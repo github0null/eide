@@ -1,0 +1,299 @@
+{
+	"name": "eide",
+	"publisher": "CL",
+	"author": {
+		"name": "CL",
+		"email": "2584456014@qq.com"
+	},
+	"keywords": [
+		"arm",
+		"stm32",
+		"keil",
+		"c51",
+		"ide",
+		"eide"
+	],
+	"license": "MIT",
+	"displayName": "EIDE",
+	"description": "a IDE for C51 and STM32 development",
+	"version": "0.0.1",
+	"engines": {
+		"vscode": "^1.36.0"
+	},
+	"categories": [
+		"Extension Packs"
+	],
+	"activationEvents": [
+		"*"
+	],
+	"icon": "res/icon/icon.png",
+	"main": "./out/extension.js",
+	"extensionPack": [
+		"CL.stm32-debugger"
+	],
+	"preview": true,
+	"repository": {
+		"url": "https://github.com/github0null/eide.git",
+		"type": "git"
+	},
+	"contributes": {
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "EIDEView",
+					"title": "EIDE",
+					"icon": "./res/icon/activitybar.svg"
+				}
+			]
+		},
+		"views": {
+			"EIDEView": [
+				{
+					"id": "Operation",
+					"name": "Operation"
+				},
+				{
+					"id": "Project",
+					"name": "Project View"
+				}
+			]
+		},
+		"commands": [
+			{
+				"command": "Project.refresh",
+				"title": "Refresh",
+				"icon": {
+					"dark": "./res/icon/action-refresh-dark.svg",
+					"light": "./res/icon/action-refresh.svg"
+				}
+			},
+			{
+				"command": "Project.historyRecord",
+				"title": "History record",
+				"icon": {
+					"dark": "./res/icon/TaskList_16x.svg",
+					"light": "./res/icon/TaskList_16x.svg"
+				}
+			},
+			{
+				"command": "Project.saveAll",
+				"title": "Save all project",
+				"icon": {
+					"dark": "./res/icon/SaveAll_16x.svg",
+					"light": "./res/icon/SaveAll_16x.svg"
+				}
+			},
+			{
+				"command": "Project.save",
+				"title": "Save this project",
+				"icon": {
+					"dark": "./res/icon/Save_16x.svg",
+					"light": "./res/icon/Save_16x.svg"
+				}
+			},
+			{
+				"command": "Project.compile",
+				"title": "Compile and output hex file",
+				"icon": {
+					"dark": "./res/icon/BuildSolution_16x.svg",
+					"light": "./res/icon/BuildSolution_16x.svg"
+				}
+			},
+			{
+				"command": "Project.close",
+				"title": "Close project",
+				"icon": {
+					"dark": "./res/icon/TestCoveredFailing_16x.svg",
+					"light": "./res/icon/TestCoveredFailing_16x.svg"
+				}
+			},
+			{
+				"command": "Project.addPackage",
+				"title": "Install Keil Package",
+				"icon": {
+					"dark": "./res/icon/Add_16xMD.svg",
+					"light": "./res/icon/Add_16xMD.svg"
+				}
+			},
+			{
+				"command": "Project.setDevice",
+				"title": "Set a Device From Package",
+				"icon": {
+					"dark": "./res/icon/FieldAdded_16x.svg",
+					"light": "./res/icon/FieldAdded_16x.svg"
+				}
+			},
+			{
+				"command": "Project.exportXml",
+				"title": "Export Keil Project XML (.uvprojx or .uvproj)",
+				"icon": {
+					"dark": "./res/icon/ExportFile_16x.svg",
+					"light": "./res/icon/ExportFile_16x.svg"
+				}
+			},
+			{
+				"command": "Project.modifyCompileConfig",
+				"title": "Modify Configuration",
+				"icon": {
+					"dark": "./res/icon/Pen4_16x.svg",
+					"light": "./res/icon/Pen4_16x.svg"
+				}
+			},
+			{
+				"command": "Project.addIncludeDir",
+				"title": "Add a include dir to project",
+				"icon": {
+					"dark": "./res/icon/Add_16xMD.svg",
+					"light": "./res/icon/Add_16xMD.svg"
+				}
+			},
+			{
+				"command": "Project.addDefine",
+				"title": "Add a define to project",
+				"icon": {
+					"dark": "./res/icon/Add_16xMD.svg",
+					"light": "./res/icon/Add_16xMD.svg"
+				}
+			},
+			{
+				"command": "Project.removeDependenceItem",
+				"title": "Remove this item",
+				"icon": {
+					"dark": "./res/icon/TestCoveredFailing_16x.svg",
+					"light": "./res/icon/TestCoveredFailing_16x.svg"
+				}
+			},
+			{
+				"command": "Project.importDependenceFromPack",
+				"title": "Import this dependence to project",
+				"icon": {
+					"dark": "./res/icon/AddDependencyGraph_16x.svg",
+					"light": "./res/icon/AddDependencyGraph_16x.svg"
+				}
+			},
+			{
+				"command": "Project.removeDependenceFromPack",
+				"title": "Remove this dependence from project",
+				"icon": {
+					"dark": "./res/icon/TestCoveredFailing_16x.svg",
+					"light": "./res/icon/TestCoveredFailing_16x.svg"
+				}
+			},
+			{
+				"command": "eide.ShowUUID",
+				"category": "EIDE",
+				"title": "Show UUID"
+			}
+		],
+		"menus": {
+			"view/title": [
+				{
+					"command": "Project.refresh",
+					"group": "navigation",
+					"when": "view == Project"
+				},
+				{
+					"command": "Project.historyRecord",
+					"group": "navigation",
+					"when": "view == Project"
+				},
+				{
+					"command": "Project.saveAll",
+					"group": "navigation",
+					"when": "view == Project"
+				}
+			],
+			"view/item/context": [
+				{
+					"command": "Project.addPackage",
+					"group": "inline",
+					"when": "viewItem == PACK && view == Project"
+				},
+				{
+					"command": "Project.setDevice",
+					"group": "inline",
+					"when": "viewItem == PACK_GROUP && view == Project"
+				},
+				{
+					"command": "Project.save",
+					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+				},
+				{
+					"command": "Project.exportXml",
+					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+				},
+				{
+					"command": "Project.exportXml",
+					"group": "inline",
+					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+				},
+				{
+					"command": "Project.compile",
+					"group": "inline",
+					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+				},
+				{
+					"command": "Project.compile",
+					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+				},
+				{
+					"command": "Project.close",
+					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+				},
+				{
+					"command": "Project.close",
+					"group": "inline",
+					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+				},
+				{
+					"command": "Project.modifyCompileConfig",
+					"group": "inline",
+					"when": "viewItem == COMPILE_CONFIGURATION_ITEM && view == Project"
+				},
+				{
+					"command": "Project.addIncludeDir",
+					"group": "inline",
+					"when": "viewItem == INC_GROUP && view == Project"
+				},
+				{
+					"command": "Project.addDefine",
+					"group": "inline",
+					"when": "viewItem == DEFINE_GROUP && view == Project"
+				},
+				{
+					"command": "Project.removeDependenceItem",
+					"group": "inline",
+					"when": "viewItem == INC_ITEM || viewItem == DEFINE_ITEM && view == Project"
+				},
+				{
+					"command": "Project.importDependenceFromPack",
+					"group": "inline",
+					"when": "viewItem == COMPONENT_GROUP && view == Project"
+				},
+				{
+					"command": "Project.removeDependenceFromPack",
+					"group": "inline",
+					"when": "viewItem == ACTIVED_GROUP && view == Project"
+				}
+			]
+		}
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"postinstall": "node ./node_modules/vscode/bin/install",
+		"test": "npm run compile && node ./node_modules/vscode/bin/test"
+	},
+	"devDependencies": {
+		"@types/mocha": "^2.2.42",
+		"@types/node": "^10.14.21",
+		"tslint": "^5.12.1",
+		"typescript": "^3.6.4",
+		"vscode": "^1.1.28"
+	},
+	"dependencies": {
+		"@types/x2js": "^3.1.0",
+		"x2js": "^3.3.1"
+	}
+}

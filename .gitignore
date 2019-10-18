@@ -1,0 +1,10 @@
+.vscode
+/node_modules
+/bin
+/out
+/res/data
+/res/template
+/res/icon
+/src
+vsc-extension-quickstart.md
+eide-0.0.1.vsix
