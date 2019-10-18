@@ -4,7 +4,7 @@
 /out
 /res/data
 /res/template
-/res/icon
+/res/icon/*.svg
 /src
 vsc-extension-quickstart.md
 eide-0.0.1.vsix
