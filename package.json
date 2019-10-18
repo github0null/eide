@@ -29,12 +29,31 @@
 	"icon": "res/icon/icon.png",
 	"main": "./out/extension.js",
 	"extensionPack": [
-		"CL.stm32-debugger"
+		"CL.stm32-debugger",
+		"ms-vscode.cpptools"
 	],
 	"preview": true,
 	"repository": {
 		"url": "https://github.com/github0null/eide.git",
 		"type": "git"
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"postinstall": "node ./node_modules/vscode/bin/install",
+		"test": "npm run compile && node ./node_modules/vscode/bin/test"
+	},
+	"devDependencies": {
+		"@types/mocha": "^2.2.42",
+		"@types/node": "^10.14.21",
+		"tslint": "^5.12.1",
+		"typescript": "^3.6.4",
+		"vscode": "^1.1.28"
+	},
+	"dependencies": {
+		"@types/x2js": "^3.1.0",
+		"x2js": "^3.3.1"
 	},
 	"contributes": {
 		"viewsContainers": {
@@ -276,24 +295,19 @@
 					"when": "viewItem == ACTIVED_GROUP && view == Project"
 				}
 			]
-		}
-	},
-	"scripts": {
-		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -p ./",
-		"watch": "tsc -watch -p ./",
-		"postinstall": "node ./node_modules/vscode/bin/install",
-		"test": "npm run compile && node ./node_modules/vscode/bin/test"
-	},
-	"devDependencies": {
-		"@types/mocha": "^2.2.42",
-		"@types/node": "^10.14.21",
-		"tslint": "^5.12.1",
-		"typescript": "^3.6.4",
-		"vscode": "^1.1.28"
-	},
-	"dependencies": {
-		"@types/x2js": "^3.1.0",
-		"x2js": "^3.3.1"
+		},
+		"snippets": [
+			{
+				"language": "c",
+				"path": "./lang/snippets.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "c",
+				"scopeName": "source.c.c51",
+				"path": "./lang/c51.tmLanguage"
+			}
+		]
 	}
 }

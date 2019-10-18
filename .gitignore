@@ -6,5 +6,6 @@
 /res/template
 /res/icon/*.svg
 /src
+/lang
 vsc-extension-quickstart.md
 eide-0.0.1.vsix
