@@ -1,7 +1,7 @@
 ![App Icon](./res/icon/icon.png)
 # EIDE
 
-###[跳转至中文](https://github.com/github0null/eide/blob/master/README.md)
+### [跳转至中文](https://github.com/github0null/eide/blob/master/README.md)
 
 ## Summary
 
