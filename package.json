@@ -10,13 +10,13 @@
 		"stm32",
 		"keil",
 		"c51",
-		"ide",
 		"eide"
 	],
+	"homepage": "https://github.com/github0null/eide/blob/master/README.md",
 	"license": "MIT",
 	"displayName": "EIDE",
 	"description": "a IDE for C51 and STM32 development",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"engines": {
 		"vscode": "^1.36.0"
 	},
@@ -29,10 +29,17 @@
 	"icon": "res/icon/icon.png",
 	"main": "./out/extension.js",
 	"extensionPack": [
-		"CL.stm32-debugger",
-		"ms-vscode.cpptools"
+		"CL.stm32-debugger"
 	],
+	"readme": "https://github.com/github0null/eide/blob/master/README.md",
+	"bugs": {
+		"url": "https://github.com/github0null/eide/issues",
+		"email": "2584456014@qq.com"
+	},
 	"preview": true,
+	"os": [
+		"win32"
+	],
 	"repository": {
 		"url": "https://github.com/github0null/eide.git",
 		"type": "git"
@@ -160,7 +167,7 @@
 			},
 			{
 				"command": "Project.addIncludeDir",
-				"title": "Add a include dir to project",
+				"title": "Add include dirs to project",
 				"icon": {
 					"dark": "./res/icon/Add_16xMD.svg",
 					"light": "./res/icon/Add_16xMD.svg"
@@ -169,6 +176,22 @@
 			{
 				"command": "Project.addDefine",
 				"title": "Add a define to project",
+				"icon": {
+					"dark": "./res/icon/Add_16xMD.svg",
+					"light": "./res/icon/Add_16xMD.svg"
+				}
+			},
+			{
+				"command": "Project.addLibDir",
+				"title": "Add library dirs to project",
+				"icon": {
+					"dark": "./res/icon/Add_16xMD.svg",
+					"light": "./res/icon/Add_16xMD.svg"
+				}
+			},
+			{
+				"command": "Project.addSourceDir",
+				"title": "Add source dirs to project",
 				"icon": {
 					"dark": "./res/icon/Add_16xMD.svg",
 					"light": "./res/icon/Add_16xMD.svg"
@@ -280,9 +303,19 @@
 					"when": "viewItem == DEFINE_GROUP && view == Project"
 				},
 				{
+					"command": "Project.addLibDir",
+					"group": "inline",
+					"when": "viewItem == LIB_GROUP && view == Project"
+				},
+				{
+					"command": "Project.addSourceDir",
+					"group": "inline",
+					"when": "viewItem == SOURCE_GROUP && view == Project"
+				},
+				{
 					"command": "Project.removeDependenceItem",
 					"group": "inline",
-					"when": "viewItem == INC_ITEM || viewItem == DEFINE_ITEM && view == Project"
+					"when": "viewItem == INC_ITEM || viewItem == DEFINE_ITEM || viewItem == LIB_ITEM || viewItem == SOURCE_ITEM && view == Project"
 				},
 				{
 					"command": "Project.importDependenceFromPack",
@@ -306,7 +339,7 @@
 			{
 				"language": "c",
 				"scopeName": "source.c.c51",
-				"path": "./lang/c51.tmLanguage"
+				"path": "./lang/c51.tmLanguage.json"
 			}
 		]
 	}
