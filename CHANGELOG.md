@@ -8,6 +8,8 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ## [V0.0.2]
 
+- add a button for uninstall `Keil package`
+- repaired the problem of load error without workspace
 - repaired the problem of language highlight
 - repaired the Log upload module
 - cancel bind `ms-vscode-cpptools` extension

@@ -142,6 +142,14 @@
 				}
 			},
 			{
+				"command": "Project.removePackage",
+				"title": "Uninstall this Keil Package",
+				"icon": {
+					"dark": "./res/icon/TestCoveredFailing_16x.svg",
+					"light": "./res/icon/TestCoveredFailing_16x.svg"
+				}
+			},
+			{
 				"command": "Project.setDevice",
 				"title": "Set a Device From Package",
 				"icon": {
