@@ -260,6 +260,11 @@
 					"when": "viewItem == PACK && view == Project"
 				},
 				{
+					"command": "Project.removePackage",
+					"group": "inline",
+					"when": "viewItem == PACK_GROUP && view == Project"
+				},
+				{
 					"command": "Project.setDevice",
 					"group": "inline",
 					"when": "viewItem == PACK_GROUP && view == Project"
