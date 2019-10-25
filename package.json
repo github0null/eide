@@ -16,9 +16,9 @@
 	"license": "MIT",
 	"displayName": "EIDE",
 	"description": "a IDE for C51 and STM32 development",
-	"version": "0.0.2",
+	"version": "0.0.4",
 	"engines": {
-		"vscode": "^1.36.0"
+		"vscode": "^1.38.0"
 	},
 	"categories": [
 		"Extension Packs"
