@@ -9,6 +9,12 @@ A tiny IDE for develop STM32 and C51 project on vscode. It is convenient to deve
 
 ***
 
+## Download
+
+The extension package is too big (about 44 MB), so you can download vsix package from **github -> release**
+
+***
+
 ## Function
 
 * Open EIDE project
