@@ -11,7 +11,7 @@ A tiny IDE for develop STM32 and C51 project on vscode. It is convenient to deve
 
 ## Download
 
-The extension package is too big (about 44 MB), so you can download vsix package from **github -> release**
+The extension package is too big (about 44 MB), so you can download vsix package from [github -> release](https://github.com/github0null/eide/releases)
 
 ***
 
@@ -19,11 +19,11 @@ The extension package is too big (about 44 MB), so you can download vsix package
 
 * Open EIDE project
 * Create EIDE project
-* Import Keil uVision 5 project and create a new EIDE project for it
+* Import Keil uVision 5 project and create a new EIDE project for it **( only support Keil uVison 4, 5 )**
 * Export Keil project file(.uvprojx, .uvproj) to workspace
 * Manage project dependence
 * Compile project (if it is a STM32 project, it will generate a launch.json for `stm32-debugger` debugger)
-* `If you need a STM32 debugger, you can search stm32-debugger in extensions market (It combines with EIDE for a better experience)`
+* `If you need a STM32 debugger, you can search `[stm32-debugger](https://github.com/github0null/stm32-debugger/releases)` in extensions market (It combines with EIDE for a better experience)`
 
 ***
 
@@ -35,24 +35,52 @@ The extension package is too big (about 44 MB), so you can download vsix package
 
 ## Function Preview
 
-* **You should uncompress compile tool before start a project** ![unzip tool](./res/preview/unzip_tool_en.png)
+#### You must uncompress compile tool before start a project
+
+![unzip tool](./res/preview/unzip_tool.png)
 
 ***
 
-* **Project preview** ![project preview](./res/preview/prjView_en.png)
+#### Open Project
+![Open prj](./res/preview/open_project_view.gif)
 
 ***
 
-* **You can install Keil package for this project (You can also not install it)** ![install pack](./res/preview/install_pack_en.png)
+#### Create a new C51 or STM32 project
+![Create prj](./res/preview/create_project_view.gif)
 
 ***
 
-* **You can install project dependence from Keil package (You can also not install it)** ![install prj dep](./res/preview/install_dep_en.png)
+#### Import Keil uVison 5 project
+![import prj](./res/preview/import_view.gif)
 
 ***
 
-* **Compile project** ![compile prj](./res/preview/compile_en.png)
+#### Export Keil uVison 5 XML
+![export prj](./res/preview/export_view.gif)
 
 ***
 
-* **Start debug (use `stm32-debugger`)** ![debug prj](./res/preview/debug.png)
+#### Project preview
+![project preview](./res/preview/prjView.png)
+
+***
+
+#### Compile project
+![compile prj](./res/preview/compile_view.gif)
+
+***
+
+#### You can install Keil package for this project (You can also not install it)
+![install pack](./res/preview/install_pack.png)
+
+***
+
+#### You can install project dependence from Keil package (You can also not install it)
+![install prj dep](./res/preview/install_dep.png)
+
+***
+
+#### Start debug (use `stm32-debugger`)
+![debug prj](./res/preview/debug.png)
+

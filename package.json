@@ -15,8 +15,8 @@
 	"homepage": "https://github.com/github0null/eide/blob/master/README.md",
 	"license": "MIT",
 	"displayName": "EIDE",
-	"description": "a IDE for C51 and STM32 development",
-	"version": "0.0.4",
+	"description": "An IDE for C51 and STM32 development",
+	"version": "1.0.0",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
@@ -29,14 +29,12 @@
 	"icon": "res/icon/icon.png",
 	"main": "./out/extension.js",
 	"extensionPack": [
-		"CL.stm32-debugger"
 	],
 	"readme": "https://github.com/github0null/eide/blob/master/README.md",
 	"bugs": {
 		"url": "https://github.com/github0null/eide/issues",
 		"email": "2584456014@qq.com"
 	},
-	"preview": true,
 	"os": [
 		"win32"
 	],
