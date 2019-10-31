@@ -26,13 +26,15 @@ All notable changes to the "eide" extension will be documented in this file.
 - open the error display
 - add some error hint to display when extension occur a error
 
-## [0.0.5]
+## [1.0.0] official version
 
 #### Add
 
 - add custom dependence for C51 project
 - add some compile options for project
+- add cpp compile option
 
 #### Fixed
 
 - cannot show C51 custom dependence
+- Import error
