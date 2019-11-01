@@ -38,3 +38,9 @@ All notable changes to the "eide" extension will be documented in this file.
 
 - cannot show C51 custom dependence
 - Import error
+
+## [1.0.1]
+
+#### Fixed
+
+- fixed some errors
