@@ -10,6 +10,4 @@ vsc-extension-quickstart.md
 .EIDE
 .gitignore
 *.code-workspace
-bin/ARM
-bin/C51
 res/data/sln.record

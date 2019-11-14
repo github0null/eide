@@ -16,7 +16,7 @@
 	"license": "MIT",
 	"displayName": "EIDE",
 	"description": "An IDE for C51 and STM32 development",
-	"version": "1.0.1",
+	"version": "1.0.3",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
@@ -28,8 +28,7 @@
 	],
 	"icon": "res/icon/icon.png",
 	"main": "./out/extension.js",
-	"extensionPack": [
-	],
+	"extensionPack": [],
 	"readme": "https://github.com/github0null/eide/blob/master/README.md",
 	"bugs": {
 		"url": "https://github.com/github0null/eide/issues",
@@ -57,10 +56,31 @@
 		"vscode": "^1.1.28"
 	},
 	"dependencies": {
+		"@types/iconv-lite": "0.0.1",
 		"@types/x2js": "^3.1.0",
+		"iconv-lite": "^0.5.0",
 		"x2js": "^3.3.1"
 	},
 	"contributes": {
+		"configuration": [
+			{
+				"title": "EIDE",
+				"properties": {
+					"EIDE.ARM.INI.Path": {
+						"type": "string",
+						"scope": "machine",
+						"description": "Keil ARM MDK 'TOOLS.INI' file path [example: D:\\Demo\\Keil\\TOOLS.INI]",
+						"default": "unknown"
+					},
+					"EIDE.C51.INI.Path": {
+						"type": "string",
+						"scope": "machine",
+						"description": "Keil C51 'TOOLS.INI' file path [example: D:\\Demo\\Keil\\C51\\TOOLS.INI]",
+						"default": "unknown"
+					}
+				}
+			}
+		],
 		"viewsContainers": {
 			"activitybar": [
 				{
@@ -121,6 +141,30 @@
 				"icon": {
 					"dark": "./res/icon/BuildSolution_16x.svg",
 					"light": "./res/icon/BuildSolution_16x.svg"
+				}
+			},
+			{
+				"command": "Project.repair",
+				"title": "Repair project dependence",
+				"icon": {
+					"dark": "./res/icon/Repair_16x.svg",
+					"light": "./res/icon/Repair_16x.svg"
+				}
+			},
+			{
+				"command": "Project.addSrcDir",
+				"title": "Add a src root dir to project",
+				"icon": {
+					"dark": "./res/icon/Add_16xMD.svg",
+					"light": "./res/icon/Add_16xMD.svg"
+				}
+			},
+			{
+				"command": "Project.removeSrcDir",
+				"title": "Remove this src root dir from project",
+				"icon": {
+					"dark": "./res/icon/TestCoveredFailing_16x.svg",
+					"light": "./res/icon/TestCoveredFailing_16x.svg"
 				}
 			},
 			{
@@ -197,7 +241,7 @@
 			},
 			{
 				"command": "Project.addSourceDir",
-				"title": "Add source dirs to project",
+				"title": "Add a source dir to project",
 				"icon": {
 					"dark": "./res/icon/Add_16xMD.svg",
 					"light": "./res/icon/Add_16xMD.svg"
@@ -272,6 +316,15 @@
 					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
 				},
 				{
+					"command": "Project.repair",
+					"when": "viewItem == DEPENDENCE && view == Project"
+				},
+				{
+					"command": "Project.repair",
+					"group": "inline",
+					"when": "viewItem == DEPENDENCE && view == Project"
+				},
+				{
 					"command": "Project.exportXml",
 					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
 				},
@@ -292,6 +345,16 @@
 				{
 					"command": "Project.close",
 					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+				},
+				{
+					"command": "Project.addSrcDir",
+					"group": "inline",
+					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+				},
+				{
+					"command": "Project.removeSrcDir",
+					"group": "inline",
+					"when": "viewItem == SRC_GROUP && view == Project"
 				},
 				{
 					"command": "Project.close",

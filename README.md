@@ -13,9 +13,23 @@
 
 ## 安装
 
-因插件较大(大概 44 MB)，如果安装较慢，可在 [github -> release](https://github.com/github0null/eide/releases) 中下载最新版本 **vsix** 包
+在 [github -> release](https://github.com/github0null/eide/releases) 中下载最新版本 **vsix** 包
 
 ***
+
+## 版本变化
+
+> ### 因作者的测试环境有限, 因此如果遇到了 bug, 欢迎大家通过 [Github -> issue](https://github.com/github0null/eide/issues) 进行反馈
+
+- ### [v1.0.3]
+
+- 由于许可证问题，这个版本移除了自带的 Keil 编译工具, 安装包大大缩小, 因此如果需要使用编译功能，则需要安装 Keil 并在此软件内设置好路径
+- 修复了导入 keil project 失败的问题
+- 在导入时自动将 ANSI 编码的文件转换为 UTF8 文件, 避免了乱码
+- 优化了构建工具，修复了部分故障
+- 修复了一些其他问题
+
+****
 
 ## 功能
 

@@ -11,9 +11,20 @@ A tiny IDE for develop STM32 and C51 project on vscode. It is convenient to deve
 
 ## Download
 
-The extension package is too big (about 44 MB), so you can download vsix package from [github -> release](https://github.com/github0null/eide/releases)
+Download vsix package at [github -> release](https://github.com/github0null/eide/releases)
 
 ***
+
+## version changes
+
+> ### for the author's test environment is limited, so if you encounter a bug, you are welcome by [github -> issue](https://github.com/github0null/eide/issues) for feedback
+
+- ### [v1.0.3]
+- due to license issues, this release removed the built-in Keil compilation tool and the installation package was greatly reduced, so if you need to use the compilation function, you need to install Keil and set the path in the software
+- fixed the failure of importing keil project
+- automatically convert ANSI encoded files to UTF8 files when importing, to avoid scrambled codes
+- optimized the build tool and fixed some faults
+- fixed some other issues
 
 ## Function
 

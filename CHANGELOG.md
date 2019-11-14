@@ -2,29 +2,34 @@
 
 All notable changes to the "eide" extension will be documented in this file.
 
-## [First Release]
+****
 
-- V 0.0.1
+## [1.0.3]
 
-## [0.0.2]
+#### add
+- add `repair button` to repair project dependence
+- support convert 'ansi' to 'utf8' code
 
-- add a button for uninstall `Keil package`
-- repaired the problem of load error without workspace
-- repaired the problem of language highlight
-- repaired the Log upload module
-- cancel bind `ms-vscode-cpptools` extension
-- repaired some error
+#### fixed
+- fixed: create project error
+- fixed: can't copy file from keil project
+- fixed some other bugs 
 
-## [0.0.3]
+****
 
-- repaired some bugs
+## [1.0.2]
 
-## [0.0.4]
+- fixed some bugs
 
-- repaired some problems on module: File.ts
-- repaired some problems on module: import project from keil xml 
-- open the error display
-- add some error hint to display when extension occur a error
+****
+
+## [1.0.1]
+
+#### Fixed
+
+- fixed some errors
+
+****
 
 ## [1.0.0] official version
 
@@ -39,8 +44,34 @@ All notable changes to the "eide" extension will be documented in this file.
 - cannot show C51 custom dependence
 - Import error
 
-## [1.0.1]
+****
 
-#### Fixed
+## [0.0.4]
 
-- fixed some errors
+- repaired some problems on module: File.ts
+- repaired some problems on module: import project from keil xml 
+- open the error display
+- add some error hint to display when extension occur a error
+
+****
+
+## [0.0.3]
+
+- repaired some bugs
+
+****
+
+## [0.0.2]
+
+- add a button for uninstall `Keil package`
+- repaired the problem of load error without workspace
+- repaired the problem of language highlight
+- repaired the Log upload module
+- cancel bind `ms-vscode-cpptools` extension
+- repaired some error
+
+****
+
+## [First Release]
+
+- V 0.0.1
