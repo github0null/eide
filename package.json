@@ -27,7 +27,7 @@
 		"*"
 	],
 	"icon": "res/icon/icon.png",
-	"main": "./out/extension.js",
+	"main": "./out/src/extension.js",
 	"extensionPack": [],
 	"readme": "https://github.com/github0null/eide/blob/master/README.md",
 	"bugs": {

@@ -19,6 +19,13 @@ Download vsix package at [github -> release](https://github.com/github0null/eide
 
 > ### for the author's test environment is limited, so if you encounter a bug, you are welcome by [github -> issue](https://github.com/github0null/eide/issues) for feedback
 
+- ### [v1.0.4]
+- Optimize repeat paths
+- fixed Chinese path problem
+- fixed some other issues
+
+****
+
 - ### [v1.0.3]
 - due to license issues, this release removed the built-in Keil compilation tool and the installation package was greatly reduced, so if you need to use the compilation function, you need to install Keil and set the path in the software
 - fixed the failure of importing keil project
