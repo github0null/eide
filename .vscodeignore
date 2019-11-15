@@ -11,3 +11,4 @@ vsc-extension-quickstart.md
 .gitignore
 *.code-workspace
 res/data/sln.record
+lib
