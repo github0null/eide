@@ -7,7 +7,7 @@
 
 一个 **STM32**, **C51** IDE, 可以方便的在 vscode 上对 C51, STM32 项目进行 开发, 管理, 并且支持 Keil uVision 5 项目的导入和导出 
 
-- **仅用于Windows平台**
+### **仅支持于 Windows 平台**
 
 ***
 
@@ -19,7 +19,19 @@
 
 ## 版本变化
 
-> ### 因作者的测试环境有限, 因此如果遇到了 bug, 欢迎大家通过 [Github -> issue](https://github.com/github0null/eide/issues) 进行反馈
+> #### 因作者的测试环境有限, 因此如果遇到了 bug, 欢迎大家通过 [Github -> issue](https://github.com/github0null/eide/issues) 进行反馈
+
+> #### 注意: 使用 JLink 工具前请确保电脑已安装 jlink 驱动程序
+
+- ### [v1.0.5]
+- 加入 JLink 烧录器, 支持一键烧录，暂不支持 C51
+- 增加快捷键: F6 -> 编译, F7 -> 烧录, ctrl+F1 -> 上传 eide 日志
+- 优化了日志程序，方便上传应用日志，帮助改进此插件
+- 修复部分问题
+
+- 烧录功能展示 ![upload-board](./res/preview/upload-board.gif)
+
+****
 
 - ### [v1.0.4]
 - 优化重复的路径
@@ -45,7 +57,7 @@
 * 导入 Keil uVision 5 项目并完成 EIDE 项目的创建 (对 Keil uVision 4, 5 支持较好)
 * 导出 Keil 项目文件(.uvprojx, .uvproj)到工作区
 * 管理项目依赖
-* 编译项目 (如果为 STM32 项目, 还会生成与调试器 stm32-debugger 相关的 launch.json)
+* 编译项目 (**终端必须使用 Powershell**) (如果为 STM32 项目, 还会生成与调试器 stm32-debugger 相关的 launch.json)
 * `如果需要 STM32 调试功能, 可以在扩展商店搜索` [stm32-debugger](https://github.com/github0null/stm32-debugger/releases)`, 它与 EIDE 结合将会有更好的体验`
 
 ***

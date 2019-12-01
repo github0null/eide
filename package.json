@@ -1,8 +1,8 @@
 {
 	"name": "eide",
-	"publisher": "CL",
+	"publisher": "cl",
 	"author": {
-		"name": "CL",
+		"name": "cl",
 		"email": "2584456014@qq.com"
 	},
 	"keywords": [
@@ -16,7 +16,7 @@
 	"license": "MIT",
 	"displayName": "EIDE",
 	"description": "An IDE for C51 and STM32 development",
-	"version": "1.0.4",
+	"version": "1.0.5",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
@@ -216,6 +216,14 @@
 				}
 			},
 			{
+				"command": "Project.modifyUploadConfig",
+				"title": "Modify Configuration",
+				"icon": {
+					"dark": "./res/icon/Pen4_16x.svg",
+					"light": "./res/icon/Pen4_16x.svg"
+				}
+			},
+			{
 				"command": "Project.addIncludeDir",
 				"title": "Add include dirs to project",
 				"icon": {
@@ -272,9 +280,36 @@
 				}
 			},
 			{
+				"command": "Project.uploadToDevice",
+				"title": "upload bin file to device",
+				"icon": {
+					"dark": "./res/icon/TransferDownload_16x.svg",
+					"light": "./res/icon/TransferDownload_16x.svg"
+				}
+			},
+			{
 				"command": "eide.ShowUUID",
-				"category": "EIDE",
+				"category": "eide",
 				"title": "Show UUID"
+			},
+			{
+				"command": "eide.uploadLog",
+				"category": "eide",
+				"title": "Upload log to remote server"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "Project.compile",
+				"key": "f6"
+			},
+			{
+				"command": "Project.uploadToDevice",
+				"key": "f7"
+			},
+			{
+				"command": "eide.uploadLog",
+				"key": "ctrl+f1"
 			}
 		],
 		"menus": {
@@ -343,6 +378,15 @@
 					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
 				},
 				{
+					"command": "Project.uploadToDevice",
+					"group": "inline",
+					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+				},
+				{
+					"command": "Project.uploadToDevice",
+					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+				},
+				{
 					"command": "Project.close",
 					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
 				},
@@ -357,14 +401,14 @@
 					"when": "viewItem == SRC_GROUP && view == Project"
 				},
 				{
-					"command": "Project.close",
-					"group": "inline",
-					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
-				},
-				{
 					"command": "Project.modifyCompileConfig",
 					"group": "inline",
 					"when": "viewItem == COMPILE_CONFIGURATION_ITEM && view == Project"
+				},
+				{
+					"command": "Project.modifyUploadConfig",
+					"group": "inline",
+					"when": "viewItem == UPLOAD_OPTION_ITEM && view == Project"
 				},
 				{
 					"command": "Project.addIncludeDir",
