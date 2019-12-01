@@ -17,7 +17,19 @@ Download vsix package at [github -> release](https://github.com/github0null/eide
 
 ## version changes
 
-> ### for the author's test environment is limited, so if you encounter a bug, you are welcome by [github -> issue](https://github.com/github0null/eide/issues) for feedback
+> #### for the author's test environment is limited, so if you encounter a bug, you are welcome by [github -> issue](https://github.com/github0null/eide/issues) for feedback
+
+> #### Warnings: you should install JLink driver in your PC before use JLink tools
+
+- ### [v1.0.5]
+- Add JLink uploader, C51 is not supported
+- Add shortcuts: F6 -> compile, F7 -> upload to board, ctrl+F1 -> upload eide log to remote server
+- Optimized logger for uploading application logs to help improve the plug-in
+- Fixed some other issues
+
+- upload hex to stm32 board ![upload-board](./res/preview/upload-board.gif)
+
+****
 
 - ### [v1.0.4]
 - Optimize repeat paths

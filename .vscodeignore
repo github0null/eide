@@ -1,7 +1,7 @@
-.vscode/**
-.vscode-test/**
-out/test/**
-src/**
+.vscode
+.vscode-test
+/out/test/**
+/src/**
 vsc-extension-quickstart.md
 **/tsconfig.json
 **/tslint.json
@@ -10,5 +10,5 @@ vsc-extension-quickstart.md
 .EIDE
 .gitignore
 *.code-workspace
-res/data/sln.record
-lib
+/res/data/sln.record
+node-utility
