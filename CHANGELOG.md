@@ -4,6 +4,8 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ****
 
+## Subsequent versions: see details in `README.md`
+
 ## [1.0.3]
 
 #### add

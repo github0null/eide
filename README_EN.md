@@ -11,7 +11,7 @@ A tiny IDE for develop STM32 and C51 project on vscode. It is convenient to deve
 
 ## Download
 
-Download vsix package at [github -> release](https://github.com/github0null/eide/releases)
+Search `eide` in extension market or Download vsix package at [github -> release](https://github.com/github0null/eide/releases)
 
 ***
 
@@ -20,6 +20,13 @@ Download vsix package at [github -> release](https://github.com/github0null/eide
 > #### for the author's test environment is limited, so if you encounter a bug, you are welcome by [github -> issue](https://github.com/github0null/eide/issues) for feedback
 
 > #### Warnings: you should install JLink driver in your PC before use JLink tools
+
+- ### [v1.0.6]
+- Fixed header file not copied when importing Keil project
+- Increased validation of the Keil path
+- Added compile-mode Settings (8051 chip to support larger RAM and ROM) and the option to remove unused functions (to reduce code size) for the C51 project
+
+****
 
 - ### [v1.0.5]
 - Add JLink uploader, C51 is not supported

@@ -16,7 +16,7 @@
 	"license": "MIT",
 	"displayName": "EIDE",
 	"description": "An IDE for C51 and STM32 development",
-	"version": "1.0.5",
+	"version": "1.0.6",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
@@ -49,11 +49,11 @@
 		"test": "npm run compile && node ./node_modules/vscode/bin/test"
 	},
 	"devDependencies": {
-		"@types/mocha": "^2.2.42",
-		"@types/node": "^10.14.21",
-		"tslint": "^5.12.1",
-		"typescript": "^3.6.4",
-		"vscode": "^1.1.28"
+		"@types/mocha": "^5.2.7",
+		"@types/node": "^12.12.17",
+		"tslint": "^5.20.1",
+		"typescript": "^3.7.3",
+		"vscode": "^1.1.36"
 	},
 	"dependencies": {
 		"@types/iconv-lite": "0.0.1",

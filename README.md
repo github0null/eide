@@ -13,7 +13,7 @@
 
 ## 安装
 
-在 [github -> release](https://github.com/github0null/eide/releases) 中下载最新版本 **vsix** 包
+在扩展商店搜索 eide 或者 在 [github -> release](https://github.com/github0null/eide/releases) 中下载最新版本 **vsix** 包
 
 ***
 
@@ -23,12 +23,19 @@
 
 > #### 注意: 使用 JLink 工具前请确保电脑已安装 jlink 驱动程序
 
+- ### [v1.0.6]
+- 修复没有找到 "core_cm.h" 头文件的问题
+- 修复在导入 Keil 项目时, 头文件没有复制的问题
+- 增加对 Keil 路径的验证
+- 为 C51 项目加入了编译模式设置（用以支持更大 RAM 和 ROM 的 8051 芯片）和去除未使用的函数的选项（用以减小 代码 体积）
+
+****
+
 - ### [v1.0.5]
 - 加入 JLink 烧录器, 支持一键烧录，暂不支持 C51
 - 增加快捷键: F6 -> 编译, F7 -> 烧录, ctrl+F1 -> 上传 eide 日志
 - 优化了日志程序，方便上传应用日志，帮助改进此插件
 - 修复部分问题
-
 - 烧录功能展示 ![upload-board](./res/preview/upload-board.gif)
 
 ****
