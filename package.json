@@ -16,7 +16,7 @@
 	"license": "MIT",
 	"displayName": "EIDE",
 	"description": "An IDE for C51 and STM32 development",
-	"version": "1.0.6",
+	"version": "1.0.7",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
@@ -51,9 +51,9 @@
 	"devDependencies": {
 		"@types/mocha": "^5.2.7",
 		"@types/node": "^12.12.17",
+		"@types/vscode": "^1.38.0",
 		"tslint": "^5.20.1",
-		"typescript": "^3.7.3",
-		"vscode": "^1.1.36"
+		"typescript": "^3.7.3"
 	},
 	"dependencies": {
 		"@types/iconv-lite": "0.0.1",
@@ -71,6 +71,12 @@
 						"scope": "machine",
 						"description": "Keil ARM MDK 'TOOLS.INI' file path [example: D:\\Demo\\Keil\\TOOLS.INI]",
 						"default": "unknown"
+					},
+					"EIDE.ARM.Option.AutoGenerateRTE_Components": {
+						"type": "boolean",
+						"scope": "resource",
+						"description": "Auto Generate RTE_Components.h",
+						"default": "true"
 					},
 					"EIDE.C51.INI.Path": {
 						"type": "string",
@@ -288,6 +294,14 @@
 				}
 			},
 			{
+				"command": "Project.modifyStorageLayout",
+				"title": "modify storage layout",
+				"icon": {
+					"dark": "./res/icon/Pen4_16x.svg",
+					"light": "./res/icon/Pen4_16x.svg"
+				}
+			},
+			{
 				"command": "eide.ShowUUID",
 				"category": "eide",
 				"title": "Show UUID"
@@ -444,6 +458,11 @@
 					"command": "Project.removeDependenceFromPack",
 					"group": "inline",
 					"when": "viewItem == ACTIVED_GROUP && view == Project"
+				},
+				{
+					"command": "Project.modifyStorageLayout",
+					"group": "inline",
+					"when": "viewItem == COMPILE_CONFIGURATION_STORAGE_LAYOUT && view == Project"
 				}
 			]
 		},

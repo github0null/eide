@@ -2,9 +2,7 @@
 /node_modules
 /bin
 /out
-/res/data
-/res/template
-/res/icon/*.svg
+/res
 /src
 /lang
 vsc-extension-quickstart.md

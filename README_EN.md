@@ -7,6 +7,8 @@
 
 A tiny IDE for develop STM32 and C51 project on vscode. It is convenient to develop and manage C51 and STM32 projects in vscode. It also supports import and export of Keil uVision 5 projects **Only for Windows platform**
 
+**GUI support english language**
+
 ***
 
 ## Download
@@ -20,6 +22,25 @@ Search `eide` in extension market or Download vsix package at [github -> release
 > #### for the author's test environment is limited, so if you encounter a bug, you are welcome by [github -> issue](https://github.com/github0null/eide/issues) for feedback
 
 > #### Warnings: you should install JLink driver in your PC before use JLink tools
+
+- ### [v1.0.7]
+- Change：Move the RAM and ROM layout options to a separate local Web page![ram-rom-layout](./res/preview/ram_rom_layout.gif)
+
+- Add：Automatic generation of "RTE_Components. H" file, as well as automatic changes, can use the plug-in Settings AutoGenerateRTE_Components disabled, turned on by default
+- Add：The default GNU extensions option
+- Add：AutoGenerateRTE_Components plug-in Settings
+- Add：useMicroLib option
+- Add：Hardware floating point options (only for cortex-m4 and cortex-m7)
+
+- repair：The macros added to C51 did not participate in the compilation process
+- repair：Failed to install F4, F7 pack pack problem
+- repair：The problem of Keil project files being overwritten when exporting
+- repair：Problems with deleting other files while using the 'fix dependency' feature
+
+- other：Enhance the accuracy of dependent imports and remove unnecessary files
+- other：Automatically remove unnecessary parts of the package to reduce project size
+
+***
 
 - ### [v1.0.6]
 - Fixed header file not copied when importing Keil project

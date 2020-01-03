@@ -23,6 +23,25 @@
 
 > #### 注意: 使用 JLink 工具前请确保电脑已安装 jlink 驱动程序
 
+- ### [v1.0.7]
+- 更改：将 RAM 和 ROM 布局选项转到到一个单独的本地的 Web 页面![ram-rom-layout](./res/preview/ram_rom_layout.gif)
+
+- 增加：自动生成 “RTE_Components.h” 文件，以及自动更改，可使用插件设置 AutoGenerateRTE_Components 禁用，默认开启
+- 增加：默认的 GNU extensions 选项
+- 增加：AutoGenerateRTE_Components 插件设置
+- 增加：useMicroLib 选项
+- 增加：硬件浮点选项（只对于 cortex-M4 以及 cortex-M7 有效）
+
+- 修复：C51 增加的宏没有参与编译过程的问题
+- 修复：安装 F4, F7 pack 包失败的问题
+- 修复：导出时 Keil 项目文件被覆盖的问题
+- 修复：使用'修复依赖'功能时删除了其他文件的问题
+
+- 其他：强化依赖导入的准确性，去除不必要的文件
+- 其他：自动删除包的不必要的部分以减小项目体积
+
+***
+
 - ### [v1.0.6]
 - 修复没有找到 "core_cm.h" 头文件的问题
 - 修复在导入 Keil 项目时, 头文件没有复制的问题
