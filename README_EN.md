@@ -23,22 +23,27 @@ Search `eide` in extension market or Download vsix package at [github -> release
 
 > #### Warnings: you should install JLink driver in your PC before use JLink tools
 
+- ### [v1.0.8]
+- Fixed: garbled code problem caused by ARM build tools
+- Fixed: C51 compilation parameters too few problem
+- Fixed: unable to create the dependence directory
+
 - ### [v1.0.7]
-- Change：Move the RAM and ROM layout options to a separate local Web page![ram-rom-layout](./res/preview/ram_rom_layout.gif)
+- Change: Move the RAM and ROM layout options to a separate local Web page![ram-rom-layout](./res/preview/ram_rom_layout.gif)
 
-- Add：Automatic generation of "RTE_Components. H" file, as well as automatic changes, can use the plug-in Settings AutoGenerateRTE_Components disabled, turned on by default
-- Add：The default GNU extensions option
-- Add：AutoGenerateRTE_Components plug-in Settings
-- Add：useMicroLib option
-- Add：Hardware floating point options (only for cortex-m4 and cortex-m7)
+- Add: Automatic generation of "RTE_Components. H" file, as well as automatic changes, can use the plug-in Settings AutoGenerateRTE_Components disabled, turned on by default
+- Add: The default GNU extensions option
+- Add: AutoGenerateRTE_Components plug-in Settings
+- Add: useMicroLib option
+- Add: Hardware floating point options (only for cortex-m4 and cortex-m7)
 
-- repair：The macros added to C51 did not participate in the compilation process
-- repair：Failed to install F4, F7 pack pack problem
-- repair：The problem of Keil project files being overwritten when exporting
-- repair：Problems with deleting other files while using the 'fix dependency' feature
+- Repair: The macros added to C51 did not participate in the compilation process
+- Repair: Failed to install F4, F7 pack pack problem
+- Repair: The problem of Keil project files being overwritten when exporting
+- Repair: Problems with deleting other files while using the 'fix dependency' feature
 
-- other：Enhance the accuracy of dependent imports and remove unnecessary files
-- other：Automatically remove unnecessary parts of the package to reduce project size
+- Other: Enhance the accuracy of dependent imports and remove unnecessary files
+- Other: Automatically remove unnecessary parts of the package to reduce project size
 
 ***
 
