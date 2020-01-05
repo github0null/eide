@@ -8,9 +8,8 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 .EIDE
-.gitignore
+**/.gitignore
 *.code-workspace
 /res/data/sln.record
-node-utility
 /bin/ARM/*.temp
 /bin/ARM/*.bat
