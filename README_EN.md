@@ -23,6 +23,13 @@ Search `eide` in extension market or Download vsix package at [github -> release
 
 > #### Warnings: you should install JLink driver in your PC before use JLink tools
 
+> #### The author is working on a manual that will make it easier to use the plug-in
+
+- ### [v1.0.9]
+- Fixed: C51 macro definition problem causing compilation failure
+
+***
+
 - ### [v1.0.8]
 - Fixed: garbled code problem caused by ARM build tools
 - Fixed: C51 compilation parameters too few problem

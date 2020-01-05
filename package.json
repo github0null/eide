@@ -16,7 +16,7 @@
 	"license": "MIT",
 	"displayName": "EIDE",
 	"description": "An IDE for C51 and STM32 development",
-	"version": "1.0.8",
+	"version": "1.0.9",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
@@ -28,7 +28,6 @@
 	],
 	"icon": "res/icon/icon.png",
 	"main": "./out/src/extension.js",
-	"extensionPack": [],
 	"readme": "https://github.com/github0null/eide/blob/master/README.md",
 	"bugs": {
 		"url": "https://github.com/github0null/eide/issues",

@@ -12,3 +12,5 @@ vsc-extension-quickstart.md
 *.code-workspace
 /res/data/sln.record
 node-utility
+/bin/ARM/*.temp
+/bin/ARM/*.bat
