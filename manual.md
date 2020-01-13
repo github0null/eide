@@ -1,6 +1,10 @@
 # EIDE 使用手册和注意事项
 
-### 基本目录结构
+[toc]
+
+***
+
+### 目录基本结构
 ![目录结构](./res/preview/dir-struct.png)
 - `.EIDE` 项目文件的目录和 EIDE 日志存放的位置
 - `dependence` 项目依赖的存放位置, 其中内容由 EIDE 自动添加、创建、管理
