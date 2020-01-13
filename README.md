@@ -23,7 +23,12 @@
 
 > #### 注意: 使用 JLink 工具前请确保电脑已安装 jlink 驱动程序
 
-> #### 作者正在编写使用手册和注意事项，这将帮助大家更方便的使用该插件
+> #### 作者正在编写一个简单的 [使用手册和注意事项](https://github.com/github0null/eide/blob/master/manual.md)，这将帮助大家更方便的使用该插件
+
+- ### [v1.1.0]
+- 修复: 项目打开后 RTE_Components.h 的内容被删除的问题
+- 更改: 更换已安装的 Component 的图标
+- 更改: 删除无用的 STD dependence
 
 - ### [v1.0.9]
 - 修复: C51宏定义不全导致编译失败的问题
@@ -66,7 +71,7 @@
 
 - ### [v1.0.5]
 - 加入 JLink 烧录器, 支持一键烧录，暂不支持 C51
-- 增加快捷键: F6 -> 编译, F7 -> 烧录, ctrl+F1 -> 上传 eide 日志
+- 增加快捷键: <kbd>F6</kbd>编译 <kbd>F7</kbd>烧录 <kbd>Ctrl</kbd>+<kbd>F1</kbd>上传 eide 日志
 - 优化了日志程序，方便上传应用日志，帮助改进此插件
 - 修复部分问题
 - 烧录功能展示 ![upload-board](./res/preview/upload-board.gif)
@@ -112,12 +117,6 @@
 
 ## 功能展示
 
-#### 在使用所有功能之前必须先解压工具
-
-![unzip tool](./res/preview/unzip_tool.png)
-
-***
-
 #### 打开项目
 ![import prj](./res/preview/open_project_view.gif)
 
@@ -138,11 +137,6 @@
 
 ***
 
-#### 项目示例
-![project preview](./res/preview/prjView.png)
-
-***
-
 #### 编译项目
 ![compile prj](./res/preview/compile_view.gif)
 
@@ -150,11 +144,6 @@
 
 #### 您可以选择为 STM32 项目安装 keil ARM 包 (安装 Keil ARM 包不是必须的)
 ![install pack](./res/preview/install_pack.png)
-
-***
-
-#### 您可以选择为项目安装 ARM 包中的依赖
-![install prj dep](./res/preview/install_dep.png)
 
 ***
 

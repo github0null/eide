@@ -23,7 +23,14 @@ Search `eide` in extension market or Download vsix package at [github -> release
 
 > #### Warnings: you should install JLink driver in your PC before use JLink tools
 
-> #### The author is working on a manual that will make it easier to use the plug-in
+> #### The author is working on a [manual](https://github.com/github0null/eide/blob/master/manual.md) that will make it easier to use the plug-in
+
+- ### [v1.1.0]
+- Fixed: rte_components.h contents removed after project open
+- Change: replace the icon of the installed Component
+- Change: delete useless STD dependence
+
+***
 
 - ### [v1.0.9]
 - Fixed: C51 macro definition problem causing compilation failure
@@ -105,12 +112,6 @@ Search `eide` in extension market or Download vsix package at [github -> release
 
 ## Function Preview
 
-#### You must uncompress compile tool before start a project
-
-![unzip tool](./res/preview/unzip_tool.png)
-
-***
-
 #### Open Project
 ![Open prj](./res/preview/open_project_view.gif)
 
@@ -131,11 +132,6 @@ Search `eide` in extension market or Download vsix package at [github -> release
 
 ***
 
-#### Project preview
-![project preview](./res/preview/prjView.png)
-
-***
-
 #### Compile project
 ![compile prj](./res/preview/compile_view.gif)
 
@@ -143,11 +139,6 @@ Search `eide` in extension market or Download vsix package at [github -> release
 
 #### You can install Keil package for this project (You can also not install it)
 ![install pack](./res/preview/install_pack.png)
-
-***
-
-#### You can install project dependence from Keil package (You can also not install it)
-![install prj dep](./res/preview/install_dep.png)
 
 ***
 
