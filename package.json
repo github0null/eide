@@ -16,7 +16,7 @@
 	"license": "MIT",
 	"displayName": "EIDE",
 	"description": "An IDE for C51 and STM32 development",
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
@@ -261,6 +261,14 @@
 				}
 			},
 			{
+				"command": "Project.addLib",
+				"title": "Add libs to project",
+				"icon": {
+					"dark": "./res/icon/Library_16x.svg",
+					"light": "./res/icon/Library_16x.svg"
+				}
+			},
+			{
 				"command": "Project.removeDependenceItem",
 				"title": "Remove this item",
 				"icon": {
@@ -405,6 +413,11 @@
 				},
 				{
 					"command": "Project.addSrcDir",
+					"group": "inline",
+					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+				},
+				{
+					"command": "Project.addLib",
 					"group": "inline",
 					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
 				},

@@ -25,6 +25,12 @@
 
 > #### 作者正在编写一个简单的 [使用手册和注意事项](https://github.com/github0null/eide/blob/master/manual.md)，这将帮助大家更方便的使用该插件
 
+- ### [v1.1.1]
+- 修复: 无法自动创建 dependence 目录的问题
+- 增加: 对 LIB 文件的链接, 可通过点击`添加LIB`按钮 或者 手动复制 LIB 文件到源文件目录完成 LIB 的添加
+
+***
+
 - ### [v1.1.0]
 - 修复: 项目打开后 RTE_Components.h 的内容被删除的问题
 - 更改: 更换已安装的 Component 的图标

@@ -25,6 +25,12 @@ Search `eide` in extension market or Download vsix package at [github -> release
 
 > #### The author is working on a [manual](https://github.com/github0null/eide/blob/master/manual.md) that will make it easier to use the plug-in
 
+- ### [v1.1.1]
+- fixed: unable to automatically create the dependence directory
+- add: links to LIB files
+
+***
+
 - ### [v1.1.0]
 - Fixed: rte_components.h contents removed after project open
 - Change: replace the icon of the installed Component

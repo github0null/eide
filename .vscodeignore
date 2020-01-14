@@ -13,3 +13,4 @@ vsc-extension-quickstart.md
 /res/data/sln.record
 /bin/ARM/*.temp
 /bin/ARM/*.bat
+**/*.pdb
