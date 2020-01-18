@@ -16,7 +16,7 @@
 	"license": "MIT",
 	"displayName": "EIDE",
 	"description": "An IDE for C51 and STM32 development",
-	"version": "1.1.1",
+	"version": "1.1.2",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
@@ -317,6 +317,14 @@
 				"command": "eide.uploadLog",
 				"category": "eide",
 				"title": "Upload log to remote server"
+			},
+			{
+				"command": "eide.ConvertToUTF8",
+				"title": "Convert file to UTF8 (has backup)"
+			},
+			{
+				"command": "eide.UndoConvertToUTF8",
+				"title": "Undo convert file to UTF8"
 			}
 		],
 		"keybindings": [
@@ -334,6 +342,16 @@
 			}
 		],
 		"menus": {
+			"editor/context": [
+				{
+					"command": "eide.ConvertToUTF8",
+					"group": "commands"
+				},
+				{
+					"command": "eide.UndoConvertToUTF8",
+					"group": "commands"
+				}
+			],
 			"view/title": [
 				{
 					"command": "Project.refresh",
