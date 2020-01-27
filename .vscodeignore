@@ -10,7 +10,7 @@ vsc-extension-quickstart.md
 .EIDE
 **/.gitignore
 *.code-workspace
-/res/data/sln.record
+**/sln.record
 /bin/ARM/*.temp
 /bin/ARM/*.bat
 **/*.pdb

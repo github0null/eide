@@ -5,7 +5,9 @@
 
 ## Summary
 
-A tiny IDE for develop STM32 and C51 project on vscode. It is convenient to develop and manage C51 and STM32 projects in vscode. It also supports import and export of Keil uVision 5 projects **Only for Windows platform**
+A **STM32**, **C51** IDE, mainly used to move Keil project to vscode, and provide the function of development, compilation, burning, debugging and management of C51, STM32 project on vscode.
+**mainly supports Keil 4,5 version**
+**Only for Windows platform**
 
 **GUI support english language**
 
@@ -24,6 +26,16 @@ Search `eide` in extension market or Download vsix package at [github -> release
 > #### Warnings: you should install JLink driver in your PC before use JLink tools
 
 > #### The author is working on a [manual](https://github.com/github0null/eide/blob/master/manual.md) that will make it easier to use the plug-in
+
+- ### [v1.1.2]
+- Fixed: the header file could not be found when ARM compiles
+- Fixed: header search path does not contain root directory
+- New: increases timestamp and compilation time for compilation output
+- New: editor context menu: manually convert the currently open ANSI file to UTF8 (Keil's default is ANSI, which will be scrambled in vscode)
+- New: editor context menu: undo last file encoding conversion
+- New: plugin Settings: convert all source files to utf-8 encoding when importing Keil project, turned on by default
+- New: the value of the label can be copied to facilitate other operations
+- New: add release/debug mode. Switch these modes to automatically add different macros at compile time. Users can customize the list of macros in plug-in Settings
 
 - ### [v1.1.1]
 - fixed: unable to automatically create the dependence directory

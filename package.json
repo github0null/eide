@@ -65,10 +65,16 @@
 			{
 				"title": "EIDE",
 				"properties": {
+					"EIDE.Option.AutoConvertFile": {
+						"type": "boolean",
+						"scope": "machine",
+						"markdownDescription": "Auto convert source file to `UTF-8` when import a keil project",
+						"default": "true"
+					},
 					"EIDE.ARM.INI.Path": {
 						"type": "string",
 						"scope": "machine",
-						"description": "Keil ARM MDK 'TOOLS.INI' file path [example: D:\\Demo\\Keil\\TOOLS.INI]",
+						"markdownDescription": "Keil ARM MDK `TOOLS.INI` file path [`example: D:\\Demo\\Keil\\TOOLS.INI`]",
 						"default": "unknown"
 					},
 					"EIDE.ARM.Option.AutoGenerateRTE_Components": {
@@ -77,11 +83,40 @@
 						"description": "Auto Generate RTE_Components.h",
 						"default": "true"
 					},
+					"EIDE.ARM.Project.MacroList.Release": {
+						"type": "string",
+						"scope": "resource",
+						"markdownDescription": "Macro List for Release Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
+						"default": "",
+						"pattern": "^(?:[a-zA-Z_]\\w*\\s*;\\s*)*$"
+					},
+					"EIDE.ARM.Project.MacroList.Debug": {
+						"type": "string",
+						"scope": "resource",
+						"examples": [],
+						"markdownDescription": "Macro List for Debug Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
+						"default": "DEBUG;",
+						"pattern": "^(?:[a-zA-Z_]\\w*\\s*;\\s*)*$"
+					},
 					"EIDE.C51.INI.Path": {
 						"type": "string",
 						"scope": "machine",
-						"description": "Keil C51 'TOOLS.INI' file path [example: D:\\Demo\\Keil\\C51\\TOOLS.INI]",
+						"markdownDescription": "Keil C51 `TOOLS.INI` file path [`example: D:\\Demo\\Keil\\C51\\TOOLS.INI`]",
 						"default": "unknown"
+					},
+					"EIDE.C51.Project.MacroList.Release": {
+						"type": "string",
+						"scope": "resource",
+						"markdownDescription": "Macro List for Release Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
+						"default": "",
+						"pattern": "^(?:[a-zA-Z_]\\w*\\s*;\\s*)*$"
+					},
+					"EIDE.C51.Project.MacroList.Debug": {
+						"type": "string",
+						"scope": "resource",
+						"markdownDescription": "Macro List for Debug Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
+						"default": "DEBUG;",
+						"pattern": "^(?:[a-zA-Z_]\\w*\\s*;\\s*)*$"
 					}
 				}
 			}
@@ -309,6 +344,22 @@
 				}
 			},
 			{
+				"command": "Project.copyItemValue",
+				"title": "copy the item value",
+				"icon": {
+					"dark": "./res/icon/CopyToClipboard_16x.svg",
+					"light": "./res/icon/CopyToClipboard_16x.svg"
+				}
+			},
+			{
+				"command": "Project.switchMode",
+				"title": "switch release/debug mode",
+				"icon": {
+					"dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
+					"light": "./res/icon/SwitchSourceOrTarget_16x.svg"
+				}
+			},
+			{
 				"command": "eide.ShowUUID",
 				"category": "eide",
 				"title": "Show UUID"
@@ -386,10 +437,6 @@
 					"when": "viewItem == PACK_GROUP && view == Project"
 				},
 				{
-					"command": "Project.save",
-					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
-				},
-				{
 					"command": "Project.repair",
 					"when": "viewItem == DEPENDENCE && view == Project"
 				},
@@ -397,6 +444,15 @@
 					"command": "Project.repair",
 					"group": "inline",
 					"when": "viewItem == DEPENDENCE && view == Project"
+				},
+				{
+					"command": "Project.save",
+					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+				},
+				{
+					"command": "Project.switchMode",
+					"group": "inline",
+					"when": "viewItem == SOLUTION && view == Project"
 				},
 				{
 					"command": "Project.exportXml",
@@ -478,6 +534,11 @@
 					"command": "Project.removeDependenceItem",
 					"group": "inline",
 					"when": "viewItem == INC_ITEM || viewItem == DEFINE_ITEM || viewItem == LIB_ITEM || viewItem == SOURCE_ITEM && view == Project"
+				},
+				{
+					"command": "Project.copyItemValue",
+					"group": "inline",
+					"when": "viewItem == ITEM || viewItem == DEPENDENCE_ITEM || viewItem == INC_ITEM || viewItem == DEFINE_ITEM || viewItem == LIB_ITEM || viewItem == SOURCE_ITEM && view == Project"
 				},
 				{
 					"command": "Project.importDependenceFromPack",
