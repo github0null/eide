@@ -16,7 +16,7 @@
 	"license": "MIT",
 	"displayName": "EIDE",
 	"description": "An IDE for C51 and STM32 development",
-	"version": "1.1.2",
+	"version": "1.1.3",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
@@ -181,6 +181,14 @@
 				"icon": {
 					"dark": "./res/icon/BuildSolution_16x.svg",
 					"light": "./res/icon/BuildSolution_16x.svg"
+				}
+			},
+			{
+				"command": "Project.IncrementCompile",
+				"title": "Increment compile and output hex file",
+				"icon": {
+					"dark": "./res/icon/CompilableFile_16x.svg",
+					"light": "./res/icon/CompilableFile_16x.svg"
 				}
 			},
 			{
@@ -390,6 +398,10 @@
 			{
 				"command": "eide.uploadLog",
 				"key": "ctrl+f1"
+			},
+			{
+				"command": "Project.IncrementCompile",
+				"key": "f9"
 			}
 		],
 		"menus": {
@@ -470,6 +482,15 @@
 				},
 				{
 					"command": "Project.compile",
+					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+				},
+				{
+					"command": "Project.IncrementCompile",
+					"group": "inline",
+					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+				},
+				{
+					"command": "Project.IncrementCompile",
 					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
 				},
 				{
