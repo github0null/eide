@@ -1,15 +1,8 @@
 # EIDE 使用手册和注意事项
 
 - [目录基本结构](#目录基本结构)
-- [使用方法](#使用方法)
-    - [打开项目](#打开项目)
-    - [新建项目](#新建项目)
-    - [安装 Keil 包](#安装-keil-包)
-    - [添加 keil Package 中的 Component, 添加完成之后删除不需要的文件](#添加-keil-package-中的-component-添加完成之后删除不需要的文件)
-    - [编译项目](#编译项目)
-    - [导入 Keil uVison 5 项目](#导入-keil-uvison-5-项目)
-    - [导出 Keil uVison 5 XML](#导出-keil-uvison-5-xml)
-    - [开始调试 (使用 stm32-debugger)](#开始调试-使用-stm32-debugger)
+- [使用示例](#使用示例)
+    - [stm32闪烁小灯](#stm32闪烁小灯)
 - [其他功能](#其他功能)
     - [添加新的源文件目录到搜索列表中](#添加新的源文件目录到搜索列表中)
     - [将一个源文件目录从搜索列表移除, 操作并不会删除目录](#将一个源文件目录从搜索列表移除-操作并不会删除目录)
@@ -27,9 +20,9 @@
 
 > 其他未列出的目录不在 EIDE 的管理范围之内，也不由 EIDE 创建
 
-### 使用方法
+### 使用示例
 
-- ### 示例1 闪烁小灯
+### stm32闪烁小灯
 - #### 创建项目
 <iframe width="720" height="480" src="https://github.com/github0null/eide/tree/master/res/preview/new-1.avi" allowfullscreen="true"></iframe>
 
