@@ -29,29 +29,12 @@
 
 ### 使用方法
 
-#### 打开项目
-![import prj](./res/preview/open_project_view.gif)
-***
-#### 新建项目
-![import prj](./res/preview/create_project_view.gif)
-***
-#### 安装 Keil 包
-![compile prj](./res/preview/install-pack.gif)
-****
-#### 添加 keil Package 中的 Component, 添加完成之后删除不需要的文件
-![compile prj](./res/preview/add-component.gif)
-****
-#### 编译项目
-![compile prj](./res/preview/compile_view.gif)
-*** 
-#### 导入 Keil uVison 5 项目
-![import prj](./res/preview/import_view.gif)
-***
-#### 导出 Keil uVison 5 XML
-![export prj](./res/preview/export_view.gif)
-***
-#### 开始调试 (使用 stm32-debugger)
-![debug prj](./res/preview/debug.png)
+- ### 示例1 闪烁小灯
+- #### 创建项目
+<iframe width="720" height="480" src="https://github.com/github0null/eide/tree/master/res/preview/new-1.avi" allowfullscreen="true"></iframe>
+
+- #### 简单调试，使用 stm32-debugger
+<iframe width="720" height="480" src="https://github.com/github0null/eide/tree/master/res/preview/debug-1.avi" allowfullscreen="true"></iframe>
 
 ### 其他功能
 #### 添加新的源文件目录到搜索列表中
