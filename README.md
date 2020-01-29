@@ -23,7 +23,7 @@
 
 > #### 注意: 使用 JLink 工具前请确保电脑已安装 jlink 驱动程序
 
-> #### 作者正在编写一个简单的 [使用手册和注意事项](https://github.com/github0null/eide/blob/master/manual.md)，这将帮助大家更方便的使用该插件
+> #### 作者正在编写一个简单的 [使用手册和注意事项](https://github.com/github0null/eide-doc/blob/master/README.md)，这将帮助大家更方便的使用该插件
 
 - ### [v1.1.2]
 - 修复: ARM 编译时无法找到头文件

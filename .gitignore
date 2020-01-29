@@ -15,3 +15,4 @@ res/template
 res/icon
 !res/icon/icon.png
 /dist
+/doc

@@ -25,7 +25,7 @@ Search `eide` in extension market or Download vsix package at [github -> release
 
 > #### Warnings: you should install JLink driver in your PC before use JLink tools
 
-> #### The author is working on a [manual](https://github.com/github0null/eide/blob/master/manual.md) that will make it easier to use the plug-in
+> #### The author is working on a [manual](https://github.com/github0null/eide-doc/blob/master/README.md) that will make it easier to use the plug-in
 
 - ### [v1.1.2]
 - Fixed: the header file could not be found when ARM compiles
