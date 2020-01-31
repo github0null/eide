@@ -27,7 +27,7 @@
 		"*"
 	],
 	"icon": "res/icon/icon.png",
-	"main": "./out/src/extension.js",
+	"main": "./out.min/src/extension.js",
 	"readme": "https://github.com/github0null/eide/blob/master/README.md",
 	"bugs": {
 		"url": "https://github.com/github0null/eide/issues",

@@ -2,6 +2,7 @@
 /node_modules
 /bin
 /out
+/out.min
 /src
 /lang
 vsc-extension-quickstart.md
