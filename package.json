@@ -27,7 +27,7 @@
 		"*"
 	],
 	"icon": "res/icon/icon.png",
-	"main": "./out.min/src/extension.js",
+	"main": "./out/src/extension.js",
 	"readme": "https://github.com/github0null/eide/blob/master/README.md",
 	"bugs": {
 		"url": "https://github.com/github0null/eide/issues",
@@ -41,9 +41,11 @@
 		"type": "git"
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run compile",
+		"vscode:prepublish": "npm run compile && npm run compress && npm run endCompress",
 		"compile": "tsc -p ./",
 		"watch": "tsc -watch -p ./",
+		"compress": "node ../JsCompress/out/src/main.js .\\out",
+		"endCompress": "node ./EndCompress.js",
 		"postinstall": "node ./node_modules/vscode/bin/install",
 		"test": "npm run compile && node ./node_modules/vscode/bin/test"
 	},

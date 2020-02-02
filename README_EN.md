@@ -15,11 +15,11 @@ A **STM32**, **C51** IDE, mainly used to move Keil project to vscode, and provid
 
 ## Download
 
-Search `eide` in extension market or Download vsix package at [github -> release](https://github.com/github0null/eide/releases)
+Search **eide** in extension market or Download vsix package at [github -> release](https://github.com/github0null/eide/releases)
 
 ***
 
-## version changes
+## version changes (recent three times)
 
 > #### for the author's test environment is limited, so if you encounter a bug, you are welcome by [github -> issue](https://github.com/github0null/eide/issues) for feedback
 
@@ -27,93 +27,32 @@ Search `eide` in extension market or Download vsix package at [github -> release
 
 > #### The author is working on a [manual](https://github.com/github0null/eide-doc/blob/master/README.md) that will make it easier to use the plug-in
 
+- ### [v1.1.3]
+- new: shows compilation timestamp and compilation time
+- new: incremental compilation (compiles only files that have been changed), shortcut <kbd>F9</kbd>
+- new: automatically generate the debugging configuration of cortex-debug
+
+***
 - ### [v1.1.2]
-- Fixed: the header file could not be found when ARM compiles
-- Fixed: header search path does not contain root directory
-- New: increases timestamp and compilation time for compilation output
-- New: editor context menu: manually convert the currently open ANSI file to UTF8 (Keil's default is ANSI, which will be scrambled in vscode)
-- New: editor context menu: undo last file encoding conversion
-- New: plugin Settings: convert all source files to utf-8 encoding when importing Keil project, turned on by default
-- New: the value of the label can be copied to facilitate other operations
-- New: add release/debug mode. Switch these modes to automatically add different macros at compile time. Users can customize the list of macros in plug-in Settings
+- fixed: the header file could not be found when ARM compiles
+- fixed: header search path does not contain root directory
+- new: increases timestamp and compilation time for compilation output
+- new: editor context menu: manually convert the currently open ANSI file to UTF8 (Keil's default is ANSI, which will be scrambled in vscode)
+- new: editor context menu: undo last file encoding conversion
+- new: plugin Settings: convert all source files to utf-8 encoding when importing Keil project, turned on by default
+- new: the value of the label can be copied to facilitate other operations
+- new: add release/debug mode. Switch these modes to automatically add different macros at compile time. Users can customize the list of macros in plug-in Settings
 
+***
 - ### [v1.1.1]
-- fixed: unable to automatically create the dependence directory
-- add: links to LIB files
+- fix: unable to automatically create the dependence directory
+- add: link to the LIB file. You can click the 'add LIB' button or manually copy the LIB file to the source directory to complete the LIB addition
 
 ***
-
-- ### [v1.1.0]
-- Fixed: rte_components.h contents removed after project open
-- Change: replace the icon of the installed Component
-- Change: delete useless STD dependence
-
-***
-
-- ### [v1.0.9]
-- Fixed: C51 macro definition problem causing compilation failure
-
-***
-
-- ### [v1.0.8]
-- Fixed: garbled code problem caused by ARM build tools
-- Fixed: C51 compilation parameters too few problem
-- Fixed: unable to create the dependence directory
-
-- ### [v1.0.7]
-- Change: Move the RAM and ROM layout options to a separate local Web page![ram-rom-layout](./res/preview/ram_rom_layout.gif)
-
-- Add: Automatic generation of "RTE_Components. H" file, as well as automatic changes, can use the plug-in Settings AutoGenerateRTE_Components disabled, turned on by default
-- Add: The default GNU extensions option
-- Add: AutoGenerateRTE_Components plug-in Settings
-- Add: useMicroLib option
-- Add: Hardware floating point options (only for cortex-m4 and cortex-m7)
-
-- Repair: The macros added to C51 did not participate in the compilation process
-- Repair: Failed to install F4, F7 pack pack problem
-- Repair: The problem of Keil project files being overwritten when exporting
-- Repair: Problems with deleting other files while using the 'fix dependency' feature
-
-- Other: Enhance the accuracy of dependent imports and remove unnecessary files
-- Other: Automatically remove unnecessary parts of the package to reduce project size
-
-***
-
-- ### [v1.0.6]
-- Fixed header file not copied when importing Keil project
-- Increased validation of the Keil path
-- Added compile-mode Settings (8051 chip to support larger RAM and ROM) and the option to remove unused functions (to reduce code size) for the C51 project
-
-****
-
-- ### [v1.0.5]
-- Add JLink uploader, C51 is not supported
-- Add shortcuts: F6 -> compile, F7 -> upload to board, ctrl+F1 -> upload eide log to remote server
-- Optimized logger for uploading application logs to help improve the plug-in
-- Fixed some other issues
-
-- upload hex to stm32 board ![upload-board](./res/preview/upload-board.gif)
-
-****
-
-- ### [v1.0.4]
-- Optimize repeat paths
-- fixed Chinese path problem
-- fixed some other issues
-
-****
-
-- ### [v1.0.3]
-- due to license issues, this release removed the built-in Keil compilation tool and the installation package was greatly reduced, so if you need to use the compilation function, you need to install Keil and set the path in the software
-- fixed the failure of importing keil project
-- automatically convert ANSI encoded files to UTF8 files when importing, to avoid scrambled codes
-- optimized the build tool and fixed some faults
-- fixed some other issues
 
 ## Function
 
-* Open EIDE project
-* Create EIDE project
+* Create and open EIDE project
 * Import Keil uVision 5 project and create a new EIDE project for it **( only support Keil uVison 4, 5 )**
 * Export Keil project file(.uvprojx, .uvproj) to workspace
 * Manage project dependence

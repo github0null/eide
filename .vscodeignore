@@ -15,4 +15,4 @@ vsc-extension-quickstart.md
 /bin/ARM/*.bat
 **/*.pdb
 doc
-out
+EndCompress.js
