@@ -9,19 +9,21 @@
 		"arm",
 		"stm32",
 		"keil",
+		"mdk",
 		"c51",
-		"eide"
+		"eide",
+		"ide"
 	],
 	"homepage": "https://github.com/github0null/eide/blob/master/README.md",
 	"license": "MIT",
 	"displayName": "EIDE",
-	"description": "An IDE for C51 and STM32 development",
-	"version": "1.1.3",
+	"description": "一个 Keil C51/STM32 的项目迁移工具 和 IDE（A Keil C51/STM32 project migration tool and IDE）",
+	"version": "1.1.4",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
 	"categories": [
-		"Extension Packs"
+		"Other"
 	],
 	"activationEvents": [
 		"*"
@@ -73,6 +75,12 @@
 						"markdownDescription": "Auto convert source file to `UTF-8` when import a keil project",
 						"default": "true"
 					},
+					"EIDE.Template.Repository.Url": {
+						"type": "string",
+						"scope": "machine",
+						"markdownDescription": "remote public github repository url, format: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
+						"default": "github0null/eide-doc/contents/eide-template-list"
+					},
 					"EIDE.ARM.INI.Path": {
 						"type": "string",
 						"scope": "machine",
@@ -84,6 +92,12 @@
 						"scope": "resource",
 						"description": "Auto Generate RTE_Components.h",
 						"default": "true"
+					},
+					"EIDE.ARM.Option.ConvertAxfFileToElfFile": {
+						"type": "boolean",
+						"scope": "machine",
+						"markdownDescription": "Convert keil `.axf` file to GCC `.elf` file after compile, this is an experimental function",
+						"default": "false"
 					},
 					"EIDE.ARM.Project.MacroList.Release": {
 						"type": "string",
@@ -370,6 +384,14 @@
 				}
 			},
 			{
+				"command": "Project.exportAsTemplate",
+				"title": "Export this project as a template",
+				"icon": {
+					"dark": "./res/icon/TableToFile_16x.svg",
+					"light": "./res/icon/TableToFile_16x.svg"
+				}
+			},
+			{
 				"command": "eide.ShowUUID",
 				"category": "eide",
 				"title": "Show UUID"
@@ -465,6 +487,19 @@
 				},
 				{
 					"command": "Project.switchMode",
+					"when": "viewItem == SOLUTION && view == Project"
+				},
+				{
+					"command": "Project.switchMode",
+					"group": "inline",
+					"when": "viewItem == SOLUTION && view == Project"
+				},
+				{
+					"command": "Project.exportAsTemplate",
+					"when": "viewItem == SOLUTION && view == Project"
+				},
+				{
+					"command": "Project.exportAsTemplate",
 					"group": "inline",
 					"when": "viewItem == SOLUTION && view == Project"
 				},
