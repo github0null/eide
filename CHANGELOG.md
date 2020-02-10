@@ -4,6 +4,11 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+- ### [v1.2.0]
+- 修复: 导入失败和模板下载问题
+
+***
+
 - ### [v1.1.4]
 > 烧录注意事项：在烧录时，如果芯片已存在读保护，则首次烧录会失败，需要再尝试一次
 

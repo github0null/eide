@@ -11,6 +11,7 @@
 		"keil",
 		"mdk",
 		"c51",
+		"8051",
 		"eide",
 		"ide"
 	],
@@ -18,7 +19,7 @@
 	"license": "MIT",
 	"displayName": "EIDE",
 	"description": "一个 Keil C51/STM32 的项目迁移工具 和 IDE（A Keil C51/STM32 project migration tool and IDE）",
-	"version": "1.1.4",
+	"version": "1.2.0",
 	"engines": {
 		"vscode": "^1.38.0"
 	},

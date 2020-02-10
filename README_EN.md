@@ -27,6 +27,11 @@ Search **eide** in extension market or Download vsix package at [github -> relea
 
 > #### The author is working on a [manual](https://github.com/github0null/eide-doc/blob/master/README.md) that will make it easier to use the plug-in
 
+- ### [v1.2.0]
+- Fixed: import failure and template download problem
+
+***
+
 - ### [v1.1.4]
 > Note for burn: if the chip has read protection during burn, the first burn will fail and you need to try again
 - repair: unable to reset the chip automatically after burning
