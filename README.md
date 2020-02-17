@@ -6,7 +6,7 @@
 ## 简述
 
 一个 Keil C51/STM32 的项目迁移工具 和 IDE, 用于提供在 vscode 上对 C51, STM32 项目进行 开发, 编译, 烧录, 调试, 管理的功能。
-**主要支持 Keil 4，5 版本**  
+**主要支持 Keil 5 版本**  
 ### **仅支持 Windows 平台**
 
 ***
@@ -24,6 +24,14 @@
 > #### 注意: 使用 JLink 工具前请确保电脑已安装 jlink 驱动程序
 
 > #### 作者正在编写一个简单的 [使用手册和注意事项](https://github.com/github0null/eide-doc/blob/master/README.md)，这将帮助大家更方便的使用该插件
+
+- ### [v1.2.1]
+- 更改: 使用与 Keil 一致的 ROM/RAM 布局
+- 修复: Keil package 的一些细节问题
+- 修复: 一些编译参数的乱码问题
+- 新增: 可以选择自定义的 ARM scatter 链接脚本, 在编译配置中更改
+
+***
 
 - ### [v1.2.0]
 - 修复: 导入失败和模板下载问题
@@ -56,7 +64,7 @@
 
 * 创建、打开 EIDE 项目
 * 创建、导入 项目模板
-* 导入 Keil uVision 5 项目并完成 EIDE 项目的创建 (对 Keil uVision 4, 5 支持较好)
+* 导入 Keil uVision 5 项目并完成 EIDE 项目的创建 (对 Keil uVision 5 支持较好)
 * 导出 Keil 项目文件(.uvprojx, .uvproj)到工作区
 * 管理项目依赖
 * 编译、增量编译 项目 (**终端必须使用 Powershell**) (如果为 STM32 项目, 还会生成与调试器 stm32-debugger/cortex-debug 相关的 launch.json)

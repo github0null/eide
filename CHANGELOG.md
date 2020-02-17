@@ -4,6 +4,14 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+- ### [v1.2.1]
+- 更改: 使用与 Keil 一致的 ROM/RAM 布局
+- 修复: Keil package 的一些细节问题
+- 修复: 一些编译参数的乱码问题
+- 新增: 可以选择自定义的 ARM scatter 链接脚本, 在编译配置中更改
+
+***
+
 - ### [v1.2.0]
 - 修复: 导入失败和模板下载问题
 
