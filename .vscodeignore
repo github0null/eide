@@ -16,4 +16,3 @@ vsc-extension-quickstart.md
 **/*.pdb
 doc
 pack.js
-/bin/SerialPortMonitor/*.xml
