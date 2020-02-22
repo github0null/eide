@@ -1,6 +1,6 @@
 # EIDE
 
-[![](https://vsmarketplacebadge.apphb.com/version/CL.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide)      [![](https://vsmarketplacebadge.apphb.com/installs/CL.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide)     [![](https://vsmarketplacebadge.apphb.com/rating/CL.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide)
+[![](https://vsmarketplacebadge.apphb.com/version/cl.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide)      [![](https://vsmarketplacebadge.apphb.com/installs/cl.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide)     [![](https://vsmarketplacebadge.apphb.com/rating/cl.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide)
 
 ## 简述
 
