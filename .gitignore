@@ -17,4 +17,4 @@ res/icon
 !res/icon/icon.png
 /dist
 /doc
-EndCompress.js
+pack.js

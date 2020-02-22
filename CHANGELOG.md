@@ -4,7 +4,12 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
-- ### [v1.2.1]
+### [v1.2.2]
+- 新增: 串口监视器，串口设置，详见**使用手册**
+
+***
+
+### [v1.2.1]
 - 更改: 使用与 Keil 一致的 ROM/RAM 布局
 - 修复: Keil package 的一些细节问题
 - 修复: 一些编译参数的乱码问题
@@ -12,12 +17,12 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
-- ### [v1.2.0]
+### [v1.2.0]
 - 修复: 导入失败和模板下载问题
 
 ***
 
-- ### [v1.1.4]
+### [v1.1.4]
 > 烧录注意事项：在烧录时，如果芯片已存在读保护，则首次烧录会失败，需要再尝试一次
 
 - 修复: 烧录后无法自动复位芯片
@@ -74,7 +79,7 @@ All notable changes to the "eide" extension will be documented in this file.
 ***
  
 ### [v1.0.7]
-- 更改: 将 RAM 和 ROM 布局选项转到到一个单独的本地的 Web 页面![ram-rom-layout](./res/preview/ram_rom_layout.gif)
+- 更改: 将 RAM 和 ROM 布局选项转到到一个单独的本地的 Web 页面
 - 增加: 自动生成 “RTE_Components.h” 文件，以及自动更改，可使用插件设置 AutoGenerateRTE_Components 禁用，默认开启
 - 增加: 默认的 GNU extensions 选项
 - 增加: AutoGenerateRTE_Components 插件设置
@@ -102,7 +107,6 @@ All notable changes to the "eide" extension will be documented in this file.
 - 增加快捷键: <kbd>F6</kbd>编译 <kbd>F7</kbd>烧录 <kbd>Ctrl</kbd>+<kbd>F1</kbd>上传 eide 日志
 - 优化了日志程序，方便上传应用日志，帮助改进此插件
 - 修复部分问题
-- 烧录功能展示 ![upload-board](./res/preview/upload-board.gif)
 
 ****
 

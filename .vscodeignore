@@ -15,4 +15,5 @@ vsc-extension-quickstart.md
 /bin/ARM/*.bat
 **/*.pdb
 doc
-EndCompress.js
+pack.js
+/bin/SerialPortMonitor/*.xml

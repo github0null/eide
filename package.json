@@ -20,7 +20,7 @@
 	"license": "MIT",
 	"displayName": "EIDE",
 	"description": "一个 Keil C51/STM32 的项目迁移工具 和 IDE（A Keil C51/STM32 project migration tool and IDE）",
-	"version": "1.2.1",
+	"version": "1.2.2",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
@@ -45,11 +45,11 @@
 		"type": "git"
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run compile && npm run compress && npm run endCompress",
+		"vscode:prepublish": "npm run compile && npm run compress && npm run pack",
 		"compile": "tsc -p ./",
 		"watch": "tsc -watch -p ./",
 		"compress": "node ../JsCompress/out/src/main.js .\\out",
-		"endCompress": "node ./EndCompress.js",
+		"pack": "node ./pack.js",
 		"postinstall": "node ./node_modules/vscode/bin/install",
 		"test": "npm run compile && node ./node_modules/vscode/bin/test"
 	},
@@ -71,6 +71,74 @@
 			{
 				"title": "EIDE",
 				"properties": {
+					"EIDE.SerialPortMonitor.Mode": {
+						"type": "string",
+						"scope": "resource",
+						"markdownDescription": "SerialPort Mode",
+						"default": "Receive Mode",
+						"enum": [
+							"Receive Mode",
+							"Send and Receive Mode"
+						],
+						"enumDescriptions": [
+							"Only monitor serial port's output",
+							"Monitor serial port's output and can send chars to serial port"
+						]
+					},
+					"EIDE.SerialPortMonitor.BaudRate": {
+						"type": "integer",
+						"scope": "resource",
+						"markdownDescription": "SerialPort Baud Rate",
+						"default": "9600"
+					},
+					"EIDE.SerialPortMonitor.DataBits": {
+						"type": "integer",
+						"scope": "resource",
+						"markdownDescription": "SerialPort Data Bits width",
+						"default": "8"
+					},
+					"EIDE.SerialPortMonitor.Parity": {
+						"type": "integer",
+						"scope": "resource",
+						"markdownDescription": "SerialPort Parity bit",
+						"default": "0",
+						"enum": [
+							0,
+							1,
+							2,
+							3,
+							4
+						],
+						"enumDescriptions": [
+							"None",
+							"Odd",
+							"Even",
+							"Mark",
+							"Space"
+						]
+					},
+					"EIDE.SerialPortMonitor.StopBits": {
+						"type": "integer",
+						"scope": "resource",
+						"markdownDescription": "SerialPort Stop Bits",
+						"default": "1",
+						"enum": [
+							1,
+							2,
+							3
+						],
+						"enumDescriptions": [
+							"One",
+							"Two",
+							"OnePointFive"
+						]
+					},
+					"EIDE.Option.CloseErrorSquiggles": {
+						"type": "boolean",
+						"scope": "resource",
+						"description": "Whether close error squiggles",
+						"default": "true"
+					},
 					"EIDE.Option.AutoConvertFile": {
 						"type": "boolean",
 						"scope": "machine",
@@ -111,7 +179,6 @@
 					"EIDE.ARM.Project.MacroList.Debug": {
 						"type": "string",
 						"scope": "resource",
-						"examples": [],
 						"markdownDescription": "Macro List for Debug Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
 						"default": "DEBUG;",
 						"pattern": "^(?:[a-zA-Z_]\\w*\\s*;\\s*)*$"
