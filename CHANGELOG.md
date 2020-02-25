@@ -4,6 +4,13 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.2.3]
+- 更改：取消勾选默认选项：导入时自动转换文件为 UTF-8
+- 修复：无法生成 .bin 文件的问题
+- 修复：生成的 cortex-debug 调试配置不正确的问题
+
+***
+
 ### [v1.2.2]
 - 新增: 串口监视器，串口设置，详见**使用手册**
 
