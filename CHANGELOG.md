@@ -5,9 +5,12 @@ All notable changes to the "eide" extension will be documented in this file.
 ***
 
 ### [v1.3.0]
-- 更改：取消勾选默认选项：导入时自动转换文件为 UTF-8
+- 更改：取消勾选默认选项：`导入时自动转换文件为 UTF-8`
+- 添加：编译选项：GNU Extension 选项，默认勾选
 - 修复：无法生成 .bin 文件的问题
 - 修复：生成的 cortex-debug 调试配置不正确的问题
+- 修复：C/C++ 混合编译的参数问题
+- 修复：导入不完整的问题
 
 ***
 
