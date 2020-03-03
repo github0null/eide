@@ -4,6 +4,18 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.4.0]
+- 新增：导入 Keil 项目时将编译参数一并导入，导出时自动为 Keil 设置编译参数
+- 新增：8051 汇编(A51) 语法高亮，代码片段
+- 新增：STC 烧录器，需要 Python3 支持，并安装 [STC 烧录器: stcgal](https://github.com/grigorig/stcgal)，具体用法见[使用手册](https://blog.csdn.net/qq_40833810/category_9688932.html)
+  - 安装 stcgal：命令行执行 `pip3 install stcgal --user`
+- 修复：C51 优化类型选择无效的问题
+- 修复：C51 编译时出现 “拒绝访问” 的问题
+- 更改：导出 Keil 项目前不需要安装 Keil pack，但导出后需要在 keil 中手动设置设备型号
+- 更改：美化了一下烧录输出，使输出变得更加直观
+- 优化：自动选择要用的 shell，无需再设置默认终端为 PowerShell
+***
+
 ### [v1.3.0]
 - 更改：取消勾选默认选项：`导入时自动转换文件为 UTF-8`
 - 添加：编译选项：GNU Extension 选项，默认勾选

@@ -1,5 +1,6 @@
 {
 	"name": "eide",
+	"displayName": "EIDE",
 	"publisher": "cl",
 	"author": {
 		"name": "cl",
@@ -16,14 +17,15 @@
 	],
 	"homepage": "https://github.com/github0null/eide/blob/master/README.md",
 	"license": "MIT",
-	"displayName": "EIDE",
 	"description": "一个 Keil C51/STM32 的项目迁移工具 和 IDE（A Keil C51/STM32 project migration tool and IDE）",
-	"version": "1.3.0",
+	"version": "1.4.0",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
 	"categories": [
-		"Other"
+		"Other",
+		"Programming Languages",
+		"Snippets"
 	],
 	"activationEvents": [
 		"*"
@@ -226,6 +228,14 @@
 			]
 		},
 		"commands": [
+			{
+				"command": "Project.createFlashOption",
+				"title": "Add a STC Flash Option config file to .EIDE dir",
+				"icon": {
+					"dark": "./res/icon/AddTextFile_16x.svg",
+					"light": "./res/icon/AddTextFile_16x.svg"
+				}
+			},
 			{
 				"command": "Project.refresh",
 				"title": "Refresh",
@@ -525,6 +535,11 @@
 			],
 			"view/item/context": [
 				{
+					"command": "Project.createFlashOption",
+					"group": "inline",
+					"when": "viewItem == UPLOAD_OPTION_C51 && view == Project"
+				},
+				{
 					"command": "Project.addPackage",
 					"group": "inline",
 					"when": "viewItem == PACK && view == Project"
@@ -685,7 +700,41 @@
 		"snippets": [
 			{
 				"language": "c",
-				"path": "./lang/snippets.json"
+				"path": "./lang/c51.snippets.json"
+			},
+			{
+				"language": "a51",
+				"path": "./lang/a51.snippets.json"
+			}
+		],
+		"languages": [
+			{
+				"id": "eide-output",
+				"mimetypes": [
+					"text/x-code-output"
+				]
+			},
+			{
+				"id": "a51",
+				"aliases": [
+					"A51",
+					"8051 Assembly"
+				],
+				"extensions": [
+					".a51",
+					".A51"
+				],
+				"filenamePatterns": [
+					"**/*.a51",
+					"**/*.A51"
+				],
+				"configuration": "./lang/a51.language-configuration.json"
+			}
+		],
+		"jsonValidation": [
+			{
+				"fileMatch": "**/*.flash.json",
+				"url": "./lang/stc.flash.verify.json"
 			}
 		],
 		"grammars": [
@@ -693,6 +742,16 @@
 				"language": "c",
 				"scopeName": "source.c.c51",
 				"path": "./lang/c51.tmLanguage.json"
+			},
+			{
+				"language": "eide-output",
+				"scopeName": "eide.output",
+				"path": "./lang/eide-output.tmLanguage.json"
+			},
+			{
+				"language": "a51",
+				"scopeName": "source.asm.a51",
+				"path": "./lang/a51.tmLanguage.json"
 			}
 		]
 	}

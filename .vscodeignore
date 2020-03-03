@@ -16,3 +16,4 @@ vsc-extension-quickstart.md
 **/*.pdb
 doc
 pack.js
+test.js
