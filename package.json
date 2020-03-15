@@ -18,7 +18,7 @@
 	"homepage": "https://github.com/github0null/eide/blob/master/README.md",
 	"license": "MIT",
 	"description": "一个 Keil C51/STM32 的项目迁移工具 和 IDE（A Keil C51/STM32 project migration tool and IDE）",
-	"version": "1.4.0",
+	"version": "1.5.0",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
@@ -229,11 +229,11 @@
 		},
 		"commands": [
 			{
-				"command": "Project.createFlashOption",
-				"title": "Add a STC Flash Option config file to .EIDE dir",
+				"command": "Project.openSTCFlashOption",
+				"title": "Open STC Flash Option configuration",
 				"icon": {
-					"dark": "./res/icon/AddTextFile_16x.svg",
-					"light": "./res/icon/AddTextFile_16x.svg"
+					"dark": "./res/icon/ConfigurationFile_16x.svg",
+					"light": "./res/icon/ConfigurationFile_16x.svg"
 				}
 			},
 			{
@@ -277,8 +277,8 @@
 				}
 			},
 			{
-				"command": "Project.IncrementCompile",
-				"title": "Increment compile and output hex file",
+				"command": "Project.fastCompile",
+				"title": "Fast compile and output hex file",
 				"icon": {
 					"dark": "./res/icon/CompilableFile_16x.svg",
 					"light": "./res/icon/CompilableFile_16x.svg"
@@ -354,6 +354,22 @@
 				"icon": {
 					"dark": "./res/icon/Pen4_16x.svg",
 					"light": "./res/icon/Pen4_16x.svg"
+				}
+			},
+			{
+				"command": "Project.modifyCompileOptions",
+				"title": "Modify Compile Options",
+				"icon": {
+					"dark": "./res/icon/Pen4_16x.svg",
+					"light": "./res/icon/Pen4_16x.svg"
+				}
+			},
+			{
+				"command": "Project.switchArmTools",
+				"title": "Switch Current Arm Tool Chain",
+				"icon": {
+					"dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
+					"light": "./res/icon/SwitchSourceOrTarget_16x.svg"
 				}
 			},
 			{
@@ -501,7 +517,7 @@
 				"key": "ctrl+f1"
 			},
 			{
-				"command": "Project.IncrementCompile",
+				"command": "Project.fastCompile",
 				"key": "f9"
 			}
 		],
@@ -535,7 +551,7 @@
 			],
 			"view/item/context": [
 				{
-					"command": "Project.createFlashOption",
+					"command": "Project.openSTCFlashOption",
 					"group": "inline",
 					"when": "viewItem == UPLOAD_OPTION_C51 && view == Project"
 				},
@@ -604,12 +620,12 @@
 					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
 				},
 				{
-					"command": "Project.IncrementCompile",
+					"command": "Project.fastCompile",
 					"group": "inline",
 					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
 				},
 				{
-					"command": "Project.IncrementCompile",
+					"command": "Project.fastCompile",
 					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
 				},
 				{
@@ -641,9 +657,19 @@
 					"when": "viewItem == SRC_GROUP && view == Project"
 				},
 				{
+					"command": "Project.switchArmTools",
+					"group": "inline",
+					"when": "viewItem == COMPILE_CONFIGURATION_ARM && view == Project"
+				},
+				{
 					"command": "Project.modifyCompileConfig",
 					"group": "inline",
 					"when": "viewItem == COMPILE_CONFIGURATION_ITEM && view == Project"
+				},
+				{
+					"command": "Project.modifyCompileOptions",
+					"group": "inline",
+					"when": "viewItem == COMPILE_CONFIGURATION_COMPILE_OPTION_ITEM && view == Project"
 				},
 				{
 					"command": "Project.modifyUploadConfig",
@@ -693,7 +719,7 @@
 				{
 					"command": "Project.modifyStorageLayout",
 					"group": "inline",
-					"when": "viewItem == COMPILE_CONFIGURATION_STORAGE_LAYOUT && view == Project"
+					"when": "viewItem == COMPILE_CONFIGURATION_STORAGE_LAYOUT_ITEM && view == Project"
 				}
 			]
 		},
@@ -735,6 +761,14 @@
 			{
 				"fileMatch": "**/*.flash.json",
 				"url": "./lang/stc.flash.verify.json"
+			},
+			{
+				"fileMatch": "**/*.v5.json",
+				"url": "./lang/arm.v5.verify.json"
+			},
+			{
+				"fileMatch": "**/*.v6.json",
+				"url": "./lang/arm.v6.verify.json"
 			}
 		],
 		"grammars": [

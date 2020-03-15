@@ -4,6 +4,12 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.5.0]
+- 新增：对 ARM V6 工具链的支持，支持所有的编译选项，详见[手册](https://blog.csdn.net/qq_40833810/article/details/104114921)
+- 更改：ARM 的编译选项转移到 json 配置文件中，因此对于旧的项目要重新设置编译选项
+- 修复：修复了一些其他问题
+***
+
 ### [v1.4.0]
 - 新增：导入 Keil 项目时将编译参数一并导入，导出时自动为 Keil 设置编译参数
 - 新增：8051 汇编(A51) 语法高亮，代码片段

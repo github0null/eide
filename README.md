@@ -18,14 +18,16 @@
 
 ## 功能
 
-* 创建、打开 EIDE 项目
-* 创建、导入 项目模板
 * 导入 Keil uVision 5 项目并完成 EIDE 项目的创建 (对 Keil uVision 5 支持较好)
 * 导出 Keil 项目文件(.uvprojx, .uvproj)到工作区
-* 编译、增量编译 项目 (如果为 STM32 项目, 还会生成与调试器 stm32-debugger/cortex-debug 相关的 launch.json)
+* 创建、打开 EIDE 项目
+* 创建、导入 项目模板
+* 编译、快速编译，支持 ARMCC V5, V6 工具链
+* 生成 hex，bin，elf
 * 烧录到芯片
 * 串口监视器
 * 管理项目依赖
+* 为 STM32 项目生成与调试器 stm32-debugger/cortex-debug 相关的 launch.json
 * 如果需要 STM32 调试功能, 可以使用 **cortex-debug** 进行调试
 
 ***
@@ -44,14 +46,20 @@
 
 ## 用法
 
-作者编写了一个 [使用手册](https://blog.csdn.net/qq_40833810/category_9688932.html)，这将帮助大家更方便的使用该插件
+#### 作者编写了一个 [使用手册](https://blog.csdn.net/qq_40833810/category_9688932.html)，这将帮助大家更方便的使用该插件
 
 ***
 
 ## 版本变化 (最近3次，详见 [CHANGELOG](./CHANGELOG.md))
 
-> #### 因作者的测试环境有限, 因此如果遇到了 bug, 大家可以通过 [Github -> issue](https://github.com/github0null/eide/issues) 进行反馈
-> #### 也可以通过QQ群: **941749328** 进行反馈，提出想法和意见；欢迎大家加入，共同进步(ง •_•)ง
+> #### 每次的版本变化，[手册](https://blog.csdn.net/qq_40833810/article/details/104114921)就会更新，注意查看。
+> #### 问题反馈，添加功能 途径1：[Github -> issue](https://github.com/github0null/eide/issues)，途径2：QQ群: **941749328**
+
+### [v1.5.0]
+- 新增：对 ARM V6 工具链的支持，支持所有的编译选项，详见[手册](https://blog.csdn.net/qq_40833810/article/details/104114921)
+- 更改：ARM 的编译选项转移到 json 配置文件中，因此对于旧的项目要重新设置编译选项
+- 修复：修复了一些其他问题
+***
 
 ### [v1.4.0]
 - 新增：导入 Keil 项目时将编译参数一并导入，导出时自动为 Keil 设置编译参数
@@ -74,11 +82,6 @@
 - 修复：导入不完整的问题
 ***
 
-### [v1.2.2]
-- 新增: 串口监视器，串口设置，详见[使用手册](https://blog.csdn.net/qq_40833810/category_9688932.html)
-***
-
 ## 注意事项
   + **使用 ARM 烧录工具前请确保电脑已安装 jlink 驱动程序**
   + **导入功能: 对于过低版本的 Keil uVision 项目可能会导入失败**
-  + **导出的 Keil uVision 项目文件含有基本的 `项目结构`,`头文件依赖`,`宏定义包含`,和 EIDE 支持的编译参数**
