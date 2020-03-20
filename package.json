@@ -18,7 +18,7 @@
 	"homepage": "https://github.com/github0null/eide/blob/master/README.md",
 	"license": "MIT",
 	"description": "一个 Keil C51/STM32 的项目迁移工具 和 IDE（A Keil C51/STM32 project migration tool and IDE）",
-	"version": "1.5.0",
+	"version": "1.6.0",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
@@ -157,6 +157,12 @@
 						"markdownDescription": "Keil ARM MDK `TOOLS.INI` file path [`example: D:\\Demo\\Keil\\TOOLS.INI`]",
 						"default": "unknown"
 					},
+					"EIDE.ARM.UseMulti-ThreadMode": {
+						"type": "boolean",
+						"scope": "machine",
+						"markdownDescription": "Use Multi-Thread Mode when compile file",
+						"default": "true"
+					},
 					"EIDE.ARM.Option.AutoGenerateRTE_Components": {
 						"type": "boolean",
 						"scope": "resource",
@@ -228,6 +234,14 @@
 			]
 		},
 		"commands": [
+			{
+				"command": "serialport.clear",
+				"title": "Clear serialport output",
+				"icon": {
+					"dark": "./res/icon/ClearWindowContent_16x.svg",
+					"light": "./res/icon/ClearWindowContent_16x.svg"
+				}
+			},
 			{
 				"command": "Project.openSTCFlashOption",
 				"title": "Open STC Flash Option configuration",
@@ -522,6 +536,13 @@
 			}
 		],
 		"menus": {
+			"editor/title": [
+				{
+					"command": "serialport.clear",
+					"group": "navigation",
+					"when": "resourceScheme == eide"
+				}
+			],
 			"editor/context": [
 				{
 					"command": "eide.ConvertToUTF8",

@@ -4,6 +4,16 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.6.0]
+- 新增：加入多线程编译模式，默认开启，当编译的文件数大于 16 时有效；
+- 更改：串口调试器`双向模式`的输出转移到虚拟文档, 详见[手册->串口调试器](https://blog.csdn.net/qq_40833810/article/details/104114921)
+- 优化：提升快速编译的效率
+- 修复：日志记录器引发的崩溃问题
+- 修复：同名源文件生成的 obj 冲突的问题
+- 修复：无法识别 .asm 后缀的汇编源文件的问题
+- 修复：修复了一些其他问题
+***
+
 ### [v1.5.0]
 - 新增：对 ARM V6 工具链的支持，支持所有的编译选项，详见[手册](https://blog.csdn.net/qq_40833810/article/details/104114921)
 - 更改：ARM 的编译选项转移到 json 配置文件中，因此对于旧的项目要重新设置编译选项
