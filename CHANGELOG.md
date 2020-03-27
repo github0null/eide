@@ -4,6 +4,15 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.7.0]
+- 更改：C51 配置转移到 json 配置文件
+- 新增：增加 SDCC 工具链，使用细节见[手册](https://blog.csdn.net/qq_40833810/article/details/104114921)
+- 新增：插件配置 SDCC Install Directory（SDCC 安装目录）
+- 修复：工具链安装位置有空格导致的无法编译的问题
+- 修复：一些其他问题
+- 优化：合并 js 提升插件加载速度
+***
+
 ### [v1.6.0]
 - 新增：加入多线程编译模式，默认开启，当编译的文件数大于 16 时有效；
 - 更改：串口调试器`双向模式`的输出转移到虚拟文档, 详见[手册->串口调试器](https://blog.csdn.net/qq_40833810/article/details/104114921)

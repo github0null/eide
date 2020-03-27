@@ -12,13 +12,16 @@
 		"keil",
 		"mdk",
 		"c51",
+		"sdcc",
+		"stm8",
+		"pic",
 		"8051",
 		"eide"
 	],
 	"homepage": "https://github.com/github0null/eide/blob/master/README.md",
 	"license": "MIT",
-	"description": "一个 Keil C51/STM32 的项目迁移工具 和 IDE（A Keil C51/STM32 project migration tool and IDE）",
-	"version": "1.6.0",
+	"description": "一个 Keil C51/STM32 的项目迁移工具、多工具链的集成开发环境（A Keil C51/STM32 project migration tool and IDE with multiple toolchains）",
+	"version": "1.7.0",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
@@ -31,7 +34,7 @@
 		"*"
 	],
 	"icon": "res/icon/icon.png",
-	"main": "./out/src/extension.js",
+	"main": "./dist/extension.js",
 	"readme": "https://github.com/github0null/eide/blob/master/README.md",
 	"bugs": {
 		"url": "https://github.com/github0null/eide/issues",
@@ -45,24 +48,26 @@
 		"type": "git"
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run compile && npm run compress && npm run pack",
+		"vscode:prepublish": "webpack --mode production",
+		"webpack": "webpack --mode development",
 		"compile": "tsc -p ./",
 		"watch": "tsc -watch -p ./",
-		"compress": "node ../JsCompress/out/src/main.js .\\out",
-		"pack": "node ./pack.js",
 		"postinstall": "node ./node_modules/vscode/bin/install",
 		"test": "npm run compile && node ./node_modules/vscode/bin/test"
 	},
 	"devDependencies": {
+		"@types/iconv-lite": "0.0.1",
 		"@types/mocha": "^5.2.7",
 		"@types/node": "^12.12.17",
 		"@types/vscode": "^1.38.0",
+		"@types/x2js": "^3.1.0",
+		"ts-loader": "^6.2.1",
 		"tslint": "^5.20.1",
-		"typescript": "^3.7.3"
+		"typescript": "^3.7.3",
+		"webpack": "^4.42.0",
+		"webpack-cli": "^3.3.11"
 	},
 	"dependencies": {
-		"@types/iconv-lite": "0.0.1",
-		"@types/x2js": "^3.1.0",
 		"iconv-lite": "^0.5.0",
 		"x2js": "^3.3.1"
 	},
@@ -208,6 +213,12 @@
 						"markdownDescription": "Macro List for Debug Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
 						"default": "DEBUG;",
 						"pattern": "^(?:[a-zA-Z_]\\w*\\s*;\\s*)*$"
+					},
+					"EIDE.SDCC.InstallDirectory": {
+						"type": "string",
+						"scope": "machine",
+						"markdownDescription": "SDCC install directory [`example: D:\\SDCC`]",
+						"default": "D:\\SDCC"
 					}
 				}
 			}
@@ -262,8 +273,8 @@
 				"command": "Project.historyRecord",
 				"title": "History record",
 				"icon": {
-					"dark": "./res/icon/TaskList_16x.svg",
-					"light": "./res/icon/TaskList_16x.svg"
+					"dark": "./res/icon/History_16x.svg",
+					"light": "./res/icon/History_16x.svg"
 				}
 			},
 			{
@@ -299,11 +310,11 @@
 				}
 			},
 			{
-				"command": "Project.repair",
-				"title": "Repair project dependence",
+				"command": "Project.installUtilityPack",
+				"title": "install Utility Library",
 				"icon": {
-					"dark": "./res/icon/Repair_16x.svg",
-					"light": "./res/icon/Repair_16x.svg"
+					"dark": "./res/icon/NewFileCollection_16x.svg",
+					"light": "./res/icon/NewFileCollection_16x.svg"
 				}
 			},
 			{
@@ -379,8 +390,8 @@
 				}
 			},
 			{
-				"command": "Project.switchArmTools",
-				"title": "Switch Current Arm Tool Chain",
+				"command": "Project.switchToolchain",
+				"title": "Choose Toolchain",
 				"icon": {
 					"dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
 					"light": "./res/icon/SwitchSourceOrTarget_16x.svg"
@@ -592,11 +603,11 @@
 					"when": "viewItem == PACK_GROUP && view == Project"
 				},
 				{
-					"command": "Project.repair",
+					"command": "Project.installUtilityPack",
 					"when": "viewItem == DEPENDENCE && view == Project"
 				},
 				{
-					"command": "Project.repair",
+					"command": "Project.installUtilityPack",
 					"group": "inline",
 					"when": "viewItem == DEPENDENCE && view == Project"
 				},
@@ -678,9 +689,9 @@
 					"when": "viewItem == SRC_GROUP && view == Project"
 				},
 				{
-					"command": "Project.switchArmTools",
+					"command": "Project.switchToolchain",
 					"group": "inline",
-					"when": "viewItem == COMPILE_CONFIGURATION_ARM && view == Project"
+					"when": "viewItem == COMPILE_CONFIGURATION && view == Project"
 				},
 				{
 					"command": "Project.modifyCompileConfig",
@@ -776,12 +787,35 @@
 					"**/*.A51"
 				],
 				"configuration": "./lang/a51.language-configuration.json"
+			},
+			{
+				"id": "c",
+				"aliases": [
+					"C51"
+				],
+				"extensions": [
+					".c",
+					".h"
+				],
+				"filenamePatterns": [
+					"**/*.c",
+					"**/*.h"
+				],
+				"configuration": "./lang/c51.language-configuration.json"
 			}
 		],
 		"jsonValidation": [
 			{
 				"fileMatch": "**/*.flash.json",
 				"url": "./lang/stc.flash.verify.json"
+			},
+			{
+				"fileMatch": "**/*.keil.json",
+				"url": "./lang/8051.keil.verify.json"
+			},
+			{
+				"fileMatch": "**/*.sdcc.json",
+				"url": "./lang/sdcc.verify.json"
 			},
 			{
 				"fileMatch": "**/*.v5.json",
@@ -807,6 +841,55 @@
 				"language": "a51",
 				"scopeName": "source.asm.a51",
 				"path": "./lang/a51.tmLanguage.json"
+			}
+		],
+		"taskDefinitions": [
+			{
+				"type": "eide-task"
+			}
+		],
+		"problemMatchers": [
+			{
+				"name": "c51",
+				"fileLocation": "autoDetect",
+				"pattern": [
+					{
+						"regexp": "^\\*\\*\\* (ERROR|WARNING) (\\w+) IN LINE (\\d+) OF (.+): (.+)$",
+						"severity": 1,
+						"code": 2,
+						"line": 3,
+						"file": 4,
+						"message": 5
+					}
+				]
+			},
+			{
+				"name": "armclang",
+				"fileLocation": "autoDetect",
+				"pattern": [
+					{
+						"regexp": "^(.+):(\\d+):(\\d+): (error|warning): (.+)$",
+						"file": 1,
+						"line": 2,
+						"column": 3,
+						"severity": 4,
+						"message": 5
+					}
+				]
+			},
+			{
+				"name": "armcc",
+				"fileLocation": "autoDetect",
+				"pattern": [
+					{
+						"regexp": "^\"*([^\"]+)\"*, line (\\d+): (Error|Warning):\\s*(.+): (.+)$",
+						"file": 1,
+						"line": 2,
+						"severity": 3,
+						"code": 4,
+						"message": 5
+					}
+				]
 			}
 		]
 	}
