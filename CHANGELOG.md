@@ -4,6 +4,15 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.8.0]
+- 更改：移除内嵌的 JLink 工具，需要自行设置 JLink 安装路径
+- 修复：ARM V6 路径 `\` 导致无法编译的问题
+- 修复：构建工具 Fast-Mode 无法打开头文件的问题
+- 修复：一些其他问题
+- 优化：提升多线程的线程数
+- 优化：插件大小大大减小
+***
+
 ### [v1.7.0]
 - 更改：C51 配置转移到 json 配置文件
 - 新增：增加 SDCC 工具链，使用细节见[手册](https://blog.csdn.net/qq_40833810/article/details/104114921)

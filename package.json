@@ -21,7 +21,7 @@
 	"homepage": "https://github.com/github0null/eide/blob/master/README.md",
 	"license": "MIT",
 	"description": "一个 Keil C51/STM32 的项目迁移工具、多工具链的集成开发环境（A Keil C51/STM32 project migration tool and IDE with multiple toolchains）",
-	"version": "1.7.0",
+	"version": "1.8.0",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
@@ -162,6 +162,12 @@
 						"markdownDescription": "Keil ARM MDK `TOOLS.INI` file path [`example: D:\\Demo\\Keil\\TOOLS.INI`]",
 						"default": "unknown"
 					},
+					"EIDE.ARM.JLink.ToolDirectory": {
+						"type": "string",
+						"scope": "machine",
+						"markdownDescription": "JLink install directory [`example: D:\\JLink`]",
+						"default": "D:\\JLink"
+					},
 					"EIDE.ARM.UseMulti-ThreadMode": {
 						"type": "boolean",
 						"scope": "machine",
@@ -273,8 +279,8 @@
 				"command": "Project.historyRecord",
 				"title": "History record",
 				"icon": {
-					"dark": "./res/icon/History_16x.svg",
-					"light": "./res/icon/History_16x.svg"
+					"dark": "./res/icon/Note_16x.svg",
+					"light": "./res/icon/Note_16x.svg"
 				}
 			},
 			{
@@ -313,8 +319,8 @@
 				"command": "Project.installUtilityPack",
 				"title": "install Utility Library",
 				"icon": {
-					"dark": "./res/icon/NewFileCollection_16x.svg",
-					"light": "./res/icon/NewFileCollection_16x.svg"
+					"dark": "./res/icon/AddBuildQueue_16x.svg",
+					"light": "./res/icon/AddBuildQueue_16x.svg"
 				}
 			},
 			{
