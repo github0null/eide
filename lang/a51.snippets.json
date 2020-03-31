@@ -1,0 +1,930 @@
+{
+    "inst_MOV": {
+        "prefix": "MOV",
+        "body": [
+            "MOV ${1:A}, ${2:Rn}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_MOVC": {
+        "prefix": "MOVC",
+        "body": [
+            "MOVC ${1:A}, ${2:value}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_MOVX": {
+        "prefix": "MOVX",
+        "body": [
+            "MOVX ${1:A}, ${2:value}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_PUSH": {
+        "prefix": "PUSH",
+        "body": [
+            "PUSH ${1:direct}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_POP": {
+        "prefix": "POP",
+        "body": [
+            "POP ${1:direct}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_XCH": {
+        "prefix": "XCH",
+        "body": [
+            "XCH ${1:A}, ${2:Rn}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_XCHD": {
+        "prefix": "XCHD",
+        "body": [
+            "XCHD ${1:A}, ${2:value}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_ADD": {
+        "prefix": "ADD",
+        "body": [
+            "ADD ${1:A}, ${2:Rn}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_ADDC": {
+        "prefix": "ADDC",
+        "body": [
+            "ADDC ${1:A}, ${2:Rn}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_SUBB": {
+        "prefix": "SUBB",
+        "body": [
+            "SUBB ${1:A}, ${2:Rn}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_INC": {
+        "prefix": "INC",
+        "body": [
+            "INC ${1:A}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_DEC": {
+        "prefix": "DEC",
+        "body": [
+            "DEC ${1:A}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_MUL": {
+        "prefix": "MUL",
+        "body": [
+            "MUL ${1:AB}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_DIV": {
+        "prefix": "DIV",
+        "body": [
+            "DIV ${1:AB}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_DA": {
+        "prefix": "DA",
+        "body": [
+            "DA ${1:A}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_ANL": {
+        "prefix": "ANL",
+        "body": [
+            "ANL ${1:A}, ${2:Rn}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_ORL": {
+        "prefix": "ORL",
+        "body": [
+            "ORL ${1:A}, ${2:Rn}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_XRL": {
+        "prefix": "XRL",
+        "body": [
+            "XRL ${1:A}, ${2:Rn}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_CLR": {
+        "prefix": "CLR",
+        "body": [
+            "CLR ${1:A}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_CPL": {
+        "prefix": "CPL",
+        "body": [
+            "CPL ${1:A}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_RL": {
+        "prefix": "RL",
+        "body": [
+            "RL ${1:A}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_RLC": {
+        "prefix": "RLC",
+        "body": [
+            "RLC ${1:A}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_RR": {
+        "prefix": "RR",
+        "body": [
+            "RR ${1:A}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_RRC": {
+        "prefix": "RRC",
+        "body": [
+            "RRC ${1:A}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_SWAP": {
+        "prefix": "SWAP",
+        "body": [
+            "SWAP ${1:A}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_SETB": {
+        "prefix": "SETB",
+        "body": [
+            "SETB ${1:C}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_JC": {
+        "prefix": "JC",
+        "body": [
+            "JC ${1:rel}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_JNC": {
+        "prefix": "JNC",
+        "body": [
+            "JNC ${1:rel}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_JB": {
+        "prefix": "JB",
+        "body": [
+            "JB ${1:bit}, ${2:rel}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_JNB": {
+        "prefix": "JNB",
+        "body": [
+            "JNB ${1:bit}, ${2:rel}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_JBC": {
+        "prefix": "JBC",
+        "body": [
+            "JBC ${1:bit}, ${2:rel}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_ACALL": {
+        "prefix": "ACALL",
+        "body": [
+            "ACALL ${1:addr11}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_LCALL": {
+        "prefix": "LCALL",
+        "body": [
+            "LCALL ${1:addr16}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_RET": {
+        "prefix": "RET",
+        "body": [
+            "RET"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_RETI": {
+        "prefix": "RETI",
+        "body": [
+            "RETI"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_AJMP": {
+        "prefix": "AJMP",
+        "body": [
+            "AJMP ${1:addr11}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_LJMP": {
+        "prefix": "LJMP",
+        "body": [
+            "LJMP ${1:addr16}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_SJMP": {
+        "prefix": "SJMP",
+        "body": [
+            "SJMP ${1:rel}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_JMP": {
+        "prefix": "JMP",
+        "body": [
+            "JMP ${1:value}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_JZ": {
+        "prefix": "JZ",
+        "body": [
+            "JZ ${1:rel}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_JNZ": {
+        "prefix": "JNZ",
+        "body": [
+            "JNZ ${1:rel}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_CJNE": {
+        "prefix": "CJNE",
+        "body": [
+            "CJNE ${1:A}, ${2:direct}, ${3:rel}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_DJNZ": {
+        "prefix": "DJNZ",
+        "body": [
+            "DJNZ ${1:Rn}, ${2:rel}"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "inst_NOP": {
+        "prefix": "NOP",
+        "body": [
+            "NOP"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly instruction"
+    },
+    "pseudoinst_ORG": {
+        "prefix": "ORG",
+        "body": [
+            "ORG"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly pseudoinstruction"
+    },
+    "pseudoinst_END": {
+        "prefix": "END",
+        "body": [
+            "END"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly pseudoinstruction"
+    },
+    "pseudoinst_ALTNAME": {
+        "prefix": "ALTNAME",
+        "body": [
+            "ALTNAME"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly pseudoinstruction"
+    },
+    "pseudoinst_INCLUDE": {
+        "prefix": "INCLUDE",
+        "body": [
+            "INCLUDE"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly pseudoinstruction"
+    },
+    "register_PSW": {
+        "prefix": "PSW",
+        "body": [
+            "PSW"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_ACC": {
+        "prefix": "ACC",
+        "body": [
+            "ACC"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_B": {
+        "prefix": "B",
+        "body": [
+            "B"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_SP": {
+        "prefix": "SP",
+        "body": [
+            "SP"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_DPL": {
+        "prefix": "DPL",
+        "body": [
+            "DPL"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_DPH": {
+        "prefix": "DPH",
+        "body": [
+            "DPH"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_PCON": {
+        "prefix": "PCON",
+        "body": [
+            "PCON"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_TCON": {
+        "prefix": "TCON",
+        "body": [
+            "TCON"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_TMOD": {
+        "prefix": "TMOD",
+        "body": [
+            "TMOD"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_TL0": {
+        "prefix": "TL0",
+        "body": [
+            "TL0"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_TL1": {
+        "prefix": "TL1",
+        "body": [
+            "TL1"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_TH0": {
+        "prefix": "TH0",
+        "body": [
+            "TH0"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_TH1": {
+        "prefix": "TH1",
+        "body": [
+            "TH1"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_IE": {
+        "prefix": "IE",
+        "body": [
+            "IE"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_IP": {
+        "prefix": "IP",
+        "body": [
+            "IP"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_SCON": {
+        "prefix": "SCON",
+        "body": [
+            "SCON"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_SBUF": {
+        "prefix": "SBUF",
+        "body": [
+            "SBUF"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_CY": {
+        "prefix": "CY",
+        "body": [
+            "CY"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_AC": {
+        "prefix": "AC",
+        "body": [
+            "AC"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_F0": {
+        "prefix": "F0",
+        "body": [
+            "F0"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_RS1": {
+        "prefix": "RS1",
+        "body": [
+            "RS1"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_RS0": {
+        "prefix": "RS0",
+        "body": [
+            "RS0"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_OV": {
+        "prefix": "OV",
+        "body": [
+            "OV"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_P": {
+        "prefix": "P",
+        "body": [
+            "P"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_TF1": {
+        "prefix": "TF1",
+        "body": [
+            "TF1"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_TR1": {
+        "prefix": "TR1",
+        "body": [
+            "TR1"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_TF0": {
+        "prefix": "TF0",
+        "body": [
+            "TF0"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_TR0": {
+        "prefix": "TR0",
+        "body": [
+            "TR0"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_IE1": {
+        "prefix": "IE1",
+        "body": [
+            "IE1"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_IT1": {
+        "prefix": "IT1",
+        "body": [
+            "IT1"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_IE0": {
+        "prefix": "IE0",
+        "body": [
+            "IE0"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_IT0": {
+        "prefix": "IT0",
+        "body": [
+            "IT0"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_EA": {
+        "prefix": "EA",
+        "body": [
+            "EA"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_ES": {
+        "prefix": "ES",
+        "body": [
+            "ES"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_ET1": {
+        "prefix": "ET1",
+        "body": [
+            "ET1"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_EX1": {
+        "prefix": "EX1",
+        "body": [
+            "EX1"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_ET0": {
+        "prefix": "ET0",
+        "body": [
+            "ET0"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_EX0": {
+        "prefix": "EX0",
+        "body": [
+            "EX0"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_PS": {
+        "prefix": "PS",
+        "body": [
+            "PS"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_PT1": {
+        "prefix": "PT1",
+        "body": [
+            "PT1"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_PX1": {
+        "prefix": "PX1",
+        "body": [
+            "PX1"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_PT0": {
+        "prefix": "PT0",
+        "body": [
+            "PT0"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_PX0": {
+        "prefix": "PX0",
+        "body": [
+            "PX0"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_RD": {
+        "prefix": "RD",
+        "body": [
+            "RD"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_WR": {
+        "prefix": "WR",
+        "body": [
+            "WR"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_T1": {
+        "prefix": "T1",
+        "body": [
+            "T1"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_T0": {
+        "prefix": "T0",
+        "body": [
+            "T0"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_INT1": {
+        "prefix": "INT1",
+        "body": [
+            "INT1"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_INT0": {
+        "prefix": "INT0",
+        "body": [
+            "INT0"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_TXD": {
+        "prefix": "TXD",
+        "body": [
+            "TXD"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_RXD": {
+        "prefix": "RXD",
+        "body": [
+            "RXD"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_SM0": {
+        "prefix": "SM0",
+        "body": [
+            "SM0"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_SM1": {
+        "prefix": "SM1",
+        "body": [
+            "SM1"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_SM2": {
+        "prefix": "SM2",
+        "body": [
+            "SM2"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_REN": {
+        "prefix": "REN",
+        "body": [
+            "REN"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_TB8": {
+        "prefix": "TB8",
+        "body": [
+            "TB8"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_RB8": {
+        "prefix": "RB8",
+        "body": [
+            "RB8"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_TI": {
+        "prefix": "TI",
+        "body": [
+            "TI"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "register_RI": {
+        "prefix": "RI",
+        "body": [
+            "RI"
+        ],
+        "scope": "a51",
+        "description": "8051 register"
+    },
+    "type_EQU": {
+        "prefix": "EQU",
+        "body": [
+            "EQU"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly Data Type"
+    },
+    "type_SET": {
+        "prefix": "SET",
+        "body": [
+            "SET"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly Data Type"
+    },
+    "type_DATA": {
+        "prefix": "DATA",
+        "body": [
+            "DATA"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly Data Type"
+    },
+    "type_BYTE": {
+        "prefix": "BYTE",
+        "body": [
+            "BYTE"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly Data Type"
+    },
+    "type_WORD": {
+        "prefix": "WORD",
+        "body": [
+            "WORD"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly Data Type"
+    },
+    "type_BIT": {
+        "prefix": "BIT",
+        "body": [
+            "BIT"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly Data Type"
+    },
+    "type_DB": {
+        "prefix": "DB",
+        "body": [
+            "DB"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly Data Type"
+    },
+    "type_DW": {
+        "prefix": "DW",
+        "body": [
+            "DW"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly Data Type"
+    },
+    "type_DS": {
+        "prefix": "DS",
+        "body": [
+            "DS"
+        ],
+        "scope": "a51",
+        "description": "8051 assembly Data Type"
+    }
+}

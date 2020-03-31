@@ -1,0 +1,305 @@
+{
+    "title": "STC flash option JSON",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "device": {
+            "markdownDescription": "`[可忽略]` STC 芯片系列（小写），默认 **auto** (STC device name)",
+            "type": "string",
+            "default": "auto",
+            "enum": [
+                "stc89",
+                "stc12a",
+                "stc12b",
+                "stc12",
+                "stc15a",
+                "stc15",
+                "stc8",
+                "usb15",
+                "auto"
+            ]
+        },
+        "port": {
+            "markdownDescription": "`[可忽略]` 要使用的串口，如 **COM3** (Serialport)",
+            "type": "string"
+        },
+        "baudrate": {
+            "markdownDescription": "`[可忽略]` 串口通信波特率，默认 **19200**",
+            "type": "string",
+            "default": "19200",
+            "enum": [
+                "2400",
+                "4800",
+                "9600",
+                "14400",
+                "19200",
+                "28800",
+                "38400",
+                "57600",
+                "115200",
+                "230400",
+                "460800"
+            ]
+        },
+        "handshakeBaudrate": {
+            "markdownDescription": "`[可忽略]` 通信握手波特率，默认 **2400**",
+            "type": "string",
+            "default": "2400",
+            "enum": [
+                "2400",
+                "4800",
+                "9600",
+                "14400",
+                "19200",
+                "28800",
+                "38400",
+                "57600",
+                "115200",
+                "230400",
+                "460800"
+            ]
+        },
+        "oscFreq": {
+            "markdownDescription": "`[可忽略]` 芯片时钟速度 KHz，**只用于 STC15 系列**",
+            "type": "string",
+            "default": "16000",
+            "enum": [
+                "8000",
+                "12000",
+                "16000",
+                "24000",
+                "32000"
+            ],
+            "enumDescriptions": [
+                "8MHz",
+                "12MHz",
+                "16MHz",
+                "24MHz",
+                "32MHz"
+            ]
+        },
+        "option": {
+            "markdownDescription": "`[可忽略]` 特定于芯片的配置项 (Specific configuration for chip)",
+            "type": "object",
+            "properties": {
+                "cpu_6t_enabled": {
+                    "markdownDescription": "`[STC89 only]` 6T 快速模式",
+                    "type": "string",
+                    "enum": [
+                        "true",
+                        "false"
+                    ]
+                },
+                "bsl_pindetect_enabled": {
+                    "markdownDescription": "`[All]` 下次冷启动才可下载程序（P3.2/P3.3 都为低），冷启动引脚根据设备而定 ",
+                    "type": "string",
+                    "enum": [
+                        "true",
+                        "false"
+                    ]
+                },
+                "eeprom_erase_enabled": {
+                    "markdownDescription": "`[All]` 下次下载时将 EEPROM 一并擦除",
+                    "type": "string",
+                    "enum": [
+                        "true",
+                        "false"
+                    ]
+                },
+                "clock_gain": {
+                    "markdownDescription": "`[All with XTAL pins]` 外部振荡器增益",
+                    "type": "string",
+                    "enum": [
+                        "low",
+                        "high"
+                    ]
+                },
+                "ale_enabled": {
+                    "markdownDescription": "`[STC89 only]` 是否使能 ALE 引脚",
+                    "type": "string",
+                    "enum": [
+                        "true",
+                        "false"
+                    ]
+                },
+                "xram_enabled": {
+                    "markdownDescription": "`[STC89 only]` 使用内部的 XRAM (STC89 only)",
+                    "type": "string",
+                    "enum": [
+                        "true",
+                        "false"
+                    ]
+                },
+                "watchdog_por_enabled": {
+                    "markdownDescription": "`[All]` 上电复位时是否启动看门狗",
+                    "type": "string",
+                    "enum": [
+                        "true",
+                        "false"
+                    ]
+                },
+                "low_voltage_reset": {
+                    "markdownDescription": "`[STC15A/STC12A/STC12]` Low-voltage reset level (`low`: ~3.3V, `high`: ~3.7V)",
+                    "type": "string",
+                    "enum": [
+                        "low",
+                        "high",
+                        "true",
+                        "false"
+                    ],
+                    "enumDescriptions": [
+                        "[STC12A/STC12]: Low-voltage: ~3.3V",
+                        "[STC12A/STC12]: High-voltage: ~3.7V",
+                        "[STC15A]: Enable low-voltage reset; [STC12]: Enable RESET2 pin low voltage detect",
+                        "[STC15A]: Disable low-voltage reset; [STC12]: Disable RESET2 pin low voltage detect"
+                    ]
+                },
+                "clock_source": {
+                    "markdownDescription": "`[STC12A+ with XTAL]` 使用内部或外部时钟",
+                    "type": "string",
+                    "enum": [
+                        "internal",
+                        "external"
+                    ]
+                },
+                "watchdog_stop_idle": {
+                    "markdownDescription": "`[STC12A+]` 是否在待机模式时停止看门狗",
+                    "type": "string",
+                    "enum": [
+                        "true",
+                        "false"
+                    ]
+                },
+                "watchdog_prescale": {
+                    "markdownDescription": "`[STC12A+]` 看门狗时钟预分频系数",
+                    "type": "string",
+                    "enum": [
+                        "2",
+                        "4",
+                        "8",
+                        "16",
+                        "32",
+                        "64",
+                        "128",
+                        "256"
+                    ]
+                },
+                "reset_pin_enabled": {
+                    "markdownDescription": "`[STC12+]` 是否使能复位引脚（不使能则用作IO口）",
+                    "type": "string",
+                    "enum": [
+                        "true",
+                        "false"
+                    ]
+                },
+                "oscillator_stable_delay": {
+                    "markdownDescription": "`[STC11F series only]` 等待振荡器稳定的延时",
+                    "type": "string",
+                    "enum": [
+                        "4096",
+                        "8192",
+                        "16384",
+                        "32768"
+                    ]
+                },
+                "por_reset_delay": {
+                    "markdownDescription": "`[STC12+]` 上电复位延时",
+                    "type": "string",
+                    "enum": [
+                        "short",
+                        "long"
+                    ]
+                },
+                "low_voltage_threshold": {
+                    "markdownDescription": "`[STC15A+]` 低压检测阈值，具体电压值由设备而定",
+                    "type": "string",
+                    "enum": [
+                        "0",
+                        "1",
+                        "2",
+                        "3",
+                        "4",
+                        "5",
+                        "6",
+                        "7"
+                    ]
+                },
+                "eeprom_lvd_inhibit": {
+                    "markdownDescription": "`[STC15A+]` 是否在低压时禁止 EEPROM 操作",
+                    "type": "string",
+                    "enum": [
+                        "true",
+                        "false"
+                    ]
+                },
+                "rstout_por_state": {
+                    "markdownDescription": "`[STC15+]` 上电复位后 RSTOUT/RSTSV 引脚状态",
+                    "type": "string",
+                    "enum": [
+                        "low",
+                        "high"
+                    ]
+                },
+                "uart1_remap": {
+                    "markdownDescription": "`[STC8]` 重映射 UART1 引脚 (P3.0/P3.1) to UART2 引脚 (P3.6/P3.7)",
+                    "type": "string",
+                    "enum": [
+                        "true",
+                        "false"
+                    ]
+                },
+                "uart2_passthrough": {
+                    "markdownDescription": "`[STC15+]` 是否直通 UART1 到 UART2 引脚 (for single-wire UART mode)",
+                    "type": "string",
+                    "enum": [
+                        "true",
+                        "false"
+                    ]
+                },
+                "uart2_pin_mode": {
+                    "markdownDescription": "`[STC15+]` UART2 TX 引脚输出模式",
+                    "type": "string",
+                    "enum": [
+                        "push-pull",
+                        "normal"
+                    ]
+                },
+                "cpu_core_voltage": {
+                    "markdownDescription": "`[STC15W+]` CPU 核心电压 (low: ~2.7V, mid: ~3.3V, high: ~3.6V)",
+                    "type": "string",
+                    "enum": [
+                        "low",
+                        "mid",
+                        "high"
+                    ]
+                },
+                "epwm_open_drain": {
+                    "markdownDescription": "`[STC8]` 是否在芯片复位后将 PWM 相关的引脚设置为开漏模式",
+                    "type": "string",
+                    "enum": [
+                        "true",
+                        "false"
+                    ]
+                },
+                "program_eeprom_split": {
+                    "markdownDescription": "`[STC8A8 w/ 64 KB]` Select split between code flash and EEPROM flash (in 512 byte blocks)",
+                    "type": "string",
+                    "enum": [
+                        "512",
+                        "768",
+                        "1024",
+                        "1280",
+                        "1536",
+                        "1792",
+                        "2048",
+                        "4096",
+                        "8192",
+                        "16384",
+                        "32768",
+                        "65024"
+                    ]
+                }
+            }
+        }
+    }
+}

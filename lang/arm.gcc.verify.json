@@ -1,0 +1,234 @@
+{
+    "title": "ARM Compiler V6 Options",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "definitions": {
+        "misc-controls": {
+            "markdownDescription": "其他选项 (Other options)",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "default": []
+        }
+    },
+    "properties": {
+        "beforeBuildTasks": {
+            "markdownDescription": "编译前要执行的命令列表 (List of commands to execute before compiling)",
+            "type": "array",
+            "default": [
+                {
+                    "name": "clean",
+                    "command": "del \"${OutDir}\\*.*\""
+                }
+            ],
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "command"
+                ],
+                "properties": {
+                    "name": {
+                        "markdownDescription": "用于显示的可读名称 (A readable name for display)",
+                        "type": "string"
+                    },
+                    "command": {
+                        "markdownDescription": "CMD 命令行 (CMD command line)",
+                        "type": "string"
+                    },
+                    "abortAfterFailed": {
+                        "markdownDescription": "是否在此命令失败时，跳过后续的命令 (Whether to skip subsequent commands if this command fails)",
+                        "type": "boolean",
+                        "default": true,
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    },
+                    "stopBuildAfterFailed": {
+                        "markdownDescription": "是否在此命令失败时，直接停止编译 (Whether to stop compiling directly when this command fails)",
+                        "type": "boolean",
+                        "default": true,
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    }
+                }
+            }
+        },
+        "afterBuildTasks": {
+            "markdownDescription": "编译结束后要执行的命令列表 (List of commands to execute after compilation)",
+            "type": "array",
+            "default": [
+                {
+                    "name": "clean",
+                    "command": "del \"${OutDir}\\*._*\""
+                }
+            ],
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "command"
+                ],
+                "properties": {
+                    "name": {
+                        "markdownDescription": "用于显示的可读名称 (A readable name for display)",
+                        "type": "string"
+                    },
+                    "command": {
+                        "markdownDescription": "CMD 命令行 (CMD command line)",
+                        "type": "string"
+                    },
+                    "abortAfterFailed": {
+                        "markdownDescription": "是否在此命令失败时，跳过后续的命令 (Whether to skip subsequent commands if this command fails)",
+                        "type": "boolean",
+                        "default": true,
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    }
+                }
+            }
+        },
+        "global": {
+            "markdownDescription": "全局选项 (Global options)",
+            "type": "object",
+            "properties": {
+                "misc-controls": {
+                    "$ref": "#/definitions/misc-controls"
+                },
+                "toolPrefix": {
+                    "markdownDescription": "工具链前缀 (toolchain prefix)",
+                    "type": "string",
+                    "default": "arm-none-eabi-"
+                },
+                "output-debug-info": {
+                    "markdownDescription": "输出调试信息 (Output debug information)",
+                    "type": "string",
+                    "default": "enable",
+                    "enum": [
+                        "enable",
+                        "disable",
+                        "dwarf-3"
+                    ],
+                    "enumDescriptions": [
+                        "开启 (enable)",
+                        "禁用 (disable)",
+                        "开启并输出 dwarf-3 格式的调试信息 (Outputs debugging information in dwarf-3 format)"
+                    ]
+                }
+            }
+        },
+        "c/cpp-compiler": {
+            "markdownDescription": "c/c++ 编译器选项 (C/C++ Compiler options)",
+            "type": "object",
+            "properties": {
+                "misc-controls": {
+                    "$ref": "#/definitions/misc-controls"
+                },
+                "language-c": {
+                    "markdownDescription": "要使用的 C 标准 (C standard)",
+                    "type": "string",
+                    "default": "c99",
+                    "enum": [
+                        "c89",
+                        "c90",
+                        "c99",
+                        "c11",
+                        "c1x",
+                        "gnu89",
+                        "gnu90",
+                        "gnu99",
+                        "gnu11",
+                        "gnu1x"
+                    ]
+                },
+                "language-cpp": {
+                    "markdownDescription": "要使用的 C++ 标准 (C++ standard)",
+                    "type": "string",
+                    "default": "c++11",
+                    "enum": [
+                        "c++98",
+                        "gnu++98",
+                        "c++11",
+                        "gnu++11",
+                        "c++14",
+                        "gnu++14"
+                    ]
+                },
+                "optimization": {
+                    "markdownDescription": "代码优化级别 (optimization level)",
+                    "type": "string",
+                    "default": "level-debug",
+                    "enum": [
+                        "level-0",
+                        "level-1",
+                        "level-2",
+                        "level-3",
+                        "level-size",
+                        "level-fast",
+                        "level-debug"
+                    ],
+                    "enumDescriptions": [
+                        "-O0 (default) 减少编译时间，使调试产生预期的结果",
+                        "-O1",
+                        "-O2",
+                        "-O3",
+                        "-Os",
+                        "-Ofast",
+                        "-Og 启用不干扰调试的优化"
+                    ]
+                },
+                "plain-char-is-signed": {
+                    "markdownDescription": "Plain Char is Signed",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "turn-Warning-into-errors": {
+                    "markdownDescription": "将警告转化为错误 (Turn warnings into errors)",
+                    "type": "boolean",
+                    "default": true,
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "warnings": {
+                    "markdownDescription": "警告等级 (warning level)",
+                    "type": "string",
+                    "default": "all-warnings",
+                    "enum": [
+                        "no-warnings",
+                        "all-warnings"
+                    ]
+                }
+            }
+        },
+        "asm-compiler": {
+            "markdownDescription": "汇编器选项 (Assembler options)",
+            "type": "object",
+            "properties": {
+                "misc-controls": {
+                    "$ref": "#/definitions/misc-controls"
+                }
+            }
+        },
+        "linker": {
+            "markdownDescription": "链接器选项 (Linker options)",
+            "type": "object",
+            "properties": {
+                "misc-controls": {
+                    "markdownDescription": "Use \"-Wl[,option]...\" pass options to the linker",
+                    "$ref": "#/definitions/misc-controls"
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,123 @@
+{
+    "information_for_contributors": [
+        "eide output"
+    ],
+    "version": "1.0.0",
+    "name": "eide-output",
+    "scopeName": "eide.output",
+    "patterns": [
+        {
+            "include": "#label_err"
+        },
+        {
+            "include": "#label_warn"
+        },
+        {
+            "include": "#label_info"
+        },
+        {
+            "include": "#label_success"
+        },
+        {
+            "include": "#string_path"
+        },
+        {
+            "include": "#string_time"
+        },
+        {
+            "include": "#range"
+        },
+        {
+            "include": "#number"
+        },
+        {
+            "include": "#progress"
+        }
+    ],
+    "repository": {
+        "number": {
+            "match": "\\b(\\d+)\\b",
+            "captures": {
+                "1": {
+                    "name": "string"
+                }
+            }
+        },
+        "progress": {
+            "match": "(\\d+%|\\d+\\.\\d+%)",
+            "captures": {
+                "1": {
+                    "name": "string"
+                }
+            }
+        },
+        "range": {
+            "match": "(0[xX][0-9a-fA-F]+)\\s*-\\s*(0[xX][0-9a-fA-F]+)\\s*(.*)",
+            "captures": {
+                "1": {
+                    "name": "constant.numeric"
+                },
+                "2": {
+                    "name": "constant.numeric"
+                },
+                "3": {
+                    "name": "token.info-token"
+                }
+            }
+        },
+        "string_time": {
+            "match": "(\\d{4,}\/\\d{1,2}\/\\d{1,2})-(\\d{1,2}:\\d{1,2}:\\d{1,2})-(GMT[\\+-]\\d+)",
+            "captures": {
+                "1": {
+                    "name": "constant.numeric"
+                },
+                "2": {
+                    "name": "token.info-token"
+                },
+                "3": {
+                    "name": "string"
+                }
+            }
+        },
+        "string_path": {
+            "match": "\\[([a-zA-Z]:(?:\\\\[^\\\\]+)+\\\\?)\\]",
+            "captures": {
+                "1": {
+                    "name": "markup.underline"
+                }
+            }
+        },
+        "label_success": {
+            "match": "\\[SUCCESS\\].*|\\b[uU]pload\\s*[sS]uccess\\b|.*\\bdone\\b.*",
+            "captures": {
+                "0": {
+                    "name": "entity.name.type"
+                }
+            }
+        },
+        "label_err": {
+            "match": "\\[ERROR\\].*|\\b[uU]pload\\s*[fF]ailed\\b",
+            "captures": {
+                "0": {
+                    "name": "token.error-token"
+                }
+            }
+        },
+        "label_warn": {
+            "match": "\\[WARNING\\].*|.*\\s*could\\s*not\\s*.*|.*\\s*can\\s*not\\s*.*",
+            "captures": {
+                "0": {
+                    "name": "token.debug-token"
+                }
+            }
+        },
+        "label_info": {
+            "match": "\\[INFO\\]",
+            "captures": {
+                "0": {
+                    "name": "token.info-token"
+                }
+            }
+        }
+    }
+}

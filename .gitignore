@@ -4,7 +4,6 @@
 /out
 /out.min
 /src
-/lang
 vsc-extension-quickstart.md
 *.vsix
 .EIDE

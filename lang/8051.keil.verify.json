@@ -1,0 +1,202 @@
+{
+    "title": "Keil C51 Compile options",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "definitions": {
+        "misc-controls": {
+            "markdownDescription": "Misc Controls（杂项）",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "default": []
+        }
+    },
+    "properties": {
+        "beforeBuildTasks": {
+            "markdownDescription": "编译前要执行的命令列表 (List of commands to execute before compiling)",
+            "type": "array",
+            "default": [
+                {
+                    "name": "clean",
+                    "command": "del \"${OutDir}\\*.*\""
+                }
+            ],
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "command"
+                ],
+                "properties": {
+                    "name": {
+                        "markdownDescription": "用于显示的可读名称 (A readable name for display)",
+                        "type": "string"
+                    },
+                    "command": {
+                        "markdownDescription": "CMD 命令行 (CMD command line)",
+                        "type": "string"
+                    },
+                    "abortAfterFailed": {
+                        "markdownDescription": "是否在此命令失败时，跳过后续的命令 (Whether to skip subsequent commands if this command fails)",
+                        "type": "boolean",
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    },
+                    "stopBuildAfterFailed": {
+                        "markdownDescription": "是否在此命令失败时，直接停止编译 (Whether to stop compiling directly when this command fails)",
+                        "type": "boolean",
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    }
+                }
+            }
+        },
+        "afterBuildTasks": {
+            "markdownDescription": "编译结束后要执行的命令列表 (List of commands to execute after compilation)",
+            "type": "array",
+            "default": [
+                {
+                    "name": "clean",
+                    "command": "del \"${OutDir}\\*._*\""
+                }
+            ],
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "command"
+                ],
+                "properties": {
+                    "name": {
+                        "markdownDescription": "用于显示的可读名称 (A readable name for display)",
+                        "type": "string"
+                    },
+                    "command": {
+                        "markdownDescription": "CMD 命令行 (CMD command line)",
+                        "type": "string"
+                    },
+                    "abortAfterFailed": {
+                        "markdownDescription": "是否在此命令失败时，跳过后续的命令 (Whether to skip subsequent commands if this command fails)",
+                        "type": "boolean",
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    }
+                }
+            }
+        },
+        "global": {
+            "markdownDescription": "全局选项 (Global Options)",
+            "type": "object",
+            "properties": {
+                "misc-controls": {
+                    "$ref": "#/definitions/misc-controls"
+                },
+                "ram-mode": {
+                    "type": "string",
+                    "markdownDescription": "RAM 类型 (RAM Type)",
+                    "default": "LARGE",
+                    "enum": [
+                        "SMALL",
+                        "COMPACT",
+                        "LARGE"
+                    ],
+                    "enumDescriptions": [
+                        "variables in DATA",
+                        "variables in PDATA",
+                        "variables in XDATA"
+                    ]
+                },
+                "rom-mode": {
+                    "type": "string",
+                    "markdownDescription": "ROM 类型 (ROM Type)",
+                    "default": "LARGE",
+                    "enum": [
+                        "SMALL",
+                        "COMPACT",
+                        "LARGE"
+                    ],
+                    "enumDescriptions": [
+                        "program 2K or less",
+                        "2K functions, 64K program",
+                        "64K program"
+                    ]
+                }
+            }
+        },
+        "c/cpp-compiler": {
+            "markdownDescription": "C 编译器选项 (C Compiler Options)",
+            "type": "object",
+            "properties": {
+                "misc-controls": {
+                    "$ref": "#/definitions/misc-controls"
+                },
+                "optimization-type": {
+                    "type": "string",
+                    "markdownDescription": "代码优化的侧重类型 (Code optimization focuses on types)",
+                    "default": "SPEED",
+                    "enum": [
+                        "SPEED",
+                        "SIZE"
+                    ],
+                    "enumDescriptions": [
+                        "Focus on code speed optimization",
+                        "Focus on code size optimization"
+                    ]
+                },
+                "optimization-level": {
+                    "type": "string",
+                    "markdownDescription": "优化级别 (optimization level)",
+                    "enum": [
+                        "level-0",
+                        "level-1",
+                        "level-2",
+                        "level-3",
+                        "level-4",
+                        "level-5",
+                        "level-6",
+                        "level-7",
+                        "level-8",
+                        "level-9"
+                    ],
+                    "enumDescriptions": [
+                        "Constant folding",
+                        "Dead code elimination",
+                        "Data overlaying",
+                        "Peephole optimization",
+                        "Register variables",
+                        "Common subexpression elimination",
+                        "Loop rotation",
+                        "Extended index access optimizing",
+                        "Reuse common entry code",
+                        "Common block subroutines"
+                    ]
+                }
+            }
+        },
+        "asm-compiler": {
+            "markdownDescription": "汇编器选项 (Assembler options)",
+            "type": "object",
+            "properties": {
+                "misc-controls": {
+                    "$ref": "#/definitions/misc-controls"
+                }
+            }
+        },
+        "linker": {
+            "markdownDescription": "链接器选项 (Linker options)",
+            "type": "object",
+            "properties": {
+                "misc-controls": {
+                    "$ref": "#/definitions/misc-controls"
+                }
+            }
+        }
+    }
+}

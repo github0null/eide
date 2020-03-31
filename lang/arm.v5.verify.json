@@ -1,0 +1,323 @@
+{
+    "title": "ARM Compiler V5 Options",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "beforeBuildTasks": {
+            "markdownDescription": "编译前要执行的命令列表 (List of commands to execute before compiling)",
+            "type": "array",
+            "default": [
+                {
+                    "name": "clean",
+                    "command": "del \"${OutDir}\\*.*\""
+                }
+            ],
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "command"
+                ],
+                "properties": {
+                    "name": {
+                        "markdownDescription": "用于显示的可读名称 (A readable name for display)",
+                        "type": "string"
+                    },
+                    "command": {
+                        "markdownDescription": "CMD 命令行 (CMD command line)",
+                        "type": "string"
+                    },
+                    "abortAfterFailed": {
+                        "markdownDescription": "是否在此命令失败时，跳过后续的命令 (Whether to skip subsequent commands if this command fails)",
+                        "type": "boolean",
+                        "default": true,
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    },
+                    "stopBuildAfterFailed": {
+                        "markdownDescription": "是否在此命令失败时，直接停止编译 (Whether to stop compiling directly when this command fails)",
+                        "type": "boolean",
+                        "default": true,
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    }
+                }
+            }
+        },
+        "afterBuildTasks": {
+            "markdownDescription": "编译结束后要执行的命令列表 (List of commands to execute after compilation)",
+            "type": "array",
+            "default": [
+                {
+                    "name": "clean",
+                    "command": "del \"${OutDir}\\*._*\""
+                }
+            ],
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "command"
+                ],
+                "properties": {
+                    "name": {
+                        "markdownDescription": "用于显示的可读名称 (A readable name for display)",
+                        "type": "string"
+                    },
+                    "command": {
+                        "markdownDescription": "CMD 命令行 (CMD command line)",
+                        "type": "string"
+                    },
+                    "abortAfterFailed": {
+                        "markdownDescription": "是否在此命令失败时，跳过后续的命令 (Whether to skip subsequent commands if this command fails)",
+                        "type": "boolean",
+                        "default": true,
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    }
+                }
+            }
+        },
+        "global": {
+            "markdownDescription": "全局选项 (Global Options)",
+            "type": "object",
+            "properties": {
+                "use-microLIB": {
+                    "markdownDescription": "是否使用微库 (Whether to use microLIB)",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                }
+            }
+        },
+        "c/cpp-compiler": {
+            "markdownDescription": "C/C++ 编译器选项 (C/C++ Compiler Options)",
+            "type": "object",
+            "properties": {
+                "misc-controls": {
+                    "markdownDescription": "Misc Controls",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": []
+                },
+                "execute-only-code": {
+                    "markdownDescription": "Execute-only Code",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "read-only-position-independent": {
+                    "markdownDescription": "为常量生成独立的代码空间 (read only position independent)",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "read-write-position-independent": {
+                    "markdownDescription": "为可读写代码生成独立的代码空间 (read write position independent)",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "split-load-and-store-multiple": {
+                    "markdownDescription": "Split Load and Store Multiple",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "c99-mode": {
+                    "markdownDescription": "C99 Mode",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "optimization": {
+                    "markdownDescription": "代码优化级别 (optimization level)",
+                    "type": "string",
+                    "enum": [
+                        "level-0",
+                        "level-1",
+                        "level-2",
+                        "level-3"
+                    ]
+                },
+                "optimize-for-time": {
+                    "markdownDescription": "代码时间优化 (optimize for time)",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "one-elf-section-per-function": {
+                    "markdownDescription": "One ELF Section per Function",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "strict-ANSI-C": {
+                    "markdownDescription": "使用标准（严格）的 ANSI C (strict ANSI C)",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "enum-container-always-int": {
+                    "markdownDescription": "枚举类型的成员变量类型为 int 型 (enum container always int)",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "plain-char-is-signed": {
+                    "markdownDescription": "Plain Char is Signed",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "gnu-extensions": {
+                    "markdownDescription": "GNU 扩展 (gnu extensions)",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "warnings": {
+                    "markdownDescription": "警告等级 (warning level)",
+                    "type": "string",
+                    "enum": [
+                        "unspecified",
+                        "no-warnings",
+                        "all-warnings"
+                    ]
+                }
+            }
+        },
+        "asm-compiler": {
+            "markdownDescription": "汇编器选项 (Assember Option)",
+            "type": "object",
+            "properties": {
+                "misc-controls": {
+                    "markdownDescription": "Misc Controls",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": []
+                },
+                "execute-only-code": {
+                    "markdownDescription": "Execute-only Code",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "read-only-position-independent": {
+                    "markdownDescription": "为常量生成独立的代码空间 (read only position independent)",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "read-write-position-independent": {
+                    "markdownDescription": "为可读写代码生成独立的代码空间 (read write position independent)",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "split-load-and-store-multiple": {
+                    "markdownDescription": "Split Load and Store Multiple",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "thumb-mode": {
+                    "markdownDescription": "Thumb Mode",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "no-warnings": {
+                    "markdownDescription": "无警告 (no warnings)",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                }
+            }
+        },
+        "linker": {
+            "markdownDescription": "链接器选项 (Linker options)",
+            "type": "object",
+            "properties": {
+                "misc-controls": {
+                    "markdownDescription": "Misc Controls",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": []
+                },
+                "not-search-std-libs": {
+                    "markdownDescription": "Don't Search Standrad Libraries",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "read-only-position-independent": {
+                    "markdownDescription": "为常量生成独立的代码空间 (read only position independent)",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "read-write-position-independent": {
+                    "markdownDescription": "为可读写代码生成独立的代码空间 (read write position independent)",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                }
+            }
+        }
+    }
+}

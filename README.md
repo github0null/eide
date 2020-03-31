@@ -2,7 +2,11 @@
 
 [![](https://vsmarketplacebadge.apphb.com/version/cl.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide) [![](https://vsmarketplacebadge.apphb.com/installs/cl.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide) [![](https://vsmarketplacebadge.apphb.com/downloads/cl.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide) [![](https://vsmarketplacebadge.apphb.com/rating/cl.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide)
 
-## 简述
+***
+
+## [English](./README_EN.md)
+
+## 简述 📑
 
 一个 Keil C51/STM32 的项目迁移工具、多工具链的集成开发环境, 用于提供在 vscode 上对 8051, STM32 项目进行 开发, 编译, 烧录, 调试, 管理的功能。
 
@@ -16,13 +20,7 @@
 
 ***
 
-## 安装
-
-在扩展商店搜索 **eide** 或者 在 [github -> release](https://github.com/github0null/eide/releases) 中下载最新版本 **vsix** 包
-
-***
-
-## 功能
+## 功能 🎉
 
 * 导入 Keil uVision 5 项目并完成 EIDE 项目的创建 (对 Keil uVision 5 支持较好)
 * 导出 Keil 项目文件(.uvprojx, .uvproj)到工作区
@@ -37,10 +35,11 @@
 
 ***
 
-## 工具链支持
-#### 8051： ![status](https://img.shields.io/badge/Keil_C51-done-brightgreen.svg) ![status](https://img.shields.io/badge/SDCC-done-brightgreen.svg)
+## 工具链支持 🔨
 
-#### ARM：![status](https://img.shields.io/badge/ARMCC_V5-done-brightgreen.svg) ![status](https://img.shields.io/badge/ARMCC_V6-done-brightgreen.svg) ![status](https://img.shields.io/badge/ARM_GCC-developing-orange.svg)
+#### ![8051](https://img.shields.io/badge/-8051_:-grey.svg) ![status](https://img.shields.io/badge/Keil_C51-done-brightgreen.svg) ![status](https://img.shields.io/badge/SDCC-done-brightgreen.svg)
+
+#### ![ARM](https://img.shields.io/badge/-ARM_:-grey.svg) ![status](https://img.shields.io/badge/ARMCC_V5-done-brightgreen.svg) ![status](https://img.shields.io/badge/ARMCC_V6-done-brightgreen.svg) ![status](https://img.shields.io/badge/ARM_GCC-done-brightgreen.svg)
 
 ***
 
@@ -52,16 +51,22 @@
 
 ***
 
-## 用法
+## 用法 📖
 
-#### 作者编写了一个 [使用手册](https://blog.csdn.net/qq_40833810/category_9688932.html)，这将帮助大家更方便的使用该插件
+#### 这里有一个简单的 [使用手册](https://blog.csdn.net/qq_40833810/category_9688932.html)，这将帮助大家简单的了解该插件
 
 ***
 
-## 版本变化 (最近3次，详见 [CHANGELOG](./CHANGELOG.md))
+## 版本变化 🔔 (最近3次，详见 [CHANGELOG](./CHANGELOG.md))
 
 > #### 每次的版本变化，[手册](https://blog.csdn.net/qq_40833810/article/details/104114921)就会更新，注意查看。
-> #### 问题反馈、添加功能，途径1：[Github Issue](https://github.com/github0null/eide/issues)，途径2：QQ群: **941749328**
+> #### 遇到了问题?😭 👉 途径1：[Github Issue](https://github.com/github0null/eide/issues)，途径2：QQ群: **941749328**
+
+### [v1.9.0]
+- 新增：GCC for ARM 工具链，使用前需要到`插件设置`设置好工具链安装目录
+- 新增：可选择在编译时要使用的线程数
+- 修复：工作区配置被强制刷新的问题
+***
 
 ### [v1.8.0]
 - 更改：移除内嵌的 JLink 工具，需要自行设置 JLink 安装路径
@@ -81,16 +86,6 @@
 - 优化：合并 js 提升插件加载速度
 ***
 
-### [v1.6.0]
-- 新增：加入多线程编译模式，默认开启，当编译的文件数大于 16 时有效；
-- 更改：串口调试器`双向模式`的输出转移到虚拟文档, 详见[手册->串口调试器](https://blog.csdn.net/qq_40833810/article/details/104114921)
-- 优化：提升快速编译的效率
-- 修复：日志记录器引发的崩溃问题
-- 修复：同名源文件生成的 obj 冲突的问题
-- 修复：无法识别 .asm 后缀的汇编源文件的问题
-- 修复：修复了一些其他问题
-***
-
-## 注意事项
+## 注意事项 🚩
   + **使用 ARM 烧录工具前请确保电脑已安装 JLink**
   + **导入功能: 对于过低版本的 Keil uVision 项目可能会导入失败**

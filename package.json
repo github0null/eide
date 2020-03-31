@@ -21,7 +21,7 @@
 	"homepage": "https://github.com/github0null/eide/blob/master/README.md",
 	"license": "MIT",
 	"description": "一个 Keil C51/STM32 的项目迁移工具、多工具链的集成开发环境（A Keil C51/STM32 project migration tool and IDE with multiple toolchains）",
-	"version": "1.8.1",
+	"version": "1.9.0",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
@@ -156,6 +156,12 @@
 						"markdownDescription": "remote public github repository url, format: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
 						"default": "github0null/eide-doc/contents/eide-template-list"
 					},
+					"EIDE.ARM.GCC.InstallDirectory": {
+						"type": "string",
+						"scope": "machine",
+						"markdownDescription": "GCC for ARM toolchain install directory [`example: D:\\ARM-GNU-Tool\\8 2019-q3-update`]",
+						"default": "D:\\ARM-GNU-Tool\\8 2019-q3-update"
+					},
 					"EIDE.ARM.INI.Path": {
 						"type": "string",
 						"scope": "machine",
@@ -173,6 +179,34 @@
 						"scope": "machine",
 						"markdownDescription": "Use Multi-Thread Mode when compile file",
 						"default": "true"
+					},
+					"EIDE.ARM.ThreadNumber": {
+						"type": "integer",
+						"scope": "resource",
+						"markdownDescription": "The number of threads you want to use",
+						"default": -1,
+						"enum": [
+							-1,
+							2,
+							4,
+							6,
+							8,
+							10,
+							12,
+							14,
+							16,
+							18,
+							20,
+							22,
+							24,
+							26,
+							28,
+							30,
+							32
+						],
+						"enumDescriptions": [
+							"auto (由插件自动选择)"
+						]
 					},
 					"EIDE.ARM.Option.AutoGenerateRTE_Components": {
 						"type": "boolean",
@@ -830,6 +864,10 @@
 			{
 				"fileMatch": "**/*.v6.json",
 				"url": "./lang/arm.v6.verify.json"
+			},
+			{
+				"fileMatch": "**/*.gcc.json",
+				"url": "./lang/arm.gcc.verify.json"
 			}
 		],
 		"grammars": [

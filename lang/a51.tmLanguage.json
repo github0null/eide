@@ -1,0 +1,129 @@
+{
+    "information_for_contributors": [
+        "51 assembly support, author: cl"
+    ],
+    "version": "1.0.0",
+    "name": "a51",
+    "scopeName": "source.asm.a51",
+    "patterns": [
+        {
+            "include": "#instruction"
+        },
+        {
+            "include": "#pseudoinstruction"
+        },
+        {
+            "include": "#operators"
+        },
+        {
+            "include": "#type"
+        },
+        {
+            "include": "#register"
+        },
+        {
+            "include": "#number"
+        },
+        {
+            "include": "#functionName"
+        },
+        {
+            "include": "#comment"
+        },
+        {
+            "include": "#string"
+        },
+        {
+            "include": "#jumpFuncName"
+        }
+    ],
+    "repository": {
+        "instruction": {
+            "match": "(?i)\\b(MOV|MOVC|MOVX|PUSH|POP|XCH|XCHD|ADD|ADDC|SUBB|INC|DEC|MUL|DIV|DA|ANL|ORL|XRL|CLR|CPL|RL|RLC|RR|RRC|SWAP|SETB|JC|JNC|JB|JNB|JBC|ACALL|LCALL|RET|RETI|AJMP|LJMP|SJMP|JMP|JZ|JNZ|CJNE|DJNZ|NOP)\\b",
+            "captures": {
+                "1": {
+                    "name": "support.function.mnemonic.arithmetic.a51"
+                }
+            }
+        },
+        "pseudoinstruction": {
+            "match": "(?i)\\b(ORG|END|ALTNAME|INCLUDE|\\$TITLE|\\$NOLIST|\\$NOCODE)\\b",
+            "captures": {
+                "1": {
+                    "name": "keyword.control.import"
+                }
+            }
+        },
+        "type": {
+            "match": "(?i)\\b(EQU|SET|DATA|BYTE|WORD|BIT|DB|DW|DS)\\b",
+            "captures": {
+                "1": {
+                    "name": "entity.name.type"
+                }
+            }
+        },
+        "operators": {
+            "match": "\\+",
+            "captures": {
+                "0": {
+                    "name": "keyword.operator"
+                }
+            }
+        },
+        "register": {
+            "match": "\\b(R[0-7]|P[0-3]|PSW|A(?:CC)?|B|SP|DPL|DPH|PCON|TCON|TMOD|TL0|TL1|TH0|TH1|IE|IP|SCON|SBUF|CY|AC|F0|RS1|RS0|OV|P|TF1|TR1|TF0|TR0|IE1|IT1|IE0|IT0|EA|ES|ET1|EX1|ET0|EX0|PS|PT1|PX1|PT0|PX0|RD|WR|T1|T0|INT1|INT0|TXD|RXD|SM0|SM1|SM2|REN|TB8|RB8|TI|RI)\\b",
+            "captures": {
+                "1": {
+                    "name": "storage.other.register.a51"
+                }
+            }
+        },
+        "number": {
+            "match": "(?i)\\b([0-9A-F]+H|0x[0-9a-f]+)\\b",
+            "captures": {
+                "1": {
+                    "name": "constant.numeric"
+                }
+            }
+        },
+        "comment": {
+            "match": "(?i)(;.*)",
+            "captures": {
+                "1": {
+                    "name": "comment.line"
+                }
+            }
+        },
+        "functionName": {
+            "match": "^\\s*\\b([a-zA-Z_]\\w*)\\b\\s*:",
+            "captures": {
+                "1": {
+                    "name": "variable"
+                }
+            }
+        },
+        "string": {
+            "match": "(\".*\"|'.*')",
+            "captures": {
+                "1": {
+                    "name": "string"
+                }
+            }
+        },
+        "jumpFuncName": {
+            "match": ".*?\\b(JC|JNC|ACALL|LCALL|AJMP|LJMP|SJMP|JMP|JZ|JNZ)\\b\\s+([a-zA-Z_]\\w*)",
+            "captures": {
+                "1": {
+                    "patterns": [
+                        {
+                            "include": "#instruction"
+                        }
+                    ]
+                },
+                "2": {
+                    "name": "variable"
+                }
+            }
+        }
+    }
+}

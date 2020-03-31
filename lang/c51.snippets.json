@@ -1,0 +1,448 @@
+{
+	"for_loop": {
+		"prefix": "for",
+		"body": [
+			"for (int ${1:var} = ${2:InitNum}; ${1:var} < ${3:Max}; ${1:var}++) {",
+			"}"
+		],
+		"scope": "c51",
+		"description": "for loop"
+	},
+	"while_loop": {
+		"prefix": "while",
+		"body": [
+			"while (${1:expression}) {",
+			"}"
+		],
+		"scope": "c51",
+		"description": "while loop"
+	},
+	"do_while_loop": {
+		"prefix": "do",
+		"body": [
+			"do {",
+			"} while (${1:expression});"
+		],
+		"scope": "c51",
+		"description": "do while loop"
+	},
+	"if_judge": {
+		"prefix": "if",
+		"body": [
+			"if(${1:expression}) {",
+			"}"
+		],
+		"scope": "c51",
+		"description": "if statement"
+	},
+	"else_judge": {
+		"prefix": "else",
+		"body": [
+			"else {",
+			"}"
+		],
+		"scope": "c51",
+		"description": "else statement"
+	},
+	"switch_branch": {
+		"prefix": "switch",
+		"body": [
+			"switch (${1:expression}) {",
+			"\tdefault:",
+			"\t\tbreak;",
+			"}"
+		],
+		"scope": "c51",
+		"description": "switch branch"
+	},
+	"interrupt_function": {
+		"prefix": "interrupt",
+		"body": [
+			"interrupt ${1:intNum} using ${2:regNum} "
+		],
+		"scope": "c51",
+		"description": "c51 interrupt function: \n<intNum> is interrupt number; \n<resNum> is register number (0 ~ 3)"
+    },
+    "key_typedef": {
+        "prefix": "typedef",
+        "body": [
+            "typedef ${1:type} ${2:MyType};"
+        ],
+        "scope": "c51",
+        "description": "key typedef"
+    },
+    "key_struct": {
+        "prefix": "struct",
+        "body": [
+            "struct ${1:typeName} {",
+            "};"
+        ],
+        "scope": "c51",
+        "description": "key struct"
+    },
+    "key_union": {
+        "prefix": "union",
+        "body": [
+            "union ${1:typeName} {",
+            "};"
+        ],
+        "scope": "c51",
+        "description": "key union"
+    },
+    "key_case": {
+        "prefix": "case",
+        "body": [
+            "case ${1:const_value}:",
+            "\tbreak;"
+        ],
+        "scope": "c51",
+        "description": "keyword case"
+    },
+	"key_break": {
+        "prefix": "break",
+        "body": [
+            "break"
+        ],
+        "scope": "c51",
+        "description": "keyword break"
+    },
+    "key_continue": {
+        "prefix": "continue",
+        "body": [
+            "continue"
+        ],
+        "scope": "c51",
+        "description": "keyword continue"
+    },
+    "key_goto": {
+        "prefix": "goto",
+        "body": [
+            "goto"
+        ],
+        "scope": "c51",
+        "description": "keyword goto"
+    },
+    "key_return": {
+        "prefix": "return",
+        "body": [
+            "return"
+        ],
+        "scope": "c51",
+        "description": "keyword return"
+    },
+    "key_const": {
+        "prefix": "const",
+        "body": [
+            "const"
+        ],
+        "scope": "c51",
+        "description": "keyword const"
+    },
+    "key_extern": {
+        "prefix": "extern",
+        "body": [
+            "extern"
+        ],
+        "scope": "c51",
+        "description": "keyword extern"
+    },
+    "key_register": {
+        "prefix": "register",
+        "body": [
+            "register"
+        ],
+        "scope": "c51",
+        "description": "keyword register"
+    },
+    "key_static": {
+        "prefix": "static",
+        "body": [
+            "static"
+        ],
+        "scope": "c51",
+        "description": "keyword static"
+    },
+    "key_data": {
+        "prefix": "data",
+        "body": [
+            "data"
+        ],
+        "scope": "c51",
+        "description": "keyword data"
+    },
+    "key_bdata": {
+        "prefix": "bdata",
+        "body": [
+            "bdata"
+        ],
+        "scope": "c51",
+        "description": "keyword bdata"
+    },
+    "key_idata": {
+        "prefix": "idata",
+        "body": [
+            "idata"
+        ],
+        "scope": "c51",
+        "description": "keyword idata"
+    },
+    "key_pdata": {
+        "prefix": "pdata",
+        "body": [
+            "pdata"
+        ],
+        "scope": "c51",
+        "description": "keyword pdata"
+    },
+    "key_xdata": {
+        "prefix": "xdata",
+        "body": [
+            "xdata"
+        ],
+        "scope": "c51",
+        "description": "keyword xdata"
+    },
+    "key_code": {
+        "prefix": "code",
+        "body": [
+            "code"
+        ],
+        "scope": "c51",
+        "description": "keyword code"
+    },
+    "key_volatile": {
+        "prefix": "volatile",
+        "body": [
+            "volatile"
+        ],
+        "scope": "c51",
+        "description": "keyword volatile"
+    },
+    "key_interrupt": {
+        "prefix": "interrupt",
+        "body": [
+            "interrupt"
+        ],
+        "scope": "c51",
+        "description": "keyword interrupt"
+    },
+    "key_reentrant": {
+        "prefix": "reentrant",
+        "body": [
+            "reentrant"
+        ],
+        "scope": "c51",
+        "description": "keyword reentrant"
+    },
+    "key_using": {
+        "prefix": "using",
+        "body": [
+            "using"
+        ],
+        "scope": "c51",
+        "description": "keyword using"
+    },
+    "key_small": {
+        "prefix": "small",
+        "body": [
+            "small"
+        ],
+        "scope": "c51",
+        "description": "keyword small"
+    },
+    "key_alien": {
+        "prefix": "alien",
+        "body": [
+            "alien"
+        ],
+        "scope": "c51",
+        "description": "keyword alien"
+    },
+    "key_large": {
+        "prefix": "large",
+        "body": [
+            "large"
+        ],
+        "scope": "c51",
+        "description": "keyword large"
+    },
+    "key_compact": {
+        "prefix": "compact",
+        "body": [
+            "compact"
+        ],
+        "scope": "c51",
+        "description": "keyword compact"
+    },
+    "key__at_": {
+        "prefix": "_at_",
+        "body": [
+            "_at_"
+        ],
+        "scope": "c51",
+        "description": "keyword _at_"
+    },
+    "key__task_": {
+        "prefix": "_task_",
+        "body": [
+            "_task_"
+        ],
+        "scope": "c51",
+        "description": "keyword _task_"
+    },
+    "key_#elif": {
+        "prefix": "#elif",
+        "body": [
+            "#elif"
+        ],
+        "scope": "c51",
+        "description": "keyword #elif"
+    },
+    "key_#endif": {
+        "prefix": "#endif",
+        "body": [
+            "#endif"
+        ],
+        "scope": "c51",
+        "description": "keyword #endif"
+    },
+    "key_#include": {
+        "prefix": "#include",
+        "body": [
+            "#include \"${1:xxx.h}\""
+        ],
+        "scope": "c51",
+        "description": "keyword #include"
+    },
+    "key_#define": {
+        "prefix": "#define",
+        "body": [
+            "#define ${1:Macro}"
+        ],
+        "scope": "c51",
+        "description": "keyword #define"
+    },
+    "key_#ifdef": {
+        "prefix": "#ifdef",
+        "body": [
+            "#ifdef ${1:Macro}",
+            "#endif"
+        ],
+        "scope": "c51",
+        "description": "keyword #ifdef"
+    },
+    "key_#ifndef": {
+        "prefix": "#ifndef",
+        "body": [
+            "#ifndef ${1:Macro}",
+            "#endif"
+        ],
+        "scope": "c51",
+        "description": "keyword #ifndef"
+    },
+    "key_NULL": {
+        "prefix": "NULL",
+        "body": [
+            "NULL"
+        ],
+        "scope": "c51",
+        "description": "keyword NULL"
+	},
+	"type_void": {
+        "prefix": "void",
+        "body": [
+            "void"
+        ],
+        "scope": "c51",
+        "description": "type void"
+    },
+    "type_short": {
+        "prefix": "short",
+        "body": [
+            "short"
+        ],
+        "scope": "c51",
+        "description": "type short"
+    },
+    "type_char": {
+        "prefix": "char",
+        "body": [
+            "char"
+        ],
+        "scope": "c51",
+        "description": "type char"
+    },
+    "type_int": {
+        "prefix": "int",
+        "body": [
+            "int"
+        ],
+        "scope": "c51",
+        "description": "type int"
+    },
+    "type_float": {
+        "prefix": "float",
+        "body": [
+            "float"
+        ],
+        "scope": "c51",
+        "description": "type float"
+    },
+    "type_signed": {
+        "prefix": "signed",
+        "body": [
+            "signed"
+        ],
+        "scope": "c51",
+        "description": "type signed"
+    },
+    "type_unsigned": {
+        "prefix": "unsigned",
+        "body": [
+            "unsigned"
+        ],
+        "scope": "c51",
+        "description": "type unsigned"
+    },
+    "type_bit": {
+        "prefix": "bit",
+        "body": [
+            "bit"
+        ],
+        "scope": "c51",
+        "description": "type bit"
+    },
+    "type_sbit": {
+        "prefix": "sbit",
+        "body": [
+            "sbit"
+        ],
+        "scope": "c51",
+        "description": "type sbit"
+    },
+    "type_sfr": {
+        "prefix": "sfr",
+        "body": [
+            "sfr"
+        ],
+        "scope": "c51",
+        "description": "type sfr"
+    },
+    "type_sfr16": {
+        "prefix": "sfr16",
+        "body": [
+            "sfr16"
+        ],
+        "scope": "c51",
+        "description": "type sfr16"
+    },
+    "type_enum": {
+        "prefix": "enum",
+        "body": [
+            "enum ${1:enumName} {",
+            "};"
+        ],
+        "scope": "c51",
+        "description": "type enum"
+    }
+}

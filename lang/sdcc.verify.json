@@ -1,0 +1,400 @@
+{
+    "title": "SDCC Compile options",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "definitions": {
+        "misc-controls": {
+            "markdownDescription": "Misc Controls（杂项）",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "default": []
+        }
+    },
+    "properties": {
+        "beforeBuildTasks": {
+            "markdownDescription": "编译前要执行的命令列表 (List of commands to execute before compiling)",
+            "type": "array",
+            "default": [
+                {
+                    "name": "clean",
+                    "command": "del \"${OutDir}\\*.*\""
+                }
+            ],
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "command"
+                ],
+                "properties": {
+                    "name": {
+                        "markdownDescription": "用于显示的可读名称 (A readable name for display)",
+                        "type": "string"
+                    },
+                    "command": {
+                        "markdownDescription": "CMD 命令行 (CMD command line)",
+                        "type": "string"
+                    },
+                    "abortAfterFailed": {
+                        "markdownDescription": "是否在此命令失败时，跳过后续的命令 (Whether to skip subsequent commands if this command fails)",
+                        "type": "boolean",
+                        "default": true,
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    },
+                    "stopBuildAfterFailed": {
+                        "markdownDescription": "是否在此命令失败时，直接停止编译 (Whether to stop compiling directly when this command fails)",
+                        "type": "boolean",
+                        "default": true,
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    }
+                }
+            }
+        },
+        "afterBuildTasks": {
+            "markdownDescription": "编译结束后要执行的命令列表 (List of commands to execute after compilation)",
+            "type": "array",
+            "default": [
+                {
+                    "name": "clean",
+                    "command": "del \"${OutDir}\\*._*\""
+                }
+            ],
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "command"
+                ],
+                "properties": {
+                    "name": {
+                        "markdownDescription": "用于显示的可读名称 (A readable name for display)",
+                        "type": "string"
+                    },
+                    "command": {
+                        "markdownDescription": "CMD 命令行 (CMD command line)",
+                        "type": "string"
+                    },
+                    "abortAfterFailed": {
+                        "markdownDescription": "是否在此命令失败时，跳过后续的命令 (Whether to skip subsequent commands if this command fails)",
+                        "type": "boolean",
+                        "default": true,
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    }
+                }
+            }
+        },
+        "global": {
+            "markdownDescription": "全局选项 (Global Options)",
+            "type": "object",
+            "properties": {
+                "device": {
+                    "markdownDescription": "Specific Processor name",
+                    "type": "string",
+                    "default": "mcs51",
+                    "enum": [
+                        "mcs51",
+                        "ds390",
+                        "ds400",
+                        "hc08",
+                        "s08",
+                        "z80",
+                        "z180",
+                        "r2k",
+                        "r3ka",
+                        "gbz80",
+                        "tlcs90",
+                        "ez80_z80",
+                        "stm8",
+                        "pic14",
+                        "pic16"
+                    ],
+                    "enumDescriptions": [
+                        "Intel MCS51 family of processors. This is the default processor target. ",
+                        "Dallas DS80C390 processor. ",
+                        "Dallas DS80C400 processor. ",
+                        "Freescale/Motorola HC08 (aka 68HC08) family of processors. ",
+                        "Freescale/Motorola S08 (aka 68HCS08, HCS08, CS08) family of processors. ",
+                        "Zilog Z80 family of processors. ",
+                        "Zilog Z180 family of processors. ",
+                        "Rabbit 2000 / Rabbit 3000 family of processors. ",
+                        "Rabbit 3000A family of processors. ",
+                        "LR35902 GameBoy Z80 processor. ",
+                        "Toshiba TLCS-90 processor. ",
+                        "Zilog eZ80 processor in Z80 mode. ",
+                        "STMicroelectronics STM8 family of processors. ",
+                        "Microchip PIC 14-bit processors (p16f84 and variants. In development, not complete).",
+                        "Microchip PIC 16-bit processors (p18f452 and variants. In development, not complete)."
+                    ]
+                },
+                "specific-options": {
+                    "markdownDescription": "options for special device",
+                    "type": "array",
+                    "default": [
+                        "--model-large"
+                    ],
+                    "items": {
+                        "type": "string",
+                        "pattern": "^-.+$",
+                        "enum": [
+                            "--model-small",
+                            "--model-medium",
+                            "--model-large",
+                            "--model-huge",
+                            "--stack-size",
+                            "--parms-in-bank1",
+                            "--pack-iram",
+                            "--no-pack-iram",
+                            "--acall-ajmp",
+                            "--no-ret-without-call",
+                            "--callee-saves-bc",
+                            "--portmode=<value>",
+                            "--asm=<value>",
+                            "--codeseg <name>",
+                            "--constseg <name>",
+                            "--dataseg <name>",
+                            "--no-std-crt0",
+                            "--reserve-regs-iy",
+                            "--oldralloc",
+                            "--fno-omit-frame-pointer",
+                            "--emit-externs",
+                            "-bo <num>",
+                            "-ba <num>",
+                            "--model-flat24",
+                            "--stack-8bit",
+                            "--stack-10bit",
+                            "--use-accelerator",
+                            "--protect-sp-update",
+                            "--pstack-model=<value>",
+                            "--extended",
+                            "--pno-banksel",
+                            "--obanksel=<value>",
+                            "--denable-peeps",
+                            "--no-optimize-goto",
+                            "--optimize-cmp",
+                            "--optimize-df",
+                            "--mplab-comp",
+                            "--link=<value>",
+                            "--preplace-udata-with=<value>",
+                            "--ivt-loc=<value>",
+                            "--nodefaultlibs",
+                            "--use-crt=<value>",
+                            "--no-crt",
+                            "--debug-xtra",
+                            "--debug-ralloc",
+                            "--pcode-verbose",
+                            "--calltree",
+                            "--gstack",
+                            "--no-warn-non-free",
+                            "--no-pcode-opt",
+                            "--no-extended-instructions",
+                            "--tini-libid <nnnn>",
+                            "--out-fmt-elf"
+                        ],
+                        "enumDescriptions": [
+                            "[mcs51/hc08/s08] internal data space is used (default)",
+                            "[mcs51/stm8] external paged data space is used",
+                            "[mcs51/hc08/s08/stm8] external data space is used",
+                            "[mcs51] functions are banked, data in external space",
+                            "[mcs51/ds390/pic14/TININative/ds400] Tells the linker to allocate this space for stack",
+                            "[mcs51/ds390/TININative/ds400] use Bank1 for parameter passing",
+                            "[mcs51/ds390/TININative/ds400] Tells the linker to pack variables in internal ram (default)",
+                            "[mcs51/ds390/TININative/ds400] Deprecated: Tells the linker not to pack variables in internal ram",
+                            "[mcs51] Use acall/ajmp instead of lcall/ljmp",
+                            "[mcs51] Do not use ret independent of acall/lcall",
+                            "[z80/z180/r2k/r3ka/gbz80/tlcs90/ez80_z80] Force a called function to always save BC",
+                            "[z80/z180/r2k/r3ka/tlcs90/ez80_z80] Determine PORT I/O mode (z80/z180)",
+                            "[z80/z180/r2k/r3ka/tlcs90/ez80_z80/pic16] Define assembler name (rgbds/asxxxx/isas/z80asm)",
+                            "[z80/z180/r2k/r3ka/gbz80/tlcs90/ez80_z80/stm8] use this name for the code segment",
+                            "[z80/z180/r2k/r3ka/gbz80/tlcs90/ez80_z80/stm8] use this name for the const segment",
+                            "[z80/z180/r2k/r3ka/gbz80/tlcs90/ez80_z80] use this name for the data segment",
+                            "[z80/z180/r2k/r3ka/gbz80/tlcs90/ez80_z80] For the z80/gbz80 do not link default crt0.rel",
+                            "[z80/z180/r2k/r3ka/tlcs90/ez80_z80] Do not use IY (incompatible with --fomit-frame-pointer)",
+                            "[z80/z180/r2k/r3ka/tlcs90/ez80_z80/hc08/s08] Use old register allocator",
+                            "[z80/z180/r2k/r3ka/tlcs90/ez80_z80] Do not omit frame pointer",
+                            "[z80/z180/r2k/r3ka/tlcs90/ez80_z80] Emit externs list in generated asm",
+                            "[gbz80] use code bank <num>",
+                            "[gbz80] use data bank <num>",
+                            "[ds390/TININative/ds400] use the flat24 model for the ds390 (default)",
+                            "[ds390/TININative/ds400] use the 8bit stack for the ds390 (not supported yet)",
+                            "[ds390/TININative/ds400] use the 10bit stack for ds390 (default)",
+                            "[ds390/TININative/ds400] generate code for ds390 arithmetic accelerator",
+                            "[ds390/TININative/ds400] will disable interrupts during ESP:SP updates",
+                            "[pic16] use stack model 'small' (default) or 'large'",
+                            "[pic16] enable Extended Instruction Set/Literal Offset Addressing mode",
+                            "[pic16] do not generate BANKSEL assembler directives",
+                            "[pic16] set banksel optimization level (default=0 no)",
+                            "[pic16] explicit enable of peepholes",
+                            "[pic16] do NOT use (conditional) BRA instead of GOTO",
+                            "[pic16] try to optimize some compares",
+                            "[pic16] thoroughly analyze data flow (memory and time intensive!)",
+                            "[pic16] enable compatibility mode for MPLAB utilities (MPASM/MPLINK)",
+                            "[pic16] Use alternative linker",
+                            "[pic16] Place udata variables at another section: udata_acs, udata_ovr, udata_shr",
+                            "[pic16] Set address of interrupt vector table.",
+                            "[pic16] do not link default libraries when linking",
+                            "[pic16] use <crt-o> run-time initialization module",
+                            "[pic16] do not link any default run-time initialization module",
+                            "[pic16/pic14] show more debug info in assembly output",
+                            "[pic16] dump register allocator debug file *.d",
+                            "[pic16] dump pcode related info",
+                            "[pic16] dump call tree in .calltree file",
+                            "[pic16] trace stack pointer push/pop to overflow",
+                            "[pic16/pic14] suppress warning on absent --use-non-free option",
+                            "[pic14] disable (slightly faulty) optimization on pCode",
+                            "[pic14] forbid use of the extended instruction set (e.g., ADDFSR)",
+                            "[TININative] LibraryID used in -mTININative",
+                            "[hc08/s08/stm8] Output executable in ELF format"
+                        ]
+                    }
+                },
+                "stack-auto": {
+                    "type": "boolean",
+                    "markdownDescription": "Stack automatic variables",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "use-external-stack": {
+                    "type": "boolean",
+                    "markdownDescription": "Use external stack",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "int-long-reent": {
+                    "type": "boolean",
+                    "markdownDescription": "Use reentrant calls on the int and long support functions",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "float-reent": {
+                    "type": "boolean",
+                    "markdownDescription": "Use reentrant calls on the float support functions",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "xram-movc": {
+                    "type": "boolean",
+                    "markdownDescription": "Use movc instead of movx to read xram (xdata)",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "noinit-xram-from-code": {
+                    "type": "boolean",
+                    "markdownDescription": "don't memcpy initialized xram from code",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "peep-asm": {
+                    "type": "boolean",
+                    "markdownDescription": "Enable peephole optimization on inline assembly",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "peep-return": {
+                    "type": "boolean",
+                    "markdownDescription": "Enable peephole optimization for return instructions",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "optimize-type": {
+                    "type": "string",
+                    "markdownDescription": "优化类型 (optimization type)",
+                    "enum": [
+                        "speed",
+                        "size"
+                    ]
+                },
+                "allow-unsafe-read": {
+                    "type": "boolean",
+                    "markdownDescription": "Allow optimizations to read any memory location anytime",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "no-optimize-std-lib": {
+                    "type": "boolean",
+                    "markdownDescription": "Disable optimization of calls to standard library",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                }
+            }
+        },
+        "c/cpp-compiler": {
+            "markdownDescription": "C 编译器选项",
+            "type": "object",
+            "properties": {
+                "misc-controls": {
+                    "$ref": "#/definitions/misc-controls"
+                },
+                "language-c": {
+                    "markdownDescription": "C 标准",
+                    "type": "string",
+                    "default": "c89",
+                    "enum": [
+                        "c89",
+                        "sdcc89",
+                        "c95",
+                        "c99",
+                        "sdcc99",
+                        "c11",
+                        "sdcc11",
+                        "c2x",
+                        "sdcc2x"
+                    ]
+                }
+            }
+        },
+        "asm-compiler": {
+            "markdownDescription": "汇编器选项 (Assember options)",
+            "type": "object",
+            "properties": {
+                "misc-controls": {
+                    "$ref": "#/definitions/misc-controls"
+                }
+            }
+        },
+        "linker": {
+            "markdownDescription": "链接器选项 (Linker options)",
+            "type": "object",
+            "properties": {
+                "misc-controls": {
+                    "$ref": "#/definitions/misc-controls"
+                },
+                "$mainFileName": {
+                    "markdownDescription": "含有 main() 的源文件名 (Source file name with \"main()\" function)",
+                    "type": "string",
+                    "default": "main"
+                }
+            }
+        }
+    }
+}

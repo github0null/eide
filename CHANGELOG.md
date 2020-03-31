@@ -4,6 +4,12 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.9.0]
+- 新增：GCC for ARM 工具链，使用前需要到`插件设置`设置好工具链安装目录
+- 新增：可选择在编译时要使用的线程数
+- 修复：工作区配置被强制刷新的问题
+***
+
 ### [v1.8.0]
 - 更改：移除内嵌的 JLink 工具，需要自行设置 JLink 安装路径
 - 修复：ARM V6 路径 `\` 导致无法编译的问题
