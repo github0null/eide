@@ -82,3 +82,4 @@ A Keil C51/STM32 **project migration tool** and **IDE** with multiple toolchains
 ## Attention 🚩
   + **Make sure that JLink is installed on your computer before using the ARM burn tool**
   + **Import keil project will be failed if Keil uVision's version is tool low**
+  + **Import process: source files in Keil project structure will be copied to eide project directory, header search path, macro, compile configuration inherited from Keil**

@@ -8,6 +8,8 @@ All notable changes to the "eide" extension will be documented in this file.
 - 新增：GCC for ARM 工具链，使用前需要到`插件设置`设置好工具链安装目录
 - 新增：可选择在编译时要使用的线程数
 - 修复：工作区配置被强制刷新的问题
+- #### [1.9.1]
+    - 更改: 取消复制不必要的头文件
 ***
 
 ### [v1.8.0]
