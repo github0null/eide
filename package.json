@@ -21,7 +21,7 @@
 	"homepage": "https://github.com/github0null/eide/blob/master/README.md",
 	"license": "MIT",
 	"description": "一个 Keil C51/STM32 的项目迁移工具、多工具链的集成开发环境（A Keil C51/STM32 project migration tool and IDE with multiple toolchains）",
-	"version": "1.9.1",
+	"version": "1.9.3",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
@@ -76,6 +76,30 @@
 			{
 				"title": "EIDE",
 				"properties": {
+					"EIDE.Option.CloseErrorSquiggles": {
+						"type": "boolean",
+						"scope": "resource",
+						"description": "Whether close error squiggles",
+						"default": "true"
+					},
+					"EIDE.Option.AutoConvertFile": {
+						"type": "boolean",
+						"scope": "machine",
+						"markdownDescription": "Auto convert source file to `UTF-8` when import a keil project",
+						"default": "false"
+					},
+					"EIDE.Option.UseTaskToBuild": {
+						"type": "boolean",
+						"scope": "machine",
+						"markdownDescription": "Use Task to build project instead of Terminal",
+						"default": false
+					},
+					"EIDE.Template.Repository.Url": {
+						"type": "string",
+						"scope": "machine",
+						"markdownDescription": "remote public github repository url, format: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
+						"default": "github0null/eide-doc/contents/eide-template-list"
+					},
 					"EIDE.SerialPortMonitor.Mode": {
 						"type": "string",
 						"scope": "resource",
@@ -137,24 +161,6 @@
 							"Two",
 							"OnePointFive"
 						]
-					},
-					"EIDE.Option.CloseErrorSquiggles": {
-						"type": "boolean",
-						"scope": "resource",
-						"description": "Whether close error squiggles",
-						"default": "true"
-					},
-					"EIDE.Option.AutoConvertFile": {
-						"type": "boolean",
-						"scope": "machine",
-						"markdownDescription": "Auto convert source file to `UTF-8` when import a keil project",
-						"default": "false"
-					},
-					"EIDE.Template.Repository.Url": {
-						"type": "string",
-						"scope": "machine",
-						"markdownDescription": "remote public github repository url, format: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
-						"default": "github0null/eide-doc/contents/eide-template-list"
 					},
 					"EIDE.ARM.GCC.InstallDirectory": {
 						"type": "string",
@@ -225,14 +231,14 @@
 						"scope": "resource",
 						"markdownDescription": "Macro List for Release Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
 						"default": "",
-						"pattern": "^(?:[a-zA-Z_]\\w*\\s*;\\s*)*$"
+						"pattern": "^(?:[a-zA-Z_][\\w]*(?:=[\\w\\.\\-]+)?;)*$"
 					},
 					"EIDE.ARM.Project.MacroList.Debug": {
 						"type": "string",
 						"scope": "resource",
 						"markdownDescription": "Macro List for Debug Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
 						"default": "DEBUG;",
-						"pattern": "^(?:[a-zA-Z_]\\w*\\s*;\\s*)*$"
+						"pattern": "^(?:[a-zA-Z_][\\w]*(?:=[\\w\\.\\-]+)?;)*$"
 					},
 					"EIDE.C51.INI.Path": {
 						"type": "string",
@@ -245,14 +251,14 @@
 						"scope": "resource",
 						"markdownDescription": "Macro List for Release Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
 						"default": "",
-						"pattern": "^(?:[a-zA-Z_]\\w*\\s*;\\s*)*$"
+						"pattern": "^(?:[a-zA-Z_][\\w]*(?:=[\\w\\.\\-]+)?;)*$"
 					},
 					"EIDE.C51.Project.MacroList.Debug": {
 						"type": "string",
 						"scope": "resource",
 						"markdownDescription": "Macro List for Debug Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
 						"default": "DEBUG;",
-						"pattern": "^(?:[a-zA-Z_]\\w*\\s*;\\s*)*$"
+						"pattern": "^(?:[a-zA-Z_][\\w]*(?:=[\\w\\.\\-]+)?;)*$"
 					},
 					"EIDE.SDCC.InstallDirectory": {
 						"type": "string",
@@ -345,13 +351,17 @@
 				"command": "Project.fastCompile",
 				"title": "Fast compile and output hex file",
 				"icon": {
-					"dark": "./res/icon/CompilableFile_16x.svg",
-					"light": "./res/icon/CompilableFile_16x.svg"
+					"dark": "./res/icon/BuildSelection_16x.svg",
+					"light": "./res/icon/BuildSelection_16x.svg"
 				}
 			},
 			{
+				"command": "Project.showBuildParams",
+				"title": "show compiler command lines"
+			},
+			{
 				"command": "Project.installUtilityPack",
-				"title": "install Utility Library",
+				"title": "install CMSIS Library",
 				"icon": {
 					"dark": "./res/icon/AddBuildQueue_16x.svg",
 					"light": "./res/icon/AddBuildQueue_16x.svg"
@@ -566,6 +576,10 @@
 			{
 				"command": "eide.UndoConvertToUTF8",
 				"title": "Undo convert file to UTF8"
+			},
+			{
+				"command": "eide.c51ToSdcc",
+				"title": "Convert C51 keywords/registers to SDCC format"
 			}
 		],
 		"keybindings": [
@@ -601,6 +615,10 @@
 				},
 				{
 					"command": "eide.UndoConvertToUTF8",
+					"group": "commands"
+				},
+				{
+					"command": "eide.c51ToSdcc",
 					"group": "commands"
 				}
 			],
@@ -701,6 +719,10 @@
 					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
 				},
 				{
+					"command": "Project.showBuildParams",
+					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+				},
+				{
 					"command": "Project.uploadToDevice",
 					"group": "inline",
 					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
@@ -726,7 +748,7 @@
 				{
 					"command": "Project.removeSrcDir",
 					"group": "inline",
-					"when": "viewItem == SRC_GROUP && view == Project"
+					"when": "viewItem == FOLDER_ROOT && view == Project"
 				},
 				{
 					"command": "Project.switchToolchain",
@@ -776,7 +798,7 @@
 				{
 					"command": "Project.copyItemValue",
 					"group": "inline",
-					"when": "viewItem == ITEM || viewItem == DEPENDENCE_ITEM || viewItem == INC_ITEM || viewItem == DEFINE_ITEM || viewItem == LIB_ITEM || viewItem == SOURCE_ITEM && view == Project"
+					"when": "viewItem == FILE_ITEM || viewItem == ITEM || viewItem == DEPENDENCE_ITEM || viewItem == INC_ITEM || viewItem == DEFINE_ITEM || viewItem == LIB_ITEM || viewItem == SOURCE_ITEM && view == Project"
 				},
 				{
 					"command": "Project.importDependenceFromPack",

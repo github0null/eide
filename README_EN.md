@@ -61,6 +61,18 @@ A Keil C51/STM32 **project migration tool** and **IDE** with multiple toolchains
 - Add: GCC for ARM toolchain
 - Add: You can choose the number of threads to use at compile time
 - Fixed：problem with workspace configuration being forced to refresh
+- #### [v1.9.1]
+    - Change: Cancel copying unnecessary header files
+- #### [v1.9.2]
+    - Fixed: When the json configuration of the compile option is misformatted, it is forced to refresh to the default configuration
+    - Change: Multiple macro definitions can be added at once, using ';' delimited
+    - Add: One-key conversion of the C51 keyword, register definition to SDCC required format
+    - Some details have been optimized
+- #### [v1.9.3]
+    - Add: Displays the RAM versus Flash ratio
+    - Change: use tree view to display project file structure
+    - Fixed: Error parameter caused by invalid macro
+    - Fixed: Process deadlock problem
 ***
 
 ### [v1.8.0]
