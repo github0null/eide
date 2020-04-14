@@ -20,8 +20,8 @@
 	],
 	"homepage": "https://github.com/github0null/eide/blob/master/README.md",
 	"license": "MIT",
-	"description": "一个 Keil C51/STM32 的项目迁移工具、多工具链的集成开发环境（A Keil C51/STM32 project migration tool and IDE with multiple toolchains）",
-	"version": "1.9.3",
+	"description": "一个 8051/STM8/STM32 多工具链的集成开发环境、Keil 项目迁移工具 (A 8051/STM8/STM32 IDE with multiple toolchains and a Keil project migration tool)",
+	"version": "1.10.0",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
@@ -179,6 +179,12 @@
 						"scope": "machine",
 						"markdownDescription": "JLink install directory [`example: D:\\JLink`]",
 						"default": "D:\\JLink"
+					},
+					"EIDE.ARM.StlinkExePath": {
+						"type": "string",
+						"scope": "machine",
+						"markdownDescription": "ST-LINK_CLI.exe path",
+						"default": "D:\\STLink\\ST-LINK_CLI.exe"
 					},
 					"EIDE.ARM.UseMulti-ThreadMode": {
 						"type": "boolean",
@@ -448,6 +454,14 @@
 				}
 			},
 			{
+				"command": "Project.switchUploader",
+				"title": "Choose hex/bin flasher",
+				"icon": {
+					"dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
+					"light": "./res/icon/SwitchSourceOrTarget_16x.svg"
+				}
+			},
+			{
 				"command": "Project.modifyUploadConfig",
 				"title": "Modify Configuration",
 				"icon": {
@@ -641,11 +655,6 @@
 			],
 			"view/item/context": [
 				{
-					"command": "Project.openSTCFlashOption",
-					"group": "inline",
-					"when": "viewItem == UPLOAD_OPTION_C51 && view == Project"
-				},
-				{
 					"command": "Project.addPackage",
 					"group": "inline",
 					"when": "viewItem == PACK && view == Project"
@@ -754,6 +763,16 @@
 					"command": "Project.switchToolchain",
 					"group": "inline",
 					"when": "viewItem == COMPILE_CONFIGURATION && view == Project"
+				},
+				{
+					"command": "Project.openSTCFlashOption",
+					"group": "inline",
+					"when": "viewItem == UPLOAD_OPTION_C51 && view == Project"
+				},
+				{
+					"command": "Project.switchUploader",
+					"group": "inline",
+					"when": "viewItem == UPLOAD_OPTION_C51 || viewItem == UPLOAD_OPTION"
 				},
 				{
 					"command": "Project.modifyCompileConfig",

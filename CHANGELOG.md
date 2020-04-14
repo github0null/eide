@@ -4,6 +4,13 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.10.0]
+- 新增: STLink 烧录支持
+- 新增: 相关工具资源的下载
+- 优化: 构建工具的输出
+- 修复: 一些其他问题
+***
+
 ### [v1.9.3]
 - 新增: 显示 RAM 和 Flash 占比
 - 更改: 使用树形视图显示项目文件结构

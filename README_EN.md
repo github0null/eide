@@ -57,6 +57,13 @@ A Keil C51/STM32 **project migration tool** and **IDE** with multiple toolchains
 
 > #### Feedback 👉 [Github Issue](https://github.com/github0null/eide/issues)
 
+### [v1.10.0]
+- New: STLink flash support
+- New: downloads of related tools
+- Optimization: build the output of the tool
+- Fixed: some other problems
+***
+
 ### [v1.9.0]
 - Add: GCC for ARM toolchain
 - Add: You can choose the number of threads to use at compile time
@@ -83,15 +90,8 @@ A Keil C51/STM32 **project migration tool** and **IDE** with multiple toolchains
 - Improved: The plug-in size is greatly reduced
 ***
 
-### [v1.7.0]
-- Change: C51 config move to a json config file
-- Add: Add SDCC Toolchain
-- Fixed: The toolchain installation location has a white space, resulting in an uncompilable problem.
-- Fixed: other problem
-- Improved: merge js script file. Increases plug-in loading speed
-***
-
 ## Attention 🚩
+  + **The multi-objective Keil project is not supported**
   + **Make sure that JLink is installed on your computer before using the ARM burn tool**
   + **Import keil project will be failed if Keil uVision's version is tool low**
   + **Import process: source files in Keil project structure will be copied to eide project directory, header search path, macro, compile configuration inherited from Keil**
