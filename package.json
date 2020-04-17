@@ -21,7 +21,7 @@
 	"homepage": "https://github.com/github0null/eide/blob/master/README.md",
 	"license": "MIT",
 	"description": "一个 8051/STM8/STM32 多工具链的集成开发环境、Keil 项目迁移工具 (A 8051/STM8/STM32 IDE with multiple toolchains and a Keil project migration tool)",
-	"version": "1.10.0",
+	"version": "1.10.1",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
@@ -76,18 +76,6 @@
 			{
 				"title": "EIDE",
 				"properties": {
-					"EIDE.Option.CloseErrorSquiggles": {
-						"type": "boolean",
-						"scope": "resource",
-						"description": "Whether close error squiggles",
-						"default": "true"
-					},
-					"EIDE.Option.AutoConvertFile": {
-						"type": "boolean",
-						"scope": "machine",
-						"markdownDescription": "Auto convert source file to `UTF-8` when import a keil project",
-						"default": "false"
-					},
 					"EIDE.Option.UseTaskToBuild": {
 						"type": "boolean",
 						"scope": "machine",
@@ -185,6 +173,12 @@
 						"scope": "machine",
 						"markdownDescription": "ST-LINK_CLI.exe path",
 						"default": "D:\\STLink\\ST-LINK_CLI.exe"
+					},
+					"EIDE.ARM.STVP.CliExePath": {
+						"type": "string",
+						"scope": "machine",
+						"markdownDescription": "STVP_CmdLine.exe path",
+						"default": "D:\\STVP\\stvp\\STVP_CmdLine.exe"
 					},
 					"EIDE.ARM.UseMulti-ThreadMode": {
 						"type": "boolean",
@@ -303,14 +297,6 @@
 				"icon": {
 					"dark": "./res/icon/ClearWindowContent_16x.svg",
 					"light": "./res/icon/ClearWindowContent_16x.svg"
-				}
-			},
-			{
-				"command": "Project.openSTCFlashOption",
-				"title": "Open STC Flash Option configuration",
-				"icon": {
-					"dark": "./res/icon/ConfigurationFile_16x.svg",
-					"light": "./res/icon/ConfigurationFile_16x.svg"
 				}
 			},
 			{
@@ -438,14 +424,6 @@
 				}
 			},
 			{
-				"command": "Project.modifyCompileOptions",
-				"title": "Modify Compile Options",
-				"icon": {
-					"dark": "./res/icon/Pen4_16x.svg",
-					"light": "./res/icon/Pen4_16x.svg"
-				}
-			},
-			{
 				"command": "Project.switchToolchain",
 				"title": "Choose Toolchain",
 				"icon": {
@@ -539,14 +517,6 @@
 				"icon": {
 					"dark": "./res/icon/TransferDownload_16x.svg",
 					"light": "./res/icon/TransferDownload_16x.svg"
-				}
-			},
-			{
-				"command": "Project.modifyStorageLayout",
-				"title": "modify storage layout",
-				"icon": {
-					"dark": "./res/icon/Pen4_16x.svg",
-					"light": "./res/icon/Pen4_16x.svg"
 				}
 			},
 			{
@@ -765,11 +735,6 @@
 					"when": "viewItem == COMPILE_CONFIGURATION && view == Project"
 				},
 				{
-					"command": "Project.openSTCFlashOption",
-					"group": "inline",
-					"when": "viewItem == UPLOAD_OPTION_C51 && view == Project"
-				},
-				{
 					"command": "Project.switchUploader",
 					"group": "inline",
 					"when": "viewItem == UPLOAD_OPTION_C51 || viewItem == UPLOAD_OPTION"
@@ -778,11 +743,6 @@
 					"command": "Project.modifyCompileConfig",
 					"group": "inline",
 					"when": "viewItem == COMPILE_CONFIGURATION_ITEM && view == Project"
-				},
-				{
-					"command": "Project.modifyCompileOptions",
-					"group": "inline",
-					"when": "viewItem == COMPILE_CONFIGURATION_COMPILE_OPTION_ITEM && view == Project"
 				},
 				{
 					"command": "Project.modifyUploadConfig",
@@ -828,11 +788,6 @@
 					"command": "Project.removeDependenceFromPack",
 					"group": "inline",
 					"when": "viewItem == ACTIVED_GROUP && view == Project"
-				},
-				{
-					"command": "Project.modifyStorageLayout",
-					"group": "inline",
-					"when": "viewItem == COMPILE_CONFIGURATION_STORAGE_LAYOUT_ITEM && view == Project"
 				}
 			]
 		},

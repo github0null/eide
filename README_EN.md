@@ -57,6 +57,14 @@ A Keil C51/STM32 **project migration tool** and **IDE** with multiple toolchains
 
 > #### Feedback 👉 [Github Issue](https://github.com/github0null/eide/issues)
 
+### [v1.10.1]
+- remove: Utf8 conversion options at import time
+- improved: A more complete directory structure is created for the source files when imported
+- improved: Open workspace directly when switching projects
+- improved: Improve the use experience
+- Fixed: STM8 download problem
+***
+
 ### [v1.10.0]
 - New: STLink flash support
 - New: downloads of related tools
@@ -80,14 +88,6 @@ A Keil C51/STM32 **project migration tool** and **IDE** with multiple toolchains
     - Change: use tree view to display project file structure
     - Fixed: Error parameter caused by invalid macro
     - Fixed: Process deadlock problem
-***
-
-### [v1.8.0]
-- Change: remove build-in JLink tool
-- Fixed: The ARM V6 path '\' causes an uncompile problem
-- Fixed: The build tool fast-mode could not open the header file
-- Improved: Increase the number of threads in multiple threads
-- Improved: The plug-in size is greatly reduced
 ***
 
 ## Attention 🚩

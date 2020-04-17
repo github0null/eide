@@ -4,6 +4,15 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.10.1]
+- 移除: 导入时的 utf8 转换选项
+- 优化: 导入时为源文件创建更加完整的目录结构
+- 优化: 切换项目时可直接打开工作区
+- 优化: 提升使用体验
+- 修复: STM8 下载问题
+- 修复: 一些细节问题
+***
+
 ### [v1.10.0]
 - 新增: STLink 烧录支持
 - 新增: 相关工具资源的下载
