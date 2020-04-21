@@ -1,936 +1,967 @@
 {
-	"name": "eide",
-	"displayName": "EIDE",
-	"publisher": "cl",
-	"author": {
-		"name": "cl",
-		"email": "2584456014@qq.com"
-	},
-	"keywords": [
-		"arm",
-		"stm32",
-		"keil",
-		"mdk",
-		"c51",
-		"sdcc",
-		"stm8",
-		"pic",
-		"8051",
-		"eide"
-	],
-	"homepage": "https://github.com/github0null/eide/blob/master/README.md",
-	"license": "MIT",
-	"description": "一个 8051/STM8/STM32 多工具链的集成开发环境、Keil 项目迁移工具 (A 8051/STM8/STM32 IDE with multiple toolchains and a Keil project migration tool)",
-	"version": "1.10.1",
-	"engines": {
-		"vscode": "^1.38.0"
-	},
-	"categories": [
-		"Other",
-		"Programming Languages",
-		"Snippets"
-	],
-	"activationEvents": [
-		"*"
-	],
-	"icon": "res/icon/icon.png",
-	"main": "./dist/extension.js",
-	"readme": "https://github.com/github0null/eide/blob/master/README.md",
-	"bugs": {
-		"url": "https://github.com/github0null/eide/issues",
-		"email": "2584456014@qq.com"
-	},
-	"os": [
-		"win32"
-	],
-	"repository": {
-		"url": "https://github.com/github0null/eide.git",
-		"type": "git"
-	},
-	"scripts": {
-		"vscode:prepublish": "webpack --mode production",
-		"webpack": "webpack --mode development",
-		"compile": "tsc -p ./",
-		"watch": "tsc -watch -p ./",
-		"postinstall": "node ./node_modules/vscode/bin/install",
-		"test": "npm run compile && node ./node_modules/vscode/bin/test"
-	},
-	"devDependencies": {
-		"@types/iconv-lite": "0.0.1",
-		"@types/mocha": "^5.2.7",
-		"@types/node": "^12.12.17",
-		"@types/vscode": "^1.38.0",
-		"@types/x2js": "^3.1.0",
-		"ts-loader": "^6.2.1",
-		"tslint": "^5.20.1",
-		"typescript": "^3.7.3",
-		"webpack": "^4.42.0",
-		"webpack-cli": "^3.3.11"
-	},
-	"dependencies": {
-		"iconv-lite": "^0.5.0",
-		"x2js": "^3.3.1"
-	},
-	"contributes": {
-		"configuration": [
-			{
-				"title": "EIDE",
-				"properties": {
-					"EIDE.Option.UseTaskToBuild": {
-						"type": "boolean",
-						"scope": "machine",
-						"markdownDescription": "Use Task to build project instead of Terminal",
-						"default": false
-					},
-					"EIDE.Template.Repository.Url": {
-						"type": "string",
-						"scope": "machine",
-						"markdownDescription": "remote public github repository url, format: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
-						"default": "github0null/eide-doc/contents/eide-template-list"
-					},
-					"EIDE.SerialPortMonitor.Mode": {
-						"type": "string",
-						"scope": "resource",
-						"markdownDescription": "SerialPort Mode",
-						"default": "Receive Mode",
-						"enum": [
-							"Receive Mode",
-							"Send and Receive Mode"
-						],
-						"enumDescriptions": [
-							"Only monitor serial port's output",
-							"Monitor serial port's output and can send chars to serial port"
-						]
-					},
-					"EIDE.SerialPortMonitor.BaudRate": {
-						"type": "integer",
-						"scope": "resource",
-						"markdownDescription": "SerialPort Baud Rate",
-						"default": "9600"
-					},
-					"EIDE.SerialPortMonitor.DataBits": {
-						"type": "integer",
-						"scope": "resource",
-						"markdownDescription": "SerialPort Data Bits width",
-						"default": "8"
-					},
-					"EIDE.SerialPortMonitor.Parity": {
-						"type": "integer",
-						"scope": "resource",
-						"markdownDescription": "SerialPort Parity bit",
-						"default": "0",
-						"enum": [
-							0,
-							1,
-							2,
-							3,
-							4
-						],
-						"enumDescriptions": [
-							"None",
-							"Odd",
-							"Even",
-							"Mark",
-							"Space"
-						]
-					},
-					"EIDE.SerialPortMonitor.StopBits": {
-						"type": "integer",
-						"scope": "resource",
-						"markdownDescription": "SerialPort Stop Bits",
-						"default": "1",
-						"enum": [
-							1,
-							2,
-							3
-						],
-						"enumDescriptions": [
-							"One",
-							"Two",
-							"OnePointFive"
-						]
-					},
-					"EIDE.ARM.GCC.InstallDirectory": {
-						"type": "string",
-						"scope": "machine",
-						"markdownDescription": "GCC for ARM toolchain install directory [`example: D:\\ARM-GNU-Tool\\8 2019-q3-update`]",
-						"default": "D:\\ARM-GNU-Tool\\8 2019-q3-update"
-					},
-					"EIDE.ARM.INI.Path": {
-						"type": "string",
-						"scope": "machine",
-						"markdownDescription": "Keil ARM MDK `TOOLS.INI` file path [`example: D:\\Demo\\Keil\\TOOLS.INI`]",
-						"default": "unknown"
-					},
-					"EIDE.ARM.JLink.ToolDirectory": {
-						"type": "string",
-						"scope": "machine",
-						"markdownDescription": "JLink install directory [`example: D:\\JLink`]",
-						"default": "D:\\JLink"
-					},
-					"EIDE.ARM.StlinkExePath": {
-						"type": "string",
-						"scope": "machine",
-						"markdownDescription": "ST-LINK_CLI.exe path",
-						"default": "D:\\STLink\\ST-LINK_CLI.exe"
-					},
-					"EIDE.ARM.STVP.CliExePath": {
-						"type": "string",
-						"scope": "machine",
-						"markdownDescription": "STVP_CmdLine.exe path",
-						"default": "D:\\STVP\\stvp\\STVP_CmdLine.exe"
-					},
-					"EIDE.ARM.UseMulti-ThreadMode": {
-						"type": "boolean",
-						"scope": "machine",
-						"markdownDescription": "Use Multi-Thread Mode when compile file",
-						"default": "true"
-					},
-					"EIDE.ARM.ThreadNumber": {
-						"type": "integer",
-						"scope": "resource",
-						"markdownDescription": "The number of threads you want to use",
-						"default": -1,
-						"enum": [
-							-1,
-							2,
-							4,
-							6,
-							8,
-							10,
-							12,
-							14,
-							16,
-							18,
-							20,
-							22,
-							24,
-							26,
-							28,
-							30,
-							32
-						],
-						"enumDescriptions": [
-							"auto (由插件自动选择)"
-						]
-					},
-					"EIDE.ARM.Option.AutoGenerateRTE_Components": {
-						"type": "boolean",
-						"scope": "resource",
-						"description": "Auto Generate RTE_Components.h",
-						"default": "true"
-					},
-					"EIDE.ARM.Option.ConvertAxfFileToElfFile": {
-						"type": "boolean",
-						"scope": "machine",
-						"markdownDescription": "Convert keil `.axf` file to GCC `.elf` file after compile, this is an experimental function",
-						"default": "false"
-					},
-					"EIDE.ARM.Project.MacroList.Release": {
-						"type": "string",
-						"scope": "resource",
-						"markdownDescription": "Macro List for Release Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
-						"default": "",
-						"pattern": "^(?:[a-zA-Z_][\\w]*(?:=[\\w\\.\\-]+)?;)*$"
-					},
-					"EIDE.ARM.Project.MacroList.Debug": {
-						"type": "string",
-						"scope": "resource",
-						"markdownDescription": "Macro List for Debug Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
-						"default": "DEBUG;",
-						"pattern": "^(?:[a-zA-Z_][\\w]*(?:=[\\w\\.\\-]+)?;)*$"
-					},
-					"EIDE.C51.INI.Path": {
-						"type": "string",
-						"scope": "machine",
-						"markdownDescription": "Keil C51 `TOOLS.INI` file path [`example: D:\\Demo\\Keil\\C51\\TOOLS.INI`]",
-						"default": "unknown"
-					},
-					"EIDE.C51.Project.MacroList.Release": {
-						"type": "string",
-						"scope": "resource",
-						"markdownDescription": "Macro List for Release Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
-						"default": "",
-						"pattern": "^(?:[a-zA-Z_][\\w]*(?:=[\\w\\.\\-]+)?;)*$"
-					},
-					"EIDE.C51.Project.MacroList.Debug": {
-						"type": "string",
-						"scope": "resource",
-						"markdownDescription": "Macro List for Debug Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
-						"default": "DEBUG;",
-						"pattern": "^(?:[a-zA-Z_][\\w]*(?:=[\\w\\.\\-]+)?;)*$"
-					},
-					"EIDE.SDCC.InstallDirectory": {
-						"type": "string",
-						"scope": "machine",
-						"markdownDescription": "SDCC install directory [`example: D:\\SDCC`]",
-						"default": "D:\\SDCC"
-					}
-				}
-			}
-		],
-		"viewsContainers": {
-			"activitybar": [
-				{
-					"id": "EIDEView",
-					"title": "EIDE",
-					"icon": "./res/icon/activitybar.svg"
-				}
-			]
-		},
-		"views": {
-			"EIDEView": [
-				{
-					"id": "Operation",
-					"name": "Operation"
-				},
-				{
-					"id": "Project",
-					"name": "Project View"
-				}
-			]
-		},
-		"commands": [
-			{
-				"command": "serialport.clear",
-				"title": "Clear serialport output",
-				"icon": {
-					"dark": "./res/icon/ClearWindowContent_16x.svg",
-					"light": "./res/icon/ClearWindowContent_16x.svg"
-				}
-			},
-			{
-				"command": "Project.refresh",
-				"title": "Refresh",
-				"icon": {
-					"dark": "./res/icon/action-refresh-dark.svg",
-					"light": "./res/icon/action-refresh.svg"
-				}
-			},
-			{
-				"command": "Project.historyRecord",
-				"title": "History record",
-				"icon": {
-					"dark": "./res/icon/Note_16x.svg",
-					"light": "./res/icon/Note_16x.svg"
-				}
-			},
-			{
-				"command": "Project.saveAll",
-				"title": "Save all project",
-				"icon": {
-					"dark": "./res/icon/SaveAll_16x.svg",
-					"light": "./res/icon/SaveAll_16x.svg"
-				}
-			},
-			{
-				"command": "Project.save",
-				"title": "Save this project",
-				"icon": {
-					"dark": "./res/icon/Save_16x.svg",
-					"light": "./res/icon/Save_16x.svg"
-				}
-			},
-			{
-				"command": "Project.compile",
-				"title": "Compile and output hex file",
-				"icon": {
-					"dark": "./res/icon/BuildSolution_16x.svg",
-					"light": "./res/icon/BuildSolution_16x.svg"
-				}
-			},
-			{
-				"command": "Project.fastCompile",
-				"title": "Fast compile and output hex file",
-				"icon": {
-					"dark": "./res/icon/BuildSelection_16x.svg",
-					"light": "./res/icon/BuildSelection_16x.svg"
-				}
-			},
-			{
-				"command": "Project.showBuildParams",
-				"title": "show compiler command lines"
-			},
-			{
-				"command": "Project.installUtilityPack",
-				"title": "install CMSIS Library",
-				"icon": {
-					"dark": "./res/icon/AddBuildQueue_16x.svg",
-					"light": "./res/icon/AddBuildQueue_16x.svg"
-				}
-			},
-			{
-				"command": "Project.addSrcDir",
-				"title": "Add a src root dir to project",
-				"icon": {
-					"dark": "./res/icon/Add_16xMD.svg",
-					"light": "./res/icon/Add_16xMD.svg"
-				}
-			},
-			{
-				"command": "Project.removeSrcDir",
-				"title": "Remove this src root dir from project",
-				"icon": {
-					"dark": "./res/icon/TestCoveredFailing_16x.svg",
-					"light": "./res/icon/TestCoveredFailing_16x.svg"
-				}
-			},
-			{
-				"command": "Project.close",
-				"title": "Close project",
-				"icon": {
-					"dark": "./res/icon/TestCoveredFailing_16x.svg",
-					"light": "./res/icon/TestCoveredFailing_16x.svg"
-				}
-			},
-			{
-				"command": "Project.addPackage",
-				"title": "Install Keil Package",
-				"icon": {
-					"dark": "./res/icon/Add_16xMD.svg",
-					"light": "./res/icon/Add_16xMD.svg"
-				}
-			},
-			{
-				"command": "Project.removePackage",
-				"title": "Uninstall this Keil Package",
-				"icon": {
-					"dark": "./res/icon/TestCoveredFailing_16x.svg",
-					"light": "./res/icon/TestCoveredFailing_16x.svg"
-				}
-			},
-			{
-				"command": "Project.setDevice",
-				"title": "Set a Device From Package",
-				"icon": {
-					"dark": "./res/icon/FieldAdded_16x.svg",
-					"light": "./res/icon/FieldAdded_16x.svg"
-				}
-			},
-			{
-				"command": "Project.exportXml",
-				"title": "Export Keil Project XML (.uvprojx or .uvproj)",
-				"icon": {
-					"dark": "./res/icon/ExportFile_16x.svg",
-					"light": "./res/icon/ExportFile_16x.svg"
-				}
-			},
-			{
-				"command": "Project.modifyCompileConfig",
-				"title": "Modify Configuration",
-				"icon": {
-					"dark": "./res/icon/Pen4_16x.svg",
-					"light": "./res/icon/Pen4_16x.svg"
-				}
-			},
-			{
-				"command": "Project.switchToolchain",
-				"title": "Choose Toolchain",
-				"icon": {
-					"dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
-					"light": "./res/icon/SwitchSourceOrTarget_16x.svg"
-				}
-			},
-			{
-				"command": "Project.switchUploader",
-				"title": "Choose hex/bin flasher",
-				"icon": {
-					"dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
-					"light": "./res/icon/SwitchSourceOrTarget_16x.svg"
-				}
-			},
-			{
-				"command": "Project.modifyUploadConfig",
-				"title": "Modify Configuration",
-				"icon": {
-					"dark": "./res/icon/Pen4_16x.svg",
-					"light": "./res/icon/Pen4_16x.svg"
-				}
-			},
-			{
-				"command": "Project.addIncludeDir",
-				"title": "Add include dirs to project",
-				"icon": {
-					"dark": "./res/icon/Add_16xMD.svg",
-					"light": "./res/icon/Add_16xMD.svg"
-				}
-			},
-			{
-				"command": "Project.addDefine",
-				"title": "Add a define to project",
-				"icon": {
-					"dark": "./res/icon/Add_16xMD.svg",
-					"light": "./res/icon/Add_16xMD.svg"
-				}
-			},
-			{
-				"command": "Project.addLibDir",
-				"title": "Add library dirs to project",
-				"icon": {
-					"dark": "./res/icon/Add_16xMD.svg",
-					"light": "./res/icon/Add_16xMD.svg"
-				}
-			},
-			{
-				"command": "Project.addSourceDir",
-				"title": "Add a source dir to project",
-				"icon": {
-					"dark": "./res/icon/Add_16xMD.svg",
-					"light": "./res/icon/Add_16xMD.svg"
-				}
-			},
-			{
-				"command": "Project.addLib",
-				"title": "Add libs to project",
-				"icon": {
-					"dark": "./res/icon/Library_16x.svg",
-					"light": "./res/icon/Library_16x.svg"
-				}
-			},
-			{
-				"command": "Project.removeDependenceItem",
-				"title": "Remove this item",
-				"icon": {
-					"dark": "./res/icon/TestCoveredFailing_16x.svg",
-					"light": "./res/icon/TestCoveredFailing_16x.svg"
-				}
-			},
-			{
-				"command": "Project.importDependenceFromPack",
-				"title": "Import this dependence to project",
-				"icon": {
-					"dark": "./res/icon/AddDependencyGraph_16x.svg",
-					"light": "./res/icon/AddDependencyGraph_16x.svg"
-				}
-			},
-			{
-				"command": "Project.removeDependenceFromPack",
-				"title": "Remove this dependence from project",
-				"icon": {
-					"dark": "./res/icon/TestCoveredFailing_16x.svg",
-					"light": "./res/icon/TestCoveredFailing_16x.svg"
-				}
-			},
-			{
-				"command": "Project.uploadToDevice",
-				"title": "upload bin file to device",
-				"icon": {
-					"dark": "./res/icon/TransferDownload_16x.svg",
-					"light": "./res/icon/TransferDownload_16x.svg"
-				}
-			},
-			{
-				"command": "Project.copyItemValue",
-				"title": "copy the item value",
-				"icon": {
-					"dark": "./res/icon/CopyToClipboard_16x.svg",
-					"light": "./res/icon/CopyToClipboard_16x.svg"
-				}
-			},
-			{
-				"command": "Project.switchMode",
-				"title": "switch release/debug mode",
-				"icon": {
-					"dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
-					"light": "./res/icon/SwitchSourceOrTarget_16x.svg"
-				}
-			},
-			{
-				"command": "Project.exportAsTemplate",
-				"title": "Export this project as a template",
-				"icon": {
-					"dark": "./res/icon/TableToFile_16x.svg",
-					"light": "./res/icon/TableToFile_16x.svg"
-				}
-			},
-			{
-				"command": "eide.ShowUUID",
-				"category": "eide",
-				"title": "Show UUID"
-			},
-			{
-				"command": "eide.uploadLog",
-				"category": "eide",
-				"title": "Upload log to remote server"
-			},
-			{
-				"command": "eide.ConvertToUTF8",
-				"title": "Convert file to UTF8 (has backup)"
-			},
-			{
-				"command": "eide.UndoConvertToUTF8",
-				"title": "Undo convert file to UTF8"
-			},
-			{
-				"command": "eide.c51ToSdcc",
-				"title": "Convert C51 keywords/registers to SDCC format"
-			}
-		],
-		"keybindings": [
-			{
-				"command": "Project.compile",
-				"key": "f6"
-			},
-			{
-				"command": "Project.uploadToDevice",
-				"key": "f7"
-			},
-			{
-				"command": "eide.uploadLog",
-				"key": "ctrl+f1"
-			},
-			{
-				"command": "Project.fastCompile",
-				"key": "f9"
-			}
-		],
-		"menus": {
-			"editor/title": [
-				{
-					"command": "serialport.clear",
-					"group": "navigation",
-					"when": "resourceScheme == eide"
-				}
-			],
-			"editor/context": [
-				{
-					"command": "eide.ConvertToUTF8",
-					"group": "commands"
-				},
-				{
-					"command": "eide.UndoConvertToUTF8",
-					"group": "commands"
-				},
-				{
-					"command": "eide.c51ToSdcc",
-					"group": "commands"
-				}
-			],
-			"view/title": [
-				{
-					"command": "Project.refresh",
-					"group": "navigation",
-					"when": "view == Project"
-				},
-				{
-					"command": "Project.historyRecord",
-					"group": "navigation",
-					"when": "view == Project"
-				},
-				{
-					"command": "Project.saveAll",
-					"group": "navigation",
-					"when": "view == Project"
-				}
-			],
-			"view/item/context": [
-				{
-					"command": "Project.addPackage",
-					"group": "inline",
-					"when": "viewItem == PACK && view == Project"
-				},
-				{
-					"command": "Project.removePackage",
-					"group": "inline",
-					"when": "viewItem == PACK_GROUP && view == Project"
-				},
-				{
-					"command": "Project.setDevice",
-					"group": "inline",
-					"when": "viewItem == PACK_GROUP && view == Project"
-				},
-				{
-					"command": "Project.installUtilityPack",
-					"when": "viewItem == DEPENDENCE && view == Project"
-				},
-				{
-					"command": "Project.installUtilityPack",
-					"group": "inline",
-					"when": "viewItem == DEPENDENCE && view == Project"
-				},
-				{
-					"command": "Project.save",
-					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
-				},
-				{
-					"command": "Project.switchMode",
-					"when": "viewItem == SOLUTION && view == Project"
-				},
-				{
-					"command": "Project.switchMode",
-					"group": "inline",
-					"when": "viewItem == SOLUTION && view == Project"
-				},
-				{
-					"command": "Project.exportAsTemplate",
-					"when": "viewItem == SOLUTION && view == Project"
-				},
-				{
-					"command": "Project.exportAsTemplate",
-					"group": "inline",
-					"when": "viewItem == SOLUTION && view == Project"
-				},
-				{
-					"command": "Project.exportXml",
-					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
-				},
-				{
-					"command": "Project.exportXml",
-					"group": "inline",
-					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
-				},
-				{
-					"command": "Project.compile",
-					"group": "inline",
-					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
-				},
-				{
-					"command": "Project.compile",
-					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
-				},
-				{
-					"command": "Project.fastCompile",
-					"group": "inline",
-					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
-				},
-				{
-					"command": "Project.fastCompile",
-					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
-				},
-				{
-					"command": "Project.showBuildParams",
-					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
-				},
-				{
-					"command": "Project.uploadToDevice",
-					"group": "inline",
-					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
-				},
-				{
-					"command": "Project.uploadToDevice",
-					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
-				},
-				{
-					"command": "Project.close",
-					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
-				},
-				{
-					"command": "Project.addSrcDir",
-					"group": "inline",
-					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
-				},
-				{
-					"command": "Project.addLib",
-					"group": "inline",
-					"when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
-				},
-				{
-					"command": "Project.removeSrcDir",
-					"group": "inline",
-					"when": "viewItem == FOLDER_ROOT && view == Project"
-				},
-				{
-					"command": "Project.switchToolchain",
-					"group": "inline",
-					"when": "viewItem == COMPILE_CONFIGURATION && view == Project"
-				},
-				{
-					"command": "Project.switchUploader",
-					"group": "inline",
-					"when": "viewItem == UPLOAD_OPTION_C51 || viewItem == UPLOAD_OPTION"
-				},
-				{
-					"command": "Project.modifyCompileConfig",
-					"group": "inline",
-					"when": "viewItem == COMPILE_CONFIGURATION_ITEM && view == Project"
-				},
-				{
-					"command": "Project.modifyUploadConfig",
-					"group": "inline",
-					"when": "viewItem == UPLOAD_OPTION_ITEM && view == Project"
-				},
-				{
-					"command": "Project.addIncludeDir",
-					"group": "inline",
-					"when": "viewItem == INC_GROUP && view == Project"
-				},
-				{
-					"command": "Project.addDefine",
-					"group": "inline",
-					"when": "viewItem == DEFINE_GROUP && view == Project"
-				},
-				{
-					"command": "Project.addLibDir",
-					"group": "inline",
-					"when": "viewItem == LIB_GROUP && view == Project"
-				},
-				{
-					"command": "Project.addSourceDir",
-					"group": "inline",
-					"when": "viewItem == SOURCE_GROUP && view == Project"
-				},
-				{
-					"command": "Project.removeDependenceItem",
-					"group": "inline",
-					"when": "viewItem == INC_ITEM || viewItem == DEFINE_ITEM || viewItem == LIB_ITEM || viewItem == SOURCE_ITEM && view == Project"
-				},
-				{
-					"command": "Project.copyItemValue",
-					"group": "inline",
-					"when": "viewItem == FILE_ITEM || viewItem == ITEM || viewItem == DEPENDENCE_ITEM || viewItem == INC_ITEM || viewItem == DEFINE_ITEM || viewItem == LIB_ITEM || viewItem == SOURCE_ITEM && view == Project"
-				},
-				{
-					"command": "Project.importDependenceFromPack",
-					"group": "inline",
-					"when": "viewItem == COMPONENT_GROUP && view == Project"
-				},
-				{
-					"command": "Project.removeDependenceFromPack",
-					"group": "inline",
-					"when": "viewItem == ACTIVED_GROUP && view == Project"
-				}
-			]
-		},
-		"snippets": [
-			{
-				"language": "c",
-				"path": "./lang/c51.snippets.json"
-			},
-			{
-				"language": "a51",
-				"path": "./lang/a51.snippets.json"
-			}
-		],
-		"languages": [
-			{
-				"id": "eide-output",
-				"mimetypes": [
-					"text/x-code-output"
-				]
-			},
-			{
-				"id": "a51",
-				"aliases": [
-					"A51",
-					"8051 Assembly"
-				],
-				"extensions": [
-					".a51",
-					".A51"
-				],
-				"filenamePatterns": [
-					"**/*.a51",
-					"**/*.A51"
-				],
-				"configuration": "./lang/a51.language-configuration.json"
-			},
-			{
-				"id": "c",
-				"aliases": [
-					"C51"
-				],
-				"extensions": [
-					".c",
-					".h"
-				],
-				"filenamePatterns": [
-					"**/*.c",
-					"**/*.h"
-				],
-				"configuration": "./lang/c51.language-configuration.json"
-			}
-		],
-		"jsonValidation": [
-			{
-				"fileMatch": "**/*.flash.json",
-				"url": "./lang/stc.flash.verify.json"
-			},
-			{
-				"fileMatch": "**/*.keil.json",
-				"url": "./lang/8051.keil.verify.json"
-			},
-			{
-				"fileMatch": "**/*.sdcc.json",
-				"url": "./lang/sdcc.verify.json"
-			},
-			{
-				"fileMatch": "**/*.v5.json",
-				"url": "./lang/arm.v5.verify.json"
-			},
-			{
-				"fileMatch": "**/*.v6.json",
-				"url": "./lang/arm.v6.verify.json"
-			},
-			{
-				"fileMatch": "**/*.gcc.json",
-				"url": "./lang/arm.gcc.verify.json"
-			}
-		],
-		"grammars": [
-			{
-				"language": "c",
-				"scopeName": "source.c.c51",
-				"path": "./lang/c51.tmLanguage.json"
-			},
-			{
-				"language": "eide-output",
-				"scopeName": "eide.output",
-				"path": "./lang/eide-output.tmLanguage.json"
-			},
-			{
-				"language": "a51",
-				"scopeName": "source.asm.a51",
-				"path": "./lang/a51.tmLanguage.json"
-			}
-		],
-		"taskDefinitions": [
-			{
-				"type": "eide-task"
-			}
-		],
-		"problemMatchers": [
-			{
-				"name": "c51",
-				"fileLocation": "autoDetect",
-				"pattern": [
-					{
-						"regexp": "^\\*\\*\\* (ERROR|WARNING) (\\w+) IN LINE (\\d+) OF (.+): (.+)$",
-						"severity": 1,
-						"code": 2,
-						"line": 3,
-						"file": 4,
-						"message": 5
-					}
-				]
-			},
-			{
-				"name": "armclang",
-				"fileLocation": "autoDetect",
-				"pattern": [
-					{
-						"regexp": "^(.+):(\\d+):(\\d+): (error|warning): (.+)$",
-						"file": 1,
-						"line": 2,
-						"column": 3,
-						"severity": 4,
-						"message": 5
-					}
-				]
-			},
-			{
-				"name": "armcc",
-				"fileLocation": "autoDetect",
-				"pattern": [
-					{
-						"regexp": "^\"*([^\"]+)\"*, line (\\d+): (Error|Warning):\\s*(.+): (.+)$",
-						"file": 1,
-						"line": 2,
-						"severity": 3,
-						"code": 4,
-						"message": 5
-					}
-				]
-			}
-		]
-	}
+    "name": "eide",
+    "displayName": "EIDE",
+    "publisher": "cl",
+    "author": {
+        "name": "cl",
+        "email": "2584456014@qq.com"
+    },
+    "keywords": [
+        "arm",
+        "stm32",
+        "keil",
+        "mdk",
+        "c51",
+        "sdcc",
+        "stm8",
+        "8051",
+        "eide"
+    ],
+    "homepage": "https://github.com/github0null/eide/blob/master/README.md",
+    "license": "MIT",
+    "description": "一个 8051/STM8/ARM 多工具链的集成开发环境、Keil 项目迁移工具 (A 8051/STM8/ARM IDE with multiple toolchains and a Keil project migration tool)",
+    "version": "1.11.0",
+    "engines": {
+        "vscode": "^1.38.0"
+    },
+    "categories": [
+        "Other",
+        "Programming Languages",
+        "Snippets"
+    ],
+    "activationEvents": [
+        "*"
+    ],
+    "icon": "res/icon/icon.png",
+    "main": "./dist/extension.js",
+    "readme": "https://github.com/github0null/eide/blob/master/README.md",
+    "bugs": {
+        "url": "https://github.com/github0null/eide/issues",
+        "email": "2584456014@qq.com"
+    },
+    "os": [
+        "win32"
+    ],
+    "repository": {
+        "url": "https://github.com/github0null/eide.git",
+        "type": "git"
+    },
+    "scripts": {
+        "vscode:prepublish": "webpack --mode production",
+        "webpack": "webpack --mode development",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "postinstall": "node ./node_modules/vscode/bin/install",
+        "test": "npm run compile && node ./node_modules/vscode/bin/test"
+    },
+    "devDependencies": {
+        "@types/iconv-lite": "0.0.1",
+        "@types/mocha": "^5.2.7",
+        "@types/node": "^12.12.17",
+        "@types/vscode": "^1.38.0",
+        "@types/x2js": "^3.1.0",
+        "ts-loader": "^6.2.1",
+        "tslint": "^5.20.1",
+        "typescript": "^3.7.3",
+        "webpack": "^4.42.0",
+        "webpack-cli": "^3.3.11"
+    },
+    "dependencies": {
+        "iconv-lite": "^0.5.0",
+        "x2js": "^3.3.1"
+    },
+    "contributes": {
+        "configuration": [
+            {
+                "title": "EIDE",
+                "properties": {
+                    "EIDE.Option.UseTaskToBuild": {
+                        "type": "boolean",
+                        "scope": "machine",
+                        "markdownDescription": "Use Task to build project instead of Terminal",
+                        "default": false
+                    },
+                    "EIDE.Template.Repository.Url": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "remote public github repository url, format: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
+                        "default": "github0null/eide-doc/contents/eide-template-list"
+                    },
+                    "EIDE.SerialPortMonitor.Mode": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "SerialPort Mode",
+                        "default": "Receive Mode",
+                        "enum": [
+                            "Receive Mode",
+                            "Send and Receive Mode"
+                        ],
+                        "enumDescriptions": [
+                            "Only monitor serial port's output",
+                            "Monitor serial port's output and can send chars to serial port"
+                        ]
+                    },
+                    "EIDE.SerialPortMonitor.BaudRate": {
+                        "type": "integer",
+                        "scope": "resource",
+                        "markdownDescription": "SerialPort Baud Rate",
+                        "default": "9600"
+                    },
+                    "EIDE.SerialPortMonitor.DataBits": {
+                        "type": "integer",
+                        "scope": "resource",
+                        "markdownDescription": "SerialPort Data Bits width",
+                        "default": "8"
+                    },
+                    "EIDE.SerialPortMonitor.Parity": {
+                        "type": "integer",
+                        "scope": "resource",
+                        "markdownDescription": "SerialPort Parity bit",
+                        "default": "0",
+                        "enum": [
+                            0,
+                            1,
+                            2,
+                            3,
+                            4
+                        ],
+                        "enumDescriptions": [
+                            "None",
+                            "Odd",
+                            "Even",
+                            "Mark",
+                            "Space"
+                        ]
+                    },
+                    "EIDE.SerialPortMonitor.StopBits": {
+                        "type": "integer",
+                        "scope": "resource",
+                        "markdownDescription": "SerialPort Stop Bits",
+                        "default": "1",
+                        "enum": [
+                            1,
+                            2,
+                            3
+                        ],
+                        "enumDescriptions": [
+                            "One",
+                            "Two",
+                            "OnePointFive"
+                        ]
+                    },
+                    "EIDE.ARM.GCC.Prefix": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "GCC tool prefix [`example: arm-none-eabi-`]",
+                        "default": "arm-none-eabi-"
+                    },
+                    "EIDE.ARM.GCC.InstallDirectory": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "GCC for ARM toolchain install directory [`example: D:\\ARM-GNU-Tool\\8 2019-q3-update`]",
+                        "default": "D:\\ARM-GCC\\8 2019-q3-update"
+                    },
+                    "EIDE.ARM.INI.Path": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "Keil ARM MDK `TOOLS.INI` file path [`example: D:\\Demo\\Keil\\TOOLS.INI`]",
+                        "default": "unknown"
+                    },
+                    "EIDE.ARM.JLink.ToolDirectory": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "JLink install directory [`example: D:\\JLink`]",
+                        "default": "D:\\JLink"
+                    },
+                    "EIDE.ARM.StlinkExePath": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "ST-LINK_CLI.exe path",
+                        "default": "D:\\STLink\\ST-LINK_CLI.exe"
+                    },
+                    "EIDE.ARM.STVP.CliExePath": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "STVP_CmdLine.exe path",
+                        "default": "D:\\STVP\\stvp\\STVP_CmdLine.exe"
+                    },
+                    "EIDE.ARM.UseMulti-ThreadMode": {
+                        "type": "boolean",
+                        "scope": "machine",
+                        "markdownDescription": "Use Multi-Thread Mode when compile file",
+                        "default": true
+                    },
+                    "EIDE.ARM.ThreadNumber": {
+                        "type": "integer",
+                        "scope": "resource",
+                        "markdownDescription": "The number of threads you want to use",
+                        "default": -1,
+                        "enum": [
+                            -1,
+                            2,
+                            4,
+                            6,
+                            8,
+                            10,
+                            12,
+                            14,
+                            16,
+                            18,
+                            20,
+                            22,
+                            24,
+                            26,
+                            28,
+                            30,
+                            32
+                        ],
+                        "enumDescriptions": [
+                            "auto (由插件自动选择)"
+                        ]
+                    },
+                    "EIDE.ARM.Option.AutoGenerateRTE_Components": {
+                        "type": "boolean",
+                        "scope": "resource",
+                        "description": "Auto Generate RTE_Components.h",
+                        "default": true
+                    },
+                    "EIDE.ARM.Option.ConvertAxfFileToElfFile": {
+                        "type": "boolean",
+                        "scope": "machine",
+                        "markdownDescription": "Convert keil `.axf` file to GCC `.elf` file after compile, this is an experimental function",
+                        "default": false
+                    },
+                    "EIDE.ARM.Project.MacroList.Release": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "Macro List for Release Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
+                        "default": "",
+                        "pattern": "^(?:[a-zA-Z_][\\w]*(?:=[\\w\\.\\-]+)?;)*$"
+                    },
+                    "EIDE.ARM.Project.MacroList.Debug": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "Macro List for Debug Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
+                        "default": "DEBUG;",
+                        "pattern": "^(?:[a-zA-Z_][\\w]*(?:=[\\w\\.\\-]+)?;)*$"
+                    },
+                    "EIDE.C51.INI.Path": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "Keil C51 `TOOLS.INI` file path [`example: D:\\Demo\\Keil\\C51\\TOOLS.INI`]",
+                        "default": "unknown"
+                    },
+                    "EIDE.C51.Project.MacroList.Release": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "Macro List for Release Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
+                        "default": "",
+                        "pattern": "^(?:[a-zA-Z_][\\w]*(?:=[\\w\\.\\-]+)?;)*$"
+                    },
+                    "EIDE.C51.Project.MacroList.Debug": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "Macro List for Debug Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
+                        "default": "DEBUG;",
+                        "pattern": "^(?:[a-zA-Z_][\\w]*(?:=[\\w\\.\\-]+)?;)*$"
+                    },
+                    "EIDE.SDCC.InstallDirectory": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "SDCC install directory [`example: D:\\SDCC`]",
+                        "default": "D:\\SDCC"
+                    }
+                }
+            }
+        ],
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "EIDEView",
+                    "title": "EIDE",
+                    "icon": "./res/icon/activitybar.svg"
+                }
+            ]
+        },
+        "views": {
+            "EIDEView": [
+                {
+                    "id": "Operation",
+                    "name": "Operation"
+                },
+                {
+                    "id": "Project",
+                    "name": "Project View"
+                }
+            ]
+        },
+        "commands": [
+            {
+                "command": "serialport.clear",
+                "title": "Clear serialport output",
+                "icon": {
+                    "dark": "./res/icon/action-clear-dark.svg",
+                    "light": "./res/icon/action-clear.svg"
+                }
+            },
+            {
+                "command": "Project.refresh",
+                "title": "Refresh",
+                "icon": {
+                    "dark": "./res/icon/action-refresh-dark.svg",
+                    "light": "./res/icon/action-refresh.svg"
+                }
+            },
+            {
+                "command": "Project.historyRecord",
+                "title": "History record",
+                "icon": {
+                    "dark": "./res/icon/Note_16x.svg",
+                    "light": "./res/icon/Note_16x.svg"
+                }
+            },
+            {
+                "command": "Project.saveAll",
+                "title": "Save all project",
+                "icon": {
+                    "dark": "./res/icon/SaveAll_16x.svg",
+                    "light": "./res/icon/SaveAll_16x.svg"
+                }
+            },
+            {
+                "command": "Project.save",
+                "title": "Save this project",
+                "icon": {
+                    "dark": "./res/icon/Save_16x.svg",
+                    "light": "./res/icon/Save_16x.svg"
+                }
+            },
+            {
+                "command": "Project.compile",
+                "title": "Compile and output hex file",
+                "icon": {
+                    "dark": "./res/icon/BuildSolution_16x.svg",
+                    "light": "./res/icon/BuildSolution_16x.svg"
+                }
+            },
+            {
+                "command": "Project.fastCompile",
+                "title": "Fast compile and output hex file",
+                "icon": {
+                    "dark": "./res/icon/BuildSelection_16x.svg",
+                    "light": "./res/icon/BuildSelection_16x.svg"
+                }
+            },
+            {
+                "command": "Project.showBuildParams",
+                "title": "show compiler command lines"
+            },
+            {
+                "command": "Project.installCMSISPack",
+                "title": "install CMSIS Library",
+                "icon": {
+                    "dark": "./res/icon/AddBuildQueue_16x.svg",
+                    "light": "./res/icon/AddBuildQueue_16x.svg"
+                }
+            },
+            {
+                "command": "Project.addSrcDir",
+                "title": "Add a src root dir to project",
+                "icon": {
+                    "dark": "./res/icon/Add_16xMD.svg",
+                    "light": "./res/icon/Add_16xMD.svg"
+                }
+            },
+            {
+                "command": "Project.removeSrcDir",
+                "title": "Remove this src root dir from project",
+                "icon": {
+                    "dark": "./res/icon/TestCoveredFailing_16x.svg",
+                    "light": "./res/icon/TestCoveredFailing_16x.svg"
+                }
+            },
+            {
+                "command": "Project.close",
+                "title": "Close project",
+                "icon": {
+                    "dark": "./res/icon/TestCoveredFailing_16x.svg",
+                    "light": "./res/icon/TestCoveredFailing_16x.svg"
+                }
+            },
+            {
+                "command": "Project.addPackage",
+                "title": "Install Keil Package",
+                "icon": {
+                    "dark": "./res/icon/Add_16xMD.svg",
+                    "light": "./res/icon/Add_16xMD.svg"
+                }
+            },
+            {
+                "command": "Project.removePackage",
+                "title": "Uninstall this Keil Package",
+                "icon": {
+                    "dark": "./res/icon/TestCoveredFailing_16x.svg",
+                    "light": "./res/icon/TestCoveredFailing_16x.svg"
+                }
+            },
+            {
+                "command": "Project.setDevice",
+                "title": "Set a Device From Package",
+                "icon": {
+                    "dark": "./res/icon/FieldAdded_16x.svg",
+                    "light": "./res/icon/FieldAdded_16x.svg"
+                }
+            },
+            {
+                "command": "Project.exportXml",
+                "title": "Export Keil Project XML (.uvprojx or .uvproj)",
+                "icon": {
+                    "dark": "./res/icon/ExportFile_16x.svg",
+                    "light": "./res/icon/ExportFile_16x.svg"
+                }
+            },
+            {
+                "command": "Project.modifyCompileConfig",
+                "title": "Modify Configuration",
+                "icon": {
+                    "dark": "./res/icon/Pen4_16x.svg",
+                    "light": "./res/icon/Pen4_16x.svg"
+                }
+            },
+            {
+                "command": "Project.switchToolchain",
+                "title": "Choose Toolchain",
+                "icon": {
+                    "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
+                    "light": "./res/icon/SwitchSourceOrTarget_16x.svg"
+                }
+            },
+            {
+                "command": "Project.switchUploader",
+                "title": "Choose hex/bin flasher",
+                "icon": {
+                    "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
+                    "light": "./res/icon/SwitchSourceOrTarget_16x.svg"
+                }
+            },
+            {
+                "command": "Project.modifyUploadConfig",
+                "title": "Modify Configuration",
+                "icon": {
+                    "dark": "./res/icon/Pen4_16x.svg",
+                    "light": "./res/icon/Pen4_16x.svg"
+                }
+            },
+            {
+                "command": "Project.addIncludeDir",
+                "title": "Add include dirs to project",
+                "icon": {
+                    "dark": "./res/icon/Add_16xMD.svg",
+                    "light": "./res/icon/Add_16xMD.svg"
+                }
+            },
+            {
+                "command": "Project.addDefine",
+                "title": "Add a define to project",
+                "icon": {
+                    "dark": "./res/icon/Add_16xMD.svg",
+                    "light": "./res/icon/Add_16xMD.svg"
+                }
+            },
+            {
+                "command": "Project.addLibDir",
+                "title": "Add library dirs to project",
+                "icon": {
+                    "dark": "./res/icon/Add_16xMD.svg",
+                    "light": "./res/icon/Add_16xMD.svg"
+                }
+            },
+            {
+                "command": "Project.addSourceDir",
+                "title": "Add a source dir to project",
+                "icon": {
+                    "dark": "./res/icon/Add_16xMD.svg",
+                    "light": "./res/icon/Add_16xMD.svg"
+                }
+            },
+            {
+                "command": "Project.addLib",
+                "title": "Add libs to project",
+                "icon": {
+                    "dark": "./res/icon/Library_16x.svg",
+                    "light": "./res/icon/Library_16x.svg"
+                }
+            },
+            {
+                "command": "Project.excludeSource",
+                "title": "Exclude this source file",
+                "icon": {
+                    "dark": "./res/icon/StatusNo_16x.svg",
+                    "light": "./res/icon/StatusNo_16x.svg"
+                }
+            },
+            {
+                "command": "Project.unexcludeSource",
+                "title": "Include this source file",
+                "icon": {
+                    "dark": "./res/icon/Add_16xMD.svg",
+                    "light": "./res/icon/Add_16xMD.svg"
+                }
+            },
+            {
+                "command": "Project.removeDependenceItem",
+                "title": "Remove this item",
+                "icon": {
+                    "dark": "./res/icon/TestCoveredFailing_16x.svg",
+                    "light": "./res/icon/TestCoveredFailing_16x.svg"
+                }
+            },
+            {
+                "command": "Project.importDependenceFromPack",
+                "title": "Import this dependence to project",
+                "icon": {
+                    "dark": "./res/icon/AddDependencyGraph_16x.svg",
+                    "light": "./res/icon/AddDependencyGraph_16x.svg"
+                }
+            },
+            {
+                "command": "Project.removeDependenceFromPack",
+                "title": "Remove this dependence from project",
+                "icon": {
+                    "dark": "./res/icon/TestCoveredFailing_16x.svg",
+                    "light": "./res/icon/TestCoveredFailing_16x.svg"
+                }
+            },
+            {
+                "command": "Project.uploadToDevice",
+                "title": "upload bin file to device",
+                "icon": {
+                    "dark": "./res/icon/TransferDownload_16x.svg",
+                    "light": "./res/icon/TransferDownload_16x.svg"
+                }
+            },
+            {
+                "command": "Project.copyItemValue",
+                "title": "copy the item value",
+                "icon": {
+                    "dark": "./res/icon/CopyToClipboard_16x.svg",
+                    "light": "./res/icon/CopyToClipboard_16x.svg"
+                }
+            },
+            {
+                "command": "Project.switchMode",
+                "title": "switch release/debug mode",
+                "icon": {
+                    "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
+                    "light": "./res/icon/SwitchSourceOrTarget_16x.svg"
+                }
+            },
+            {
+                "command": "Project.exportAsTemplate",
+                "title": "Export this project as a template",
+                "icon": {
+                    "dark": "./res/icon/TableToFile_16x.svg",
+                    "light": "./res/icon/TableToFile_16x.svg"
+                }
+            },
+            {
+                "command": "eide.ShowUUID",
+                "category": "eide",
+                "title": "Show UUID"
+            },
+            {
+                "command": "eide.uploadLog",
+                "category": "eide",
+                "title": "Upload log to remote server"
+            },
+            {
+                "command": "eide.ConvertToUTF8",
+                "title": "Convert file to UTF8 (has backup)"
+            },
+            {
+                "command": "eide.UndoConvertToUTF8",
+                "title": "Undo convert file to UTF8"
+            },
+            {
+                "command": "eide.c51ToSdcc",
+                "title": "Convert C51 keywords/registers to SDCC format"
+            }
+        ],
+        "keybindings": [
+            {
+                "command": "Project.uploadToDevice",
+                "key": "f7"
+            },
+            {
+                "command": "Project.compile",
+                "key": "f6"
+            },
+            {
+                "command": "eide.uploadLog",
+                "key": "ctrl+f1"
+            },
+            {
+                "command": "Project.fastCompile",
+                "key": "f9"
+            }
+        ],
+        "menus": {
+            "editor/title": [
+                {
+                    "command": "serialport.clear",
+                    "group": "navigation",
+                    "when": "resourceScheme == eide"
+                }
+            ],
+            "editor/context": [
+                {
+                    "command": "eide.ConvertToUTF8",
+                    "group": "commands"
+                },
+                {
+                    "command": "eide.UndoConvertToUTF8",
+                    "group": "commands"
+                },
+                {
+                    "command": "eide.c51ToSdcc",
+                    "group": "commands"
+                }
+            ],
+            "view/title": [
+                {
+                    "command": "Project.refresh",
+                    "group": "navigation",
+                    "when": "view == Project"
+                },
+                {
+                    "command": "Project.historyRecord",
+                    "group": "navigation",
+                    "when": "view == Project"
+                },
+                {
+                    "command": "Project.saveAll",
+                    "group": "navigation",
+                    "when": "view == Project"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "Project.addPackage",
+                    "group": "inline",
+                    "when": "viewItem == PACK && view == Project"
+                },
+                {
+                    "command": "Project.removePackage",
+                    "group": "inline",
+                    "when": "viewItem == PACK_GROUP && view == Project"
+                },
+                {
+                    "command": "Project.setDevice",
+                    "group": "inline",
+                    "when": "viewItem == PACK_GROUP && view == Project"
+                },
+                {
+                    "command": "Project.installCMSISPack",
+                    "when": "viewItem == DEPENDENCE && view == Project"
+                },
+                {
+                    "command": "Project.installCMSISPack",
+                    "group": "inline",
+                    "when": "viewItem == DEPENDENCE && view == Project"
+                },
+                {
+                    "command": "Project.save",
+                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                },
+                {
+                    "command": "Project.switchMode",
+                    "when": "viewItem == SOLUTION && view == Project"
+                },
+                {
+                    "command": "Project.switchMode",
+                    "group": "inline",
+                    "when": "viewItem == SOLUTION && view == Project"
+                },
+                {
+                    "command": "Project.exportAsTemplate",
+                    "when": "viewItem == SOLUTION && view == Project"
+                },
+                {
+                    "command": "Project.exportAsTemplate",
+                    "group": "inline",
+                    "when": "viewItem == SOLUTION && view == Project"
+                },
+                {
+                    "command": "Project.exportXml",
+                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                },
+                {
+                    "command": "Project.exportXml",
+                    "group": "inline",
+                    "when": "viewItem == SOLUTION && view == Project"
+                },
+                {
+                    "command": "Project.compile",
+                    "group": "inline",
+                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                },
+                {
+                    "command": "Project.compile",
+                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                },
+                {
+                    "command": "Project.fastCompile",
+                    "group": "inline",
+                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                },
+                {
+                    "command": "Project.fastCompile",
+                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                },
+                {
+                    "command": "Project.showBuildParams",
+                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                },
+                {
+                    "command": "Project.uploadToDevice",
+                    "group": "inline",
+                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                },
+                {
+                    "command": "Project.uploadToDevice",
+                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                },
+                {
+                    "command": "Project.close",
+                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                },
+                {
+                    "command": "Project.excludeSource",
+                    "group": "inline",
+                    "when": "viewItem == FILE_ITEM && view == Project"
+                },
+                {
+                    "command": "Project.unexcludeSource",
+                    "group": "inline",
+                    "when": "viewItem == EXCFILE_ITEM && view == Project"
+                },
+                {
+                    "command": "Project.addSrcDir",
+                    "group": "inline",
+                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                },
+                {
+                    "command": "Project.addLib",
+                    "group": "inline",
+                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                },
+                {
+                    "command": "Project.removeSrcDir",
+                    "group": "inline",
+                    "when": "viewItem == FOLDER_ROOT && view == Project"
+                },
+                {
+                    "command": "Project.switchToolchain",
+                    "group": "inline",
+                    "when": "viewItem == COMPILE_CONFIGURATION && view == Project"
+                },
+                {
+                    "command": "Project.switchUploader",
+                    "group": "inline",
+                    "when": "viewItem == UPLOAD_OPTION_C51 || viewItem == UPLOAD_OPTION"
+                },
+                {
+                    "command": "Project.modifyCompileConfig",
+                    "group": "inline",
+                    "when": "viewItem == COMPILE_CONFIGURATION_ITEM && view == Project"
+                },
+                {
+                    "command": "Project.modifyUploadConfig",
+                    "group": "inline",
+                    "when": "viewItem == UPLOAD_OPTION_ITEM && view == Project"
+                },
+                {
+                    "command": "Project.addIncludeDir",
+                    "group": "inline",
+                    "when": "viewItem == INC_GROUP && view == Project"
+                },
+                {
+                    "command": "Project.addDefine",
+                    "group": "inline",
+                    "when": "viewItem == DEFINE_GROUP && view == Project"
+                },
+                {
+                    "command": "Project.addLibDir",
+                    "group": "inline",
+                    "when": "viewItem == LIB_GROUP && view == Project"
+                },
+                {
+                    "command": "Project.addSourceDir",
+                    "group": "inline",
+                    "when": "viewItem == SOURCE_GROUP && view == Project"
+                },
+                {
+                    "command": "Project.removeDependenceItem",
+                    "group": "inline",
+                    "when": "viewItem == INC_ITEM || viewItem == DEFINE_ITEM || viewItem == LIB_ITEM || viewItem == SOURCE_ITEM && view == Project"
+                },
+                {
+                    "command": "Project.copyItemValue",
+                    "group": "inline",
+                    "when": "viewItem == EXCFILE_ITEM || viewItem == FILE_ITEM || viewItem == ITEM || viewItem == DEPENDENCE_ITEM || viewItem == INC_ITEM || viewItem == DEFINE_ITEM || viewItem == LIB_ITEM || viewItem == SOURCE_ITEM && view == Project"
+                },
+                {
+                    "command": "Project.importDependenceFromPack",
+                    "group": "inline",
+                    "when": "viewItem == COMPONENT_GROUP && view == Project"
+                },
+                {
+                    "command": "Project.removeDependenceFromPack",
+                    "group": "inline",
+                    "when": "viewItem == ACTIVED_GROUP && view == Project"
+                }
+            ]
+        },
+        "snippets": [
+            {
+                "language": "c",
+                "path": "./lang/c51.snippets.json"
+            },
+            {
+                "language": "a51",
+                "path": "./lang/a51.snippets.json"
+            }
+        ],
+        "languages": [
+            {
+                "id": "eide-output",
+                "mimetypes": [
+                    "text/x-code-output"
+                ]
+            },
+            {
+                "id": "a51",
+                "aliases": [
+                    "A51",
+                    "8051 Assembly"
+                ],
+                "extensions": [
+                    ".a51",
+                    ".A51"
+                ],
+                "filenamePatterns": [
+                    "**/*.a51",
+                    "**/*.A51"
+                ],
+                "configuration": "./lang/a51.language-configuration.json"
+            },
+            {
+                "id": "c",
+                "aliases": [
+                    "C51"
+                ],
+                "extensions": [
+                    ".c",
+                    ".h"
+                ],
+                "filenamePatterns": [
+                    "**/*.c",
+                    "**/*.h"
+                ],
+                "configuration": "./lang/c51.language-configuration.json"
+            }
+        ],
+        "jsonValidation": [
+            {
+                "fileMatch": "**/*.flash.json",
+                "url": "./lang/stc.flash.verify.json"
+            },
+            {
+                "fileMatch": "**/*.keil.json",
+                "url": "./lang/8051.keil.verify.json"
+            },
+            {
+                "fileMatch": "**/*.sdcc.json",
+                "url": "./lang/sdcc.verify.json"
+            },
+            {
+                "fileMatch": "**/*.v5.json",
+                "url": "./lang/arm.v5.verify.json"
+            },
+            {
+                "fileMatch": "**/*.v6.json",
+                "url": "./lang/arm.v6.verify.json"
+            },
+            {
+                "fileMatch": "**/*.gcc.json",
+                "url": "./lang/arm.gcc.verify.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "c",
+                "scopeName": "source.c.c51",
+                "path": "./lang/c51.tmLanguage.json"
+            },
+            {
+                "language": "eide-output",
+                "scopeName": "eide.output",
+                "path": "./lang/eide-output.tmLanguage.json"
+            },
+            {
+                "language": "a51",
+                "scopeName": "source.asm.a51",
+                "path": "./lang/a51.tmLanguage.json"
+            }
+        ],
+        "taskDefinitions": [
+            {
+                "type": "eide-task"
+            }
+        ],
+        "problemMatchers": [
+            {
+                "name": "c51",
+                "fileLocation": "autoDetect",
+                "pattern": [
+                    {
+                        "regexp": "^\\*\\*\\* (ERROR|WARNING) (\\w+) IN LINE (\\d+) OF (.+): (.+)$",
+                        "severity": 1,
+                        "code": 2,
+                        "line": 3,
+                        "file": 4,
+                        "message": 5
+                    }
+                ]
+            },
+            {
+                "name": "armclang",
+                "fileLocation": "autoDetect",
+                "pattern": [
+                    {
+                        "regexp": "^(.+):(\\d+):(\\d+): (error|warning): (.+)$",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3,
+                        "severity": 4,
+                        "message": 5
+                    }
+                ]
+            },
+            {
+                "name": "armcc",
+                "fileLocation": "autoDetect",
+                "pattern": [
+                    {
+                        "regexp": "^\"*([^\"]+)\"*, line (\\d+): (Error|Warning):\\s*(.+): (.+)$",
+                        "file": 1,
+                        "line": 2,
+                        "severity": 3,
+                        "code": 4,
+                        "message": 5
+                    }
+                ]
+            }
+        ]
+    }
 }
