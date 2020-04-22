@@ -62,6 +62,13 @@
 > #### 每次的版本变化，[手册](https://blog.csdn.net/qq_40833810/article/details/104114921)就可能会更新，注意查看。
 > #### 遇到了问题?😭 👉 途径1：[Github Issue](https://github.com/github0null/eide/issues)，途径2：QQ群: **941749328**
 
+### [v1.11.1]
+
+- 修复: stcgal 输出问题
+- 更改: 调整 SDCC 的参数设置
+
+***
+
 ### [v1.11.0]
 - 新增: 可排除源文件, 使其不加入到编译流程中
 - 新增: SDCC 可选择生成 s19, elf
