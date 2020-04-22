@@ -1,7 +1,17 @@
 {
-    "title": "ARM Compiler V5 Options",
+    "title": "IAR for STM8 Options",
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
+    "definitions": {
+        "misc-controls": {
+            "markdownDescription": "其他选项 (Other options)",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "default": []
+        }
+    },
     "properties": {
         "beforeBuildTasks": {
             "markdownDescription": "编译前要执行的命令列表 (List of commands to execute before compiling)",
@@ -9,7 +19,7 @@
             "default": [
                 {
                     "name": "clean",
-                    "command": "del /Q \"${OutDir}\\*.*\""
+                    "command": "del \"${OutDir}\\*.*\""
                 }
             ],
             "items": {
@@ -85,111 +95,151 @@
             }
         },
         "global": {
-            "markdownDescription": "全局选项 (Global Options)",
+            "markdownDescription": "全局选项 (Global options)",
             "type": "object",
             "properties": {
-                "use-microLIB": {
-                    "markdownDescription": "是否使用微库 (Whether to use microLIB)",
-                    "type": "boolean",
-                    "enum": [
-                        true,
-                        false
-                    ]
+                "misc-controls": {
+                    "$ref": "#/definitions/misc-controls"
                 }
             }
         },
         "c/cpp-compiler": {
-            "markdownDescription": "C/C++ 编译器选项 (C/C++ Compiler Options)",
+            "markdownDescription": "c/c++ 编译器选项 (C/C++ Compiler options)",
             "type": "object",
             "properties": {
                 "misc-controls": {
-                    "markdownDescription": "Misc Controls",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "default": []
+                    "$ref": "#/definitions/misc-controls"
                 },
-                "execute-only-code": {
-                    "markdownDescription": "Execute-only Code",
-                    "type": "boolean",
+                "language-c": {
+                    "markdownDescription": "要使用的 C 标准 (C standard)",
+                    "type": "string",
+                    "default": "c99",
                     "enum": [
-                        true,
-                        false
+                        "c89",
+                        "c99"
                     ]
                 },
-                "read-only-position-independent": {
-                    "markdownDescription": "为常量生成独立的代码空间 (read only position independent)",
-                    "type": "boolean",
+                "language-cpp": {
+                    "markdownDescription": "要使用的 C++ 标准 (C++ standard)",
+                    "type": "string",
+                    "default": "Extended-EC++",
                     "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "read-write-position-independent": {
-                    "markdownDescription": "为可读写代码生成独立的代码空间 (read write position independent)",
-                    "type": "boolean",
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "split-load-and-store-multiple": {
-                    "markdownDescription": "Split Load and Store Multiple",
-                    "type": "boolean",
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "c99-mode": {
-                    "markdownDescription": "C99 Mode",
-                    "type": "boolean",
-                    "enum": [
-                        true,
-                        false
+                        "Embedded-C++",
+                        "Extended-EC++"
                     ]
                 },
                 "optimization": {
                     "markdownDescription": "代码优化级别 (optimization level)",
                     "type": "string",
+                    "default": "low",
                     "enum": [
-                        "level-0",
-                        "level-1",
-                        "level-2",
-                        "level-3"
+                        "no",
+                        "low",
+                        "medium",
+                        "high",
+                        "size",
+                        "speed"
+                    ],
+                    "enumDescriptions": [
+                        "不优化 (not optimize)",
+                        "低 (low)",
+                        "中 (medium)",
+                        "高 (high)",
+                        "侧重于大小 (size)",
+                        "侧重于速度 (speed)"
                     ]
                 },
-                "optimize-for-time": {
-                    "markdownDescription": "代码时间优化 (optimize for time)",
+                "not-destroy-cpp-static-object": {
+                    "description": "not destroy c++ static object",
                     "type": "boolean",
                     "enum": [
                         true,
                         false
                     ]
                 },
-                "one-elf-section-per-function": {
-                    "markdownDescription": "One ELF Section per Function",
+                "allow-VLA": {
+                    "description": "allow VLA",
                     "type": "boolean",
                     "enum": [
                         true,
                         false
                     ]
                 },
-                "strict-ANSI-C": {
-                    "markdownDescription": "使用标准（严格）的 ANSI C (strict ANSI C)",
+                "use-cpp-inline-semantics": {
+                    "description": "use c++ inline semantics",
                     "type": "boolean",
                     "enum": [
                         true,
                         false
                     ]
                 },
-                "enum-container-always-int": {
-                    "markdownDescription": "枚举类型的成员变量类型为 int 型 (enum container always int)",
+                "require-prototypes": {
+                    "description": "require prototypes",
                     "type": "boolean",
                     "enum": [
                         true,
                         false
+                    ]
+                },
+                "language-conformance": {
+                    "description": "language conformance",
+                    "type": "string",
+                    "enum": [
+                        "strict",
+                        "standard",
+                        "IAR-extensions"
+                    ]
+                },
+                "floating-point": {
+                    "description": "floating point",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "multibyte-support": {
+                    "description": "multibyte support",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "virtual-bytes": {
+                    "description": "virtual bytes",
+                    "type": "string",
+                    "enum": [
+                        "16",
+                        "12"
+                    ]
+                },
+                "no-size-constraints": {
+                    "description": "no size constraints",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "code-mode": {
+                    "description": "code mode",
+                    "type": "string",
+                    "default": "medium",
+                    "enum": [
+                        "small",
+                        "medium",
+                        "large"
+                    ]
+                },
+                "data-mode": {
+                    "description": "data mode",
+                    "type": "string",
+                    "default": "medium",
+                    "enum": [
+                        "small",
+                        "medium",
+                        "large"
                     ]
                 },
                 "plain-char-is-signed": {
@@ -200,79 +250,50 @@
                         false
                     ]
                 },
-                "gnu-extensions": {
-                    "markdownDescription": "GNU 扩展 (gnu extensions)",
+                "turn-Warning-into-errors": {
+                    "markdownDescription": "将警告转化为错误 (Turn warnings into errors)",
                     "type": "boolean",
+                    "default": true,
                     "enum": [
                         true,
                         false
-                    ]
-                },
-                "warnings": {
-                    "markdownDescription": "警告等级 (warning level)",
-                    "type": "string",
-                    "enum": [
-                        "unspecified",
-                        "no-warnings",
-                        "all-warnings"
                     ]
                 }
             }
         },
         "asm-compiler": {
-            "markdownDescription": "汇编器选项 (Assember Option)",
+            "markdownDescription": "汇编器选项 (Assembler options)",
             "type": "object",
             "properties": {
                 "misc-controls": {
-                    "markdownDescription": "Misc Controls",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "default": []
+                    "$ref": "#/definitions/misc-controls"
                 },
-                "execute-only-code": {
-                    "markdownDescription": "Execute-only Code",
+                "case-sensitive-user-symbols": {
+                    "description": "case sensitive user symbols",
                     "type": "boolean",
                     "enum": [
                         true,
                         false
                     ]
                 },
-                "read-only-position-independent": {
-                    "markdownDescription": "为常量生成独立的代码空间 (read only position independent)",
+                "multibyte-support": {
+                    "description": "multibyte support",
                     "type": "boolean",
                     "enum": [
                         true,
                         false
                     ]
                 },
-                "read-write-position-independent": {
-                    "markdownDescription": "为可读写代码生成独立的代码空间 (read write position independent)",
+                "allow-mnemonics-first-column": {
+                    "description": "allow mnemonics first column",
                     "type": "boolean",
                     "enum": [
                         true,
                         false
                     ]
                 },
-                "split-load-and-store-multiple": {
-                    "markdownDescription": "Split Load and Store Multiple",
-                    "type": "boolean",
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "thumb-mode": {
-                    "markdownDescription": "Thumb Mode",
-                    "type": "boolean",
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "no-warnings": {
-                    "markdownDescription": "无警告 (no warnings)",
+                "allow-directives-first-column": {
+                    "description": "allow directives first column",
                     "type": "boolean",
                     "enum": [
                         true,
@@ -284,38 +305,46 @@
         "linker": {
             "markdownDescription": "链接器选项 (Linker options)",
             "type": "object",
+            "required": [
+                "linker-config"
+            ],
             "properties": {
                 "misc-controls": {
-                    "markdownDescription": "Misc Controls",
+                    "$ref": "#/definitions/misc-controls"
+                },
+                "not-auto-search-runtime-lib": {
+                    "description": "not auto search runtime lib",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "not-support-C_SPY-debugging": {
+                    "description": "not support C_SPY debugging",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "linker-config": {
+                    "description": "linker config file",
+                    "type": "string",
+                    "default": "lnkstm8s105k4.icf"
+                },
+                "config-defines": {
+                    "description": "linker config defines",
                     "type": "array",
+                    "default": [],
                     "items": {
                         "type": "string"
-                    },
-                    "default": []
+                    }
                 },
-                "not-search-std-libs": {
-                    "markdownDescription": "Don't Search Standrad Libraries",
-                    "type": "boolean",
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "read-only-position-independent": {
-                    "markdownDescription": "为常量生成独立的代码空间 (read only position independent)",
-                    "type": "boolean",
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "read-write-position-independent": {
-                    "markdownDescription": "为可读写代码生成独立的代码空间 (read write position independent)",
-                    "type": "boolean",
-                    "enum": [
-                        true,
-                        false
-                    ]
+                "program-entry": {
+                    "description": "program entry",
+                    "type": "string",
+                    "default": "__iar_program_start"
                 }
             }
         }

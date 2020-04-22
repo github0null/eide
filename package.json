@@ -149,6 +149,12 @@
                             "OnePointFive"
                         ]
                     },
+                    "EIDE.IAR.STM8.InstallDirectory": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "IAR for STM8 install directory [`example: D:\\IAR`]",
+                        "default": "D:\\IAR"
+                    },
                     "EIDE.ARM.GCC.Prefix": {
                         "type": "string",
                         "scope": "machine",
@@ -895,6 +901,10 @@
             {
                 "fileMatch": "**/*.gcc.json",
                 "url": "./lang/arm.gcc.verify.json"
+            },
+            {
+                "fileMatch": "**/*.stm8.iar.json",
+                "url": "./lang/stm8.iar.verify.json"
             }
         ],
         "grammars": [

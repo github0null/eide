@@ -19,7 +19,7 @@
             "default": [
                 {
                     "name": "clean",
-                    "command": "del \"${OutDir}\\*.*\""
+                    "command": "del /Q \"${OutDir}\\*.*\""
                 }
             ],
             "items": {
@@ -282,6 +282,22 @@
                 "no-optimize-std-lib": {
                     "type": "boolean",
                     "markdownDescription": "Disable optimization of calls to standard library",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "plain-char-is-signed": {
+                    "type": "boolean",
+                    "markdownDescription": "plain char is signed",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "out-debug-info": {
+                    "type": "boolean",
+                    "markdownDescription": "output debug info",
                     "enum": [
                         true,
                         false

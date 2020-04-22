@@ -9,7 +9,7 @@
             "default": [
                 {
                     "name": "clean",
-                    "command": "del \"${OutDir}\\*.*\""
+                    "command": "del /Q \"${OutDir}\\*.*\""
                 }
             ],
             "items": {
