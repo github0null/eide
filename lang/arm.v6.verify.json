@@ -276,6 +276,11 @@
                         "type": "string"
                     },
                     "default": []
+                },
+                "output-lib": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "生成为 LIB (generate LIB)"
                 }
             }
         }

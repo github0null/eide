@@ -195,6 +195,35 @@
             "properties": {
                 "misc-controls": {
                     "$ref": "#/definitions/misc-controls"
+                },
+                "output-lib": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "生成为 LIB (generate LIB)"
+                },
+                "use-RTX": {
+                    "type": "string",
+                    "default": "None",
+                    "description": "使用 RTX 操作系统 (use RTX operation system)",
+                    "enum": [
+                        "None",
+                        "RTX-Full",
+                        "RTX-Tiny"
+                    ]
+                },
+                "remove-unused": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "删除未使用的程序和数据段 (removes unused program and data segments)"
+                },
+                "disable-warnings": {
+                    "type": "array",
+                    "description": "屏蔽特定的警告 (disable specific warning)",
+                    "default": [],
+                    "items": {
+                        "type": "string",
+                        "pattern": "\\d+"
+                    }
                 }
             }
         }

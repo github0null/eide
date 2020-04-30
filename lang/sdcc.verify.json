@@ -362,6 +362,11 @@
                     "markdownDescription": "含有 main() 的源文件名 (Source file name with \"main()\" function)",
                     "type": "string",
                     "default": "main"
+                },
+                "output-lib": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "生成为 LIB (generate LIB)"
                 }
             }
         }
