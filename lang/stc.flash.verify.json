@@ -24,9 +24,9 @@
             "type": "string"
         },
         "baudrate": {
-            "markdownDescription": "`[可忽略]` 串口通信波特率，默认 **19200**",
+            "markdownDescription": "`[可忽略]` 串口通信波特率",
             "type": "string",
-            "default": "19200",
+            "default": "115200",
             "enum": [
                 "2400",
                 "4800",
