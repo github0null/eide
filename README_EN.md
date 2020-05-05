@@ -57,6 +57,11 @@ A 8051/STM8/ARM **IDE** with multiple toolchains for Vs Code, A Keil C51/STM32 *
 
 > #### Feedback 👉 [Github Issue](https://github.com/github0null/eide/issues)
 
+### [v1.12.2]
+- Fixed: ARMCC V5 C++ Parameter problems
+- Fixed: some bugs
+***
+
 ### [v1.12.1]
 - Changed: remove unnecessary features
 - Changed: view structure
@@ -72,22 +77,6 @@ A 8051/STM8/ARM **IDE** with multiple toolchains for Vs Code, A Keil C51/STM32 *
 - Changed: Added some linker options for Keil_C51
 - Fixed: GCC syntax check could not find the problem with the built-in header file
 - Fixed: stcgal output problem
-***
-
-### [v1.11.0]
-- New: You can exclude unwanted source files. Excluded files are not added to the compilation process
-- New: SDCC can optionally generate s19, elf
-- Fixed: The GCC toolchain syntax prompts for incomplete problems
-- Change: Remove options not commonly used in SDCC
-- Improve: Optimize some details
-***
-
-### [v1.10.1]
-- remove: Utf8 conversion options at import time
-- improved: A more complete directory structure is created for the source files when imported
-- improved: Open workspace directly when switching projects
-- improved: Improve the use experience
-- Fixed: STM8 download problem
 ***
 
 ## Attention 🚩

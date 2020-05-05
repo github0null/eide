@@ -20,7 +20,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一个 8051/STM8/ARM 多工具链的集成开发环境、Keil 项目迁移工具 (A 8051/STM8/ARM IDE with multiple toolchains and a Keil project migration tool)",
-    "version": "1.12.1",
+    "version": "1.12.2",
     "engines": {
         "vscode": "^1.38.0"
     },

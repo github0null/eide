@@ -4,6 +4,11 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.12.2]
+- 修复: ARMCC V5 C++ 参数问题
+- 修复: 一些细节问题
+***
+
 ### [v1.12.1]
 - 更改: 移除不必要的功能
 - 更改: 修改视图结构
