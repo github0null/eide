@@ -8,7 +8,7 @@
 
 ## 简述 📑
 
-一个 8051/STM8/ARM 多工具链的集成开发环境、Keil 项目迁移工具。用于提供在 vscode 上对 8051, STM8(使用 SDCC 工具链), STM32 项目进行 开发, 编译, 烧录, 管理的功能。
+一个 8051/STM8/ARM 多工具链的集成开发环境、Keil 项目迁移工具。用于提供在 vscode 上对 8051, STM8, Cortex-M 项目进行 开发, 编译, 烧录, 管理的功能。
 
 **仅支持 Windows 平台**
 
@@ -17,6 +17,25 @@
 ***
 
 ![preview](./res/preview/show.png)
+
+***
+
+## 工具链支持 🔨
+
+#### ![8051](https://img.shields.io/badge/-8051_:-grey.svg) ![status](https://img.shields.io/badge/Keil_C51-done-brightgreen.svg) ![status](https://img.shields.io/badge/SDCC-done-brightgreen.svg)
+
+#### ![STM8](https://img.shields.io/badge/-STM8_:-grey.svg) ![status](https://img.shields.io/badge/IAR_STM8-done-brightgreen.svg)
+
+#### ![ARM](https://img.shields.io/badge/-ARM_:-grey.svg) ![status](https://img.shields.io/badge/ARMCC_V5-done-brightgreen.svg) ![status](https://img.shields.io/badge/ARMCC_V6-done-brightgreen.svg) ![status](https://img.shields.io/badge/ARM_GCC-done-brightgreen.svg)
+
+
+***
+
+## 语法支持
+
+* 标准 C 语法高亮，代码片段
+* 8051 C 语法高亮，代码片段
+* 8051 汇编(A51) 语法高亮，代码片段
 
 ***
 
@@ -31,23 +50,7 @@
 * 烧录到芯片
 * 串口监视器
 * 管理项目依赖
-* 为 STM32 项目生成与调试器 `cortex-debug` 相关的 launch.json
-
-***
-
-## 工具链支持 🔨
-
-#### ![8051](https://img.shields.io/badge/-8051_:-grey.svg) ![status](https://img.shields.io/badge/Keil_C51-done-brightgreen.svg) ![status](https://img.shields.io/badge/SDCC-done-brightgreen.svg)
-
-#### ![ARM](https://img.shields.io/badge/-ARM_:-grey.svg) ![status](https://img.shields.io/badge/ARMCC_V5-done-brightgreen.svg) ![status](https://img.shields.io/badge/ARMCC_V6-done-brightgreen.svg) ![status](https://img.shields.io/badge/ARM_GCC-done-brightgreen.svg)
-
-***
-
-## 语法支持
-
-* 标准 C 语法高亮，代码片段
-* 8051 C 语法高亮，代码片段
-* 8051 汇编(A51) 语法高亮，代码片段
+* 自动生成调试配置
 
 ***
 
@@ -62,6 +65,14 @@
 > #### 每次的版本变化，[手册](https://blog.csdn.net/qq_40833810/article/details/104114921)就可能会更新，注意查看。
 > #### 遇到了问题?😭 👉 途径1：[Github Issue](https://github.com/github0null/eide/issues)，途径2：QQ群: **941749328**
 
+### [v1.13.0]
+- 新增: IAR for STM8 工具链支持
+- 新增: STM8-Debug 调试配置生成
+- 新增: JLink 支持使用自定义的 jflash 文件
+- 修复: 无法删除头文件包含路径的问题
+- 修复: 修复一些细节问题
+***
+
 ### [v1.12.2]
 - 修复: ARMCC V5 C++ 参数问题
 - 修复: 一些细节问题
@@ -72,18 +83,6 @@
 - 更改: 修改视图结构
 - 修复: 不必要的路径检查导致的问题
 - 修复: 一些细节问题
-***
-
-### [v1.12.0]
-- 新增: 可生成 LIB，通过修改编译配置选择
-- 新增: 自动加载多工作区项目
-- 新增: 可排除目录（非递归的）
-- 新增: 可生成 bat 脚本，需要在设置中开启
-- 更改: 调整 SDCC 的一些参数
-- 更改: 为 Keil_C51 增加了一些链接器选项
-- 修复: GCC 语法检查无法找到内置的头文件的问题
-- 修复: stcgal 输出问题
-- 修复: 修复一些细节
 ***
 
 ## 注意事项 🚩
