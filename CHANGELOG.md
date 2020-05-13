@@ -4,6 +4,18 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.13.1]
+- 更改: 使用相对路径完成项目编译生成
+- 优化: 视图的显示
+***
+
+### [v1.13.0]
+- 新增: IAR for STM8 工具链支持
+- 新增: STM8-Debug 调试配置生成
+- 新增: JLink 支持使用自定义的 jflash 文件
+- 修复: 无法删除头文件包含路径的问题
+***
+
 ### [v1.12.2]
 - 修复: ARMCC V5 C++ 参数问题
 - 修复: 一些细节问题
