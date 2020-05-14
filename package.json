@@ -606,7 +606,7 @@
             },
             {
                 "command": "eide.c51ToSdcc",
-                "title": "Convert C51 keywords/registers to SDCC format"
+                "title": "Convert Keil_C51 registers to SDCC format"
             }
         ],
         "keybindings": [

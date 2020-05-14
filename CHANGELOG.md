@@ -7,6 +7,8 @@ All notable changes to the "eide" extension will be documented in this file.
 ### [v1.13.1]
 - 更改: 使用相对路径完成项目编译生成
 - 优化: 视图的显示
+- 优化: 减少命令行的长度
+- 修复: 自定义的 jflash 路径被覆盖
 ***
 
 ### [v1.13.0]
