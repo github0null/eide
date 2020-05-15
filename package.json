@@ -491,22 +491,6 @@
                 }
             },
             {
-                "command": "Project.addLibDir",
-                "title": "Add library folder to project",
-                "icon": {
-                    "dark": "./res/icon/Add_16xMD.svg",
-                    "light": "./res/icon/Add_16xMD.svg"
-                }
-            },
-            {
-                "command": "Project.addLib",
-                "title": "Add libs to project",
-                "icon": {
-                    "dark": "./res/icon/Library_16x.svg",
-                    "light": "./res/icon/Library_16x.svg"
-                }
-            },
-            {
                 "command": "Project.excludeSource",
                 "title": "Exclude this source file",
                 "icon": {
@@ -676,12 +660,12 @@
                 },
                 {
                     "command": "Project.installCMSISPack",
-                    "when": "viewItem == DEPENDENCE && view == Project"
+                    "when": "viewItem == DEPENDENCE_ARM && view == Project"
                 },
                 {
                     "command": "Project.installCMSISPack",
                     "group": "inline",
-                    "when": "viewItem == DEPENDENCE && view == Project"
+                    "when": "viewItem == DEPENDENCE_ARM && view == Project"
                 },
                 {
                     "command": "Project.save",
@@ -779,11 +763,6 @@
                     "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
                 },
                 {
-                    "command": "Project.addLib",
-                    "group": "inline",
-                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
-                },
-                {
                     "command": "Project.removeSrcDir",
                     "group": "inline",
                     "when": "viewItem == FOLDER_ROOT && view == Project"
@@ -817,11 +796,6 @@
                     "command": "Project.addDefine",
                     "group": "inline",
                     "when": "viewItem == DEFINE_GROUP && view == Project"
-                },
-                {
-                    "command": "Project.addLibDir",
-                    "group": "inline",
-                    "when": "viewItem == LIB_GROUP && view == Project"
                 },
                 {
                     "command": "Project.removeDependenceItem",
