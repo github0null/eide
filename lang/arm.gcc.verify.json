@@ -1,10 +1,10 @@
 {
-    "title": "ARM Compiler V6 Options",
+    "title": "ARM GCC Options",
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "definitions": {
-        "misc-controls": {
-            "markdownDescription": "其他选项 (Other options)",
+        "FLAGS": {
+            "markdownDescription": "自定义参数 (Custom parameters)",
             "type": "array",
             "items": {
                 "type": "string"
@@ -98,14 +98,6 @@
             "markdownDescription": "全局选项 (Global options)",
             "type": "object",
             "properties": {
-                "misc-controls": {
-                    "$ref": "#/definitions/misc-controls"
-                },
-                "toolPrefix": {
-                    "markdownDescription": "工具链前缀 (toolchain prefix)",
-                    "type": "string",
-                    "default": "arm-none-eabi-"
-                },
                 "output-debug-info": {
                     "markdownDescription": "输出调试信息 (Output debug information)",
                     "type": "string",
@@ -127,8 +119,13 @@
             "markdownDescription": "c/c++ 编译器选项 (C/C++ Compiler options)",
             "type": "object",
             "properties": {
-                "misc-controls": {
-                    "$ref": "#/definitions/misc-controls"
+                "C_FLAGS": {
+                    "markdownDescription": "C 附加参数 (C custom parameters)",
+                    "$ref": "#/definitions/FLAGS"
+                },
+                "CXX_FLAGS": {
+                    "markdownDescription": "C++ 附加参数 (C++ custom parameters)",
+                    "$ref": "#/definitions/FLAGS"
                 },
                 "language-c": {
                     "markdownDescription": "要使用的 C 标准 (C standard)",
@@ -215,8 +212,8 @@
             "markdownDescription": "汇编器选项 (Assembler options)",
             "type": "object",
             "properties": {
-                "misc-controls": {
-                    "$ref": "#/definitions/misc-controls"
+                "ASM_FLAGS": {
+                    "$ref": "#/definitions/FLAGS"
                 }
             }
         },
@@ -224,9 +221,9 @@
             "markdownDescription": "链接器选项 (Linker options)",
             "type": "object",
             "properties": {
-                "misc-controls": {
+                "LD_FLAGS": {
                     "markdownDescription": "Use \"-Wl[,option]...\" pass options to the linker",
-                    "$ref": "#/definitions/misc-controls"
+                    "$ref": "#/definitions/FLAGS"
                 },
                 "output-lib": {
                     "type": "boolean",

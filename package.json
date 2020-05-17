@@ -169,13 +169,13 @@
                     },
                     "EIDE.ARM.GCC.Prefix": {
                         "type": "string",
-                        "scope": "machine",
+                        "scope": "resource",
                         "markdownDescription": "GCC tool prefix [`example: arm-none-eabi-`]",
                         "default": "arm-none-eabi-"
                     },
                     "EIDE.ARM.GCC.InstallDirectory": {
                         "type": "string",
-                        "scope": "machine",
+                        "scope": "resource",
                         "markdownDescription": "GCC for ARM toolchain install directory [`example: D:\\ARM-GNU-Tool\\8 2019-q3-update`]",
                         "default": "D:\\ARM-GCC\\8 2019-q3-update"
                     },
@@ -477,6 +477,14 @@
             {
                 "command": "Project.addIncludeDir",
                 "title": "Add include folder to project",
+                "icon": {
+                    "dark": "./res/icon/Add_16xMD.svg",
+                    "light": "./res/icon/Add_16xMD.svg"
+                }
+            },
+            {
+                "command": "Project.addLibDir",
+                "title": "Add library folders to project",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
                     "light": "./res/icon/Add_16xMD.svg"
@@ -793,6 +801,11 @@
                     "when": "viewItem == INC_GROUP && view == Project"
                 },
                 {
+                    "command": "Project.addLibDir",
+                    "group": "inline",
+                    "when": "viewItem == LIB_GROUP && view == Project"
+                },
+                {
                     "command": "Project.addDefine",
                     "group": "inline",
                     "when": "viewItem == DEFINE_GROUP && view == Project"
@@ -890,7 +903,7 @@
                 "url": "./lang/arm.v6.verify.json"
             },
             {
-                "fileMatch": "**/*.gcc.json",
+                "fileMatch": "**/arm.options.gcc.json",
                 "url": "./lang/arm.gcc.verify.json"
             },
             {

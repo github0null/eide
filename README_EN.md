@@ -61,6 +61,15 @@ A 8051/STM8/ARM **IDE** with multiple toolchains for Vs Code, A Keil C51/STM32 *
 
 > #### Feedback 👉 [Github Issue](https://github.com/github0null/eide/issues)
 
+### [v1.13.1]
+- Changed: Adjust the compiled configuration format for arm-gcc. The old configuration format is no longer valid
+- Changed: Complete the project build with relative paths
+- Optimized: Display of view
+- Optimized: Reduce the length of the command line
+- Optimized: Remove useless functions
+- Fixed: The custom jflash path has been overwrited
+***
+
 ### [v1.13.0]
 - New: IAR for STM8 toolchain support
 - New: STM8-Debug debug configuration
@@ -71,12 +80,6 @@ A 8051/STM8/ARM **IDE** with multiple toolchains for Vs Code, A Keil C51/STM32 *
 
 ### [v1.12.2]
 - Fixed: ARMCC V5 C++ Parameter problems
-- Fixed: some bugs
-***
-
-### [v1.12.1]
-- Changed: remove unnecessary features
-- Changed: view structure
 - Fixed: some bugs
 ***
 

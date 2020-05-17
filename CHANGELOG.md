@@ -5,6 +5,7 @@ All notable changes to the "eide" extension will be documented in this file.
 ***
 
 ### [v1.13.1]
+- 更改: 调整 ARM-GCC 的编译配置格式，旧的配置格式将不再有效
 - 更改: 使用相对路径完成项目编译生成
 - 优化: 视图的显示
 - 优化: 减少命令行的长度

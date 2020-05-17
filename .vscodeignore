@@ -17,6 +17,7 @@ vsc-extension-quickstart.md
 **/sln.record
 /bin/ARM/*.temp
 /bin/ARM/*.bat
+/bin/ARM/SerialPortMonitor
 **/*.pdb
 **/ARM/*.xml
 *.js
