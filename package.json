@@ -20,7 +20,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一个 8051/STM8/ARM 多工具链的集成开发环境、Keil 项目迁移工具 (A 8051/STM8/ARM IDE with multiple toolchains and a Keil project migration tool)",
-    "version": "1.13.1",
+    "version": "1.13.2",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -77,13 +77,13 @@
                 "properties": {
                     "EIDE.Option.CreateBatchFile": {
                         "type": "boolean",
-                        "scope": "machine",
+                        "scope": "resource",
                         "markdownDescription": "Create batch file after build",
                         "default": false
                     },
                     "EIDE.Option.UseTaskToBuild": {
                         "type": "boolean",
-                        "scope": "machine",
+                        "scope": "resource",
                         "markdownDescription": "Use Task to build project instead of Terminal",
                         "default": false
                     },
@@ -205,7 +205,7 @@
                     },
                     "EIDE.ARM.UseMulti-ThreadMode": {
                         "type": "boolean",
-                        "scope": "machine",
+                        "scope": "resource",
                         "markdownDescription": "Use Multi-Thread Mode when compile file",
                         "default": true
                     },
@@ -243,11 +243,11 @@
                         "description": "Auto Generate RTE_Components.h",
                         "default": true
                     },
-                    "EIDE.ARM.Option.ConvertAxfFileToElfFile": {
+                    "EIDE.ARM.Option.AxfToElf": {
                         "type": "boolean",
-                        "scope": "machine",
-                        "markdownDescription": "Convert keil `.axf` file to GCC `.elf` file after compile, this is an experimental function",
-                        "default": false
+                        "scope": "resource",
+                        "markdownDescription": "Convert `.axf` to `.elf` after compile, this is an experimental function",
+                        "default": true
                     },
                     "EIDE.ARM.Project.MacroList.Release": {
                         "type": "string",

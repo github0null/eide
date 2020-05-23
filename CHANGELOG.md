@@ -4,6 +4,12 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.13.2]
+- 更改: 调整图标
+- 更改: 调整某些设置的范围
+- 修复: 一些细节问题
+***
+
 ### [v1.13.1]
 - 更改: 调整 ARM-GCC 的编译配置格式，旧的配置格式将不再有效
 - 更改: 使用相对路径完成项目编译生成

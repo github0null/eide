@@ -119,7 +119,7 @@
                     ]
                 },
                 "read-only-position-independent": {
-                    "markdownDescription": "为常量生成独立的代码空间 (read only position independent)",
+                    "markdownDescription": "Generation of Read-Only Position-Independent (ROPI) code",
                     "type": "boolean",
                     "enum": [
                         true,
@@ -127,7 +127,7 @@
                     ]
                 },
                 "read-write-position-independent": {
-                    "markdownDescription": "为可读写代码生成独立的代码空间 (read write position independent)",
+                    "markdownDescription": "Generation of Read/Write Position-Independent (RWPI) code",
                     "type": "boolean",
                     "enum": [
                         true,
@@ -240,7 +240,7 @@
                     ]
                 },
                 "read-only-position-independent": {
-                    "markdownDescription": "为常量生成独立的代码空间 (read only position independent)",
+                    "markdownDescription": "Generation of Read-Only Position-Independent (ROPI) code",
                     "type": "boolean",
                     "enum": [
                         true,
@@ -248,7 +248,7 @@
                     ]
                 },
                 "read-write-position-independent": {
-                    "markdownDescription": "为可读写代码生成独立的代码空间 (read write position independent)",
+                    "markdownDescription": "Generation of Read/Write Position-Independent (RWPI) code",
                     "type": "boolean",
                     "enum": [
                         true,
@@ -302,7 +302,7 @@
                     ]
                 },
                 "read-only-position-independent": {
-                    "markdownDescription": "为常量生成独立的代码空间 (read only position independent)",
+                    "markdownDescription": "Makes the load and execution region containing the RO output section position-independent.",
                     "type": "boolean",
                     "enum": [
                         true,
@@ -310,7 +310,7 @@
                     ]
                 },
                 "read-write-position-independent": {
-                    "markdownDescription": "为可读写代码生成独立的代码空间 (read write position independent)",
+                    "markdownDescription": "Makes the load and execution region containing the RW and ZI output section position-independent.",
                     "type": "boolean",
                     "enum": [
                         true,
