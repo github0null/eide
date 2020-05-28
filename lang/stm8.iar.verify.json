@@ -138,27 +138,45 @@
                         "medium",
                         "high",
                         "size",
-                        "speed"
+                        "speed",
+                        "speed-no-size-constraints"
                     ],
                     "enumDescriptions": [
                         "不优化 (not optimize)",
                         "低 (low)",
                         "中 (medium)",
-                        "高 (high)",
-                        "侧重于大小 (size)",
-                        "侧重于速度 (speed)"
+                        "高, 平衡 (high, balanced)",
+                        "高, 侧重于大小 (high, size)",
+                        "高, 侧重于速度 (high, speed)",
+                        "高, 侧重于速度, 不限制大小 (high, speed, no size constraints)"
                     ]
                 },
-                "not-destroy-cpp-static-object": {
-                    "description": "not destroy c++ static object",
+                "runtime-lib": {
+                    "description": "The C/EC++ runtime library configuration",
+                    "type": "string",
+                    "default": "normal",
+                    "enum": [
+                        "normal",
+                        "full",
+                        "null"
+                    ],
+                    "enumDescriptions": [
+                        "No locale interface, C locale, no file descriptor support, no multibytes in printf and scanf, and no hex floats in strtod.",
+                        "Full locale interface, C locale, file descriptor support, multibytes in printf and scanf, and hex floats in strtod.",
+                        "No use"
+                    ]
+                },
+                "destroy-cpp-static-object": {
+                    "description": "destroy c++ static object",
                     "type": "boolean",
+                    "default": true,
                     "enum": [
                         true,
                         false
                     ]
                 },
                 "allow-VLA": {
-                    "description": "allow VLA",
+                    "description": "allow VLA, for language c",
                     "type": "boolean",
                     "enum": [
                         true,
@@ -166,7 +184,7 @@
                     ]
                 },
                 "use-cpp-inline-semantics": {
-                    "description": "use c++ inline semantics",
+                    "description": "use c++ inline semantics, for language c++",
                     "type": "boolean",
                     "enum": [
                         true,
@@ -209,21 +227,14 @@
                 "virtual-bytes": {
                     "description": "virtual bytes",
                     "type": "string",
+                    "default": "16",
                     "enum": [
                         "16",
                         "12"
                     ]
                 },
-                "no-size-constraints": {
-                    "description": "no size constraints",
-                    "type": "boolean",
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "code-mode": {
-                    "description": "code mode",
+                "data-mode": {
+                    "description": "data mode",
                     "type": "string",
                     "default": "medium",
                     "enum": [
@@ -232,10 +243,10 @@
                         "large"
                     ]
                 },
-                "data-mode": {
-                    "description": "data mode",
+                "code-mode": {
+                    "description": "code mode",
                     "type": "string",
-                    "default": "medium",
+                    "default": "small",
                     "enum": [
                         "small",
                         "medium",
@@ -308,21 +319,37 @@
             "required": [
                 "linker-config"
             ],
+            "dependencies": {
+                "use-C_SPY-debug-lib": [
+                    "auto-search-runtime-lib"
+                ]
+            },
             "properties": {
                 "misc-controls": {
                     "$ref": "#/definitions/misc-controls"
                 },
-                "not-auto-search-runtime-lib": {
-                    "description": "not auto search runtime lib",
+                "auto-search-runtime-lib": {
+                    "description": "auto search runtime lib",
                     "type": "boolean",
+                    "default": true,
                     "enum": [
                         true,
                         false
                     ]
                 },
-                "not-support-C_SPY-debugging": {
-                    "description": "not support C_SPY debugging",
+                "use-C_SPY-debug-lib": {
+                    "description": "Use C-SPY debug library",
                     "type": "boolean",
+                    "default": true,
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "merge-duplicate-sections": {
+                    "description": "merge duplicate sections",
+                    "type": "boolean",
+                    "default": true,
                     "enum": [
                         true,
                         false

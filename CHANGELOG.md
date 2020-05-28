@@ -4,6 +4,11 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.13.3]
+- 更改: 资源下载链接的位置
+- 更改: 调整 IAR_STM8 的编译配置, 一些旧的配置属性将会失效
+***
+
 ### [v1.13.2]
 - 更改: 调整图标
 - 更改: 调整某些设置的范围
