@@ -4,6 +4,14 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.13.4]
+- 新增: 为 RAM/ROM 视图增加重置按钮
+- 修复: ARM-GCC 硬件浮点选项错误
+- 更改: 根据选项值隐藏无用的视图选项
+- 优化: 安装 keil package 时删除不必要的文件和目录以减小项目体积
+- 优化一些细节
+***
+
 ### [v1.13.3]
 - 更改: 资源下载链接的位置
 - 更改: 调整 IAR_STM8 的编译配置, 旧的配置将会失效
