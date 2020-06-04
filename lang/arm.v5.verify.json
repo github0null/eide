@@ -27,6 +27,14 @@
                         "markdownDescription": "CMD 命令行 (CMD command line)",
                         "type": "string"
                     },
+                    "disable": {
+                        "markdownDescription": "禁用此命令 (disable this command)",
+                        "type": "boolean",
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    },
                     "abortAfterFailed": {
                         "markdownDescription": "是否在此命令失败时，跳过后续的命令 (Whether to skip subsequent commands if this command fails)",
                         "type": "boolean",
@@ -71,6 +79,14 @@
                     "command": {
                         "markdownDescription": "CMD 命令行 (CMD command line)",
                         "type": "string"
+                    },
+                    "disable": {
+                        "markdownDescription": "禁用此命令 (disable this command)",
+                        "type": "boolean",
+                        "enum": [
+                            true,
+                            false
+                        ]
                     },
                     "abortAfterFailed": {
                         "markdownDescription": "是否在此命令失败时，跳过后续的命令 (Whether to skip subsequent commands if this command fails)",

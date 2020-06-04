@@ -87,6 +87,12 @@
                         "markdownDescription": "Use Task to build project instead of Terminal",
                         "default": false
                     },
+                    "EIDE.Option.InsertExtraCommandsAtBegin": {
+                        "type": "boolean",
+                        "scope": "resource",
+                        "markdownDescription": "The built-in command lines will insert at the beginning of the `beforeBuildTasks / afterBuildTasks`",
+                        "default": false
+                    },
                     "EIDE.Template.Repository.Url": {
                         "type": "string",
                         "scope": "machine",
