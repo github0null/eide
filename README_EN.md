@@ -1,12 +1,10 @@
-# EIDE
+# Embedded IDE
 
 [![](https://vsmarketplacebadge.apphb.com/version/cl.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide) [![](https://vsmarketplacebadge.apphb.com/installs/cl.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide) [![](https://vsmarketplacebadge.apphb.com/downloads/cl.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide) [![](https://vsmarketplacebadge.apphb.com/rating/cl.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide)
 
 ## Summary 📑
 
 A 8051/STM8/ARM **IDE** with multiple toolchains for Vs Code, A Keil C51/STM32 **project migration tool**. Provide development, compilation, burning, management functions for **8051/stm8/arm** projects on vscode.
-
-**Keil 5 version is mainly supported.**
 
 **Only for Windows platform**
 
@@ -18,7 +16,6 @@ A 8051/STM8/ARM **IDE** with multiple toolchains for Vs Code, A Keil C51/STM32 *
 
 ## Feature 🎉
 
-* Import Keil uVision 5 project as a vscode workspace
 * Export eide project as a Keil project file (.uvprojx, .uvproj)
 * Create, Open eide project
 * Create, Import eide project template
@@ -43,14 +40,6 @@ A 8051/STM8/ARM **IDE** with multiple toolchains for Vs Code, A Keil C51/STM32 *
 
 ***
 
-## Syntax support
-
-* Standard C syntax highlights, code snippets
-* 8051 C syntax highlights, code snippets
-* 8051 assembly(A51) syntax highlights, code snippets
-
-***
-
 ## Usage 📖
 
 #### There is a simple [user's manual](https://github0null.github.io/eide-manual) for foreign friends
@@ -60,6 +49,16 @@ A 8051/STM8/ARM **IDE** with multiple toolchains for Vs Code, A Keil C51/STM32 *
 ## Version changes 🔔
 
 > #### Feedback 👉 [Github Issue](https://github.com/github0null/eide/issues)
+
+### [v1.14.0]
+- New: Add reset button for RAM/ROM view
+- Fixed: Error in ARM-GCC hardware floating-point option
+- Changed: Remove the keil import function
+- Changed: Hide useless view options based on option values
+- Changed: Remove useless C51 syntax highlighting
+- Optimized: Expand some keywords further
+- Optimized: Remove unnecessary files and directories when installing keil Package to reduce project size
+***
 
 ### [v1.13.1]
 - Changed: Adjust the compiled configuration format for arm-gcc. The old configuration format is no longer valid
@@ -77,14 +76,3 @@ A 8051/STM8/ARM **IDE** with multiple toolchains for Vs Code, A Keil C51/STM32 *
 - Fixed: can't delete include path
 - Fixed: some bugs
 ***
-
-### [v1.12.2]
-- Fixed: ARMCC V5 C++ Parameter problems
-- Fixed: some bugs
-***
-
-## Attention 🚩
-  + **The multi-objective Keil project is not supported**
-  + **Make sure that JLink is installed on your computer before using the ARM burn tool**
-  + **Import keil project will be failed if Keil uVision's version is tool low**
-  + **Import process: source files in Keil project structure will be copied to eide project directory, header search path, macro, compile configuration inherited from Keil**

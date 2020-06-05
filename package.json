@@ -1,6 +1,6 @@
 {
     "name": "eide",
-    "displayName": "EIDE",
+    "displayName": "Embedded IDE",
     "publisher": "cl",
     "author": {
         "name": "cl",
@@ -9,8 +9,6 @@
     "keywords": [
         "arm",
         "stm32",
-        "keil",
-        "mdk",
         "c51",
         "sdcc",
         "stm8",
@@ -19,8 +17,8 @@
     ],
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
-    "description": "一个 8051/STM8/Cortex-M 多工具链的开发环境、Keil 项目迁移工具 (A 8051/STM8/Cortex-M IDE with multiple toolchains, A Keil project migration tool)",
-    "version": "1.13.4",
+    "description": "一个 8051/STM8/Cortex-M 多工具链的开发环境 (A 8051/STM8/Cortex-M IDE with multiple toolchains)",
+    "version": "1.14.0",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -840,10 +838,6 @@
         },
         "snippets": [
             {
-                "language": "c",
-                "path": "./lang/c51.snippets.json"
-            },
-            {
                 "language": "a51",
                 "path": "./lang/a51.snippets.json"
             }
@@ -870,21 +864,6 @@
                     "**/*.A51"
                 ],
                 "configuration": "./lang/a51.language-configuration.json"
-            },
-            {
-                "id": "c",
-                "aliases": [
-                    "C51"
-                ],
-                "extensions": [
-                    ".c",
-                    ".h"
-                ],
-                "filenamePatterns": [
-                    "**/*.c",
-                    "**/*.h"
-                ],
-                "configuration": "./lang/c51.language-configuration.json"
             }
         ],
         "jsonValidation": [
@@ -918,11 +897,6 @@
             }
         ],
         "grammars": [
-            {
-                "language": "c",
-                "scopeName": "source.c.c51",
-                "path": "./lang/c51.tmLanguage.json"
-            },
             {
                 "language": "eide-output",
                 "scopeName": "eide.output",

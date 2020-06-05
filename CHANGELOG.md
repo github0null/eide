@@ -4,10 +4,13 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
-### [v1.13.4]
+### [v1.14.0]
 - 新增: 为 RAM/ROM 视图增加重置按钮
 - 修复: ARM-GCC 硬件浮点选项错误
+- 更改: 移除 keil 导入功能
 - 更改: 根据选项值隐藏无用的视图选项
+- 更改: 移除无用的 c51 语法高亮
+- 优化: 进一步扩展一些关键字
 - 优化: 安装 keil package 时删除不必要的文件和目录以减小项目体积
 - 优化一些细节
 ***

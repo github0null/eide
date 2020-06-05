@@ -1,4 +1,4 @@
-# EIDE
+# Embedded IDE
 
 [![](https://vsmarketplacebadge.apphb.com/version/cl.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide) [![](https://vsmarketplacebadge.apphb.com/installs/cl.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide) [![](https://vsmarketplacebadge.apphb.com/downloads/cl.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide) [![](https://vsmarketplacebadge.apphb.com/rating/cl.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide)
 
@@ -11,8 +11,6 @@
 一个 8051/STM8/ARM 多工具链的集成开发环境、Keil 项目迁移工具。用于提供在 vscode 上对 8051, STM8, Cortex-M 项目进行 开发, 编译, 烧录, 管理的功能。
 
 **仅支持 Windows 平台**
-
-**Keil 项目迁移主要支持 Keil 5 版本，其他版本未做过测试**
 
 ***
 
@@ -31,20 +29,11 @@
 
 ***
 
-## 语法扩展
-
-* 标准 C 语法高亮，代码片段
-* 8051 C 语法高亮，代码片段
-* 8051 汇编(A51) 语法高亮，代码片段
-
-***
-
 ## 功能 🎉
 
-* 导入 Keil uVision 5 项目并完成 EIDE 项目的创建 (对 Keil uVision 5 支持较好)
-* 导出 Keil 项目文件(.uvprojx, .uvproj)到工作区
 * 创建、打开 EIDE 项目
 * 创建、导入 项目模板
+* 导出 Keil 项目文件(.uvprojx, .uvproj) 到工作区
 * 编译、快速编译，支持 Keil 所有工具链，以及附加的工具链
 * 生成 hex，bin，elf
 * 烧录到芯片
@@ -58,7 +47,7 @@
 
 #### 1. 设置好要使用的工具链的路径
 
-#### 2. 新建或导入项目，然后就可以开始了
+#### 2. 新建项目，然后就可以开始了
 
 ***
 
@@ -71,10 +60,13 @@
 > #### 每次的版本变化，使用说明 就可能会更新，注意查看。
 > #### 遇到了BUG?😭 反馈途径 [1]：[Github Issue](https://github.com/github0null/eide/issues)，[2]：QQ群: **941749328**
 
-### [v1.13.4]
+### [v1.14.0]
 - 新增: 为 RAM/ROM 视图增加重置按钮
 - 修复: ARM-GCC 硬件浮点选项错误
+- 更改: 移除 keil 导入功能
 - 更改: 根据选项值隐藏无用的视图选项
+- 更改: 移除无用的 c51 语法高亮
+- 优化: 进一步扩展一些关键字
 - 优化: 安装 keil package 时删除不必要的文件和目录以减小项目体积
 - 优化一些细节
 ***
@@ -90,8 +82,3 @@
 - 更改: 调整某些设置的范围
 - 修复: 一些细节问题
 ***
-
-## 注意事项 🚩
-  + **导入功能: 不支持导入多目标的 Keil 项目**
-  + **导入功能: 对于过低版本的 Keil uVision 项目可能会导入失败**
-  + **导入过程: Keil 项目结构里的源文件都会被复制到 eide 项目的目录下，头文件搜索路径，宏，编译配置继承自 Keil**
