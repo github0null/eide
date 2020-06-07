@@ -71,7 +71,7 @@
     "contributes": {
         "configuration": [
             {
-                "title": "EIDE",
+                "title": "Embedded IDE",
                 "properties": {
                     "EIDE.Option.CreateBatchFile": {
                         "type": "boolean",
