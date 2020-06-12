@@ -4,6 +4,12 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.14.1]
+- 更改: 排除目录时递归排除所有子目录
+- 修复一些问题
+- 优化一些使用细节
+***
+
 ### [v1.14.0]
 - 新增: 为 RAM/ROM 视图增加重置按钮
 - 修复: ARM-GCC 硬件浮点选项错误

@@ -18,7 +18,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一个 8051/STM8/Cortex-M 多工具链的开发环境 (A 8051/STM8/Cortex-M IDE with multiple toolchains)",
-    "version": "1.14.0",
+    "version": "1.14.1",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -198,13 +198,13 @@
                     "EIDE.ARM.StlinkExePath": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "ST-LINK_CLI.exe path",
+                        "markdownDescription": "STLink flasher `ST-LINK_CLI.exe` path",
                         "default": "D:\\STLink\\ST-LINK_CLI.exe"
                     },
                     "EIDE.ARM.STVP.CliExePath": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "STVP_CmdLine.exe path",
+                        "markdownDescription": "STVP flasher `STVP_CmdLine.exe` path",
                         "default": "D:\\STVP\\stvp\\STVP_CmdLine.exe"
                     },
                     "EIDE.ARM.UseMulti-ThreadMode": {
@@ -336,11 +336,15 @@
             },
             {
                 "command": "Project.historyRecord",
-                "title": "History record",
+                "title": "History records",
                 "icon": {
                     "dark": "./res/icon/Note_16x.svg",
                     "light": "./res/icon/Note_16x.svg"
                 }
+            },
+            {
+                "command": "Project.clearHistoryRecord",
+                "title": "Clear history records"
             },
             {
                 "command": "Project.saveAll",
@@ -480,7 +484,7 @@
             },
             {
                 "command": "Project.addIncludeDir",
-                "title": "Add include folder to project",
+                "title": "add include directories to project",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
                     "light": "./res/icon/Add_16xMD.svg"
@@ -488,7 +492,7 @@
             },
             {
                 "command": "Project.addLibDir",
-                "title": "Add library folders to project",
+                "title": "add library search paths to project",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
                     "light": "./res/icon/Add_16xMD.svg"
@@ -496,10 +500,34 @@
             },
             {
                 "command": "Project.addDefine",
-                "title": "Add a macro to project",
+                "title": "add macros to project",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
                     "light": "./res/icon/Add_16xMD.svg"
+                }
+            },
+            {
+                "command": "Project.showIncludeDir",
+                "title": "display all include paths",
+                "icon": {
+                    "dark": "./res/icon/eye_16x_dark.svg",
+                    "light": "./res/icon/eye_16x.svg"
+                }
+            },
+            {
+                "command": "Project.showLibDir",
+                "title": "display all lib paths",
+                "icon": {
+                    "dark": "./res/icon/eye_16x_dark.svg",
+                    "light": "./res/icon/eye_16x.svg"
+                }
+            },
+            {
+                "command": "Project.showDefine",
+                "title": "display all macros",
+                "icon": {
+                    "dark": "./res/icon/eye_16x_dark.svg",
+                    "light": "./res/icon/eye_16x.svg"
                 }
             },
             {
@@ -544,7 +572,7 @@
             },
             {
                 "command": "Project.importDependenceFromPack",
-                "title": "Import this dependence",
+                "title": "install this component",
                 "icon": {
                     "dark": "./res/icon/AddDependencyGraph_16x.svg",
                     "light": "./res/icon/AddDependencyGraph_16x.svg"
@@ -552,7 +580,7 @@
             },
             {
                 "command": "Project.removeDependenceFromPack",
-                "title": "Remove this dependence",
+                "title": "uninstall this component",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
                     "light": "./res/icon/TestCoveredFailing_16x.svg"
@@ -646,6 +674,10 @@
                 {
                     "command": "Project.historyRecord",
                     "group": "navigation",
+                    "when": "view == Project"
+                },
+                {
+                    "command": "Project.clearHistoryRecord",
                     "when": "view == Project"
                 },
                 {
@@ -805,12 +837,27 @@
                     "when": "viewItem == INC_GROUP && view == Project"
                 },
                 {
+                    "command": "Project.showIncludeDir",
+                    "group": "inline",
+                    "when": "viewItem == INC_GROUP && view == Project"
+                },
+                {
                     "command": "Project.addLibDir",
                     "group": "inline",
                     "when": "viewItem == LIB_GROUP && view == Project"
                 },
                 {
+                    "command": "Project.showLibDir",
+                    "group": "inline",
+                    "when": "viewItem == LIB_GROUP && view == Project"
+                },
+                {
                     "command": "Project.addDefine",
+                    "group": "inline",
+                    "when": "viewItem == DEFINE_GROUP && view == Project"
+                },
+                {
+                    "command": "Project.showDefine",
                     "group": "inline",
                     "when": "viewItem == DEFINE_GROUP && view == Project"
                 },

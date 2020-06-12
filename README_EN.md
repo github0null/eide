@@ -4,7 +4,7 @@
 
 ## Summary 📑
 
-A 8051/STM8/ARM **IDE** with multiple toolchains for Vs Code, A Keil C51/STM32 **project migration tool**. Provide development, compilation, burning, management functions for **8051/stm8/arm** projects on vscode.
+A 8051/STM8/ARM **IDE**  for VsCode, A Keil C51/STM32 **project migration tool**. Provide development, compilation, burning, management functions for **8051/stm8/arm** projects on vscode.
 
 **Only for Windows platform**
 
