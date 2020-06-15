@@ -116,6 +116,67 @@
             "properties": {
                 "misc-controls": {
                     "$ref": "#/definitions/misc-controls"
+                },
+                "printf-formatter": {
+                    "type": "string",
+                    "description": "printf formatter option",
+                    "default": "tiny",
+                    "enum": [
+                        "auto",
+                        "tiny",
+                        "small",
+                        "small-without-multibyte",
+                        "large",
+                        "large-without-multibyte",
+                        "full",
+                        "full-without-multibyte"
+                    ],
+                    "enumDescriptions": [
+                        "Automatic choice of formatter.",
+                        "No specifier a or A, no specifier n, no float, no flags.",
+                        "No specifier a or A, no specifier n, no float.",
+                        "No specifier a or A, no specifier n, no float, without multibytes",
+                        "No specifier a or A.",
+                        "No specifier a or A, without multibytes.",
+                        "Full formatting.",
+                        "Full formatting, without multibytes."
+                    ]
+                },
+                "scanf-formatter": {
+                    "type": "string",
+                    "description": "scanf formatter option",
+                    "default": "small",
+                    "enum": [
+                        "auto",
+                        "small",
+                        "small-without-multibyte",
+                        "large",
+                        "large-without-multibyte",
+                        "full",
+                        "full-without-multibyte"
+                    ],
+                    "enumDescriptions": [
+                        "Automatic choice of formatter.",
+                        "No specifier n, no float, no scan set, no assignment suppressing.",
+                        "No specifier n, no float, no scan set, no assignment suppressing, without multibytes.",
+                        "No specifier n, no float.",
+                        "No specifier n, no float, without multibytes.",
+                        "Full formatting.",
+                        "Full formatting, without multibytes."
+                    ]
+                },
+                "math-functions": {
+                    "type": "string",
+                    "description": "math functions option",
+                    "default": "smaller",
+                    "enum": [
+                        "default",
+                        "smaller"
+                    ],
+                    "enumDescriptions": [
+                        "Default variants of cos, sin, tan, log, log10, pow, and exp.",
+                        "Smaller size, higher execution speed, less precision, smaller input range."
+                    ]
                 }
             }
         },
