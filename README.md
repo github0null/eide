@@ -61,7 +61,9 @@
 > #### 遇到了BUG?😭 反馈途径 [1]：[Github Issue](https://github.com/github0null/eide/issues)，[2]：QQ群: **941749328**
 
 ### [v1.14.2]
-- 优化: 完善 IAR_STM8 工具链的 编译参数 和 宏扩展
+- 修复: 完善 IAR_STM8 工具链的 编译参数 和 宏扩展
+- 优化: 串口监视器支持 GBK 编码
+- 优化一些细节
 ***
 
 ### [v1.14.1]

@@ -18,7 +18,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一个 8051/STM8/Cortex-M 多工具链的开发环境 (A 8051/STM8/Cortex-M IDE with multiple toolchains)",
-    "version": "1.14.1",
+    "version": "1.14.2",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -96,6 +96,12 @@
                         "scope": "machine",
                         "markdownDescription": "remote public github repository url, format: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
                         "default": "github0null/eide-doc/contents/eide-template-list"
+                    },
+                    "EIDE.SerialPortMonitor.DefaultPort": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "Default port name",
+                        "default": "COM3"
                     },
                     "EIDE.SerialPortMonitor.ShowStatusBar": {
                         "type": "boolean",
