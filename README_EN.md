@@ -40,7 +40,7 @@ A 8051/STM8/ARM development environment for VsCode. Provide development, compila
 
 ## Usage 📖
 
-#### There is a simple [user's manual](https://github0null.github.io/eide-manual) for foreign friends
+#### There is a simple [user's manual](https://github0null.github.io/eide-manual)
 
 ***
 
