@@ -4,7 +4,7 @@
 
 ## Summary 📑
 
-A 8051/STM8/ARM **IDE**  for VsCode, A Keil C51/STM32 **project migration tool**. Provide development, compilation, burning, management functions for **8051/stm8/arm** projects on vscode.
+A 8051/STM8/ARM development environment for VsCode. Provide development, compilation, burning functions;
 
 **Only for Windows platform**
 
@@ -23,8 +23,7 @@ A 8051/STM8/ARM **IDE**  for VsCode, A Keil C51/STM32 **project migration tool**
 * Generate hex, bin, elf
 * Download to device board
 * Serialport monitor
-* manage project
-* Generate `cortex-debug` debug configurations for STM32 project
+* Generate Cortex-debug / STM8-debug debug configurations for STM32 / STM8 project
 
 ***
 
@@ -33,8 +32,7 @@ A 8051/STM8/ARM **IDE**  for VsCode, A Keil C51/STM32 **project migration tool**
 #### ![8051](https://img.shields.io/badge/-8051_:-grey.svg) ![status](https://img.shields.io/badge/Keil_C51-done-brightgreen.svg) ![status](https://img.shields.io/badge/SDCC-done-brightgreen.svg)
 
 
-#### ![STM8](https://img.shields.io/badge/-STM8_:-grey.svg) ![status](https://img.shields.io/badge/IAR_STM8-done-brightgreen.svg)
-
+#### ![STM8](https://img.shields.io/badge/-STM8_:-grey.svg) ![status](https://img.shields.io/badge/IAR_STM8-done-brightgreen.svg) ![status](https://img.shields.io/badge/SDCC-done-brightgreen.svg)
 
 #### ![ARM](https://img.shields.io/badge/-ARM_:-grey.svg) ![status](https://img.shields.io/badge/ARMCC_V5-done-brightgreen.svg) ![status](https://img.shields.io/badge/ARMCC_V6-done-brightgreen.svg) ![status](https://img.shields.io/badge/ARM_GCC-done-brightgreen.svg)
 

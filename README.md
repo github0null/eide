@@ -8,7 +8,7 @@
 
 ## 简述 📑
 
-一个 8051/STM8/Cortex-M 的开发环境。用于在 vscode 上提供对 8051, STM8, Cortex-M 项目进行 开发, 编译, 烧录, 管理的功能。
+一个 8051/STM8/Cortex-M 的开发环境。用于在 vscode 上提供对 8051, STM8, Cortex-M 项目进行 开发, 编译, 烧录 的功能。
 
 **仅支持 Windows 平台**
 
@@ -38,8 +38,7 @@
 * 生成 hex，bin，elf
 * 烧录到芯片
 * 串口监视器
-* 管理项目依赖
-* 自动生成调试配置
+* 自动生成 Cortex-debug / STM8-debug 调试配置
 
 ***
 
