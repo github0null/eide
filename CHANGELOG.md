@@ -4,6 +4,12 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.14.3]
+- 更改: 调整 STVP 的烧录参数
+- 更改: 增加一些内置的项目模板，可在新建项目时选择
+- 更改: 将 ARM_GCC 默认的 FABI 值由 hard 改为 softfp
+***
+
 ### [v1.14.2]
 - 修复: 完善 IAR_STM8 工具链的 编译参数 和 宏扩展
 - 优化: 串口监视器支持 GBK 编码

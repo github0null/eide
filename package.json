@@ -18,7 +18,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一个 8051/STM8/Cortex-M 多工具链的开发环境 (A 8051/STM8/Cortex-M IDE with multiple toolchains)",
-    "version": "1.14.2",
+    "version": "1.14.3",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -580,8 +580,8 @@
                 "command": "Project.importDependenceFromPack",
                 "title": "install this component",
                 "icon": {
-                    "dark": "./res/icon/AddDependencyGraph_16x.svg",
-                    "light": "./res/icon/AddDependencyGraph_16x.svg"
+                    "dark": "./res/icon/AddToCollection_16x.svg",
+                    "light": "./res/icon/AddToCollection_16x.svg"
                 }
             },
             {
@@ -746,11 +746,6 @@
                 {
                     "command": "Project.exportXml",
                     "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
-                },
-                {
-                    "command": "Project.exportXml",
-                    "group": "inline",
-                    "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
                     "command": "Project.compile",
@@ -982,20 +977,6 @@
                 ]
             },
             {
-                "name": "armclang",
-                "fileLocation": "autoDetect",
-                "pattern": [
-                    {
-                        "regexp": "^(.+):(\\d+):(\\d+): (error|warning): (.+)$",
-                        "file": 1,
-                        "line": 2,
-                        "column": 3,
-                        "severity": 4,
-                        "message": 5
-                    }
-                ]
-            },
-            {
                 "name": "armcc",
                 "fileLocation": "autoDetect",
                 "pattern": [
@@ -1005,6 +986,20 @@
                         "line": 2,
                         "severity": 3,
                         "code": 4,
+                        "message": 5
+                    }
+                ]
+            },
+            {
+                "name": "gcc",
+                "fileLocation":"autoDetect",
+                "pattern":[
+                    {
+                        "regexp": "^(.+):(\\d+):(\\d+):\\s+(\\w+):\\s+(.*)$",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3,
+                        "severity": 4,
                         "message": 5
                     }
                 ]

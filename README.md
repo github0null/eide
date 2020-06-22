@@ -26,16 +26,13 @@
 
 #### ![ARM](https://img.shields.io/badge/-ARM_:-grey.svg) ![status](https://img.shields.io/badge/ARMCC_V5-✔-brightgreen.svg) ![status](https://img.shields.io/badge/ARMCC_V6-✔-brightgreen.svg) ![status](https://img.shields.io/badge/ARM_GCC-✔-brightgreen.svg)
 
-
 ***
 
 ## 功能 🎉
 
 * 创建、打开 EIDE 项目
 * 创建、导入 项目模板
-* 导出 Keil 项目文件(.uvprojx, .uvproj) 到工作区
-* 编译、快速编译，支持 Keil 所有工具链，以及附加的工具链
-* 生成 hex，bin，elf
+* 编译、快速编译, 生成 hex，bin
 * 烧录到芯片
 * 串口监视器
 * 自动生成 Cortex-debug / STM8-debug 调试配置
@@ -50,14 +47,20 @@
 
 ***
 
-#### 这里有一个简单的 [使用说明](https://blog.csdn.net/qq_40833810/category_9688932.html)，可以帮助大家简单的了解该插件的特性
+#### 这里有一个简要的 [使用说明](https://blog.csdn.net/qq_40833810/category_9688932.html)，可以帮助大家简单的了解该插件
 
 ***
 
 ## 版本变化 🔔 (最近3次，详见 [CHANGELOG](./CHANGELOG.md))
 
 > #### 每次的版本变化，使用说明 就可能会更新，注意查看。
-> #### 遇到了BUG?😭 反馈途径 [1]：[Github Issue](https://github.com/github0null/eide/issues)，[2]：QQ群: **941749328**
+> #### 遇到了 BUG ? 反馈途径 [1]：[Github Issue](https://github.com/github0null/eide/issues)，[2]：QQ群: **941749328**
+
+### [v1.14.3]
+- 更改: 调整 STVP 的烧录参数
+- 更改: 增加一些内置的项目模板，可在新建项目时选择
+- 更改: 将 ARM_GCC 默认的 FABI 值由 hard 改为 softfp
+***
 
 ### [v1.14.2]
 - 修复: 完善 IAR_STM8 工具链的 编译参数 和 宏扩展
@@ -69,15 +72,4 @@
 - 更改: 排除目录时递归排除所有子目录
 - 修复一些问题
 - 优化一些使用细节
-***
-
-### [v1.14.0]
-- 新增: 为 RAM/ROM 视图增加重置按钮
-- 修复: ARM-GCC 硬件浮点选项错误
-- 更改: 移除 keil 导入功能
-- 更改: 根据选项值隐藏无用的视图选项
-- 更改: 移除无用的 c51 语法高亮
-- 优化: 进一步扩展一些关键字
-- 优化: 安装 keil package 时删除不必要的文件和目录以减小项目体积
-- 优化一些细节
 ***
