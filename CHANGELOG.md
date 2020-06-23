@@ -4,6 +4,10 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.14.4]
+- 修复: C51 宏的格式不正确导致的编译错误
+***
+
 ### [v1.14.3]
 - 更改: 调整 STVP 的烧录参数
 - 更改: 增加一些内置的项目模板，可在新建项目时选择
