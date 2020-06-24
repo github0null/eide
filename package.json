@@ -12,13 +12,14 @@
         "c51",
         "sdcc",
         "stm8",
+        "c51",
         "8051",
         "eide"
     ],
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一个 8051/STM8/Cortex-M 多工具链的开发环境 (A 8051/STM8/Cortex-M IDE with multiple toolchains)",
-    "version": "1.14.5",
+    "version": "1.15.0",
     "engines": {
         "vscode": "^1.38.0"
     },
