@@ -1,0 +1,398 @@
+{
+    "keilName": "TargetArmAds",
+    "groups": {
+        "AC5": {
+            "global": {
+                "keilName": "ArmAdsMisc",
+                "properties": {
+                    "use-microLIB": {
+                        "keilName": "useUlib",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    }
+                }
+            },
+            "c/cpp-compiler": {
+                "keilName": "Cads",
+                "properties": {
+                    "execute-only-code": {
+                        "keilName": "useXO",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "optimization": {
+                        "keilName": "Optim",
+                        "defaultKey": "level-0",
+                        "enum": {
+                            "level-0": "1",
+                            "level-1": "2",
+                            "level-2": "3",
+                            "default": "3",
+                            "level-3": "4"
+                        }
+                    },
+                    "split-load-and-store-multiple": {
+                        "keilName": "SplitLS",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "one-elf-section-per-function": {
+                        "keilName": "OneElfS",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "plain-char-is-signed": {
+                        "keilName": "PlainCh",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "read-only-position-independent": {
+                        "keilName": "Ropi",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "read-write-position-independent": {
+                        "keilName": "Rwpi",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "warnings": {
+                        "keilName": "wLevel",
+                        "defaultKey": "all-warnings",
+                        "enum": {
+                            "unspecified": "0",
+                            "no-warnings": "1",
+                            "all-warnings": "2",
+                            "default": "2"
+                        }
+                    },
+                    "strict-ANSI-C": {
+                        "keilName": "Strict",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "enum-container-always-int": {
+                        "keilName": "EnumInt",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "gnu-extensions": {
+                        "keilName": "uGnu",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "c99-mode": {
+                        "keilName": "uC99",
+                        "enum": {
+                            "false": "0",
+                            "true": "1"
+                        }
+                    }
+                }
+            },
+            "asm-compiler": {
+                "keilName": "Aads",
+                "properties": {
+                    "thumb-mode": {
+                        "keilName": "thumb",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "execute-only-code": {
+                        "keilName": "useXO",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "split-load-and-store-multiple": {
+                        "keilName": "SplitLS",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "read-only-position-independent": {
+                        "keilName": "Ropi",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "read-write-position-independent": {
+                        "keilName": "Rwpi",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "no-warnings": {
+                        "keilName": "NoWarn",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    }
+                }
+            },
+            "linker": {
+                "keilName": "LDads",
+                "properties": {
+                    "read-only-position-independent": {
+                        "keilName": "Ropi",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "read-write-position-independent": {
+                        "keilName": "Rwpi",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "not-search-std-libs": {
+                        "keilName": "noStLib",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    }
+                }
+            }
+        },
+        "AC6": {
+            "global": {
+                "keilName": "ArmAdsMisc",
+                "properties": {
+                    "use-microLIB": {
+                        "keilName": "useUlib",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    }
+                }
+            },
+            "c/cpp-compiler": {
+                "keilName": "Cads",
+                "properties": {
+                    "execute-only-code": {
+                        "keilName": "useXO",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "optimization": {
+                        "keilName": "Optim",
+                        "enum": {
+                            "level-0": "1",
+                            "default": "1",
+                            "level-1": "2",
+                            "level-2": "3",
+                            "level-3": "4",
+                            "level-fast": "5",
+                            "level-balanced": "6",
+                            "level-image-size": "7"
+                        }
+                    },
+                    "link-time-optimization": {
+                        "keilName": "oTime",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "split-load-and-store-multiple": {
+                        "keilName": "SplitLS",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "one-elf-section-per-function": {
+                        "keilName": "OneElfS",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "turn-Warning-into-errors": {
+                        "keilName": "v6WtE",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "plain-char-is-signed": {
+                        "keilName": "PlainCh",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "read-only-position-independent": {
+                        "keilName": "Ropi",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "read-write-position-independent": {
+                        "keilName": "Rwpi",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "short-enums#wchar": {
+                        "keilName": "vShortWch",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "use-rtti": {
+                        "keilName": "v6Rtti",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "warnings": {
+                        "keilName": "wLevel",
+                        "enum": {
+                            "unspecified": "0",
+                            "no-warnings": "1",
+                            "all-warnings": "2",
+                            "ac5-like-warnings": "3",
+                            "default": "3",
+                            "misra-compatible": "4"
+                        }
+                    },
+                    "language-c": {
+                        "keilName": "v6Lang",
+                        "enum": {
+                            "default": "6",
+                            "c90": "1",
+                            "gnu90": "2",
+                            "c99": "3",
+                            "gnu99": "4",
+                            "c11": "5",
+                            "gnu11": "6"
+                        }
+                    },
+                    "language-cpp": {
+                        "keilName": "v6LangP",
+                        "enum": {
+                            "default": "2",
+                            "c++98": "1",
+                            "gnu++98": "2",
+                            "c++11": "3",
+                            "gnu++11": "4",
+                            "c++03": "5",
+                            "c++14": "6"
+                        }
+                    }
+                }
+            },
+            "asm-compiler": {
+                "keilName": "Aads",
+                "properties": {
+                    "$use": {
+                        "keilName": "uClangAs",
+                        "enum": {
+                            "asm-clang": "1",
+                            "asm": "0"
+                        }
+                    },
+                    "thumb-mode": {
+                        "keilName": "thumb",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "split-load-and-store-multiple": {
+                        "keilName": "SplitLS",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "read-only-position-independent": {
+                        "keilName": "Ropi",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "read-write-position-independent": {
+                        "keilName": "Rwpi",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "no-warnings": {
+                        "keilName": "NoWarn",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    }
+                }
+            },
+            "linker": {
+                "keilName": "LDads",
+                "properties": {
+                    "read-only-position-independent": {
+                        "keilName": "Ropi",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "read-write-position-independent": {
+                        "keilName": "Rwpi",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
+                    "not-search-std-libs": {
+                        "keilName": "noStLib",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

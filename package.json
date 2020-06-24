@@ -637,6 +637,11 @@
             {
                 "command": "eide.c51ToSdcc",
                 "title": "Convert Keil_C51 registers to SDCC format"
+            },
+            {
+                "command": "eide.updateModels",
+                "category": "eide",
+                "title": "Update compiler models"
             }
         ],
         "keybindings": [

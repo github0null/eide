@@ -1,4 +1,3 @@
-.vscode
 /node_modules
 /bin
 /out
@@ -9,11 +8,6 @@ vsc-extension-quickstart.md
 .EIDE
 .vscodeignore
 lib
-res/data
-res/html
-res/template
-res/icon
-!res/icon/icon.png
 /dist
 /doc
 pack.js

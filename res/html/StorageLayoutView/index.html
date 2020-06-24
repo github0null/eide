@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>RAM ROM Layout</title>
+
+    <link href="${bootstrap-css}" rel="stylesheet">
+    <link href="${checkbox-css}" rel="stylesheet">
+    <script src="${bootstrap-js}"></script>
+
+    <!--<link href="../bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../checkbox/checkbox.min.css" rel="stylesheet">
+    
+    <script src="../bootstrap/js/bootstrap.min.js"></script>-->
+
+    <style>
+        body {
+            margin: 12px;
+            background-color: var(--vscode-editor-background);
+        }
+
+        li {
+            list-style-type: none;
+        }
+        
+        #submit {
+            display: flex;
+            justify-content: center;
+        }
+
+        .form-group {
+            margin: 0;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="panel panel-info">
+        <div class="panel-heading">
+            <h4 class="panel-title">
+                <li data-parent="#body">
+                    RAM Layout
+                </li>
+            </h4>
+        </div>
+        <div id="RAM-Layout" class="panel-collapse collapse in">
+            <div class="panel-body">
+                <table class="table table-bordered" >
+                    <caption>On-Chip</caption>
+                    <thead>
+                        <tr>
+                            <th>default</th>
+                            <th>start address</th>
+                            <th>size</th>
+                            <th>NoInit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr id="IRAM1">
+                            <td>
+                                <div class="pretty p-svg p-curve">
+                                    <input id="IRAM1-default" type="checkbox"/>
+                                    <div class="state p-info">
+                                        <!-- svg path -->
+                                        <svg class="svg svg-icon" viewBox="0 0 20 20">
+                                            <path d="M7.629,14.566c0.125,0.125,0.291,0.188,0.456,0.188c0.164,0,0.329-0.062,0.456-0.188l8.219-8.221c0.252-0.252,0.252-0.659,0-0.911c-0.252-0.252-0.659-0.252-0.911,0l-7.764,7.763L4.152,9.267c-0.252-0.251-0.66-0.251-0.911,0c-0.252,0.252-0.252,0.66,0,0.911L7.629,14.566z" style="stroke: white;fill:white;"></path>
+                                        </svg>
+                                        <label>IRAM1</label>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-group">
+                                    <input id="IRAM1-startAddr" type="text" class="form-control">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-group">
+                                    <input id="IRAM1-size" type="text" class="form-control">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="pretty p-svg p-curve">
+                                    <input id="IRAM1-NoInit" type="checkbox">
+                                    <div class="state p-info">
+                                        <!-- svg path -->
+                                        <svg class="svg svg-icon" viewBox="0 0 20 20">
+                                            <path d="M7.629,14.566c0.125,0.125,0.291,0.188,0.456,0.188c0.164,0,0.329-0.062,0.456-0.188l8.219-8.221c0.252-0.252,0.252-0.659,0-0.911c-0.252-0.252-0.659-0.252-0.911,0l-7.764,7.763L4.152,9.267c-0.252-0.251-0.66-0.251-0.911,0c-0.252,0.252-0.252,0.66,0,0.911L7.629,14.566z" style="stroke: white;fill:white;"></path>
+                                        </svg>
+                                        <label></label>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr id="IRAM2">
+                            <td>
+                                <div class="pretty p-svg p-curve">
+                                    <input id="IRAM2-default" type="checkbox">
+                                    <div class="state p-info">
+                                        <!-- svg path -->
+                                        <svg class="svg svg-icon" viewBox="0 0 20 20">
+                                            <path d="M7.629,14.566c0.125,0.125,0.291,0.188,0.456,0.188c0.164,0,0.329-0.062,0.456-0.188l8.219-8.221c0.252-0.252,0.252-0.659,0-0.911c-0.252-0.252-0.659-0.252-0.911,0l-7.764,7.763L4.152,9.267c-0.252-0.251-0.66-0.251-0.911,0c-0.252,0.252-0.252,0.66,0,0.911L7.629,14.566z" style="stroke: white;fill:white;"></path>
+                                        </svg>
+                                        <label>IRAM2</label>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-group">
+                                    <input id="IRAM2-startAddr" type="text" class="form-control">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-group">
+                                    <input id="IRAM2-size" type="text" class="form-control">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="pretty p-svg p-curve">
+                                    <input id="IRAM2-NoInit" type="checkbox">
+                                    <div class="state p-info">
+                                        <!-- svg path -->
+                                        <svg class="svg svg-icon" viewBox="0 0 20 20">
+                                            <path d="M7.629,14.566c0.125,0.125,0.291,0.188,0.456,0.188c0.164,0,0.329-0.062,0.456-0.188l8.219-8.221c0.252-0.252,0.252-0.659,0-0.911c-0.252-0.252-0.659-0.252-0.911,0l-7.764,7.763L4.152,9.267c-0.252-0.251-0.66-0.251-0.911,0c-0.252,0.252-0.252,0.66,0,0.911L7.629,14.566z" style="stroke: white;fill:white;"></path>
+                                        </svg>
+                                        <label></label>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <table class="table table-bordered">
+                    <caption>Off-Chip</caption>
+                    <thead>
+                        <tr>
+                            <th>default</th>
+                            <th>start address</th>
+                            <th>size</th>
+                            <th>NoInit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr id="RAM1">
+                            <td>
+                                <div class="pretty p-svg p-curve">
+                                    <input id="RAM1-default" type="checkbox">
+                                    <div class="state p-info">
+                                        <!-- svg path -->
+                                        <svg class="svg svg-icon" viewBox="0 0 20 20">
+                                            <path d="M7.629,14.566c0.125,0.125,0.291,0.188,0.456,0.188c0.164,0,0.329-0.062,0.456-0.188l8.219-8.221c0.252-0.252,0.252-0.659,0-0.911c-0.252-0.252-0.659-0.252-0.911,0l-7.764,7.763L4.152,9.267c-0.252-0.251-0.66-0.251-0.911,0c-0.252,0.252-0.252,0.66,0,0.911L7.629,14.566z" style="stroke: white;fill:white;"></path>
+                                        </svg>
+                                        <label>RAM1</label>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-group">
+                                    <input id="RAM1-startAddr" type="text" class="form-control">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-group">
+                                    <input id="RAM1-size" type="text" class="form-control">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="pretty p-svg p-curve">
+                                    <input id="RAM1-NoInit" type="checkbox">
+                                    <div class="state p-info">
+                                        <!-- svg path -->
+                                        <svg class="svg svg-icon" viewBox="0 0 20 20">
+                                            <path d="M7.629,14.566c0.125,0.125,0.291,0.188,0.456,0.188c0.164,0,0.329-0.062,0.456-0.188l8.219-8.221c0.252-0.252,0.252-0.659,0-0.911c-0.252-0.252-0.659-0.252-0.911,0l-7.764,7.763L4.152,9.267c-0.252-0.251-0.66-0.251-0.911,0c-0.252,0.252-0.252,0.66,0,0.911L7.629,14.566z" style="stroke: white;fill:white;"></path>
+                                        </svg>
+                                        <label></label>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr id="RAM2">
+                            <td>
+                                <div class="pretty p-svg p-curve">
+                                    <input id="RAM2-default" type="checkbox">
+                                    <div class="state p-info">
+                                        <!-- svg path -->
+                                        <svg class="svg svg-icon" viewBox="0 0 20 20">
+                                            <path d="M7.629,14.566c0.125,0.125,0.291,0.188,0.456,0.188c0.164,0,0.329-0.062,0.456-0.188l8.219-8.221c0.252-0.252,0.252-0.659,0-0.911c-0.252-0.252-0.659-0.252-0.911,0l-7.764,7.763L4.152,9.267c-0.252-0.251-0.66-0.251-0.911,0c-0.252,0.252-0.252,0.66,0,0.911L7.629,14.566z" style="stroke: white;fill:white;"></path>
+                                        </svg>
+                                        <label>RAM2</label>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-group">
+                                    <input id="RAM2-startAddr" type="text" class="form-control">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-group">
+                                    <input id="RAM2-size" type="text" class="form-control">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="pretty p-svg p-curve">
+                                    <input id="RAM2-NoInit" type="checkbox">
+                                    <div class="state p-info">
+                                        <!-- svg path -->
+                                        <svg class="svg svg-icon" viewBox="0 0 20 20">
+                                            <path d="M7.629,14.566c0.125,0.125,0.291,0.188,0.456,0.188c0.164,0,0.329-0.062,0.456-0.188l8.219-8.221c0.252-0.252,0.252-0.659,0-0.911c-0.252-0.252-0.659-0.252-0.911,0l-7.764,7.763L4.152,9.267c-0.252-0.251-0.66-0.251-0.911,0c-0.252,0.252-0.252,0.66,0,0.911L7.629,14.566z" style="stroke: white;fill:white;"></path>
+                                        </svg>
+                                        <label></label>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr id="RAM3">
+                            <td>
+                                <div class="pretty p-svg p-curve">
+                                    <input id="RAM3-default" type="checkbox">
+                                    <div class="state p-info">
+                                        <!-- svg path -->
+                                        <svg class="svg svg-icon" viewBox="0 0 20 20">
+                                            <path d="M7.629,14.566c0.125,0.125,0.291,0.188,0.456,0.188c0.164,0,0.329-0.062,0.456-0.188l8.219-8.221c0.252-0.252,0.252-0.659,0-0.911c-0.252-0.252-0.659-0.252-0.911,0l-7.764,7.763L4.152,9.267c-0.252-0.251-0.66-0.251-0.911,0c-0.252,0.252-0.252,0.66,0,0.911L7.629,14.566z" style="stroke: white;fill:white;"></path>
+                                        </svg>
+                                        <label>RAM3</label>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-group">
+                                    <input id="RAM3-startAddr" type="text" class="form-control">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-group">
+                                    <input id="RAM3-size" type="text" class="form-control">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="pretty p-svg p-curve">
+                                    <input id="RAM3-NoInit" type="checkbox">
+                                    <div class="state p-info">
+                                        <!-- svg path -->
+                                        <svg class="svg svg-icon" viewBox="0 0 20 20">
+                                            <path d="M7.629,14.566c0.125,0.125,0.291,0.188,0.456,0.188c0.164,0,0.329-0.062,0.456-0.188l8.219-8.221c0.252-0.252,0.252-0.659,0-0.911c-0.252-0.252-0.659-0.252-0.911,0l-7.764,7.763L4.152,9.267c-0.252-0.251-0.66-0.251-0.911,0c-0.252,0.252-0.252,0.66,0,0.911L7.629,14.566z" style="stroke: white;fill:white;"></path>
+                                        </svg>
+                                        <label></label>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-warning">
+        <div class="panel-heading">
+            <h4 class="panel-title">
+                <li data-parent="#body">
+                    ROM Layout
+                </li>
+            </h4>
+        </div>
+        <div id="ROM-Layout" class="panel-collapse collapse in">
+            <div class="panel-body">
+                <table class="table table-bordered">
+                    <caption>On-Chip</caption>
+                    <thead>
+                        <tr>
+                            <th>default</th>
+                            <th>start address</th>
+                            <th>size</th>
+                            <th>startup</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr id="IROM1">
+                            <td>
+                                <div class="pretty p-svg p-curve">
+                                    <input id="IROM1-default" type="checkbox">
+                                    <div class="state p-warning">
+                                        <!-- svg path -->
+                                        <svg class="svg svg-icon" viewBox="0 0 20 20">
+                                            <path d="M7.629,14.566c0.125,0.125,0.291,0.188,0.456,0.188c0.164,0,0.329-0.062,0.456-0.188l8.219-8.221c0.252-0.252,0.252-0.659,0-0.911c-0.252-0.252-0.659-0.252-0.911,0l-7.764,7.763L4.152,9.267c-0.252-0.251-0.66-0.251-0.911,0c-0.252,0.252-0.252,0.66,0,0.911L7.629,14.566z" style="stroke: white;fill:white;"></path>
+                                        </svg>
+                                        <label>IROM1</label>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-group">
+                                    <input id="IROM1-startAddr" type="text" class="form-control">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-group">
+                                    <input id="IROM1-size" type="text" class="form-control">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="pretty p-default p-round">
+                                    <input id="IROM1-startup" type="radio" name="optionsRadiosinline">
+                                    <div class="state p-warning">
+                                        <label></label>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr id="IROM2">
+                            <td>
+                                <div class="pretty p-svg p-curve">
+                                    <input id="IROM2-default" type="checkbox">
+                                    <div class="state p-warning">
+                                        <!-- svg path -->
+                                        <svg class="svg svg-icon" viewBox="0 0 20 20">
+                                            <path d="M7.629,14.566c0.125,0.125,0.291,0.188,0.456,0.188c0.164,0,0.329-0.062,0.456-0.188l8.219-8.221c0.252-0.252,0.252-0.659,0-0.911c-0.252-0.252-0.659-0.252-0.911,0l-7.764,7.763L4.152,9.267c-0.252-0.251-0.66-0.251-0.911,0c-0.252,0.252-0.252,0.66,0,0.911L7.629,14.566z" style="stroke: white;fill:white;"></path>
+                                        </svg>
+                                        <label>IROM2</label>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-group">
+                                    <input id="IROM2-startAddr" type="text" class="form-control">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-group">
+                                    <input id="IROM2-size" type="text" class="form-control">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="pretty p-default p-round">
+                                    <input id="IROM2-startup" type="radio" name="optionsRadiosinline">
+                                    <div class="state p-warning">
+                                        <label></label>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <table class="table table-bordered">
+                    <caption>Off-Chip</caption>
+                    <thead>
+                        <tr>
+                            <th>default</th>
+                            <th>start address</th>
+                            <th>size</th>
+                            <th>startup</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr id="ROM1">
+                            <td>
+                                <div class="pretty p-svg p-curve">
+                                    <input id="ROM1-default" type="checkbox">
+                                    <div class="state p-warning">
+                                        <!-- svg path -->
+                                        <svg class="svg svg-icon" viewBox="0 0 20 20">
+                                            <path d="M7.629,14.566c0.125,0.125,0.291,0.188,0.456,0.188c0.164,0,0.329-0.062,0.456-0.188l8.219-8.221c0.252-0.252,0.252-0.659,0-0.911c-0.252-0.252-0.659-0.252-0.911,0l-7.764,7.763L4.152,9.267c-0.252-0.251-0.66-0.251-0.911,0c-0.252,0.252-0.252,0.66,0,0.911L7.629,14.566z" style="stroke: white;fill:white;"></path>
+                                        </svg>
+                                        <label>ROM1</label>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-group">
+                                    <input id="ROM1-startAddr" type="text" class="form-control">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-group">
+                                    <input id="ROM1-size" type="text" class="form-control">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="pretty p-default p-round">
+                                    <input id="ROM1-startup" type="radio" name="optionsRadiosinline">
+                                    <div class="state p-warning">
+                                        <label></label>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr id="ROM2">
+                            <td>
+                                <div class="pretty p-svg p-curve">
+                                    <input id="ROM2-default" type="checkbox">
+                                    <div class="state p-warning">
+                                        <!-- svg path -->
+                                        <svg class="svg svg-icon" viewBox="0 0 20 20">
+                                            <path d="M7.629,14.566c0.125,0.125,0.291,0.188,0.456,0.188c0.164,0,0.329-0.062,0.456-0.188l8.219-8.221c0.252-0.252,0.252-0.659,0-0.911c-0.252-0.252-0.659-0.252-0.911,0l-7.764,7.763L4.152,9.267c-0.252-0.251-0.66-0.251-0.911,0c-0.252,0.252-0.252,0.66,0,0.911L7.629,14.566z" style="stroke: white;fill:white;"></path>
+                                        </svg>
+                                        <label>ROM2</label>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-group">
+                                    <input id="ROM2-startAddr" type="text" class="form-control">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-group">
+                                    <input id="ROM2-size" type="text" class="form-control">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="pretty p-default p-round">
+                                    <input id="ROM2-startup" type="radio" name="optionsRadiosinline">
+                                    <div class="state p-warning">
+                                        <label></label>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr id="ROM3">
+                            <td>
+                                <div class="pretty p-svg p-curve">
+                                    <input id="ROM3-default" type="checkbox">
+                                    <div class="state p-warning">
+                                        <!-- svg path -->
+                                        <svg class="svg svg-icon" viewBox="0 0 20 20">
+                                            <path d="M7.629,14.566c0.125,0.125,0.291,0.188,0.456,0.188c0.164,0,0.329-0.062,0.456-0.188l8.219-8.221c0.252-0.252,0.252-0.659,0-0.911c-0.252-0.252-0.659-0.252-0.911,0l-7.764,7.763L4.152,9.267c-0.252-0.251-0.66-0.251-0.911,0c-0.252,0.252-0.252,0.66,0,0.911L7.629,14.566z" style="stroke: white;fill:white;"></path>
+                                        </svg>
+                                        <label>ROM3</label>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-group">
+                                    <input id="ROM3-startAddr" type="text" class="form-control">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-group">
+                                    <input id="ROM3-size" type="text" class="form-control">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="pretty p-default p-round">
+                                    <input id="ROM3-startup" type="radio" name="optionsRadiosinline">
+                                    <div class="state p-warning">
+                                        <label></label>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="submit">
+        <button id="save" type="button" class="btn btn-info" style="width: 10%;margin: 5px;">Save</button>
+        <button id="reset" type="button" class="btn btn-warning" style="width: 10%;margin: 5px;">Reset</button>
+    </div>
+</body>
+
+<!--<script type="text/javascript" src="./index.js"></script>-->
+
+<script type="text/javascript" src="${index-js}"></script>
+
+</html>
