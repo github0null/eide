@@ -4,6 +4,10 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.15.0]
+- 新增: 自动更新编译器参数模型
+***
+
 ### [v1.14.4]
 - 修复: C51 宏的格式不正确导致的编译错误
 ***

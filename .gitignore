@@ -12,3 +12,4 @@ lib
 /doc
 pack.js
 test.js
+**/data/config.json
