@@ -15,6 +15,7 @@ vsc-extension-quickstart.md
 **/.gitignore
 *.code-workspace
 **/sln.record
+**/data/config.json
 /bin/ARM/*.temp
 /bin/ARM/*.bat
 **/*.pdb

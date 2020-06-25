@@ -5,7 +5,8 @@ All notable changes to the "eide" extension will be documented in this file.
 ***
 
 ### [v1.15.0]
-- 新增: 自动更新编译器参数模型
+- 新增: 自动从 Github 更新全局的编译器参数配置
+- 更改: 调整 ARM-GCC 默认的项目编译配置
 ***
 
 ### [v1.14.4]

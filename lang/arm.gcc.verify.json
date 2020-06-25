@@ -128,6 +128,19 @@
                         "禁用 (disable)",
                         "开启并输出 dwarf-3 格式的调试信息 (Outputs debugging information in dwarf-3 format)"
                     ]
+                },
+                "$float-abi-type": {
+                    "markdownDescription": "硬件浮点 ABI (Hardware floating-point ABI)",
+                    "type": "string",
+                    "default": "softfp",
+                    "enum": [
+                        "softfp",
+                        "hard"
+                    ],
+                    "enumDescriptions": [
+                        "使用 ARM 通用寄存器完成参数传递, 兼容 soft",
+                        "使用 FPU 浮点寄存器完成参数传递"
+                    ]
                 }
             }
         },
