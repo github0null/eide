@@ -318,11 +318,19 @@
                         true,
                         false
                     ]
+                },
+                "use-non-free": {
+                    "type": "boolean",
+                    "markdownDescription": "use non-free libraries and include paths",
+                    "enum": [
+                        true,
+                        false
+                    ]
                 }
             }
         },
         "c/cpp-compiler": {
-            "markdownDescription": "C 编译器选项",
+            "markdownDescription": "C 编译器选项 (C compiler options)",
             "type": "object",
             "properties": {
                 "misc-controls": {
@@ -363,7 +371,7 @@
                     "$ref": "#/definitions/misc-controls"
                 },
                 "$use": {
-                    "markdownDescription": "要使用哪种输出文件，默认 hex (Which output file to use, 'hex' by default)",
+                    "markdownDescription": "要使用哪种输出格式，默认为 hex (Which output format to use, 'hex' is default)",
                     "type": "string",
                     "enum": [
                         "s19",
@@ -371,7 +379,7 @@
                     ],
                     "enumDescriptions": [
                         "Motorola S19 format",
-                        "ELF format (Only for HC08/S08)"
+                        "ELF format (Only for STM8/HC08/S08)"
                     ]
                 },
                 "$mainFileName": {
@@ -382,7 +390,7 @@
                 "output-lib": {
                     "type": "boolean",
                     "default": true,
-                    "description": "生成为 LIB (generate LIB)"
+                    "description": "生成 Library (generate Library)"
                 }
             }
         }
