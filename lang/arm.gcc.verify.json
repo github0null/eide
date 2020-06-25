@@ -119,14 +119,16 @@
                     "type": "string",
                     "default": "enable",
                     "enum": [
-                        "enable",
                         "disable",
+                        "enable",
+                        "dwarf-2",
                         "dwarf-3"
                     ],
                     "enumDescriptions": [
-                        "开启 (enable)",
                         "禁用 (disable)",
-                        "开启并输出 dwarf-3 格式的调试信息 (Outputs debugging information in dwarf-3 format)"
+                        "开启 (enable)",
+                        "开启并输出 dwarf-2 格式的调试信息 (Output debug information with dwarf-2 format)",
+                        "开启并输出 dwarf-3 格式的调试信息 (Output debug information with dwarf-3 format)"
                     ]
                 },
                 "$float-abi-type": {
