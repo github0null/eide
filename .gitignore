@@ -13,3 +13,4 @@ lib
 pack.js
 test.js
 **/data/config.json
+**/data/sln.record

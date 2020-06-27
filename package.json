@@ -84,7 +84,7 @@
                         "type": "boolean",
                         "scope": "resource",
                         "markdownDescription": "Use Task to build project instead of Terminal",
-                        "default": false
+                        "default": true
                     },
                     "EIDE.Option.InsertExtraCommandsAtBegin": {
                         "type": "boolean",

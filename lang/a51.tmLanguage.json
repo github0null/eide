@@ -87,7 +87,7 @@
             }
         },
         "comment": {
-            "match": "(?i)(;.*)",
+            "match": "(;.*)",
             "captures": {
                 "1": {
                     "name": "comment.line"
