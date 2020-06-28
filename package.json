@@ -969,20 +969,6 @@
         ],
         "problemMatchers": [
             {
-                "name": "c51",
-                "fileLocation": "autoDetect",
-                "pattern": [
-                    {
-                        "regexp": "^\\*\\*\\* (ERROR|WARNING) (\\w+) IN LINE (\\d+) OF (.+): (.+)$",
-                        "severity": 1,
-                        "code": 2,
-                        "line": 3,
-                        "file": 4,
-                        "message": 5
-                    }
-                ]
-            },
-            {
                 "name": "armcc",
                 "fileLocation": "autoDetect",
                 "pattern": [
