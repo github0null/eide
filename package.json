@@ -811,7 +811,7 @@
                 {
                     "command": "Project.addSrcDir",
                     "group": "inline",
-                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                    "when": "viewItem == PROJECT && view == Project"
                 },
                 {
                     "command": "Project.removeSrcDir",
