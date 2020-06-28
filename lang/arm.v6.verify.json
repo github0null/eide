@@ -164,7 +164,6 @@
                     "markdownDescription": "代码优化级别 (optimization level)",
                     "type": "string",
                     "enum": [
-                        "default",
                         "level-0",
                         "level-1",
                         "level-2",
