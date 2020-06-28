@@ -53,13 +53,12 @@
 
 ## 版本变化 🔔 (最近3次，详见 [CHANGELOG](./CHANGELOG.md))
 
-> #### 每次的版本变化，使用说明 就可能会更新，注意查看。
 > #### 遇到了 BUG ? 反馈途径 [1]：[Github Issue](https://github.com/github0null/eide/issues)，[2]：QQ群: **941749328**
 
 ### [v1.15.0]
 - 新增: 自动从 Github 更新全局的编译器参数配置
 - 更改: 调整 ARM-GCC 默认的项目编译配置
-- 更改: 调整 JLink 烧录配置，使用 JLink.exe 代替原来的 JFlash.exe
+- 更改: 调整 JLink 烧录配置，使用 JLink 命令行代替 JFlash
 - 更改: 默认使用 task 发送命令，可在插件设置中更改
 ***
 
