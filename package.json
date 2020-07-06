@@ -19,7 +19,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一个 8051/STM8/Cortex-M 多工具链的开发环境 (A 8051/STM8/Cortex-M IDE with multiple toolchains)",
-    "version": "1.15.0",
+    "version": "1.16.0",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -451,7 +451,7 @@
             },
             {
                 "command": "Project.exportXml",
-                "title": "Export Keil Project XML (.uvprojx or .uvproj)",
+                "title": "Export keil project XML",
                 "icon": {
                     "dark": "./res/icon/ExportFile_16x.svg",
                     "light": "./res/icon/ExportFile_16x.svg"
@@ -467,7 +467,7 @@
             },
             {
                 "command": "Project.switchToolchain",
-                "title": "Choose Toolchain",
+                "title": "Choose toolchain",
                 "icon": {
                     "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
                     "light": "./res/icon/SwitchSourceOrTarget_16x.svg"
@@ -475,7 +475,7 @@
             },
             {
                 "command": "Project.switchUploader",
-                "title": "Choose hex/bin flasher",
+                "title": "Choose flasher",
                 "icon": {
                     "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
                     "light": "./res/icon/SwitchSourceOrTarget_16x.svg"

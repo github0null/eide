@@ -4,6 +4,13 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.16.0]
+- 新增：pyOCD 烧录器，用以支持 CMSIS-DAP 烧录器; ()[使用方法] 
+- 更改：完善 c_cpp_properties.json 的内容
+- 修复：部分 keil 包解析错误
+- 优化一些细节问题
+***
+
 ### [v1.15.0]
 - 新增: 自动从 Github 更新全局的编译器参数配置
 - 更改: 调整 ARM-GCC 默认的项目编译配置

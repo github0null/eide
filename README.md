@@ -12,9 +12,19 @@
 
 **仅支持 Windows 平台**
 
+![preview](./res/preview/show.png)
+
 ***
 
-![preview](./res/preview/show.png)
+## 功能特性 🎉
+
+* 提供丰富的项目模板方便快速开始项目
+* 支持从标准的 CMSIS Package 安装芯片的外设库
+* 支持多种主流的编译工具
+* 一键编译、快速编译, 自动生成 hex，bin
+* 一键烧录到芯片，支持主流的烧录器
+* 内置的串口监视器
+* 为调试器 Cortex-debug / STM8-debug 自动生成调试配置
 
 ***
 
@@ -25,17 +35,6 @@
 #### ![STM8](https://img.shields.io/badge/-STM8_:-grey.svg) ![status](https://img.shields.io/badge/IAR_STM8-✔-brightgreen.svg) ![status](https://img.shields.io/badge/SDCC-✔-brightgreen.svg)
 
 #### ![ARM](https://img.shields.io/badge/-ARM_:-grey.svg) ![status](https://img.shields.io/badge/ARMCC_V5-✔-brightgreen.svg) ![status](https://img.shields.io/badge/ARMCC_V6-✔-brightgreen.svg) ![status](https://img.shields.io/badge/ARM_GCC-✔-brightgreen.svg)
-
-***
-
-## 功能 🎉
-
-* 创建、打开 EIDE 项目
-* 创建、导入 项目模板
-* 编译、快速编译, 生成 hex，bin
-* 烧录到芯片
-* 串口监视器
-* 自动生成 Cortex-debug / STM8-debug 调试配置
 
 ***
 
