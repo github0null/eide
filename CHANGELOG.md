@@ -5,10 +5,10 @@ All notable changes to the "eide" extension will be documented in this file.
 ***
 
 ### [v1.16.0]
-- 新增：pyOCD 烧录器，用以支持 CMSIS-DAP 烧录器; ()[使用方法] 
+- 新增：pyocd 烧录，用以支持 DAP-Link，[使用方法](https://blog.csdn.net/qq_40833810/article/details/104114921#_pyocd__169)
 - 更改：完善 c_cpp_properties.json 的内容
 - 修复：部分 keil 包解析错误
-- 优化一些细节问题
+- 优化一些使用细节
 ***
 
 ### [v1.15.0]

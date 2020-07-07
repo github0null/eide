@@ -54,6 +54,13 @@
 
 > #### 遇到了 BUG ? 反馈途径 [1]：[Github Issue](https://github.com/github0null/eide/issues)，[2]：QQ群: **941749328**
 
+### [v1.16.0]
+- 新增：pyocd 烧录，用以支持 DAP-Link，[使用方法](https://blog.csdn.net/qq_40833810/article/details/104114921#_pyocd__169)
+- 更改：完善 c_cpp_properties.json 的内容
+- 修复：部分 keil 包解析错误
+- 优化一些使用细节
+***
+
 ### [v1.15.0]
 - 新增: 自动从 Github 更新全局的编译器参数配置
 - 更改: 调整 ARM-GCC 默认的项目编译配置
@@ -63,9 +70,3 @@
 
 ### [v1.14.4]
 - 修复: C51 宏的格式不正确导致的编译错误
-***
-
-### [v1.14.3]
-- 更改: 调整 STVP 的烧录参数
-- 更改: 增加一些内置的项目模板，可在新建项目时选择
-- 更改: 将 ARM_GCC 默认的 FABI 值由 hard 改为 softfp
