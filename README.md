@@ -20,9 +20,8 @@
 
 * 提供丰富的项目模板方便快速开始项目
 * 支持从标准的 CMSIS Package 安装芯片的外设库
-* 支持多种主流的编译工具
-* 一键编译、快速编译, 自动生成 hex，bin
-* 一键烧录到芯片，支持主流的烧录器
+* 一键编译、快速编译，支持多种主流的编译工具
+* 一键烧录到芯片，支持多种主流的烧录器
 * 内置的串口监视器
 * 为调试器 Cortex-debug / STM8-debug 自动生成调试配置
 
@@ -54,8 +53,15 @@
 
 > #### 遇到了 BUG ? 反馈途径 [1]：[Github Issue](https://github.com/github0null/eide/issues)，[2]：QQ群: **941749328**
 
+### [v1.17.0]
+- 新增：OpenOCD 烧录
+- 更改：快速编译在搜索头文件时忽略文件名的大小写
+- 更改：修补 axf 时保留符号表
+- 优化一些使用细节
+***
+
 ### [v1.16.0]
-- 新增：pyocd 烧录，用以支持 DAP-Link，[使用方法](https://blog.csdn.net/qq_40833810/article/details/104114921#_pyocd__169)
+- 新增：pyocd 烧录，用以支持 DAP-Link，[使用方法](https://blog.csdn.net/qq_40833810/article/details/104114921#_pyocd__157)
 - 更改：完善 c_cpp_properties.json 的内容
 - 修复：部分 keil 包解析错误
 - 优化一些使用细节
@@ -66,7 +72,3 @@
 - 更改: 调整 ARM-GCC 默认的项目编译配置
 - 更改: 简化 JLink 烧录配置，使用 JLink 命令行代替 JFlash
 - 更改: 默认使用 task 发送命令，可在插件设置中更改
-***
-
-### [v1.14.4]
-- 修复: C51 宏的格式不正确导致的编译错误

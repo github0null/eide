@@ -4,6 +4,13 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.17.0]
+- 新增：OpenOCD 烧录
+- 更改：快速编译在搜索头文件时忽略文件名的大小写
+- 更改：修补 axf 时保留符号表
+- 优化一些使用细节
+***
+
 ### [v1.16.0]
 - 新增：pyocd 烧录，用以支持 DAP-Link，[使用方法](https://blog.csdn.net/qq_40833810/article/details/104114921#_pyocd__169)
 - 更改：完善 c_cpp_properties.json 的内容

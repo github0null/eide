@@ -19,7 +19,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一个 8051/STM8/Cortex-M 多工具链的开发环境 (A 8051/STM8/Cortex-M IDE with multiple toolchains)",
-    "version": "1.16.0",
+    "version": "1.17.0",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -175,8 +175,9 @@
                     "EIDE.IAR.STM8.InstallDirectory": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "IAR install directory [`example: D:\\IAR`]",
-                        "default": "D:\\IAR"
+                        "markdownDescription": "IAR for STM8 install directory [`example: D:\\IAR`]",
+                        "default": "D:\\IAR",
+                        "pattern": "^\\S.*[^\\s\\\\]$"
                     },
                     "EIDE.ARM.GCC.Prefix": {
                         "type": "string",
@@ -188,7 +189,8 @@
                         "type": "string",
                         "scope": "resource",
                         "markdownDescription": "GCC for ARM toolchain install directory [`example: D:\\ARM-GNU-Tool\\8 2019-q3-update`]",
-                        "default": "D:\\ARM-GCC\\8 2019-q3-update"
+                        "default": "D:\\ARM-GCC\\8 2019-q3-update",
+                        "pattern": "^\\S.*[^\\s\\\\]$"
                     },
                     "EIDE.ARM.INI.Path": {
                         "type": "string",
@@ -200,19 +202,20 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "JLink install directory [`example: D:\\JLink`]",
-                        "default": "D:\\JLink"
+                        "default": "D:\\JLink",
+                        "pattern": "^\\S.*[^\\s\\\\]$"
+                    },
+                    "EIDE.ARM.OpenOCD.ExePath": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "OpenOCD.exe path [`example: D:\\OpenOCD\\bin\\openocd.exe`]",
+                        "default": "D:\\OpenOCD\\bin\\openocd.exe"
                     },
                     "EIDE.ARM.StlinkExePath": {
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "STLink flasher `ST-LINK_CLI.exe` path",
                         "default": "D:\\STLink\\ST-LINK_CLI.exe"
-                    },
-                    "EIDE.ARM.STVP.CliExePath": {
-                        "type": "string",
-                        "scope": "machine",
-                        "markdownDescription": "STVP flasher `STVP_CmdLine.exe` path",
-                        "default": "D:\\STVP\\stvp\\STVP_CmdLine.exe"
                     },
                     "EIDE.ARM.UseMulti-ThreadMode": {
                         "type": "boolean",
@@ -257,7 +260,7 @@
                     "EIDE.ARM.Option.AxfToElf": {
                         "type": "boolean",
                         "scope": "resource",
-                        "markdownDescription": "Convert `.axf` to `.elf` after compile, this is an experimental function",
+                        "markdownDescription": "Convert `.axf` to `.elf` for ARMCC compiler",
                         "default": true
                     },
                     "EIDE.ARM.Project.MacroList.Release": {
@@ -273,6 +276,12 @@
                         "markdownDescription": "Macro List for Debug Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
                         "default": "DEBUG;",
                         "pattern": "^(?:[a-zA-Z_][\\w]*(?:=[\\w\\.\\-]+)?;)*$"
+                    },
+                    "EIDE.STM8.STVP.CliExePath": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "STVP flasher `STVP_CmdLine.exe` path",
+                        "default": "D:\\STVP\\stvp\\STVP_CmdLine.exe"
                     },
                     "EIDE.C51.INI.Path": {
                         "type": "string",
@@ -298,7 +307,8 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "SDCC install directory [`example: D:\\SDCC`]",
-                        "default": "D:\\SDCC"
+                        "default": "D:\\SDCC",
+                        "pattern": "^\\S.*[^\\s\\\\]$"
                     }
                 }
             }
