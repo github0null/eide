@@ -4,6 +4,12 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.17.1]
+- 修复：完善 IAR_STM8 关键字扩展
+- 更改：调整一些默认的编译配置
+- 优化一些使用细节
+***
+
 ### [v1.17.0]
 - 新增：OpenOCD 烧录
 - 更改：快速编译在搜索头文件时忽略文件名的大小写

@@ -116,7 +116,7 @@
                 },
                 "ram-mode": {
                     "type": "string",
-                    "markdownDescription": "RAM 类型 (RAM Type)",
+                    "markdownDescription": "RAM 模式 (RAM mode)",
                     "default": "LARGE",
                     "enum": [
                         "SMALL",
@@ -131,7 +131,7 @@
                 },
                 "rom-mode": {
                     "type": "string",
-                    "markdownDescription": "ROM 类型 (ROM Type)",
+                    "markdownDescription": "ROM 模式 (ROM mode)",
                     "default": "LARGE",
                     "enum": [
                         "SMALL",
@@ -215,7 +215,7 @@
                 "output-lib": {
                     "type": "boolean",
                     "default": true,
-                    "description": "生成为 LIB (generate LIB)"
+                    "description": "生成链接库 (generate link library)"
                 },
                 "use-RTX": {
                     "type": "string",

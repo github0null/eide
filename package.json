@@ -19,7 +19,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一个 8051/STM8/Cortex-M 多工具链的开发环境 (A 8051/STM8/Cortex-M IDE with multiple toolchains)",
-    "version": "1.17.0",
+    "version": "1.17.1",
     "engines": {
         "vscode": "^1.38.0"
     },
