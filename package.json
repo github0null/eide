@@ -128,19 +128,19 @@
                         "type": "integer",
                         "scope": "resource",
                         "markdownDescription": "SerialPort Baud Rate",
-                        "default": "9600"
+                        "default": 9600
                     },
                     "EIDE.SerialPortMonitor.DataBits": {
                         "type": "integer",
                         "scope": "resource",
                         "markdownDescription": "SerialPort Data Bits width",
-                        "default": "8"
+                        "default": 8
                     },
                     "EIDE.SerialPortMonitor.Parity": {
                         "type": "integer",
                         "scope": "resource",
                         "markdownDescription": "SerialPort Parity bit",
-                        "default": "0",
+                        "default": 0,
                         "enum": [
                             0,
                             1,
@@ -160,7 +160,7 @@
                         "type": "integer",
                         "scope": "resource",
                         "markdownDescription": "SerialPort Stop Bits",
-                        "default": "1",
+                        "default": 1,
                         "enum": [
                             1,
                             2,
@@ -347,8 +347,16 @@
                 "command": "Project.refresh",
                 "title": "Refresh",
                 "icon": {
-                    "dark": "./res/icon/action-refresh-dark.svg",
-                    "light": "./res/icon/action-refresh.svg"
+                    "dark": "./res/icon/refresh-dark.svg",
+                    "light": "./res/icon/refresh-light.svg"
+                }
+            },
+            {
+                "command": "sourceRoot.refresh",
+                "title": "Refresh folder",
+                "icon": {
+                    "dark": "./res/icon/refresh-dark.svg",
+                    "light": "./res/icon/refresh-light.svg"
                 }
             },
             {
@@ -437,7 +445,7 @@
             },
             {
                 "command": "Project.addPackage",
-                "title": "Install Keil Package",
+                "title": "Install CMSIS Package",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
                     "light": "./res/icon/Add_16xMD.svg"
@@ -445,7 +453,7 @@
             },
             {
                 "command": "Project.removePackage",
-                "title": "Uninstall this Keil Package",
+                "title": "Uninstall this CMSIS Package",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
                     "light": "./res/icon/TestCoveredFailing_16x.svg"
@@ -824,6 +832,11 @@
                     "when": "viewItem == PROJECT && view == Project"
                 },
                 {
+                    "command": "sourceRoot.refresh",
+                    "group": "inline",
+                    "when": "viewItem == FOLDER_ROOT && view == Project"
+                },
+                {
                     "command": "Project.removeSrcDir",
                     "group": "inline",
                     "when": "viewItem == FOLDER_ROOT && view == Project"
@@ -994,8 +1007,8 @@
             },
             {
                 "name": "gcc",
-                "fileLocation":"autoDetect",
-                "pattern":[
+                "fileLocation": "autoDetect",
+                "pattern": [
                     {
                         "regexp": "^(.+):(\\d+):(\\d+):\\s+(\\w+):\\s+(.*)$",
                         "file": 1,

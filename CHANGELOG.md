@@ -5,9 +5,9 @@ All notable changes to the "eide" extension will be documented in this file.
 ***
 
 ### [v1.17.1]
-- 修复：完善 IAR_STM8 关键字扩展
+- 修复：文件夹变化过快导致的刷新文件夹失败
 - 更改：调整一些默认的编译配置
-- 优化一些使用细节
+- 新增：支持使用 .eideignore 在打包项目时排除某些文件
 ***
 
 ### [v1.17.0]
