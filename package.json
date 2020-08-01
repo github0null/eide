@@ -18,8 +18,8 @@
     ],
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
-    "description": "一个 8051/STM8/Cortex-M 多工具链的开发环境 (A 8051/STM8/Cortex-M IDE with multiple toolchains)",
-    "version": "1.17.1",
+    "description": "一个 8051/STM8/Cortex-M 的开发工具 (A 8051/STM8/Cortex-M development tool)",
+    "version": "1.17.2",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -337,7 +337,7 @@
         "commands": [
             {
                 "command": "serialport.clear",
-                "title": "Clear serialport output",
+                "title": "Clear Serialport Output",
                 "icon": {
                     "dark": "./res/icon/action-clear-dark.svg",
                     "light": "./res/icon/action-clear.svg"
@@ -353,7 +353,7 @@
             },
             {
                 "command": "sourceRoot.refresh",
-                "title": "Refresh folder",
+                "title": "Refresh Folder",
                 "icon": {
                     "dark": "./res/icon/refresh-dark.svg",
                     "light": "./res/icon/refresh-light.svg"
@@ -361,7 +361,7 @@
             },
             {
                 "command": "Project.historyRecord",
-                "title": "History records",
+                "title": "History Records",
                 "icon": {
                     "dark": "./res/icon/Note_16x.svg",
                     "light": "./res/icon/Note_16x.svg"
@@ -369,11 +369,11 @@
             },
             {
                 "command": "Project.clearHistoryRecord",
-                "title": "Clear history records"
+                "title": "Clear History Records"
             },
             {
                 "command": "Project.saveAll",
-                "title": "Save all project",
+                "title": "Save All Projects",
                 "icon": {
                     "dark": "./res/icon/SaveAll_16x.svg",
                     "light": "./res/icon/SaveAll_16x.svg"
@@ -381,35 +381,43 @@
             },
             {
                 "command": "Project.setActive",
-                "title": "Active this project"
+                "title": "Active Project"
             },
             {
                 "command": "Project.save",
-                "title": "Save this project",
+                "title": "Save",
                 "icon": {
                     "dark": "./res/icon/Save_16x.svg",
                     "light": "./res/icon/Save_16x.svg"
                 }
             },
             {
-                "command": "Project.compile",
-                "title": "Build project",
-                "icon": {
-                    "dark": "./res/icon/BuildSolution_16x.svg",
-                    "light": "./res/icon/BuildSolution_16x.svg"
-                }
-            },
-            {
                 "command": "Project.fastCompile",
-                "title": "Fast build project",
+                "title": "Build",
                 "icon": {
                     "dark": "./res/icon/BuildSelection_16x.svg",
                     "light": "./res/icon/BuildSelection_16x.svg"
                 }
             },
             {
+                "command": "Project.compile",
+                "title": "Rebuild",
+                "icon": {
+                    "dark": "./res/icon/BuildSolution_16x.svg",
+                    "light": "./res/icon/BuildSolution_16x.svg"
+                }
+            },
+            {
+                "command": "Project.clean",
+                "title": "Clean",
+                "icon": {
+                    "dark": "./res/icon/clean_dark_16x.svg",
+                    "light": "./res/icon/clean_light_16x.svg"
+                }
+            },
+            {
                 "command": "Project.showBuildParams",
-                "title": "Show compiler command lines"
+                "title": "Show Compiler Command Lines"
             },
             {
                 "command": "Project.installCMSISPack",
@@ -421,15 +429,15 @@
             },
             {
                 "command": "Project.addSrcDir",
-                "title": "Add a source folder",
+                "title": "Add Source Folders",
                 "icon": {
-                    "dark": "./res/icon/Add_16xMD.svg",
-                    "light": "./res/icon/Add_16xMD.svg"
+                    "dark": "./res/icon/AddFolder_16x.svg",
+                    "light": "./res/icon/AddFolder_16x.svg"
                 }
             },
             {
                 "command": "Project.removeSrcDir",
-                "title": "Remove this source folder",
+                "title": "Remove This Source Folder",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
                     "light": "./res/icon/TestCoveredFailing_16x.svg"
@@ -437,7 +445,7 @@
             },
             {
                 "command": "Project.close",
-                "title": "Close project",
+                "title": "Close Project",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
                     "light": "./res/icon/TestCoveredFailing_16x.svg"
@@ -453,7 +461,7 @@
             },
             {
                 "command": "Project.removePackage",
-                "title": "Uninstall this CMSIS Package",
+                "title": "Uninstall This CMSIS Package",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
                     "light": "./res/icon/TestCoveredFailing_16x.svg"
@@ -461,7 +469,7 @@
             },
             {
                 "command": "Project.setDevice",
-                "title": "Choose a device",
+                "title": "Choose Device",
                 "icon": {
                     "dark": "./res/icon/FieldAdded_16x.svg",
                     "light": "./res/icon/FieldAdded_16x.svg"
@@ -469,7 +477,7 @@
             },
             {
                 "command": "Project.exportXml",
-                "title": "Export keil project XML",
+                "title": "Export Keil Project XML",
                 "icon": {
                     "dark": "./res/icon/ExportFile_16x.svg",
                     "light": "./res/icon/ExportFile_16x.svg"
@@ -485,7 +493,7 @@
             },
             {
                 "command": "Project.switchToolchain",
-                "title": "Choose toolchain",
+                "title": "Choose Toolchain",
                 "icon": {
                     "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
                     "light": "./res/icon/SwitchSourceOrTarget_16x.svg"
@@ -493,7 +501,7 @@
             },
             {
                 "command": "Project.switchUploader",
-                "title": "Choose flasher",
+                "title": "Choose Flasher",
                 "icon": {
                     "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
                     "light": "./res/icon/SwitchSourceOrTarget_16x.svg"
@@ -509,7 +517,7 @@
             },
             {
                 "command": "Project.addIncludeDir",
-                "title": "add include directories to project",
+                "title": "Add Include Folder",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
                     "light": "./res/icon/Add_16xMD.svg"
@@ -517,7 +525,7 @@
             },
             {
                 "command": "Project.addLibDir",
-                "title": "add library search paths to project",
+                "title": "Add Library Search Paths",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
                     "light": "./res/icon/Add_16xMD.svg"
@@ -525,7 +533,7 @@
             },
             {
                 "command": "Project.addDefine",
-                "title": "add macros to project",
+                "title": "Add Macros",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
                     "light": "./res/icon/Add_16xMD.svg"
@@ -533,7 +541,7 @@
             },
             {
                 "command": "Project.showIncludeDir",
-                "title": "display all include paths",
+                "title": "Display All Include Paths",
                 "icon": {
                     "dark": "./res/icon/eye_16x_dark.svg",
                     "light": "./res/icon/eye_16x.svg"
@@ -541,7 +549,7 @@
             },
             {
                 "command": "Project.showLibDir",
-                "title": "display all lib paths",
+                "title": "Display All Library Paths",
                 "icon": {
                     "dark": "./res/icon/eye_16x_dark.svg",
                     "light": "./res/icon/eye_16x.svg"
@@ -549,7 +557,7 @@
             },
             {
                 "command": "Project.showDefine",
-                "title": "display all macros",
+                "title": "Display All Macros",
                 "icon": {
                     "dark": "./res/icon/eye_16x_dark.svg",
                     "light": "./res/icon/eye_16x.svg"
@@ -557,7 +565,7 @@
             },
             {
                 "command": "Project.excludeSource",
-                "title": "Exclude this source file",
+                "title": "Exclude This File",
                 "icon": {
                     "dark": "./res/icon/StatusNo_16x.svg",
                     "light": "./res/icon/StatusNo_16x.svg"
@@ -565,7 +573,7 @@
             },
             {
                 "command": "Project.unexcludeSource",
-                "title": "Include this source file",
+                "title": "Include This File",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
                     "light": "./res/icon/Add_16xMD.svg"
@@ -573,7 +581,7 @@
             },
             {
                 "command": "Project.excludeFolder",
-                "title": "Exclude this folder",
+                "title": "Exclude This Folder",
                 "icon": {
                     "dark": "./res/icon/StatusNo_16x.svg",
                     "light": "./res/icon/StatusNo_16x.svg"
@@ -581,7 +589,7 @@
             },
             {
                 "command": "Project.unexcludeFolder",
-                "title": "Include this folder",
+                "title": "Include This Folder",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
                     "light": "./res/icon/Add_16xMD.svg"
@@ -589,7 +597,7 @@
             },
             {
                 "command": "Project.removeDependenceItem",
-                "title": "Remove this item",
+                "title": "Remove This Item",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
                     "light": "./res/icon/TestCoveredFailing_16x.svg"
@@ -597,7 +605,7 @@
             },
             {
                 "command": "Project.importDependenceFromPack",
-                "title": "install this component",
+                "title": "Install This Component",
                 "icon": {
                     "dark": "./res/icon/AddToCollection_16x.svg",
                     "light": "./res/icon/AddToCollection_16x.svg"
@@ -605,7 +613,7 @@
             },
             {
                 "command": "Project.removeDependenceFromPack",
-                "title": "uninstall this component",
+                "title": "Remove This Component",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
                     "light": "./res/icon/TestCoveredFailing_16x.svg"
@@ -613,7 +621,7 @@
             },
             {
                 "command": "Project.uploadToDevice",
-                "title": "Upload binary file to device",
+                "title": "Upload To Device",
                 "icon": {
                     "dark": "./res/icon/TransferDownload_16x.svg",
                     "light": "./res/icon/TransferDownload_16x.svg"
@@ -621,7 +629,7 @@
             },
             {
                 "command": "Project.copyItemValue",
-                "title": "Copy item value",
+                "title": "Copy Item Value",
                 "icon": {
                     "dark": "./res/icon/CopyToClipboard_16x.svg",
                     "light": "./res/icon/CopyToClipboard_16x.svg"
@@ -629,7 +637,7 @@
             },
             {
                 "command": "Project.switchMode",
-                "title": "Switch release/debug mode",
+                "title": "Switch Release/Debug Mode",
                 "icon": {
                     "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
                     "light": "./res/icon/SwitchSourceOrTarget_16x.svg"
@@ -637,7 +645,7 @@
             },
             {
                 "command": "Project.exportAsTemplate",
-                "title": "Export project template",
+                "title": "Export Project Template",
                 "icon": {
                     "dark": "./res/icon/TableToFile_16x.svg",
                     "light": "./res/icon/TableToFile_16x.svg"
@@ -651,16 +659,16 @@
             {
                 "command": "eide.uploadLog",
                 "category": "eide",
-                "title": "Upload log to remote server"
+                "title": "Upload Logs"
             },
             {
                 "command": "eide.c51ToSdcc",
-                "title": "Convert Keil_C51 registers to SDCC format"
+                "title": "Convert Keil_C51 Registers To SDCC Format"
             },
             {
                 "command": "eide.updateModels",
                 "category": "eide",
-                "title": "Update compiler models"
+                "title": "Update Compiler Models"
             }
         ],
         "keybindings": [
@@ -787,6 +795,15 @@
                 },
                 {
                     "command": "Project.fastCompile",
+                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                },
+                {
+                    "command": "Project.clean",
+                    "group": "inline",
+                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                },
+                {
+                    "command": "Project.clean",
                     "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
                 },
                 {

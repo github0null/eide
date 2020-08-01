@@ -4,6 +4,12 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.17.2]
+- 更改：调整了一些图标
+- 更改：调整了一些字符串提示
+- 更改：调整了构建工具
+***
+
 ### [v1.17.1]
 - 修复：文件夹变化过快导致的刷新文件夹失败
 - 更改：调整一些默认的编译配置
