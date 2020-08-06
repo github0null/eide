@@ -4,6 +4,12 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.18.0]
+- 新增：为编译器输出增加高亮
+- 更改：调整默认快捷键
+- 更改：使用 jsonc 解析某些带注释的 vsocde 配置
+***
+
 ### [v1.17.2]
 - 更改：调整了一些图标
 - 更改：调整了一些字符串提示

@@ -19,7 +19,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一个 8051/STM8/Cortex-M 的开发工具 (A 8051/STM8/Cortex-M development tool)",
-    "version": "1.17.2",
+    "version": "1.18.0",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -67,6 +67,7 @@
     },
     "dependencies": {
         "iconv-lite": "^0.5.0",
+        "jsonc": "^2.0.0",
         "x2js": "^3.3.1"
     },
     "contributes": {
@@ -384,6 +385,10 @@
                 "title": "Active Project"
             },
             {
+                "command": "Project.resetDatabase",
+                "title": "Reset Database"
+            },
+            {
                 "command": "Project.save",
                 "title": "Save",
                 "icon": {
@@ -674,11 +679,11 @@
         "keybindings": [
             {
                 "command": "Project.uploadToDevice",
-                "key": "f7"
+                "key": "ctrl+alt+d"
             },
             {
                 "command": "Project.compile",
-                "key": "f6"
+                "key": "ctrl+alt+f7"
             },
             {
                 "command": "eide.uploadLog",
@@ -686,7 +691,7 @@
             },
             {
                 "command": "Project.fastCompile",
-                "key": "f9"
+                "key": "f7"
             }
         ],
         "menus": {
@@ -751,10 +756,14 @@
                 },
                 {
                     "command": "Project.save",
-                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                    "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
                     "command": "Project.setActive",
+                    "when": "viewItem == SOLUTION && view == Project"
+                },
+                {
+                    "command": "Project.resetDatabase",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {

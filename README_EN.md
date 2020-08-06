@@ -4,7 +4,7 @@
 
 ## Summary 📑
 
-A 8051/STM8/ARM development environment for VsCode. Provide development, compilation, burning functions;
+A 8051/STM8/Cortex-M development tool for VsCode. Provide development, compilation, burning functions;
 
 **Only for Windows platform**
 
@@ -16,14 +16,12 @@ A 8051/STM8/ARM development environment for VsCode. Provide development, compila
 
 ## Feature 🎉
 
-* Export eide project as a Keil project file (.uvprojx, .uvproj)
-* Create, Open eide project
-* Create, Import eide project template
-* Build, Fast build project; support all of Keil's toolchains, and additional toolchains
-* Generate hex, bin, elf
-* Download to device board
-* Serialport monitor
-* Generate Cortex-debug / STM8-debug debug configurations for STM32 / STM8 project
+* Provides a rich project template for quick project start
+* Support for installation of chip peripheral libraries from standard CMSIS packages
+* One-key compilation, fast compilation, support a variety of mainstream compilation tools
+* One-key burn to chip, support a variety of mainstream burn
+* Built-in serial port monitor
+* Automatically generates a debug configuration for the debugger Cortex-debug/stm8-debug
 
 ***
 
@@ -47,30 +45,3 @@ A 8051/STM8/ARM development environment for VsCode. Provide development, compila
 ## Version changes 🔔
 
 > #### Feedback 👉 [Github Issue](https://github.com/github0null/eide/issues)
-
-### [v1.14.0]
-- New: Add reset button for RAM/ROM view
-- Fixed: Error in ARM-GCC hardware floating-point option
-- Changed: Remove the keil import function
-- Changed: Hide useless view options based on option values
-- Changed: Remove useless C51 syntax highlighting
-- Optimized: Expand some keywords further
-- Optimized: Remove unnecessary files and directories when installing keil Package to reduce project size
-***
-
-### [v1.13.1]
-- Changed: Adjust the compiled configuration format for arm-gcc. The old configuration format is no longer valid
-- Changed: Complete the project build with relative paths
-- Optimized: Display of view
-- Optimized: Reduce the length of the command line
-- Optimized: Remove useless functions
-- Fixed: The custom jflash path has been overwrited
-***
-
-### [v1.13.0]
-- New: IAR for STM8 toolchain support
-- New: STM8-Debug debug configuration
-- New: custom jflash file
-- Fixed: can't delete include path
-- Fixed: some bugs
-***
