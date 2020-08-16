@@ -691,7 +691,8 @@
             },
             {
                 "command": "Project.fastCompile",
-                "key": "f7"
+                "key": "f7",
+                "when": "!isInDiffEditor"
             }
         ],
         "menus": {
