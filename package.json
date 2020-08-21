@@ -19,7 +19,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一个 8051/STM8/Cortex-M 的开发工具 (A 8051/STM8/Cortex-M development tool)",
-    "version": "1.18.0",
+    "version": "1.18.1",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -976,7 +976,7 @@
                 "url": "./lang/stc.flash.verify.json"
             },
             {
-                "fileMatch": "**/*.keil.json",
+                "fileMatch": "**/*.options.keil.json",
                 "url": "./lang/8051.keil.verify.json"
             },
             {
@@ -984,15 +984,15 @@
                 "url": "./lang/sdcc.verify.json"
             },
             {
-                "fileMatch": "**/*.v5.json",
+                "fileMatch": "**/*.options.v5.json",
                 "url": "./lang/arm.v5.verify.json"
             },
             {
-                "fileMatch": "**/*.v6.json",
+                "fileMatch": "**/*.options.v6.json",
                 "url": "./lang/arm.v6.verify.json"
             },
             {
-                "fileMatch": "**/arm.options.gcc.json",
+                "fileMatch": "**/*.options.gcc.json",
                 "url": "./lang/arm.gcc.verify.json"
             },
             {
