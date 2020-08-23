@@ -4,7 +4,7 @@
     "type": "object",
     "definitions": {
         "misc-controls": {
-            "markdownDescription": "其他选项 (Other options)",
+            "markdownDescription": "自定义选项 (custom options)",
             "type": "array",
             "items": {
                 "type": "string"

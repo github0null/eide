@@ -119,7 +119,7 @@
             "type": "object",
             "properties": {
                 "misc-controls": {
-                    "markdownDescription": "Misc Controls",
+                    "markdownDescription": "自定义编译器选项 (custom compiler options)",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -240,7 +240,7 @@
             "type": "object",
             "properties": {
                 "misc-controls": {
-                    "markdownDescription": "Misc Controls",
+                    "markdownDescription": "自定义汇编器选项 (custom assember options)",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -302,7 +302,7 @@
             "type": "object",
             "properties": {
                 "misc-controls": {
-                    "markdownDescription": "Misc Controls",
+                    "markdownDescription": "自定义链接器选项 (custom linker options)",
                     "type": "array",
                     "items": {
                         "type": "string"

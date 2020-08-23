@@ -4,7 +4,7 @@
     "type": "object",
     "definitions": {
         "FLAGS": {
-            "markdownDescription": "自定义参数 (Custom parameters)",
+            "markdownDescription": "自定义选项 (custom options)",
             "type": "array",
             "items": {
                 "type": "string"
