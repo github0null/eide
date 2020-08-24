@@ -8,6 +8,7 @@ All notable changes to the "eide" extension will be documented in this file.
 - 更改：调整输出目录
 - 更改：调整 dependence 目录
 - 更改：调整某些文本提示
+- 更改：Build 功能: 使用编译器输出的 *.d 引用文件来确定哪些源文件需要重新编译，移除旧的方法
 ***
 
 ### [v1.18.1]

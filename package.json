@@ -385,10 +385,6 @@
                 "title": "Active Project"
             },
             {
-                "command": "Project.resetDatabase",
-                "title": "Reset Database"
-            },
-            {
                 "command": "Project.save",
                 "title": "Save",
                 "icon": {
@@ -761,10 +757,6 @@
                 },
                 {
                     "command": "Project.setActive",
-                    "when": "viewItem == SOLUTION && view == Project"
-                },
-                {
-                    "command": "Project.resetDatabase",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
