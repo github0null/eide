@@ -4,6 +4,12 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.18.3]
+- 更改：调整输出目录
+- 更改：调整 dependence 目录
+- 更改：调整某些文本提示
+***
+
 ### [v1.18.1]
 - 修复：输出目录不存在导致 jlink 烧录失败并无法再次进行烧录
 - 更改：使某些输入框能够一直获得焦点，防止因鼠标单击空白而导致输入框消失

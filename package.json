@@ -19,7 +19,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一个 8051/STM8/Cortex-M 的开发工具 (A 8051/STM8/Cortex-M development tool)",
-    "version": "1.18.2",
+    "version": "1.18.3",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -861,7 +861,7 @@
                 {
                     "command": "sourceRoot.refresh",
                     "group": "inline",
-                    "when": "viewItem == FOLDER_ROOT && view == Project"
+                    "when": "viewItem == FOLDER_ROOT_DEPS || viewItem == FOLDER_ROOT && view == Project"
                 },
                 {
                     "command": "Project.removeSrcDir",
