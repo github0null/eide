@@ -47,6 +47,12 @@
 
 > #### 遇到了 BUG ? 反馈途径: [Github Issue](https://github.com/github0null/eide/issues)
 
+### [v1.18.4]
+- 更改：允许为 KEIL_C51 的宏设置值
+- 更改：调整 KEIL_C51 汇编器为 A51，不再使用 AX51
+- 更改：调整 OpenOCD 下载的命令行
+***
+
 ### [v1.18.3]
 - 更改：调整输出目录
 - 更改：重命名 dependence 目录
