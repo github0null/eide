@@ -374,12 +374,14 @@
                     "markdownDescription": "要使用哪种输出格式，默认为 hex (Which output format to use, 'hex' is default)",
                     "type": "string",
                     "enum": [
+                        "hex",
                         "s19",
                         "elf"
                     ],
                     "enumDescriptions": [
-                        "Motorola S19 format",
-                        "ELF format (Only for STM8/HC08/S08)"
+                        "Intel HEX Format",
+                        "Motorola S19 Format",
+                        "ELF Format (Only for STM8/HC08/S08)"
                     ]
                 },
                 "$mainFileName": {
