@@ -19,13 +19,13 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一个 8051/STM8/Cortex-M 的开发工具 (A 8051/STM8/Cortex-M development tool)",
-    "version": "1.18.4",
+    "version": "1.18.5",
     "engines": {
         "vscode": "^1.38.0"
     },
     "categories": [
-        "Other",
         "Programming Languages",
+        "Other",
         "Snippets"
     ],
     "activationEvents": [
