@@ -4,6 +4,11 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.18.6]
+- 更改：调整了一些字符串提示
+- 更改：为某些编译配置增加 output-debug-info 选项，用以指定是否生成调试信息
+***
+
 ### [v1.18.4]
 - 更改：允许为 KEIL_C51 的宏设置值
 - 更改：调整 KEIL_C51 汇编器为 A51，不再使用 AX51

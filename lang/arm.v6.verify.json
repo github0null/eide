@@ -111,6 +111,23 @@
                         true,
                         false
                     ]
+                },
+                "output-debug-info": {
+                    "markdownDescription": "输出调试信息 (Output debug information)",
+                    "type": "string",
+                    "default": "enable",
+                    "enum": [
+                        "disable",
+                        "enable",
+                        "dwarf-2",
+                        "dwarf-3"
+                    ],
+                    "enumDescriptions": [
+                        "禁用 (disable)",
+                        "开启 (enable)",
+                        "开启并输出 dwarf-2 格式的调试信息 (Output debug information with dwarf-2 format)",
+                        "开启并输出 dwarf-3 格式的调试信息 (Output debug information with dwarf-3 format)"
+                    ]
                 }
             }
         },

@@ -111,6 +111,19 @@
                         true,
                         false
                     ]
+                },
+                "output-debug-info": {
+                    "markdownDescription": "输出调试信息 (Output debug information)",
+                    "type": "string",
+                    "default": "enable",
+                    "enum": [
+                        "disable",
+                        "enable"
+                    ],
+                    "enumDescriptions": [
+                        "禁用 (disable)",
+                        "开启 (enable)"
+                    ]
                 }
             }
         },
