@@ -21,3 +21,4 @@ vsc-extension-quickstart.md
 **/*.pdb
 **/ARM/*.xml
 *.js
+*.cpuprofile
