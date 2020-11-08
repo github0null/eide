@@ -19,7 +19,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一个 8051/STM8/Cortex-M 的开发工具 (A 8051/STM8/Cortex-M development tool)",
-    "version": "1.18.8",
+    "version": "1.18.9",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -103,7 +103,7 @@
                         "type": "string",
                         "scope": "resource",
                         "markdownDescription": "Default port name",
-                        "default": "COM3"
+                        "default": "null"
                     },
                     "EIDE.SerialPortMonitor.ShowStatusBar": {
                         "type": "boolean",
@@ -111,19 +111,11 @@
                         "markdownDescription": "Show serialport status bar",
                         "default": true
                     },
-                    "EIDE.SerialPortMonitor.Mode": {
-                        "type": "string",
+                    "EIDE.SerialPortMonitor.useUnixLF": {
+                        "type": "boolean",
                         "scope": "resource",
-                        "markdownDescription": "SerialPort Mode",
-                        "default": "Receive Mode",
-                        "enum": [
-                            "Receive Mode",
-                            "Send and Receive Mode"
-                        ],
-                        "enumDescriptions": [
-                            "Only monitor serial port's output",
-                            "Monitor serial port's output and can send chars to serial port"
-                        ]
+                        "markdownDescription": "Use Unix New Line Char",
+                        "default": false
                     },
                     "EIDE.SerialPortMonitor.BaudRate": {
                         "type": "integer",

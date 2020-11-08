@@ -4,6 +4,10 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.18.9]
+- 更改：调整串口监视器
+***
+
 ### [v1.18.8]
 - 更改：调整用于完善语法高亮的宏
 - 修复：更改编译配置后没有在下一次编译时触发重新编译
