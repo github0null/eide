@@ -761,11 +761,6 @@
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "Project.exportAsTemplate",
-                    "group": "inline",
-                    "when": "viewItem == SOLUTION && view == Project"
-                },
-                {
                     "command": "Project.exportXml",
                     "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
                 },
