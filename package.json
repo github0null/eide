@@ -470,7 +470,7 @@
             },
             {
                 "command": "Project.exportXml",
-                "title": "Export Keil Project XML",
+                "title": "Export To Keil Project",
                 "icon": {
                     "dark": "./res/icon/ExportFile_16x.svg",
                     "light": "./res/icon/ExportFile_16x.svg"
