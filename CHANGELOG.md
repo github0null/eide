@@ -4,6 +4,10 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.18.10]
+- 更改：调整生成 hex, bin, s19 的命令行
+***
+
 ### [v1.18.9]
 - 更改：调整串口监视器
 ***
