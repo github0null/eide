@@ -4,6 +4,14 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.19.0]
+- 修复：解析调试配置失败时，launch.json 被重置
+- 修复：命令行输出错位
+- 更改：将从模板创建选项合并到新建项目
+- 更改：调整视图的默认显示顺序
+- 更改：调整构建工具的输出
+***
+
 ### [v1.18.10]
 - 更改：调整生成 hex, bin, s19 的命令行
 ***

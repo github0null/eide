@@ -19,7 +19,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一个 8051/STM8/Cortex-M 的开发工具 (A 8051/STM8/Cortex-M development tool)",
-    "version": "1.18.10",
+    "version": "1.19.0",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -169,7 +169,7 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "IAR for STM8 install directory [`example: D:\\IAR`]",
-                        "default": "D:\\IAR",
+                        "default": "null",
                         "pattern": "^\\S.*[^\\s\\\\]$"
                     },
                     "EIDE.ARM.GCC.Prefix": {
@@ -182,7 +182,7 @@
                         "type": "string",
                         "scope": "resource",
                         "markdownDescription": "GCC for ARM toolchain install directory [`example: D:\\ARM-GNU-Tool\\8 2019-q3-update`]",
-                        "default": "D:\\ARM-GCC\\8 2019-q3-update",
+                        "default": "null",
                         "pattern": "^\\S.*[^\\s\\\\]$"
                     },
                     "EIDE.ARM.INI.Path": {
@@ -195,20 +195,20 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "JLink install directory [`example: D:\\JLink`]",
-                        "default": "D:\\JLink",
+                        "default": "null",
                         "pattern": "^\\S.*[^\\s\\\\]$"
                     },
                     "EIDE.ARM.OpenOCD.ExePath": {
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "OpenOCD.exe path [`example: D:\\OpenOCD\\bin\\openocd.exe`]",
-                        "default": "D:\\OpenOCD\\bin\\openocd.exe"
+                        "default": "null"
                     },
                     "EIDE.ARM.StlinkExePath": {
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "STLink flasher `ST-LINK_CLI.exe` path",
-                        "default": "D:\\STLink\\ST-LINK_CLI.exe"
+                        "default": "null"
                     },
                     "EIDE.ARM.UseMulti-ThreadMode": {
                         "type": "boolean",
@@ -274,7 +274,7 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "STVP flasher `STVP_CmdLine.exe` path",
-                        "default": "D:\\STVP\\stvp\\STVP_CmdLine.exe"
+                        "default": "null"
                     },
                     "EIDE.C51.INI.Path": {
                         "type": "string",
@@ -300,7 +300,7 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "SDCC install directory [`example: D:\\SDCC`]",
-                        "default": "D:\\SDCC",
+                        "default": "null",
                         "pattern": "^\\S.*[^\\s\\\\]$"
                     }
                 }
@@ -318,24 +318,16 @@
         "views": {
             "EIDEView": [
                 {
-                    "id": "Operation",
-                    "name": "Operation"
+                    "id": "Project",
+                    "name": "EIDE Projects"
                 },
                 {
-                    "id": "Project",
-                    "name": "Project View"
+                    "id": "Operation",
+                    "name": "Operation"
                 }
             ]
         },
         "commands": [
-            {
-                "command": "serialport.clear",
-                "title": "Clear Serialport Output",
-                "icon": {
-                    "dark": "./res/icon/action-clear-dark.svg",
-                    "light": "./res/icon/action-clear.svg"
-                }
-            },
             {
                 "command": "Project.refresh",
                 "title": "Refresh",
@@ -685,11 +677,6 @@
         ],
         "menus": {
             "editor/title": [
-                {
-                    "command": "serialport.clear",
-                    "group": "navigation",
-                    "when": "resourceScheme == eide"
-                }
             ],
             "editor/context": [
                 {
