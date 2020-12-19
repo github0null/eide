@@ -40,13 +40,18 @@
 
 ## 使用方法 📖
 
-#### 这里有一个简要的 [使用说明](https://blog.csdn.net/qq_40833810/category_9688932.html)
+#### 这里有一个 [使用手册](http://www.em-ide.com/docs/eide-manual)
 
 ***
 
 ## 版本变化 🔔 (最近3次，详见 [CHANGELOG](./CHANGELOG.md))
 
 > #### 遇到了 BUG ? 反馈途径: [Github Issue](https://github.com/github0null/eide/issues)
+
+### [v1.20.0]
+- 调整：Github 模板的显示结构
+- 调整：根据下载配置生成调试配置
+***
 
 ### [v1.19.0]
 - 修复：解析调试配置失败时，launch.json 被重置
@@ -59,6 +64,3 @@
 ### [v1.18.10]
 - 更改：调整生成 hex, bin, s19 的命令行
 ***
-
-### [v1.18.9]
-- 更改：合并串口监视器输出和输入

@@ -4,6 +4,11 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.20.0]
+- 调整：Github 模板的显示结构
+- 调整：根据下载配置生成调试配置
+***
+
 ### [v1.19.0]
 - 修复：解析调试配置失败时，launch.json 被重置
 - 修复：命令行输出错位

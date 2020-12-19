@@ -38,7 +38,7 @@ A 8051/STM8/Cortex-M development tool for VsCode. Provide development, compilati
 
 ## Usage 📖
 
-#### There is a simple [user's manual](https://github0null.github.io/eide-manual)
+#### There is a simple [user's manual](http://www.em-ide.com/docs/eide-manual)
 
 ***
 
