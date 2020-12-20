@@ -7,6 +7,7 @@
 A 8051/STM8/Cortex-M development tool for VsCode. Provide development, compilation, burning functions;
 
 **Only for Windows platform**
+**Require .NET FrameWork 3.5**
 
 ***
 

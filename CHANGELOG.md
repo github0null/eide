@@ -4,6 +4,10 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.20.1]
+- 调整：构建工具的输出
+***
+
 ### [v1.20.0]
 - 调整：Github 模板的显示结构
 - 调整：根据下载配置生成调试配置

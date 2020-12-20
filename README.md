@@ -10,7 +10,9 @@
 
 一款 8051/STM8/Cortex-M 的开发工具。用于在 vscode 上提供对 8051, STM8, Cortex-M 项目进行 开发, 编译, 烧录 的功能。
 
-**仅支持 Windows 平台**
+**注意：**
+ - **仅支持 Windows 平台**
+ - **构建工具依赖于 .NET FrameWork 3.5，没有的自行安装**
 
 ![preview](./res/preview/show.png)
 
