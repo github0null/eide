@@ -4,6 +4,11 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.20.2]
+- 调整：将依赖项目录 deps 移动到 .eide
+- 调整：builder 的日志格式
+***
+
 ### [v1.20.1]
 - 调整：构建工具的输出
 ***
