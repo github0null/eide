@@ -19,8 +19,8 @@ A 8051/STM8/Cortex-M development tool for VsCode. Provide development, compilati
 
 * Provides a rich project template for quick project start
 * Support for installation of chip peripheral libraries from standard CMSIS packages
-* One-key compilation, fast compilation, support a variety of mainstream compilation tools
-* One-key burn to chip, support a variety of mainstream burn
+* compilation, fast compilation, support a variety of mainstream compilation tools
+* burn to chip, support a variety of mainstream burn
 * Built-in serial port monitor
 * Automatically generates a debug configuration for the debugger Cortex-debug/stm8-debug
 

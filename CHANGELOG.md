@@ -4,6 +4,12 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.20.3]
+- 调整：创建项目的向导
+- 调整：调整内置的模板
+- 修复：获取模板信息时没有进度条显示
+***
+
 ### [v1.20.2]
 - 调整：将依赖项目录 deps 移动到 .eide
 - 调整：builder 的日志格式
