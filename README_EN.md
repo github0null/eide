@@ -4,9 +4,10 @@
 
 ## Summary 📑
 
-A 8051/STM8/Cortex-M development tool for VsCode. Provide development, compilation, burning functions;
+A singlechip development environment for 8051/STM8/Cortex-M. Provide development, compilation, burning functions on vscode;
 
 **Only for Windows platform**
+
 **Require .NET FrameWork 3.5**
 
 ***
@@ -39,10 +40,13 @@ A 8051/STM8/Cortex-M development tool for VsCode. Provide development, compilati
 
 ## Usage 📖
 
-#### There is a simple [user's manual](http://www.em-ide.com/docs/eide-manual)
+#### There is a [user manual](https://www.em-ide.com/docs/eide-manual)
 
 ***
 
-## Version changes 🔔
+## Feedback
 
-> #### Feedback 👉 [Github Issue](https://github.com/github0null/eide/issues)
+- [Github Issue](https://github.com/github0null/eide/issues)
+
+- [Discussion https://discuss.em-ide.com](https://discuss.em-ide.com/)
+

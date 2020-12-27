@@ -8,7 +8,7 @@
 
 ## 简述 📑
 
-一款 8051/STM8/Cortex-M 的开发工具。用于在 vscode 上提供对 8051, STM8, Cortex-M 项目进行 开发, 编译, 烧录 的功能。
+一款适用于 8051/STM8/Cortex-M 的单片机开发环境，用于在 vscode 上提供对 8051, STM8, Cortex-M 项目进行 开发, 编译, 烧录 的功能。
 
 **注意：**
  - **仅支持 Windows 平台**
@@ -42,13 +42,28 @@
 
 ## 使用方法 📖
 
-#### 这里有一个 [使用手册](http://www.em-ide.com/docs/eide-manual)
+#### 这里有一个 [使用手册](https://www.em-ide.com/docs/eide-manual)
+
+***
+
+## 遇到了问题 ?
+
+反馈途径: 
+
+- [Github Issue](https://github.com/github0null/eide/issues)
+
+- [论坛 https://discuss.em-ide.com](https://discuss.em-ide.com/)
 
 ***
 
 ## 版本变化 🔔 (最近3次，详见 [CHANGELOG](./CHANGELOG.md))
 
-> #### 遇到了 BUG ? 反馈途径: [Github Issue](https://github.com/github0null/eide/issues)
+### [v1.20.4]
+- 修复：打开串口监视器时出现资源已经释放的错误
+- 修复：在没有打开工作区时无法编译项目
+- 调整：将 "项目" 栏重命名为 "项目资源"
+- 优化：在 "项目资源" 栏中支持双击文件以非预览模式打开
+***
 
 ### [v1.20.3]
 - 调整：创建项目的向导
@@ -59,8 +74,3 @@
 ### [v1.20.2]
 - 调整：将依赖项目录 deps 移动到 .eide
 - 调整：builder 的日志格式
-***
-
-### [v1.20.0]
-- 调整：Github 模板的显示结构
-- 调整：根据下载配置生成调试配置
