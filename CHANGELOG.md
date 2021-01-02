@@ -4,7 +4,7 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
-### [v1.21.0]
+### [v1.21.1]
 - 新增：添加新设置，允许设置输出目录名称
 - 更改：允许添加多个链接脚本
 - 更改：将 EIDE.json 重命名为 eide.json
