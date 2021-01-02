@@ -23,7 +23,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一款适用于 8051/STM8/Cortex-M 的单片机开发环境 (A singlechip development environment for 8051/STM8/Cortex-M)",
-    "version": "1.20.4",
+    "version": "1.21.0",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -475,7 +475,7 @@
             },
             {
                 "command": "Project.modifyCompileConfig",
-                "title": "Modify Configuration",
+                "title": "Modify",
                 "icon": {
                     "dark": "./res/icon/Pen4_16x.svg",
                     "light": "./res/icon/Pen4_16x.svg"
@@ -499,7 +499,15 @@
             },
             {
                 "command": "Project.modifyUploadConfig",
-                "title": "Modify Configuration",
+                "title": "Modify",
+                "icon": {
+                    "dark": "./res/icon/Pen4_16x.svg",
+                    "light": "./res/icon/Pen4_16x.svg"
+                }
+            },
+            {
+                "command": "Project.modifyOtherSettings",
+                "title": "Modify",
                 "icon": {
                     "dark": "./res/icon/Pen4_16x.svg",
                     "light": "./res/icon/Pen4_16x.svg"
@@ -853,6 +861,11 @@
                     "command": "Project.modifyUploadConfig",
                     "group": "inline",
                     "when": "viewItem == UPLOAD_OPTION_ITEM && view == Project"
+                },
+                {
+                    "command": "Project.modifyOtherSettings",
+                    "group": "inline",
+                    "when": "viewItem == SETTINGS_ITEM && view == Project"
                 },
                 {
                     "command": "Project.addIncludeDir",

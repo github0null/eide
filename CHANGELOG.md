@@ -4,6 +4,13 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.21.0]
+- 新增：添加新设置，允许设置输出目录名称
+- 更改：允许添加多个链接脚本
+- 更改：将 EIDE.json 重命名为 eide.json
+- 优化：模板视图支持嵌套显示
+***
+
 ### [v1.20.4]
 - 修复：打开串口监视器时出现资源已经释放的错误
 - 修复：在没有打开工作区时无法编译项目
