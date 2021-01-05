@@ -22,6 +22,7 @@
 #define __tiny
 #define __trap()
 #define __weak
+
 #define asm(str)
 #define __asm(str)
 #define _Pragma(x)
