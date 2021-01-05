@@ -5,8 +5,9 @@ All notable changes to the "eide" extension will be documented in this file.
 ***
 
 ### [v1.21.3]
-- 修复：为 pyOCD 生成 cortex-debug 调试配置时没有设置 targetId
+- 优化：优化调试配置的生成
 - 修复：导出 keil 项目时没有设置输出目录
+- 更改：调整 C/C++ 插件的配置生成
 ***
 
 ### [v1.21.2]

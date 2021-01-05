@@ -1,7 +1,12 @@
 /***
- * !!! Dont include this file in your project !, it can only be used for code analysis !!! 
+ * !!! Don't include this file in your project !, it can only be used for code analysis !!! 
 */
 
+#ifndef __VSCODE_CPPTOOL
+#error "Don't include this file in your project !, it can only be used for code analysis !"
+#endif // !
+
+// compiler keywords
 #define __alignof__(x)
 #define __asm(x)
 #define __asm__(x)
@@ -32,8 +37,13 @@
 #define __force_stores()
 #define __memory_changed()
 #define __schedule_barrier()
-#define __semihost(x,y)
-#define __vfp_status(x,y)
+#define __semihost(x, y)
+#define __vfp_status(x, y)
+
+typedef struct { void *__ap; } __builtin_va_list;
+#define __builtin_va_arg(x,y)
+#define __builtin_va_start(x,y)
+#define __builtin_va_end(x)
 
 #define __builtin_arm_nop()
 #define __builtin_arm_wfi()
@@ -51,9 +61,9 @@
 
 #define __builtin_clz(x)
 #define __builtin_arm_ldrex(x)
-#define __builtin_arm_strex(x,y)
+#define __builtin_arm_strex(x, y)
 #define __builtin_arm_clrex()
-#define __builtin_arm_ssat(x,y)
-#define __builtin_arm_usat(x,y)
+#define __builtin_arm_ssat(x, y)
+#define __builtin_arm_usat(x, y)
 #define __builtin_arm_ldaex(x)
-#define __builtin_arm_stlex(x,y)
+#define __builtin_arm_stlex(x, y)

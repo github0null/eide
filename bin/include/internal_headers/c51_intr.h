@@ -1,6 +1,10 @@
 /***
- * !!! Dont include this file in your project !, it can only be used for code analysis !!! 
+ * !!! Don't include this file in your project !, it can only be used for code analysis !!! 
 */
+
+#ifndef __VSCODE_CPPTOOL
+#error "Don't include this file in your project !, it can only be used for code analysis !"
+#endif // !
 
 // compiler flags
 #ifdef __SDCC

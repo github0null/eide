@@ -1,11 +1,10 @@
 /***
- * !!! Dont include this file in your project !, it can only be used for code analysis !!! 
+ * !!! Don't include this file in your project !, it can only be used for code analysis !!! 
 */
 
-// suppress warnings and errors
-#pragma clang diagnostic ignored "-W#warnings"
-#pragma clang diagnostic ignored "-Winvalid-source-encoding"
-// #pragma clang diagnostic ignored "-Wnonnull"
+#ifndef __VSCODE_CPPTOOL
+#error "Don't include this file in your project !, it can only be used for code analysis !"
+#endif // !
 
 #ifdef _WIN32
 #undef _WIN32
@@ -25,7 +24,6 @@
 #define __va_arg(ap, type) __builtin_va_arg(ap, type)
 #define __va_start(ap, param) __builtin_va_start(ap, param)
 #define __va_end(ap) __builtin_va_end(ap)
-typedef __va_list __builtin_va_list;
 
 #define OS_RUNPRIV 1
 #define __MODULE__ ""
