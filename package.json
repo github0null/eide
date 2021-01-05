@@ -23,7 +23,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一款适用于 8051/STM8/Cortex-M 的单片机开发环境 (A singlechip development environment for 8051/STM8/Cortex-M)",
-    "version": "1.21.2",
+    "version": "1.21.3",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -410,7 +410,7 @@
                 "title": "Show Compiler Command Lines"
             },
             {
-                "command": "Project.installCMSISPack",
+                "command": "Project.installCMSISHeaders",
                 "title": "Add CMSIS Header Files To Project",
                 "icon": {
                     "dark": "./res/icon/AddBuildQueue_16x.svg",
@@ -734,7 +734,7 @@
                     "when": "viewItem == PACK_GROUP && view == Project"
                 },
                 {
-                    "command": "Project.installCMSISPack",
+                    "command": "Project.installCMSISHeaders",
                     "group": "inline",
                     "when": "viewItem == PACK && view == Project"
                 },

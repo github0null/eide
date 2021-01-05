@@ -1,3 +1,38 @@
+/***
+ * !!! Dont include this file in your project !, it can only be used for code analysis !!! 
+*/
+
+// keywords
+#define __eeprom
+#define __far
+#define __far_func
+#define __huge
+#define __huge_func
+#define __interrupt
+#define __intrinsic
+#define __monitor
+#define __near
+#define __near_func
+#define __no_init
+#define __noreturn
+#define __ramfunc
+#define __root
+#define __ro_placement
+#define __task
+#define __tiny
+#define __trap()
+#define __weak
+#define asm(str)
+#define __asm(str)
+#define _Pragma(x)
+#define __ALIGNOF__(x)
+#define __nounwind
+#define __data16
+#define __regvar
+#define __raw
+#define __save_reg20
+
+// compiler predefine macros
 #define __CHAR_BITS__ 8
 #define __CHAR_MAX__ 0xff
 #define __CHAR_MIN__ 0
@@ -271,3 +306,4 @@
 #define _DLIB_CONFIG_FILE_HEADER_NAME "DLib_Config_Normal.h"
 #define _DLIB_CONFIG_FILE_STRING "DLib_Config_Normal.h"
 #define __VERSION__ "IAR C/C++ Compiler V3.11.1.207 for STM8"
+

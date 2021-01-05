@@ -4,6 +4,11 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.21.3]
+- 修复：为 pyOCD 生成 cortex-debug 调试配置时没有设置 targetId
+- 修复：导出 keil 项目时没有设置输出目录
+***
+
 ### [v1.21.2]
 - 新增：添加新设置，允许设置输出目录名称
 - 更改：允许添加多个链接脚本
