@@ -435,7 +435,7 @@
             },
             {
                 "command": "Project.close",
-                "title": "Close Project",
+                "title": "Close",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
                     "light": "./res/icon/TestCoveredFailing_16x.svg"
@@ -643,7 +643,7 @@
             },
             {
                 "command": "Project.exportAsTemplate",
-                "title": "Export Project Template",
+                "title": "Export To Template Pack",
                 "icon": {
                     "dark": "./res/icon/TableToFile_16x.svg",
                     "light": "./res/icon/TableToFile_16x.svg"
@@ -653,11 +653,6 @@
                 "command": "eide.ShowUUID",
                 "category": "eide",
                 "title": "Show UUID"
-            },
-            {
-                "command": "eide.uploadLog",
-                "category": "eide",
-                "title": "Upload Logs"
             },
             {
                 "command": "eide.c51ToSdcc",
@@ -677,10 +672,6 @@
             {
                 "command": "Project.compile",
                 "key": "ctrl+alt+f7"
-            },
-            {
-                "command": "eide.uploadLog",
-                "key": "ctrl+f1"
             },
             {
                 "command": "Project.fastCompile",

@@ -10,14 +10,43 @@
 #undef _WIN32
 #endif
 
+#ifdef __GNUC__
+#undef __GNUC__
+#endif
+
 #define __CC_ARM
 
 // keywords
 #define __attribute__(x)
 #define __nonnull__(x)
-#define __builtin_va_arg(x,y)
-#define __builtin_va_start(x,y)
+#define __builtin_va_arg(x, y)
+#define __builtin_va_start(x, y)
 #define __builtin_va_end(x)
+
+#define __swi(x)
+#define __align(n)
+#define __forceinline
+#define __restrict
+#define __alignof__(x) sizeof(x)
+#define __ALIGNOF__ __alignof__
+#define __asm(x)
+#define __global_reg(n)
+#define __inline
+#define __INTADDR__(x)
+#define __irq
+#define __packed
+#define __pure
+#define __smc(x)
+#define __softfp
+#define __svc(x)
+#define __svc_indirect(x)
+#define __svc_indirect_r7(x)
+#define __value_in_regs
+#define __weak
+#define __writeonly
+#define __declspec(x)
+#define __int64 long long
+#define __register
 
 #define _VA_LIST
 #define va_list __va_list
@@ -153,32 +182,6 @@ unsigned int __usub16(unsigned int val1, unsigned int val2);
 unsigned int __usub8(unsigned int val1, unsigned int val2);
 unsigned int __uxtab16(unsigned int val1, unsigned int val2);
 unsigned int __uxtb16(unsigned int val);
-
-// other definitions
-#define __swi(x)
-#define __align(n)
-#define __forceinline inline
-#define __restrict
-#define __alignof__(x) 0 //sizeof(x)
-#define __ALIGNOF__ __alignof__
-#define __asm(x)
-#define __global_reg(n)
-#define __inline inline
-#define __INTADDR__ (int)
-#define __irq
-#define __packed
-#define __pure __attribute__((const))
-#define __smc(x)
-#define __softfp
-#define __svc(x)
-#define __svc_indirect(x)
-#define __svc_indirect_r7(x)
-#define __value_in_regs
-#define __weak __attribute__((weak))
-#define __writeonly
-#define __declspec(x) //__attribute__((x))   // noinline, noreturn
-#define __int64 long long
-#define __register
 
 // synchronization and barrier intrinsics
 void __dbg(void);
