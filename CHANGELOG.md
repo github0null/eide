@@ -4,6 +4,10 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.21.4]
+- 优化：为模板名称排序
+***
+
 ### [v1.21.3]
 - 优化：优化调试配置的生成
 - 修复：导出 keil 项目时没有设置输出目录
