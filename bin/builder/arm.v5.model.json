@@ -142,7 +142,9 @@
                     "level-0": "-O0",
                     "level-1": "-O1",
                     "level-2": "-O2",
-                    "level-3": "-O3"
+                    "level-3": "-O3",
+                    "level-size": "-Ospace",
+                    "level-speed": "-Otime"
                 }
             },
             "optimize-for-time": {

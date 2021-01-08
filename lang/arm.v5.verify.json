@@ -186,7 +186,17 @@
                         "level-0",
                         "level-1",
                         "level-2",
-                        "level-3"
+                        "level-3",
+                        "level-size",
+                        "level-speed"
+                    ],
+                    "enumDescriptions": [
+                        "-O0",
+                        "-O1",
+                        "-O2",
+                        "-O3",
+                        "-Ospace 侧重于代码大小优化",
+                        "-Otime 侧重于代码速度优化"
                     ]
                 },
                 "optimize-for-time": {

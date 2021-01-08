@@ -5,7 +5,9 @@ All notable changes to the "eide" extension will be documented in this file.
 ***
 
 ### [v1.21.4]
+- 新增：为 ARMCC 增加 `代码大小` 和 `代码速度` 优化的选项
 - 优化：为模板名称排序
+- 修复：打开多个项目时，日志输出位置重叠
 ***
 
 ### [v1.21.3]
