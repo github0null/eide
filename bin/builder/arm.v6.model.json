@@ -355,7 +355,7 @@
                 }
             },
             "link-scatter": {
-                "type": "value",
+                "type": "list",
                 "command": "--scatter "
             },
             "$outputBin": [

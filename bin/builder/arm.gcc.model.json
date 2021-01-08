@@ -298,7 +298,7 @@
                 "command": "-Wl,-Map=${mapPath}"
             },
             "link-scatter": {
-                "type": "value",
+                "type": "list",
                 "command": "-T "
             },
             "$outputBin": [
