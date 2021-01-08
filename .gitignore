@@ -1,5 +1,4 @@
 /node_modules
-/bin/builder
 /out
 /out.min
 /src

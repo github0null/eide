@@ -1,0 +1,336 @@
+﻿{
+    "name": "GNU C Compiler for ARM",
+    "id": "GCC",
+    "toolPrefix": "arm-none-eabi-",
+    "useUnixPath": true,
+    "global": {
+        "C_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c"
+            ]
+        },
+        "CXX_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "cpp"
+            ]
+        },
+        "ASM_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "asm"
+            ]
+        },
+        "LD_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "linker"
+            ]
+        },
+        "output-debug-info": {
+            "type": "selectable",
+            "command": {
+                "enable": "-g",
+                "disable": "",
+                "dwarf-2": "-g -gdwarf-2",
+                "dwarf-3": "-g -gdwarf-3",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm"
+            ]
+        },
+        "microcontroller-cpu": {
+            "type": "keyValue",
+            "command": "-mcpu=",
+            "enum": {
+                "cortex-m0": "cortex-m0",
+                "cortex-m0+": "cortex-m0plus",
+                "cortex-m3": "cortex-m3",
+                "cortex-m4-none": "cortex-m4",
+                "cortex-m4-sp": "cortex-m4",
+                "cortex-m7-none": "cortex-m7",
+                "cortex-m7-sp": "cortex-m7",
+                "cortex-m7-dp": "cortex-m7"
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ]
+        },
+        "microcontroller-fpu": {
+            "type": "selectable",
+            "command": {
+                "cortex-m0": "",
+                "cortex-m0+": "",
+                "cortex-m3": "",
+                "cortex-m4-none": "",
+                "cortex-m4-sp": "-mfpu=fpv4-sp-d16",
+                "cortex-m7-none": "",
+                "cortex-m7-sp": "-mfpu=fpv5-sp-d16",
+                "cortex-m7-dp": "-mfpu=fpv5-d16"
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ]
+        },
+        "$float-abi-type": {
+            "type": "selectable",
+            "command": {
+                "softfp": "softfp",
+                "hard": "hard",
+                "false": "softfp"
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ]
+        },
+        "microcontroller-float": {
+            "type": "selectable",
+            "command": {
+                "cortex-m0": "",
+                "cortex-m0+": "",
+                "cortex-m3": "",
+                "cortex-m4-none": "-mfloat-abi=soft",
+                "cortex-m4-sp": "-mfloat-abi=${$float-abi-type}",
+                "cortex-m7-none": "-mfloat-abi=soft",
+                "cortex-m7-sp": "-mfloat-abi=${$float-abi-type}",
+                "cortex-m7-dp": "-mfloat-abi=${$float-abi-type}"
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ]
+        }
+    },
+    "groups": {
+        "c": {
+            "$path": "bin\\${toolPrefix}gcc.exe",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "-D${key}=\"${value}\""
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$output": "-o ${out} -MD ${in}",
+            "$default": [
+                "-c",
+                "-x c",
+                "-mthumb"
+            ],
+            "$language-c": {
+                "type": "keyValue",
+                "command": "-std=",
+                "enum": {
+                    "default": "c90",
+                    "c89": "c89",
+                    "c90": "c90",
+                    "c99": "c99",
+                    "c11": "c11",
+                    "c1x": "c1x",
+                    "gnu89": "gnu89",
+                    "gnu90": "gnu90",
+                    "gnu99": "gnu99",
+                    "gnu11": "gnu11",
+                    "gnu1x": "gnu1x"
+                }
+            },
+            "optimization": {
+                "type": "selectable",
+                "command": {
+                    "false": "",
+                    "level-0": "-O0",
+                    "level-1": "-O1",
+                    "level-2": "-O2",
+                    "level-3": "-O3",
+                    "level-size": "-Os",
+                    "level-fast": "-Ofast",
+                    "level-debug": "-Og"
+                }
+            },
+            "plain-char-is-signed": {
+                "type": "selectable",
+                "command": {
+                    "true": "-fsigned-char",
+                    "false": "-funsigned-char"
+                }
+            },
+            "turn-Warning-into-errors": {
+                "type": "selectable",
+                "command": {
+                    "true": "-Werror",
+                    "false": ""
+                }
+            },
+            "warnings": {
+                "type": "selectable",
+                "command": {
+                    "false": "",
+                    "no-warnings": "-w",
+                    "all-warnings": "-Wall"
+                }
+            }
+        },
+        "cpp": {
+            "$path": "bin\\${toolPrefix}gcc.exe",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "-D${key}=\"${value}\""
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$output": "-o ${out} -MD ${in}",
+            "$default": [
+                "-c",
+                "-x c++",
+                "-mthumb"
+            ],
+            "$language-cpp": {
+                "type": "keyValue",
+                "command": "-std=",
+                "enum": {
+                    "default": "c++98",
+                    "c++98": "c++98",
+                    "gnu++98": "gnu++98",
+                    "c++11": "c++11",
+                    "gnu++11": "gnu++11",
+                    "c++14": "c++14",
+                    "gnu++14": "gnu++14"
+                }
+            },
+            "optimization": {
+                "type": "selectable",
+                "command": {
+                    "false": "",
+                    "level-0": "-O0",
+                    "level-1": "-O1",
+                    "level-2": "-O2",
+                    "level-3": "-O3",
+                    "level-size": "-Os",
+                    "level-fast": "-Ofast",
+                    "level-debug": "-Og"
+                }
+            },
+            "plain-char-is-signed": {
+                "type": "selectable",
+                "command": {
+                    "true": "-fsigned-char",
+                    "false": "-funsigned-char"
+                }
+            },
+            "turn-Warning-into-errors": {
+                "type": "selectable",
+                "command": {
+                    "true": "-Werror",
+                    "false": ""
+                }
+            },
+            "warnings": {
+                "type": "selectable",
+                "command": {
+                    "false": "",
+                    "no-warnings": "-w",
+                    "all-warnings": "-Wall"
+                }
+            }
+        },
+        "asm": {
+            "$path": "bin\\${toolPrefix}gcc.exe",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "-D${key}=\"${value}\""
+            },
+            "$output": "-o ${out} -MD ${in}",
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$default": [
+                "-x assembler",
+                "-x assembler-with-cpp",
+                "-c",
+                "-mthumb"
+            ]
+        },
+        "linker": {
+            "$path": "bin\\${toolPrefix}gcc.exe",
+            "$libs": {
+                "body": "-L${value}"
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$default": [
+                "-mthumb"
+            ],
+            "$output": "-o ${out} ${in} -lm",
+            "$outputSuffix": ".elf",
+            "$linkMap": {
+                "type": "value",
+                "command": "-Wl,-Map=${mapPath}"
+            },
+            "link-scatter": {
+                "type": "value",
+                "command": "-T "
+            },
+            "$outputBin": [
+                {
+                    "name": "output hex file",
+                    "toolPath": "bin\\${toolPrefix}objcopy.exe",
+                    "outputSuffix": ".hex",
+                    "command": "-O ihex ${linkerOutput} ${output}"
+                },
+                {
+                    "name": "output bin file",
+                    "toolPath": "bin\\${toolPrefix}objcopy.exe",
+                    "outputSuffix": ".bin",
+                    "command": "-O binary ${linkerOutput} ${output}"
+                }
+            ],
+            "$extraCommand": [
+                {
+                    "name": "print elf size",
+                    "toolPath": "bin\\${toolPrefix}size.exe",
+                    "command": "--format=berkeley ${linkerOutput}"
+                }
+            ]
+        },
+        "linker-lib": {
+            "$path": "bin\\${toolPrefix}ar.exe",
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$output": "-rcv ${out} ${in}",
+            "$outputSuffix": ".a"
+        }
+    }
+}

@@ -1,0 +1,392 @@
+{
+    "name": "ARM C Compiler Version 6",
+    "id": "AC6",
+    "useUnixPath": true,
+    "global": {
+        "microcontroller-cpu": {
+            "type": "keyValue",
+            "command": "-mcpu=",
+            "enum": {
+                "cortex-m0": "cortex-m0",
+                "cortex-m0+": "cortex-m0plus",
+                "cortex-m3": "cortex-m3",
+                "cortex-m4-none": "cortex-m4",
+                "cortex-m4-sp": "cortex-m4",
+                "cortex-m7-none": "cortex-m7",
+                "cortex-m7-sp": "cortex-m7",
+                "cortex-m7-dp": "cortex-m7"
+            },
+            "group": [
+                "c/cpp",
+                "asm-clang"
+            ]
+        },
+        "microcontroller-fpu": {
+            "type": "selectable",
+            "command": {
+                "cortex-m0": "",
+                "cortex-m0+": "",
+                "cortex-m3": "",
+                "cortex-m4-none": "-mfpu=none",
+                "cortex-m4-sp": "-mfpu=fpv4-sp-d16",
+                "cortex-m7-none": "-mfpu=none",
+                "cortex-m7-sp": "-mfpu=fpv5-sp-d16",
+                "cortex-m7-dp": "-mfpu=fpv5-d16"
+            },
+            "group": [
+                "c/cpp",
+                "asm-clang"
+            ]
+        },
+        "microcontroller-float": {
+            "type": "selectable",
+            "command": {
+                "cortex-m0": "",
+                "cortex-m0+": "",
+                "cortex-m3": "",
+                "cortex-m4-none": "-mfloat-abi=soft",
+                "cortex-m4-sp": "-mfloat-abi=hard",
+                "cortex-m7-none": "-mfloat-abi=soft",
+                "cortex-m7-sp": "-mfloat-abi=hard",
+                "cortex-m7-dp": "-mfloat-abi=hard"
+            },
+            "group": [
+                "c/cpp",
+                "asm-clang"
+            ]
+        },
+        "output-debug-info": {
+            "type": "selectable",
+            "command": {
+                "enable": "-g",
+                "disable": "",
+                "dwarf-2": "-g -gdwarf-2",
+                "dwarf-3": "-g -gdwarf-3",
+                "false": ""
+            },
+            "group": [
+                "c/cpp",
+                "asm",
+                "asm-clang"
+            ]
+        },
+        "misc-controls": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c/cpp",
+                "asm",
+                "asm-clang",
+                "linker"
+            ]
+        }
+    },
+    "groups": {
+        "c/cpp": {
+            "$path": "ARMCLANG\\bin\\armclang.exe",
+            "$encoding": "UTF8",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "-D${key}=\"${value}\""
+            },
+            "$output": "-o ${out} -MD ${in}",
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$default": [
+                "--target=arm-arm-none-eabi",
+                "-c"
+            ],
+            "$language-c": {
+                "type": "keyValue",
+                "command": "-xc -std=",
+                "enum": {
+                    "default": "gnu11",
+                    "c90": "c90",
+                    "gnu90": "gnu90",
+                    "c99": "c99",
+                    "gnu99": "gnu99",
+                    "c11": "c11",
+                    "gnu11": "gnu11"
+                }
+            },
+            "$language-cpp": {
+                "type": "keyValue",
+                "command": "-xc++ -std=",
+                "enum": {
+                    "default": "gnu++98",
+                    "c++98": "c++98",
+                    "gnu++98": "gnu++98",
+                    "c++11": "c++11",
+                    "gnu++11": "gnu++11",
+                    "c++03": "c++03",
+                    "c++14": "c++14"
+                }
+            },
+            "use-microLIB": {
+                "type": "selectable",
+                "command": {
+                    "true": "-D__MICROLIB",
+                    "false": ""
+                }
+            },
+            "execute-only-code": {
+                "type": "selectable",
+                "command": {
+                    "true": "-mexecute-only",
+                    "false": ""
+                }
+            },
+            "optimization": {
+                "type": "keyValue",
+                "command": "",
+                "enum": {
+                    "default": "",
+                    "level-0": "-O0",
+                    "level-1": "-O1",
+                    "level-2": "-O2",
+                    "level-3": "-O3",
+                    "level-fast": "-Ofast",
+                    "level-balanced": "-Os",
+                    "level-image-size": "-Oz"
+                }
+            },
+            "link-time-optimization": {
+                "type": "selectable",
+                "command": {
+                    "true": "-flto",
+                    "false": ""
+                }
+            },
+            "split-load-and-store-multiple": {
+                "type": "selectable",
+                "command": {
+                    "true": "-ldm-stm",
+                    "false": ""
+                }
+            },
+            "one-elf-section-per-function": {
+                "type": "selectable",
+                "command": {
+                    "true": "-ffunction-sections",
+                    "false": "-fno-function-sections"
+                }
+            },
+            "turn-Warning-into-errors": {
+                "type": "selectable",
+                "command": {
+                    "true": "-Werror",
+                    "false": ""
+                }
+            },
+            "plain-char-is-signed": {
+                "type": "selectable",
+                "command": {
+                    "true": "-fsigned-char",
+                    "false": "-funsigned-char"
+                }
+            },
+            "read-only-position-independent": {
+                "type": "selectable",
+                "command": {
+                    "true": "-fropi",
+                    "false": ""
+                }
+            },
+            "read-write-position-independent": {
+                "type": "selectable",
+                "command": {
+                    "true": "-frwpi",
+                    "false": ""
+                }
+            },
+            "short-enums#wchar": {
+                "type": "selectable",
+                "command": {
+                    "true": "-fshort-enums -fshort-wchar",
+                    "false": ""
+                }
+            },
+            "use-rtti": {
+                "type": "selectable",
+                "command": {
+                    "true": "",
+                    "false": "-fno-rtti"
+                }
+            },
+            "warnings": {
+                "type": "keyValue",
+                "command": "",
+                "enum": {
+                    "default": "-Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality",
+                    "unspecified": "",
+                    "no-warnings": "-w",
+                    "all-warnings": "-Weverything -Wno-packed -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality",
+                    "ac5-like-warnings": "-Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality",
+                    "misra-compatible": "-Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-covered-switch-default -Wno-unreachable-code-break"
+                }
+            }
+        },
+        "asm": {
+            "$path": "ARMCLANG\\bin\\armasm.exe",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "--pd \"${key} SETA ${value}\""
+            },
+            "$output": "-o ${out} --depend ${refPath} ${in}",
+            "$invoke": {
+                "useFile": true,
+                "body": "--Via ${value}"
+            },
+            "use-microLIB": {
+                "type": "selectable",
+                "command": {
+                    "true": "--pd \"__MICROLIB SETA 1\"",
+                    "false": ""
+                }
+            },
+            "microcontroller-cpu": {
+                "type": "keyValue",
+                "command": "--cpu ",
+                "enum": {
+                    "cortex-m0": "Cortex-M0",
+                    "cortex-m0+": "Cortex-M0+",
+                    "cortex-m3": "Cortex-M3",
+                    "cortex-m4-none": "Cortex-M4 --fpu=SoftVFP",
+                    "cortex-m4-sp": "Cortex-M4.fp",
+                    "cortex-m7-none": "Cortex-M7 --fpu=SoftVFP",
+                    "cortex-m7-sp": "Cortex-M7.fp.sp",
+                    "cortex-m7-dp": "Cortex-M7.fp.dp"
+                }
+            }
+        },
+        "asm-clang": {
+            "$path": "ARMCLANG\\bin\\armclang.exe",
+            "$encoding": "UTF8",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "-D${key}=\"${value}\""
+            },
+            "$output": "-o ${out} -MD ${in}",
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$default": [
+                "-x assembler-with-cpp",
+                "-c"
+            ],
+            "use-microLIB": {
+                "type": "selectable",
+                "command": {
+                    "true": "-D__MICROLIB",
+                    "false": ""
+                }
+            },
+            "target": {
+                "type": "keyValue",
+                "command": "--target=",
+                "enum": {
+                    "cortex-m0": "arm-arm-none-eabi",
+                    "cortex-m0+": "arm-arm-none-eabi",
+                    "cortex-m3": "arm-arm-none-eabi",
+                    "cortex-m4-none": "armv7em-arm-none-eabi",
+                    "cortex-m4-sp": "arm-arm-none-eabi",
+                    "cortex-m7-none": "arm-arm-none-eabi",
+                    "cortex-m7-sp": "arm-arm-none-eabi",
+                    "cortex-m7-dp": "arm-arm-none-eabi"
+                }
+            }
+        },
+        "linker": {
+            "$path": "ARMCLANG\\bin\\armlink.exe",
+            "$invoke": {
+                "useFile": true,
+                "body": "--Via ${value}"
+            },
+            "$output": "${in} -o ${out}",
+            "$default-tail": [
+                "--strict",
+                "--summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols",
+                "--info sizes --info totals --info unused --info veneers"
+            ],
+            "$matcher": [
+                "^\\s*total.*size"
+            ],
+            "$ramMatcher": "^\\s*Total RW  Size \\(RW Data \\+ ZI Data\\)\\s+(\\d+)",
+            "$romMatcher": "^\\s*Total ROM Size \\(Code \\+ RO Data \\+ RW Data\\)\\s+(\\d+)",
+            "$linkMap": {
+                "type": "value",
+                "command": "--list ${mapPath}"
+            },
+            "use-microLIB": {
+                "type": "selectable",
+                "command": {
+                    "true": "--library_type=microlib",
+                    "false": ""
+                }
+            },
+            "microcontroller-cpu": {
+                "type": "keyValue",
+                "command": "--cpu=",
+                "enum": {
+                    "cortex-m0": "Cortex-M0",
+                    "cortex-m0+": "Cortex-M0+",
+                    "cortex-m3": "Cortex-M3",
+                    "cortex-m4-none": "Cortex-M4 --fpu=SoftVFP",
+                    "cortex-m4-sp": "Cortex-M4.fp",
+                    "cortex-m7-none": "Cortex-M7 --fpu=SoftVFP",
+                    "cortex-m7-sp": "Cortex-M7.fp.sp",
+                    "cortex-m7-dp": "Cortex-M7.fp.dp"
+                }
+            },
+            "link-time-optimization": {
+                "type": "selectable",
+                "command": {
+                    "true": "--lto",
+                    "false": ""
+                }
+            },
+            "link-scatter": {
+                "type": "value",
+                "command": "--scatter "
+            },
+            "$outputBin": [
+                {
+                    "name": "output hex file",
+                    "toolPath": "ARMCLANG\\bin\\fromelf.exe",
+                    "outputSuffix": ".hex",
+                    "command": "--i32combined --output ${output} ${linkerOutput}"
+                },
+                {
+                    "name": "output s19 file",
+                    "toolPath": "ARMCLANG\\bin\\fromelf.exe",
+                    "outputSuffix": ".s19",
+                    "command": "--m32combined --output ${output} ${linkerOutput}"
+                },
+                {
+                    "name": "output bin file",
+                    "toolPath": "ARMCLANG\\bin\\fromelf.exe",
+                    "outputSuffix": ".bin",
+                    "command": "--bincombined --output ${output} ${linkerOutput}"
+                }
+            ]
+        },
+        "linker-lib": {
+            "$path": "ARMCC\\bin\\armar.exe",
+            "$invoke": {
+                "useFile": true,
+                "body": "--Via ${value}"
+            },
+            "$output": "-rcv ${out} ${in}",
+            "$outputSuffix": ".lib"
+        }
+    }
+}
