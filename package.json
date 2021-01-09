@@ -33,7 +33,7 @@
         "Snippets"
     ],
     "activationEvents": [
-        "*"
+        "onStartupFinished"
     ],
     "icon": "res/icon/icon.png",
     "main": "./dist/extension.js",
