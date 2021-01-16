@@ -4,6 +4,12 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.22.0]
+- 新增：允许通过自定义shell命令下载程序
+- 修复：解析 GD32 keil 包时出现的问题
+- 优化：压缩配置, 移除无用的 eide 项目配置
+***
+
 ### [v1.21.4]
 - 新增：为 ARMCC 增加 `代码大小` 和 `代码速度` 优化的选项
 - 优化：为模板名称排序
