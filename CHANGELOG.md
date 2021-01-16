@@ -7,6 +7,7 @@ All notable changes to the "eide" extension will be documented in this file.
 ### [v1.22.0]
 - 新增：允许通过自定义shell命令下载程序
 - 修复：解析 GD32 keil 包时出现的问题
+- 调整：调整功能按钮；移除多余的按钮，将其放到右键菜单
 - 优化：压缩配置, 移除无用的 eide 项目配置
 ***
 

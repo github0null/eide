@@ -328,7 +328,7 @@
                 },
                 {
                     "id": "Operation",
-                    "name": "Operation"
+                    "name": "Operations"
                 }
             ]
         },
@@ -407,7 +407,7 @@
             },
             {
                 "command": "Project.showBuildParams",
-                "title": "Show Compiler Command Lines"
+                "title": "Show Compiler CommandLine"
             },
             {
                 "command": "Project.installCMSISHeaders",
@@ -619,7 +619,7 @@
             },
             {
                 "command": "Project.uploadToDevice",
-                "title": "Upload To Device",
+                "title": "Download To Device",
                 "icon": {
                     "dark": "./res/icon/TransferDownload_16x.svg",
                     "light": "./res/icon/TransferDownload_16x.svg"
@@ -643,7 +643,7 @@
             },
             {
                 "command": "Project.exportAsTemplate",
-                "title": "Export To Template Pack",
+                "title": "Export To EIDE Template",
                 "icon": {
                     "dark": "./res/icon/TableToFile_16x.svg",
                     "light": "./res/icon/TableToFile_16x.svg"
@@ -696,11 +696,11 @@
                 {
                     "command": "Project.historyRecord",
                     "group": "navigation",
-                    "when": "view == Project"
+                    "when": "view == Operation"
                 },
                 {
                     "command": "Project.clearHistoryRecord",
-                    "when": "view == Project"
+                    "when": "view == Operation"
                 },
                 {
                     "command": "Project.saveAll",
@@ -742,61 +742,56 @@
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "Project.switchMode",
-                    "group": "inline",
-                    "when": "viewItem == SOLUTION && view == Project"
-                },
-                {
                     "command": "Project.exportAsTemplate",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
                     "command": "Project.exportXml",
-                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                    "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
                     "command": "Project.compile",
                     "group": "inline",
-                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                    "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
                     "command": "Project.compile",
-                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                    "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
                     "command": "Project.fastCompile",
                     "group": "inline",
-                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                    "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
                     "command": "Project.fastCompile",
-                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                    "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
                     "command": "Project.clean",
                     "group": "inline",
-                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                    "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
                     "command": "Project.clean",
-                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                    "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
                     "command": "Project.showBuildParams",
-                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                    "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
                     "command": "Project.uploadToDevice",
                     "group": "inline",
-                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                    "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
                     "command": "Project.uploadToDevice",
-                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                    "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
                     "command": "Project.close",
-                    "when": "viewItem == SOLUTION || viewItem == PROJECT && view == Project"
+                    "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
                     "command": "Project.excludeSource",
@@ -821,6 +816,10 @@
                 {
                     "command": "Project.addSrcDir",
                     "group": "inline",
+                    "when": "viewItem == PROJECT && view == Project"
+                },
+                {
+                    "command": "Project.addSrcDir",
                     "when": "viewItem == PROJECT && view == Project"
                 },
                 {
