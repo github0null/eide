@@ -23,7 +23,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一款适用于 8051/STM8/Cortex-M 的单片机开发环境 (A singlechip development environment for 8051/STM8/Cortex-M)",
-    "version": "1.22.1",
+    "version": "1.22.2",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -443,7 +443,7 @@
             },
             {
                 "command": "Project.addPackage",
-                "title": "Install CMSIS Package",
+                "title": "Install Chip Support Package",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
                     "light": "./res/icon/Add_16xMD.svg"
@@ -451,7 +451,7 @@
             },
             {
                 "command": "Project.removePackage",
-                "title": "Uninstall This CMSIS Package",
+                "title": "Uninstall This Chip Support Package",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
                     "light": "./res/icon/TestCoveredFailing_16x.svg"
@@ -725,8 +725,11 @@
                     "when": "viewItem == PACK_GROUP && view == Project"
                 },
                 {
+                    "command": "Project.addPackage",
+                    "when": "viewItem == PACK && view == Project"
+                },
+                {
                     "command": "Project.installCMSISHeaders",
-                    "group": "inline",
                     "when": "viewItem == PACK && view == Project"
                 },
                 {

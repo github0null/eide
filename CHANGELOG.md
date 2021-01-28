@@ -4,6 +4,11 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.22.2]
+- 优化：汉化某些提示信息
+- 优化：隐藏某些不必要的设置或选项
+***
+
 ### [v1.22.1]
 - 修复：在工作区文件夹内无法启动扩展
 ***
