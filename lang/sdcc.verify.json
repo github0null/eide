@@ -153,63 +153,139 @@
                         "Microchip PIC 16-bit processors (p18f452 and variants. In development, not complete)."
                     ]
                 },
-                "specific-options": {
-                    "markdownDescription": "options for special device",
-                    "type": "array",
-                    "default": [
-                        "--model-large"
-                    ],
-                    "items": {
-                        "type": "string",
-                        "pattern": "^-.+$",
-                        "enum": [
-                            "--model-small",
-                            "--model-medium",
-                            "--model-large",
-                            "--model-huge",
-                            "--xstack",
-                            "--iram-size <Value>",
-                            "--xram-size <Value>",
-                            "--code-size <Value>",
-                            "--stack-size <Value>",
-                            "--pack-iram",
-                            "--acall-ajmp",
-                            "--no-ret-without-call",
-                            "--model-ﬂat24",
-                            "--protect-sp-update",
-                            "--stack-10bit",
-                            "--stack-probe",
-                            "--tini-libid <nnnn>",
-                            "--use-accelerator",
-                            "--no-std-crt0",
-                            "--callee-saves-bc",
-                            "--codeseg <Value>",
-                            "--constseg <Value>"
-                        ],
-                        "enumDescriptions": [
-                            "[mcs51] Generate code for Small model programs.",
-                            "[mcs51/stm8] Generate code for Medium model programs.",
-                            "[mcs51/stm8] Generate code for Large model programs.",
-                            "[mcs51] Generate code for Huge model programs.",
-                            "[mcs51] Uses a pseudo stack in the __pdata area.",
-                            "[mcs51] Causes the linker to check if the internal ram usage is within limits of the given value. ",
-                            "[mcs51] Causes the linker to check if the external ram usage is within limits of the given value. ",
-                            "[mcs51] Causes the linker to check if the code memory usage is within limits of the given value. ",
-                            "[mcs51] Causes the linker to check if there is at minimum <Value> bytes for stack. ",
-                            "[mcs51] Causes the linker to use unused register banks for data variables and pack data, idata and stack together. ",
-                            "[mcs51] Replaces the three byte instructions lcall/ljmp with the two byte instructions acall/ajmp. ",
-                            "[mcs51] Causes the code generator to insert an extra lcall or acall instruction whenever it needs to use a ret instruction in a context other than a function returning. ",
-                            "[DS390/DS400] Generate 24-bit ﬂat mode code. ",
-                            "[DS390/DS400] disable interrupts during ESP:SP updates",
-                            "[DS390/DS400] Generate code for the 10 bit stack mode of the Dallas DS80C390 part. ",
-                            "[DS390/DS400] insert call to function __stack_probe at each function prologue. ",
-                            "[DS390/DS400] LibraryID used in -mTININative. ",
-                            "[DS390/DS400] generate code for DS390 Arithmetic Accelerator.",
-                            "[z80-related] When linking, skip the standard crt0.rel object ﬁle. ",
-                            "[z80-related] Force a called function to always save BC. ",
-                            "[z80-related] Use <Value> for the code segment name.",
-                            "[z80-related] Use <Value> for the const segment name."
-                        ]
+                "device-options": {
+                    "markdownDescription": "芯片特定选项 (special options for device)",
+                    "type": "object",
+                    "properties": {
+                        "mcs51": {
+                            "type": "array",
+                            "markdownDescription": "mcs51 选项 (options for mcs51)",
+                            "default": [
+                                "--model-small"
+                            ],
+                            "items": {
+                                "type": "string",
+                                "pattern": "^-.+$",
+                                "enum": [
+                                    "--model-small",
+                                    "--model-medium",
+                                    "--model-large",
+                                    "--model-huge",
+                                    "--xstack",
+                                    "--iram-size <Value>",
+                                    "--xram-size <Value>",
+                                    "--code-size <Value>",
+                                    "--stack-size <Value>",
+                                    "--pack-iram",
+                                    "--acall-ajmp",
+                                    "--no-ret-without-call"
+                                ],
+                                "enumDescriptions": [
+                                    "Generate code for Small model programs.",
+                                    "Generate code for Medium model programs.",
+                                    "Generate code for Large model programs.",
+                                    "Generate code for Huge model programs.",
+                                    "Uses a pseudo stack in the __pdata area.",
+                                    "Causes the linker to check if the internal ram usage is within limits of the given value. ",
+                                    "Causes the linker to check if the external ram usage is within limits of the given value. ",
+                                    "Causes the linker to check if the code memory usage is within limits of the given value. ",
+                                    "Causes the linker to check if there is at minimum <Value> bytes for stack. ",
+                                    "Causes the linker to use unused register banks for data variables and pack data, idata and stack together. ",
+                                    "Replaces the three byte instructions lcall/ljmp with the two byte instructions acall/ajmp. ",
+                                    "Causes the code generator to insert an extra lcall or acall instruction whenever it needs to use a ret instruction in a context other than a function returning. "
+                                ]
+                            }
+                        },
+                        "stm8": {
+                            "type": "array",
+                            "markdownDescription": "stm8 选项 (options for stm8)",
+                            "default": [
+                                "--model-medium"
+                            ],
+                            "items": {
+                                "type": "string",
+                                "pattern": "^-.+$",
+                                "enum": [
+                                    "--model-medium",
+                                    "--model-large"
+                                ],
+                                "enumDescriptions": [
+                                    "Generate code for Medium model programs.",
+                                    "Generate code for Large model programs."
+                                ]
+                            }
+                        },
+                        "ds390": {
+                            "type": "array",
+                            "markdownDescription": "ds390 选项 (options for ds390)",
+                            "default": [],
+                            "items": {
+                                "type": "string",
+                                "pattern": "^-.+$",
+                                "enum": [
+                                    "--model-ﬂat24",
+                                    "--protect-sp-update",
+                                    "--stack-10bit",
+                                    "--stack-probe",
+                                    "--tini-libid <nnnn>",
+                                    "--use-accelerator"
+                                ],
+                                "enumDescriptions": [
+                                    "Generate 24-bit ﬂat mode code. ",
+                                    "disable interrupts during ESP:SP updates",
+                                    "Generate code for the 10 bit stack mode of the Dallas DS80C390 part. ",
+                                    "insert call to function __stack_probe at each function prologue. ",
+                                    "LibraryID used in -mTININative. ",
+                                    "generate code for DS390 Arithmetic Accelerator."
+                                ]
+                            }
+                        },
+                        "ds400": {
+                            "type": "array",
+                            "markdownDescription": "ds400 选项 (options for ds400)",
+                            "default": [],
+                            "items": {
+                                "type": "string",
+                                "pattern": "^-.+$",
+                                "enum": [
+                                    "--model-ﬂat24",
+                                    "--protect-sp-update",
+                                    "--stack-10bit",
+                                    "--stack-probe",
+                                    "--tini-libid <nnnn>",
+                                    "--use-accelerator"
+                                ],
+                                "enumDescriptions": [
+                                    "Generate 24-bit ﬂat mode code. ",
+                                    "disable interrupts during ESP:SP updates",
+                                    "Generate code for the 10 bit stack mode of the Dallas DS80C390 part. ",
+                                    "insert call to function __stack_probe at each function prologue. ",
+                                    "LibraryID used in -mTININative. ",
+                                    "generate code for DS390 Arithmetic Accelerator."
+                                ]
+                            }
+                        },
+                        "z80": {
+                            "type": "array",
+                            "markdownDescription": "z80 options (for z80, z180, r2k, r3ka, gbz80, tlcs90, ez80_z80)",
+                            "default": [],
+                            "items": {
+                                "type": "string",
+                                "pattern": "^-.+$",
+                                "enum": [
+                                    "--no-std-crt0",
+                                    "--callee-saves-bc",
+                                    "--codeseg <Value>",
+                                    "--constseg <Value>"
+                                ],
+                                "enumDescriptions": [
+                                    "When linking, skip the standard crt0.rel object ﬁle. ",
+                                    "Force a called function to always save BC. ",
+                                    "Use <Value> for the code segment name.",
+                                    "Use <Value> for the const segment name."
+                                ]
+                            }
+                        }
                     }
                 },
                 "stack-auto": {
@@ -368,7 +444,7 @@
                 "misc-controls": {
                     "$ref": "#/definitions/misc-controls"
                 },
-                "$use": {
+                "executable-format": {
                     "markdownDescription": "要使用哪种输出格式，默认为 hex (Which output format to use, 'hex' is default)",
                     "type": "string",
                     "enum": [

@@ -4,6 +4,12 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.22.3]
+- 更改：调整 sdcc, gcc 默认编译配置
+- 更改：调整某些提示信息
+- 新增：允许为项目创建 target, 和切换 target
+***
+
 ### [v1.22.2]
 - 优化：汉化某些提示信息
 - 优化：隐藏某些不必要的设置或选项

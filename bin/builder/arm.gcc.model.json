@@ -291,7 +291,7 @@
             "$default": [
                 "-mthumb"
             ],
-            "$output": "-o ${out} ${in} -lm",
+            "$output": "-o ${out} ${in} ${lib_flags}",
             "$outputSuffix": ".elf",
             "$linkMap": {
                 "type": "value",
@@ -317,7 +317,7 @@
             ],
             "$extraCommand": [
                 {
-                    "name": "print elf size",
+                    "name": "elf size",
                     "toolPath": "bin\\${toolPrefix}size.exe",
                     "command": "--format=berkeley ${linkerOutput}"
                 }

@@ -256,6 +256,13 @@
                     "markdownDescription": "Use \"-Wl[,option]...\" pass options to the linker",
                     "$ref": "#/definitions/FLAGS"
                 },
+                "LIB_FLAGS": {
+                    "markdownDescription": "链接库选项 (lib flags)",
+                    "$ref": "#/definitions/FLAGS",
+                    "default": [
+                        "-lm"
+                    ]
+                },
                 "output-lib": {
                     "type": "boolean",
                     "default": true,

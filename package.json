@@ -23,7 +23,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一款适用于 8051/STM8/Cortex-M 的单片机开发环境 (A singlechip development environment for 8051/STM8/Cortex-M)",
-    "version": "1.22.2",
+    "version": "1.23.0",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -194,7 +194,7 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "Keil ARM MDK `TOOLS.INI` file path [`example: D:\\Demo\\Keil\\TOOLS.INI`]",
-                        "default": "unknown"
+                        "default": "null"
                     },
                     "EIDE.ARM.JLink.ToolDirectory": {
                         "type": "string",
@@ -261,20 +261,6 @@
                         "markdownDescription": "Convert `.axf` to `.elf` for ARMCC compiler",
                         "default": true
                     },
-                    "EIDE.ARM.Project.MacroList.Release": {
-                        "type": "string",
-                        "scope": "resource",
-                        "markdownDescription": "Macro List for Release Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
-                        "default": "",
-                        "pattern": "^(?:[a-zA-Z_][\\w]*(?:=[\\w\\.\\-]+)?;)*$"
-                    },
-                    "EIDE.ARM.Project.MacroList.Debug": {
-                        "type": "string",
-                        "scope": "resource",
-                        "markdownDescription": "Macro List for Debug Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
-                        "default": "DEBUG;",
-                        "pattern": "^(?:[a-zA-Z_][\\w]*(?:=[\\w\\.\\-]+)?;)*$"
-                    },
                     "EIDE.STM8.STVP.CliExePath": {
                         "type": "string",
                         "scope": "machine",
@@ -285,21 +271,7 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "Keil C51 `TOOLS.INI` file path [`example: D:\\Demo\\Keil\\C51\\TOOLS.INI`]",
-                        "default": "unknown"
-                    },
-                    "EIDE.C51.Project.MacroList.Release": {
-                        "type": "string",
-                        "scope": "resource",
-                        "markdownDescription": "Macro List for Release Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
-                        "default": "",
-                        "pattern": "^(?:[a-zA-Z_][\\w]*(?:=[\\w\\.\\-]+)?;)*$"
-                    },
-                    "EIDE.C51.Project.MacroList.Debug": {
-                        "type": "string",
-                        "scope": "resource",
-                        "markdownDescription": "Macro List for Debug Mode, `use ';' to separate multiple macros and end with ';'`, these macros will be added at compile time",
-                        "default": "DEBUG;",
-                        "pattern": "^(?:[a-zA-Z_][\\w]*(?:=[\\w\\.\\-]+)?;)*$"
+                        "default": "null"
                     },
                     "EIDE.SDCC.InstallDirectory": {
                         "type": "string",
@@ -372,14 +344,6 @@
             {
                 "command": "Project.setActive",
                 "title": "Active Project"
-            },
-            {
-                "command": "Project.save",
-                "title": "Save",
-                "icon": {
-                    "dark": "./res/icon/Save_16x.svg",
-                    "light": "./res/icon/Save_16x.svg"
-                }
             },
             {
                 "command": "Project.fastCompile",
@@ -635,7 +599,7 @@
             },
             {
                 "command": "Project.switchMode",
-                "title": "Switch Release/Debug Mode",
+                "title": "Switch Target",
                 "icon": {
                     "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
                     "light": "./res/icon/SwitchSourceOrTarget_16x.svg"
@@ -733,10 +697,6 @@
                     "when": "viewItem == PACK && view == Project"
                 },
                 {
-                    "command": "Project.save",
-                    "when": "viewItem == SOLUTION && view == Project"
-                },
-                {
                     "command": "Project.setActive",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
@@ -758,25 +718,13 @@
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "Project.compile",
-                    "when": "viewItem == SOLUTION && view == Project"
-                },
-                {
                     "command": "Project.fastCompile",
                     "group": "inline",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "Project.fastCompile",
-                    "when": "viewItem == SOLUTION && view == Project"
-                },
-                {
                     "command": "Project.clean",
                     "group": "inline",
-                    "when": "viewItem == SOLUTION && view == Project"
-                },
-                {
-                    "command": "Project.clean",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
@@ -786,10 +734,6 @@
                 {
                     "command": "Project.uploadToDevice",
                     "group": "inline",
-                    "when": "viewItem == SOLUTION && view == Project"
-                },
-                {
-                    "command": "Project.uploadToDevice",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
