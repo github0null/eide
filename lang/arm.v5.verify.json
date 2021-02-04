@@ -133,11 +133,14 @@
             "properties": {
                 "misc-controls": {
                     "markdownDescription": "自定义编译器选项 (custom compiler options)",
-                    "type": "array",
+                    "type": [
+                        "string",
+                        "array"
+                    ],
                     "items": {
                         "type": "string"
                     },
-                    "default": []
+                    "default": ""
                 },
                 "execute-only-code": {
                     "markdownDescription": "Execute-only Code",
@@ -264,11 +267,14 @@
             "properties": {
                 "misc-controls": {
                     "markdownDescription": "自定义汇编器选项 (custom assember options)",
-                    "type": "array",
+                    "type": [
+                        "string",
+                        "array"
+                    ],
                     "items": {
                         "type": "string"
                     },
-                    "default": []
+                    "default": ""
                 },
                 "execute-only-code": {
                     "markdownDescription": "Execute-only Code",
@@ -326,11 +332,14 @@
             "properties": {
                 "misc-controls": {
                     "markdownDescription": "自定义链接器选项 (custom linker options)",
-                    "type": "array",
+                    "type": [
+                        "string",
+                        "array"
+                    ],
                     "items": {
                         "type": "string"
                     },
-                    "default": []
+                    "default": ""
                 },
                 "not-search-std-libs": {
                     "markdownDescription": "Don't Search Standrad Libraries",

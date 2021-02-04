@@ -5,7 +5,10 @@
     "definitions": {
         "FLAGS": {
             "markdownDescription": "自定义选项 (custom options)",
-            "type": "array",
+            "type": [
+                "string",
+                "array"
+            ],
             "items": {
                 "type": "string"
             },
@@ -152,11 +155,13 @@
             "properties": {
                 "C_FLAGS": {
                     "markdownDescription": "C 附加参数 (C custom parameters)",
-                    "$ref": "#/definitions/FLAGS"
+                    "$ref": "#/definitions/FLAGS",
+                    "default": ""
                 },
                 "CXX_FLAGS": {
                     "markdownDescription": "C++ 附加参数 (C++ custom parameters)",
-                    "$ref": "#/definitions/FLAGS"
+                    "$ref": "#/definitions/FLAGS",
+                    "default": ""
                 },
                 "language-c": {
                     "markdownDescription": "要使用的 C 标准 (C standard)",
@@ -244,7 +249,8 @@
             "type": "object",
             "properties": {
                 "ASM_FLAGS": {
-                    "$ref": "#/definitions/FLAGS"
+                    "$ref": "#/definitions/FLAGS",
+                    "default": ""
                 }
             }
         },
@@ -254,14 +260,13 @@
             "properties": {
                 "LD_FLAGS": {
                     "markdownDescription": "Use \"-Wl[,option]...\" pass options to the linker",
-                    "$ref": "#/definitions/FLAGS"
+                    "$ref": "#/definitions/FLAGS",
+                    "default": ""
                 },
                 "LIB_FLAGS": {
                     "markdownDescription": "链接库选项 (lib flags)",
                     "$ref": "#/definitions/FLAGS",
-                    "default": [
-                        "-lm"
-                    ]
+                    "default": "-lm"
                 },
                 "output-lib": {
                     "type": "boolean",

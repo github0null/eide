@@ -137,11 +137,14 @@
             "properties": {
                 "misc-controls": {
                     "markdownDescription": "自定义编译器选项 (custom compiler options)",
-                    "type": "array",
+                    "type": [
+                        "string",
+                        "array"
+                    ],
                     "items": {
                         "type": "string"
                     },
-                    "default": []
+                    "default": ""
                 },
                 "language-c": {
                     "markdownDescription": "要使用的 C 标准 (C standard)",
@@ -289,11 +292,14 @@
                 },
                 "misc-controls": {
                     "markdownDescription": "自定义汇编器选项 (custom assember options)",
-                    "type": "array",
+                    "type": [
+                        "string",
+                        "array"
+                    ],
                     "items": {
                         "type": "string"
                     },
-                    "default": []
+                    "default": ""
                 }
             }
         },
@@ -303,11 +309,14 @@
             "properties": {
                 "misc-controls": {
                     "markdownDescription": "自定义链接器选项 (custom linker options)",
-                    "type": "array",
+                    "type": [
+                        "string",
+                        "array"
+                    ],
                     "items": {
                         "type": "string"
                     },
-                    "default": []
+                    "default": ""
                 },
                 "output-lib": {
                     "type": "boolean",

@@ -5,11 +5,14 @@
     "definitions": {
         "misc-controls": {
             "markdownDescription": "自定义选项 (custom options)",
-            "type": "array",
+            "type": [
+                "string",
+                "array"
+            ],
             "items": {
                 "type": "string"
             },
-            "default": []
+            "default": ""
         }
     },
     "properties": {
