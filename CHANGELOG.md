@@ -4,6 +4,12 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v1.23.2]
+- 优化：为 github 站点进行代理，提升模板仓库连接速度和下载速度
+- 优化：调整构建器的输出提示
+- 调整：更改某些字符串提示
+***
+
 ### [v1.23.1]
 - 更改：调整 sdcc, gcc 默认编译配置
 - 更改：调整某些提示信息

@@ -23,7 +23,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一款适用于 8051/STM8/Cortex-M 的单片机开发环境 (A singlechip development environment for 8051/STM8/Cortex-M)",
-    "version": "1.23.1",
+    "version": "1.23.2",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -97,6 +97,12 @@
                         "scope": "resource",
                         "markdownDescription": "The built-in command lines will insert at the beginning of the `beforeBuildTasks / afterBuildTasks`",
                         "default": false
+                    },
+                    "EIDE.Template.Repository.UseProxy": {
+                        "type": "boolean",
+                        "scope": "machine",
+                        "markdownDescription": "Use github proxy to improve network speed (experimental function)",
+                        "default": true
                     },
                     "EIDE.Template.Repository.Url": {
                         "type": "string",
