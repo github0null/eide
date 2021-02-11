@@ -6,9 +6,14 @@
 #error "Don't include this file in your project !, it can only be used for code analysis !"
 #endif // !
 
+#ifdef _WIN32
+#undef _WIN32
+#endif
+
 // compiler keywords
 #define __alignof__(x)
 #define __asm(x)
+#define __asm
 #define __asm__(x)
 #define __forceinline
 #define __restrict

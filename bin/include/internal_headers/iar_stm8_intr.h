@@ -6,6 +6,14 @@
 #error "Don't include this file in your project !, it can only be used for code analysis !"
 #endif // !
 
+#ifdef _WIN32
+#undef _WIN32
+#endif
+
+#ifdef __GNUC__
+#undef __GNUC__
+#endif
+
 // keywords
 #define __eeprom
 #define __far

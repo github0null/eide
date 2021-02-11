@@ -6,6 +6,10 @@
 #error "Don't include this file in your project !, it can only be used for code analysis !"
 #endif // !
 
+#ifdef _WIN32
+#undef _WIN32
+#endif
+
 // compiler flags
 #ifdef __SDCC
 

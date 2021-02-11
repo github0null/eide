@@ -30,6 +30,7 @@
 #define __alignof__(x) sizeof(x)
 #define __ALIGNOF__ __alignof__
 #define __asm(x)
+#define __asm
 #define __global_reg(n)
 #define __inline
 #define __INTADDR__(x)
