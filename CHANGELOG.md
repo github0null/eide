@@ -4,6 +4,14 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v2.0.0]
+- 新增：支持以虚拟文件夹形式组织源文件
+- 新增：支持 Keil 项目导入功能，**但只支持 Keil 5 及以上版本**
+- 新增：支持更改项目名称
+- 优化：当使用的工具没有安装时，给出提示和下载链接
+- 优化：隐藏 axf2elf 工具的输出，将其重定向到 axf2elf.log 文件
+***
+
 ### [v1.23.2]
 - 优化：为 github 站点进行代理，提升模板仓库连接速度和下载速度
 - 优化：调整构建器的输出提示
