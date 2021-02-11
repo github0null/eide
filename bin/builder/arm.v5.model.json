@@ -294,19 +294,19 @@
             "$outputBin": [
                 {
                     "name": "output hex file",
-                    "toolPath": "ARMCLANG\\bin\\fromelf.exe",
+                    "toolPath": "ARMCC\\bin\\fromelf.exe",
                     "outputSuffix": ".hex",
                     "command": "--i32combined --output ${output} ${linkerOutput}"
                 },
                 {
                     "name": "output s19 file",
-                    "toolPath": "ARMCLANG\\bin\\fromelf.exe",
+                    "toolPath": "ARMCC\\bin\\fromelf.exe",
                     "outputSuffix": ".s19",
                     "command": "--m32combined --output ${output} ${linkerOutput}"
                 },
                 {
                     "name": "output bin file",
-                    "toolPath": "ARMCLANG\\bin\\fromelf.exe",
+                    "toolPath": "ARMCC\\bin\\fromelf.exe",
                     "outputSuffix": ".bin",
                     "command": "--bincombined --output ${output} ${linkerOutput}"
                 }
