@@ -23,7 +23,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一款适用于 8051/STM8/Cortex-M 的单片机开发环境 (A singlechip development environment for 8051/STM8/Cortex-M)",
-    "version": "1.23.2",
+    "version": "2.0.0",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -311,6 +311,26 @@
             ]
         },
         "commands": [
+            {
+                "command": "project.source.virtual_folder_add_file",
+                "title": "Add File"
+            },
+            {
+                "command": "project.source.virtual_folder_add",
+                "title": "Add Folder"
+            },
+            {
+                "command": "project.source.virtual_folder_remove",
+                "title": "Remove"
+            },
+            {
+                "command": "project.source.virtual_file_remove",
+                "title": "Remove"
+            },
+            {
+                "command": "project.source.virtual_folder_rename",
+                "title": "Rename"
+            },
             {
                 "command": "Project.refresh",
                 "title": "Refresh",
@@ -680,6 +700,26 @@
             ],
             "view/item/context": [
                 {
+                    "command": "project.source.virtual_folder_add_file",
+                    "when": "viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == Project"
+                },
+                {
+                    "command": "project.source.virtual_folder_add",
+                    "when": "viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == Project"
+                },
+                {
+                    "command": "project.source.virtual_folder_remove",
+                    "when": "viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == Project"
+                },
+                {
+                    "command": "project.source.virtual_folder_rename",
+                    "when": "viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == Project"
+                },
+                {
+                    "command": "project.source.virtual_file_remove",
+                    "when": "viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
+                },
+                {
                     "command": "Project.addPackage",
                     "group": "inline",
                     "when": "viewItem == PACK && view == Project"
@@ -749,22 +789,22 @@
                 {
                     "command": "Project.excludeSource",
                     "group": "inline",
-                    "when": "viewItem == FILE_ITEM && view == Project"
+                    "when": "viewItem == FILE_ITEM || viewItem == V_FILE_ITEM && view == Project"
                 },
                 {
                     "command": "Project.unexcludeSource",
                     "group": "inline",
-                    "when": "viewItem == EXCFILE_ITEM && view == Project"
+                    "when": "viewItem == EXCFILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
                 },
                 {
                     "command": "Project.excludeFolder",
                     "group": "inline",
-                    "when": "viewItem == FOLDER && view == Project"
+                    "when": "viewItem == FOLDER || viewItem == V_FOLDER || viewItem == V_FOLDER_ROOT && view == Project"
                 },
                 {
                     "command": "Project.unexcludeFolder",
                     "group": "inline",
-                    "when": "viewItem == EXCFOLDER && view == Project"
+                    "when": "viewItem == EXCFOLDER || viewItem == V_EXCFOLDER && view == Project"
                 },
                 {
                     "command": "Project.addSrcDir",
@@ -778,7 +818,7 @@
                 {
                     "command": "sourceRoot.refresh",
                     "group": "inline",
-                    "when": "viewItem == FOLDER_ROOT_DEPS || viewItem == FOLDER_ROOT && view == Project"
+                    "when": "viewItem == FOLDER_ROOT_DEPS || viewItem == FOLDER_ROOT || viewItem == V_FOLDER_ROOT && view == Project"
                 },
                 {
                     "command": "Project.removeSrcDir",
