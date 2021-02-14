@@ -220,7 +220,7 @@
                     "EIDE.ARM.StlinkExePath": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "STLink flasher `ST-LINK_CLI.exe` path",
+                        "markdownDescription": "ST-LINK Utility: `ST-LINK_CLI.exe` path",
                         "default": "null"
                     },
                     "EIDE.ARM.UseMulti-ThreadMode": {
@@ -272,7 +272,7 @@
                     "EIDE.STM8.STVP.CliExePath": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "STVP flasher `STVP_CmdLine.exe` path",
+                        "markdownDescription": "STVP: `STVP_CmdLine.exe` path",
                         "default": "null"
                     },
                     "EIDE.C51.INI.Path": {
@@ -284,7 +284,7 @@
                     "EIDE.SDCC.InstallDirectory": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "SDCC install directory [`example: D:\\SDCC`]",
+                        "markdownDescription": "SDCC install folder [`example: D:\\SDCC`]",
                         "default": "null",
                         "pattern": "^\\S.*[^\\s\\\\]$"
                     }
