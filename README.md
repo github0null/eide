@@ -43,7 +43,7 @@
 
 ## 使用文档 📖
 
-[使用手册 https://www.em-ide.com/docs/eide-manual](https://www.em-ide.com/docs/eide-manual)
+[使用手册 https://docs.em-ide.com](https://docs.em-ide.com)
 
 ***
 
@@ -54,3 +54,5 @@
 - [Github Issue](https://github.com/github0null/eide/issues)
 
 - [论坛 https://discuss.em-ide.com](https://discuss.em-ide.com/)
+
+- QQ交流群：860375447

@@ -4,6 +4,15 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
+### [v2.1.0]
+- 新增：支持 cortex-m23, cortex-m33
+- 修复：导入KEIL项目时某些包含路径存在后缀 '\\'
+- 修复：导入KEIL项目时宏定义解析出错
+- 更改：修改插件图标
+- 更改：调整字符串提示
+- 优化：导入KEIL项目时自动选择工具链
+***
+
 ### [v2.0.0]
 - 新增：支持以虚拟文件夹形式组织源文件
 - 新增：支持 KEIL 项目导入功能，**但只支持 KEIL 5 及以上版本**

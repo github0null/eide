@@ -10,6 +10,13 @@
 				"$tsc"
 			],
 			"group": "build"
+		},
+		{
+			"label": "build release",
+			"type": "shell",
+			"command": "vsce package",
+			"problemMatcher": [],
+			"group": "build"
 		}
 	]
 }

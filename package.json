@@ -7,8 +7,9 @@
         "email": "2584456014@qq.com"
     },
     "keywords": [
-        "embedded",
         "cortex-m",
+        "armcc",
+        "gcc",
         "arm",
         "stm32",
         "c51",
@@ -16,14 +17,13 @@
         "mcs51",
         "stm8",
         "sdcc",
-        "armcc",
-        "gcc",
-        "eide"
+        "eide",
+        "embedded"
     ],
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一款适用于 8051/STM8/Cortex-M 的单片机开发环境 (A singlechip development environment for 8051/STM8/Cortex-M)",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "engines": {
         "vscode": "^1.38.0"
     },
