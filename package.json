@@ -23,7 +23,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一款适用于 8051/STM8/Cortex-M 的单片机开发环境 (A singlechip development environment for 8051/STM8/Cortex-M)",
-    "version": "2.0.1",
+    "version": "2.1.0",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -134,7 +134,7 @@
                         "type": "integer",
                         "scope": "resource",
                         "markdownDescription": "SerialPort Baud Rate",
-                        "default": 9600
+                        "default": 115200
                     },
                     "EIDE.SerialPortMonitor.DataBits": {
                         "type": "integer",
@@ -182,8 +182,7 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "IAR for STM8 install directory [`example: D:\\IAR`]",
-                        "default": "null",
-                        "pattern": "^\\S.*[^\\s\\\\]$"
+                        "default": "null"
                     },
                     "EIDE.ARM.GCC.Prefix": {
                         "type": "string",
@@ -194,34 +193,32 @@
                     "EIDE.ARM.GCC.InstallDirectory": {
                         "type": "string",
                         "scope": "resource",
-                        "markdownDescription": "GCC for ARM toolchain install directory [`example: D:\\ARM-GNU-Tool\\8 2019-q3-update`]",
-                        "default": "null",
-                        "pattern": "^\\S.*[^\\s\\\\]$"
+                        "markdownDescription": "GCC for ARM toolchain install directory [`example: D:\\arm-gcc\\8 2019-q3-update`]",
+                        "default": "null"
                     },
                     "EIDE.ARM.INI.Path": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "Keil ARM MDK `TOOLS.INI` file path [`example: D:\\Demo\\Keil\\TOOLS.INI`]",
-                        "default": "null"
+                        "markdownDescription": "Keil ARM MDK `TOOLS.INI` file path [`example: C:\\Keil_v5\\TOOLS.INI`]",
+                        "default": "C:\\Keil_v5\\TOOLS.INI"
                     },
                     "EIDE.ARM.JLink.ToolDirectory": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "JLink install directory [`example: D:\\JLink`]",
-                        "default": "null",
-                        "pattern": "^\\S.*[^\\s\\\\]$"
+                        "markdownDescription": "JLink install directory [`example: C:\\Program Files (x86)\\SEGGER\\JLink`]",
+                        "default": "C:\\Program Files (x86)\\SEGGER\\JLink"
                     },
                     "EIDE.ARM.OpenOCD.ExePath": {
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "OpenOCD.exe path [`example: D:\\OpenOCD\\bin\\openocd.exe`]",
-                        "default": "null"
+                        "default": "D:\\OpenOCD\\bin\\openocd.exe"
                     },
                     "EIDE.ARM.StlinkExePath": {
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "ST-LINK Utility: `ST-LINK_CLI.exe` path",
-                        "default": "null"
+                        "default": "C:\\Program Files (x86)\\STMicroelectronics\\STM32 ST-LINK Utility\\ST-LINK Utility\\ST-LINK_CLI.exe"
                     },
                     "EIDE.ARM.UseMulti-ThreadMode": {
                         "type": "boolean",
@@ -273,20 +270,19 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "STVP: `STVP_CmdLine.exe` path",
-                        "default": "null"
+                        "default": "C:\\Program Files (x86)\\STMicroelectronics\\st_toolset\\stvp\\STVP_CmdLine.exe"
                     },
                     "EIDE.C51.INI.Path": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "Keil C51 `TOOLS.INI` file path [`example: D:\\Demo\\Keil\\C51\\TOOLS.INI`]",
-                        "default": "null"
+                        "markdownDescription": "Keil C51 `TOOLS.INI` file path [`example: C:\\Keil_v5\\C51\\TOOLS.INI`]",
+                        "default": "C:\\Keil_v5\\C51\\TOOLS.INI"
                     },
                     "EIDE.SDCC.InstallDirectory": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "SDCC install folder [`example: D:\\SDCC`]",
-                        "default": "null",
-                        "pattern": "^\\S.*[^\\s\\\\]$"
+                        "markdownDescription": "SDCC install folder [`example: C:\\Program Files (x86)\\SDCC`]",
+                        "default": "C:\\Program Files (x86)\\SDCC"
                     }
                 }
             }
@@ -403,7 +399,7 @@
             },
             {
                 "command": "Project.installCMSISHeaders",
-                "title": "Add CMSIS Header Files To Project",
+                "title": "Install cmsis header files",
                 "icon": {
                     "dark": "./res/icon/AddBuildQueue_16x.svg",
                     "light": "./res/icon/AddBuildQueue_16x.svg"

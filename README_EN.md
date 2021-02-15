@@ -6,7 +6,7 @@
 
 A singlechip development environment for 8051/STM8/Cortex-M. Provide development, compilation, burning functions on vscode;
 
-**Only for Windows platform**
+**Only for Windows platform，Win7+**
 
 **Require .NET FrameWork 3.5**
 
@@ -19,9 +19,10 @@ A singlechip development environment for 8051/STM8/Cortex-M. Provide development
 ## Feature 🎉
 
 * Provides a rich project template for quick project start
-* Support for installation of chip peripheral libraries from standard CMSIS packages
-* compilation, fast compilation, support a variety of mainstream compilation tools
-* burn to chip, support a variety of mainstream burn
+* Support import KEIL5 project
+* Support for installation of chip peripheral libraries from standard KEIL chip support packages
+* compilation, fast compilation, support a variety of mainstream compilation tools (armcc, gcc-arm-none-eabi, sdcc ...)
+* burn to chip, support a variety of mainstream burn (jlink, stlink, openocd ...)
 * Built-in serial port monitor
 * Automatically generates a debug configuration for the debugger Cortex-debug/stm8-debug
 
@@ -40,7 +41,7 @@ A singlechip development environment for 8051/STM8/Cortex-M. Provide development
 
 ## Usage 📖
 
-#### There is a [user manual](https://www.em-ide.com/docs/eide-manual)
+#### There is a [user manual](https://docs.em-ide.com)
 
 ***
 

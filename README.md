@@ -11,7 +11,7 @@
 一款适用于 8051/STM8/Cortex-M 的单片机开发环境，用于在 vscode 上提供对 8051, STM8, Cortex-M 项目进行 开发, 编译, 烧录 的功能。
 
 **注意：**
- - **仅支持 Windows 平台**
+ - **仅支持 Windows 平台，Win7 及以上**
  - **构建工具依赖于 .NET FrameWork 3.5，没有的自行安装**
 
 ![preview](./res/preview/show.png)
@@ -22,12 +22,12 @@
 
 * 支持 8051，STM8，Cortex-M 项目
 * 支持导入 KEIL 项目 (仅支持 KEIL 5 及以上版本)
+* 支持安装标准的KEIL芯片支持包
 * 提供丰富的项目模板方便快速开始项目
-* 支持从标准的 CMSIS Package 安装芯片的外设库
-* 一键编译、快速编译，支持多种主流的编译工具
-* 一键烧录到芯片，支持多种主流的烧录器
-* 内置的串口监视器
-* 为调试器 Cortex-debug / STM8-debug 自动生成调试配置
+* 一键编译、快速编译，支持多种主流的编译工具 (armcc, gcc-arm-none-eabi, keil_c51, sdcc ...)
+* 一键烧录到芯片，支持多种主流的烧录器 (jlink, stlink, openocd, pyocd ...)
+* 内置的串口监视器，一键打开串口
+* 自动生成默认调试配置，为调试器插件 Cortex-debug / STM8-debug 生成默认配置
 
 ***
 
@@ -51,8 +51,8 @@
 
 反馈途径: 
 
-- [Github Issue](https://github.com/github0null/eide/issues)
-
 - [论坛 https://discuss.em-ide.com](https://discuss.em-ide.com/)
+
+- [Github Issue](https://github.com/github0null/eide/issues)
 
 - QQ交流群：860375447
