@@ -4,10 +4,11 @@ All notable changes to the "eide" extension will be documented in this file.
 
 ***
 
-### [v2.1.0]
+### [v2.1.1]
 - 新增：支持 cortex-m23, cortex-m33
 - 修复：导入KEIL项目时由于某些包含路径存在后缀 '\\'，而导致路径不正确
 - 修复：导入KEIL项目时带有"的宏定义解析出错
+- 修复：切换 Target 之后，编译，烧录配置没有更新
 - 更改：修改插件图标为圆形
 - 更改：调整字符串提示，和某些工具的图标
 - 优化：导入KEIL项目时自动选择工具链
