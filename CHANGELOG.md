@@ -1,7 +1,14 @@
 # Change Log
 
-All notable changes to the "eide" extension will be documented in this file.
+所有值得注意的版本变化将被记录在这个文件中。
 
+***
+
+### [v2.2.0]
+- 新增：支持导入KEIL项目时导入芯片RAM/FLASH布局信息，fpu浮点选项信息
+- **修复：排除功能无法排除嵌套的源文件夹**
+- 优化：为不支持FPU的芯片隐藏浮点选项
+- 更改：移除多余浮点选项 `default`， 将由已有选项 `none` 代替
 ***
 
 ### [v2.1.1]
