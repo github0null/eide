@@ -41,9 +41,9 @@
 
 ***
 
-## 使用文档 📖
+## 文档 📖
 
-[使用手册 https://docs.em-ide.com](https://docs.em-ide.com)
+[文档地址: https://docs.em-ide.com](https://docs.em-ide.com)
 
 ***
 
@@ -51,7 +51,7 @@
 
 反馈途径: 
 
-- [论坛 https://discuss.em-ide.com](https://discuss.em-ide.com/)
+- [论坛: https://discuss.em-ide.com](https://discuss.em-ide.com/)
 
 - [Github Issue](https://github.com/github0null/eide/issues)
 

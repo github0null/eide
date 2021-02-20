@@ -24,7 +24,7 @@ function updateView(_data) {
     }
 
     for (let i = 1; i < 4; i++) {
-        
+
         ClearInput('RAM', i);
         document.getElementById('RAM' + i.toString() + '-default').checked = false;
         document.getElementById('RAM' + i.toString() + '-NoInit').checked = false;
@@ -109,15 +109,43 @@ function addCheckListener() {
     }
 }
 
+function showDialog(title, msg) {
+    $('#dialog-label').removeClass('text-danger');
+    $('#dialog-label').removeClass('text-success');
+    $('#dialog-label').text(title);
+    if (title === 'Done') { $('#dialog-label').addClass('text-success'); }
+    else { $('#dialog-label').addClass('text-danger'); }
+    $('#dialog-text').text(msg);
+    $('#notice-dialog').modal();
+}
+
 function InitEvent() {
 
     addTextVerifier();
     addCheckListener();
 
     window.addEventListener('message', event => {
-        defData = event.data.DEF;
-        EnableReset(defData !== undefined);
-        updateView(event.data.CURRENT);
+
+        // is a message
+        if (typeof event.data === 'string') {
+            switch (event.data) {
+                case 'update-done':
+                    showDialog('Done', 'Save successfully !');
+                    break;
+                case 'update-failed':
+                    showDialog('Failed', 'Save failed !');
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        // is a data
+        else {
+            defData = event.data.DEF;
+            EnableReset(defData !== undefined);
+            updateView(event.data.CURRENT);
+        }
     });
 
     document.getElementById('save').onclick = () => {
@@ -125,7 +153,7 @@ function InitEvent() {
     };
 
     document.getElementById('reset').onclick = () => {
-        if(defData) {
+        if (defData) {
             updateView(defData);
             EnableSubmit(true);
         }
@@ -260,28 +288,28 @@ function onSubmit() {
 
         //if (document.getElementById('IRAM' + i.toString() + '-default').checked) {
 
-            const ram = {
-                tag: 'IRAM',
-                id: i,
-                mem: GetInput('IRAM', i),
-                isChecked: document.getElementById('IRAM' + i.toString() + '-default').checked,
-                noInit: document.getElementById('IRAM' + i.toString() + '-NoInit').checked
-            };
+        const ram = {
+            tag: 'IRAM',
+            id: i,
+            mem: GetInput('IRAM', i),
+            isChecked: document.getElementById('IRAM' + i.toString() + '-default').checked,
+            noInit: document.getElementById('IRAM' + i.toString() + '-NoInit').checked
+        };
 
-            data.RAM.push(ram);
+        data.RAM.push(ram);
         //}
 
         //if (document.getElementById('IROM' + i.toString() + '-default').checked) {
 
-            const rom = {
-                tag: 'IROM',
-                id: i,
-                mem: GetInput('IROM', i),
-                isChecked: document.getElementById('IROM' + i.toString() + '-default').checked,
-                isStartup: document.getElementById('IROM' + i.toString() + '-startup').checked
-            };
+        const rom = {
+            tag: 'IROM',
+            id: i,
+            mem: GetInput('IROM', i),
+            isChecked: document.getElementById('IROM' + i.toString() + '-default').checked,
+            isStartup: document.getElementById('IROM' + i.toString() + '-startup').checked
+        };
 
-            data.ROM.push(rom);
+        data.ROM.push(rom);
         //}
     }
 
@@ -289,28 +317,28 @@ function onSubmit() {
 
         //if (document.getElementById('RAM' + i.toString() + '-default').checked) {
 
-            const ram = {
-                tag: 'RAM',
-                id: i,
-                mem: GetInput('RAM', i),
-                isChecked: document.getElementById('RAM' + i.toString() + '-default').checked,
-                noInit: document.getElementById('RAM' + i.toString() + '-NoInit').checked
-            };
+        const ram = {
+            tag: 'RAM',
+            id: i,
+            mem: GetInput('RAM', i),
+            isChecked: document.getElementById('RAM' + i.toString() + '-default').checked,
+            noInit: document.getElementById('RAM' + i.toString() + '-NoInit').checked
+        };
 
-            data.RAM.push(ram);
+        data.RAM.push(ram);
         //}
 
         //if (document.getElementById('ROM' + i.toString() + '-default').checked) {
 
-            const rom = {
-                tag: 'ROM',
-                id: i,
-                mem: GetInput('ROM', i),
-                isChecked: document.getElementById('ROM' + i.toString() + '-default').checked,
-                isStartup: document.getElementById('ROM' + i.toString() + '-startup').checked
-            };
+        const rom = {
+            tag: 'ROM',
+            id: i,
+            mem: GetInput('ROM', i),
+            isChecked: document.getElementById('ROM' + i.toString() + '-default').checked,
+            isStartup: document.getElementById('ROM' + i.toString() + '-startup').checked
+        };
 
-            data.ROM.push(rom);
+        data.ROM.push(rom);
         //}
     }
 
