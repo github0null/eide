@@ -12,7 +12,7 @@
 			"group": "build"
 		},
 		{
-			"label": "build release",
+			"label": "build vsix",
 			"type": "shell",
 			"command": "vsce package",
 			"problemMatcher": [],
