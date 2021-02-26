@@ -447,29 +447,27 @@
                 "misc-controls": {
                     "$ref": "#/definitions/misc-controls"
                 },
-                "executable-format": {
-                    "markdownDescription": "要使用哪种输出格式，默认为 hex (Which output format to use, 'hex' is default)",
-                    "type": "string",
-                    "enum": [
-                        "hex",
-                        "s19",
-                        "elf"
-                    ],
-                    "enumDescriptions": [
-                        "Intel HEX Format",
-                        "Motorola S19 Format",
-                        "ELF Format (Only for STM8/HC08/S08)"
-                    ]
-                },
                 "$mainFileName": {
                     "markdownDescription": "含有 main() 的源文件名 (Source file name with \"main()\" function)",
                     "type": "string",
                     "default": "main"
                 },
-                "output-lib": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "生成链接库 (generate link library)"
+                "output-format": {
+                    "type": "string",
+                    "default": "hex",
+                    "description": "输出格式 (output format)",
+                    "enum": [
+                        "hex",
+                        "s19",
+                        "elf",
+                        "lib"
+                    ],
+                    "enumDescriptions": [
+                        "Intel HEX Format",
+                        "Motorola S19 Format",
+                        "ELF Format (Only for STM8/HC08/S08)",
+                        "静态库 (static library)"
+                    ]
                 }
             }
         }

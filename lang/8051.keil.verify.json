@@ -215,10 +215,18 @@
                 "misc-controls": {
                     "$ref": "#/definitions/misc-controls"
                 },
-                "output-lib": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "生成链接库 (generate link library)"
+                "output-format": {
+                    "type": "string",
+                    "default": "elf",
+                    "description": "输出格式 (output format)",
+                    "enum": [
+                        "elf",
+                        "lib"
+                    ],
+                    "enumDescriptions": [
+                        "可执行文件 (executable file)",
+                        "静态库 (static library)"
+                    ]
                 },
                 "use-RTX": {
                     "type": "string",

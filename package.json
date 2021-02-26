@@ -23,7 +23,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一款适用于 8051/STM8/Cortex-M 的单片机开发环境 (A singlechip development environment for 8051/STM8/Cortex-M)",
-    "version": "2.2.2",
+    "version": "2.2.3",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -33,7 +33,7 @@
         "Snippets"
     ],
     "activationEvents": [
-        "onStartupFinished"
+        "*"
     ],
     "icon": "res/icon/icon.png",
     "main": "./dist/extension.js",
@@ -86,7 +86,7 @@
                         "type": "boolean",
                         "scope": "resource",
                         "markdownDescription": "Print relative path when compile source file",
-                        "default": false
+                        "default": true
                     },
                     "EIDE.Option.CreateBatchFile": {
                         "type": "boolean",
