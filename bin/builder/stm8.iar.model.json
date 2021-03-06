@@ -2,6 +2,34 @@
     "name": "IAR C Compiler for STM8",
     "id": "IAR_STM8",
     "global": {
+        "code-mode": {
+            "type": "keyValue",
+            "command": "--code_model ",
+            "enum": {
+                "small": "small",
+                "medium": "medium",
+                "large": "large",
+                "default": "small"
+            },
+            "group": [
+                "c/cpp",
+                "asm"
+            ]
+        },
+        "data-mode": {
+            "type": "keyValue",
+            "command": "--data_model ",
+            "enum": {
+                "small": "small",
+                "medium": "medium",
+                "large": "large",
+                "default": "medium"
+            },
+            "group": [
+                "c/cpp",
+                "asm"
+            ]
+        },
         "misc-controls": {
             "type": "list",
             "command": "",
@@ -190,26 +218,6 @@
                     "false": "-Ol --no_cse --no_unroll --no_inline --no_code_motion --no_tbaa --no_cross_call"
                 }
             },
-            "code-mode": {
-                "type": "keyValue",
-                "command": "--code_model ",
-                "enum": {
-                    "small": "small",
-                    "medium": "medium",
-                    "large": "large",
-                    "default": "small"
-                }
-            },
-            "data-mode": {
-                "type": "keyValue",
-                "command": "--data_model ",
-                "enum": {
-                    "small": "small",
-                    "medium": "medium",
-                    "large": "large",
-                    "default": "medium"
-                }
-            },
             "turn-Warning-into-errors": {
                 "type": "selectable",
                 "command": {
@@ -223,12 +231,9 @@
             "$includes": {
                 "body": "-I ${value}"
             },
-            "$defines": {
-                "body": "-D ${key}=${value}"
-            },
             "$invoke": {
                 "useFile": true,
-                "body": "-f {value}"
+                "body": "-f ${value}"
             },
             "$output": "--dependencies=m + -o ${out} ${in}",
             "$default": [
@@ -241,8 +246,8 @@
             "case-sensitive-user-symbols": {
                 "type": "selectable",
                 "command": {
-                    "true": "--case_insensitive",
-                    "false": ""
+                    "true": "",
+                    "false": "--case_insensitive"
                 }
             },
             "multibyte-support": {

@@ -205,9 +205,6 @@
             "$includes": {
                 "body": "-I${value}"
             },
-            "$defines": {
-                "body": "--pd \"${key} SETA ${value}\""
-            },
             "$invoke": {
                 "useFile": true,
                 "body": "--Via ${value}"

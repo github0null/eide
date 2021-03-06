@@ -1,26 +1,26 @@
 [
     {
         "fileName": "8051.keil.model.json",
-        "version": 2
+        "version": 3
     },
     {
         "fileName": "arm.gcc.model.json",
-        "version": 4
+        "version": 5
     },
     {
         "fileName": "arm.v5.model.json",
-        "version": 4
+        "version": 5
     },
     {
         "fileName": "arm.v6.model.json",
-        "version": 4
+        "version": 5
     },
     {
         "fileName": "sdcc.model.json",
-        "version": 2
+        "version": 3
     },
     {
         "fileName": "stm8.iar.model.json",
-        "version": 2
+        "version": 4
     }
 ]

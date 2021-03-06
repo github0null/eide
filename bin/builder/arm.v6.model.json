@@ -247,9 +247,6 @@
             "$includes": {
                 "body": "-I${value}"
             },
-            "$defines": {
-                "body": "--pd \"${key} SETA ${value}\""
-            },
             "$output": "-o ${out} --depend ${refPath} ${in}",
             "$invoke": {
                 "useFile": true,
@@ -286,9 +283,6 @@
             "$encoding": "UTF8",
             "$includes": {
                 "body": "-I${value}"
-            },
-            "$defines": {
-                "body": "-D${key}=\"${value}\""
             },
             "$output": "-o ${out} -MD ${in}",
             "$invoke": {

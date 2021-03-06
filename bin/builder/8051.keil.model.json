@@ -80,12 +80,6 @@
                 "useFile": true,
                 "body": "@${value}"
             },
-            "$defines": {
-                "prefix": "DEFINE(",
-                "body": "${key}='${value}'",
-                "sep": ",",
-                "suffix": ")"
-            },
             "$output": "OBJECT(${out}) EP",
             "$quotePath": false,
             "$listPath": {

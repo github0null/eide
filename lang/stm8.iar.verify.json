@@ -120,6 +120,26 @@
                 "misc-controls": {
                     "$ref": "#/definitions/misc-controls"
                 },
+                "data-mode": {
+                    "description": "data mode",
+                    "type": "string",
+                    "default": "medium",
+                    "enum": [
+                        "small",
+                        "medium",
+                        "large"
+                    ]
+                },
+                "code-mode": {
+                    "description": "code mode",
+                    "type": "string",
+                    "default": "small",
+                    "enum": [
+                        "small",
+                        "medium",
+                        "large"
+                    ]
+                },
                 "output-debug-info": {
                     "markdownDescription": "输出调试信息 (Output debug information)",
                     "type": "string",
@@ -324,26 +344,6 @@
                     "enum": [
                         "16",
                         "12"
-                    ]
-                },
-                "data-mode": {
-                    "description": "data mode",
-                    "type": "string",
-                    "default": "medium",
-                    "enum": [
-                        "small",
-                        "medium",
-                        "large"
-                    ]
-                },
-                "code-mode": {
-                    "description": "code mode",
-                    "type": "string",
-                    "default": "small",
-                    "enum": [
-                        "small",
-                        "medium",
-                        "large"
                     ]
                 },
                 "plain-char-is-signed": {
