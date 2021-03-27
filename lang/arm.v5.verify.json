@@ -115,7 +115,7 @@
                 "output-debug-info": {
                     "markdownDescription": "输出调试信息 (Output debug information)",
                     "type": "string",
-                    "default": "enable",
+                    "default": "disable",
                     "enum": [
                         "disable",
                         "enable"
@@ -131,60 +131,10 @@
             "markdownDescription": "C/C++ 编译器选项 (C/C++ Compiler Options)",
             "type": "object",
             "properties": {
-                "misc-controls": {
-                    "markdownDescription": "自定义编译器选项 (custom compiler options)",
-                    "type": [
-                        "string",
-                        "array"
-                    ],
-                    "items": {
-                        "type": "string"
-                    },
-                    "default": ""
-                },
-                "execute-only-code": {
-                    "markdownDescription": "Execute-only Code",
-                    "type": "boolean",
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "read-only-position-independent": {
-                    "markdownDescription": "Generation of Read-Only Position-Independent (ROPI) code",
-                    "type": "boolean",
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "read-write-position-independent": {
-                    "markdownDescription": "Generation of Read/Write Position-Independent (RWPI) code",
-                    "type": "boolean",
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "split-load-and-store-multiple": {
-                    "markdownDescription": "Split Load and Store Multiple",
-                    "type": "boolean",
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "c99-mode": {
-                    "markdownDescription": "C99 Mode",
-                    "type": "boolean",
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
                 "optimization": {
                     "markdownDescription": "代码优化级别 (optimization level)",
                     "type": "string",
+                    "default": "level-0",
                     "enum": [
                         "level-0",
                         "level-1",
@@ -218,8 +168,24 @@
                         false
                     ]
                 },
-                "strict-ANSI-C": {
-                    "markdownDescription": "使用标准（严格）的 ANSI C (strict ANSI C)",
+                "split-load-and-store-multiple": {
+                    "markdownDescription": "Split Load and Store Multiple",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "c99-mode": {
+                    "markdownDescription": "C99 Mode",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "gnu-extensions": {
+                    "markdownDescription": "GNU 扩展 (gnu extensions)",
                     "type": "boolean",
                     "enum": [
                         true,
@@ -242,39 +208,23 @@
                         false
                     ]
                 },
-                "gnu-extensions": {
-                    "markdownDescription": "GNU 扩展 (gnu extensions)",
-                    "type": "boolean",
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
                 "warnings": {
                     "markdownDescription": "警告等级 (warning level)",
                     "type": "string",
+                    "default": "unspecified",
                     "enum": [
                         "unspecified",
                         "no-warnings",
                         "all-warnings"
                     ]
-                }
-            }
-        },
-        "asm-compiler": {
-            "markdownDescription": "汇编器选项 (Assember Option)",
-            "type": "object",
-            "properties": {
-                "misc-controls": {
-                    "markdownDescription": "自定义汇编器选项 (custom assember options)",
-                    "type": [
-                        "string",
-                        "array"
-                    ],
-                    "items": {
-                        "type": "string"
-                    },
-                    "default": ""
+                },
+                "strict-ANSI-C": {
+                    "markdownDescription": "使用标准（严格）的 ANSI C (strict ANSI C)",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
                 },
                 "execute-only-code": {
                     "markdownDescription": "Execute-only Code",
@@ -300,6 +250,23 @@
                         false
                     ]
                 },
+                "misc-controls": {
+                    "markdownDescription": "C/C++编译器附加选项 (other c/c++ compiler options)",
+                    "type": [
+                        "string",
+                        "array"
+                    ],
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": ""
+                }
+            }
+        },
+        "asm-compiler": {
+            "markdownDescription": "汇编器选项 (Assember Option)",
+            "type": "object",
+            "properties": {
                 "split-load-and-store-multiple": {
                     "markdownDescription": "Split Load and Store Multiple",
                     "type": "boolean",
@@ -323,15 +290,33 @@
                         true,
                         false
                     ]
-                }
-            }
-        },
-        "linker": {
-            "markdownDescription": "链接器选项 (Linker options)",
-            "type": "object",
-            "properties": {
+                },
+                "execute-only-code": {
+                    "markdownDescription": "Execute-only Code",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "read-only-position-independent": {
+                    "markdownDescription": "Generation of Read-Only Position-Independent (ROPI) code",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "read-write-position-independent": {
+                    "markdownDescription": "Generation of Read/Write Position-Independent (RWPI) code",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
                 "misc-controls": {
-                    "markdownDescription": "自定义链接器选项 (custom linker options)",
+                    "markdownDescription": "汇编器附加选项 (other assember options)",
                     "type": [
                         "string",
                         "array"
@@ -340,6 +325,25 @@
                         "type": "string"
                     },
                     "default": ""
+                }
+            }
+        },
+        "linker": {
+            "markdownDescription": "链接器选项 (Linker options)",
+            "type": "object",
+            "properties": {
+                "output-format": {
+                    "type": "string",
+                    "default": "elf",
+                    "description": "输出格式 (output format)",
+                    "enum": [
+                        "elf",
+                        "lib"
+                    ],
+                    "enumDescriptions": [
+                        "可执行文件 (executable file)",
+                        "静态库 (static library)"
+                    ]
                 },
                 "not-search-std-libs": {
                     "markdownDescription": "Don't Search Standrad Libraries",
@@ -365,18 +369,16 @@
                         false
                     ]
                 },
-                "output-format": {
-                    "type": "string",
-                    "default": "elf",
-                    "description": "输出格式 (output format)",
-                    "enum": [
-                        "elf",
-                        "lib"
+                "misc-controls": {
+                    "markdownDescription": "链接器附加选项 (other linker options)",
+                    "type": [
+                        "string",
+                        "array"
                     ],
-                    "enumDescriptions": [
-                        "可执行文件 (executable file)",
-                        "静态库 (static library)"
-                    ]
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": ""
                 }
             }
         }

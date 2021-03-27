@@ -156,140 +156,39 @@
                         "Microchip PIC 16-bit processors (p18f452 and variants. In development, not complete)."
                     ]
                 },
-                "device-options": {
-                    "markdownDescription": "芯片特定选项 (special options for device)",
-                    "type": "object",
-                    "properties": {
-                        "mcs51": {
-                            "type": "array",
-                            "markdownDescription": "mcs51 选项 (options for mcs51)",
-                            "default": [
-                                "--model-small"
-                            ],
-                            "items": {
-                                "type": "string",
-                                "pattern": "^-.+$",
-                                "enum": [
-                                    "--model-small",
-                                    "--model-medium",
-                                    "--model-large",
-                                    "--model-huge",
-                                    "--xstack",
-                                    "--iram-size <Value>",
-                                    "--xram-size <Value>",
-                                    "--code-size <Value>",
-                                    "--stack-size <Value>",
-                                    "--pack-iram",
-                                    "--acall-ajmp",
-                                    "--no-ret-without-call"
-                                ],
-                                "enumDescriptions": [
-                                    "Generate code for Small model programs.",
-                                    "Generate code for Medium model programs.",
-                                    "Generate code for Large model programs.",
-                                    "Generate code for Huge model programs.",
-                                    "Uses a pseudo stack in the __pdata area.",
-                                    "Causes the linker to check if the internal ram usage is within limits of the given value. ",
-                                    "Causes the linker to check if the external ram usage is within limits of the given value. ",
-                                    "Causes the linker to check if the code memory usage is within limits of the given value. ",
-                                    "Causes the linker to check if there is at minimum <Value> bytes for stack. ",
-                                    "Causes the linker to use unused register banks for data variables and pack data, idata and stack together. ",
-                                    "Replaces the three byte instructions lcall/ljmp with the two byte instructions acall/ajmp. ",
-                                    "Causes the code generator to insert an extra lcall or acall instruction whenever it needs to use a ret instruction in a context other than a function returning. "
-                                ]
-                            }
-                        },
-                        "stm8": {
-                            "type": "array",
-                            "markdownDescription": "stm8 选项 (options for stm8)",
-                            "default": [
-                                "--model-medium"
-                            ],
-                            "items": {
-                                "type": "string",
-                                "pattern": "^-.+$",
-                                "enum": [
-                                    "--model-medium",
-                                    "--model-large"
-                                ],
-                                "enumDescriptions": [
-                                    "Generate code for Medium model programs.",
-                                    "Generate code for Large model programs."
-                                ]
-                            }
-                        },
-                        "ds390": {
-                            "type": "array",
-                            "markdownDescription": "ds390 选项 (options for ds390)",
-                            "default": [],
-                            "items": {
-                                "type": "string",
-                                "pattern": "^-.+$",
-                                "enum": [
-                                    "--model-ﬂat24",
-                                    "--protect-sp-update",
-                                    "--stack-10bit",
-                                    "--stack-probe",
-                                    "--tini-libid <nnnn>",
-                                    "--use-accelerator"
-                                ],
-                                "enumDescriptions": [
-                                    "Generate 24-bit ﬂat mode code. ",
-                                    "disable interrupts during ESP:SP updates",
-                                    "Generate code for the 10 bit stack mode of the Dallas DS80C390 part. ",
-                                    "insert call to function __stack_probe at each function prologue. ",
-                                    "LibraryID used in -mTININative. ",
-                                    "generate code for DS390 Arithmetic Accelerator."
-                                ]
-                            }
-                        },
-                        "ds400": {
-                            "type": "array",
-                            "markdownDescription": "ds400 选项 (options for ds400)",
-                            "default": [],
-                            "items": {
-                                "type": "string",
-                                "pattern": "^-.+$",
-                                "enum": [
-                                    "--model-ﬂat24",
-                                    "--protect-sp-update",
-                                    "--stack-10bit",
-                                    "--stack-probe",
-                                    "--tini-libid <nnnn>",
-                                    "--use-accelerator"
-                                ],
-                                "enumDescriptions": [
-                                    "Generate 24-bit ﬂat mode code. ",
-                                    "disable interrupts during ESP:SP updates",
-                                    "Generate code for the 10 bit stack mode of the Dallas DS80C390 part. ",
-                                    "insert call to function __stack_probe at each function prologue. ",
-                                    "LibraryID used in -mTININative. ",
-                                    "generate code for DS390 Arithmetic Accelerator."
-                                ]
-                            }
-                        },
-                        "z80": {
-                            "type": "array",
-                            "markdownDescription": "z80 options (for z80, z180, r2k, r3ka, gbz80, tlcs90, ez80_z80)",
-                            "default": [],
-                            "items": {
-                                "type": "string",
-                                "pattern": "^-.+$",
-                                "enum": [
-                                    "--no-std-crt0",
-                                    "--callee-saves-bc",
-                                    "--codeseg <Value>",
-                                    "--constseg <Value>"
-                                ],
-                                "enumDescriptions": [
-                                    "When linking, skip the standard crt0.rel object ﬁle. ",
-                                    "Force a called function to always save BC. ",
-                                    "Use <Value> for the code segment name.",
-                                    "Use <Value> for the const segment name."
-                                ]
-                            }
-                        }
-                    }
+                "optimize-type": {
+                    "type": "string",
+                    "markdownDescription": "优化类型 (optimization type)",
+                    "default": "balanced",
+                    "enum": [
+                        "speed",
+                        "balanced",
+                        "size"
+                    ]
+                },
+                "plain-char-is-signed": {
+                    "type": "boolean",
+                    "markdownDescription": "plain char is signed",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "out-debug-info": {
+                    "type": "boolean",
+                    "markdownDescription": "output debug info",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "use-non-free": {
+                    "type": "boolean",
+                    "markdownDescription": "use non-free libraries and include paths",
+                    "enum": [
+                        true,
+                        false
+                    ]
                 },
                 "stack-auto": {
                     "type": "boolean",
@@ -355,15 +254,6 @@
                         false
                     ]
                 },
-                "optimize-type": {
-                    "type": "string",
-                    "markdownDescription": "优化类型 (optimization type)",
-                    "enum": [
-                        "speed",
-                        "balanced",
-                        "size"
-                    ]
-                },
                 "allow-unsafe-read": {
                     "type": "boolean",
                     "markdownDescription": "Allow optimizations to read any memory location anytime",
@@ -380,29 +270,9 @@
                         false
                     ]
                 },
-                "plain-char-is-signed": {
-                    "type": "boolean",
-                    "markdownDescription": "plain char is signed",
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "out-debug-info": {
-                    "type": "boolean",
-                    "markdownDescription": "output debug info",
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "use-non-free": {
-                    "type": "boolean",
-                    "markdownDescription": "use non-free libraries and include paths",
-                    "enum": [
-                        true,
-                        false
-                    ]
+                "misc-controls": {
+                    "markdownDescription": "其他选项 (Other Options)",
+                    "$ref": "#/definitions/misc-controls"
                 }
             }
         },
@@ -410,13 +280,10 @@
             "markdownDescription": "C 编译器选项 (C compiler options)",
             "type": "object",
             "properties": {
-                "misc-controls": {
-                    "$ref": "#/definitions/misc-controls"
-                },
                 "language-c": {
                     "markdownDescription": "C 标准",
                     "type": "string",
-                    "default": "c89",
+                    "default": "c99",
                     "enum": [
                         "c89",
                         "sdcc89",
@@ -428,6 +295,10 @@
                         "c2x",
                         "sdcc2x"
                     ]
+                },
+                "misc-controls": {
+                    "markdownDescription": "其他选项 (Other Options)",
+                    "$ref": "#/definitions/misc-controls"
                 }
             }
         },
@@ -436,6 +307,7 @@
             "type": "object",
             "properties": {
                 "misc-controls": {
+                    "markdownDescription": "其他选项 (Other Options)",
                     "$ref": "#/definitions/misc-controls"
                 }
             }
@@ -444,14 +316,6 @@
             "markdownDescription": "链接器选项 (Linker options)",
             "type": "object",
             "properties": {
-                "misc-controls": {
-                    "$ref": "#/definitions/misc-controls"
-                },
-                "$mainFileName": {
-                    "markdownDescription": "含有 main() 的源文件名 (Source file name with \"main()\" function)",
-                    "type": "string",
-                    "default": "main"
-                },
                 "output-format": {
                     "type": "string",
                     "default": "hex",
@@ -468,6 +332,15 @@
                         "ELF Format (Only for STM8/HC08/S08)",
                         "静态库 (static library)"
                     ]
+                },
+                "$mainFileName": {
+                    "markdownDescription": "含有 main() 的源文件名 (Source file name with \"main()\" function)",
+                    "type": "string",
+                    "default": "main"
+                },
+                "misc-controls": {
+                    "markdownDescription": "其他选项 (Other Options)",
+                    "$ref": "#/definitions/misc-controls"
                 }
             }
         }

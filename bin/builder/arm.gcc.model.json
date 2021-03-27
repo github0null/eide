@@ -238,7 +238,7 @@
             "optimization": {
                 "type": "selectable",
                 "command": {
-                    "false": "",
+                    "false": "-O0",
                     "level-0": "-O0",
                     "level-1": "-O1",
                     "level-2": "-O2",

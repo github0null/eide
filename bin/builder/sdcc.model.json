@@ -24,17 +24,6 @@
                 "s19"
             ]
         },
-        "specific-options": {
-            "type": "list",
-            "command": "",
-            "group": [
-                "c/cpp",
-                "asm",
-                "linker",
-                "elf",
-                "s19"
-            ]
-        },
         "stack-auto": {
             "type": "selectable",
             "command": {

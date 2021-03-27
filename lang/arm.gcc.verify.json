@@ -117,23 +117,6 @@
             "markdownDescription": "全局选项 (Global options)",
             "type": "object",
             "properties": {
-                "output-debug-info": {
-                    "markdownDescription": "输出调试信息 (Output debug information)",
-                    "type": "string",
-                    "default": "enable",
-                    "enum": [
-                        "disable",
-                        "enable",
-                        "dwarf-2",
-                        "dwarf-3"
-                    ],
-                    "enumDescriptions": [
-                        "禁用 (disable)",
-                        "开启 (enable)",
-                        "开启并输出 dwarf-2 格式的调试信息 (Output debug information with dwarf-2 format)",
-                        "开启并输出 dwarf-3 格式的调试信息 (Output debug information with dwarf-3 format)"
-                    ]
-                },
                 "$float-abi-type": {
                     "markdownDescription": "硬件浮点 ABI (Hardware floating-point ABI)",
                     "type": "string",
@@ -146,6 +129,23 @@
                         "使用 ARM 通用寄存器完成参数传递, 兼容 soft",
                         "使用 FPU 浮点寄存器完成参数传递"
                     ]
+                },
+                "output-debug-info": {
+                    "markdownDescription": "输出调试信息 (Output debug information)",
+                    "type": "string",
+                    "default": "disable",
+                    "enum": [
+                        "disable",
+                        "enable",
+                        "dwarf-2",
+                        "dwarf-3"
+                    ],
+                    "enumDescriptions": [
+                        "禁用 (disable)",
+                        "开启 (enable)",
+                        "开启并输出 dwarf-2 格式的调试信息 (Output debug information with dwarf-2 format)",
+                        "开启并输出 dwarf-3 格式的调试信息 (Output debug information with dwarf-3 format)"
+                    ]
                 }
             }
         },
@@ -153,20 +153,10 @@
             "markdownDescription": "c/c++ 编译器选项 (C/C++ Compiler options)",
             "type": "object",
             "properties": {
-                "C_FLAGS": {
-                    "markdownDescription": "C 附加参数 (C custom parameters)",
-                    "$ref": "#/definitions/FLAGS",
-                    "default": ""
-                },
-                "CXX_FLAGS": {
-                    "markdownDescription": "C++ 附加参数 (C++ custom parameters)",
-                    "$ref": "#/definitions/FLAGS",
-                    "default": ""
-                },
                 "language-c": {
-                    "markdownDescription": "要使用的 C 标准 (C standard)",
+                    "markdownDescription": "C 标准 (C standard)",
                     "type": "string",
-                    "default": "c99",
+                    "default": "c90",
                     "enum": [
                         "c89",
                         "c90",
@@ -181,9 +171,9 @@
                     ]
                 },
                 "language-cpp": {
-                    "markdownDescription": "要使用的 C++ 标准 (C++ standard)",
+                    "markdownDescription": "C++ 标准 (C++ standard)",
                     "type": "string",
-                    "default": "c++11",
+                    "default": "c++98",
                     "enum": [
                         "c++98",
                         "gnu++98",
@@ -196,7 +186,7 @@
                 "optimization": {
                     "markdownDescription": "代码优化级别 (optimization level)",
                     "type": "string",
-                    "default": "level-debug",
+                    "default": "level-0",
                     "enum": [
                         "level-0",
                         "level-1",
@@ -216,6 +206,15 @@
                         "-Og 启用不干扰调试的优化"
                     ]
                 },
+                "warnings": {
+                    "markdownDescription": "警告等级 (warning level)",
+                    "type": "string",
+                    "default": "all-warnings",
+                    "enum": [
+                        "no-warnings",
+                        "all-warnings"
+                    ]
+                },
                 "plain-char-is-signed": {
                     "markdownDescription": "Plain Char is Signed",
                     "type": "boolean",
@@ -227,20 +226,20 @@
                 "turn-Warning-into-errors": {
                     "markdownDescription": "将警告转化为错误 (Turn warnings into errors)",
                     "type": "boolean",
-                    "default": true,
                     "enum": [
                         true,
                         false
                     ]
                 },
-                "warnings": {
-                    "markdownDescription": "警告等级 (warning level)",
-                    "type": "string",
-                    "default": "all-warnings",
-                    "enum": [
-                        "no-warnings",
-                        "all-warnings"
-                    ]
+                "C_FLAGS": {
+                    "markdownDescription": "C 附加参数 (C other options)",
+                    "$ref": "#/definitions/FLAGS",
+                    "default": ""
+                },
+                "CXX_FLAGS": {
+                    "markdownDescription": "C++ 附加参数 (C++ other options)",
+                    "$ref": "#/definitions/FLAGS",
+                    "default": ""
                 }
             }
         },
@@ -249,6 +248,7 @@
             "type": "object",
             "properties": {
                 "ASM_FLAGS": {
+                    "markdownDescription": "汇编器附加参数 (Assembler other options)",
                     "$ref": "#/definitions/FLAGS",
                     "default": ""
                 }
@@ -258,16 +258,6 @@
             "markdownDescription": "链接器选项 (Linker options)",
             "type": "object",
             "properties": {
-                "LD_FLAGS": {
-                    "markdownDescription": "Use \"-Wl[,option]...\" pass options to the linker",
-                    "$ref": "#/definitions/FLAGS",
-                    "default": ""
-                },
-                "LIB_FLAGS": {
-                    "markdownDescription": "链接库选项 (lib flags)",
-                    "$ref": "#/definitions/FLAGS",
-                    "default": "-lm"
-                },
                 "output-format": {
                     "type": "string",
                     "default": "elf",
@@ -280,6 +270,16 @@
                         "可执行文件 (executable file)",
                         "静态库 (static library)"
                     ]
+                },
+                "LD_FLAGS": {
+                    "markdownDescription": "Use \"-Wl[,option]...\" pass options to the linker",
+                    "$ref": "#/definitions/FLAGS",
+                    "default": ""
+                },
+                "LIB_FLAGS": {
+                    "markdownDescription": "链接库选项 (lib flags)",
+                    "$ref": "#/definitions/FLAGS",
+                    "default": "-lm"
                 }
             }
         }

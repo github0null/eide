@@ -117,9 +117,6 @@
             "markdownDescription": "全局选项 (Global options)",
             "type": "object",
             "properties": {
-                "misc-controls": {
-                    "$ref": "#/definitions/misc-controls"
-                },
                 "data-mode": {
                     "description": "data mode",
                     "type": "string",
@@ -143,7 +140,7 @@
                 "output-debug-info": {
                     "markdownDescription": "输出调试信息 (Output debug information)",
                     "type": "string",
-                    "default": "enable",
+                    "default": "disable",
                     "enum": [
                         "disable",
                         "enable"
@@ -156,7 +153,7 @@
                 "printf-formatter": {
                     "type": "string",
                     "description": "printf formatter option",
-                    "default": "tiny",
+                    "default": "auto",
                     "enum": [
                         "auto",
                         "tiny",
@@ -181,7 +178,7 @@
                 "scanf-formatter": {
                     "type": "string",
                     "description": "scanf formatter option",
-                    "default": "small",
+                    "default": "auto",
                     "enum": [
                         "auto",
                         "small",
@@ -204,7 +201,7 @@
                 "math-functions": {
                     "type": "string",
                     "description": "math functions option",
-                    "default": "smaller",
+                    "default": "default",
                     "enum": [
                         "default",
                         "smaller"
@@ -220,9 +217,6 @@
             "markdownDescription": "c/c++ 编译器选项 (C/C++ Compiler options)",
             "type": "object",
             "properties": {
-                "misc-controls": {
-                    "$ref": "#/definitions/misc-controls"
-                },
                 "language-c": {
                     "markdownDescription": "要使用的 C 标准 (C standard)",
                     "type": "string",
@@ -244,7 +238,7 @@
                 "optimization": {
                     "markdownDescription": "代码优化级别 (optimization level)",
                     "type": "string",
-                    "default": "low",
+                    "default": "no",
                     "enum": [
                         "no",
                         "low",
@@ -267,7 +261,7 @@
                 "runtime-lib": {
                     "description": "The C/EC++ runtime library configuration",
                     "type": "string",
-                    "default": "normal",
+                    "default": "null",
                     "enum": [
                         "normal",
                         "full",
@@ -279,10 +273,29 @@
                         "No use"
                     ]
                 },
+                "language-conformance": {
+                    "description": "language conformance",
+                    "type": "string",
+                    "default": "IAR-extensions",
+                    "enum": [
+                        "strict",
+                        "standard",
+                        "IAR-extensions"
+                    ]
+                },
+                "virtual-bytes": {
+                    "description": "virtual bytes",
+                    "type": "string",
+                    "default": "16",
+                    "enum": [
+                        "16",
+                        "12"
+                    ]
+                },
                 "destroy-cpp-static-object": {
                     "description": "destroy c++ static object",
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "enum": [
                         true,
                         false
@@ -312,15 +325,6 @@
                         false
                     ]
                 },
-                "language-conformance": {
-                    "description": "language conformance",
-                    "type": "string",
-                    "enum": [
-                        "strict",
-                        "standard",
-                        "IAR-extensions"
-                    ]
-                },
                 "floating-point": {
                     "description": "floating point",
                     "type": "boolean",
@@ -337,15 +341,6 @@
                         false
                     ]
                 },
-                "virtual-bytes": {
-                    "description": "virtual bytes",
-                    "type": "string",
-                    "default": "16",
-                    "enum": [
-                        "16",
-                        "12"
-                    ]
-                },
                 "plain-char-is-signed": {
                     "markdownDescription": "Plain Char is Signed",
                     "type": "boolean",
@@ -357,11 +352,14 @@
                 "turn-Warning-into-errors": {
                     "markdownDescription": "将警告转化为错误 (Turn warnings into errors)",
                     "type": "boolean",
-                    "default": true,
                     "enum": [
                         true,
                         false
                     ]
+                },
+                "misc-controls": {
+                    "markdownDescription": "其他选项 (Other Options)",
+                    "$ref": "#/definitions/misc-controls"
                 }
             }
         },
@@ -369,9 +367,6 @@
             "markdownDescription": "汇编器选项 (Assembler options)",
             "type": "object",
             "properties": {
-                "misc-controls": {
-                    "$ref": "#/definitions/misc-controls"
-                },
                 "case-sensitive-user-symbols": {
                     "description": "case sensitive user symbols",
                     "type": "boolean",
@@ -403,6 +398,10 @@
                         true,
                         false
                     ]
+                },
+                "misc-controls": {
+                    "markdownDescription": "其他选项 (Other Options)",
+                    "$ref": "#/definitions/misc-controls"
                 }
             }
         },
@@ -418,13 +417,9 @@
                 ]
             },
             "properties": {
-                "misc-controls": {
-                    "$ref": "#/definitions/misc-controls"
-                },
                 "auto-search-runtime-lib": {
                     "description": "auto search runtime lib",
                     "type": "boolean",
-                    "default": true,
                     "enum": [
                         true,
                         false
@@ -433,7 +428,6 @@
                 "use-C_SPY-debug-lib": {
                     "description": "Use C-SPY debug library",
                     "type": "boolean",
-                    "default": true,
                     "enum": [
                         true,
                         false
@@ -442,16 +436,23 @@
                 "merge-duplicate-sections": {
                     "description": "merge duplicate sections",
                     "type": "boolean",
-                    "default": true,
                     "enum": [
                         true,
                         false
                     ]
                 },
-                "linker-config": {
-                    "description": "linker config file path.\n Example: \"lnkstm8s103f3.icf\"\n or \"./lnkstm8s103f3.icf\" (relative by workspace folder)\n or \"${ToolDir}/stm8/config/lnkstm8s103f3.icf\"",
+                "output-format": {
                     "type": "string",
-                    "default": "lnkstm8s103f3.icf"
+                    "default": "elf",
+                    "description": "输出格式 (output format)",
+                    "enum": [
+                        "elf",
+                        "lib"
+                    ],
+                    "enumDescriptions": [
+                        "可执行文件 (executable file)",
+                        "静态库 (static library)"
+                    ]
                 },
                 "config-defines": {
                     "description": "define some config symbols",
@@ -469,18 +470,14 @@
                     "type": "string",
                     "default": "__iar_program_start"
                 },
-                "output-format": {
+                "linker-config": {
+                    "description": "linker config file path.\n Example: \"lnkstm8xxx.icf\"\n or \"./lnkstm8xxx.icf\" (relative by workspace folder)\n or \"${ToolDir}/stm8/config/lnkstm8xxx.icf\"",
                     "type": "string",
-                    "default": "elf",
-                    "description": "输出格式 (output format)",
-                    "enum": [
-                        "elf",
-                        "lib"
-                    ],
-                    "enumDescriptions": [
-                        "可执行文件 (executable file)",
-                        "静态库 (static library)"
-                    ]
+                    "default": "lnkstm8s103f3.icf"
+                },
+                "misc-controls": {
+                    "markdownDescription": "其他选项 (Other Options)",
+                    "$ref": "#/definitions/misc-controls"
                 }
             }
         }

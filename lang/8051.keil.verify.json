@@ -114,13 +114,10 @@
             "markdownDescription": "全局选项 (Global Options)",
             "type": "object",
             "properties": {
-                "misc-controls": {
-                    "$ref": "#/definitions/misc-controls"
-                },
                 "ram-mode": {
                     "type": "string",
                     "markdownDescription": "RAM 模式 (RAM mode)",
-                    "default": "LARGE",
+                    "default": "SMALL",
                     "enum": [
                         "SMALL",
                         "COMPACT",
@@ -153,9 +150,6 @@
             "markdownDescription": "C 编译器选项 (C Compiler Options)",
             "type": "object",
             "properties": {
-                "misc-controls": {
-                    "$ref": "#/definitions/misc-controls"
-                },
                 "optimization-type": {
                     "type": "string",
                     "markdownDescription": "代码优化的侧重类型 (Code optimization focuses on types)",
@@ -172,6 +166,7 @@
                 "optimization-level": {
                     "type": "string",
                     "markdownDescription": "优化级别 (optimization level)",
+                    "default": "level-8",
                     "enum": [
                         "level-0",
                         "level-1",
@@ -196,6 +191,10 @@
                         "Reuse common entry code",
                         "Common block subroutines"
                     ]
+                },
+                "misc-controls": {
+                    "markdownDescription": "其他选项 (Other Options)",
+                    "$ref": "#/definitions/misc-controls"
                 }
             }
         },
@@ -204,6 +203,7 @@
             "type": "object",
             "properties": {
                 "misc-controls": {
+                    "markdownDescription": "其他选项 (Other Options)",
                     "$ref": "#/definitions/misc-controls"
                 }
             }
@@ -212,8 +212,10 @@
             "markdownDescription": "链接器选项 (Linker options)",
             "type": "object",
             "properties": {
-                "misc-controls": {
-                    "$ref": "#/definitions/misc-controls"
+                "remove-unused": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "删除未使用的程序和数据段 (removes unused program and data segments)"
                 },
                 "output-format": {
                     "type": "string",
@@ -238,11 +240,6 @@
                         "RTX-Tiny"
                     ]
                 },
-                "remove-unused": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "删除未使用的程序和数据段 (removes unused program and data segments)"
-                },
                 "disable-warnings": {
                     "type": "array",
                     "description": "屏蔽特定的警告 (disable specific warning)",
@@ -251,6 +248,10 @@
                         "type": "string",
                         "pattern": "\\d+"
                     }
+                },
+                "misc-controls": {
+                    "markdownDescription": "其他选项 (Other Options)",
+                    "$ref": "#/definitions/misc-controls"
                 }
             }
         }
