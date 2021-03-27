@@ -7,7 +7,7 @@
 ### [v2.4.0]
 - **新增：支持使用 UI 来修改编译器参数**
 - 修复：缺少 chcp 命令而导致的插件无法启动
-- **更改：移除 sdcc 的 deivce-options 选项，使用 misc-controls 代替**
+- **更改：移除 sdcc 的 deivce-options 选项，相关参数到 misc-controls 中添加**
 ***
 
 ### [v2.3.2]
