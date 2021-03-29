@@ -32,11 +32,11 @@
 #define __near
 
 // internal value type
-typedef struct __bit __bit;
-typedef struct __sbit __sbit;
-typedef struct __sfr __sfr;
-typedef struct __sfr16 __sfr16;
-typedef struct __sfr32 __sfr32;
+typedef __bit __bit;
+typedef __sbit __sbit;
+typedef __sfr __sfr;
+typedef __sfr16 __sfr16;
+typedef __sfr32 __sfr32;
 
 #else // Keil C51
 
@@ -60,10 +60,10 @@ typedef struct __sfr32 __sfr32;
 #define code
 
 // internal value type
-typedef struct bit bit;
-typedef struct sbit sbit;
-typedef struct sfr sfr;
-typedef struct sfr16 sfr16;
-typedef struct sfr32 sfr32;
+typedef bit bit;
+typedef sbit sbit;
+typedef sfr sfr;
+typedef sfr16 sfr16;
+typedef sfr32 sfr32;
 
 #endif
