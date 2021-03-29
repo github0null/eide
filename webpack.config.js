@@ -19,7 +19,8 @@ const config = {
         x2js: 'x2js',
         iconv_lite: 'iconv-lite',
         jsonc: 'jsonc',
-        ini: 'ini'
+        ini: 'ini',
+        yaml: 'yaml'
     },
     resolve: {
         // support reading TypeScript and JavaScript files, 📖 -> https://github.com/TypeStrong/ts-loader
