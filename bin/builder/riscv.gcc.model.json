@@ -1,7 +1,7 @@
-﻿{
-    "name": "GNU C Compiler for ARM",
+{
+    "name": "GNU C Compiler for RISC-V",
     "id": "GCC",
-    "toolPrefix": "arm-none-eabi-",
+    "toolPrefix": "riscv-none-embed-",
     "useUnixPath": true,
     "global": {
         "C_FLAGS": {
@@ -32,6 +32,46 @@
                 "linker"
             ]
         },
+        "optimization": {
+            "type": "selectable",
+            "command": {
+                "false": "-O0",
+                "level-0": "-O0",
+                "level-1": "-O1",
+                "level-2": "-O2",
+                "level-3": "-O3",
+                "level-size": "-Os",
+                "level-fast": "-Ofast",
+                "level-debug": "-Og"
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "turn-warning-into-errors": {
+            "type": "selectable",
+            "command": {
+                "true": "-Werror",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "warnings": {
+            "type": "selectable",
+            "command": {
+                "false": "",
+                "no-warnings": "-w",
+                "all-warnings": "-Wall"
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
         "output-debug-info": {
             "type": "selectable",
             "command": {
@@ -47,88 +87,31 @@
                 "asm"
             ]
         },
-        "microcontroller-cpu": {
-            "type": "keyValue",
-            "command": "-mcpu=",
-            "enum": {
-                "cortex-m0": "cortex-m0",
-                "cortex-m0+": "cortex-m0plus",
-                "cortex-m23": "cortex-m23",
-                "cortex-m3": "cortex-m3",
-                "cortex-m33": "cortex-m33",
-                "cortex-m33-none": "cortex-m33",
-                "cortex-m33-sp": "cortex-m33",
-                "cortex-m4-none": "cortex-m4",
-                "cortex-m4-sp": "cortex-m4",
-                "cortex-m7-none": "cortex-m7",
-                "cortex-m7-sp": "cortex-m7",
-                "cortex-m7-dp": "cortex-m7"
-            },
+        "arch": {
+            "type": "value",
+            "command": "-march=",
             "group": [
                 "c",
                 "cpp",
-                "asm",
-                "linker"
+                "asm"
             ]
         },
-        "microcontroller-fpu": {
-            "type": "selectable",
-            "command": {
-                "cortex-m0": "",
-                "cortex-m0+": "",
-                "cortex-m23": "",
-                "cortex-m3": "",
-                "cortex-m33": "",
-                "cortex-m33-none": "",
-                "cortex-m33-sp": "-mfpu=fpv5-sp-d16",
-                "cortex-m4-none": "",
-                "cortex-m4-sp": "-mfpu=fpv4-sp-d16",
-                "cortex-m7-none": "",
-                "cortex-m7-sp": "-mfpu=fpv5-sp-d16",
-                "cortex-m7-dp": "-mfpu=fpv5-d16"
-            },
+        "abi": {
+            "type": "value",
+            "command": "-mabi=",
             "group": [
                 "c",
                 "cpp",
-                "asm",
-                "linker"
+                "asm"
             ]
         },
-        "$float-abi-type": {
-            "type": "selectable",
-            "command": {
-                "softfp": "softfp",
-                "hard": "hard",
-                "false": "softfp"
-            },
+        "code-model": {
+            "type": "value",
+            "command": "-mcmodel=",
             "group": [
                 "c",
                 "cpp",
-                "asm",
-                "linker"
-            ]
-        },
-        "microcontroller-float": {
-            "type": "selectable",
-            "command": {
-                "cortex-m0": "",
-                "cortex-m0+": "",
-                "cortex-m23": "",
-                "cortex-m3": "",
-                "cortex-m33": "-mfloat-abi=soft",
-                "cortex-m33-none": "-mfloat-abi=soft",
-                "cortex-m33-sp": "-mfloat-abi=${$float-abi-type}",
-                "cortex-m4-none": "-mfloat-abi=soft",
-                "cortex-m4-sp": "-mfloat-abi=${$float-abi-type}",
-                "cortex-m7-none": "-mfloat-abi=soft",
-                "cortex-m7-sp": "-mfloat-abi=${$float-abi-type}",
-                "cortex-m7-dp": "-mfloat-abi=${$float-abi-type}"
-            },
-            "group": [
-                "c",
-                "cpp",
-                "asm",
-                "linker"
+                "asm"
             ]
         }
     },
@@ -148,8 +131,7 @@
             "$output": "-o ${out} -MD ${in}",
             "$default": [
                 "-c",
-                "-x c",
-                "-mthumb"
+                "-x c"
             ],
             "$language-c": {
                 "type": "keyValue",
@@ -166,34 +148,6 @@
                     "gnu99": "gnu99",
                     "gnu11": "gnu11",
                     "gnu1x": "gnu1x"
-                }
-            },
-            "optimization": {
-                "type": "selectable",
-                "command": {
-                    "false": "",
-                    "level-0": "-O0",
-                    "level-1": "-O1",
-                    "level-2": "-O2",
-                    "level-3": "-O3",
-                    "level-size": "-Os",
-                    "level-fast": "-Ofast",
-                    "level-debug": "-Og"
-                }
-            },
-            "turn-Warning-into-errors": {
-                "type": "selectable",
-                "command": {
-                    "true": "-Werror",
-                    "false": ""
-                }
-            },
-            "warnings": {
-                "type": "selectable",
-                "command": {
-                    "false": "",
-                    "no-warnings": "-w",
-                    "all-warnings": "-Wall"
                 }
             }
         },
@@ -212,8 +166,7 @@
             "$output": "-o ${out} -MD ${in}",
             "$default": [
                 "-c",
-                "-x c++",
-                "-mthumb"
+                "-x c++"
             ],
             "$language-cpp": {
                 "type": "keyValue",
@@ -226,34 +179,6 @@
                     "gnu++11": "gnu++11",
                     "c++14": "c++14",
                     "gnu++14": "gnu++14"
-                }
-            },
-            "optimization": {
-                "type": "selectable",
-                "command": {
-                    "false": "-O0",
-                    "level-0": "-O0",
-                    "level-1": "-O1",
-                    "level-2": "-O2",
-                    "level-3": "-O3",
-                    "level-size": "-Os",
-                    "level-fast": "-Ofast",
-                    "level-debug": "-Og"
-                }
-            },
-            "turn-Warning-into-errors": {
-                "type": "selectable",
-                "command": {
-                    "true": "-Werror",
-                    "false": ""
-                }
-            },
-            "warnings": {
-                "type": "selectable",
-                "command": {
-                    "false": "",
-                    "no-warnings": "-w",
-                    "all-warnings": "-Wall"
                 }
             }
         },
@@ -270,8 +195,7 @@
             "$default": [
                 "-x assembler",
                 "-x assembler-with-cpp",
-                "-c",
-                "-mthumb"
+                "-c"
             ]
         },
         "linker": {
@@ -283,9 +207,7 @@
                 "useFile": true,
                 "body": "@${value}"
             },
-            "$default": [
-                "-mthumb"
-            ],
+            "$default": [],
             "$output": "-o ${out} ${in} ${lib_flags}",
             "$outputSuffix": ".elf",
             "$linkMap": {
@@ -296,7 +218,7 @@
                 "type": "list",
                 "command": ""
             },
-            "link-scatter": {
+            "linker-script": {
                 "type": "list",
                 "command": "-T "
             },

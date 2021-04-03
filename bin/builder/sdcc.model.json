@@ -144,7 +144,9 @@
             "group": [
                 "c/cpp",
                 "asm",
-				"elf"
+                "linker",
+                "elf",
+                "s19"
             ]
         },
         "allow-unsafe-read": {

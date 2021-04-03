@@ -117,19 +117,6 @@
             "markdownDescription": "全局选项 (Global options)",
             "type": "object",
             "properties": {
-                "$float-abi-type": {
-                    "markdownDescription": "硬件浮点 ABI (Hardware floating-point ABI)",
-                    "type": "string",
-                    "default": "softfp",
-                    "enum": [
-                        "softfp",
-                        "hard"
-                    ],
-                    "enumDescriptions": [
-                        "使用 ARM 通用寄存器完成参数传递, 兼容 soft",
-                        "使用 FPU 浮点寄存器完成参数传递"
-                    ]
-                },
                 "output-debug-info": {
                     "markdownDescription": "输出调试信息 (Output debug information)",
                     "type": "string",
@@ -146,6 +133,18 @@
                         "开启并输出 dwarf-2 格式的调试信息 (Output debug information with dwarf-2 format)",
                         "开启并输出 dwarf-3 格式的调试信息 (Output debug information with dwarf-3 format)"
                     ]
+                },
+                "arch": {
+                    "markdownDescription": "指令集 (arch)",
+                    "type": "string"
+                },
+                "abi": {
+                    "markdownDescription": "整数和浮点调用约定 (integer and floating-point calling convention)",
+                    "type": "string"
+                },
+                "code-model": {
+                    "markdownDescription": "代码模型 (code model)",
+                    "type": "string"
                 }
             }
         },
@@ -215,7 +214,7 @@
                         "all-warnings"
                     ]
                 },
-                "turn-Warning-into-errors": {
+                "turn-warning-into-errors": {
                     "markdownDescription": "将警告转化为错误 (Turn warnings into errors)",
                     "type": "boolean"
                 },
