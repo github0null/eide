@@ -23,7 +23,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一款适用于 8051/STM8/Cortex-M 的单片机开发环境 (A singlechip development environment for 8051/STM8/Cortex-M)",
-    "version": "2.4.1",
+    "version": "2.5.0",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -290,6 +290,18 @@
                         "scope": "machine",
                         "markdownDescription": "SDCC install folder [`example: C:\\Program Files (x86)\\SDCC`]",
                         "default": "C:\\Program Files (x86)\\SDCC"
+                    },
+                    "EIDE.RISCV.InstallDirectory": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "RISC-V toolchain install folder [`example: D:\\xpack-riscv-none-embed-gcc-8.3.0-2.3`]",
+                        "default": "D:\\xpack-riscv-none-embed-gcc-8.3.0-2.3"
+                    },
+                    "EIDE.RISCV.ToolPrefix": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "RISC-V toolchain prefix",
+                        "default": "riscv-none-embed-"
                     }
                 }
             }
@@ -406,7 +418,7 @@
             },
             {
                 "command": "Project.installCMSISHeaders",
-                "title": "Install cmsis header files",
+                "title": "Install CMSIS Header Files",
                 "icon": {
                     "dark": "./res/icon/AddBuildQueue_16x.svg",
                     "light": "./res/icon/AddBuildQueue_16x.svg"
@@ -652,11 +664,6 @@
             {
                 "command": "eide.c51ToSdcc",
                 "title": "Convert Keil_C51 Registers To SDCC Format"
-            },
-            {
-                "command": "eide.updateModels",
-                "category": "eide",
-                "title": "Update Compiler Models"
             }
         ],
         "keybindings": [
@@ -965,6 +972,10 @@
             {
                 "fileMatch": "**/*.stm8.iar.json",
                 "url": "./lang/stm8.iar.verify.json"
+            },
+            {
+                "fileMatch": "**/*riscv.gcc.options.json",
+                "url": "./lang/riscv.gcc.verify.json"
             }
         ],
         "grammars": [

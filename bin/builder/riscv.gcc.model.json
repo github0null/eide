@@ -113,6 +113,16 @@
                 "cpp",
                 "asm"
             ]
+        },
+        "misc-control": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ]
         }
     },
     "groups": {

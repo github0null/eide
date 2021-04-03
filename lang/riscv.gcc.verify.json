@@ -145,6 +145,11 @@
                 "code-model": {
                     "markdownDescription": "代码模型 (code model)",
                     "type": "string"
+                },
+                "misc-control": {
+                    "markdownDescription": "其他选项 (other options)",
+                    "$ref": "#/definitions/FLAGS",
+                    "default": ""
                 }
             }
         },

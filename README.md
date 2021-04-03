@@ -8,7 +8,9 @@
 
 ## 简述 📑
 
-一款适用于 8051/STM8/Cortex-M 的单片机开发环境，用于在 vscode 上提供对 8051, STM8, Cortex-M 项目进行 开发, 编译, 烧录 的功能。
+一款适用于 8051/STM8/Cortex-M/RISC-V 的单片机开发环境。
+
+在 vscode 上提供 **8051**, **STM8**, **Cortex-M**, **RISC-V** 项目的 开发, 编译, 烧录 的功能。
 
 **注意：**
  - **仅支持 Windows 平台，Win7 及以上**
@@ -20,9 +22,9 @@
 
 ## 功能特性 🎉
 
-* 支持 8051，STM8，Cortex-M 项目
+* 支持 8051，STM8，Cortex-M，RISC-V 项目
 * 支持导入 KEIL 项目 (仅支持 KEIL 5 及以上版本)
-* 支持安装标准的KEIL芯片支持包
+* 支持安装标准的KEIL芯片支持包 (仅用于 Cortex-M 项目)
 * 提供丰富的项目模板方便快速开始项目
 * 一键编译、快速编译，支持多种主流的编译工具 (armcc, gcc-arm-none-eabi, keil_c51, sdcc ...)
 * 一键烧录到芯片，支持多种主流的烧录器 (jlink, stlink, openocd, pyocd ...)
@@ -38,6 +40,8 @@
  ![STM8](https://img.shields.io/badge/-STM8_:-grey.svg) ![status](https://img.shields.io/badge/IAR_STM8-✔-brightgreen.svg) ![status](https://img.shields.io/badge/SDCC-✔-brightgreen.svg)
  
  ![ARM](https://img.shields.io/badge/-ARM_:-grey.svg) ![status](https://img.shields.io/badge/ARMCC-✔-brightgreen.svg) ![status](https://img.shields.io/badge/ARMCLang-✔-brightgreen.svg) ![status](https://img.shields.io/badge/ARM_GCC-✔-brightgreen.svg)
+
+ ![RISC-V](https://img.shields.io/badge/-RISCV_:-grey.svg) ![status](https://img.shields.io/badge/RISCV_GCC-✔-brightgreen.svg)
 
 ***
 

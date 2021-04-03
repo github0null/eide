@@ -4,7 +4,7 @@
 
 ## Summary 📑
 
-A singlechip development environment for 8051/STM8/Cortex-M. Provide development, compilation, burning functions on vscode;
+A singlechip development environment for 8051, STM8, Cortex-M, RISC-V. Provide development, compilation, burning functions on vscode;
 
 **Only for Windows platform，Win7+**
 
@@ -36,6 +36,8 @@ A singlechip development environment for 8051/STM8/Cortex-M. Provide development
 #### ![STM8](https://img.shields.io/badge/-STM8_:-grey.svg) ![status](https://img.shields.io/badge/IAR_STM8-done-brightgreen.svg) ![status](https://img.shields.io/badge/SDCC-done-brightgreen.svg)
 
 #### ![ARM](https://img.shields.io/badge/-ARM_:-grey.svg) ![status](https://img.shields.io/badge/ARMCC_V5-done-brightgreen.svg) ![status](https://img.shields.io/badge/ARMCC_V6-done-brightgreen.svg) ![status](https://img.shields.io/badge/ARM_GCC-done-brightgreen.svg)
+
+#### ![RISC-V](https://img.shields.io/badge/-RISCV_:-grey.svg) ![status](https://img.shields.io/badge/RISCV_GCC-✔-brightgreen.svg)
 
 ***
 
