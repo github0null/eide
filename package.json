@@ -7,10 +7,12 @@
         "email": "2584456014@qq.com"
     },
     "keywords": [
+        "arm",
         "cortex-m",
         "armcc",
         "gcc",
-        "arm",
+        "risc-v",
+        "riscv",
         "stm32",
         "c51",
         "8051",
@@ -22,8 +24,8 @@
     ],
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
-    "description": "一款适用于 8051/STM8/Cortex-M 的单片机开发环境 (A singlechip development environment for 8051/STM8/Cortex-M)",
-    "version": "2.5.0",
+    "description": "一款适用于 8051/STM8/Cortex-M/RISC-V 的单片机开发环境 (A singlechip development environment for 8051/STM8/Cortex-M/RISC-V)",
+    "version": "2.5.1",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -189,19 +191,19 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "IAR for STM8 install directory [`example: D:\\IAR`]",
-                        "default": "null"
+                        "default": ""
                     },
                     "EIDE.ARM.GCC.Prefix": {
                         "type": "string",
                         "scope": "resource",
-                        "markdownDescription": "GCC tool prefix [`example: arm-none-eabi-`]",
+                        "markdownDescription": "ARM GCC toolchain prefix [`example: arm-none-eabi-`]",
                         "default": "arm-none-eabi-"
                     },
                     "EIDE.ARM.GCC.InstallDirectory": {
                         "type": "string",
                         "scope": "resource",
                         "markdownDescription": "GCC for ARM toolchain install directory [`example: D:\\arm-gcc\\8 2019-q3-update`]",
-                        "default": "null"
+                        "default": ""
                     },
                     "EIDE.ARM.INI.Path": {
                         "type": "string",
@@ -213,19 +215,19 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "JLink install directory [`example: C:\\Program Files (x86)\\SEGGER\\JLink`]",
-                        "default": "C:\\Program Files (x86)\\SEGGER\\JLink"
+                        "default": ""
                     },
                     "EIDE.ARM.OpenOCD.ExePath": {
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "OpenOCD.exe path [`example: D:\\OpenOCD\\bin\\openocd.exe`]",
-                        "default": "D:\\OpenOCD\\bin\\openocd.exe"
+                        "default": ""
                     },
                     "EIDE.ARM.StlinkExePath": {
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "ST-LINK Utility: `ST-LINK_CLI.exe` path",
-                        "default": "C:\\Program Files (x86)\\STMicroelectronics\\STM32 ST-LINK Utility\\ST-LINK Utility\\ST-LINK_CLI.exe"
+                        "default": ""
                     },
                     "EIDE.ARM.UseMulti-ThreadMode": {
                         "type": "boolean",
@@ -277,7 +279,7 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "STVP: `STVP_CmdLine.exe` path",
-                        "default": "C:\\Program Files (x86)\\STMicroelectronics\\st_toolset\\stvp\\STVP_CmdLine.exe"
+                        "default": ""
                     },
                     "EIDE.C51.INI.Path": {
                         "type": "string",
@@ -289,17 +291,17 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "SDCC install folder [`example: C:\\Program Files (x86)\\SDCC`]",
-                        "default": "C:\\Program Files (x86)\\SDCC"
+                        "default": ""
                     },
                     "EIDE.RISCV.InstallDirectory": {
                         "type": "string",
-                        "scope": "machine",
+                        "scope": "resource",
                         "markdownDescription": "RISC-V toolchain install folder [`example: D:\\xpack-riscv-none-embed-gcc-8.3.0-2.3`]",
-                        "default": "D:\\xpack-riscv-none-embed-gcc-8.3.0-2.3"
+                        "default": ""
                     },
                     "EIDE.RISCV.ToolPrefix": {
                         "type": "string",
-                        "scope": "machine",
+                        "scope": "resource",
                         "markdownDescription": "RISC-V toolchain prefix",
                         "default": "riscv-none-embed-"
                     }

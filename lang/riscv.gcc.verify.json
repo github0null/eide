@@ -5,6 +5,7 @@
     "definitions": {
         "FLAGS": {
             "markdownDescription": "自定义选项 (custom options)",
+            "size": "huge",
             "type": [
                 "string",
                 "array"
@@ -136,14 +137,17 @@
                 },
                 "arch": {
                     "markdownDescription": "指令集 (arch)",
+                    "size": "small",
                     "type": "string"
                 },
                 "abi": {
                     "markdownDescription": "整数和浮点调用约定 (integer and floating-point calling convention)",
+                    "size": "small",
                     "type": "string"
                 },
                 "code-model": {
                     "markdownDescription": "代码模型 (code model)",
+                    "size": "small",
                     "type": "string"
                 },
                 "misc-control": {
@@ -160,31 +164,33 @@
                 "language-c": {
                     "markdownDescription": "C 标准 (C standard)",
                     "type": "string",
-                    "default": "c90",
+                    "default": "c11",
                     "enum": [
                         "c89",
                         "c90",
                         "c99",
                         "c11",
-                        "c1x",
+                        "c17",
                         "gnu89",
                         "gnu90",
                         "gnu99",
                         "gnu11",
-                        "gnu1x"
+                        "gnu17"
                     ]
                 },
                 "language-cpp": {
                     "markdownDescription": "C++ 标准 (C++ standard)",
                     "type": "string",
-                    "default": "c++98",
+                    "default": "c++11",
                     "enum": [
                         "c++98",
                         "gnu++98",
                         "c++11",
                         "gnu++11",
                         "c++14",
-                        "gnu++14"
+                        "gnu++14",
+                        "c++17",
+                        "gnu++17"
                     ]
                 },
                 "optimization": {
@@ -270,6 +276,7 @@
                 },
                 "LIB_FLAGS": {
                     "markdownDescription": "链接库选项 (lib flags)",
+                    "size": "normal",
                     "$ref": "#/definitions/FLAGS",
                     "default": ""
                 }

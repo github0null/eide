@@ -229,6 +229,7 @@
                 },
                 "misc-controls": {
                     "markdownDescription": "C/C++编译器附加选项 (other c/c++ compiler options)",
+                    "size": "huge",
                     "type": [
                         "string",
                         "array"
@@ -255,6 +256,7 @@
                 },
                 "misc-controls": {
                     "markdownDescription": "汇编器附加选项 (other assember options)",
+                    "size": "huge",
                     "type": [
                         "string",
                         "array"
@@ -285,6 +287,7 @@
                 },
                 "misc-controls": {
                     "markdownDescription": "链接器附加选项 (other linker options)",
+                    "size": "huge",
                     "type": [
                         "string",
                         "array"

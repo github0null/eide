@@ -51,6 +51,12 @@
 
 ***
 
+## 更新日志
+
+[ChangeLog](https://marketplace.visualstudio.com/items/CL.eide/changelog)
+
+***
+
 ## 遇到了问题 ?
 
 反馈途径: 
