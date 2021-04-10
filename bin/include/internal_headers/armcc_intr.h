@@ -19,8 +19,8 @@
 // keywords
 #define __attribute__(x)
 #define __nonnull__(x)
-#define __builtin_va_arg(x, y)
-#define __builtin_va_start(x, y)
+#define __builtin_va_arg(x, t) ((t)0)
+#define __builtin_va_start(x, p)
 #define __builtin_va_end(x)
 
 #define __swi(x)
@@ -49,8 +49,6 @@
 #define __int64 long long
 #define __register
 
-#define _VA_LIST
-#define va_list __va_list
 #define __va_arg(ap, type) __builtin_va_arg(ap, type)
 #define __va_start(ap, param) __builtin_va_start(ap, param)
 #define __va_end(ap) __builtin_va_end(ap)

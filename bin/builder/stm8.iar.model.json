@@ -14,7 +14,8 @@
             "group": [
                 "c/cpp",
                 "asm"
-            ]
+            ],
+            "location": "first"
         },
         "data-mode": {
             "type": "keyValue",
@@ -28,16 +29,8 @@
             "group": [
                 "c/cpp",
                 "asm"
-            ]
-        },
-        "misc-controls": {
-            "type": "list",
-            "command": "",
-            "group": [
-                "c/cpp",
-                "asm",
-                "linker"
-            ]
+            ],
+            "location": "first"
         },
         "output-debug-info": {
             "type": "selectable",
@@ -92,6 +85,15 @@
                 "false": ""
             },
             "group": [
+                "linker"
+            ]
+        },
+        "misc-controls": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c/cpp",
+                "asm",
                 "linker"
             ]
         }

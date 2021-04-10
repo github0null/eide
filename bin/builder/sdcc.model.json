@@ -2,17 +2,6 @@
     "name": "Small Device C Compiler",
     "id": "SDCC",
     "global": {
-        "misc-controls": {
-            "type": "list",
-            "command": "",
-            "group": [
-                "c/cpp",
-                "asm",
-                "linker",
-                "elf",
-                "s19"
-            ]
-        },
         "device": {
             "type": "value",
             "command": "-m",
@@ -22,7 +11,8 @@
                 "linker",
                 "elf",
                 "s19"
-            ]
+            ],
+            "location": "first"
         },
         "stack-auto": {
             "type": "selectable",
@@ -177,6 +167,17 @@
                 "true": "--use-non-free",
                 "false": ""
             },
+            "group": [
+                "c/cpp",
+                "asm",
+                "linker",
+                "elf",
+                "s19"
+            ]
+        },
+        "misc-controls": {
+            "type": "list",
+            "command": "",
             "group": [
                 "c/cpp",
                 "asm",

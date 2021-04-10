@@ -46,8 +46,8 @@
 #define __vfp_status(x, y)
 
 typedef struct { void *__ap; } __builtin_va_list;
-#define __builtin_va_arg(x,y)
-#define __builtin_va_start(x,y)
+#define __builtin_va_arg(x,t) ((t)0)
+#define __builtin_va_start(x,p)
 #define __builtin_va_end(x)
 
 #define __builtin_arm_nop()

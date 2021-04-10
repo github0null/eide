@@ -25,7 +25,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "一款适用于 8051/STM8/Cortex-M/RISC-V 的单片机开发环境 (A singlechip development environment for 8051/STM8/Cortex-M/RISC-V)",
-    "version": "2.5.1",
+    "version": "2.5.2",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -80,11 +80,54 @@
         "x2js": "^3.3.1",
         "yaml": "^1.10.2"
     },
+    "extensionDependencies": [
+        "ms-vscode.cpptools",
+        "marus25.cortex-debug",
+        "dan-c-underwood.arm",
+        "zixuanwang.linkerscript",
+        "keroc.hex-fmt"
+    ],
     "contributes": {
         "configuration": [
             {
                 "title": "Embedded IDE",
                 "properties": {
+                    "EIDE.Builder.ThreadNumber": {
+                        "type": "integer",
+                        "scope": "resource",
+                        "markdownDescription": "The number of threads when build",
+                        "default": -1,
+                        "enum": [
+                            -1,
+                            1,
+                            2,
+                            4,
+                            6,
+                            8,
+                            10,
+                            12,
+                            14,
+                            16,
+                            18,
+                            20,
+                            22,
+                            24,
+                            26,
+                            28,
+                            30,
+                            32
+                        ],
+                        "enumDescriptions": [
+                            "auto",
+                            "not use multi-thread mode"
+                        ]
+                    },
+                    "EIDE.Option.ShowToolbarInEditerTitle": {
+                        "type": "boolean",
+                        "scope": "resource",
+                        "markdownDescription": "Displays some toolbars in the editor title",
+                        "default": true
+                    },
                     "EIDE.Option.PrintRelativePathWhenBuild": {
                         "type": "boolean",
                         "scope": "resource",
@@ -229,40 +272,6 @@
                         "markdownDescription": "ST-LINK Utility: `ST-LINK_CLI.exe` path",
                         "default": ""
                     },
-                    "EIDE.ARM.UseMulti-ThreadMode": {
-                        "type": "boolean",
-                        "scope": "resource",
-                        "markdownDescription": "Use Multi-Thread Mode when compile file",
-                        "default": true
-                    },
-                    "EIDE.ARM.ThreadNumber": {
-                        "type": "integer",
-                        "scope": "resource",
-                        "markdownDescription": "The number of threads you want to use",
-                        "default": -1,
-                        "enum": [
-                            -1,
-                            2,
-                            4,
-                            6,
-                            8,
-                            10,
-                            12,
-                            14,
-                            16,
-                            18,
-                            20,
-                            22,
-                            24,
-                            26,
-                            28,
-                            30,
-                            32
-                        ],
-                        "enumDescriptions": [
-                            "auto (由插件自动选择)"
-                        ]
-                    },
                     "EIDE.ARM.Option.AutoGenerateRTE_Components": {
                         "type": "boolean",
                         "scope": "resource",
@@ -391,7 +400,8 @@
                 "title": "Active Project"
             },
             {
-                "command": "Project.fastCompile",
+                "command": "Project.build",
+                "category": "eide",
                 "title": "Build",
                 "icon": {
                     "dark": "./res/icon/BuildSelection_16x.svg",
@@ -399,7 +409,8 @@
                 }
             },
             {
-                "command": "Project.compile",
+                "command": "Project.rebuild",
+                "category": "eide",
                 "title": "Rebuild",
                 "icon": {
                     "dark": "./res/icon/BuildSolution_16x.svg",
@@ -408,10 +419,20 @@
             },
             {
                 "command": "Project.clean",
+                "category": "eide",
                 "title": "Clean",
                 "icon": {
                     "dark": "./res/icon/clean_dark_16x.svg",
                     "light": "./res/icon/clean_light_16x.svg"
+                }
+            },
+            {
+                "command": "Project.uploadToDevice",
+                "title": "Upload Program To Device",
+                "category": "eide",
+                "icon": {
+                    "dark": "./res/icon/TransferDownload_16x.svg",
+                    "light": "./res/icon/TransferDownload_16x.svg"
                 }
             },
             {
@@ -627,14 +648,6 @@
                 }
             },
             {
-                "command": "Project.uploadToDevice",
-                "title": "Upload Program To Device",
-                "icon": {
-                    "dark": "./res/icon/TransferDownload_16x.svg",
-                    "light": "./res/icon/TransferDownload_16x.svg"
-                }
-            },
-            {
                 "command": "Project.copyItemValue",
                 "title": "Copy Item Value",
                 "icon": {
@@ -665,7 +678,18 @@
             },
             {
                 "command": "eide.c51ToSdcc",
+                "category": "eide",
                 "title": "Convert Keil_C51 Registers To SDCC Format"
+            },
+            {
+                "command": "eide.ReloadJlinkDevs",
+                "category": "eide",
+                "title": "Reload JLink Devices List"
+            },
+            {
+                "command": "eide.ReloadStm8Devs",
+                "category": "eide",
+                "title": "Reload STM8 Devices List"
             }
         ],
         "keybindings": [
@@ -674,17 +698,33 @@
                 "key": "ctrl+alt+d"
             },
             {
-                "command": "Project.compile",
+                "command": "Project.rebuild",
                 "key": "ctrl+alt+f7"
             },
             {
-                "command": "Project.fastCompile",
+                "command": "Project.build",
                 "key": "f7",
                 "when": "!isInDiffEditor"
             }
         ],
         "menus": {
-            "editor/title": [],
+            "editor/title": [
+                {
+                    "when": "config.EIDE.Option.ShowToolbarInEditerTitle",
+                    "command": "Project.build",
+                    "group": "navigation"
+                },
+                {
+                    "when": "config.EIDE.Option.ShowToolbarInEditerTitle",
+                    "command": "Project.clean",
+                    "group": "navigation"
+                },
+                {
+                    "when": "config.EIDE.Option.ShowToolbarInEditerTitle",
+                    "command": "Project.uploadToDevice",
+                    "group": "navigation"
+                }
+            ],
             "editor/context": [
                 {
                     "command": "eide.c51ToSdcc",
@@ -773,12 +813,12 @@
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "Project.compile",
+                    "command": "Project.rebuild",
                     "group": "inline",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "Project.fastCompile",
+                    "command": "Project.build",
                     "group": "inline",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
@@ -990,11 +1030,6 @@
                 "language": "a51",
                 "scopeName": "source.asm.a51",
                 "path": "./lang/a51.tmLanguage.json"
-            }
-        ],
-        "taskDefinitions": [
-            {
-                "type": "eide-task"
             }
         ],
         "problemMatchers": [

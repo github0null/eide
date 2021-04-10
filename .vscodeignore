@@ -22,3 +22,5 @@ vsc-extension-quickstart.md
 **/ARM/*.xml
 *.js
 *.cpuprofile
+# internal template projects
+res/template/projects

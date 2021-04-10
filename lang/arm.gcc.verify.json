@@ -147,6 +147,11 @@
                         "开启并输出 dwarf-2 格式的调试信息 (Output debug information with dwarf-2 format)",
                         "开启并输出 dwarf-3 格式的调试信息 (Output debug information with dwarf-3 format)"
                     ]
+                },
+                "misc-control": {
+                    "markdownDescription": "其他选项 (other options)",
+                    "$ref": "#/definitions/FLAGS",
+                    "default": ""
                 }
             }
         },

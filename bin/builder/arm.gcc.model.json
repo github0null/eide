@@ -4,49 +4,6 @@
     "toolPrefix": "arm-none-eabi-",
     "useUnixPath": true,
     "global": {
-        "C_FLAGS": {
-            "type": "list",
-            "command": "",
-            "group": [
-                "c"
-            ]
-        },
-        "CXX_FLAGS": {
-            "type": "list",
-            "command": "",
-            "group": [
-                "cpp"
-            ]
-        },
-        "ASM_FLAGS": {
-            "type": "list",
-            "command": "",
-            "group": [
-                "asm"
-            ]
-        },
-        "LD_FLAGS": {
-            "type": "list",
-            "command": "",
-            "group": [
-                "linker"
-            ]
-        },
-        "output-debug-info": {
-            "type": "selectable",
-            "command": {
-                "enable": "-g",
-                "disable": "",
-                "dwarf-2": "-g -gdwarf-2",
-                "dwarf-3": "-g -gdwarf-3",
-                "false": ""
-            },
-            "group": [
-                "c",
-                "cpp",
-                "asm"
-            ]
-        },
         "microcontroller-cpu": {
             "type": "keyValue",
             "command": "-mcpu=",
@@ -69,7 +26,8 @@
                 "cpp",
                 "asm",
                 "linker"
-            ]
+            ],
+            "location": "first"
         },
         "microcontroller-fpu": {
             "type": "selectable",
@@ -92,7 +50,8 @@
                 "cpp",
                 "asm",
                 "linker"
-            ]
+            ],
+            "location": "first"
         },
         "$float-abi-type": {
             "type": "selectable",
@@ -124,6 +83,60 @@
                 "cortex-m7-sp": "-mfloat-abi=${$float-abi-type}",
                 "cortex-m7-dp": "-mfloat-abi=${$float-abi-type}"
             },
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ],
+            "location": "first"
+        },
+        "output-debug-info": {
+            "type": "selectable",
+            "command": {
+                "enable": "-g",
+                "disable": "",
+                "dwarf-2": "-g -gdwarf-2",
+                "dwarf-3": "-g -gdwarf-3",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm"
+            ]
+        },
+        "C_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c"
+            ]
+        },
+        "CXX_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "cpp"
+            ]
+        },
+        "ASM_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "asm"
+            ]
+        },
+        "LD_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "linker"
+            ]
+        },
+        "misc-control": {
+            "type": "list",
+            "command": "",
             "group": [
                 "c",
                 "cpp",

@@ -2,27 +2,6 @@
     "name": "ARM C Compiler Version 5",
     "id": "AC5",
     "global": {
-        "misc-controls": {
-            "type": "list",
-            "command": "",
-            "group": [
-                "c/cpp",
-                "asm",
-                "linker"
-            ]
-        },
-        "output-debug-info": {
-            "type": "selectable",
-            "command": {
-                "enable": "-g",
-                "disable": "",
-                "false": ""
-            },
-            "group": [
-                "c/cpp",
-                "asm"
-            ]
-        },
         "microcontroller-cpu": {
             "type": "keyValue",
             "command": "--cpu ",
@@ -40,6 +19,19 @@
                 "c/cpp",
                 "asm",
                 "linker"
+            ],
+            "location": "first"
+        },
+        "output-debug-info": {
+            "type": "selectable",
+            "command": {
+                "enable": "-g",
+                "disable": "",
+                "false": ""
+            },
+            "group": [
+                "c/cpp",
+                "asm"
             ]
         },
         "execute-only-code": {
@@ -84,6 +76,15 @@
             "group": [
                 "c/cpp",
                 "asm"
+            ]
+        },
+        "misc-controls": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c/cpp",
+                "asm",
+                "linker"
             ]
         }
     },
@@ -255,6 +256,14 @@
             "$linkMap": {
                 "type": "value",
                 "command": "--list ${mapPath}"
+            },
+            "output-debug-info": {
+                "type": "selectable",
+                "command": {
+                    "enable": "",
+                    "disable": "--nodebug",
+                    "false": ""
+                }
             },
             "use-microLIB": {
                 "type": "selectable",

@@ -23,7 +23,8 @@
             "group": [
                 "c/cpp",
                 "asm-clang"
-            ]
+            ],
+            "location": "first"
         },
         "microcontroller-fpu": {
             "type": "selectable",
@@ -44,7 +45,8 @@
             "group": [
                 "c/cpp",
                 "asm-clang"
-            ]
+            ],
+            "location": "first"
         },
         "microcontroller-float": {
             "type": "selectable",
@@ -65,7 +67,8 @@
             "group": [
                 "c/cpp",
                 "asm-clang"
-            ]
+            ],
+            "location": "first"
         },
         "output-debug-info": {
             "type": "selectable",
@@ -340,13 +343,6 @@
                 "type": "value",
                 "command": "--list ${mapPath}"
             },
-            "use-microLIB": {
-                "type": "selectable",
-                "command": {
-                    "true": "--library_type=microlib",
-                    "false": ""
-                }
-            },
             "microcontroller-cpu": {
                 "type": "keyValue",
                 "command": "--cpu=",
@@ -363,6 +359,21 @@
                     "cortex-m7-none": "Cortex-M7 --fpu=SoftVFP",
                     "cortex-m7-sp": "Cortex-M7.fp.sp",
                     "cortex-m7-dp": "Cortex-M7.fp.dp"
+                }
+            },
+            "use-microLIB": {
+                "type": "selectable",
+                "command": {
+                    "true": "--library_type=microlib",
+                    "false": ""
+                }
+            },
+            "output-debug-info": {
+                "type": "selectable",
+                "command": {
+                    "enable": "",
+                    "disable": "--nodebug",
+                    "false": ""
                 }
             },
             "link-time-optimization": {

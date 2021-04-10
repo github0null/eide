@@ -4,33 +4,38 @@
     "toolPrefix": "riscv-none-embed-",
     "useUnixPath": true,
     "global": {
-        "C_FLAGS": {
-            "type": "list",
-            "command": "",
+        "arch": {
+            "type": "value",
+            "command": "-march=",
             "group": [
-                "c"
-            ]
-        },
-        "CXX_FLAGS": {
-            "type": "list",
-            "command": "",
-            "group": [
-                "cpp"
-            ]
-        },
-        "ASM_FLAGS": {
-            "type": "list",
-            "command": "",
-            "group": [
-                "asm"
-            ]
-        },
-        "LD_FLAGS": {
-            "type": "list",
-            "command": "",
-            "group": [
+                "c",
+                "cpp",
+                "asm",
                 "linker"
-            ]
+            ],
+            "location": "first"
+        },
+        "abi": {
+            "type": "value",
+            "command": "-mabi=",
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ],
+            "location": "first"
+        },
+        "code-model": {
+            "type": "value",
+            "command": "-mcmodel=",
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ],
+            "location": "first"
         },
         "optimization": {
             "type": "selectable",
@@ -87,33 +92,31 @@
                 "asm"
             ]
         },
-        "arch": {
-            "type": "value",
-            "command": "-march=",
+        "C_FLAGS": {
+            "type": "list",
+            "command": "",
             "group": [
-                "c",
-                "cpp",
-                "asm",
-                "linker"
+                "c"
             ]
         },
-        "abi": {
-            "type": "value",
-            "command": "-mabi=",
+        "CXX_FLAGS": {
+            "type": "list",
+            "command": "",
             "group": [
-                "c",
-                "cpp",
-                "asm",
-                "linker"
+                "cpp"
             ]
         },
-        "code-model": {
-            "type": "value",
-            "command": "-mcmodel=",
+        "ASM_FLAGS": {
+            "type": "list",
+            "command": "",
             "group": [
-                "c",
-                "cpp",
-                "asm",
+                "asm"
+            ]
+        },
+        "LD_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
                 "linker"
             ]
         },
