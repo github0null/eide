@@ -12,7 +12,8 @@
                 "default": "small"
             },
             "group": [
-                "c/cpp",
+                "c",
+                "cpp",
                 "asm"
             ],
             "location": "first"
@@ -27,7 +28,8 @@
                 "default": "medium"
             },
             "group": [
-                "c/cpp",
+                "c",
+                "cpp",
                 "asm"
             ],
             "location": "first"
@@ -40,7 +42,8 @@
                 "false": ""
             },
             "group": [
-                "c/cpp",
+                "c",
+                "cpp",
                 "asm"
             ]
         },
@@ -92,14 +95,15 @@
             "type": "list",
             "command": "",
             "group": [
-                "c/cpp",
+                "c",
+                "cpp",
                 "asm",
                 "linker"
             ]
         }
     },
     "groups": {
-        "c/cpp": {
+        "c": {
             "$path": "stm8\\bin\\iccstm8.exe",
             "$includes": {
                 "body": "-I ${value}"
@@ -125,8 +129,104 @@
                     "false": "",
                     "c99": "",
                     "c89": "--c89"
-                },
-                "exclude": [ "--no_static_destruction" ]
+                }
+            },
+            "runtime-lib": {
+                "type": "value",
+                "command": "--dlib_config "
+            },
+            "allow-VLA": {
+                "type": "selectable",
+                "command": {
+                    "true": "--vla",
+                    "false": ""
+                }
+            },
+            "require-prototypes": {
+                "type": "selectable",
+                "command": {
+                    "true": "--require_prototypes",
+                    "false": ""
+                }
+            },
+            "language-conformance": {
+                "type": "selectable",
+                "command": {
+                    "strict": "--strict",
+                    "standard": "",
+                    "IAR-extensions": "-e",
+                    "false": "-e"
+                }
+            },
+            "plain-char-is-signed": {
+                "type": "selectable",
+                "command": {
+                    "true": "--char_is_signed",
+                    "false": ""
+                }
+            },
+            "floating-point": {
+                "type": "selectable",
+                "command": {
+                    "true": "--relaxed_fp",
+                    "false": ""
+                }
+            },
+            "multibyte-support": {
+                "type": "selectable",
+                "command": {
+                    "true": "--enable_multibytes",
+                    "false": ""
+                }
+            },
+            "virtual-bytes": {
+                "type": "selectable",
+                "command": {
+                    "16": "--vregs 16",
+                    "12": "--vregs 12",
+                    "false": "--vregs 16"
+                }
+            },
+            "optimization": {
+                "type": "selectable",
+                "command": {
+                    "no": "-On --no_cse --no_unroll --no_inline --no_code_motion --no_tbaa --no_cross_call",
+                    "low": "-Ol --no_cse --no_unroll --no_inline --no_code_motion --no_tbaa --no_cross_call",
+                    "medium": "-Om --no_unroll --no_inline --no_tbaa --no_cross_call",
+                    "high": "-Oh",
+                    "size": "-Ohz",
+                    "speed": "-Ohs --no_cross_call",
+                    "speed-no-size-constraints": "-Ohs --no_cross_call --no_size_constraints",
+                    "false": "-Ol --no_cse --no_unroll --no_inline --no_code_motion --no_tbaa --no_cross_call"
+                }
+            },
+            "turn-Warning-into-errors": {
+                "type": "selectable",
+                "command": {
+                    "true": "--warnings_are_errors",
+                    "false": ""
+                }
+            }
+        },
+        "cpp": {
+            "$path": "stm8\\bin\\iccstm8.exe",
+            "$includes": {
+                "body": "-I ${value}"
+            },
+            "$defines": {
+                "body": "-D ${key}=${value}"
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "-f ${value}"
+            },
+            "$output": "--dependencies=m + -o ${out} ${in}",
+            "$default": [
+                "--silent"
+            ],
+            "$listPath": {
+                "type": "value",
+                "command": "-lCN ${listPath}"
             },
             "$language-cpp": {
                 "type": "selectable",
@@ -134,8 +234,7 @@
                     "Embedded-C++": "--ec++",
                     "Extended-EC++": "--eec++",
                     "false": "--eec++"
-                },
-                "exclude": [ "--vla", "--use_c\\+\\+_inline" ]
+                }
             },
             "runtime-lib": {
                 "type": "value",
@@ -146,20 +245,6 @@
                 "command": {
                     "true": "",
                     "false": "--no_static_destruction"
-                }
-            },
-            "allow-VLA": {
-                "type": "selectable",
-                "command": {
-                    "true": "--vla",
-                    "false": ""
-                }
-            },
-            "use-cpp-inline-semantics": {
-                "type": "selectable",
-                "command": {
-                    "true": "--use_c++_inline",
-                    "false": ""
                 }
             },
             "require-prototypes": {
@@ -286,9 +371,9 @@
             "$output": "${in} -o ${out}",
             "$outputSuffix": ".out",
             "$matcher": [
-                "readonly\\s+code memory\\s*$",
-                "readonly\\s+data memory\\s*$",
-                "readwrite\\s+data memory\\s*$"
+                "of readonly\\s+code memory",
+                "of readonly\\s+data memory",
+                "of readwrite\\s+data memory"
             ],
             "$linkMap": {
                 "type": "value",

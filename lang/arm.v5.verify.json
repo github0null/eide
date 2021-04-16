@@ -250,8 +250,20 @@
                         false
                     ]
                 },
-                "misc-controls": {
-                    "markdownDescription": "C/C++编译器附加选项 (other c/c++ compiler options)",
+                "C_FLAGS": {
+                    "markdownDescription": "C 附加选项 (other c compiler options)",
+                    "size": "huge",
+                    "type": [
+                        "string",
+                        "array"
+                    ],
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": ""
+                },
+                "CXX_FLAGS": {
+                    "markdownDescription": "C++ 附加选项 (other c++ compiler options)",
                     "size": "huge",
                     "type": [
                         "string",

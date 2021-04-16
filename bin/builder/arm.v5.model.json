@@ -16,7 +16,8 @@
                 "cortex-m7-dp": "Cortex-M7.fp.dp"
             },
             "group": [
-                "c/cpp",
+                "c",
+                "cpp",
                 "asm",
                 "linker"
             ],
@@ -30,7 +31,8 @@
                 "false": ""
             },
             "group": [
-                "c/cpp",
+                "c",
+                "cpp",
                 "asm"
             ]
         },
@@ -41,7 +43,8 @@
                 "false": ""
             },
             "group": [
-                "c/cpp",
+                "c",
+                "cpp",
                 "asm"
             ]
         },
@@ -52,7 +55,8 @@
                 "false": ""
             },
             "group": [
-                "c/cpp",
+                "c",
+                "cpp",
                 "asm"
             ]
         },
@@ -63,7 +67,8 @@
                 "false": ""
             },
             "group": [
-                "c/cpp",
+                "c",
+                "cpp",
                 "asm"
             ]
         },
@@ -74,7 +79,8 @@
                 "false": ""
             },
             "group": [
-                "c/cpp",
+                "c",
+                "cpp",
                 "asm"
             ]
         },
@@ -82,14 +88,13 @@
             "type": "list",
             "command": "",
             "group": [
-                "c/cpp",
                 "asm",
                 "linker"
             ]
         }
     },
     "groups": {
-        "c/cpp": {
+        "c": {
             "$path": "ARMCC\\bin\\armcc.exe",
             "$includes": {
                 "body": "-I${value}"
@@ -118,8 +123,7 @@
                 "command": "--cpp",
                 "enum": {
                     "default": ""
-                },
-                "exclude": [ "--gnu", "--c99" ]
+                }
             },
             "c99-mode": {
                 "type": "selectable",
@@ -199,6 +203,104 @@
                     "no-warnings": "-W",
                     "all-warnings": ""
                 }
+            },
+            "C_FLAGS": {
+                "type": "list",
+                "command": ""
+            }
+        },
+        "cpp": {
+            "$path": "ARMCC\\bin\\armcc.exe",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "-D${key}=\"${value}\""
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "--Via ${value}"
+            },
+            "$output": "-o ${out} --depend ${refPath} ${in}",
+            "$default": [
+                "-c --cpp",
+                "--apcs=interwork"
+            ],
+            "$language-cpp": {
+                "type": "keyValue",
+                "command": "",
+                "enum": {
+                    "default": ""
+                }
+            },
+            "use-microLIB": {
+                "type": "selectable",
+                "command": {
+                    "true": "-D__MICROLIB",
+                    "false": ""
+                }
+            },
+            "optimization": {
+                "type": "keyValue",
+                "command": "",
+                "enum": {
+                    "default": "-O0",
+                    "level-0": "-O0",
+                    "level-1": "-O1",
+                    "level-2": "-O2",
+                    "level-3": "-O3",
+                    "level-size": "-Ospace",
+                    "level-speed": "-Otime"
+                }
+            },
+            "optimize-for-time": {
+                "type": "selectable",
+                "command": {
+                    "true": "-Otime",
+                    "false": ""
+                }
+            },
+            "one-elf-section-per-function": {
+                "type": "selectable",
+                "command": {
+                    "true": "--split_sections",
+                    "false": ""
+                }
+            },
+            "strict-ANSI-C": {
+                "type": "selectable",
+                "command": {
+                    "true": "--strict",
+                    "false": ""
+                }
+            },
+            "enum-container-always-int": {
+                "type": "selectable",
+                "command": {
+                    "true": "--enum_is_int",
+                    "false": ""
+                }
+            },
+            "plain-char-is-signed": {
+                "type": "selectable",
+                "command": {
+                    "true": "--signed_chars",
+                    "false": ""
+                }
+            },
+            "warnings": {
+                "type": "keyValue",
+                "command": "",
+                "enum": {
+                    "default": "",
+                    "unspecified": "",
+                    "no-warnings": "-W",
+                    "all-warnings": ""
+                }
+            },
+            "CXX_FLAGS": {
+                "type": "list",
+                "command": ""
             }
         },
         "asm": {

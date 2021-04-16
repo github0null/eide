@@ -24,8 +24,8 @@
     ],
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
-    "description": "一款适用于 8051/STM8/Cortex-M/RISC-V 的单片机开发环境 (A singlechip development environment for 8051/STM8/Cortex-M/RISC-V)",
-    "version": "2.5.2",
+    "description": "A singlechip development environment for 8051/STM8/Cortex-M/RISC-V",
+    "version": "2.5.3",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -81,11 +81,7 @@
         "yaml": "^1.10.2"
     },
     "extensionDependencies": [
-        "ms-vscode.cpptools",
-        "marus25.cortex-debug",
-        "dan-c-underwood.arm",
-        "zixuanwang.linkerscript",
-        "keroc.hex-fmt"
+        "ms-vscode.cpptools"
     ],
     "contributes": {
         "configuration": [
@@ -710,17 +706,17 @@
         "menus": {
             "editor/title": [
                 {
-                    "when": "config.EIDE.Option.ShowToolbarInEditerTitle",
+                    "when": "cl.eide.projectActived && config.EIDE.Option.ShowToolbarInEditerTitle",
                     "command": "Project.build",
                     "group": "navigation"
                 },
                 {
-                    "when": "config.EIDE.Option.ShowToolbarInEditerTitle",
+                    "when": "cl.eide.projectActived && config.EIDE.Option.ShowToolbarInEditerTitle",
                     "command": "Project.clean",
                     "group": "navigation"
                 },
                 {
-                    "when": "config.EIDE.Option.ShowToolbarInEditerTitle",
+                    "when": "cl.eide.projectActived && config.EIDE.Option.ShowToolbarInEditerTitle",
                     "command": "Project.uploadToDevice",
                     "group": "navigation"
                 }
