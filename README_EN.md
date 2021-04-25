@@ -12,7 +12,7 @@ Provide **8051**, **STM8**, **Cortex-M**, **RISC-V** project development, compil
 
 **Notice:**
  - **Only support Windows platform, Win7 and above**
- - **The build tool relies on the .NET Framework 3.5**
+ - **The build tool relies on the .NET Environment**
 
 ![preview](./res/preview/show.png)
 

@@ -14,7 +14,7 @@
 
 **注意：**
  - **仅支持 Windows 平台，Win7 及以上**
- - **构建工具需要 .NET FrameWork 3.5 环境 (一般系统会自带)**
+ - **构建工具需要 .NET 环境 (一般系统会自带)**
 
 ![preview](./res/preview/show.png)
 

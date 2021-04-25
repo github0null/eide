@@ -25,7 +25,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "A singlechip development environment for 8051/STM8/Cortex-M/RISC-V",
-    "version": "2.5.3",
+    "version": "2.5.4",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -80,9 +80,6 @@
         "x2js": "^3.3.1",
         "yaml": "^1.10.2"
     },
-    "extensionDependencies": [
-        "ms-vscode.cpptools"
-    ],
     "contributes": {
         "configuration": [
             {
@@ -335,6 +332,14 @@
             ]
         },
         "commands": [
+            {
+                "command": "project.source.filesystem_folder_add_file",
+                "title": "New File"
+            },
+            {
+                "command": "project.source.filesystem_folder_add",
+                "title": "New Folder"
+            },
             {
                 "command": "project.source.virtual_folder_add_file",
                 "title": "Add File"
@@ -749,6 +754,14 @@
                 }
             ],
             "view/item/context": [
+                {
+                    "command": "project.source.filesystem_folder_add_file",
+                    "when": "viewItem == FOLDER || viewItem == FOLDER_ROOT && view == Project"
+                },
+                {
+                    "command": "project.source.filesystem_folder_add",
+                    "when": "viewItem == FOLDER || viewItem == FOLDER_ROOT && view == Project"
+                },
                 {
                     "command": "project.source.virtual_folder_add_file",
                     "when": "viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == Project"
