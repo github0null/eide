@@ -25,7 +25,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "A singlechip development environment for 8051/STM8/Cortex-M/RISC-V",
-    "version": "2.5.4",
+    "version": "2.5.5",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -333,35 +333,35 @@
         },
         "commands": [
             {
-                "command": "project.source.filesystem_folder_add_file",
+                "command": "_project.source.filesystem_folder_add_file",
                 "title": "New File"
             },
             {
-                "command": "project.source.filesystem_folder_add",
+                "command": "_project.source.filesystem_folder_add",
                 "title": "New Folder"
             },
             {
-                "command": "project.source.virtual_folder_add_file",
+                "command": "_project.source.virtual_folder_add_file",
                 "title": "Add File"
             },
             {
-                "command": "project.source.virtual_folder_add",
+                "command": "_project.source.virtual_folder_add",
                 "title": "Add Folder"
             },
             {
-                "command": "project.source.virtual_folder_remove",
+                "command": "_project.source.virtual_folder_remove",
                 "title": "Remove"
             },
             {
-                "command": "project.source.virtual_file_remove",
+                "command": "_project.source.virtual_file_remove",
                 "title": "Remove"
             },
             {
-                "command": "project.source.virtual_folder_rename",
+                "command": "_project.source.virtual_folder_rename",
                 "title": "Rename"
             },
             {
-                "command": "Project.refresh",
+                "command": "_project.refresh",
                 "title": "Refresh",
                 "icon": {
                     "dark": "./res/icon/refresh-dark.svg",
@@ -369,7 +369,7 @@
                 }
             },
             {
-                "command": "sourceRoot.refresh",
+                "command": "_project.sourceRoot.refresh",
                 "title": "Refresh Folder",
                 "icon": {
                     "dark": "./res/icon/refresh-dark.svg",
@@ -377,7 +377,7 @@
                 }
             },
             {
-                "command": "Project.historyRecord",
+                "command": "_project.historyRecord",
                 "title": "History Records",
                 "icon": {
                     "dark": "./res/icon/Note_16x.svg",
@@ -385,11 +385,11 @@
                 }
             },
             {
-                "command": "Project.clearHistoryRecord",
+                "command": "_project.clearHistoryRecord",
                 "title": "Clear History Records"
             },
             {
-                "command": "Project.saveAll",
+                "command": "_project.saveAll",
                 "title": "Save All Projects",
                 "icon": {
                     "dark": "./res/icon/SaveAll_16x.svg",
@@ -397,11 +397,11 @@
                 }
             },
             {
-                "command": "Project.setActive",
+                "command": "_project.setActive",
                 "title": "Active Project"
             },
             {
-                "command": "Project.build",
+                "command": "eide.project.build",
                 "category": "eide",
                 "title": "Build",
                 "icon": {
@@ -410,7 +410,7 @@
                 }
             },
             {
-                "command": "Project.rebuild",
+                "command": "eide.project.rebuild",
                 "category": "eide",
                 "title": "Rebuild",
                 "icon": {
@@ -419,7 +419,7 @@
                 }
             },
             {
-                "command": "Project.clean",
+                "command": "eide.project.clean",
                 "category": "eide",
                 "title": "Clean",
                 "icon": {
@@ -428,7 +428,7 @@
                 }
             },
             {
-                "command": "Project.uploadToDevice",
+                "command": "eide.project.uploadToDevice",
                 "title": "Upload Program To Device",
                 "category": "eide",
                 "icon": {
@@ -437,11 +437,11 @@
                 }
             },
             {
-                "command": "Project.showBuildParams",
+                "command": "_project.showBuildParams",
                 "title": "Show Compiler CommandLine"
             },
             {
-                "command": "Project.installCMSISHeaders",
+                "command": "_project.installCMSISHeaders",
                 "title": "Install CMSIS Header Files",
                 "icon": {
                     "dark": "./res/icon/AddBuildQueue_16x.svg",
@@ -449,7 +449,7 @@
                 }
             },
             {
-                "command": "Project.addSrcDir",
+                "command": "_project.addSrcDir",
                 "title": "Add Source Folders",
                 "icon": {
                     "dark": "./res/icon/AddFolder_16x.svg",
@@ -457,7 +457,7 @@
                 }
             },
             {
-                "command": "Project.removeSrcDir",
+                "command": "_project.removeSrcDir",
                 "title": "Remove This Source Folder",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
@@ -465,7 +465,7 @@
                 }
             },
             {
-                "command": "Project.close",
+                "command": "_project.close",
                 "title": "Close",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
@@ -473,7 +473,7 @@
                 }
             },
             {
-                "command": "Project.addPackage",
+                "command": "_project.addPackage",
                 "title": "Install Chip Support Package",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
@@ -481,7 +481,7 @@
                 }
             },
             {
-                "command": "Project.removePackage",
+                "command": "_project.removePackage",
                 "title": "Uninstall This Chip Support Package",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
@@ -489,7 +489,7 @@
                 }
             },
             {
-                "command": "Project.setDevice",
+                "command": "_project.setDevice",
                 "title": "Choose Device",
                 "icon": {
                     "dark": "./res/icon/FieldAdded_16x.svg",
@@ -497,7 +497,7 @@
                 }
             },
             {
-                "command": "Project.exportXml",
+                "command": "_project.exportXml",
                 "title": "Export To Keil Project",
                 "icon": {
                     "dark": "./res/icon/ExportFile_16x.svg",
@@ -505,7 +505,7 @@
                 }
             },
             {
-                "command": "Project.modifyCompileConfig",
+                "command": "_project.modifyCompileConfig",
                 "title": "Modify",
                 "icon": {
                     "dark": "./res/icon/Pen4_16x.svg",
@@ -513,7 +513,7 @@
                 }
             },
             {
-                "command": "Project.switchToolchain",
+                "command": "_project.switchToolchain",
                 "title": "Choose Toolchain",
                 "icon": {
                     "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
@@ -521,7 +521,7 @@
                 }
             },
             {
-                "command": "Project.switchUploader",
+                "command": "_project.switchUploader",
                 "title": "Choose Flasher",
                 "icon": {
                     "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
@@ -529,7 +529,7 @@
                 }
             },
             {
-                "command": "Project.modifyUploadConfig",
+                "command": "_project.modifyUploadConfig",
                 "title": "Modify",
                 "icon": {
                     "dark": "./res/icon/Pen4_16x.svg",
@@ -537,7 +537,7 @@
                 }
             },
             {
-                "command": "Project.modifyOtherSettings",
+                "command": "_project.modifyOtherSettings",
                 "title": "Modify",
                 "icon": {
                     "dark": "./res/icon/Pen4_16x.svg",
@@ -545,7 +545,7 @@
                 }
             },
             {
-                "command": "Project.addIncludeDir",
+                "command": "_project.addIncludeDir",
                 "title": "Add Include Folder",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
@@ -553,7 +553,7 @@
                 }
             },
             {
-                "command": "Project.addLibDir",
+                "command": "_project.addLibDir",
                 "title": "Add Library Search Paths",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
@@ -561,7 +561,7 @@
                 }
             },
             {
-                "command": "Project.addDefine",
+                "command": "_project.addDefine",
                 "title": "Add Macros",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
@@ -569,7 +569,7 @@
                 }
             },
             {
-                "command": "Project.showIncludeDir",
+                "command": "_project.showIncludeDir",
                 "title": "Display All Include Paths",
                 "icon": {
                     "dark": "./res/icon/eye_16x_dark.svg",
@@ -577,7 +577,7 @@
                 }
             },
             {
-                "command": "Project.showLibDir",
+                "command": "_project.showLibDir",
                 "title": "Display All Library Paths",
                 "icon": {
                     "dark": "./res/icon/eye_16x_dark.svg",
@@ -585,7 +585,7 @@
                 }
             },
             {
-                "command": "Project.showDefine",
+                "command": "_project.showDefine",
                 "title": "Display All Macros",
                 "icon": {
                     "dark": "./res/icon/eye_16x_dark.svg",
@@ -593,7 +593,7 @@
                 }
             },
             {
-                "command": "Project.excludeSource",
+                "command": "_project.excludeSource",
                 "title": "Exclude This File",
                 "icon": {
                     "dark": "./res/icon/StatusNo_16x.svg",
@@ -601,7 +601,7 @@
                 }
             },
             {
-                "command": "Project.unexcludeSource",
+                "command": "_project.unexcludeSource",
                 "title": "Include This File",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
@@ -609,7 +609,7 @@
                 }
             },
             {
-                "command": "Project.excludeFolder",
+                "command": "_project.excludeFolder",
                 "title": "Exclude This Folder",
                 "icon": {
                     "dark": "./res/icon/StatusNo_16x.svg",
@@ -617,7 +617,7 @@
                 }
             },
             {
-                "command": "Project.unexcludeFolder",
+                "command": "_project.unexcludeFolder",
                 "title": "Include This Folder",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
@@ -625,7 +625,7 @@
                 }
             },
             {
-                "command": "Project.removeDependenceItem",
+                "command": "_project.removeDependenceItem",
                 "title": "Remove This Item",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
@@ -633,7 +633,7 @@
                 }
             },
             {
-                "command": "Project.importDependenceFromPack",
+                "command": "_project.importDependenceFromPack",
                 "title": "Install This Component",
                 "icon": {
                     "dark": "./res/icon/AddToCollection_16x.svg",
@@ -641,7 +641,7 @@
                 }
             },
             {
-                "command": "Project.removeDependenceFromPack",
+                "command": "_project.removeDependenceFromPack",
                 "title": "Remove This Component",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
@@ -649,7 +649,7 @@
                 }
             },
             {
-                "command": "Project.copyItemValue",
+                "command": "_project.copyItemValue",
                 "title": "Copy Item Value",
                 "icon": {
                     "dark": "./res/icon/CopyToClipboard_16x.svg",
@@ -657,7 +657,7 @@
                 }
             },
             {
-                "command": "Project.switchMode",
+                "command": "_project.switchMode",
                 "title": "Switch Target",
                 "icon": {
                     "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
@@ -665,7 +665,7 @@
                 }
             },
             {
-                "command": "Project.exportAsTemplate",
+                "command": "_project.exportAsTemplate",
                 "title": "Export To EIDE Template",
                 "icon": {
                     "dark": "./res/icon/TableToFile_16x.svg",
@@ -695,15 +695,15 @@
         ],
         "keybindings": [
             {
-                "command": "Project.uploadToDevice",
+                "command": "eide.project.uploadToDevice",
                 "key": "ctrl+alt+d"
             },
             {
-                "command": "Project.rebuild",
+                "command": "eide.project.rebuild",
                 "key": "ctrl+alt+f7"
             },
             {
-                "command": "Project.build",
+                "command": "eide.project.build",
                 "key": "f7",
                 "when": "!isInDiffEditor"
             }
@@ -712,17 +712,17 @@
             "editor/title": [
                 {
                     "when": "cl.eide.projectActived && config.EIDE.Option.ShowToolbarInEditerTitle",
-                    "command": "Project.build",
+                    "command": "eide.project.build",
                     "group": "navigation"
                 },
                 {
                     "when": "cl.eide.projectActived && config.EIDE.Option.ShowToolbarInEditerTitle",
-                    "command": "Project.clean",
+                    "command": "eide.project.clean",
                     "group": "navigation"
                 },
                 {
                     "when": "cl.eide.projectActived && config.EIDE.Option.ShowToolbarInEditerTitle",
-                    "command": "Project.uploadToDevice",
+                    "command": "eide.project.uploadToDevice",
                     "group": "navigation"
                 }
             ],
@@ -734,232 +734,232 @@
             ],
             "view/title": [
                 {
-                    "command": "Project.refresh",
+                    "command": "_project.refresh",
                     "group": "navigation",
                     "when": "view == Project"
                 },
                 {
-                    "command": "Project.historyRecord",
+                    "command": "_project.historyRecord",
                     "group": "navigation",
                     "when": "view == Operation"
                 },
                 {
-                    "command": "Project.clearHistoryRecord",
+                    "command": "_project.clearHistoryRecord",
                     "when": "view == Operation"
                 },
                 {
-                    "command": "Project.saveAll",
+                    "command": "_project.saveAll",
                     "group": "navigation",
                     "when": "view == Project"
                 }
             ],
             "view/item/context": [
                 {
-                    "command": "project.source.filesystem_folder_add_file",
+                    "command": "_project.source.filesystem_folder_add_file",
                     "when": "viewItem == FOLDER || viewItem == FOLDER_ROOT && view == Project"
                 },
                 {
-                    "command": "project.source.filesystem_folder_add",
+                    "command": "_project.source.filesystem_folder_add",
                     "when": "viewItem == FOLDER || viewItem == FOLDER_ROOT && view == Project"
                 },
                 {
-                    "command": "project.source.virtual_folder_add_file",
+                    "command": "_project.source.virtual_folder_add_file",
                     "when": "viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == Project"
                 },
                 {
-                    "command": "project.source.virtual_folder_add",
+                    "command": "_project.source.virtual_folder_add",
                     "when": "viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == Project"
                 },
                 {
-                    "command": "project.source.virtual_folder_remove",
+                    "command": "_project.source.virtual_folder_remove",
                     "when": "viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == Project"
                 },
                 {
-                    "command": "project.source.virtual_folder_rename",
+                    "command": "_project.source.virtual_folder_rename",
                     "when": "viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == Project"
                 },
                 {
-                    "command": "project.source.virtual_file_remove",
+                    "command": "_project.source.virtual_file_remove",
                     "when": "viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
                 },
                 {
-                    "command": "Project.addPackage",
+                    "command": "_project.addPackage",
                     "group": "inline",
                     "when": "viewItem == PACK && view == Project"
                 },
                 {
-                    "command": "Project.removePackage",
+                    "command": "_project.removePackage",
                     "group": "inline",
                     "when": "viewItem == PACK_GROUP && view == Project"
                 },
                 {
-                    "command": "Project.setDevice",
+                    "command": "_project.setDevice",
                     "group": "inline",
                     "when": "viewItem == PACK_GROUP && view == Project"
                 },
                 {
-                    "command": "Project.addPackage",
+                    "command": "_project.addPackage",
                     "when": "viewItem == PACK && view == Project"
                 },
                 {
-                    "command": "Project.installCMSISHeaders",
+                    "command": "_project.installCMSISHeaders",
                     "when": "viewItem == PACK && view == Project"
                 },
                 {
-                    "command": "Project.setActive",
+                    "command": "_project.setActive",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "Project.switchMode",
+                    "command": "_project.switchMode",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "Project.exportAsTemplate",
+                    "command": "_project.exportAsTemplate",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "Project.exportXml",
+                    "command": "_project.exportXml",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "Project.rebuild",
+                    "command": "eide.project.rebuild",
                     "group": "inline",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "Project.build",
+                    "command": "eide.project.build",
                     "group": "inline",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "Project.clean",
+                    "command": "eide.project.clean",
                     "group": "inline",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "Project.showBuildParams",
+                    "command": "_project.showBuildParams",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "Project.uploadToDevice",
+                    "command": "eide.project.uploadToDevice",
                     "group": "inline",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "Project.close",
+                    "command": "_project.close",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "Project.excludeSource",
+                    "command": "_project.excludeSource",
                     "group": "inline",
                     "when": "viewItem == FILE_ITEM || viewItem == V_FILE_ITEM && view == Project"
                 },
                 {
-                    "command": "Project.unexcludeSource",
+                    "command": "_project.unexcludeSource",
                     "group": "inline",
                     "when": "viewItem == EXCFILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
                 },
                 {
-                    "command": "Project.excludeFolder",
+                    "command": "_project.excludeFolder",
                     "group": "inline",
                     "when": "viewItem == FOLDER || viewItem == V_FOLDER || viewItem == V_FOLDER_ROOT && view == Project"
                 },
                 {
-                    "command": "Project.unexcludeFolder",
+                    "command": "_project.unexcludeFolder",
                     "group": "inline",
                     "when": "viewItem == EXCFOLDER || viewItem == V_EXCFOLDER && view == Project"
                 },
                 {
-                    "command": "Project.addSrcDir",
+                    "command": "_project.addSrcDir",
                     "group": "inline",
                     "when": "viewItem == PROJECT && view == Project"
                 },
                 {
-                    "command": "Project.addSrcDir",
+                    "command": "_project.addSrcDir",
                     "when": "viewItem == PROJECT && view == Project"
                 },
                 {
-                    "command": "sourceRoot.refresh",
+                    "command": "_project.sourceRoot.refresh",
                     "group": "inline",
                     "when": "viewItem == FOLDER_ROOT_DEPS || viewItem == FOLDER_ROOT || viewItem == V_FOLDER_ROOT && view == Project"
                 },
                 {
-                    "command": "Project.removeSrcDir",
+                    "command": "_project.removeSrcDir",
                     "group": "inline",
                     "when": "viewItem == FOLDER_ROOT && view == Project"
                 },
                 {
-                    "command": "Project.switchToolchain",
+                    "command": "_project.switchToolchain",
                     "group": "inline",
                     "when": "viewItem == COMPILE_CONFIGURATION && view == Project"
                 },
                 {
-                    "command": "Project.switchUploader",
+                    "command": "_project.switchUploader",
                     "group": "inline",
                     "when": "viewItem == UPLOAD_OPTION_C51 || viewItem == UPLOAD_OPTION"
                 },
                 {
-                    "command": "Project.modifyCompileConfig",
+                    "command": "_project.modifyCompileConfig",
                     "group": "inline",
                     "when": "viewItem == COMPILE_CONFIGURATION_ITEM && view == Project"
                 },
                 {
-                    "command": "Project.modifyUploadConfig",
+                    "command": "_project.modifyUploadConfig",
                     "group": "inline",
                     "when": "viewItem == UPLOAD_OPTION_ITEM && view == Project"
                 },
                 {
-                    "command": "Project.modifyOtherSettings",
+                    "command": "_project.modifyOtherSettings",
                     "group": "inline",
                     "when": "viewItem == SETTINGS_ITEM && view == Project"
                 },
                 {
-                    "command": "Project.addIncludeDir",
+                    "command": "_project.addIncludeDir",
                     "group": "inline",
                     "when": "viewItem == INC_GROUP && view == Project"
                 },
                 {
-                    "command": "Project.showIncludeDir",
+                    "command": "_project.showIncludeDir",
                     "group": "inline",
                     "when": "viewItem == INC_GROUP && view == Project"
                 },
                 {
-                    "command": "Project.addLibDir",
+                    "command": "_project.addLibDir",
                     "group": "inline",
                     "when": "viewItem == LIB_GROUP && view == Project"
                 },
                 {
-                    "command": "Project.showLibDir",
+                    "command": "_project.showLibDir",
                     "group": "inline",
                     "when": "viewItem == LIB_GROUP && view == Project"
                 },
                 {
-                    "command": "Project.addDefine",
+                    "command": "_project.addDefine",
                     "group": "inline",
                     "when": "viewItem == DEFINE_GROUP && view == Project"
                 },
                 {
-                    "command": "Project.showDefine",
+                    "command": "_project.showDefine",
                     "group": "inline",
                     "when": "viewItem == DEFINE_GROUP && view == Project"
                 },
                 {
-                    "command": "Project.removeDependenceItem",
+                    "command": "_project.removeDependenceItem",
                     "group": "inline",
                     "when": "viewItem == INC_ITEM || viewItem == DEFINE_ITEM || viewItem == LIB_ITEM || viewItem == SOURCE_ITEM && view == Project"
                 },
                 {
-                    "command": "Project.copyItemValue",
+                    "command": "_project.copyItemValue",
                     "group": "inline",
                     "when": "viewItem == EXCFILE_ITEM || viewItem == FILE_ITEM || viewItem == ITEM || viewItem == DEPENDENCE_ITEM || viewItem == INC_ITEM || viewItem == DEFINE_ITEM || viewItem == LIB_ITEM || viewItem == SOURCE_ITEM && view == Project"
                 },
                 {
-                    "command": "Project.importDependenceFromPack",
+                    "command": "_project.importDependenceFromPack",
                     "group": "inline",
                     "when": "viewItem == COMPONENT_GROUP && view == Project"
                 },
                 {
-                    "command": "Project.removeDependenceFromPack",
+                    "command": "_project.removeDependenceFromPack",
                     "group": "inline",
                     "when": "viewItem == ACTIVED_GROUP && view == Project"
                 }
