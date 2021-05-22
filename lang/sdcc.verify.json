@@ -334,6 +334,19 @@
                         "静态库 (static library)"
                     ]
                 },
+                "$disableOutputTask": {
+                    "type": "boolean",
+                    "markdownDescription": "禁用输出任务 (disable output task)",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "$objectSuffix": {
+                    "markdownDescription": "obj 文件后缀, 默认 '.rel' (object file suffix, default: '.rel')",
+                    "type": "string",
+                    "default": ".rel"
+                },
                 "$mainFileName": {
                     "markdownDescription": "含有 main() 的源文件名 (Source file name with \"main()\" function)",
                     "type": "string",
