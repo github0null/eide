@@ -10,6 +10,10 @@
 #undef _WIN32
 #endif
 
+#ifdef _MSC_VER
+#undef _MSC_VER
+#endif
+
 // compiler keywords
 #define __alignof__(x)
 #define __asm(x)

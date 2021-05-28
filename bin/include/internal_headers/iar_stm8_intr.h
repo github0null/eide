@@ -10,6 +10,10 @@
 #undef _WIN32
 #endif
 
+#ifdef _MSC_VER
+#undef _MSC_VER
+#endif
+
 #ifdef __GNUC__
 #undef __GNUC__
 #endif

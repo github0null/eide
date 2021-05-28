@@ -137,7 +137,10 @@
                         "ez80_z80",
                         "stm8",
                         "pic14",
-                        "pic16"
+                        "pic16",
+                        "pdk13",
+                        "pdk14",
+                        "pdk15"
                     ],
                     "enumDescriptions": [
                         "Intel MCS51 family of processors. This is the default processor target. ",
@@ -154,7 +157,10 @@
                         "Zilog eZ80 processor in Z80 mode. ",
                         "STMicroelectronics STM8 family of processors. ",
                         "Microchip PIC 14-bit processors (p16f84 and variants. In development, not complete).",
-                        "Microchip PIC 16-bit processors (p18f452 and variants. In development, not complete)."
+                        "Microchip PIC 16-bit processors (p18f452 and variants. In development, not complete).",
+                        "Padauk processors with 13 bit wide program memory.",
+                        "Padauk processors with 14 bit wide program memory.",
+                        "Padauk processors with 15 bit wide program memory."
                     ]
                 },
                 "optimize-type": {

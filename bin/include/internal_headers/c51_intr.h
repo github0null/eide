@@ -10,6 +10,10 @@
 #undef _WIN32
 #endif
 
+#ifdef _MSC_VER
+#undef _MSC_VER
+#endif
+
 // compiler flags
 #ifdef __SDCC
 
@@ -21,6 +25,10 @@
 #define __using(x)
 #define __at(x)
 #define __asm__(x)
+
+// for pic
+#define __wparam
+#define __shadowregs
 
 // storage type
 #define __data
@@ -39,6 +47,8 @@ typedef __sfr16 __sfr16;
 typedef __sfr32 __sfr32;
 
 #else // Keil C51
+
+#define __C51__
 
 // keywords
 #define interrupt
