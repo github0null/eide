@@ -10,11 +10,10 @@
 
 一款适用于 8051/STM8/Cortex-M/RISC-V 的单片机开发环境。
 
-在 vscode 上提供 **8051**, **STM8**, **Cortex-M**, **RISC-V** 项目的 开发, 编译, 烧录 等功能。
+在 vscode 上提供 **8051**, **STM8**, **Cortex-M**, **RISC-V** ... 项目的 开发, 编译, 烧录 等功能。
 
 **注意：**
  - **仅支持 Windows 平台，Win7 及以上**
- - **构建工具需要 .NET 环境 (一般系统会自带)**
 
 ![preview](./res/preview/show.png)
 
@@ -47,7 +46,7 @@
 
 ## 快速开始 🏃‍♀️
 
-1. 安装上述的任意一款编译工具
+1. 安装上述的任意一款编译器
 
 2. 打开扩展的 Operations 栏，设置编译器的安装路径
 
@@ -58,6 +57,8 @@
 ## 使用文档 📖
 
 [文档地址: https://docs.em-ide.com](https://docs.em-ide.com)
+
+[相关编译器及工具下载：https://cloud.github0null.io/s/R4SY](https://cloud.github0null.io/s/R4SY)
 
 ***
 

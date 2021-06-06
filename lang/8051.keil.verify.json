@@ -153,6 +153,7 @@
             "properties": {
                 "optimization-type": {
                     "type": "string",
+                    "readable_name": "优化类型 (optimization type)",
                     "markdownDescription": "代码优化的侧重类型 (Code optimization focuses on types)",
                     "default": "SPEED",
                     "enum": [
@@ -216,7 +217,7 @@
                 "remove-unused": {
                     "type": "boolean",
                     "default": false,
-                    "description": "删除未使用的程序和数据段 (removes unused program and data segments)"
+                    "description": "删除未使用的程序和数据段 (remove unused code/data segments)"
                 },
                 "output-format": {
                     "type": "string",

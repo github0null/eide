@@ -418,6 +418,19 @@
                 ]
             },
             "properties": {
+                "output-format": {
+                    "type": "string",
+                    "default": "elf",
+                    "description": "输出格式 (output format)",
+                    "enum": [
+                        "elf",
+                        "lib"
+                    ],
+                    "enumDescriptions": [
+                        "可执行文件 (executable file)",
+                        "静态库 (static library)"
+                    ]
+                },
                 "auto-search-runtime-lib": {
                     "description": "auto search runtime lib",
                     "type": "boolean",
@@ -442,19 +455,6 @@
                         false
                     ]
                 },
-                "output-format": {
-                    "type": "string",
-                    "default": "elf",
-                    "description": "输出格式 (output format)",
-                    "enum": [
-                        "elf",
-                        "lib"
-                    ],
-                    "enumDescriptions": [
-                        "可执行文件 (executable file)",
-                        "静态库 (static library)"
-                    ]
-                },
                 "config-defines": {
                     "description": "define some config symbols",
                     "type": "array",
@@ -467,11 +467,12 @@
                     }
                 },
                 "program-entry": {
-                    "description": "program entry",
+                    "description": "程序入口 (program entry)",
                     "type": "string",
                     "default": "__iar_program_start"
                 },
                 "linker-config": {
+                    "readable_name": "链接脚本路径 (linker config file path)",
                     "description": "linker config file path.\n Example: \"lnkstm8xxx.icf\"\n or \"./lnkstm8xxx.icf\" (relative by workspace folder)\n or \"${ToolDir}/stm8/config/lnkstm8xxx.icf\"",
                     "type": "string",
                     "default": "lnkstm8s103f3.icf"
