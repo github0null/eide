@@ -3,5 +3,8 @@
 		{
 			"path": "."
 		}
-    ]
+	],
+	"settings": {
+		"RTT_Studio.Build.Parallel_Jobs": "4"
+	}
 }

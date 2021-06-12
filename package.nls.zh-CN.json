@@ -1,0 +1,98 @@
+{
+    "eide.bar.operations": "操作",
+    "eide.bar.projects": "EIDE 项目",
+    
+    "eide.item.copy": "复制值",
+    "eide.item.modify": "修改",
+    "eide.item.remove": "移除",
+
+    "eide.function.show.uuid": "查看 UUID",
+    "eide.function.convert.keil.to.sdcc": "将 Keil_C51 寄存器声明转换为 SDCC 格式",
+    "eide.function.reload.jlink.dev.list": "重新加载 JLink 芯片信息列表",
+    "eide.function.reload.stm8.dev.list": "重新加载 STM8 芯片信息列表",
+
+    "eide.project.refresh": "刷新",
+    "eide.project.save.all": "保存所有项目",
+    "eide.project.active": "设为活动",
+    "eide.project.close": "关闭项目",
+    "eide.project.export.template": "导出 EIDE 模板",
+    "eide.project.export.keil": "导出 Keil 项目",
+    "eide.project.show.commands": "查看生成的编译器命令行",
+    "eide.project.switch.target": "切换目标",
+    "eide.project.build": "构建",
+    "eide.project.rebuild": "重新构建",
+    "eide.project.clean": "清理",
+    "eide.project.upload": "烧录",
+
+    "eide.operation.open.history": "打开历史记录",
+    "eide.operation.clear.history": "清除历史记录",
+
+    "eide.explorer.root.add.folder": "添加源文件夹",
+    "eide.explorer.root.remove.folder": "移除源文件夹",
+    "eide.explorer.root.refresh.folder": "刷新",
+    "eide.explorer.new.file": "新建文件",
+    "eide.explorer.add.file": "添加文件",
+    "eide.explorer.remove.file": "移除",
+    "eide.explorer.new.folder": "新建文件夹",
+    "eide.explorer.add.folder": "添加文件夹",
+    "eide.explorer.exclude.file": "从项目中排除",
+    "eide.explorer.include.file": "取消排除",
+    "eide.explorer.remove.folder": "移除",
+    "eide.explorer.rename.folder": "重命名",
+    "eide.explorer.exclude.folder": "从项目中排除",
+    "eide.explorer.include.folder": "取消排除",
+
+    "eide.package.install": "安装芯片支持包",
+    "eide.package.install.cmsis": "安装 CMSIS 头文件",
+    "eide.package.remove": "卸载芯片支持包",
+    "eide.package.select.device": "选择芯片",
+    "eide.package.comp.install": "安装组件",
+    "eide.package.comp.uninstall": "移除组件",
+
+    "eide.builder.switch": "切换编译工具",
+    "eide.flash.switch": "切换烧录器",
+    
+    "eide.deps.include.show": "显示所有包含路径",
+    "eide.deps.include.add": "添加包含路径",
+    "eide.deps.inclib.show": "显示所有库目录",
+    "eide.deps.inclib.add": "添加库目录",
+    "eide.deps.macro.show": "显示所有宏定义",
+    "eide.deps.macro.add": "添加宏定义",
+    
+    "settings.builder.jobs": "构建时使用的线程数",
+    
+    "settings.option.show.toolbar.in.editer.title": "在编辑器的标题栏显示小工具",
+    "settings.option.print.relative.path": "编译时打印源文件的相对路径",
+    "settings.option.create.batch.file": "生成脚本",
+    "settings.option.use.task.to.build": "使用 vscode 任务执行编译命令",
+    "settings.option.insert.extcommands.at.begin": "内置的构建任务将被插入到 `beforeBuildTasks / afterBuildTasks` 之前",
+    
+    "settings.template.use.proxy": "使用 github 代理加速模板下载",
+    "settings.template.repo.url": "远程 github 模板仓库地址, 格式: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
+
+    "settings.serial.def.port": "默认串口名称",
+    "settings.serial.show.toolbar": "显示串口工具栏",
+    "settings.serial.use.unix.lf": "在串口中使用 Unix 换行符",
+    "settings.serial.baud": "串口波特率",
+    "settings.serial.data.width": "串口数据宽度",
+    "settings.serial.parity": "串口奇偶校验位",
+    "settings.serial.stop.bits": "串口停止位",
+
+    "settings.keilc51.ini": "Keil_C51 `TOOLS.INI` 文件路径 [`example: C:\\Keil_v5\\C51\\TOOLS.INI`]",
+    "settings.iar.stm8.install.folder": "IAR for STM8 安装目录 [`example: D:\\IAR`]",
+    "settings.sdcc.install.folder": "SDCC 安装目录 [`example: C:\\Program Files (x86)\\SDCC`]",
+
+    "settings.arm.gcc.install.folder": "GNU Arm Embedded Toolchain 安装目录 [`example: D:\\arm-gcc\\8 2019-q3-update`]",
+    "settings.arm.gcc.prefix": "GNU Arm Embedded Toolchain 编译器前缀 [`example: arm-none-eabi-`]",
+
+    "settings.armcc.ini": "Keil ARM MDK `TOOLS.INI` 文件路径 [`example: C:\\Keil_v5\\TOOLS.INI`]",
+    "settings.armcc.convert.axf": "编译完成后将 `.axf` 转换为 `.elf`",
+    
+    "settings.riscv.gcc.install.folder": "RISC-V Toolchain 安装目录 [`example: D:\\xpack-riscv-none-embed-gcc-8.3.0-2.3`]",
+    "settings.riscv.gcc.prefix": "RISC-V Toolchain 编译器前缀",
+
+    "settings.jlink.install.folder": "JLink 安装目录 [`example: C:\\Program Files (x86)\\SEGGER\\JLink`]",
+    "settings.openocd.install.folder": "OpenOCD.exe 可执行文件路径 [`example: D:\\OpenOCD\\bin\\openocd.exe`]",
+    "settings.stlink.install.folder": "ST-LINK Utility: `ST-LINK_CLI.exe` 可执行文件路径",
+    "settings.stvp.path": "STVP: `STVP_CmdLine.exe` 可执行文件路径"
+}

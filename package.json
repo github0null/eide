@@ -25,7 +25,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "A singlechip development environment for 8051/STM8/Cortex-M/RISC-V",
-    "version": "2.7.0",
+    "version": "2.7.1",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -45,7 +45,8 @@
         "email": "2584456014@qq.com"
     },
     "os": [
-        "win32"
+        "win32",
+        "windows"
     ],
     "repository": {
         "url": "https://github.com/github0null/eide.git",
@@ -88,7 +89,7 @@
                     "EIDE.Builder.ThreadNumber": {
                         "type": "integer",
                         "scope": "resource",
-                        "markdownDescription": "The number of threads when build",
+                        "markdownDescription": "%settings.builder.jobs%",
                         "default": -1,
                         "enum": [
                             -1,
@@ -112,85 +113,85 @@
                         ],
                         "enumDescriptions": [
                             "auto",
-                            "not use multi-thread mode"
+                            "use single thread mode"
                         ]
                     },
                     "EIDE.Option.ShowToolbarInEditerTitle": {
                         "type": "boolean",
                         "scope": "resource",
-                        "markdownDescription": "Displays some toolbars in the editor title",
+                        "markdownDescription": "%settings.option.show.toolbar.in.editer.title%",
                         "default": true
                     },
                     "EIDE.Option.PrintRelativePathWhenBuild": {
                         "type": "boolean",
                         "scope": "resource",
-                        "markdownDescription": "Print relative path when compile source file",
+                        "markdownDescription": "%settings.option.print.relative.path%",
                         "default": true
                     },
                     "EIDE.Option.CreateBatchFile": {
                         "type": "boolean",
                         "scope": "resource",
-                        "markdownDescription": "Create batch file after build",
+                        "markdownDescription": "%settings.option.create.batch.file%",
                         "default": false
                     },
                     "EIDE.Option.UseTaskToBuild": {
                         "type": "boolean",
                         "scope": "resource",
-                        "markdownDescription": "Use Task to build project instead of Terminal",
+                        "markdownDescription": "%settings.option.use.task.to.build%",
                         "default": true
                     },
                     "EIDE.Option.InsertExtraCommandsAtBegin": {
                         "type": "boolean",
                         "scope": "resource",
-                        "markdownDescription": "The built-in command lines will insert at the beginning of the `beforeBuildTasks / afterBuildTasks`",
+                        "markdownDescription": "%settings.option.insert.extcommands.at.begin%",
                         "default": false
                     },
                     "EIDE.Template.Repository.UseProxy": {
                         "type": "boolean",
                         "scope": "machine",
-                        "markdownDescription": "Use github proxy to improve network speed (experimental function)",
+                        "markdownDescription": "%settings.template.use.proxy%",
                         "default": true
                     },
                     "EIDE.Template.Repository.Url": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "remote public github repository url, format: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
+                        "markdownDescription": "%settings.template.repo.url%",
                         "default": "github0null/eide-doc/contents/eide-template-list"
                     },
                     "EIDE.SerialPortMonitor.DefaultPort": {
                         "type": "string",
                         "scope": "resource",
-                        "markdownDescription": "Default port name",
+                        "markdownDescription": "%settings.serial.def.port%",
                         "default": "null"
                     },
                     "EIDE.SerialPortMonitor.ShowStatusBar": {
                         "type": "boolean",
                         "scope": "resource",
-                        "markdownDescription": "Show serialport status bar",
+                        "markdownDescription": "%settings.serial.show.toolbar%",
                         "default": true
                     },
                     "EIDE.SerialPortMonitor.useUnixLF": {
                         "type": "boolean",
                         "scope": "resource",
-                        "markdownDescription": "Use Unix New Line Char",
+                        "markdownDescription": "%settings.serial.use.unix.lf%",
                         "default": false
                     },
                     "EIDE.SerialPortMonitor.BaudRate": {
                         "type": "integer",
                         "scope": "resource",
-                        "markdownDescription": "SerialPort Baud Rate",
+                        "markdownDescription": "%settings.serial.baud%",
                         "default": 115200
                     },
                     "EIDE.SerialPortMonitor.DataBits": {
                         "type": "integer",
                         "scope": "resource",
-                        "markdownDescription": "SerialPort Data Bits width",
+                        "markdownDescription": "%settings.serial.data.width%",
                         "default": 8
                     },
                     "EIDE.SerialPortMonitor.Parity": {
                         "type": "integer",
                         "scope": "resource",
-                        "markdownDescription": "SerialPort Parity bit",
+                        "markdownDescription": "%settings.serial.parity%",
                         "default": 0,
                         "enum": [
                             0,
@@ -210,7 +211,7 @@
                     "EIDE.SerialPortMonitor.StopBits": {
                         "type": "integer",
                         "scope": "resource",
-                        "markdownDescription": "SerialPort Stop Bits",
+                        "markdownDescription": "%settings.serial.stop.bits%",
                         "default": 1,
                         "enum": [
                             1,
@@ -226,43 +227,43 @@
                     "EIDE.IAR.STM8.InstallDirectory": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "IAR for STM8 install directory [`example: D:\\IAR`]",
+                        "markdownDescription": "%settings.iar.stm8.install.folder%",
                         "default": ""
                     },
                     "EIDE.ARM.GCC.Prefix": {
                         "type": "string",
                         "scope": "resource",
-                        "markdownDescription": "ARM GCC toolchain prefix [`example: arm-none-eabi-`]",
+                        "markdownDescription": "%settings.arm.gcc.prefix%",
                         "default": "arm-none-eabi-"
                     },
                     "EIDE.ARM.GCC.InstallDirectory": {
                         "type": "string",
                         "scope": "resource",
-                        "markdownDescription": "GCC for ARM toolchain install directory [`example: D:\\arm-gcc\\8 2019-q3-update`]",
+                        "markdownDescription": "%settings.arm.gcc.install.folder%",
                         "default": ""
                     },
                     "EIDE.ARM.INI.Path": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "Keil ARM MDK `TOOLS.INI` file path [`example: C:\\Keil_v5\\TOOLS.INI`]",
+                        "markdownDescription": "%settings.armcc.ini%",
                         "default": "C:\\Keil_v5\\TOOLS.INI"
                     },
                     "EIDE.ARM.JLink.ToolDirectory": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "JLink install directory [`example: C:\\Program Files (x86)\\SEGGER\\JLink`]",
+                        "markdownDescription": "%settings.jlink.install.folder%",
                         "default": ""
                     },
                     "EIDE.ARM.OpenOCD.ExePath": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "OpenOCD.exe path [`example: D:\\OpenOCD\\bin\\openocd.exe`]",
+                        "markdownDescription": "%settings.openocd.install.folder%",
                         "default": ""
                     },
                     "EIDE.ARM.StlinkExePath": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "ST-LINK Utility: `ST-LINK_CLI.exe` path",
+                        "markdownDescription": "%settings.stlink.install.folder%",
                         "default": ""
                     },
                     "EIDE.ARM.Option.AutoGenerateRTE_Components": {
@@ -274,37 +275,37 @@
                     "EIDE.ARM.Option.AxfToElf": {
                         "type": "boolean",
                         "scope": "resource",
-                        "markdownDescription": "Convert `.axf` to `.elf` for ARMCC compiler",
+                        "markdownDescription": "%settings.armcc.convert.axf%",
                         "default": true
                     },
                     "EIDE.STM8.STVP.CliExePath": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "STVP: `STVP_CmdLine.exe` path",
+                        "markdownDescription": "%settings.stvp.path%",
                         "default": ""
                     },
                     "EIDE.C51.INI.Path": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "Keil C51 `TOOLS.INI` file path [`example: C:\\Keil_v5\\C51\\TOOLS.INI`]",
+                        "markdownDescription": "%settings.keilc51.ini%",
                         "default": "C:\\Keil_v5\\C51\\TOOLS.INI"
                     },
                     "EIDE.SDCC.InstallDirectory": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "SDCC install folder [`example: C:\\Program Files (x86)\\SDCC`]",
+                        "markdownDescription": "%settings.sdcc.install.folder%",
                         "default": ""
                     },
                     "EIDE.RISCV.InstallDirectory": {
                         "type": "string",
                         "scope": "resource",
-                        "markdownDescription": "RISC-V toolchain install folder [`example: D:\\xpack-riscv-none-embed-gcc-8.3.0-2.3`]",
+                        "markdownDescription": "%settings.riscv.gcc.install.folder%",
                         "default": ""
                     },
                     "EIDE.RISCV.ToolPrefix": {
                         "type": "string",
                         "scope": "resource",
-                        "markdownDescription": "RISC-V toolchain prefix",
+                        "markdownDescription": "%settings.riscv.gcc.prefix%",
                         "default": "riscv-none-embed-"
                     }
                 }
@@ -323,46 +324,46 @@
             "EIDEView": [
                 {
                     "id": "Project",
-                    "name": "EIDE Projects"
+                    "name": "%eide.bar.projects%"
                 },
                 {
                     "id": "Operation",
-                    "name": "Operations"
+                    "name": "%eide.bar.operations%"
                 }
             ]
         },
         "commands": [
             {
                 "command": "_project.source.filesystem_folder_add_file",
-                "title": "New File"
+                "title": "%eide.explorer.new.file%"
             },
             {
                 "command": "_project.source.filesystem_folder_add",
-                "title": "New Folder"
+                "title": "%eide.explorer.new.folder%"
             },
             {
                 "command": "_project.source.virtual_folder_add_file",
-                "title": "Add File"
+                "title": "%eide.explorer.add.file%"
             },
             {
                 "command": "_project.source.virtual_folder_add",
-                "title": "Add Folder"
+                "title": "%eide.explorer.add.folder%"
             },
             {
                 "command": "_project.source.virtual_folder_remove",
-                "title": "Remove"
+                "title": "%eide.explorer.remove.folder%"
             },
             {
                 "command": "_project.source.virtual_file_remove",
-                "title": "Remove"
+                "title": "%eide.explorer.remove.file%"
             },
             {
                 "command": "_project.source.virtual_folder_rename",
-                "title": "Rename"
+                "title": "%eide.explorer.rename.folder%"
             },
             {
                 "command": "_project.refresh",
-                "title": "Refresh",
+                "title": "%eide.project.refresh%",
                 "icon": {
                     "dark": "./res/icon/refresh-dark.svg",
                     "light": "./res/icon/refresh-light.svg"
@@ -370,7 +371,7 @@
             },
             {
                 "command": "_project.sourceRoot.refresh",
-                "title": "Refresh Folder",
+                "title": "%eide.explorer.root.refresh.folder%",
                 "icon": {
                     "dark": "./res/icon/refresh-dark.svg",
                     "light": "./res/icon/refresh-light.svg"
@@ -378,7 +379,7 @@
             },
             {
                 "command": "_project.historyRecord",
-                "title": "History Records",
+                "title": "%eide.operation.open.history%",
                 "icon": {
                     "dark": "./res/icon/Note_16x.svg",
                     "light": "./res/icon/Note_16x.svg"
@@ -386,11 +387,11 @@
             },
             {
                 "command": "_project.clearHistoryRecord",
-                "title": "Clear History Records"
+                "title": "%eide.operation.clear.history%"
             },
             {
                 "command": "_project.saveAll",
-                "title": "Save All Projects",
+                "title": "%eide.project.save.all%",
                 "icon": {
                     "dark": "./res/icon/SaveAll_16x.svg",
                     "light": "./res/icon/SaveAll_16x.svg"
@@ -398,12 +399,12 @@
             },
             {
                 "command": "_project.setActive",
-                "title": "Active Project"
+                "title": "%eide.project.active%"
             },
             {
                 "command": "eide.project.build",
                 "category": "eide",
-                "title": "Build",
+                "title": "%eide.project.build%",
                 "icon": {
                     "dark": "./res/icon/BuildSelection_16x.svg",
                     "light": "./res/icon/BuildSelection_16x.svg"
@@ -412,7 +413,7 @@
             {
                 "command": "eide.project.rebuild",
                 "category": "eide",
-                "title": "Rebuild",
+                "title": "%eide.project.rebuild%",
                 "icon": {
                     "dark": "./res/icon/BuildSolution_16x.svg",
                     "light": "./res/icon/BuildSolution_16x.svg"
@@ -421,7 +422,7 @@
             {
                 "command": "eide.project.clean",
                 "category": "eide",
-                "title": "Clean",
+                "title": "%eide.project.clean%",
                 "icon": {
                     "dark": "./res/icon/clean_dark_16x.svg",
                     "light": "./res/icon/clean_light_16x.svg"
@@ -429,7 +430,7 @@
             },
             {
                 "command": "eide.project.uploadToDevice",
-                "title": "Upload Program To Device",
+                "title": "%eide.project.upload%",
                 "category": "eide",
                 "icon": {
                     "dark": "./res/icon/TransferDownload_16x.svg",
@@ -438,11 +439,11 @@
             },
             {
                 "command": "_project.showBuildParams",
-                "title": "Show Compiler CommandLine"
+                "title": "%eide.project.show.commands%"
             },
             {
                 "command": "_project.installCMSISHeaders",
-                "title": "Install CMSIS Header Files",
+                "title": "%eide.package.install.cmsis%",
                 "icon": {
                     "dark": "./res/icon/AddBuildQueue_16x.svg",
                     "light": "./res/icon/AddBuildQueue_16x.svg"
@@ -450,7 +451,7 @@
             },
             {
                 "command": "_project.addSrcDir",
-                "title": "Add Source Folders",
+                "title": "%eide.explorer.root.add.folder%",
                 "icon": {
                     "dark": "./res/icon/AddFolder_16x.svg",
                     "light": "./res/icon/AddFolder_16x.svg"
@@ -458,7 +459,7 @@
             },
             {
                 "command": "_project.removeSrcDir",
-                "title": "Remove This Source Folder",
+                "title": "%eide.explorer.root.remove.folder%",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
                     "light": "./res/icon/TestCoveredFailing_16x.svg"
@@ -466,7 +467,7 @@
             },
             {
                 "command": "_project.close",
-                "title": "Close",
+                "title": "%eide.project.close%",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
                     "light": "./res/icon/TestCoveredFailing_16x.svg"
@@ -474,7 +475,7 @@
             },
             {
                 "command": "_project.addPackage",
-                "title": "Install Chip Support Package",
+                "title": "%eide.package.install%",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
                     "light": "./res/icon/Add_16xMD.svg"
@@ -482,7 +483,7 @@
             },
             {
                 "command": "_project.removePackage",
-                "title": "Uninstall This Chip Support Package",
+                "title": "%eide.package.remove%",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
                     "light": "./res/icon/TestCoveredFailing_16x.svg"
@@ -490,7 +491,7 @@
             },
             {
                 "command": "_project.setDevice",
-                "title": "Choose Device",
+                "title": "%eide.package.select.device%",
                 "icon": {
                     "dark": "./res/icon/FieldAdded_16x.svg",
                     "light": "./res/icon/FieldAdded_16x.svg"
@@ -498,7 +499,7 @@
             },
             {
                 "command": "_project.exportXml",
-                "title": "Export To Keil Project",
+                "title": "%eide.project.export.keil%",
                 "icon": {
                     "dark": "./res/icon/ExportFile_16x.svg",
                     "light": "./res/icon/ExportFile_16x.svg"
@@ -506,7 +507,7 @@
             },
             {
                 "command": "_project.modifyCompileConfig",
-                "title": "Modify",
+                "title": "%eide.item.modify%",
                 "icon": {
                     "dark": "./res/icon/Pen4_16x.svg",
                     "light": "./res/icon/Pen4_16x.svg"
@@ -514,7 +515,7 @@
             },
             {
                 "command": "_project.switchToolchain",
-                "title": "Choose Toolchain",
+                "title": "%eide.builder.switch%",
                 "icon": {
                     "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
                     "light": "./res/icon/SwitchSourceOrTarget_16x.svg"
@@ -522,7 +523,7 @@
             },
             {
                 "command": "_project.switchUploader",
-                "title": "Choose Flasher",
+                "title": "%eide.flash.switch%",
                 "icon": {
                     "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
                     "light": "./res/icon/SwitchSourceOrTarget_16x.svg"
@@ -530,7 +531,7 @@
             },
             {
                 "command": "_project.modifyUploadConfig",
-                "title": "Modify",
+                "title": "%eide.item.modify%",
                 "icon": {
                     "dark": "./res/icon/Pen4_16x.svg",
                     "light": "./res/icon/Pen4_16x.svg"
@@ -538,7 +539,7 @@
             },
             {
                 "command": "_project.modifyOtherSettings",
-                "title": "Modify",
+                "title": "%eide.item.modify%",
                 "icon": {
                     "dark": "./res/icon/Pen4_16x.svg",
                     "light": "./res/icon/Pen4_16x.svg"
@@ -546,7 +547,7 @@
             },
             {
                 "command": "_project.addIncludeDir",
-                "title": "Add Include Folder",
+                "title": "%eide.deps.include.add%",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
                     "light": "./res/icon/Add_16xMD.svg"
@@ -554,7 +555,7 @@
             },
             {
                 "command": "_project.addLibDir",
-                "title": "Add Library Search Paths",
+                "title": "%eide.deps.inclib.add%",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
                     "light": "./res/icon/Add_16xMD.svg"
@@ -562,7 +563,7 @@
             },
             {
                 "command": "_project.addDefine",
-                "title": "Add Macros",
+                "title": "%eide.deps.macro.add%",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
                     "light": "./res/icon/Add_16xMD.svg"
@@ -570,7 +571,7 @@
             },
             {
                 "command": "_project.showIncludeDir",
-                "title": "Display All Include Paths",
+                "title": "%eide.deps.include.show%",
                 "icon": {
                     "dark": "./res/icon/eye_16x_dark.svg",
                     "light": "./res/icon/eye_16x.svg"
@@ -578,7 +579,7 @@
             },
             {
                 "command": "_project.showLibDir",
-                "title": "Display All Library Paths",
+                "title": "%eide.deps.inclib.show%",
                 "icon": {
                     "dark": "./res/icon/eye_16x_dark.svg",
                     "light": "./res/icon/eye_16x.svg"
@@ -586,7 +587,7 @@
             },
             {
                 "command": "_project.showDefine",
-                "title": "Display All Macros",
+                "title": "%eide.deps.macro.show%",
                 "icon": {
                     "dark": "./res/icon/eye_16x_dark.svg",
                     "light": "./res/icon/eye_16x.svg"
@@ -594,7 +595,7 @@
             },
             {
                 "command": "_project.excludeSource",
-                "title": "Exclude This File",
+                "title": "%eide.explorer.exclude.file%",
                 "icon": {
                     "dark": "./res/icon/StatusNo_16x.svg",
                     "light": "./res/icon/StatusNo_16x.svg"
@@ -602,7 +603,7 @@
             },
             {
                 "command": "_project.unexcludeSource",
-                "title": "Include This File",
+                "title": "%eide.explorer.include.file%",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
                     "light": "./res/icon/Add_16xMD.svg"
@@ -610,7 +611,7 @@
             },
             {
                 "command": "_project.excludeFolder",
-                "title": "Exclude This Folder",
+                "title": "%eide.explorer.exclude.folder%",
                 "icon": {
                     "dark": "./res/icon/StatusNo_16x.svg",
                     "light": "./res/icon/StatusNo_16x.svg"
@@ -618,7 +619,7 @@
             },
             {
                 "command": "_project.unexcludeFolder",
-                "title": "Include This Folder",
+                "title": "%eide.explorer.include.folder%",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
                     "light": "./res/icon/Add_16xMD.svg"
@@ -626,7 +627,7 @@
             },
             {
                 "command": "_project.removeDependenceItem",
-                "title": "Remove This Item",
+                "title": "%eide.item.remove%",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
                     "light": "./res/icon/TestCoveredFailing_16x.svg"
@@ -634,7 +635,7 @@
             },
             {
                 "command": "_project.importDependenceFromPack",
-                "title": "Install This Component",
+                "title": "%eide.package.comp.install%",
                 "icon": {
                     "dark": "./res/icon/AddToCollection_16x.svg",
                     "light": "./res/icon/AddToCollection_16x.svg"
@@ -642,7 +643,7 @@
             },
             {
                 "command": "_project.removeDependenceFromPack",
-                "title": "Remove This Component",
+                "title": "%eide.package.comp.uninstall%",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
                     "light": "./res/icon/TestCoveredFailing_16x.svg"
@@ -650,7 +651,7 @@
             },
             {
                 "command": "_project.copyItemValue",
-                "title": "Copy Item Value",
+                "title": "%eide.item.copy%",
                 "icon": {
                     "dark": "./res/icon/CopyToClipboard_16x.svg",
                     "light": "./res/icon/CopyToClipboard_16x.svg"
@@ -658,7 +659,7 @@
             },
             {
                 "command": "_project.switchMode",
-                "title": "Switch Target",
+                "title": "%eide.project.switch.target%",
                 "icon": {
                     "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
                     "light": "./res/icon/SwitchSourceOrTarget_16x.svg"
@@ -666,7 +667,7 @@
             },
             {
                 "command": "_project.exportAsTemplate",
-                "title": "Export To EIDE Template",
+                "title": "%eide.project.export.template%",
                 "icon": {
                     "dark": "./res/icon/TableToFile_16x.svg",
                     "light": "./res/icon/TableToFile_16x.svg"
@@ -675,22 +676,22 @@
             {
                 "command": "eide.ShowUUID",
                 "category": "eide",
-                "title": "Show UUID"
+                "title": "%eide.function.show.uuid%"
             },
             {
                 "command": "eide.c51ToSdcc",
                 "category": "eide",
-                "title": "Convert Keil_C51 Registers To SDCC Format"
+                "title": "%eide.function.convert.keil.to.sdcc%"
             },
             {
                 "command": "eide.ReloadJlinkDevs",
                 "category": "eide",
-                "title": "Reload JLink Devices List"
+                "title": "%eide.function.reload.jlink.dev.list%"
             },
             {
                 "command": "eide.ReloadStm8Devs",
                 "category": "eide",
-                "title": "Reload STM8 Devices List"
+                "title": "%eide.function.reload.stm8.dev.list%"
             }
         ],
         "keybindings": [
@@ -807,7 +808,7 @@
                 },
                 {
                     "command": "_project.setActive",
-                    "when": "viewItem == SOLUTION && view == Project"
+                    "when": "viewItem == SOLUTION && view == Project && cl.eide.enable.active"
                 },
                 {
                     "command": "_project.switchMode",

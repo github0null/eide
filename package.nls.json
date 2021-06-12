@@ -1,0 +1,98 @@
+{
+    "eide.bar.operations": "Operations",
+    "eide.bar.projects": "EIDE Projects",
+    
+    "eide.item.copy": "Copy Value",
+    "eide.item.modify": "Modify",
+    "eide.item.remove": "Remove",
+
+    "eide.function.show.uuid": "Show UUID",
+    "eide.function.convert.keil.to.sdcc": "Convert Keil_C51 Registers To SDCC Format",
+    "eide.function.reload.jlink.dev.list": "Reload JLink Devices List",
+    "eide.function.reload.stm8.dev.list": "Reload STM8 Devices List",
+
+    "eide.project.refresh": "Refresh",
+    "eide.project.save.all": "Save All Projects",
+    "eide.project.active": "Active Project",
+    "eide.project.close": "Close",
+    "eide.project.export.template": "Export EIDE Template",
+    "eide.project.export.keil": "Export Keil Project",
+    "eide.project.show.commands": "Show Compiler CommandLine",
+    "eide.project.switch.target": "Switch Target",
+    "eide.project.build": "Build",
+    "eide.project.rebuild": "Rebuild",
+    "eide.project.clean": "Clean",
+    "eide.project.upload": "Upload Program To Device",
+
+    "eide.operation.open.history": "History Records",
+    "eide.operation.clear.history": "Clear History Records",
+
+    "eide.explorer.root.add.folder": "Add Source Folder",
+    "eide.explorer.root.remove.folder": "Remove Source Folder",
+    "eide.explorer.root.refresh.folder": "Refresh",
+    "eide.explorer.new.file": "New File",
+    "eide.explorer.add.file": "Add File",
+    "eide.explorer.remove.file": "Remove",
+    "eide.explorer.new.folder": "New Folder",
+    "eide.explorer.add.folder": "Add Folder",
+    "eide.explorer.exclude.file": "Exclude File",
+    "eide.explorer.include.file": "Include File",
+    "eide.explorer.remove.folder": "Remove",
+    "eide.explorer.rename.folder": "Rename",
+    "eide.explorer.exclude.folder": "Exclude Folder",
+    "eide.explorer.include.folder": "Include Folder",
+
+    "eide.package.install": "Install Chip Support Package",
+    "eide.package.install.cmsis": "Install CMSIS Header Files",
+    "eide.package.remove": "Uninstall Chip Support Package",
+    "eide.package.select.device": "Choose Device",
+    "eide.package.comp.install": "Install Component",
+    "eide.package.comp.uninstall": "Uninstall Component",
+
+    "eide.builder.switch": "Choose Toolchain",
+    "eide.flash.switch": "Choose Flasher",
+    
+    "eide.deps.include.show": "Display All Include Paths",
+    "eide.deps.include.add": "Add Include Path",
+    "eide.deps.inclib.show": "Display All Library Folders",
+    "eide.deps.inclib.add": "Add Library Folder",
+    "eide.deps.macro.show": "Display All Macros",
+    "eide.deps.macro.add": "Add Macro",
+
+    "settings.builder.jobs": "The number of threads when build",
+    
+    "settings.option.show.toolbar.in.editer.title": "Displays some toolbars in the editor title",
+    "settings.option.print.relative.path": "Print relative path when compile source file",
+    "settings.option.create.batch.file": "Create batch file after build",
+    "settings.option.use.task.to.build": "Use Task to build project instead of Terminal",
+    "settings.option.insert.extcommands.at.begin": "The built-in command lines will insert at the beginning of the `beforeBuildTasks / afterBuildTasks`",
+    
+    "settings.template.use.proxy": "Use github proxy to improve network speed (experimental function)",
+    "settings.template.repo.url": "remote public github repository url, format: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
+
+    "settings.serial.def.port": "Default port name",
+    "settings.serial.show.toolbar": "Show serialport status bar",
+    "settings.serial.use.unix.lf": "Use Unix New Line Char",
+    "settings.serial.baud": "SerialPort Baud Rate",
+    "settings.serial.data.width": "SerialPort Data Bits width",
+    "settings.serial.parity": "SerialPort Parity bit",
+    "settings.serial.stop.bits": "SerialPort Stop Bits",
+
+    "settings.keilc51.ini": "Keil C51 `TOOLS.INI` file path [`example: C:\\Keil_v5\\C51\\TOOLS.INI`]",
+    "settings.iar.stm8.install.folder": "IAR for STM8 install directory [`example: D:\\IAR`]",
+    "settings.sdcc.install.folder": "SDCC install folder [`example: C:\\Program Files (x86)\\SDCC`]",
+
+    "settings.arm.gcc.install.folder": "GCC for ARM toolchain install directory [`example: D:\\arm-gcc\\8 2019-q3-update`]",
+    "settings.arm.gcc.prefix": "ARM GCC toolchain prefix [`example: arm-none-eabi-`]",
+
+    "settings.armcc.ini": "Keil ARM MDK `TOOLS.INI` file path [`example: C:\\Keil_v5\\TOOLS.INI`]",
+    "settings.armcc.convert.axf": "Convert `.axf` to `.elf` for ARMCC compiler",
+    
+    "settings.riscv.gcc.install.folder": "RISC-V toolchain install folder [`example: D:\\xpack-riscv-none-embed-gcc-8.3.0-2.3`]",
+    "settings.riscv.gcc.prefix": "RISC-V toolchain prefix",
+
+    "settings.jlink.install.folder": "JLink install directory [`example: C:\\Program Files (x86)\\SEGGER\\JLink`]",
+    "settings.openocd.install.folder": "OpenOCD.exe path [`example: D:\\OpenOCD\\bin\\openocd.exe`]",
+    "settings.stlink.install.folder": "ST-LINK Utility: `ST-LINK_CLI.exe` path",
+    "settings.stvp.path": "STVP: `STVP_CmdLine.exe` path"
+}
