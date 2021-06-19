@@ -1,0 +1,3 @@
+[submodule "res/eide_makefile_template"]
+	path = res/eide_makefile_template
+	url = https://git.github0null.io/root/eide_makefile_template.git

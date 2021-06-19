@@ -23,6 +23,7 @@
     "eide.project.rebuild": "重新构建",
     "eide.project.clean": "清理",
     "eide.project.upload": "烧录",
+    "eide.project.gen.makefile": "生成 Makefile 模板",
 
     "eide.operation.open.history": "打开历史记录",
     "eide.operation.clear.history": "清除历史记录",
@@ -60,6 +61,7 @@
     "eide.deps.macro.add": "添加宏定义",
     
     "settings.builder.jobs": "构建时使用的线程数",
+    "settings.builder.gen.makefile.params": "生成 Makefile 参数文件",
     
     "settings.option.show.toolbar.in.editer.title": "在编辑器的标题栏显示小工具",
     "settings.option.print.relative.path": "编译时打印源文件的相对路径",
@@ -92,6 +94,8 @@
     "settings.riscv.gcc.prefix": "RISC-V Toolchain 编译器前缀",
 
     "settings.jlink.install.folder": "JLink 安装目录 [`example: C:\\Program Files (x86)\\SEGGER\\JLink`]",
+    "settings.jlink.device.xml": "JLinkDevices.xml 文件路径",
+
     "settings.openocd.install.folder": "OpenOCD.exe 可执行文件路径 [`example: D:\\OpenOCD\\bin\\openocd.exe`]",
     "settings.stlink.install.folder": "ST-LINK Utility: `ST-LINK_CLI.exe` 可执行文件路径",
     "settings.stvp.path": "STVP: `STVP_CmdLine.exe` 可执行文件路径"

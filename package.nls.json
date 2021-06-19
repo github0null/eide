@@ -23,6 +23,7 @@
     "eide.project.rebuild": "Rebuild",
     "eide.project.clean": "Clean",
     "eide.project.upload": "Upload Program To Device",
+    "eide.project.gen.makefile": "Generate Makefile Template",
 
     "eide.operation.open.history": "History Records",
     "eide.operation.clear.history": "Clear History Records",
@@ -60,6 +61,7 @@
     "eide.deps.macro.add": "Add Macro",
 
     "settings.builder.jobs": "The number of threads when build",
+    "settings.builder.gen.makefile.params": "Generate the Makefile parameters file",
     
     "settings.option.show.toolbar.in.editer.title": "Displays some toolbars in the editor title",
     "settings.option.print.relative.path": "Print relative path when compile source file",
@@ -92,6 +94,8 @@
     "settings.riscv.gcc.prefix": "RISC-V toolchain prefix",
 
     "settings.jlink.install.folder": "JLink install directory [`example: C:\\Program Files (x86)\\SEGGER\\JLink`]",
+    "settings.jlink.device.xml": "JLinkDevices.xml File Path",
+
     "settings.openocd.install.folder": "OpenOCD.exe path [`example: D:\\OpenOCD\\bin\\openocd.exe`]",
     "settings.stlink.install.folder": "ST-LINK Utility: `ST-LINK_CLI.exe` path",
     "settings.stvp.path": "STVP: `STVP_CmdLine.exe` path"

@@ -25,3 +25,6 @@ vsc-extension-quickstart.md
 # internal template projects
 res/template/projects
 *.js.map
+# eide makefile template
+.gitmodules
+res/eide_makefile_template

@@ -25,7 +25,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "A singlechip development environment for 8051/STM8/Cortex-M/RISC-V",
-    "version": "2.7.2",
+    "version": "2.8.1",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -115,6 +115,12 @@
                             "auto",
                             "use single thread mode"
                         ]
+                    },
+                    "EIDE.Builder.GenerateMakefileParameters": {
+                        "type": "boolean",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.builder.gen.makefile.params%",
+                        "default": true
                     },
                     "EIDE.Option.ShowToolbarInEditerTitle": {
                         "type": "boolean",
@@ -248,19 +254,25 @@
                         "markdownDescription": "%settings.armcc.ini%",
                         "default": "C:\\Keil_v5\\TOOLS.INI"
                     },
-                    "EIDE.ARM.JLink.ToolDirectory": {
+                    "EIDE.JLink.InstallDirectory": {
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "%settings.jlink.install.folder%",
                         "default": ""
                     },
-                    "EIDE.ARM.OpenOCD.ExePath": {
+                    "EIDE.JLink.DeviceXmlPath": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "%settings.jlink.device.xml%",
+                        "default": ""
+                    },
+                    "EIDE.OpenOCD.ExePath": {
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "%settings.openocd.install.folder%",
                         "default": ""
                     },
-                    "EIDE.ARM.StlinkExePath": {
+                    "EIDE.STLink.ExePath": {
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "%settings.stlink.install.folder%",
@@ -440,6 +452,10 @@
             {
                 "command": "_project.showBuildParams",
                 "title": "%eide.project.show.commands%"
+            },
+            {
+                "command": "_project.generate.makefile",
+                "title": "%eide.project.gen.makefile%"
             },
             {
                 "command": "_project.installCMSISHeaders",
@@ -839,6 +855,10 @@
                 },
                 {
                     "command": "_project.showBuildParams",
+                    "when": "viewItem == SOLUTION && view == Project"
+                },
+                {
+                    "command": "_project.generate.makefile",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
