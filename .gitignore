@@ -6,7 +6,7 @@ vsc-extension-quickstart.md
 *.vsix
 .EIDE
 .vscodeignore
-lib
+./lib
 /dist
 /doc
 pack.js
@@ -17,3 +17,7 @@ test.js
 package-lock.json
 # internal template projects
 res/template/projects
+# bin
+bin/builder/*.xml
+bin/builder/*.exe.config
+bin/tools/*

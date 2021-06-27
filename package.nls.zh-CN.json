@@ -42,6 +42,10 @@
     "eide.explorer.rename.folder": "重命名",
     "eide.explorer.exclude.folder": "从项目中排除",
     "eide.explorer.include.folder": "取消排除",
+    
+    "eide.source.show.disassembly": "查看反汇编",
+    "eide.source.run.cppcheck": "使用 Cppcheck 进行检查",
+    "eide.project.run.cppcheck": "使用 Cppcheck 检查项目",
 
     "eide.package.install": "安装芯片支持包",
     "eide.package.install.cmsis": "安装 CMSIS 头文件",
@@ -98,5 +102,7 @@
 
     "settings.openocd.install.folder": "OpenOCD.exe 可执行文件路径 [`example: D:\\OpenOCD\\bin\\openocd.exe`]",
     "settings.stlink.install.folder": "ST-LINK Utility: `ST-LINK_CLI.exe` 可执行文件路径",
-    "settings.stvp.path": "STVP: `STVP_CmdLine.exe` 可执行文件路径"
+    "settings.stvp.path": "STVP: `STVP_CmdLine.exe` 可执行文件路径",
+    
+    "settings.cppcheck.exec.path": "cppcheck.exe 可执行文件路径"
 }

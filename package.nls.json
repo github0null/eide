@@ -42,6 +42,10 @@
     "eide.explorer.rename.folder": "Rename",
     "eide.explorer.exclude.folder": "Exclude Folder",
     "eide.explorer.include.folder": "Include Folder",
+    
+    "eide.source.show.disassembly": "Show Disassembly",
+    "eide.source.run.cppcheck": "Cppcheck This File",
+    "eide.project.run.cppcheck": "Cppcheck Project",
 
     "eide.package.install": "Install Chip Support Package",
     "eide.package.install.cmsis": "Install CMSIS Header Files",
@@ -98,5 +102,7 @@
 
     "settings.openocd.install.folder": "OpenOCD.exe path [`example: D:\\OpenOCD\\bin\\openocd.exe`]",
     "settings.stlink.install.folder": "ST-LINK Utility: `ST-LINK_CLI.exe` path",
-    "settings.stvp.path": "STVP: `STVP_CmdLine.exe` path"
+    "settings.stvp.path": "STVP: `STVP_CmdLine.exe` path",
+
+    "settings.cppcheck.exec.path": "cppcheck.exe executable path"
 }

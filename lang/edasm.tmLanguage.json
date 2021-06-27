@@ -1,0 +1,110 @@
+{
+    "information_for_contributors": [
+        "eide gcc disassembly support"
+    ],
+    "version": "1.0.0",
+    "name": "edasm",
+    "scopeName": "source.dasm.gcc",
+    "patterns": [
+        {
+            "include": "#file_header"
+        },
+        {
+            "include": "#section_header"
+        },
+        {
+            "include": "#operators"
+        },
+        {
+            "include": "#number"
+        },
+        {
+            "include": "#comment"
+        },
+        {
+            "include": "#statement"
+        },
+        {
+            "include": "#string"
+        }
+    ],
+    "repository": {
+        "file_header": {
+            "match": "(.*):\\s+\\b(file format)\\b\\s+(.*)",
+            "captures": {
+                "1": {
+                    "name": "variable"
+                },
+                "2": {
+                    "name": "string"
+                },
+                "3": {
+                    "name": "entity.name.type"
+                }
+            }
+        },
+        "section_header": {
+            "match": "\\b(Disassembly of section)\\b\\s+(.*)",
+            "captures": {
+                "1": {
+                    "name": "keyword.control.import"
+                },
+                "2": {
+                    "name": "entity.name.type"
+                }
+            }
+        },
+        "operators": {
+            "match": "\\+",
+            "captures": {
+                "0": {
+                    "name": "keyword.operator"
+                }
+            }
+        },
+        "number": {
+            "match": "(?i)\\b([0-9a-f]+H|0x[0-9a-f]+)\\b",
+            "captures": {
+                "1": {
+                    "name": "constant.numeric"
+                }
+            }
+        },
+        "comment": {
+            "match": "(;.+)",
+            "captures": {
+                "1": {
+                    "name": "comment.line"
+                }
+            }
+        },
+        "statement": {
+            "match": "(?i)\\s*([0-9a-f]+:)\\s*([0-9a-f]+) ([0-9a-f]+)?\\s+([a-z\\.]+)([^;]*)",
+            "captures": {
+                "1": {
+                    "name": "string"
+                },
+                "2": {
+                    "name": "constant.numeric"
+                },
+                "3": {
+                    "name": "constant.numeric"
+                },
+                "4": {
+                    "name": "support.function.mnemonic.arithmetic"
+                },
+                "5": {
+                    "name": "storage.other.register"
+                }
+            }
+        },
+        "string": {
+            "match": "(\"[^\"]*\"|'[^']*')",
+            "captures": {
+                "1": {
+                    "name": "string"
+                }
+            }
+        }
+    }
+}
