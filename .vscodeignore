@@ -33,3 +33,4 @@ bin/builder/*.xml
 bin/builder/*.exe.config
 bin/tools
 docs
+res/html/builder_options/bootstrap
