@@ -15,7 +15,7 @@
 **注意：**
  - **仅支持 Windows 平台，Win7 及以上**
 
-![preview](./res/preview/show.png)
+![preview](https://docs.em-ide.com/preview.png)
 
 ***
 

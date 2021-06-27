@@ -17,6 +17,13 @@
 			"command": "vsce package",
 			"problemMatcher": [],
 			"group": "build"
+		},
+		{
+			"label": "publish app",
+			"type": "shell",
+			"command": "vsce publish",
+			"problemMatcher": [],
+			"group": "build"
 		}
 	]
 }
