@@ -4,6 +4,10 @@
 
 ***
 
+### [v2.9.1]
+- 修复：将内置 unify_builder 默认字符集更改为 GBK，修复中文乱码的错误
+***
+
 ### [v2.9.0]
 - **更改：使用内置的 Mono 运行时代替 .NetFramework 运行时**
 - 更改：eide 默认模板仓库转移至 https://github.com/github0null/eide-resource

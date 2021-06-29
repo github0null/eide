@@ -1,5 +1,5 @@
 {
-    "name": "GNU C Compiler for RISC-V",
+    "name": "RISC-V GCC",
     "id": "GCC",
     "toolPrefix": "riscv-none-embed-",
     "useUnixPath": true,

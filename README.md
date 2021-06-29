@@ -58,8 +58,6 @@
 
 [文档地址: https://docs.em-ide.com](https://docs.em-ide.com)
 
-[相关编译器及工具下载：https://cloud.github0null.io/s/R4SY](https://cloud.github0null.io/s/R4SY)
-
 ***
 
 ## 更新日志 📌

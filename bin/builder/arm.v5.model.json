@@ -1,5 +1,5 @@
 {
-    "name": "ARM C Compiler Version 5",
+    "name": "ARMCC Version 5",
     "id": "AC5",
     "global": {
         "microcontroller-cpu": {

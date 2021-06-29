@@ -1,5 +1,5 @@
 ﻿{
-    "name": "GNU C Compiler for ARM",
+    "name": "GNU Arm Embedded Toolchain",
     "id": "GCC",
     "toolPrefix": "arm-none-eabi-",
     "useUnixPath": true,

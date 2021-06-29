@@ -1,5 +1,5 @@
 {
-    "name": "Small Device C Compiler",
+    "name": "SDCC",
     "id": "SDCC",
     "global": {
         "device": {

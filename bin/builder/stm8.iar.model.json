@@ -1,5 +1,5 @@
 ﻿{
-    "name": "IAR C Compiler for STM8",
+    "name": "IAR C Compiler For STM8",
     "id": "IAR_STM8",
     "global": {
         "code-mode": {

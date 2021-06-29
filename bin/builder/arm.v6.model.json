@@ -1,5 +1,5 @@
 {
-    "name": "ARM C Compiler Version 6",
+    "name": "ARMCC Version 6",
     "id": "AC6",
     "useUnixPath": true,
     "global": {
