@@ -25,7 +25,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "A singlechip development environment for 8051/STM8/Cortex-M/RISC-V",
-    "version": "2.9.1",
+    "version": "2.10.0",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -86,6 +86,12 @@
             {
                 "title": "Embedded IDE",
                 "properties": {
+                    "EIDE.Cppcheck.ExecutablePath": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "%settings.cppcheck.exec.path%",
+                        "default": ""
+                    },
                     "EIDE.Builder.ThreadNumber": {
                         "type": "integer",
                         "scope": "resource",
@@ -339,6 +345,14 @@
             ]
         },
         "commands": [
+            {
+                "command": "_project.cppcheck.check_all",
+                "title": "%eide.project.run.cppcheck%"
+            },
+            {
+                "command": "_project.cppcheck.clear_all",
+                "title": "%eide.project.clear.cppcheck%"
+            },
             {
                 "command": "_project.source.show_disassembly",
                 "title": "%eide.source.show.disassembly%"
@@ -711,16 +725,23 @@
         "keybindings": [
             {
                 "command": "eide.project.uploadToDevice",
-                "key": "ctrl+alt+d"
+                "key": "ctrl+alt+d",
+                "when": "cl.eide.projectActived"
             },
             {
                 "command": "eide.project.rebuild",
-                "key": "ctrl+alt+f7"
+                "key": "ctrl+alt+f7",
+                "when": "cl.eide.projectActived"
             },
             {
                 "command": "eide.project.build",
                 "key": "f7",
-                "when": "!isInDiffEditor"
+                "when": "cl.eide.projectActived && !isInDiffEditor"
+            },
+            {
+                "command": "_project.cppcheck.check_all",
+                "key": "ctrl+alt+c",
+                "when": "cl.eide.projectActived"
             }
         ],
         "menus": {
@@ -782,6 +803,14 @@
                 }
             ],
             "view/item/context": [
+                {
+                    "command": "_project.cppcheck.check_all",
+                    "when": "viewItem == SOLUTION && view == Project"
+                },
+                {
+                    "command": "_project.cppcheck.clear_all",
+                    "when": "viewItem == SOLUTION && view == Project"
+                },
                 {
                     "command": "_project.source.filesystem_folder_add_file",
                     "when": "viewItem == FOLDER || viewItem == FOLDER_ROOT && view == Project"

@@ -23,11 +23,12 @@
 
 * 支持 8051，STM8，Cortex-M，RISC-V 项目
 * 支持导入 KEIL 项目 (仅支持 KEIL 5 及以上版本)
-* 支持安装标准的KEIL芯片支持包 (仅用于 Cortex-M 项目)
+* 支持安装标准的 KEIL 芯片支持包 (仅用于 Cortex-M 项目)
 * 提供丰富的项目模板方便快速开始项目
 * 一键编译、快速编译，支持多种主流的编译工具 (armcc, gcc-arm-none-eabi, keil_c51, sdcc ...)
 * 一键烧录到芯片，支持多种主流的烧录器 (jlink, stlink, openocd, pyocd ...)
 * 内置的串口监视器，一键打开串口
+* 支持使用 Cppcheck 对项目进行静态检查
 * 自动生成默认调试配置，为调试器插件 Cortex-debug / STM8-debug 生成默认配置
 
 ***

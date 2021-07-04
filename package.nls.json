@@ -46,6 +46,7 @@
     "eide.source.show.disassembly": "Show Disassembly",
     "eide.source.run.cppcheck": "Cppcheck This File",
     "eide.project.run.cppcheck": "Cppcheck Project",
+    "eide.project.clear.cppcheck": "Clear Cppcheck Diagnostic Informations",
 
     "eide.package.install": "Install Chip Support Package",
     "eide.package.install.cmsis": "Install CMSIS Header Files",

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- !!! Embedded IDE: Cppcheck config template !!! -->
+<project version="1">
+    <builddir>${cppcheck_build_folder}</builddir>
+    <platform>${platform}</platform>
+    <analyze-all-vs-configs>false</analyze-all-vs-configs>
+    <check-headers>true</check-headers>
+    <check-unused-templates>true</check-unused-templates>
+    <max-ctu-depth>2</max-ctu-depth>
+    <max-template-recursion>100</max-template-recursion>
+    <includedir>
+        <!-- !!! DON'T MODIFY THE FLOLLOWING CONTENTS !!! -->
+        ${include_list}
+    </includedir>
+    <defines>
+        <!-- example: <define name="DEF=123"/> -->
+        ${macro_list}
+    </defines>
+    <undefines>
+        <!-- example: <undefine>UNDEF</undefine> -->
+    </undefines>
+    <paths>
+        <!-- !!! DON'T MODIFY THE FLOLLOWING CONTENTS !!! -->
+        ${source_list}
+    </paths>
+    <libraries>
+        <!-- example: <library>gnu</library> -->
+        ${lib_list}
+    </libraries>
+</project>

@@ -46,6 +46,7 @@
     "eide.source.show.disassembly": "查看反汇编",
     "eide.source.run.cppcheck": "使用 Cppcheck 进行检查",
     "eide.project.run.cppcheck": "使用 Cppcheck 检查项目",
+    "eide.project.clear.cppcheck": "清除 Cppcheck 诊断信息",
 
     "eide.package.install": "安装芯片支持包",
     "eide.package.install.cmsis": "安装 CMSIS 头文件",
