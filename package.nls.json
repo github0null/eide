@@ -15,7 +15,7 @@
     "eide.project.save.all": "Save All Projects",
     "eide.project.active": "Active Project",
     "eide.project.close": "Close",
-    "eide.project.export.template": "Export EIDE Template",
+    "eide.project.export.template": "Export Eide Template",
     "eide.project.export.keil": "Export Keil Project",
     "eide.project.show.commands": "Show Compiler CommandLine",
     "eide.project.switch.target": "Switch Target",
@@ -24,6 +24,11 @@
     "eide.project.clean": "Clean",
     "eide.project.upload": "Upload Program To Device",
     "eide.project.gen.makefile": "Generate Makefile Template",
+
+    "eide.workspace.build": "Build All",
+    "eide.workspace.rebuild": "Rebuild All",
+    "eide.workspace.open.config": "Open Workspace Configuration",
+    "eide.workspace.make.template": "Export Workspace To Eide Template",
 
     "eide.operation.open.history": "History Records",
     "eide.operation.clear.history": "Clear History Records",

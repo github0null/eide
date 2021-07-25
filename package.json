@@ -25,7 +25,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "A singlechip development environment for 8051/STM8/Cortex-M/RISC-V",
-    "version": "2.10.2",
+    "version": "2.11.0",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -345,6 +345,34 @@
             ]
         },
         "commands": [
+            {
+                "command": "_cl.eide.workspace.build",
+                "title": "%eide.workspace.build%",
+                "icon": {
+                    "dark": "./res/icon/BuildSelection_16x.svg",
+                    "light": "./res/icon/BuildSelection_16x.svg"
+                }
+            },
+            {
+                "command": "_cl.eide.workspace.rebuild",
+                "title": "%eide.workspace.rebuild%",
+                "icon": {
+                    "dark": "./res/icon/BuildSolution_16x.svg",
+                    "light": "./res/icon/BuildSolution_16x.svg"
+                }
+            },
+            {
+                "command": "_cl.eide.workspace.open.config",
+                "title": "%eide.workspace.open.config%",
+                "icon": {
+                    "dark": "./res/icon/ConfigurationFile_16x.svg",
+                    "light": "./res/icon/ConfigurationFile_16x.svg"
+                }
+            },
+            {
+                "command": "_cl.eide.workspace.make.template",
+                "title": "%eide.workspace.make.template%"
+            },
             {
                 "command": "_project.cppcheck.check_all",
                 "title": "%eide.project.run.cppcheck%"
@@ -763,6 +791,21 @@
                 }
             ],
             "view/title": [
+                {
+                    "command": "_cl.eide.workspace.build",
+                    "group": "navigation",
+                    "when": "view == Project && cl.eide.isWorkspaceProject"
+                },
+                {
+                    "command": "_cl.eide.workspace.rebuild",
+                    "group": "navigation",
+                    "when": "view == Project && cl.eide.isWorkspaceProject"
+                },
+                {
+                    "command": "_cl.eide.workspace.open.config",
+                    "group": "navigation",
+                    "when": "view == Project && cl.eide.isWorkspaceProject"
+                },
                 {
                     "command": "_project.refresh",
                     "group": "navigation",

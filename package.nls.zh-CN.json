@@ -24,6 +24,11 @@
     "eide.project.clean": "清理",
     "eide.project.upload": "烧录",
     "eide.project.gen.makefile": "生成 Makefile 模板",
+    
+    "eide.workspace.build": "构建所有项目",
+    "eide.workspace.rebuild": "重新构建所有项目",
+    "eide.workspace.open.config": "打开工作区配置",
+    "eide.workspace.make.template": "导出工作区为 EIDE 模板",
 
     "eide.operation.open.history": "打开历史记录",
     "eide.operation.clear.history": "清除历史记录",

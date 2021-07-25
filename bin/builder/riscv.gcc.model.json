@@ -258,7 +258,8 @@
             ],
             "$extraCommand": [
                 {
-                    "name": "elf size",
+                    "name": "program size",
+                    "type": "gcc-size",
                     "toolPath": "bin\\${toolPrefix}size.exe",
                     "command": "--format=berkeley ${linkerOutput}"
                 }
