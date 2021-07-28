@@ -5,18 +5,26 @@
     "properties": {
         "device": {
             "markdownDescription": "`[可忽略]` STC 芯片系列（小写），默认 **auto** (STC device name)",
-            "type": "string",
-            "default": "auto",
-            "enum": [
-                "stc89",
-                "stc12a",
-                "stc12b",
-                "stc12",
-                "stc15a",
-                "stc15",
-                "stc8",
-                "usb15",
-                "auto"
+            "anyOf": [
+                {
+                    "type": "string",
+                    "default": "auto",
+                    "enum": [
+                        "stc89",
+                        "stc12a",
+                        "stc12b",
+                        "stc12",
+                        "stc15a",
+                        "stc15",
+                        "stc8",
+                        "usb15",
+                        "auto"
+                    ]
+                },
+                {
+                    "type": "string",
+                    "default": "auto"
+                }
             ]
         },
         "port": {
@@ -61,21 +69,30 @@
         },
         "oscFreq": {
             "markdownDescription": "`[可忽略]` 芯片时钟速度 KHz，**只用于 STC15 系列**",
-            "type": "string",
-            "default": "16000",
-            "enum": [
-                "8000",
-                "12000",
-                "16000",
-                "24000",
-                "32000"
-            ],
-            "enumDescriptions": [
-                "8MHz",
-                "12MHz",
-                "16MHz",
-                "24MHz",
-                "32MHz"
+            "anyOf": [
+                {
+                    "type": "string",
+                    "default": "16000",
+                    "enum": [
+                        "8000",
+                        "12000",
+                        "16000",
+                        "24000",
+                        "32000"
+                    ],
+                    "enumDescriptions": [
+                        "8MHz",
+                        "12MHz",
+                        "16MHz",
+                        "24MHz",
+                        "32MHz"
+                    ]
+                },
+                {
+                    "type": "string",
+                    "default": "16000",
+                    "pattern": "^\\d+$"
+                }
             ]
         },
         "option": {
@@ -283,20 +300,35 @@
                 },
                 "program_eeprom_split": {
                     "markdownDescription": "`[STC8A8 w/ 64 KB]` Select split between code flash and EEPROM flash (in 512 byte blocks)",
-                    "type": "string",
-                    "enum": [
-                        "512",
-                        "768",
-                        "1024",
-                        "1280",
-                        "1536",
-                        "1792",
-                        "2048",
-                        "4096",
-                        "8192",
-                        "16384",
-                        "32768",
-                        "65024"
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "enum": [
+                                "512",
+                                "1024",
+                                "2048",
+                                "3072",
+                                "4096",
+                                "5120",
+                                "6144",
+                                "7168",
+                                "8192",
+                                "9216",
+                                "10240",
+                                "11264",
+                                "12288",
+                                "13312",
+                                "14336",
+                                "15360",
+                                "16384",
+                                "65024"
+                            ]
+                        },
+                        {
+                            "type": "string",
+                            "default": "512",
+                            "pattern": "^\\d+$"
+                        }
                     ]
                 }
             }
