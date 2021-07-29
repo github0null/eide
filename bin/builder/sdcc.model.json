@@ -238,6 +238,9 @@
         },
         "linker": {
             "$path": "bin\\sdcc.exe",
+            "$libs": {
+                "body": "-L ${value}"
+            },
             "$invoke": {
                 "useFile": false,
                 "body": "${value}"
@@ -278,6 +281,9 @@
         },
         "s19": {
             "$path": "bin\\sdcc.exe",
+            "$libs": {
+                "body": "-L ${value}"
+            },
             "$invoke": {
                 "useFile": false,
                 "body": "${value}"
@@ -300,6 +306,9 @@
         },
         "elf": {
             "$path": "bin\\sdcc.exe",
+            "$libs": {
+                "body": "-L ${value}"
+            },
             "$invoke": {
                 "useFile": false,
                 "body": "${value}"
