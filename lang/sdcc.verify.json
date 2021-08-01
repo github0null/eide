@@ -302,7 +302,7 @@
                 },
                 "misc-controls": {
                     "markdownDescription": "Other Global Options",
-                    "description.zh-cn": "其他全局选项",
+                    "description.zh-cn": "编译器附加选项（全局）",
                     "$ref": "#/definitions/misc-controls"
                 }
             }
@@ -331,7 +331,7 @@
                 },
                 "misc-controls": {
                     "markdownDescription": "Other C Compiler Options",
-                    "description.zh-cn": "C 编译器附加参数",
+                    "description.zh-cn": "C 编译器附加选项",
                     "$ref": "#/definitions/misc-controls"
                 }
             }
@@ -343,7 +343,7 @@
             "properties": {
                 "misc-controls": {
                     "markdownDescription": "Other Assembler Options",
-                    "description.zh-cn": "汇编器附加参数",
+                    "description.zh-cn": "汇编器附加选项",
                     "$ref": "#/definitions/misc-controls"
                 }
             }
@@ -398,7 +398,7 @@
                 },
                 "misc-controls": {
                     "markdownDescription": "Other Linker Options",
-                    "description.zh-cn": "链接器附加参数",
+                    "description.zh-cn": "链接器附加选项",
                     "$ref": "#/definitions/misc-controls"
                 }
             }

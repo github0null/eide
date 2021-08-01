@@ -270,7 +270,7 @@
                 },
                 "C_FLAGS": {
                     "markdownDescription": "Other C Compiler Options",
-                    "description.zh-cn": "C 编译器附加参数",
+                    "description.zh-cn": "C 编译器附加选项",
                     "size": "huge",
                     "type": [
                         "string",
@@ -283,7 +283,7 @@
                 },
                 "CXX_FLAGS": {
                     "markdownDescription": "Other C++ Compiler Options",
-                    "description.zh-cn": "C++ 编译器附加参数",
+                    "description.zh-cn": "C++ 编译器附加选项",
                     "size": "huge",
                     "type": [
                         "string",
@@ -352,7 +352,7 @@
                 },
                 "misc-controls": {
                     "markdownDescription": "Other Assembler Options",
-                    "description.zh-cn": "汇编器附加参数",
+                    "description.zh-cn": "汇编器附加选项",
                     "size": "huge",
                     "type": [
                         "string",
@@ -410,7 +410,7 @@
                 },
                 "misc-controls": {
                     "markdownDescription": "Other Linker Options",
-                    "description.zh-cn": "链接器附加参数",
+                    "description.zh-cn": "链接器附加选项",
                     "size": "huge",
                     "type": [
                         "string",

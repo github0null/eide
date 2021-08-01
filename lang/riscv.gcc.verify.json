@@ -162,7 +162,7 @@
                 },
                 "misc-control": {
                     "markdownDescription": "Other Global Options",
-                    "description.zh-cn": "其他全局选项",
+                    "description.zh-cn": "编译器附加选项（全局）",
                     "$ref": "#/definitions/FLAGS",
                     "default": ""
                 }
@@ -248,13 +248,13 @@
                 },
                 "C_FLAGS": {
                     "markdownDescription": "Other C Compiler Options",
-                    "description.zh-cn": "C 编译器附加参数",
+                    "description.zh-cn": "C 编译器附加选项",
                     "$ref": "#/definitions/FLAGS",
                     "default": ""
                 },
                 "CXX_FLAGS": {
                     "markdownDescription": "Other C++ Compiler Options",
-                    "description.zh-cn": "C++ 编译器附加参数",
+                    "description.zh-cn": "C++ 编译器附加选项",
                     "$ref": "#/definitions/FLAGS",
                     "default": ""
                 }
@@ -267,7 +267,7 @@
             "properties": {
                 "ASM_FLAGS": {
                     "markdownDescription": "Other Assembler Options",
-                    "description.zh-cn": "汇编器附加参数",
+                    "description.zh-cn": "汇编器附加选项",
                     "$ref": "#/definitions/FLAGS",
                     "default": ""
                 }
@@ -294,7 +294,7 @@
                 },
                 "LD_FLAGS": {
                     "readable_name": "Other Linker Options",
-                    "readable_name.zh-cn": "链接器附加参数",
+                    "readable_name.zh-cn": "链接器附加选项",
                     "markdownDescription": "Use \"-Wl[,option]...\" pass options to the linker",
                     "description.zh-cn": "使用 \"-Wl[,option]...\" 传递链接器选项",
                     "$ref": "#/definitions/FLAGS",
