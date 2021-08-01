@@ -11,6 +11,7 @@ vsc-extension-quickstart.md
 /doc
 pack.js
 test.js
+*.js.map
 **/data/config.json
 **/data/sln.record
 *.cpuprofile
@@ -18,6 +19,8 @@ package-lock.json
 # internal template projects
 res/template/projects
 # bin
+bin
 bin/builder/*.xml
 bin/builder/*.exe.config
 bin/tools/*
+bin_bk

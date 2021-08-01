@@ -4,8 +4,15 @@
 
 ***
 
+### [v2.11.1]
+- 更改：将插件改为在线安装，缩小 vsix 安装包大小，离线版下载位置：https://github.com/github0null/eide/releases
+- 优化：优化**构建器选项** 的 UI，适应 vscode 语言配置
+- 优化：安装 CMSIS Pack 的组件时对文件进行过滤
+- 优化：新增插件设置，允许禁用相关的右键上下文菜单
+***
+
 ### [v2.11.0]
-- 新增：支持多项目工作区的构建（具体细节见文档：https://docs.em-ide.com/#/zh-cn/multi_prj_workspace）
+- 新增：支持多项目工作区的构建，具体细节见文档：https://docs.em-ide.com/#/zh-cn/multi_prj_workspace
 - 新增：支持 GCC 可执行文件的大小显示和占用比（要显示占用比，须在项目环境变量中设置芯片大小信息）
 - 优化：优化构建输出显示
 - 更改：默认 eide 模板后缀改为 `ept`, 多项目工作区模板后缀为 `ewt`

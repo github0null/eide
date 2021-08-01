@@ -75,9 +75,11 @@
         "webpack-cli": "^3.3.11"
     },
     "dependencies": {
+        "@types/unzipper": "^0.10.4",
         "iconv-lite": "^0.5.0",
         "ini": "^2.0.0",
         "jsonc": "^2.0.0",
+        "unzipper": "^0.10.11",
         "x2js": "^3.3.1",
         "yaml": "^1.10.2"
     },
@@ -86,11 +88,23 @@
             {
                 "title": "Embedded IDE",
                 "properties": {
+                    "EIDE.Option.DisableEditorContextMenu": {
+                        "type": "boolean",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.option.disable.editor_context.menu%",
+                        "default": false
+                    },
+                    "EIDE.Option.DisableExplorerContextMenu": {
+                        "type": "boolean",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.option.disable.explorer_context.menu%",
+                        "default": false
+                    },
                     "EIDE.Cppcheck.ExecutablePath": {
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "%settings.cppcheck.exec.path%",
-                        "default": ""
+                        "default": "${userRoot}/.eide/tools/cppcheck/cppcheck.exe"
                     },
                     "EIDE.Builder.ThreadNumber": {
                         "type": "integer",
@@ -246,7 +260,7 @@
                         "type": "string",
                         "scope": "resource",
                         "markdownDescription": "%settings.arm.gcc.install.folder%",
-                        "default": ""
+                        "default": "${userRoot}/.eide/tools/gcc_arm"
                     },
                     "EIDE.ARM.INI.Path": {
                         "type": "string",
@@ -258,7 +272,7 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "%settings.jlink.install.folder%",
-                        "default": ""
+                        "default": "${userRoot}/.eide/tools/jlink"
                     },
                     "EIDE.JLink.DeviceXmlPath": {
                         "type": "string",
@@ -270,13 +284,13 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "%settings.openocd.install.folder%",
-                        "default": ""
+                        "default": "${userRoot}/.eide/tools/openocd/bin/openocd.exe"
                     },
                     "EIDE.STLink.ExePath": {
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "%settings.stlink.install.folder%",
-                        "default": ""
+                        "default": "${userRoot}/.eide/tools/stlink/ST-LINK_CLI.exe"
                     },
                     "EIDE.ARM.Option.AutoGenerateRTE_Components": {
                         "type": "boolean",
@@ -294,7 +308,7 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "%settings.stvp.path%",
-                        "default": ""
+                        "default": "${userRoot}/.eide/tools/stvp/STVP_CmdLine.exe"
                     },
                     "EIDE.C51.INI.Path": {
                         "type": "string",
@@ -312,7 +326,7 @@
                         "type": "string",
                         "scope": "resource",
                         "markdownDescription": "%settings.riscv.gcc.install.folder%",
-                        "default": ""
+                        "default": "${userRoot}/.eide/tools/gcc_riscv"
                     },
                     "EIDE.RISCV.ToolPrefix": {
                         "type": "string",
@@ -773,23 +787,6 @@
             }
         ],
         "menus": {
-            "editor/title": [
-                {
-                    "when": "cl.eide.projectActived && config.EIDE.Option.ShowToolbarInEditerTitle",
-                    "command": "eide.project.build",
-                    "group": "navigation"
-                },
-                {
-                    "when": "cl.eide.projectActived && config.EIDE.Option.ShowToolbarInEditerTitle",
-                    "command": "eide.project.clean",
-                    "group": "navigation"
-                },
-                {
-                    "when": "cl.eide.projectActived && config.EIDE.Option.ShowToolbarInEditerTitle",
-                    "command": "eide.project.uploadToDevice",
-                    "group": "navigation"
-                }
-            ],
             "view/title": [
                 {
                     "command": "_cl.eide.workspace.build",
@@ -826,23 +823,40 @@
                     "when": "view == Project"
                 }
             ],
-            "editor/context": [
+            "editor/title": [
                 {
-                    "command": "eide.c51ToSdcc",
-                    "group": "commands",
-                    "when": "resourceLangId == c || resourceLangId == cpp && cl.eide.projectActived"
+                    "when": "cl.eide.projectActived && config.EIDE.Option.ShowToolbarInEditerTitle",
+                    "command": "eide.project.build",
+                    "group": "navigation"
                 },
+                {
+                    "when": "cl.eide.projectActived && config.EIDE.Option.ShowToolbarInEditerTitle",
+                    "command": "eide.project.clean",
+                    "group": "navigation"
+                },
+                {
+                    "when": "cl.eide.projectActived && config.EIDE.Option.ShowToolbarInEditerTitle",
+                    "command": "eide.project.uploadToDevice",
+                    "group": "navigation"
+                }
+            ],
+            "editor/context": [
                 {
                     "command": "_project.source.show_disassembly",
                     "group": "commands",
-                    "when": "resourceLangId == c || resourceLangId == cpp && cl.eide.projectActived"
+                    "when": "resourceLangId =~ /^c$|^cpp$/ && cl.eide.projectActived && !config.EIDE.Option.DisableEditorContextMenu"
                 }
             ],
             "explorer/context": [
                 {
+                    "command": "eide.c51ToSdcc",
+                    "group": "commands",
+                    "when": "resourceLangId =~ /^c$|^cpp$/ && cl.eide.projectActived && !config.EIDE.Option.DisableExplorerContextMenu"
+                },
+                {
                     "command": "_project.source.show_disassembly",
                     "group": "commands",
-                    "when": "resourceLangId == c || resourceLangId == cpp && cl.eide.projectActived"
+                    "when": "resourceLangId =~ /^c$|^cpp$/ && cl.eide.projectActived && !config.EIDE.Option.DisableExplorerContextMenu"
                 }
             ],
             "view/item/context": [

@@ -4,7 +4,8 @@
     "type": "object",
     "definitions": {
         "misc-controls": {
-            "markdownDescription": "自定义选项 (custom options)",
+            "markdownDescription": "Other Options",
+            "description.zh-cn": "其他选项",
             "size": "huge",
             "type": [
                 "string",
@@ -18,7 +19,8 @@
     },
     "properties": {
         "beforeBuildTasks": {
-            "markdownDescription": "编译前要执行的命令列表 (List of commands to execute before compiling)",
+            "markdownDescription": "List of commands to execute before build",
+            "description.zh-cn": "构建前要执行的命令列表",
             "type": "array",
             "default": [
                 {
@@ -34,15 +36,18 @@
                 ],
                 "properties": {
                     "name": {
-                        "markdownDescription": "用于显示的可读名称 (A readable name for display)",
+                        "markdownDescription": "A readable name for display",
+                        "description.zh-cn": "用于显示的可读名称",
                         "type": "string"
                     },
                     "command": {
-                        "markdownDescription": "CMD 命令行 (CMD command line)",
+                        "markdownDescription": "Shell command line",
+                        "description.zh-cn": "Shell 命令行",
                         "type": "string"
                     },
                     "disable": {
-                        "markdownDescription": "禁用此命令 (disable this command)",
+                        "markdownDescription": "Disable this command",
+                        "description.zh-cn": "禁用此命令",
                         "type": "boolean",
                         "enum": [
                             true,
@@ -50,18 +55,18 @@
                         ]
                     },
                     "abortAfterFailed": {
-                        "markdownDescription": "是否在此命令失败时，跳过后续的命令 (Whether to skip subsequent commands if this command fails)",
+                        "markdownDescription": "Whether to skip subsequent commands if this command failed",
+                        "description.zh-cn": "是否在此命令失败时，跳过后续的命令",
                         "type": "boolean",
-                        "default": true,
                         "enum": [
                             true,
                             false
                         ]
                     },
                     "stopBuildAfterFailed": {
-                        "markdownDescription": "是否在此命令失败时，直接停止编译 (Whether to stop compiling directly when this command fails)",
+                        "markdownDescription": "Whether to stop compiling directly when this command failed",
+                        "description.zh-cn": "是否在此命令失败时，直接停止编译",
                         "type": "boolean",
-                        "default": true,
                         "enum": [
                             true,
                             false
@@ -71,7 +76,8 @@
             }
         },
         "afterBuildTasks": {
-            "markdownDescription": "编译结束后要执行的命令列表 (List of commands to execute after compilation)",
+            "markdownDescription": "List of commands to execute after build",
+            "description.zh-cn": "构建结束后要执行的命令列表",
             "type": "array",
             "default": [
                 {
@@ -87,15 +93,18 @@
                 ],
                 "properties": {
                     "name": {
-                        "markdownDescription": "用于显示的可读名称 (A readable name for display)",
+                        "markdownDescription": "A readable name for display",
+                        "description.zh-cn": "用于显示的可读名称",
                         "type": "string"
                     },
                     "command": {
-                        "markdownDescription": "CMD 命令行 (CMD command line)",
+                        "markdownDescription": "Shell command line",
+                        "description.zh-cn": "Shell 命令行",
                         "type": "string"
                     },
                     "disable": {
-                        "markdownDescription": "禁用此命令 (disable this command)",
+                        "markdownDescription": "Disable this command",
+                        "description.zh-cn": "禁用此命令",
                         "type": "boolean",
                         "enum": [
                             true,
@@ -103,9 +112,9 @@
                         ]
                     },
                     "abortAfterFailed": {
-                        "markdownDescription": "是否在此命令失败时，跳过后续的命令 (Whether to skip subsequent commands if this command fails)",
+                        "markdownDescription": "Whether to skip subsequent commands if this command failed",
+                        "description.zh-cn": "是否在此命令失败时，跳过后续的命令",
                         "type": "boolean",
-                        "default": true,
                         "enum": [
                             true,
                             false
@@ -115,7 +124,8 @@
             }
         },
         "global": {
-            "markdownDescription": "全局选项 (Global options)",
+            "markdownDescription": "Global Options",
+            "description.zh-cn": "全局选项",
             "type": "object",
             "properties": {
                 "data-mode": {
@@ -139,16 +149,13 @@
                     ]
                 },
                 "output-debug-info": {
-                    "markdownDescription": "输出调试信息 (Output debug information)",
+                    "markdownDescription": "Output debug information",
+                    "description.zh-cn": "输出调试信息",
                     "type": "string",
                     "default": "disable",
                     "enum": [
                         "disable",
                         "enable"
-                    ],
-                    "enumDescriptions": [
-                        "禁用 (disable)",
-                        "开启 (enable)"
                     ]
                 },
                 "printf-formatter": {
@@ -215,11 +222,13 @@
             }
         },
         "c/cpp-compiler": {
-            "markdownDescription": "c/c++ 编译器选项 (C/C++ Compiler options)",
+            "markdownDescription": "C/C++ Compiler Options",
+            "description.zh-cn": "C/C++ 编译器选项",
             "type": "object",
             "properties": {
                 "language-c": {
-                    "markdownDescription": "要使用的 C 标准 (C standard)",
+                    "markdownDescription": "C Standard",
+                    "description.zh-cn": "C 标准",
                     "type": "string",
                     "default": "c99",
                     "enum": [
@@ -228,7 +237,8 @@
                     ]
                 },
                 "language-cpp": {
-                    "markdownDescription": "要使用的 C++ 标准 (C++ standard)",
+                    "markdownDescription": "C++ Standard",
+                    "description.zh-cn": "C++ 标准",
                     "type": "string",
                     "default": "Extended-EC++",
                     "enum": [
@@ -237,7 +247,8 @@
                     ]
                 },
                 "optimization": {
-                    "markdownDescription": "代码优化级别 (optimization level)",
+                    "markdownDescription": "Optimization Level",
+                    "description.zh-cn": "代码优化级别",
                     "type": "string",
                     "default": "no",
                     "enum": [
@@ -250,13 +261,13 @@
                         "speed-no-size-constraints"
                     ],
                     "enumDescriptions": [
-                        "不优化 (not optimize)",
-                        "低 (low)",
-                        "中 (medium)",
-                        "高, 平衡 (high, balanced)",
-                        "高, 侧重于大小 (high, size)",
-                        "高, 侧重于速度 (high, speed)",
-                        "高, 侧重于速度, 不限制大小 (high, speed, no size constraints)"
+                        "not optimize",
+                        "low",
+                        "medium",
+                        "high, balanced",
+                        "high, size",
+                        "high, speed",
+                        "high, speed, no size constraints"
                     ]
                 },
                 "runtime-lib": {
@@ -351,7 +362,8 @@
                     ]
                 },
                 "turn-Warning-into-errors": {
-                    "markdownDescription": "将警告转化为错误 (Turn warnings into errors)",
+                    "markdownDescription": "Turn warnings into errors",
+                    "description.zh-cn": "将警告转化为错误",
                     "type": "boolean",
                     "enum": [
                         true,
@@ -359,13 +371,15 @@
                     ]
                 },
                 "misc-controls": {
-                    "markdownDescription": "其他选项 (Other Options)",
+                    "markdownDescription": "Other C/C++ Compiler Options",
+                    "description.zh-cn": "C/C++ 编译器附加参数",
                     "$ref": "#/definitions/misc-controls"
                 }
             }
         },
         "asm-compiler": {
-            "markdownDescription": "汇编器选项 (Assembler options)",
+            "markdownDescription": "Assembler Options",
+            "description.zh-cn": "汇编器选项",
             "type": "object",
             "properties": {
                 "case-sensitive-user-symbols": {
@@ -401,13 +415,15 @@
                     ]
                 },
                 "misc-controls": {
-                    "markdownDescription": "其他选项 (Other Options)",
+                    "markdownDescription": "Other Assembler Options",
+                    "description.zh-cn": "汇编器附加参数",
                     "$ref": "#/definitions/misc-controls"
                 }
             }
         },
         "linker": {
-            "markdownDescription": "链接器选项 (Linker options)",
+            "markdownDescription": "Linker Options",
+            "description.zh-cn": "链接器选项",
             "type": "object",
             "required": [
                 "linker-config"
@@ -421,14 +437,15 @@
                 "output-format": {
                     "type": "string",
                     "default": "elf",
-                    "description": "输出格式 (output format)",
+                    "description": "Output Format",
+                    "description.zh-cn": "输出格式",
                     "enum": [
                         "elf",
                         "lib"
                     ],
                     "enumDescriptions": [
-                        "可执行文件 (executable file)",
-                        "静态库 (static library)"
+                        "executable file",
+                        "static library"
                     ]
                 },
                 "auto-search-runtime-lib": {
@@ -467,18 +484,23 @@
                     }
                 },
                 "program-entry": {
-                    "description": "程序入口 (program entry)",
+                    "readable_name": "Program Entry",
+                    "readable_name.zh-cn": "程序入口",
+                    "description": "Program entry，default: __iar_program_start",
+                    "description.zh-cn": "程序入口，默认：__iar_program_start",
                     "type": "string",
                     "default": "__iar_program_start"
                 },
                 "linker-config": {
-                    "readable_name": "链接脚本路径 (linker config file path)",
+                    "readable_name": "Linker config file path",
+                    "readable_name.zh-cn": "链接脚本路径",
                     "description": "linker config file path.\n Example: \"lnkstm8xxx.icf\"\n or \"./lnkstm8xxx.icf\" (relative by workspace folder)\n or \"${ToolDir}/stm8/config/lnkstm8xxx.icf\"",
                     "type": "string",
                     "default": "lnkstm8s103f3.icf"
                 },
                 "misc-controls": {
-                    "markdownDescription": "其他选项 (Other Options)",
+                    "markdownDescription": "Other Linker Options",
+                    "description.zh-cn": "链接器附加参数",
                     "$ref": "#/definitions/misc-controls"
                 }
             }

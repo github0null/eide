@@ -110,5 +110,8 @@
     "settings.stlink.install.folder": "ST-LINK Utility: `ST-LINK_CLI.exe` path",
     "settings.stvp.path": "STVP: `STVP_CmdLine.exe` path",
 
-    "settings.cppcheck.exec.path": "cppcheck.exe executable path"
+    "settings.cppcheck.exec.path": "cppcheck.exe executable path",
+
+    "settings.option.disable.editor_context.menu": "Disable editor context menu",
+    "settings.option.disable.explorer_context.menu": "Disable explorer context menu"
 }

@@ -4,7 +4,8 @@
     "type": "object",
     "definitions": {
         "misc-controls": {
-            "markdownDescription": "自定义选项 (custom options)",
+            "markdownDescription": "Other Options",
+            "description.zh-cn": "其他选项",
             "size": "huge",
             "type": [
                 "string",
@@ -18,7 +19,8 @@
     },
     "properties": {
         "beforeBuildTasks": {
-            "markdownDescription": "编译前要执行的命令列表 (List of commands to execute before compiling)",
+            "markdownDescription": "List of commands to execute before build",
+            "description.zh-cn": "构建前要执行的命令列表",
             "type": "array",
             "default": [
                 {
@@ -34,15 +36,18 @@
                 ],
                 "properties": {
                     "name": {
-                        "markdownDescription": "用于显示的可读名称 (A readable name for display)",
+                        "markdownDescription": "A readable name for display",
+                        "description.zh-cn": "用于显示的可读名称",
                         "type": "string"
                     },
                     "command": {
-                        "markdownDescription": "CMD 命令行 (CMD command line)",
+                        "markdownDescription": "Shell command line",
+                        "description.zh-cn": "Shell 命令行",
                         "type": "string"
                     },
                     "disable": {
-                        "markdownDescription": "禁用此命令 (disable this command)",
+                        "markdownDescription": "Disable this command",
+                        "description.zh-cn": "禁用此命令",
                         "type": "boolean",
                         "enum": [
                             true,
@@ -50,18 +55,18 @@
                         ]
                     },
                     "abortAfterFailed": {
-                        "markdownDescription": "是否在此命令失败时，跳过后续的命令 (Whether to skip subsequent commands if this command fails)",
+                        "markdownDescription": "Whether to skip subsequent commands if this command failed",
+                        "description.zh-cn": "是否在此命令失败时，跳过后续的命令",
                         "type": "boolean",
-                        "default": true,
                         "enum": [
                             true,
                             false
                         ]
                     },
                     "stopBuildAfterFailed": {
-                        "markdownDescription": "是否在此命令失败时，直接停止编译 (Whether to stop compiling directly when this command fails)",
+                        "markdownDescription": "Whether to stop compiling directly when this command failed",
+                        "description.zh-cn": "是否在此命令失败时，直接停止编译",
                         "type": "boolean",
-                        "default": true,
                         "enum": [
                             true,
                             false
@@ -71,7 +76,8 @@
             }
         },
         "afterBuildTasks": {
-            "markdownDescription": "编译结束后要执行的命令列表 (List of commands to execute after compilation)",
+            "markdownDescription": "List of commands to execute after build",
+            "description.zh-cn": "构建结束后要执行的命令列表",
             "type": "array",
             "default": [
                 {
@@ -87,15 +93,18 @@
                 ],
                 "properties": {
                     "name": {
-                        "markdownDescription": "用于显示的可读名称 (A readable name for display)",
+                        "markdownDescription": "A readable name for display",
+                        "description.zh-cn": "用于显示的可读名称",
                         "type": "string"
                     },
                     "command": {
-                        "markdownDescription": "CMD 命令行 (CMD command line)",
+                        "markdownDescription": "Shell command line",
+                        "description.zh-cn": "Shell 命令行",
                         "type": "string"
                     },
                     "disable": {
-                        "markdownDescription": "禁用此命令 (disable this command)",
+                        "markdownDescription": "Disable this command",
+                        "description.zh-cn": "禁用此命令",
                         "type": "boolean",
                         "enum": [
                             true,
@@ -103,9 +112,9 @@
                         ]
                     },
                     "abortAfterFailed": {
-                        "markdownDescription": "是否在此命令失败时，跳过后续的命令 (Whether to skip subsequent commands if this command fails)",
+                        "markdownDescription": "Whether to skip subsequent commands if this command failed",
+                        "description.zh-cn": "是否在此命令失败时，跳过后续的命令",
                         "type": "boolean",
-                        "default": true,
                         "enum": [
                             true,
                             false
@@ -115,11 +124,13 @@
             }
         },
         "global": {
-            "markdownDescription": "全局选项 (Global Options)",
+            "markdownDescription": "Global Options",
+            "description.zh-cn": "全局选项",
             "type": "object",
             "properties": {
                 "device": {
-                    "markdownDescription": "芯片类型 (Processor name)",
+                    "markdownDescription": "Processor Type",
+                    "description.zh-cn": "芯片类型",
                     "type": "string",
                     "default": "mcs51",
                     "enum": [
@@ -165,7 +176,8 @@
                 },
                 "optimize-type": {
                     "type": "string",
-                    "markdownDescription": "优化类型 (optimization type)",
+                    "markdownDescription": "Optimization Level",
+                    "description.zh-cn": "代码优化级别",
                     "default": "balanced",
                     "enum": [
                         "speed",
@@ -289,17 +301,20 @@
                     ]
                 },
                 "misc-controls": {
-                    "markdownDescription": "其他选项 (Other Options)",
+                    "markdownDescription": "Other Global Options",
+                    "description.zh-cn": "其他全局选项",
                     "$ref": "#/definitions/misc-controls"
                 }
             }
         },
         "c/cpp-compiler": {
-            "markdownDescription": "C 编译器选项 (C compiler options)",
+            "markdownDescription": "C/C++ Compiler Options",
+            "description.zh-cn": "C/C++ 编译器选项",
             "type": "object",
             "properties": {
                 "language-c": {
-                    "markdownDescription": "C 标准",
+                    "markdownDescription": "C Standard",
+                    "description.zh-cn": "C 标准",
                     "type": "string",
                     "default": "c99",
                     "enum": [
@@ -315,29 +330,34 @@
                     ]
                 },
                 "misc-controls": {
-                    "markdownDescription": "其他选项 (Other Options)",
+                    "markdownDescription": "Other C Compiler Options",
+                    "description.zh-cn": "C 编译器附加参数",
                     "$ref": "#/definitions/misc-controls"
                 }
             }
         },
         "asm-compiler": {
-            "markdownDescription": "汇编器选项 (Assember options)",
+            "markdownDescription": "Assembler Options",
+            "description.zh-cn": "汇编器选项",
             "type": "object",
             "properties": {
                 "misc-controls": {
-                    "markdownDescription": "其他选项 (Other Options)",
+                    "markdownDescription": "Other Assembler Options",
+                    "description.zh-cn": "汇编器附加参数",
                     "$ref": "#/definitions/misc-controls"
                 }
             }
         },
         "linker": {
-            "markdownDescription": "链接器选项 (Linker options)",
+            "markdownDescription": "Linker Options",
+            "description.zh-cn": "链接器选项",
             "type": "object",
             "properties": {
                 "output-format": {
                     "type": "string",
                     "default": "hex",
-                    "description": "输出格式 (output format)",
+                    "description": "Output Format",
+                    "description.zh-cn": "输出格式",
                     "enum": [
                         "hex",
                         "s19",
@@ -348,31 +368,37 @@
                         "Intel HEX Format",
                         "Motorola S19 Format",
                         "ELF Format (Only for STM8/HC08/S08)",
-                        "静态库 (static library)"
+                        "Static Library"
                     ]
                 },
                 "$disableOutputTask": {
                     "type": "boolean",
-                    "markdownDescription": "禁用输出任务 (disable output task)",
+                    "markdownDescription": "Not Output Executable File",
+                    "description.zh-cn": "不生成可执行文件",
                     "enum": [
                         true,
                         false
                     ]
                 },
                 "$objectSuffix": {
-                    "readable_name": "obj 文件后缀 (object file suffix)",
-                    "markdownDescription": "obj 文件后缀, 默认 '.rel' (object file suffix, default: '.rel')",
+                    "readable_name": "Object file suffix",
+                    "readable_name.zh-cn": "obj 文件后缀",
+                    "markdownDescription": "Object file suffix, default: '.rel'",
+                    "description.zh-cn": "obj 文件后缀, 默认：'.rel'",
                     "type": "string",
                     "default": ".rel"
                 },
                 "$mainFileName": {
-                    "readable_name": "含有 main() 的源文件名 (source filename containing 'main()')",
-                    "markdownDescription": "含有 main() 的源文件名 (Source file name with \"main()\" function)",
+                    "readable_name": "Source filename containing 'main()'",
+                    "readable_name.zh-cn": "含有 main() 函数的源文件名",
+                    "markdownDescription": "Source filename containing 'main()', default: 'main'",
+                    "description.zh-cn": "含有 main() 函数的源文件名，默认：'main'",
                     "type": "string",
                     "default": "main"
                 },
                 "misc-controls": {
-                    "markdownDescription": "其他选项 (Other Options)",
+                    "markdownDescription": "Other Linker Options",
+                    "description.zh-cn": "链接器附加参数",
                     "$ref": "#/definitions/misc-controls"
                 }
             }

@@ -110,5 +110,8 @@
     "settings.stlink.install.folder": "ST-LINK Utility: `ST-LINK_CLI.exe` 可执行文件路径",
     "settings.stvp.path": "STVP: `STVP_CmdLine.exe` 可执行文件路径",
     
-    "settings.cppcheck.exec.path": "cppcheck.exe 可执行文件路径"
+    "settings.cppcheck.exec.path": "cppcheck.exe 可执行文件路径",
+    
+    "settings.option.disable.editor_context.menu": "禁用编辑器上下文菜单",
+    "settings.option.disable.explorer_context.menu": "禁用资源浏览器上下文菜单"
 }

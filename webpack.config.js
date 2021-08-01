@@ -20,7 +20,8 @@ const config = {
         iconv_lite: 'iconv-lite',
         jsonc: 'jsonc',
         ini: 'ini',
-        yaml: 'yaml'
+        yaml: 'yaml',
+        unzipper: 'unzipper'
     },
     resolve: {
         // support reading TypeScript and JavaScript files, 📖 -> https://github.com/TypeStrong/ts-loader
