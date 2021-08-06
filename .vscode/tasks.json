@@ -26,9 +26,32 @@
 			"group": "build"
 		},
 		{
-			"label": "clean bin folder",
+			"label": "prepack binaries",
 			"type": "shell",
-			"command": "rm ./bin/builder/* -Include *.xml,*.exe.config -Verbose -Force",
+			"command": [
+				"rm ./bin/builder/* -Include *.xml,*.exe.config -Verbose -Force;",
+				"rm D:\\Code-Project\\TypeScript\\eide-templates\\binaries\\bin.zip -Verbose -Force;"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "pack binaries",
+			"type": "shell",
+			"command": "7za a -r -y -ssw -tzip -mx9 \"%OUT_NAME%\" .\\bin\\*",
+			"options": {
+				"shell": {
+					"executable": "cmd.exe",
+					"args": [
+						"/C"
+					]
+				},
+				"env": {
+					"OUT_NAME": "D:\\Code-Project\\TypeScript\\eide-templates\\binaries\\bin.zip"
+				}
+			},
+			"dependsOn": [
+				"prepack binaries"
+			],
 			"problemMatcher": [],
 			"group": "build"
 		}
