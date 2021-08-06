@@ -113,5 +113,14 @@
     "settings.cppcheck.exec.path": "cppcheck.exe executable path",
 
     "settings.option.disable.editor_context.menu": "Disable editor context menu",
-    "settings.option.disable.explorer_context.menu": "Disable explorer context menu"
+    "settings.option.disable.explorer_context.menu": "Disable explorer context menu",
+
+    "string.eide.startup.walkthroughs": "Embedded IDE Startup",
+    "string.eide.startup.walkthroughs.detail": "We'll show you how to get started with Embedded IDE.",
+    "string.eide.setup.toolchain": "Setup Toolchain",
+    "string.eide.setup.toolchain.detail": "Before you start, we need to setup the path of the toolchain(compiler).\n[Setup Toolchain](command:eide.operation.install_toolchain)",
+    "string.eide.start_project": "Start Your Project",
+    "string.eide.start_project.detail": "Now, We can create a project !\n[New Project](command:eide.operation.new_project)\nor import a MDK project !\n[Import Keil Project](command:eide.operation.import_project)",
+    "string.eide.open_docs": "Learn More",
+    "string.eide.open_docs.detail": "Click the link will open the manual that may help you learn more about usage.\n[Embedded IDE Document](https://docs.em-ide.com/)"
 }

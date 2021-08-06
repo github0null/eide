@@ -266,6 +266,16 @@
             "description.zh-cn": "汇编器选项",
             "type": "object",
             "properties": {
+                "defines": {
+                    "readable_name": "Macro Defines",
+                    "readable_name.zh-cn": "宏定义",
+                    "markdownDescription": "Macro Defines",
+                    "description.zh-cn": "宏定义",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "$use": {
                     "markdownDescription": "Assember Type",
                     "description.zh-cn": "汇编器类型",

@@ -113,5 +113,14 @@
     "settings.cppcheck.exec.path": "cppcheck.exe 可执行文件路径",
     
     "settings.option.disable.editor_context.menu": "禁用编辑器上下文菜单",
-    "settings.option.disable.explorer_context.menu": "禁用资源浏览器上下文菜单"
+    "settings.option.disable.explorer_context.menu": "禁用资源浏览器上下文菜单",
+
+    "string.eide.startup.walkthroughs": "Embedded IDE 演示",
+    "string.eide.startup.walkthroughs.detail": "我们将向您展示如何开始使用 Embedded IDE 。",
+    "string.eide.setup.toolchain": "设置编译器路径",
+    "string.eide.setup.toolchain.detail": "在开始之前，我们需要设置工具链(编译器)的路径。\n[设置工具链](command:eide.operation.install_toolchain)",
+    "string.eide.start_project": "开始你的项目",
+    "string.eide.start_project.detail": "现在，我们可以创建一个项目 ！\n[New Project](command:eide.operation.new_project)\n或者导入一个 MDK 项目 ！\n[Import Keil Project](command:eide.operation.import_project)",
+    "string.eide.open_docs": "了解更多",
+    "string.eide.open_docs.detail": "点击链接可以打开文档，也许能帮您了解到更多的用法。\n[Embedded IDE Document](https://docs.em-ide.com/)"
 }

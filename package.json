@@ -30,6 +30,7 @@
         "vscode": "^1.38.0"
     },
     "categories": [
+        "Extension Packs",
         "Programming Languages",
         "Other",
         "Snippets"
@@ -45,8 +46,7 @@
         "email": "2584456014@qq.com"
     },
     "os": [
-        "win32",
-        "windows"
+        "Win32"
     ],
     "repository": {
         "url": "https://github.com/github0null/eide.git",
@@ -83,7 +83,59 @@
         "x2js": "^3.3.1",
         "yaml": "^1.10.2"
     },
+    "extensionPack": [
+        "dan-c-underwood.arm",
+        "zixuanwang.linkerscript",
+        "keroc.hex-fmt",
+        "hars.cppsnippets",
+        "marus25.cortex-debug"
+    ],
     "contributes": {
+        "walkthroughs": [
+            {
+                "id": "eide.startup.walkthroughs",
+                "title": "%string.eide.startup.walkthroughs%",
+                "description": "%string.eide.startup.walkthroughs.detail%",
+                "steps": [
+                    {
+                        "id": "eide.wt.install_tool",
+                        "title": "%string.eide.setup.toolchain%",
+                        "description": "%string.eide.setup.toolchain.detail%",
+                        "media": {
+                            "image": "img/setup_toochain.png",
+                            "altText": "setup toolchain"
+                        },
+                        "completionEvents": [
+                            "onContext:cl.eide.toolchain_ready"
+                        ]
+                    },
+                    {
+                        "id": "eide.wt.start_project",
+                        "title": "%string.eide.start_project%",
+                        "description": "%string.eide.start_project.detail%",
+                        "media": {
+                            "image": "img/start_project.png",
+                            "altText": "start a project"
+                        },
+                        "completionEvents": [
+                            "onContext:cl.eide.projectActived"
+                        ]
+                    },
+                    {
+                        "id": "eide.wt.docs",
+                        "title": "%string.eide.open_docs%",
+                        "description": "%string.eide.open_docs.detail%",
+                        "media": {
+                            "image": "img/open_docs.png",
+                            "altText": "eide docs"
+                        },
+                        "completionEvents": [
+                            "onLink:https://docs.em-ide.com/"
+                        ]
+                    }
+                ]
+            }
+        ],
         "configuration": [
             {
                 "title": "Embedded IDE",
@@ -359,6 +411,18 @@
             ]
         },
         "commands": [
+            {
+                "command": "eide.operation.install_toolchain",
+                "title": "Install toolchain for eide"
+            },
+            {
+                "command": "eide.operation.import_project",
+                "title": "Import a project by eide"
+            },
+            {
+                "command": "eide.operation.new_project",
+                "title": "Create a new project by eide"
+            },
             {
                 "command": "_cl.eide.workspace.build",
                 "title": "%eide.workspace.build%",
