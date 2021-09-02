@@ -30,7 +30,6 @@
         "vscode": "^1.38.0"
     },
     "categories": [
-        "Extension Packs",
         "Programming Languages",
         "Other",
         "Snippets"
@@ -83,13 +82,6 @@
         "x2js": "^3.3.1",
         "yaml": "^1.10.2"
     },
-    "extensionPack": [
-        "dan-c-underwood.arm",
-        "zixuanwang.linkerscript",
-        "keroc.hex-fmt",
-        "hars.cppsnippets",
-        "marus25.cortex-debug"
-    ],
     "contributes": {
         "walkthroughs": [
             {
@@ -301,6 +293,12 @@
                         "scope": "machine",
                         "markdownDescription": "%settings.iar.stm8.install.folder%",
                         "default": ""
+                    },
+                    "EIDE.STM8.GNU-SDCC.InstallDirectory": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "gnu sdcc for stm8 installation path",
+                        "default": "${userRoot}/.eide/tools/stm8_gnu_sdcc"
                     },
                     "EIDE.ARM.GCC.Prefix": {
                         "type": "string",
@@ -1214,6 +1212,10 @@
             {
                 "fileMatch": "**/*.options.gcc.json",
                 "url": "./lang/arm.gcc.verify.json"
+            },
+            {
+                "fileMatch": "**/*.stm8.gnu-sdcc.json",
+                "url": "./lang/stm8.gnu-sdcc.verify.json"
             },
             {
                 "fileMatch": "**/*.stm8.iar.json",
