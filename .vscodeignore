@@ -22,6 +22,7 @@ vsc-extension-quickstart.md
 **/ARM/*.xml
 *.js
 *.cpuprofile
+*.vscodeignore
 
 # internal template projects
 res/template/projects
@@ -39,4 +40,4 @@ bin/tools
 docs
 
 # shell script
-./*.sh
+*.sh
