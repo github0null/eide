@@ -39,4 +39,4 @@ bin/tools
 docs
 
 # shell script
-*.sh
+./*.sh
