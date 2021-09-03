@@ -28,4 +28,4 @@ bin/tools/*
 bin_bk
 
 # shell script
-./*.sh
+*.sh
