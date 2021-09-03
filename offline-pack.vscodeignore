@@ -1,0 +1,42 @@
+.vscode
+.vscode-test
+out
+src
+.EIDE
+doc
+**/*.log
+!**/template/*.jflash
+**/*.jflash
+vsc-extension-quickstart.md
+**/tsconfig.json
+**/tslint.json
+**/*.map
+**/*.ts
+**/.gitignore
+*.code-workspace
+**/sln.record
+**/data/config.json
+/bin/ARM/*.temp
+/bin/ARM/*.bat
+**/*.pdb
+**/ARM/*.xml
+*.js
+*.cpuprofile
+
+# internal template projects
+res/template/projects
+*.js.map
+
+# eide makefile template
+.gitmodules
+res/eide_makefile_template
+
+# ignore unused files
+# bin
+bin/builder/*.xml
+bin/builder/*.exe.config
+bin/tools
+docs
+
+# shell script
+./*.sh
