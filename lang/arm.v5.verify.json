@@ -130,10 +130,6 @@
                     "enum": [
                         "disable",
                         "enable"
-                    ],
-                    "enumDescriptions": [
-                        "禁用 (disable)",
-                        "开启 (enable)"
                     ]
                 }
             }

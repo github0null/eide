@@ -396,14 +396,16 @@
                     "markdownDescription": "Object file suffix, default: '.rel'",
                     "description.zh-cn": "obj 文件后缀, 默认：'.rel'",
                     "type": "string",
+                    "size": "small",
                     "default": ".rel"
                 },
                 "$mainFileName": {
                     "readable_name": "Source filename containing 'main()'",
-                    "readable_name.zh-cn": "含有 main() 函数的源文件名",
+                    "readable_name.zh-cn": "main() 函数所在源文件",
                     "markdownDescription": "Source filename containing 'main()', default: 'main'",
                     "description.zh-cn": "含有 main() 函数的源文件名，默认：'main'",
                     "type": "string",
+                    "size": "small",
                     "default": "main"
                 },
                 "misc-controls": {

@@ -419,6 +419,11 @@
                 "title": "Create a new project by eide"
             },
             {
+                "command": "eide.reinstall.binaries",
+                "category": "eide",
+                "title": "%eide.function.reinstall.binaries%"
+            },
+            {
                 "command": "_cl.eide.workspace.build",
                 "title": "%eide.workspace.build%",
                 "icon": {

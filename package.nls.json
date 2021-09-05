@@ -10,6 +10,7 @@
     "eide.function.convert.keil.to.sdcc": "Convert Keil_C51 Registers To SDCC Format",
     "eide.function.reload.jlink.dev.list": "Reload JLink Devices List",
     "eide.function.reload.stm8.dev.list": "Reload STM8 Devices List",
+    "eide.function.reinstall.binaries": "Reinstall eide binaries",
 
     "eide.project.refresh": "Refresh",
     "eide.project.save.all": "Save All Projects",

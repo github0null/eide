@@ -10,6 +10,7 @@
     "eide.function.convert.keil.to.sdcc": "将 Keil_C51 寄存器声明转换为 SDCC 格式",
     "eide.function.reload.jlink.dev.list": "重新加载 JLink 芯片信息列表",
     "eide.function.reload.stm8.dev.list": "重新加载 STM8 芯片信息列表",
+    "eide.function.reinstall.binaries": "重新安装 eide binaries",
 
     "eide.project.refresh": "刷新",
     "eide.project.save.all": "保存所有项目",

@@ -357,7 +357,6 @@
                     "readable_name.zh-cn": "链接库选项",
                     "markdownDescription": "Lib Flags, like: -lxxx",
                     "description.zh-cn": "链接库选项，例如：-lxxx",
-                    "size": "normal",
                     "$ref": "#/definitions/misc-controls",
                     "default": ""
                 }
