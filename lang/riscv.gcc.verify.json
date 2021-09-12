@@ -298,8 +298,8 @@
                         "lib"
                     ],
                     "enumDescriptions": [
-                        "executable file",
-                        "static library"
+                        "ELF File",
+                        "Static Library"
                     ]
                 },
                 "LD_FLAGS": {

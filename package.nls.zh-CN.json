@@ -108,7 +108,7 @@
     "settings.jlink.device.xml": "JLinkDevices.xml 文件路径",
 
     "settings.openocd.install.folder": "OpenOCD.exe 可执行文件路径 [`example: D:\\OpenOCD\\bin\\openocd.exe`]",
-    "settings.stlink.install.folder": "ST-LINK Utility: `ST-LINK_CLI.exe` 可执行文件路径",
+    "settings.stlink.install.folder": "`STM32_Programmer_CLI.exe` 或 `ST-LINK Utility: ST-LINK_CLI.exe` 可执行文件路径",
     "settings.stvp.path": "STVP: `STVP_CmdLine.exe` 可执行文件路径",
     
     "settings.cppcheck.exec.path": "cppcheck.exe 可执行文件路径",

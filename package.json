@@ -337,7 +337,7 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "%settings.stlink.install.folder%",
-                        "default": "${userRoot}/.eide/tools/stlink/ST-LINK_CLI.exe"
+                        "default": "${userRoot}/.eide/tools/st_cube_programer/bin/STM32_Programmer_CLI.exe"
                     },
                     "EIDE.ARM.Option.AutoGenerateRTE_Components": {
                         "type": "boolean",

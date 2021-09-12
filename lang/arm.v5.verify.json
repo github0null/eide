@@ -386,8 +386,8 @@
                         "lib"
                     ],
                     "enumDescriptions": [
-                        "executable file",
-                        "static library"
+                        "AXF File",
+                        "Static Library"
                     ]
                 },
                 "not-search-std-libs": {

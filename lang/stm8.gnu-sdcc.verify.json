@@ -343,7 +343,7 @@
                         "lib"
                     ],
                     "enumDescriptions": [
-                        "ELF Format",
+                        "ELF File",
                         "Static Library"
                     ]
                 },
