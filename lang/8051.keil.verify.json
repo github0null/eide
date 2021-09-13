@@ -253,8 +253,8 @@
                         "lib"
                     ],
                     "enumDescriptions": [
-                        "executable file",
-                        "static library"
+                        "Object File",
+                        "Static Library"
                     ]
                 },
                 "use-RTX": {

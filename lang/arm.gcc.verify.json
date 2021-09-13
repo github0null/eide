@@ -288,8 +288,8 @@
                         "lib"
                     ],
                     "enumDescriptions": [
-                        "executable file",
-                        "static library"
+                        "ELF (Executable Linkable Format)",
+                        "Static Library"
                     ]
                 },
                 "LD_FLAGS": {
@@ -305,7 +305,6 @@
                     "readable_name.zh-cn": "链接库选项",
                     "markdownDescription": "Lib Flags, like: -lxxx",
                     "description.zh-cn": "链接库选项，例如：-lxxx",
-                    "size": "normal",
                     "$ref": "#/definitions/FLAGS",
                     "default": ""
                 }

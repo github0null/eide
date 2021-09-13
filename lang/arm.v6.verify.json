@@ -316,8 +316,8 @@
                         "lib"
                     ],
                     "enumDescriptions": [
-                        "executable file",
-                        "static library"
+                        "AXF (Arm Executable File)",
+                        "Static Library"
                     ]
                 },
                 "misc-controls": {

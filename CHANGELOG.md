@@ -4,9 +4,14 @@
 
 ***
 
-### [v2.12.2_1]
+### [v2.12.3]
+- 新增：增加一条命令 `eide.reinstall.binaries`，允许重新安装 eide-binaries
 - 优化：支持自动读取 JLink 内部 Device 列表，以及加载 JLink 安装目录下的 'JLinkDevices.xml'
 - 优化：使用扩展推荐，取消原来的扩展包绑定，将自动附加扩展推荐到项目工作区（在工作内打开 **扩展** -> **推荐** 即可查看）
+- 优化：允许向虚拟文件夹添加 c/c++ 头文件
+- 优化：优化构建器选项 UI (使用 element UI 代替部分 boostrap 组件)
+- 支持 sdcc 编译 .asm 汇编文件
+- 优化：为 STLink 下载方式兼容 STM32CubeProgramer 下载器，将默认 stlink 下载器安装包修改为 [st_cube_programer.7z](https://github.com/github0null/eide-resource/blob/master/packages/st_cube_programer.7z)
 ***
 
 ### [v2.12.1]

@@ -25,7 +25,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "A singlechip development environment for 8051/STM8/Cortex-M/RISC-V",
-    "version": "2.12.2",
+    "version": "2.12.3",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -337,7 +337,7 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "%settings.stlink.install.folder%",
-                        "default": "${userRoot}/.eide/tools/stlink/ST-LINK_CLI.exe"
+                        "default": "${userRoot}/.eide/tools/st_cube_programer/bin/STM32_Programmer_CLI.exe"
                     },
                     "EIDE.ARM.Option.AutoGenerateRTE_Components": {
                         "type": "boolean",
@@ -417,6 +417,11 @@
             {
                 "command": "eide.operation.new_project",
                 "title": "Create a new project by eide"
+            },
+            {
+                "command": "eide.reinstall.binaries",
+                "category": "eide",
+                "title": "%eide.function.reinstall.binaries%"
             },
             {
                 "command": "_cl.eide.workspace.build",

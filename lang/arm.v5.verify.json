@@ -130,10 +130,6 @@
                     "enum": [
                         "disable",
                         "enable"
-                    ],
-                    "enumDescriptions": [
-                        "禁用 (disable)",
-                        "开启 (enable)"
                     ]
                 }
             }
@@ -390,8 +386,8 @@
                         "lib"
                     ],
                     "enumDescriptions": [
-                        "executable file",
-                        "static library"
+                        "AXF (Arm Executable File)",
+                        "Static Library"
                     ]
                 },
                 "not-search-std-libs": {

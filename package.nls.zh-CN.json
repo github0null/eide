@@ -10,6 +10,7 @@
     "eide.function.convert.keil.to.sdcc": "将 Keil_C51 寄存器声明转换为 SDCC 格式",
     "eide.function.reload.jlink.dev.list": "重新加载 JLink 芯片信息列表",
     "eide.function.reload.stm8.dev.list": "重新加载 STM8 芯片信息列表",
+    "eide.function.reinstall.binaries": "重新安装 eide binaries",
 
     "eide.project.refresh": "刷新",
     "eide.project.save.all": "保存所有项目",
@@ -107,7 +108,7 @@
     "settings.jlink.device.xml": "JLinkDevices.xml 文件路径",
 
     "settings.openocd.install.folder": "OpenOCD.exe 可执行文件路径 [`example: D:\\OpenOCD\\bin\\openocd.exe`]",
-    "settings.stlink.install.folder": "ST-LINK Utility: `ST-LINK_CLI.exe` 可执行文件路径",
+    "settings.stlink.install.folder": "`STM32_Programmer_CLI.exe` 或 `ST-LINK Utility: ST-LINK_CLI.exe` 可执行文件路径",
     "settings.stvp.path": "STVP: `STVP_CmdLine.exe` 可执行文件路径",
     
     "settings.cppcheck.exec.path": "cppcheck.exe 可执行文件路径",

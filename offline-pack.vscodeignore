@@ -33,7 +33,7 @@ res/template/projects
 res/eide_makefile_template
 
 # ignore unused files
-bin
+# bin
 bin/builder/*.xml
 bin/builder/*.exe.config
 bin/tools
