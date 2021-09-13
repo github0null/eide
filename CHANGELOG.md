@@ -4,7 +4,7 @@
 
 ***
 
-### [v2.13.0_RC1]
+### [v2.12.3]
 - 新增：增加一条命令 `eide.reinstall.binaries`，允许重新安装 eide-binaries
 - 优化：支持自动读取 JLink 内部 Device 列表，以及加载 JLink 安装目录下的 'JLinkDevices.xml'
 - 优化：使用扩展推荐，取消原来的扩展包绑定，将自动附加扩展推荐到项目工作区（在工作内打开 **扩展** -> **推荐** 即可查看）

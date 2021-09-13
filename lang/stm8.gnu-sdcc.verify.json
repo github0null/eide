@@ -343,7 +343,7 @@
                         "lib"
                     ],
                     "enumDescriptions": [
-                        "ELF File",
+                        "ELF (Executable Linkable Format)",
                         "Static Library"
                     ]
                 },

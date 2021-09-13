@@ -386,7 +386,7 @@
                         "lib"
                     ],
                     "enumDescriptions": [
-                        "AXF File",
+                        "AXF (Arm Executable File)",
                         "Static Library"
                     ]
                 },
