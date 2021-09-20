@@ -4,6 +4,10 @@
 
 ***
 
+### [v2.13.0_RC1]
+- 修复：打开 RAM/ROM Layout 偶尔出现内容为空的问题，适应 vscode 主题色
+***
+
 ### [v2.12.3]
 - 新增：增加一条命令 `eide.reinstall.binaries`，允许重新安装 eide-binaries
 - 优化：支持自动读取 JLink 内部 Device 列表，以及加载 JLink 安装目录下的 'JLinkDevices.xml'
