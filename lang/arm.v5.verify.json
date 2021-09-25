@@ -115,7 +115,7 @@
             "properties": {
                 "use-microLIB": {
                     "markdownDescription": "Use MicroLIB",
-                    "description.zh-cn": "是否使用微库",
+                    "description.zh-cn": "Use MicroLIB",
                     "type": "boolean",
                     "enum": [
                         true,
