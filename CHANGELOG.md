@@ -8,6 +8,7 @@
 - 优化：切换不同的烧录器时，保留旧的烧录配置
 - 优化：为 STLink，JLink 烧录器增加**附加命令行**选项，用于为烧录程序附加额外的命令行
 - 修复：打开 RAM/ROM Layout 偶尔出现内容为空的问题，适应 vscode 主题色
+- 修复：同时打开多个 vscode 实例时，JLink Device List 读取冲突而导致 JLink Device List 为空
 ***
 
 ### [v2.12.3]
