@@ -6,6 +6,8 @@ InitEvent();
 
 NotifySubmitStatus();
 
+vscode.postMessage('eide.ram_rom_layout.launched');
+
 //-----------------------------------------
 
 function updateView(_data) {

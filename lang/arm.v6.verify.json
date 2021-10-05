@@ -115,7 +115,7 @@
             "properties": {
                 "use-microLIB": {
                     "markdownDescription": "Use MicroLIB",
-                    "description.zh-cn": "是否使用微库",
+                    "description.zh-cn": "Use MicroLIB",
                     "type": "boolean",
                     "enum": [
                         true,
@@ -237,13 +237,13 @@
                     "type": "boolean"
                 },
                 "read-only-position-independent": {
-                    "markdownDescription": "read only position independent",
-                    "description.zh-cn": "为常量生成独立的代码空间",
+                    "markdownDescription": "Read-Only Position-Independent (ROPI)",
+                    "description.zh-cn": "Read-Only Position-Independent (ROPI)",
                     "type": "boolean"
                 },
                 "read-write-position-independent": {
-                    "markdownDescription": "read write position independent",
-                    "description.zh-cn": "为可读写代码生成独立的代码空间",
+                    "markdownDescription": "Read-Write Position-Independent (RWPI)",
+                    "description.zh-cn": "Read-Write Position-Independent (RWPI)",
                     "type": "boolean"
                 },
                 "misc-controls": {

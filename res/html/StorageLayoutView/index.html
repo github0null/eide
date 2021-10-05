@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>RAM ROM Layout</title>
+    <title>Memory Layout</title>
 
     <link href="${bootstrap-css}" rel="stylesheet">
     <link href="${checkbox-css}" rel="stylesheet">
@@ -17,6 +17,11 @@
     <script src="../bootstrap/js/bootstrap.min.js"></script>-->
 
     <style>
+        @font-face {
+            font-family: Consolas;
+            src: url("fonts/consola.ttf");
+        }
+
         body {
             margin: 12px;
             background-color: var(--vscode-editor-background) !important;
@@ -37,6 +42,224 @@
 
         .form-group {
             margin: 0;
+        }
+
+        /* panel */
+
+        .panel-body {
+            color: var(--vscode-editor-foreground) !important;
+            background-color: var(--vscode-editor-background) !important;
+        }
+
+        .panel-info,
+        .panel-warning {
+            color: var(--vscode-editor-foreground) !important;
+            border-radius: .25rem !important;
+        }
+
+        /* table */
+
+        table,
+        tr,
+        th,
+        td,
+        thead,
+        .table,
+        .table-bordered {
+            color: var(--vscode-input-foreground) !important;
+            background-color: var(--vscode-editor-background) !important;
+            font-family: Consolas !important;
+            border-color: var(--vscode-input-placeholderForeground) !important;
+        }
+
+        .table:before {
+            height: 0px;
+        }
+
+        /* copy from eide builder options view */
+
+        legend {
+            font-size: 1rem !important;
+        }
+
+        section {
+            color: var(--vscode-editor-foreground) !important;
+            background-color: var(--vscode-editor-background) !important;
+        }
+
+        .nav-link {
+            color: var(--vscode-editor-foreground) !important;
+            background-color: var(--vscode-editor-background) !important;
+            border: 1px solid var(--vscode-button-background) !important;
+        }
+
+        .nav-pills,
+        .card,
+        .card-body,
+        .list-group-item,
+        .custom-form {
+            color: var(--vscode-editor-foreground) !important;
+            background-color: var(--vscode-editor-background) !important;
+        }
+
+        .custom-checkbox .custom-control-label:before {
+            background-color: var(--vscode-editor-background);
+            border-color: var(--vscode-input-placeholderForeground);
+        }
+
+        .card-body {
+            border-radius: 4px;
+            box-shadow: 0 5px 15px var(--vscode-input-background);
+        }
+
+        .nav-pills.show>.nav-link {
+            color: var(--vscode-editor-foreground) !important;
+            background-color: var(--vscode-button-background) !important;
+            border: 1px solid var(--vscode-button-background) !important;
+        }
+
+        /* set style for table */
+        .el-popover {
+            color: var(--vscode-input-foreground) !important;
+            background-color: var(--vscode-editor-background) !important;
+            font-family: Consolas !important;
+            border: 1px solid var(--vscode-input-placeholderForeground) !important;
+            border-radius: .25rem !important;
+            box-shadow: 0 1px 3px var(--vscode-focusBorder) !important;
+        }
+
+        /* set common style for input */
+        input,
+        textarea {
+            color: var(--vscode-input-foreground) !important;
+            background-color: var(--vscode-editor-background) !important;
+            font-family: Consolas !important;
+            border: 1px solid var(--vscode-input-placeholderForeground) !important;
+            border-radius: .25rem !important;
+            padding: .625rem .75rem !important;
+        }
+
+        /* el select container style */
+
+        .el-select {
+            padding: 0px !important;
+        }
+
+        .el-select .el-input__inner {
+            padding-left: 15px !important;
+            padding-right: 32px !important;
+            /* make arrow normal */
+        }
+
+        .el-scrollbar,
+        .el-select-dropdown,
+        .el-select-dropdown__wrap,
+        .el-scrollbar__wrap,
+        .el-scrollbar__view,
+        .el-select-dropdown__list,
+        .el-select-dropdown__item {
+            color: var(--vscode-input-foreground) !important;
+            background-color: var(--vscode-editor-background) !important;
+        }
+
+        .el-select-dropdown__item {
+            height: 32px !important;
+        }
+
+        .el-select-dropdown__item.selected {
+            color: var(--vscode-editor-foreground) !important;
+        }
+
+        .el-select-dropdown {
+            padding: 2px 0px !important;
+            border: 1px solid var(--vscode-input-placeholderForeground) !important;
+            border-radius: .25rem !important;
+            box-shadow: 0 1px 3px var(--vscode-focusBorder) !important;
+        }
+
+        .el-select-dropdown__item:hover {
+            background-color: var(--vscode-inputOption-activeBackground) !important;
+        }
+
+        /* proper arrow */
+        .el-popper[x-placement^=top] .popper__arrow:after {
+            border-top-color: var(--vscode-input-placeholderForeground) !important;
+            bottom: 0px !important;
+        }
+
+        .el-popper[x-placement^=bottom] .popper__arrow:after {
+            border-bottom-color: var(--vscode-input-placeholderForeground) !important;
+            top: 0px !important;
+        }
+
+        .el-popper[x-placement^=right] .popper__arrow:after {
+            border-right-color: var(--vscode-input-placeholderForeground) !important;
+            left: 0px !important;
+        }
+
+        .el-popper[x-placement^=left] .popper__arrow:after {
+            border-left-color: var(--vscode-input-placeholderForeground) !important;
+            right: 0px !important;
+        }
+
+        /* set foreground color for input placaholder */
+        input::-webkit-input-placeholder,
+        textarea::-webkit-input-placeholder,
+        .form-control::-webkit-input-placeholder {
+            color: var(--vscode-input-placeholderForeground) !important;
+        }
+
+        .list-group-item {
+            border: none !important;
+            border-color: var(--vscode-input-placeholderForeground) !important;
+        }
+
+        .form-control-alternative {
+            color: var(--vscode-input-foreground) !important;
+            /* set font color for input */
+            background-color: var(--vscode-editor-background) !important;
+            border: 1px solid var(--vscode-input-placeholderForeground) !important;
+            border-radius: .25rem !important;
+        }
+
+        .form-control {
+            border: 1px solid var(--vscode-input-placeholderForeground) !important;
+            border-radius: .25rem !important;
+        }
+
+        select {
+            border: 1px solid var(--vscode-input-placeholderForeground) !important;
+            border-radius: .25rem !important;
+        }
+
+        /* actions */
+
+        .nav-pills.active,
+        .nav-link.active {
+            color: var(--vscode-button-foreground) !important;
+            background-color: var(--vscode-button-background) !important;
+            border: 1px solid var(--vscode-button-background) !important;
+        }
+
+        a:focus,
+        input:focus,
+        select:focus {
+            outline: none !important;
+            /* remove outline when get focus */
+        }
+
+        select:focus {
+            border: 1px solid var(--vscode-focusBorder) !important;
+            border-radius: .25rem !important;
+        }
+
+        input:focus,
+        textarea:focus,
+        .form-control:focus,
+        .form-control-alternative:focus {
+            border: 1px solid var(--vscode-focusBorder) !important;
+            border-radius: .25rem !important;
+            box-shadow: 0 1px 3px var(--vscode-focusBorder);
         }
     </style>
 
@@ -63,7 +286,7 @@
         <div class="panel-heading">
             <h4 class="panel-title">
                 <li data-parent="#body">
-                    RAM Layout
+                    Ram Layout
                 </li>
             </h4>
         </div>
@@ -73,9 +296,9 @@
                     <caption>On-Chip</caption>
                     <thead>
                         <tr>
-                            <th>default</th>
-                            <th>start address</th>
-                            <th>size</th>
+                            <th>Default</th>
+                            <th>Start Address</th>
+                            <th>Size</th>
                             <th>NoInit</th>
                         </tr>
                     </thead>
@@ -167,9 +390,9 @@
                     <caption>Off-Chip</caption>
                     <thead>
                         <tr>
-                            <th>default</th>
-                            <th>start address</th>
-                            <th>size</th>
+                            <th>Default</th>
+                            <th>Start Address</th>
+                            <th>Size</th>
                             <th>NoInit</th>
                         </tr>
                     </thead>
@@ -304,7 +527,7 @@
         <div class="panel-heading">
             <h4 class="panel-title">
                 <li data-parent="#body">
-                    ROM Layout
+                    Rom Layout
                 </li>
             </h4>
         </div>
@@ -314,10 +537,10 @@
                     <caption>On-Chip</caption>
                     <thead>
                         <tr>
-                            <th>default</th>
-                            <th>start address</th>
-                            <th>size</th>
-                            <th>startup</th>
+                            <th>Default</th>
+                            <th>Start Address</th>
+                            <th>Size</th>
+                            <th>Startup</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -396,10 +619,10 @@
                     <caption>Off-Chip</caption>
                     <thead>
                         <tr>
-                            <th>default</th>
-                            <th>start address</th>
-                            <th>size</th>
-                            <th>startup</th>
+                            <th>Default</th>
+                            <th>Start Address</th>
+                            <th>Size</th>
+                            <th>Startup</th>
                         </tr>
                     </thead>
                     <tbody>
