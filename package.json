@@ -25,7 +25,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "A singlechip development environment for 8051/STM8/Cortex-M/RISC-V",
-    "version": "2.13.0",
+    "version": "2.13.1",
     "engines": {
         "vscode": "^1.38.0"
     },
@@ -53,7 +53,6 @@
         "webpack": "webpack --mode development",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
-        "postinstall": "node ./node_modules/vscode/bin/install",
         "test": "npm run compile && node ./node_modules/vscode/bin/test"
     },
     "devDependencies": {
@@ -76,7 +75,7 @@
         "ini": "^2.0.0",
         "jsonc": "^2.0.0",
         "unzipper": "^0.10.11",
-        "x2js": "^3.3.1",
+        "x2js": "3.4.1",
         "yaml": "^1.10.2"
     },
     "contributes": {
