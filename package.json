@@ -128,6 +128,12 @@
             {
                 "title": "Embedded IDE",
                 "properties": {
+                    "EIDE.Option.ShowSourceReferences": {
+                        "type": "boolean",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.option.show.source.references%",
+                        "default": true
+                    },
                     "EIDE.Option.DisableEditorContextMenu": {
                         "type": "boolean",
                         "scope": "resource",
@@ -1132,7 +1138,7 @@
                 {
                     "command": "_project.copyItemValue",
                     "group": "inline",
-                    "when": "viewItem == EXCFILE_ITEM || viewItem == FILE_ITEM || viewItem == ITEM || viewItem == DEPENDENCE_ITEM || viewItem == INC_ITEM || viewItem == DEFINE_ITEM || viewItem == LIB_ITEM || viewItem == SOURCE_ITEM && view == Project"
+                    "when": "viewItem == EXCFILE_ITEM || viewItem == FILE_ITEM || viewItem == SRCREF_FILE_ITEM || viewItem == ITEM || viewItem == DEPENDENCE_ITEM || viewItem == INC_ITEM || viewItem == DEFINE_ITEM || viewItem == LIB_ITEM || viewItem == SOURCE_ITEM && view == Project"
                 },
                 {
                     "command": "_project.importDependenceFromPack",
