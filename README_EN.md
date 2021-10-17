@@ -54,7 +54,7 @@ Provide **8051**, **STM8**, **Cortex-M**, **RISC-V** project development, compil
 
 ## Document 📖
 
-[Document Address: https://docs.em-ide.com](https://docs.em-ide.com)
+[Document Address: https://docs.em-ide.com/#/en-us/](https://docs.em-ide.com/#/en-us/)
 
 ***
 
