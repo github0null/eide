@@ -410,6 +410,12 @@
                 }
             ]
         },
+        "viewsWelcome": [
+            {
+                "view": "Project",
+                "contents": "%string.eide.project.welcome%"
+            }
+        ],
         "commands": [
             {
                 "command": "eide.operation.install_toolchain",
