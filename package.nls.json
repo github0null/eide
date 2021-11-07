@@ -49,6 +49,7 @@
     "eide.explorer.exclude.folder": "Exclude Folder",
     "eide.explorer.include.folder": "Include Folder",
     
+    "eide.source.show_cmsis_config_wizard": "CMSIS Configuration Wizard",
     "eide.source.show.disassembly": "Show Disassembly",
     "eide.source.run.cppcheck": "Cppcheck This File",
     "eide.project.run.cppcheck": "Cppcheck Project",

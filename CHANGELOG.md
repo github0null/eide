@@ -6,6 +6,7 @@
 
 ### [v2.14.0_RC1]
 - 新增：支持显示源文件的头文件引用，默认开启，可在插件设置中关闭
+- 新增：增加 CMSIS Configuration Wizard 功能。[Configuration Wizard Annotations](https://arm-software.github.io/CMSIS_5/Pack/html/configWizard.html)
 ***
 
 ### [v2.13.0]

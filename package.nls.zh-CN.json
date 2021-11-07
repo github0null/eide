@@ -49,6 +49,7 @@
     "eide.explorer.exclude.folder": "从项目中排除",
     "eide.explorer.include.folder": "取消排除",
     
+    "eide.source.show_cmsis_config_wizard": "CMSIS Configuration Wizard",
     "eide.source.show.disassembly": "查看反汇编",
     "eide.source.run.cppcheck": "使用 Cppcheck 进行检查",
     "eide.project.run.cppcheck": "使用 Cppcheck 检查项目",

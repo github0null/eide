@@ -475,6 +475,10 @@
                 "title": "%eide.source.show.disassembly%"
             },
             {
+                "command": "_project.source.show_cmsis_config_wizard",
+                "title": "%eide.source.show_cmsis_config_wizard%"
+            },
+            {
                 "command": "_project.source.filesystem_folder_add_file",
                 "title": "%eide.explorer.new.file%"
             },
@@ -920,6 +924,11 @@
                     "command": "_project.source.show_disassembly",
                     "group": "commands",
                     "when": "resourceLangId =~ /^c$|^cpp$/ && cl.eide.projectActived && !config.EIDE.Option.DisableEditorContextMenu"
+                },
+                {
+                    "command": "_project.source.show_cmsis_config_wizard",
+                    "group": "commands",
+                    "when": "resourceLangId =~ /^c$|^cpp$/ && !config.EIDE.Option.DisableEditorContextMenu"
                 }
             ],
             "explorer/context": [
