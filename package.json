@@ -941,6 +941,11 @@
                     "command": "_project.source.show_disassembly",
                     "group": "commands",
                     "when": "resourceLangId =~ /^c$|^cpp$/ && cl.eide.projectActived && !config.EIDE.Option.DisableExplorerContextMenu"
+                },
+                {
+                    "command": "_project.source.show_cmsis_config_wizard",
+                    "group": "commands",
+                    "when": "resourceLangId =~ /^c$|^cpp$/ && !config.EIDE.Option.DisableExplorerContextMenu"
                 }
             ],
             "view/item/context": [
