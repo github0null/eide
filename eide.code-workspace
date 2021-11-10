@@ -5,6 +5,7 @@
 		}
 	],
 	"settings": {
-		"search.useIgnoreFiles": false
+		"search.useIgnoreFiles": false,
+		"typescript.tsdk": "node_modules\\typescript\\lib"
 	}
 }

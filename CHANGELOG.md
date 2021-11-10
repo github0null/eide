@@ -4,6 +4,14 @@
 
 ***
 
+### [v2.14.0]
+- 优化：增加一些编译器预定义宏
+- 优化：优化 Builder Config UI，修复选项卡阴影区域显示不正常的问题
+- 新增：支持显示源文件的头文件引用，默认开启，可在插件设置中关闭
+- 新增：增加 [CMSIS Configuration Wizard](https://arm-software.github.io/CMSIS_5/Pack/html/configWizard.html) 功能。 打开带有 CMSIS Config 格式的头文件，右键菜单选择 `CMSIS Configuration Wizard` 即可打开配置UI
+  ![preview](./img/cmsis_wizard_preview.png)
+***
+
 ### [v2.13.0]
 - 优化：切换不同的烧录器时，保留旧的烧录配置
 - 优化：为 STLink，JLink 烧录器增加**附加命令行**选项，用于为烧录程序附加额外的命令行

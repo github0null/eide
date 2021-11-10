@@ -49,6 +49,7 @@
     "eide.explorer.exclude.folder": "Exclude Folder",
     "eide.explorer.include.folder": "Include Folder",
     
+    "eide.source.show_cmsis_config_wizard": "CMSIS Configuration Wizard",
     "eide.source.show.disassembly": "Show Disassembly",
     "eide.source.run.cppcheck": "Cppcheck This File",
     "eide.project.run.cppcheck": "Cppcheck Project",
@@ -79,6 +80,7 @@
     "settings.option.create.batch.file": "Create batch file after build",
     "settings.option.use.task.to.build": "Use Task to build project instead of Terminal",
     "settings.option.insert.extcommands.at.begin": "The built-in command lines will insert at the beginning of the `beforeBuildTasks / afterBuildTasks`",
+    "settings.option.show.source.references": "Show c/c++ header references for source file",
     
     "settings.template.use.proxy": "Use github proxy to improve network speed (experimental function)",
     "settings.template.repo.url": "remote public github repository url, format: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
@@ -123,5 +125,7 @@
     "string.eide.start_project": "Start Your Project",
     "string.eide.start_project.detail": "Now, We can create a project !\n[New Project](command:eide.operation.new_project)\nor import a MDK project !\n[Import Keil Project](command:eide.operation.import_project)",
     "string.eide.open_docs": "Learn More",
-    "string.eide.open_docs.detail": "Click the link will open the manual that may help you learn more about usage.\n[Embedded IDE Document](https://docs.em-ide.com/)"
+    "string.eide.open_docs.detail": "Click the link will open the manual that may help you learn more about usage.\n[Embedded IDE Document](https://docs.em-ide.com/)",
+
+    "string.eide.project.welcome": "There are no project in this workspace ! \n[New Project](command:eide.operation.new_project)\n[Import Keil Project](command:eide.operation.import_project)"
 }
