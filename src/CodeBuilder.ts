@@ -1,0 +1,896 @@
+/*
+	MIT License
+
+	Copyright (c) 2019 github0null
+
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+*/
+
+import { AbstractProject } from "./EIDEProject";
+import { ResManager } from "./ResManager";
+import { File } from "../lib/node-utility/File";
+import {
+    ProjectConfigData, ArmBaseCompileData,
+    Memory, ARMStorageLayout, ICompileOptions,
+    FloatingHardwareOption, ProjectConfiguration, C51BaseCompileData, RiscvCompileData
+} from "./EIDETypeDefine";
+import { SettingManager } from "./SettingManager";
+import { GlobalEvent } from "./GlobalEvents";
+import { ExceptionToMessage, newMessage } from "./Message";
+import { CmdLineHandler } from "./CmdLineHandler";
+
+import * as fs from 'fs';
+import * as vscode from 'vscode';
+import * as NodePath from 'path';
+import { ArrayDelRepetition } from "../lib/node-utility/Utility";
+import { DependenceManager } from "./DependenceManager";
+import { WorkspaceManager } from "./WorkspaceManager";
+import { ToolchainName } from "./ToolchainManager";
+import { md5, sha256 } from "./utility";
+import { MakefileGen } from "./Makefile";
+import { append2SysEnv } from "./Platform";
+import * as events from 'events';
+import { FileWatcher } from "../lib/node-utility/FileWatcher";
+
+export interface BuildOptions {
+
+    useDebug?: boolean;
+
+    useFastMode?: boolean;
+}
+
+export interface BuilderParams {
+    name: string;
+    target: string;
+    toolchain: ToolchainName;
+    showRepathOnLog?: boolean,
+    threadNum?: number;
+    dumpPath: string;
+    outDir: string;
+    builderDir: string;
+    rootDir: string;
+    ram?: number;
+    rom?: number;
+    sourceList: string[];
+    incDirs: string[];
+    libDirs: string[];
+    defines: string[];
+    options: ICompileOptions;
+    sha?: { [options_name: string]: string };
+    env?: { [name: string]: any };
+}
+
+export abstract class CodeBuilder {
+
+    protected readonly paramsFileName = 'builder.params';
+
+    protected project: AbstractProject;
+    protected useFastCompile?: boolean;
+    protected useShowParamsMode?: boolean;
+    protected _event: events.EventEmitter;
+    protected logWatcher: FileWatcher | undefined;
+
+    constructor(_project: AbstractProject) {
+        this.project = _project;
+        this._event = new events.EventEmitter();
+    }
+
+    on(event: 'finished', listener: () => void): void;
+    on(event: any, listener: (arg: any) => void): void {
+        this._event.on(event, listener);
+    }
+
+    private emit(event: 'finished'): void;
+    private emit(event: any, arg?: any): void {
+        this._event.emit(event, arg);
+    }
+
+    getSourceList(): string[] {
+
+        const srcList: string[] = [];
+        const fGoups = this.project.getFileGroups();
+        const filter = AbstractProject.getSourceFileFilter();
+
+        for (const group of fGoups) {
+            if (group.disabled) continue; // skip disabled group
+            for (const source of group.files) {
+                if (source.disabled) continue; // skip disabled file
+                if (!filter.some((reg) => reg.test(source.file.path))) continue; // skip non-source
+                const rePath = this.project.ToRelativePath(source.file.path, false);
+                srcList.push(rePath || source.file.path);
+            }
+        }
+
+        return srcList;
+    }
+
+    getIncludeDirs(): string[] {
+
+        const incList = this.project.GetConfiguration().GetAllMergeDep([
+            `${ProjectConfiguration.BUILD_IN_GROUP_NAME}.${DependenceManager.toolchainDepName}`
+        ]).incList;
+
+        return ArrayDelRepetition(incList.concat(
+            this.project.getToolchain().getDefaultIncludeList(),
+            this.project.getSourceIncludeList()
+        ));
+    }
+
+    getDefineList(): string[] {
+        return this.project.GetConfiguration().GetAllMergeDep().defineList;
+    }
+
+    getLibDirs(): string[] {
+        return this.project.GetConfiguration()
+            .GetAllMergeDep([
+                `${ProjectConfiguration.BUILD_IN_GROUP_NAME}.${DependenceManager.toolchainDepName}`
+            ]).libList;
+    }
+
+    protected enableRebuild(_enable: boolean = true) {
+        this.useFastCompile = !_enable;
+    }
+
+    protected isRebuild(): boolean {
+        return !this.useFastCompile;
+    }
+
+    build(options?: BuildOptions): void {
+
+        const commandLine = this.genBuildCommand(options);
+        if (!commandLine) return;
+
+        const title = options?.useDebug ? 'compiler params' : 'build';
+        const resManager = ResManager.GetInstance();
+        const shellPath = ResManager.checkWindowsShell() ? undefined : resManager.getCMDPath();
+        const cmdEnv = append2SysEnv([resManager.getBuilderDir()]);
+
+        try { // watch log, to emit done event
+            const builderLog = File.fromArray([this.project.getEideDir().path, 'log', 'unify_builder.log']);
+            if (!builderLog.IsFile()) builderLog.Write('');
+            if (this.logWatcher) { this.logWatcher.Close(); delete this.logWatcher; };
+            this.logWatcher = new FileWatcher(builderLog, false);
+            this.logWatcher.OnChanged = () => { this.logWatcher?.Close(); this.emit('finished'); };
+            this.logWatcher.Watch();
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+        }
+
+        // run build
+        if (SettingManager.GetInstance().isUseTaskToBuild() && WorkspaceManager.getInstance().hasWorkspaces()) {
+            // use task
+            const task = new vscode.Task({ type: 'shell' }, vscode.TaskScope.Workspace, title, 'shell');
+            const shellOption: vscode.ShellExecutionOptions = {};
+            if (shellPath) { shellOption.executable = shellPath; shellOption.shellArgs = ['/C'] }
+            shellOption.env = cmdEnv;
+            task.execution = new vscode.ShellExecution(commandLine, shellOption);
+            task.problemMatchers = this.getProblemMatcher();
+            task.isBackground = false;
+            task.presentationOptions = { echo: true, focus: false, clear: true };
+            vscode.tasks.executeTask(task);
+        } else {
+            // use terminal
+            const index = vscode.window.terminals.findIndex((t) => { return t.name === title; });
+            if (index !== -1) { vscode.window.terminals[index].dispose(); }
+            const opts: vscode.TerminalOptions = { name: title, shellPath: shellPath, env: cmdEnv };
+            const terminal = vscode.window.createTerminal(opts);
+            terminal.show(true);
+            terminal.sendText(CmdLineHandler.DeleteCmdPrefix(commandLine));
+        }
+    }
+
+    genBuildCommand(options?: BuildOptions, disPowershell?: boolean): string | undefined {
+
+        // reinit build mode
+        this.useFastCompile = options?.useFastMode;
+        this.useShowParamsMode = options?.useDebug;
+
+        /* if not found toolchain, exit ! */
+        if (!this.project.checkAndNotifyInstallToolchain()) { return; }
+
+        const prjConfig = this.project.GetConfiguration();
+        const outDir = new File(this.project.ToAbsolutePath(prjConfig.getOutDir()));
+        outDir.CreateDir(true);
+
+        const isPowershell = !disPowershell && /powershell.exe$/i.test(vscode.env.shell);
+        const resManager = ResManager.GetInstance();
+
+        // generate command line
+        const cmds = [`${this.getBuilderExe().path}`].concat(this.getCommands());
+        const exeName: string = resManager.getMonoExecutable().path;
+        const commandLine = CmdLineHandler.getCommandLine(exeName, cmds, isPowershell);
+
+        return commandLine;
+    }
+
+    private genHashFromCompilerOptions(builderOptions: BuilderParams): any {
+
+        const res: any = {};
+
+        if (typeof builderOptions['defines'] == 'object') {
+            res['c/cpp-defines'] = md5(JSON.stringify(builderOptions['defines']));
+        }
+
+        const options: any = builderOptions.options;
+
+        for (const key in options) {
+            if (typeof options[key] == 'object') {
+                res[key] = md5(JSON.stringify(options[key]));
+            }
+        }
+
+        return res;
+    }
+
+    private compareHashObj(key: string, hashObj_1?: { [key: string]: string }, hashObj_2?: { [key: string]: string }): boolean {
+
+        if (hashObj_1 == hashObj_2 == undefined) {
+            return true;
+        }
+
+        if (hashObj_1 && hashObj_2) {
+
+            if (hashObj_1[key] == hashObj_2[key] == undefined) {
+                return true;
+            }
+
+            return hashObj_1[key] == hashObj_2[key];
+        }
+
+        return false;
+    }
+
+    private getCommands(): string[] {
+
+        const config = this.project.GetConfiguration().config;
+        const settingManager = SettingManager.GetInstance();
+        const toolchain = this.project.getToolchain();
+
+        const binDir = toolchain.getToolchainDir().path;
+        const dumpDir = this.project.getLogDir().path;
+        const outDir = NodePath.normalize(this.project.getOutputDir());
+        const paramsPath = this.project.ToAbsolutePath(outDir + File.sep + this.paramsFileName);
+        const compileOptions: ICompileOptions = this.project.GetConfiguration()
+            .compileConfigModel.getOptions(this.project.getEideDir().path, config);
+        const memMaxSize = this.getMaxSize();
+        const modeList: string[] = [];
+
+        const builderOptions: BuilderParams = {
+            name: config.name,
+            target: this.project.getCurrentTarget(),
+            toolchain: toolchain.name,
+            showRepathOnLog: settingManager.isPrintRelativePathWhenBuild(),
+            threadNum: settingManager.getThreadNumber(),
+            rootDir: this.project.GetRootDir().path,
+            dumpPath: this.project.ToRelativePath(dumpDir, false) || dumpDir,
+            outDir: outDir,
+            builderDir: ResManager.GetInstance().getBuilderDir(),
+            ram: memMaxSize?.ram,
+            rom: memMaxSize?.rom,
+            incDirs: this.getIncludeDirs().map((incPath) => { return this.project.ToRelativePath(incPath, false) || incPath; }),
+            libDirs: this.getLibDirs().map((libPath) => { return this.project.ToRelativePath(libPath, false) || libPath; }),
+            sourceList: this.getSourceList().sort(),
+            defines: this.getDefineList(),
+            options: JSON.parse(JSON.stringify(compileOptions)),
+            env: this.project.getProjectEnv()
+        };
+
+        // set ram size from env
+        if (builderOptions.ram == undefined &&
+            builderOptions.env &&
+            builderOptions.env['MCU_RAM_SIZE']) {
+            builderOptions.ram = parseInt(builderOptions.env['MCU_RAM_SIZE']) || undefined;
+        }
+
+        // set rom size from env
+        if (builderOptions.rom == undefined &&
+            builderOptions.env &&
+            builderOptions.env['MCU_ROM_SIZE']) {
+            builderOptions.rom = parseInt(builderOptions.env['MCU_ROM_SIZE']) || undefined;
+        }
+
+        // handle options by toolchain
+        toolchain.preHandleOptions({
+            targetName: config.name,
+            toAbsolutePath: (path) => this.project.ToAbsolutePath(path),
+            getOutDir: () => { return this.project.ToAbsolutePath(outDir); }
+        }, builderOptions.options);
+
+        // handle options
+        this.preHandleOptions(builderOptions.options);
+
+        // generate hash for compiler options
+        builderOptions.sha = this.genHashFromCompilerOptions(builderOptions);
+
+        // check whether need rebuild project
+        if (this.isRebuild() == false) {
+            try {
+                const prevParams: BuilderParams =
+                    File.IsFile(paramsPath) ? JSON.parse(fs.readFileSync(paramsPath, 'utf8')) : {};
+
+                // not found hash from old params file
+                if (prevParams.sha == undefined) {
+                    this.enableRebuild();
+                }
+
+                // check hash obj by specifies keys
+                else {
+                    const keyList = ['global', 'c/cpp-defines', 'c/cpp-compiler', 'asm-compiler'];
+                    for (const key of keyList) {
+                        if (!this.compareHashObj(key, prevParams.sha, builderOptions.sha)) {
+                            this.enableRebuild();
+                            break;
+                        }
+                    }
+                }
+            } catch (error) {
+                this.enableRebuild(); // make rebuild
+                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            }
+        }
+
+        // set build mode
+        if (config.toolchain === 'Keil_C51') {
+            // disable fast compile for Keil C51
+            modeList.push('Normal');
+        } else {
+            modeList.push(this.isRebuild() ? 'Normal' : 'Fast');
+        }
+
+        if (this.useShowParamsMode) {
+            modeList.push('Debug');
+        }
+
+        // disable multi-thread in Keil_C51
+        if (settingManager.isUseMultithreadMode() && config.toolchain !== 'Keil_C51') {
+            modeList.push('MULTHREAD');
+        }
+
+        // write project build params
+        if (this.useShowParamsMode) {
+            fs.writeFileSync(paramsPath, JSON.stringify(builderOptions, undefined, 4));
+        } else {
+            fs.writeFileSync(paramsPath, JSON.stringify(builderOptions));
+        }
+
+        // generate makefile params
+        if (settingManager.isGenerateMakefileParams()) {
+            try {
+                const gen = new MakefileGen();
+                gen.generateParamsToFile(builderOptions, this.project.ToAbsolutePath(config.outDir));
+            } catch (error) {
+                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            }
+        }
+
+        return [
+            '-b', binDir,
+            '-M', toolchain.modelName,
+            '-p', paramsPath,
+            '-m', modeList.join('-')
+        ];
+    }
+
+    private getBuilderExe(): File {
+        return ResManager.GetInstance().getBuilder();
+    }
+
+    protected abstract getMaxSize(): MemorySize | undefined;
+
+    protected abstract preHandleOptions(options: ICompileOptions): void;
+
+    protected abstract getProblemMatcher(): string[];
+
+    static NewBuilder(_project: AbstractProject): CodeBuilder {
+        switch (_project.GetConfiguration().config.type) {
+            case 'ARM':
+                return new ARMCodeBuilder(_project);
+            case 'RISC-V':
+                return new RiscvCodeBuilder(_project);
+            case 'C51':
+                return new C51CodeBuilder(_project);
+            default:
+                throw new Error(`not support this project type: '${_project.GetConfiguration().config.type}'`);
+        }
+    }
+}
+
+interface MemorySize {
+    ram?: number;
+    rom?: number;
+}
+
+interface RomItem {
+    memInfo: Memory;
+    selected: boolean;
+}
+
+interface RamItem {
+    memInfo: Memory;
+    selected: boolean;
+    noInit: boolean;
+}
+
+interface MemoryScatter {
+    startUpIndex: number;
+    romList: RomItem[];
+    ramList: RamItem[];
+}
+
+interface MemoryText {
+    name: string;
+    addr: string;
+    content: string;
+    child: MemoryText[];
+}
+
+class ARMCodeBuilder extends CodeBuilder {
+
+    constructor(_project: AbstractProject) {
+        super(_project);
+    }
+
+    private EmptyMemoryScatter(): MemoryScatter {
+        let memScatter: MemoryScatter = {
+            startUpIndex: -1,
+            romList: [],
+            ramList: []
+        };
+
+        for (let i = 0; i < 5; i++) {
+            memScatter.romList.push({
+                memInfo: {
+                    startAddr: '0x00000000',
+                    size: '0x00000000'
+                },
+                selected: false
+            });
+            memScatter.ramList.push({
+                memInfo: {
+                    startAddr: '0x00000000',
+                    size: '0x00000000'
+                },
+                selected: false,
+                noInit: false
+            });
+        }
+
+        return memScatter;
+    }
+
+    private FillHexNumber(num: string): string {
+        if (num.length >= 10) {
+            return num;
+        }
+        let str = '0x';
+        for (let i = 0; i < (10 - num.length); i++) {
+            str += '0';
+        }
+        return str + num.substring(2);
+    }
+
+    private GetMemoryScatter(_storageLayout: ARMStorageLayout): MemoryScatter {
+
+        let memScatter = this.EmptyMemoryScatter();
+        memScatter.startUpIndex = -1;
+
+        const storageLayout: ARMStorageLayout = JSON.parse(JSON.stringify(_storageLayout));
+
+        let index = 0;
+        for (let i = 0; i < storageLayout.RAM.length; i++) {
+
+            switch (storageLayout.RAM[i].tag) {
+                case 'IRAM':
+                    index = storageLayout.RAM[i].id + 2;
+                    break;
+                case 'RAM':
+                    index = storageLayout.RAM[i].id - 1;
+                    break;
+                default:
+                    throw Error('Unknown RAM Tag !');
+            }
+
+            memScatter.ramList[index].memInfo = storageLayout.RAM[i].mem;
+            memScatter.ramList[index].memInfo.startAddr = this.FillHexNumber(storageLayout.RAM[i].mem.startAddr);
+            memScatter.ramList[index].memInfo.size = this.FillHexNumber(storageLayout.RAM[i].mem.size);
+            memScatter.ramList[index].selected = storageLayout.RAM[i].isChecked;
+            memScatter.ramList[index].noInit = storageLayout.RAM[i].noInit;
+        }
+
+        for (let i = 0; i < storageLayout.ROM.length; i++) {
+
+            switch (storageLayout.ROM[i].tag) {
+                case 'IROM':
+                    index = storageLayout.ROM[i].id + 2;
+                    break;
+                case 'ROM':
+                    index = storageLayout.ROM[i].id - 1;
+                    break;
+                default:
+                    throw Error('Unknown ROM Tag !');
+            }
+
+            memScatter.romList[index].memInfo = storageLayout.ROM[i].mem;
+            memScatter.romList[index].memInfo.startAddr = this.FillHexNumber(storageLayout.ROM[i].mem.startAddr);
+            memScatter.romList[index].memInfo.size = this.FillHexNumber(storageLayout.ROM[i].mem.size);
+            memScatter.romList[index].selected = storageLayout.ROM[i].isChecked;
+            memScatter.startUpIndex = storageLayout.ROM[i].isStartup ? index : memScatter.startUpIndex;
+        }
+
+        if (memScatter.startUpIndex === -1) {
+            throw Error('MemScatter.startupIndex can\'t be -1');
+        }
+        else if (!memScatter.romList[memScatter.startUpIndex].selected) {
+            throw Error('the IROM' + (memScatter.startUpIndex - 2).toString() + ' is a startup ROM but it is not selected !');
+        }
+
+        return memScatter;
+    }
+
+    private GenMemTxtBySct(memScatter: MemoryScatter): MemoryText[] {
+
+        const getRomName = (index: number, isChild: boolean): string => {
+            let name = isChild ? 'ER_' : 'LR_';
+            let num = index + 1;
+            if (num > 3) {
+                name += 'I';
+                num = num - 3;
+            }
+            return name + 'ROM' + num.toString();
+        };
+        const getRamName = (index: number) => {
+            let name = 'RW_';
+            let num = index + 1;
+            if (num > 3) {
+                name += 'I';
+                num = num - 3;
+            }
+            return name + 'RAM' + num.toString();
+        };
+
+        const memTxt: MemoryText[] = [];
+
+        const staUpInfo = memScatter.romList[memScatter.startUpIndex].memInfo;
+
+        const staUpTxt: MemoryText = {
+            name: getRomName(memScatter.startUpIndex, false),
+            addr: ' ' + staUpInfo.startAddr + ' ' + staUpInfo.size + ' ',
+            content: '',
+            child: []
+        };
+        staUpTxt.child.push({
+            name: getRomName(memScatter.startUpIndex, true),
+            addr: ' ' + staUpInfo.startAddr + ' ' + staUpInfo.size + ' ',
+            content: '*.o (RESET, +First) \r\n*(InRoot$$Sections) \r\n.ANY (+RO) \r\n.ANY (+XO) \r\n',
+            child: []
+        });
+
+        //RAM
+        memScatter.ramList.forEach((item, index) => {
+            if (item.selected) {
+                staUpTxt.child.push({
+                    name: getRamName(index),
+                    addr: ' ' + item.memInfo.startAddr + (item.noInit ? ' UNINIT ' : ' ') + item.memInfo.size + ' ',
+                    content: '.ANY (+RW +ZI) \r\n',
+                    child: []
+                });
+            }
+        });
+
+        memTxt.push(staUpTxt);
+
+        memScatter.romList.forEach((item, index) => {
+            if (item.selected && index !== memScatter.startUpIndex) {
+                memTxt.push({
+                    name: getRomName(index, false),
+                    addr: ' ' + item.memInfo.startAddr + ' ' + item.memInfo.size + ' ',
+                    content: '',
+                    child: [{
+                        name: getRomName(index, true),
+                        addr: ' ' + item.memInfo.startAddr + ' ' + item.memInfo.size + ' ',
+                        content: '.ANY (+RO) \r\n',
+                        child: []
+                    }]
+                });
+            }
+        });
+
+        return memTxt;
+    }
+
+    private GenMemScatterFile(config: ProjectConfigData<ArmBaseCompileData>): File {
+
+        const sctFile = new File(this.project.ToAbsolutePath(this.project.getOutputDir()
+            + File.sep + config.name + '.sct'));
+
+        let data = '';
+        const memTxt = this.GenMemTxtBySct(this.GetMemoryScatter(config.compileConfig.storageLayout));
+
+        memTxt.forEach(tItem => {
+            let str = tItem.name + tItem.addr + '{\r\n';
+
+            if (tItem.child.length > 0) {
+                tItem.child.forEach(v => {
+                    str += v.name + v.addr + '{\r\n';
+                    str += v.content;
+                    str += '}\r\n';
+                });
+            } else {
+                str += tItem.content;
+            }
+
+            str += '}\r\n\r\n';
+            data += str;
+        });
+
+        // indent sct text
+        const lines = data.split(/\r\n|\n/);
+        let braceCount = 0;
+        for (let index = 0; index < lines.length; index++) {
+
+            const line = lines[index];
+
+            if (line.endsWith('}')) {
+                braceCount--;
+            }
+
+            if (braceCount > 0 && line.trim() !== '') {
+                lines[index] = '\t'.repeat(braceCount) + line;
+            }
+
+            if (line.endsWith('{')) {
+                braceCount++;
+            }
+        }
+
+        const title =
+            '; ******************************************************************' + '\r\n' +
+            '; *** Scatter-Loading Description File generated by Embedded IDE ***' + '\r\n' +
+            '; ******************************************************************' + '\r\n\r\n';
+        data = lines.join('\r\n');
+        sctFile.Write(title + data);
+
+        return sctFile;
+    }
+
+    private getCpuString(cpu: string, hardOption: FloatingHardwareOption): string {
+
+        let suffix: string = '';
+
+        switch (hardOption) {
+            case 'no_dsp':
+                // nothing
+                break;
+            case 'single':
+                if (cpu.endsWith('m33') || cpu.endsWith('m4') || cpu.endsWith('m7')) {
+                    suffix = '-sp';
+                }
+                break;
+            case 'double':
+                if (cpu.endsWith('m4') || cpu.endsWith('m7')) {
+                    suffix = '-dp';
+                }
+                break;
+            default: // none
+                if (cpu.endsWith('m33') || cpu.endsWith('m4') || cpu.endsWith('m7')) {
+                    suffix = '-none';
+                }
+                break;
+        }
+
+        return cpu + suffix;
+    }
+
+    protected getMaxSize(): MemorySize | undefined {
+
+        const prjConfig = this.project.GetConfiguration<ArmBaseCompileData>();
+
+        if (!prjConfig.config.compileConfig.useCustomScatterFile) {
+
+            const memLayout: ARMStorageLayout = JSON.parse(JSON.stringify(prjConfig.config.compileConfig.storageLayout));
+            const res: MemorySize = {};
+
+            try {
+                let romSize = 0;
+                for (const rom of memLayout.ROM) {
+                    if (rom.isChecked) {
+                        romSize += parseInt(rom.mem.size);
+                    }
+                }
+                res.rom = !isNaN(romSize) ? romSize : undefined;
+            } catch (error) {
+                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            }
+
+            try {
+                let ramSize = 0;
+                for (const ram of memLayout.RAM) {
+                    if (ram.isChecked) {
+                        ramSize += parseInt(ram.mem.size);
+                    }
+                }
+                res.ram = !isNaN(ramSize) ? ramSize : undefined;
+            } catch (error) {
+                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            }
+
+            return res;
+        }
+
+        return undefined;
+    }
+
+    protected getProblemMatcher(): string[] {
+        switch (this.project.getToolchain().name) {
+            case 'AC5':
+                return ['$armcc'];
+            default:
+                return ['$gcc'];
+        }
+    }
+
+    protected preHandleOptions(options: ICompileOptions) {
+
+        const config = this.project.GetConfiguration<ArmBaseCompileData>().config;
+        const toolchain = this.project.getToolchain();
+        const settingManager = SettingManager.GetInstance();
+
+        const cpuString = this.getCpuString(
+            config.compileConfig.cpuType.toLowerCase(), config.compileConfig.floatingPointHardware
+        );
+
+        if (!options.global) {
+            options.global = Object.create(null);
+        }
+
+        options.global['microcontroller-cpu'] = cpuString;
+        options.global['microcontroller-fpu'] = cpuString;
+        options.global['microcontroller-float'] = cpuString;
+        options.global['target'] = cpuString; // params for 'armclang-asm'
+
+        if (!options['linker']) {
+            options.linker = Object.create(null);
+        }
+
+        const ldFileList: string[] = [];
+
+        // 'armcc' can select whether use custom linker file
+        if (['AC5', 'AC6'].includes(toolchain.name)) {
+            // use custom linker script files
+            if (config.compileConfig.useCustomScatterFile) {
+                config.compileConfig.scatterFilePath.split(',').forEach((sctPath) => {
+                    ldFileList.push(`"${this.project.ToAbsolutePath(sctPath).replace(/\\/g, '/')}"`);
+                });
+            }
+            // auto generate scatter file 
+            else {
+                ldFileList.push(`"${this.GenMemScatterFile(config).path.replace(/\\/g, '/')}"`);
+            }
+        }
+
+        // other toolchain must use custom linker script file
+        else {
+            config.compileConfig.scatterFilePath.split(',').forEach((sctPath) => {
+                ldFileList.push(`"${this.project.ToAbsolutePath(sctPath).replace(/\\/g, '/')}"`);
+            });
+        }
+
+        // set linker script
+        options.linker['link-scatter'] = ldFileList;
+
+        if (options.afterBuildTasks === undefined) {
+            options.afterBuildTasks = [];
+        }
+
+        if (options['linker']['output-format'] !== 'lib') {
+
+            const extraCommands: any[] = [];
+
+            // convert elf
+            if (['AC5', 'AC6'].includes(config.toolchain) && settingManager.IsConvertAxf2Elf()) {
+
+                const toolFolderName = config.toolchain === 'AC6' ? 'ARMCLANG' : 'ARMCC';
+                const tool_root_folder = `${toolchain.getToolchainDir().path}\\${toolFolderName}`;
+                const ouput_path = `\${outDir}\\${config.name}`;
+                const axf2elf_log = `\${outDir}\\axf2elf.log`;
+
+                extraCommands.push({
+                    name: 'axf to elf',
+                    command: `"\${exeDir}\\mono.exe" "\${exeDir}\\axf2elf.exe" -d "${tool_root_folder}" -b "${ouput_path}.bin" -i "${ouput_path}.axf" -o "${ouput_path}.elf" > "${axf2elf_log}"`
+                });
+            }
+
+            // insert command lines
+            if (settingManager.isInsertCommandsAtBegin()) {
+                options.afterBuildTasks = extraCommands.concat(options.afterBuildTasks);
+            } else {
+                options.afterBuildTasks = options.afterBuildTasks.concat(extraCommands);
+            }
+        }
+    }
+}
+
+class RiscvCodeBuilder extends CodeBuilder {
+
+    protected getProblemMatcher(): string[] {
+        return ['$gcc'];
+    }
+
+    protected getMaxSize(): MemorySize | undefined {
+        return undefined;
+    }
+
+    protected preHandleOptions(options: ICompileOptions) {
+
+        const config = this.project.GetConfiguration<RiscvCompileData>().config;
+
+        const ldFileList: string[] = [];
+        config.compileConfig.linkerScriptPath.split(',').forEach((sctPath) => {
+            ldFileList.push(`"${this.project.ToAbsolutePath(sctPath).replace(/\\/g, '/')}"`);
+        });
+
+        if (!options['linker']) {
+            options.linker = Object.create(null);
+        }
+
+        // set linker script
+        options.linker['linker-script'] = ldFileList;
+    }
+}
+
+class C51CodeBuilder extends CodeBuilder {
+
+    protected getProblemMatcher(): string[] {
+        switch (this.project.getToolchain().name) {
+            case 'SDCC':
+                return ['$gcc'];
+            default:
+                return [];
+        }
+    }
+
+    protected getMaxSize(): MemorySize | undefined {
+        return undefined;
+    }
+
+    protected preHandleOptions(options: ICompileOptions) {
+
+        const config = this.project.GetConfiguration<C51BaseCompileData>().config;
+        const toolchain = this.project.getToolchain();
+
+        /* set linker script if it's existed */
+        if (config.compileConfig.linkerScript) {
+
+            const ldFileList: string[] = [];
+
+            config.compileConfig.linkerScript.split(',').forEach((sctPath) => {
+                ldFileList.push(`"${this.project.ToAbsolutePath(sctPath).replace(/\\/g, '/')}"`);
+            });
+
+            if (!options['linker']) {
+                options.linker = Object.create(null);
+            }
+
+            // set linker script for stm8 gnu sdcc
+            if (toolchain.name == 'GNU_SDCC_STM8') {
+                options.linker['linker-script'] = ldFileList;
+            }
+        }
+    }
+}
