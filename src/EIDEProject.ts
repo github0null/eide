@@ -1724,27 +1724,28 @@ class EIDEProject extends AbstractProject {
         // project type is ARM
         if (cConfig instanceof ArmBaseCompileConfigModel) {
 
+            const newDevInfo = this.GetPackManager().getCurrentDevInfo();
+
             // clear old device
             if (oldDevice) {
                 const dev = this.packManager.getCurrentDevInfo(oldDevice);
                 const define = dev?.define?.split(/ |,/g);
-                if (define) {
+                if (define && newDevInfo) { // if we switch device, remove old device macros 
                     this.GetConfiguration().CustomDep_RemoveFromDefineList(define);
                 }
             }
 
             // update new device
-            const deviceInfo = this.GetPackManager().getCurrentDevInfo();
-            if (deviceInfo) {
+            if (newDevInfo) {
 
                 // update compile options
-                cConfig.SetKeyValue('cpuType', deviceInfo.core || 'Cortex-M3');
-                cConfig.updateStorageLayout(deviceInfo.storageLayout);
+                cConfig.SetKeyValue('cpuType', newDevInfo.core || 'Cortex-M3');
+                cConfig.updateStorageLayout(newDevInfo.storageLayout);
 
                 // update device, set macro
-                prjConfig.config.deviceName = deviceInfo.name;
-                if (deviceInfo.define) {
-                    this.GetConfiguration().CustomDep_AddAllFromDefineList(deviceInfo.define.split(/ |,/g));
+                prjConfig.config.deviceName = newDevInfo.name;
+                if (newDevInfo.define) {
+                    this.GetConfiguration().CustomDep_AddAllFromDefineList(newDevInfo.define.split(/ |,/g));
                 }
             }
 
