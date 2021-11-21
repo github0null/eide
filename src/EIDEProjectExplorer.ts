@@ -1713,13 +1713,24 @@ export class ProjectExplorer {
         // create cppcheck output channel
         this.cppcheck_out = vscode.window.createOutputChannel('eide-cppcheck');
 
-        // when file saved, clear diagnostic
-        /* vscode.workspace.onDidSaveTextDocument((document) => {
-            const uri = document.uri;
-            if (this.cppcheck_diag.has(uri)) {
-                this.cppcheck_diag.delete(uri);
-            }
-        }); */
+        // register doc event
+        context.subscriptions.push(vscode.workspace.onDidSaveTextDocument((doc) => {
+            this.onCustomDepYamlSaved(doc)
+        }));
+
+        context.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors((curEditors) => {
+
+            const closedList: string[] = [];
+
+            this.prjCusDepChangesMap.forEach((__, fileName) => {
+                const idx = curEditors.findIndex((doc) => NodePath.basename(doc.document.fileName) == fileName);
+                if (idx == -1) closedList.push(fileName);
+            });
+
+            closedList.forEach((tmpFile) => {
+                this.onCustomDepYamlClosed(tmpFile);
+            });
+        }));
 
         this.on('request_open_project', (fsPath: string) => this.dataProvider.OpenProject(fsPath));
         this.on('request_create_project', (option: CreateOptions) => this.dataProvider.CreateProject(option));
@@ -3236,6 +3247,65 @@ export class ProjectExplorer {
         }
     }
 
+    // callbk, if config file saved, apply the changes
+    private onCustomDepYamlSaved(doc: vscode.TextDocument) {
+
+        const tmpFileName = NodePath.basename(doc.fileName);
+        const prj = this.prjCusDepChangesMap.get(tmpFileName);
+
+        // skip irrelevant files
+        if (prj == undefined) return;
+
+        // save to config
+        try {
+
+            const cusDep = prj.GetConfiguration().CustomDep_getDependence();
+            const cfg = yml.parse(doc.getText());
+
+            // inc list
+            if (Array.isArray(cfg.IncludeFolders)) {
+                cusDep.incList = cfg.IncludeFolders
+                    .filter((path: any) => typeof (path) == 'string')
+                    .map((path: string) => prj.ToAbsolutePath(path));
+            }
+
+            // lib list
+            if (Array.isArray(cfg.LibraryFolders)) {
+                cusDep.libList = cfg.LibraryFolders
+                    .filter((path: any) => typeof (path) == 'string')
+                    .map((path: string) => prj.ToAbsolutePath(path));
+            }
+
+            // macro list
+            if (Array.isArray(cfg.Defines)) {
+                cusDep.defineList = cfg.Defines
+                    .filter((path: any) => typeof (path) == 'string');
+            }
+
+            prj.GetConfiguration().CustomDep_NotifyChanged();
+
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+        }
+    }
+
+    // callbk, if config file closed, rm tmp file
+    private onCustomDepYamlClosed(tmpFileName: string) {
+
+        // skip irrelevant files
+        if (!this.prjCusDepChangesMap.has(tmpFileName)) return;
+
+        // do 
+        try {
+            this.prjCusDepChangesMap.delete(tmpFileName); // remove from mapper
+            fs.unlinkSync(`${os.tmpdir()}/${tmpFileName}`);
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+        }
+    }
+
+    // KV: <ymlFileName, EideProject>
+    private prjCusDepChangesMap: Map<string, AbstractProject> = new Map();
     async ModifyCustomDependence(item: ProjTreeItem) {
 
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
@@ -3248,96 +3318,48 @@ export class ProjectExplorer {
             `#`
         ];
 
-        // push include path
-        yamlLines.push(
-            ``,
-            `# Header Include Path`,
-            `IncludeFolders:`,
-            `#   - ./Your/Include/Folder/Path`
-        );
-        cusDep.incList.forEach((path) => {
-            yamlLines.push(`    - ${prj.ToRelativePath(path) || path}`)
-        });
+        // fill data
+        {
+            // push include path
+            yamlLines.push(
+                ``,
+                `# Header Include Path`,
+                `IncludeFolders:`,
+                `#   - ./Your/Include/Folder/Path`
+            );
+            cusDep.incList.forEach((path) => {
+                yamlLines.push(`    - ${prj.ToRelativePath(path) || path}`)
+            });
 
-        // push lib folder path
-        yamlLines.push(
-            ``,
-            `# Library Search Path`,
-            `LibraryFolders:`,
-            `#   - ./Your/Library/Path`
-        );
-        cusDep.libList.forEach((path) => {
-            yamlLines.push(`    - ${prj.ToRelativePath(path) || path}`)
-        });
+            // push lib folder path
+            yamlLines.push(
+                ``,
+                `# Library Search Path`,
+                `LibraryFolders:`,
+                `#   - ./Your/Library/Path`
+            );
+            cusDep.libList.forEach((path) => {
+                yamlLines.push(`    - ${prj.ToRelativePath(path) || path}`)
+            });
 
-        // push macros
-        yamlLines.push(
-            ``,
-            `# Global Macro Defines`,
-            `Defines:`,
-            `#   - TEST=1`
-        );
-        cusDep.defineList.forEach((macro) => {
-            yamlLines.push(`    - ${macro}`)
-        });
+            // push macros
+            yamlLines.push(
+                ``,
+                `# Global Macro Defines`,
+                `Defines:`,
+                `#   - TEST=1`
+            );
+            cusDep.defineList.forEach((macro) => {
+                yamlLines.push(`    - ${macro}`)
+            });
+        }
 
         // write and open file
         const yamlStr = yamlLines.join(os.EOL);
         const tmpFile = File.fromArray([os.tmpdir(), `eide-deps-${Date.now()}.yaml`]);
         tmpFile.Write(yamlStr);
-
-        // reg cb, if file saved, apply modify
-        vscode.workspace.onDidSaveTextDocument((doc) => {
-
-            // skip irrelevant files
-            if (NodePath.basename(doc.fileName) != tmpFile.name) return;
-
-            // save to config
-            try {
-                const cfg = yml.parse(doc.getText());
-
-                // inc list
-                if (Array.isArray(cfg.IncludeFolders)) {
-                    cusDep.incList = cfg.IncludeFolders
-                        .filter((path: any) => typeof (path) == 'string')
-                        .map((path: string) => prj.ToAbsolutePath(path));
-                }
-
-                // lib list
-                if (Array.isArray(cfg.LibraryFolders)) {
-                    cusDep.libList = cfg.LibraryFolders
-                        .filter((path: any) => typeof (path) == 'string')
-                        .map((path: string) => prj.ToAbsolutePath(path));
-                }
-
-                // macro list
-                if (Array.isArray(cfg.Defines)) {
-                    cusDep.defineList = cfg.Defines
-                        .filter((path: any) => typeof (path) == 'string');
-                }
-
-                prj.GetConfiguration().CustomDep_NotifyChanged();
-            } catch (error) {
-                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
-            }
-        });
-
-        // reg cb, if file closed, rm it
-        vscode.workspace.onDidCloseTextDocument((doc) => {
-
-            // skip irrelevant files
-            if (NodePath.basename(doc.fileName) != tmpFile.name) return;
-
-            // do 
-            try {
-                fs.unlinkSync(tmpFile.path)
-            } catch (error) {
-                // do nothing
-            }
-        });
-
-        // open file
-        vscode.window.showTextDocument(vscode.Uri.parse(tmpFile.ToUri()), { preview: true });
+        this.prjCusDepChangesMap.set(tmpFile.name, prj); // add to mapper
+        vscode.window.showTextDocument(vscode.Uri.parse(tmpFile.ToUri()), { preview: false });
     }
 
     RemoveDependenceItem(item: ProjTreeItem) {

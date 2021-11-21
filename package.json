@@ -29,7 +29,7 @@
     "description": "A singlechip development environment for 8051/STM8/Cortex-M/RISC-V",
     "version": "2.14.0",
     "engines": {
-        "vscode": "^1.38.0"
+        "vscode": "^1.60.0"
     },
     "categories": [
         "Programming Languages",
