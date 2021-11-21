@@ -3314,7 +3314,7 @@ export class ProjectExplorer {
         // gen deps yaml content
         const yamlLines: string[] = [
             `#`,
-            `# You can modify the config by edit this file and save it.`,
+            `# You can modify the configuration by editing and saving this file.`,
             `#`
         ];
 
