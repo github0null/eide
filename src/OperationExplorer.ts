@@ -195,7 +195,7 @@ export class OperationExplorer {
             label: create_project,
             command: {
                 title: create_project,
-                command: 'Operation.Create'
+                command: '_cl.eide.Operation.Create'
             },
             tooltip: create_project_hit,
             iconPath: {
@@ -209,7 +209,7 @@ export class OperationExplorer {
             label: view_str$import_project,
             command: {
                 title: view_str$import_project,
-                command: 'Operation.Import'
+                command: '_cl.eide.Operation.Import'
             },
             tooltip: import_project_hit,
             iconPath: {
@@ -223,7 +223,7 @@ export class OperationExplorer {
             label: open_project,
             command: {
                 title: open_project,
-                command: 'Operation.Open'
+                command: '_cl.eide.Operation.Open'
             },
             tooltip: open_project_hit,
             iconPath: {
@@ -237,7 +237,7 @@ export class OperationExplorer {
             label: view_str$operation$open_serialport,
             command: {
                 title: view_str$operation$open_serialport,
-                command: 'Operation.OpenSerialPortMonitor'
+                command: '_cl.eide.Operation.OpenSerialPortMonitor'
             },
             tooltip: view_str$operation$open_serialport,
             iconPath: {
@@ -256,7 +256,7 @@ export class OperationExplorer {
             label: view_str$operation$setToolchainPath,
             command: {
                 title: view_str$operation$setToolchainPath,
-                command: 'Operation.SetToolchainPath'
+                command: '_cl.eide.Operation.SetToolchainPath'
             },
             tooltip: view_str$operation$setToolchainPath,
             iconPath: {
@@ -273,7 +273,7 @@ export class OperationExplorer {
             label: view_str$operation$openSettings,
             command: {
                 title: view_str$operation$openSettings,
-                command: 'Operation.openSettings'
+                command: '_cl.eide.Operation.openSettings'
             },
             tooltip: view_str$operation$openSettings,
             iconPath: {
