@@ -495,7 +495,8 @@ export class ResManager extends events.EventEmitter {
 
         /* gen jlink internal device list to file */
         try { fs.unlinkSync(devXmlFile.path) } catch (error) { /* do nothing */ }
-        try { ChildProcess.execSync(cmd); } catch (error) { /* do nothing */ }
+        try { ChildProcess.execSync(cmd) } catch (error) { /* do nothing */ }
+        try { fs.unlinkSync(jlinkTmpCmdFile.path) } catch (error) { /* do nothing */ } // rm tmp file
         if (devXmlFile.IsFile()) { file = devXmlFile; }
 
         try {
@@ -510,6 +511,11 @@ export class ResManager extends events.EventEmitter {
             });
 
             const dom = parser.xml2js<any>(file.Read());
+
+            // rm tmp file
+            if (devXmlFile.IsFile()) {
+                try { fs.unlinkSync(devXmlFile.path) } catch (error) { }
+            }
 
             if (dom.DeviceDatabase == undefined) {
                 throw Error(`Not found 'DeviceDatabase' in devices xml, [file]: '${file.path}'`);
