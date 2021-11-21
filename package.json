@@ -465,6 +465,14 @@
                 "title": "%eide.workspace.make.template%"
             },
             {
+                "command": "_cl.eide.project.modify.deps",
+                "title": "%eide.item.modify%",
+                "icon": {
+                    "dark": "./res/icon/ConfigurationFile_16x.svg",
+                    "light": "./res/icon/ConfigurationFile_16x.svg"
+                }
+            },
+            {
                 "command": "_cl.eide.project.cppcheck.check_all",
                 "title": "%eide.project.run.cppcheck%"
             },
@@ -1121,6 +1129,11 @@
                     "command": "_cl.eide.project.modifyOtherSettings",
                     "group": "inline",
                     "when": "viewItem == SETTINGS_ITEM && view == Project"
+                },
+                {
+                    "command": "_cl.eide.project.modify.deps",
+                    "group": "inline",
+                    "when": "viewItem == DEPENDENCE && view == Project"
                 },
                 {
                     "command": "_cl.eide.project.addIncludeDir",

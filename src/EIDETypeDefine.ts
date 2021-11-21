@@ -1026,6 +1026,10 @@ export class ProjectConfiguration<T extends CompileData>
         return this.config.dependenceList[index].depList[depIndex];
     }
 
+    CustomDep_NotifyChanged() {
+        this.emit('dataChanged', { type: 'dependence' });
+    }
+
     CustomDep_RemoveInvalidIncDirs() {
         const dep = this.CustomDep_getDependence();
         dep.incList = dep.incList.filter((_path) => { return new File(_path).IsDir(); });

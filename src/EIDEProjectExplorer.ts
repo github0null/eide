@@ -75,9 +75,8 @@ import { VirtualDocument } from './VirtualDocsProvider';
 import { ResInstaller } from './ResInstaller';
 import { ExeCmd, ExecutableOption, ExeFile } from '../lib/node-utility/Executable';
 import { CmdLineHandler } from './CmdLineHandler';
-import * as CmsisConfigParser from './CmsisConfigParser'
-import * as ini from 'ini';
 import { WebPanelManager } from './WebPanelManager';
+import * as yml from 'yaml'
 
 enum TreeItemType {
     SOLUTION,
@@ -1927,10 +1926,6 @@ export class ProjectExplorer {
 
         this._buildLock = true;
 
-        vscode.window.visibleTextEditors.forEach(editor => {
-            editor.document.save();
-        });
-
         // save project before build
         prj.Save();
 
@@ -1965,9 +1960,6 @@ export class ProjectExplorer {
             GlobalEvent.emit('msg', newMessage('Warning', 'No project is opened !'));
             return;
         }
-
-        /* save all editor */
-        vscode.window.visibleTextEditors.forEach(editor => { editor.document.save(); });
 
         const cmdList: BuildCommandInfo[] = [];
 
@@ -3242,6 +3234,111 @@ export class ProjectExplorer {
         } else {
             vscode.env.clipboard.writeText(item.val.value);
         }
+    }
+
+    async ModifyCustomDependence(item: ProjTreeItem) {
+
+        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        const cusDep = prj.GetConfiguration().CustomDep_getDependence();
+
+        // gen deps yaml content
+        const yamlLines: string[] = [
+            `#`,
+            `# You can modify the config by edit this file and save it.`,
+            `#`,
+            ``
+        ];
+
+        // push include path
+        yamlLines.push(
+            ``,
+            `# Header Include Path`,
+            `IncludeFolders:`,
+            `#   - ./Your/Include/Folder/Path`
+        );
+        cusDep.incList.forEach((path) => {
+            yamlLines.push(`    - ${prj.ToRelativePath(path) || path}`)
+        });
+
+        // push lib folder path
+        yamlLines.push(
+            ``,
+            `# Library Search Path`,
+            `LibraryFolders:`,
+            `#   - ./Your/Library/Path`
+        );
+        cusDep.libList.forEach((path) => {
+            yamlLines.push(`    - ${prj.ToRelativePath(path) || path}`)
+        });
+
+        // push macros
+        yamlLines.push(
+            ``,
+            `# Global Macro Defines`,
+            `Defines:`,
+            `#   - TEST=1`
+        );
+        cusDep.defineList.forEach((macro) => {
+            yamlLines.push(`    - ${macro}`)
+        });
+
+        // write and open file
+        const yamlStr = yamlLines.join(os.EOL);
+        const tmpFile = File.fromArray([os.tmpdir(), `eide-deps-${Date.now()}.yaml`]);
+        tmpFile.Write(yamlStr);
+
+        // reg cb, if file saved, apply modify
+        vscode.workspace.onDidSaveTextDocument((doc) => {
+
+            // skip irrelevant files
+            if (NodePath.basename(doc.fileName) != tmpFile.name) return;
+
+            // save to config
+            try {
+                const cfg = yml.parse(doc.getText());
+
+                // inc list
+                if (Array.isArray(cfg.IncludeFolders)) {
+                    cusDep.incList = cfg.IncludeFolders
+                        .filter((path: any) => typeof (path) == 'string')
+                        .map((path: string) => prj.ToAbsolutePath(path));
+                }
+
+                // lib list
+                if (Array.isArray(cfg.LibraryFolders)) {
+                    cusDep.libList = cfg.LibraryFolders
+                        .filter((path: any) => typeof (path) == 'string')
+                        .map((path: string) => prj.ToAbsolutePath(path));
+                }
+
+                // macro list
+                if (Array.isArray(cfg.Defines)) {
+                    cusDep.defineList = cfg.Defines
+                        .filter((path: any) => typeof (path) == 'string');
+                }
+
+                prj.GetConfiguration().CustomDep_NotifyChanged();
+            } catch (error) {
+                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+            }
+        });
+
+        // reg cb, if file closed, rm it
+        vscode.workspace.onDidCloseTextDocument((doc) => {
+
+            // skip irrelevant files
+            if (NodePath.basename(doc.fileName) != tmpFile.name) return;
+
+            // do 
+            try {
+                fs.unlinkSync(tmpFile.path)
+            } catch (error) {
+                // do nothing
+            }
+        });
+
+        // open file
+        vscode.window.showTextDocument(vscode.Uri.parse(tmpFile.ToUri()), { preview: true });
     }
 
     RemoveDependenceItem(item: ProjTreeItem) {
