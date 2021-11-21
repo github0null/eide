@@ -3245,8 +3245,7 @@ export class ProjectExplorer {
         const yamlLines: string[] = [
             `#`,
             `# You can modify the config by edit this file and save it.`,
-            `#`,
-            ``
+            `#`
         ];
 
         // push include path
