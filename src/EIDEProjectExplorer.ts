@@ -1718,9 +1718,10 @@ export class ProjectExplorer {
             this.onCustomDepYamlSaved(doc)
         }));
 
-        context.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors((curEditors) => {
+        context.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors((__) => {
 
             const closedList: string[] = [];
+	    const curEditors = vscode.window.visibleTextEditors;
 
             this.prjCusDepChangesMap.forEach((__, fileName) => {
                 const idx = curEditors.findIndex((doc) => NodePath.basename(doc.document.fileName) == fileName);
