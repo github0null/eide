@@ -1718,7 +1718,7 @@ export class ProjectExplorer {
             this.onCustomDepYamlSaved(doc)
         }));
 
-        context.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors((__) => {
+        context.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors(() => {
 
             const closedList: string[] = [];
 	    const curEditors = vscode.window.visibleTextEditors;
