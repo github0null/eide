@@ -1714,24 +1714,8 @@ export class ProjectExplorer {
         this.cppcheck_out = vscode.window.createOutputChannel('eide-cppcheck');
 
         // register doc event
-        context.subscriptions.push(vscode.workspace.onDidSaveTextDocument((doc) => {
-            this.onCustomDepYamlSaved(doc)
-        }));
-
-        context.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors(() => {
-
-            const closedList: string[] = [];
-	    const curEditors = vscode.window.visibleTextEditors;
-
-            this.prjCusDepChangesMap.forEach((__, fileName) => {
-                const idx = curEditors.findIndex((doc) => NodePath.basename(doc.document.fileName) == fileName);
-                if (idx == -1) closedList.push(fileName);
-            });
-
-            closedList.forEach((tmpFile) => {
-                this.onCustomDepYamlClosed(tmpFile);
-            });
-        }));
+        context.subscriptions.push(vscode.workspace.onDidSaveTextDocument((doc) => this.onCustomDepYamlSaved(doc)));
+        context.subscriptions.push(vscode.workspace.onDidCloseTextDocument((doc) => this.onCustomDepYamlClosed(doc)));
 
         this.on('request_open_project', (fsPath: string) => this.dataProvider.OpenProject(fsPath));
         this.on('request_create_project', (option: CreateOptions) => this.dataProvider.CreateProject(option));
@@ -3291,9 +3275,10 @@ export class ProjectExplorer {
     }
 
     // callbk, if config file closed, rm tmp file
-    private onCustomDepYamlClosed(tmpFileName: string) {
+    private onCustomDepYamlClosed(doc: vscode.TextDocument) {
 
         // skip irrelevant files
+        const tmpFileName = NodePath.basename(doc.fileName);
         if (!this.prjCusDepChangesMap.has(tmpFileName)) return;
 
         // do 
@@ -3355,11 +3340,27 @@ export class ProjectExplorer {
             });
         }
 
+        const getTmpPathByProject = (prj: AbstractProject) => {
+            for (const KV of this.prjCusDepChangesMap) {
+                if (KV[1].getWsPath().toLowerCase() == prj.getWsPath().toLowerCase()) {
+                    return KV[0];
+                }
+            }
+        };
+
         // write and open file
         const yamlStr = yamlLines.join(os.EOL);
-        const tmpFile = File.fromArray([os.tmpdir(), `eide-deps-${Date.now()}.yaml`]);
+        const oldName = getTmpPathByProject(prj);
+        let tmpFile: File;
+
+        if (oldName) {
+            tmpFile = File.fromArray([os.tmpdir(), oldName]);
+        } else {// if file not exist, add to mapper
+            tmpFile = File.fromArray([os.tmpdir(), `eide-deps-${Date.now()}.yaml`]);
+            this.prjCusDepChangesMap.set(tmpFile.name, prj);
+        }
+
         tmpFile.Write(yamlStr);
-        this.prjCusDepChangesMap.set(tmpFile.name, prj); // add to mapper
         vscode.window.showTextDocument(vscode.Uri.parse(tmpFile.ToUri()), { preview: false });
     }
 
