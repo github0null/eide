@@ -667,8 +667,8 @@ export const view_str$operation$baudrate = [
 ][langIndex];
 
 export const view_str$operation$setKeil51Path = [
-    '设置 Keil_C51 工具链的 TOOLS.INI 路径',
-    'Set Keil_C51 toolchain\'s \'TOOLS.INI\' path'
+    '设置 Keil_C51 的 TOOLS.INI 路径',
+    'Set Keil_C51\'s \'TOOLS.INI\' path'
 ][langIndex];
 
 export const view_str$operation$setMDKPath = [
