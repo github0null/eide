@@ -3249,22 +3249,31 @@ export class ProjectExplorer {
 
             // inc list
             if (Array.isArray(cfg.IncludeFolders)) {
-                cusDep.incList = cfg.IncludeFolders
+                const li = cfg.IncludeFolders
                     .filter((path: any) => typeof (path) == 'string')
                     .map((path: string) => prj.ToAbsolutePath(path));
+                cusDep.incList = ArrayDelRepetition(li);
+            } else {
+                cusDep.incList = [];
             }
 
             // lib list
             if (Array.isArray(cfg.LibraryFolders)) {
-                cusDep.libList = cfg.LibraryFolders
+                const li = cfg.LibraryFolders
                     .filter((path: any) => typeof (path) == 'string')
                     .map((path: string) => prj.ToAbsolutePath(path));
+                cusDep.libList = ArrayDelRepetition(li);
+            } else {
+                cusDep.libList = [];
             }
 
             // macro list
             if (Array.isArray(cfg.Defines)) {
-                cusDep.defineList = cfg.Defines
+                const li = cfg.Defines
                     .filter((path: any) => typeof (path) == 'string');
+                cusDep.defineList = ArrayDelRepetition(li);
+            } else {
+                cusDep.defineList = [];
             }
 
             prj.GetConfiguration().CustomDep_NotifyChanged();
