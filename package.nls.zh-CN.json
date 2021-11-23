@@ -96,6 +96,8 @@
     "settings.iar.stm8.install.folder": "IAR for STM8 安装目录 [`example: D:\\IAR`]",
     "settings.sdcc.install.folder": "SDCC 安装目录 [`example: C:\\Program Files (x86)\\SDCC`]",
 
+    "settings.arm.armcc5.install.folder": "Armcc v5 toolchain 安装目录 [`example: D:\\ac5`]",
+    "settings.arm.armcc6.install.folder": "Armcc v6 toolchain 安装目录 [`example: D:\\ac6`]",
     "settings.arm.gcc.install.folder": "GNU Arm Embedded Toolchain 安装目录 [`example: D:\\arm-gcc\\8 2019-q3-update`]",
     "settings.arm.gcc.prefix": "GNU Arm Embedded Toolchain 编译器前缀 [`example: arm-none-eabi-`]",
 

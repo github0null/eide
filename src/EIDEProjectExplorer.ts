@@ -1310,51 +1310,53 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                 const incs: string[] = this.importCmsisHeaders(baseInfo.rootFolder).map((f) => f.path);
 
                 /* try resolve all deps */
-                const mdkRoot = SettingManager.GetInstance().GetMdkDir();
-                const fileTypes: string[] = ['source', 'header'];
-                rte_deps.forEach((dep) => {
-                    /* check dep whether is valid */
-                    if (fileTypes.includes(dep.category || '') && dep.class && dep.packPath) {
-                        const srcFileLi: File[] = [];
-                        const vFolder = getVirtualFolder(`${VirtualSource.rootName}/::${dep.class}`, true);
+                const mdkRoot = SettingManager.GetInstance().GetMdkArmDir();
+                if (mdkRoot) { // MDK ARM dir, like: 'D:\keil\ARM'
+                    const fileTypes: string[] = ['source', 'header'];
+                    rte_deps.forEach((dep) => {
+                        /* check dep whether is valid */
+                        if (fileTypes.includes(dep.category || '') && dep.class && dep.packPath) {
+                            const srcFileLi: File[] = [];
+                            const vFolder = getVirtualFolder(`${VirtualSource.rootName}/::${dep.class}`, true);
 
-                        /* add all candidate files */
-                        if (dep.instance) { srcFileLi.push(new File(dep.instance[0])) }
-                        srcFileLi.push(File.fromArray([mdkRoot.path, 'PACK', dep.packPath, dep.path]));
+                            /* add all candidate files */
+                            if (dep.instance) { srcFileLi.push(new File(dep.instance[0])) }
+                            srcFileLi.push(File.fromArray([mdkRoot.path, 'PACK', dep.packPath, dep.path]));
 
-                        /* resolve dependences */
-                        for (const srcFile of srcFileLi) {
+                            /* resolve dependences */
+                            for (const srcFile of srcFileLi) {
 
-                            /* check condition */
-                            if (!srcFile.IsFile()) { continue; }
-                            if (dep.category == 'source' && !vFolder) { continue; }
+                                /* check condition */
+                                if (!srcFile.IsFile()) { continue; }
+                                if (dep.category == 'source' && !vFolder) { continue; }
 
-                            let srcRePath: string | undefined = baseInfo.rootFolder.ToRelativePath(srcFile.path, false);
+                                let srcRePath: string | undefined = baseInfo.rootFolder.ToRelativePath(srcFile.path, false);
 
-                            /* if it's not in workspace, copy it */
-                            if (srcRePath == undefined) {
-                                srcRePath = ['.cmsis', dep.packPath, dep.path].join(File.sep);
-                                const realFolder = File.fromArray([baseInfo.rootFolder.path, NodePath.dirname(srcRePath)]);
-                                realFolder.CreateDir(true);
-                                realFolder.CopyFile(srcFile);
+                                /* if it's not in workspace, copy it */
+                                if (srcRePath == undefined) {
+                                    srcRePath = ['.cmsis', dep.packPath, dep.path].join(File.sep);
+                                    const realFolder = File.fromArray([baseInfo.rootFolder.path, NodePath.dirname(srcRePath)]);
+                                    realFolder.CreateDir(true);
+                                    realFolder.CopyFile(srcFile);
+                                }
+
+                                /* if it's a source, add to project */
+                                if (dep.category == 'source' && vFolder) {
+                                    vFolder.files.push({ path: srcRePath });
+                                }
+
+                                /* if it's a header, add to include path */
+                                else if (dep.category == 'header') {
+                                    incs.push(`${baseInfo.rootFolder.path}${File.sep}${NodePath.dirname(srcRePath)}`);
+                                }
+
+                                return; /* resolved !, exit */
                             }
-
-                            /* if it's a source, add to project */
-                            if (dep.category == 'source' && vFolder) {
-                                vFolder.files.push({ path: srcRePath });
-                            }
-
-                            /* if it's a header, add to include path */
-                            else if (dep.category == 'header') {
-                                incs.push(`${baseInfo.rootFolder.path}${File.sep}${NodePath.dirname(srcRePath)}`);
-                            }
-
-                            return; /* resolved !, exit */
                         }
-                    }
-                    /* resolve failed !, store dep */
-                    unresolved_deps.push(dep);
-                });
+                        /* resolve failed !, store dep */
+                        unresolved_deps.push(dep);
+                    });
+                }
 
                 /* add include paths for targets */
                 const mdk_rte_folder = File.fromArray([`${keilPrjFile.dir}`, 'RTE']);

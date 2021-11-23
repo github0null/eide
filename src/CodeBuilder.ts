@@ -805,8 +805,7 @@ class ARMCodeBuilder extends CodeBuilder {
             // convert elf
             if (['AC5', 'AC6'].includes(config.toolchain) && settingManager.IsConvertAxf2Elf()) {
 
-                const toolFolderName = config.toolchain === 'AC6' ? 'ARMCLANG' : 'ARMCC';
-                const tool_root_folder = `${toolchain.getToolchainDir().path}\\${toolFolderName}`;
+                const tool_root_folder = toolchain.getToolchainDir().path;
                 const ouput_path = `\${outDir}\\${config.name}`;
                 const axf2elf_log = `\${outDir}\\axf2elf.log`;
 

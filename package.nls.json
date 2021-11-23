@@ -97,6 +97,8 @@
     "settings.iar.stm8.install.folder": "IAR for STM8 install directory [`example: D:\\IAR`]",
     "settings.sdcc.install.folder": "SDCC install folder [`example: C:\\Program Files (x86)\\SDCC`]",
 
+    "settings.arm.armcc5.install.folder": "Armcc v5 toolchain install directory [`example: D:\\ac5`]",
+    "settings.arm.armcc6.install.folder": "Armcc v6 toolchain install directory [`example: D:\\ac6`]",
     "settings.arm.gcc.install.folder": "GCC for ARM toolchain install directory [`example: D:\\arm-gcc\\8 2019-q3-update`]",
     "settings.arm.gcc.prefix": "ARM GCC toolchain prefix [`example: arm-none-eabi-`]",
 

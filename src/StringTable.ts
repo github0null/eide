@@ -426,6 +426,11 @@ export const view_str$prompt$select_folder = [
     `Select This Folder`
 ][langIndex];
 
+export const view_str$prompt$select_file_or_folder = [
+    `选择该文件或文件夹`,
+    `Select This File Or Folder`
+][langIndex];
+
 export const view_str$prompt$not_found_compiler = [
     `无法找到编译器 '{}' 的安装位置 ！`,
     `Not found the compiler '{}' installation location !`
@@ -667,8 +672,8 @@ export const view_str$operation$setKeil51Path = [
 ][langIndex];
 
 export const view_str$operation$setMDKPath = [
-    '设置 ARMCC 工具链的 TOOLS.INI 路径',
-    'Set ARMCC Toolchain\'s \'TOOLS.INI\' path'
+    '设置 MDK 的 TOOLS.INI 路径',
+    'Set MDK\'s \'TOOLS.INI\' path'
 ][langIndex];
 
 export const view_str$operation$setToolchainInstallDir = [

@@ -304,6 +304,18 @@
                         "markdownDescription": "gnu sdcc for stm8 installation path",
                         "default": "${userRoot}/.eide/tools/stm8_gnu_sdcc"
                     },
+                    "EIDE.ARM.ARMCC5.InstallDirectory": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.arm.armcc5.install.folder%",
+                        "default": ""
+                    },
+                    "EIDE.ARM.ARMCC6.InstallDirectory": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.arm.armcc6.install.folder%",
+                        "default": ""
+                    },
                     "EIDE.ARM.GCC.Prefix": {
                         "type": "string",
                         "scope": "resource",

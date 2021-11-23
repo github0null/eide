@@ -1290,9 +1290,9 @@ export abstract class AbstractProject {
 
         if (!envFile.IsFile()) {
             const defTxt: string[] = [
-                `###############################################################################################`,
-                `# project environment config, can be used for 'builder options', 'custom download command'`,
-                `###############################################################################################`,
+                `##################################################################################`,
+                `# project environment config, can be used for 'builder', 'downloader' ...`,
+                `##################################################################################`,
                 ``,
                 `# mcu ram size`,
                 `#MCU_RAM_SIZE=0x00`,
