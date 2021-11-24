@@ -245,9 +245,12 @@ async function onSelectSerialBaudrate() {
 
 async function checkAndInstallBinaries(constex: vscode.ExtensionContext, forceInstall?: boolean): Promise<boolean> {
 
+    const eideCfg = ResManager.GetInstance().getAppConfig<any>();
+    const binVersion = eideCfg['binaray_version'] ? `-${eideCfg['binaray_version']}` : ''
+
     const downloadSites: string[] = [
-        `https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/bin.zip`,
-        `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/bin.zip`
+        `https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/bin${binVersion}.zip`,
+        `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/bin${binVersion}.zip`
     ];
 
     /* random select the order of site */
@@ -271,7 +274,7 @@ async function checkAndInstallBinaries(constex: vscode.ExtensionContext, forceIn
     let installedDone = false;
 
     try {
-        const tmpFile = File.fromArray([os.tmpdir(), 'eide-binaries.zip']);
+        const tmpFile = File.fromArray([os.tmpdir(), `eide-binaries${binVersion}.zip`]);
 
         /* make dir */
         binFolder.CreateDir(true);
@@ -353,6 +356,11 @@ async function checkAndInstallBinaries(constex: vscode.ExtensionContext, forceIn
                         });
                 });
             });
+        }
+
+        /* del tmp file */
+        if (tmpFile.IsFile()) {
+            try { fs.unlinkSync(tmpFile.path) } catch (error) { }
         }
 
     } catch (error) {

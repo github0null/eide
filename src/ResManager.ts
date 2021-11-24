@@ -40,6 +40,7 @@ import { AbstractProject } from "./EIDEProject";
 import { SettingManager } from "./SettingManager";
 import * as utility from './utility'
 import { CmdLineHandler } from "./CmdLineHandler";
+import * as yaml from 'yaml';
 
 let resManager: ResManager | undefined;
 
@@ -90,7 +91,6 @@ export class ResManager extends events.EventEmitter {
     private cacheInfoList: FileCacheInfo[];
     private stm8DevList: string[];
 
-    private appConfigFile: File;
     private appConfig: any;
 
     private constructor(context?: vscode.ExtensionContext) {
@@ -110,7 +110,6 @@ export class ResManager extends events.EventEmitter {
         }
 
         this.LoadSysEnv();
-        this.appConfigFile = File.fromArray([this.GetAppDataDir().path, 'config.json']);
 
         this.InitIcons();
         this.LoadAppConfig();
@@ -124,7 +123,6 @@ export class ResManager extends events.EventEmitter {
 
         GlobalEvent.on('extension_close', () => {
             this.saveCache();
-            this.saveAppConfig();
         });
     }
 
@@ -226,25 +224,20 @@ export class ResManager extends events.EventEmitter {
     //====================
 
     private LoadAppConfig() {
-        if (this.appConfigFile.IsFile()) {
+
+        const cfgFile = File.fromArray([this.GetAppDataDir().path, 'config.yaml']);
+
+        if (cfgFile.IsFile()) {
             try {
-                this.appConfig = JSON.parse(this.appConfigFile.Read());
+                this.appConfig = yaml.parse(cfgFile.Read());
             } catch (error) {
-                this.appConfig = Object.create(null);
-                console.error(error);
+                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
             }
         }
     }
 
     getAppConfig<T extends any>(): T {
         return this.appConfig;
-    }
-
-    saveAppConfig(newConfig?: any) {
-        if (typeof newConfig === 'object') {
-            this.appConfig = newConfig;
-        }
-        this.appConfigFile.Write(JSON.stringify(this.appConfig, undefined, 4));
     }
 
     //=====================
