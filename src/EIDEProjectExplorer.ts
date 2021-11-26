@@ -1367,26 +1367,38 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
                 /* log unresolved deps */
                 if (unresolved_deps.length > 0) {
+
+                    const title = `!!! ${WARNING} !!!`;
+
                     const lines: string[] = [
-                        `!!! ${WARNING} !!!`,
+                        `${title}`,
                         view_str$prompt$unresolved_deps,
                         view_str$prompt$prj_location.replace('{}', baseInfo.workspaceFile.path),
                         '---'
                     ];
+
                     unresolved_deps.forEach((dep) => {
-                        const nLine: string[] = [];
+
                         let locate = dep.packPath;
-                        if (dep.instance) { locate = baseInfo.rootFolder.ToRelativePath(dep.instance[0], false) || dep.instance[0] }
-                        nLine.push(
+                        if (dep.instance) {
+                            locate = baseInfo.rootFolder
+                                .ToRelativePath(dep.instance[0], false) || dep.instance[0]
+                        }
+
+                        const nLine: string[] = [
                             `FileName: '${dep.path}'`,
                             `\tClass:     '${dep.class}'`,
                             `\tCategory:  '${dep.category}'`,
                             `\tLocation:  '${locate}'`,
-                        );
+                        ];
+
                         lines.push(nLine.join(os.EOL));
                     });
+
                     const cont = lines.join(`${os.EOL}${os.EOL}`);
-                    const doc = await vscode.workspace.openTextDocument({ content: cont });
+                    const file = File.fromArray([baseInfo.rootFolder.path, `${title}.txt`]);
+                    file.Write(cont); // write content to file
+                    const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(file.ToUri()));
                     vscode.window.showTextDocument(doc, { preview: false });
                 }
             }
