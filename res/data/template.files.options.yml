@@ -1,0 +1,34 @@
+#########################################################################################
+#                append compiler options for files or virtual folders
+#########################################################################################
+
+version: '1.0'
+
+#########################################################################################
+#                                     rules
+#
+# syntax:
+#   <your matcher expr>: <your compiler command>
+#
+# examples:
+#   main.cpp:           --cpp11 -Og ...
+#   src/*.c:            -gnu -O2 ...
+#   src/lib/**/*.cpp:   --cpp11 -Os ...
+#   !Application/*.c:   -O0
+#
+# For more syntax, please refer to: https://www.npmjs.com/package/micromatch
+#
+#########################################################################################
+
+#
+# for source files with filesystem paths
+#
+files:
+#   test/**/test.c: --c99
+
+#
+# for source files with virtual paths
+#
+virtualPathFiles:
+#   test/**/*.c: --c99
+

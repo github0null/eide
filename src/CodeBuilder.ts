@@ -22,6 +22,12 @@
 	SOFTWARE.
 */
 
+import * as fs from 'fs';
+import * as vscode from 'vscode';
+import * as NodePath from 'path';
+import * as events from 'events';
+import * as globmatch from 'micromatch'
+
 import { AbstractProject } from "./EIDEProject";
 import { ResManager } from "./ResManager";
 import { File } from "../lib/node-utility/File";
@@ -35,9 +41,6 @@ import { GlobalEvent } from "./GlobalEvents";
 import { ExceptionToMessage, newMessage } from "./Message";
 import { CmdLineHandler } from "./CmdLineHandler";
 
-import * as fs from 'fs';
-import * as vscode from 'vscode';
-import * as NodePath from 'path';
 import { ArrayDelRepetition } from "../lib/node-utility/Utility";
 import { DependenceManager } from "./DependenceManager";
 import { WorkspaceManager } from "./WorkspaceManager";
@@ -45,7 +48,6 @@ import { ToolchainName } from "./ToolchainManager";
 import { md5, sha256 } from "./utility";
 import { MakefileGen } from "./Makefile";
 import { append2SysEnv } from "./Platform";
-import * as events from 'events';
 import { FileWatcher } from "../lib/node-utility/FileWatcher";
 
 export interface BuildOptions {
@@ -68,6 +70,8 @@ export interface BuilderParams {
     ram?: number;
     rom?: number;
     sourceList: string[];
+    sourceParams?: { [name: string]: string; };
+    sourceParamsMtime?: number;
     incDirs: string[];
     libDirs: string[];
     defines: string[];
@@ -101,23 +105,96 @@ export abstract class CodeBuilder {
         this._event.emit(event, arg);
     }
 
-    getSourceList(): string[] {
+    genSourceInfo(prevBuilderParams: BuilderParams): {
+        sources: string[],
+        params?: { [name: string]: string; }
+        paramsModTime?: number;
+    } {
 
-        const srcList: string[] = [];
+        const srcList: { path: string, virtualPath?: string; }[] = [];
+        const srcParams: { [name: string]: string; } = {};
         const fGoups = this.project.getFileGroups();
         const filter = AbstractProject.getSourceFileFilter();
 
+        // filter source files
         for (const group of fGoups) {
             if (group.disabled) continue; // skip disabled group
             for (const source of group.files) {
                 if (source.disabled) continue; // skip disabled file
                 if (!filter.some((reg) => reg.test(source.file.path))) continue; // skip non-source
                 const rePath = this.project.ToRelativePath(source.file.path, false);
-                srcList.push(rePath || source.file.path);
+                const fInfo: any = { path: rePath || source.file.path }
+                if (AbstractProject.isVirtualSourceGroup(group)) {
+                    fInfo.virtualPath = `${group.name}/${source.file.name}`
+                }
+                srcList.push(fInfo);
             }
         }
 
-        return srcList;
+        // append user options for files
+        try {
+            const options = this.project.getFilesOptions();
+
+            // parser
+            const matcher = (parttenInfo: any, fieldName: string) => {
+                srcList.forEach((srcInf: any) => {
+                    if (!srcInf[fieldName]) return; // skip if not exist
+                    for (const expr in parttenInfo) {
+                        const path = (<string>srcInf[fieldName]).replace(/\\/g, '/');
+                        if (globmatch.isMatch(path, expr)) {
+                            if (srcParams[srcInf.path]) {
+                                srcParams[srcInf.path] += ' ' + (parttenInfo[expr] || '')
+                            } else {
+                                srcParams[srcInf.path] = parttenInfo[expr] || '';
+                            }
+                        }
+                    }
+                });
+            };
+
+            if (options) {
+
+                // virtual folder files
+                if (typeof options?.virtualPathFiles == 'object') {
+                    const parttenInfo = options?.virtualPathFiles;
+                    matcher(parttenInfo, 'virtualPath');
+                }
+
+                // filesystem files
+                if (typeof options?.files == 'object') {
+                    const parttenInfo = options?.files;
+                    matcher(parttenInfo, 'path');
+                }
+
+                // if src options is modified to null but old is not null,
+                // we need make source recompile
+                const oldSrcParams = prevBuilderParams.sourceParams;
+                for (const path in oldSrcParams) {
+                    if (srcParams[path] == undefined && oldSrcParams[path] != undefined &&
+                        oldSrcParams[path] != '') {
+                        srcParams[path] = ""; // make it empty to trigger recompile 
+                    }
+                }
+            }
+
+        } catch (err) {
+            GlobalEvent.emit('msg', ExceptionToMessage(err, 'Hidden'));
+            GlobalEvent.emit('msg', newMessage('Warning', `Append files options failed !, msg: ${err.message || ''}`));
+        }
+
+        let mTimeMs: number | undefined;
+
+        try {
+            mTimeMs = fs.statSync(this.project.getFilesOptionsFile().path).mtimeMs
+        } catch (error) {
+            // do nothing
+        }
+
+        return {
+            sources: srcList.map((inf) => inf.path),
+            params: srcParams,
+            paramsModTime: mTimeMs
+        }
     }
 
     getIncludeDirs(): string[] {
@@ -270,6 +347,8 @@ export abstract class CodeBuilder {
             .compileConfigModel.getOptions(this.project.getEideDir().path, config);
         const memMaxSize = this.getMaxSize();
         const modeList: string[] = [];
+        const prevParams: BuilderParams = File.IsFile(paramsPath) ? JSON.parse(fs.readFileSync(paramsPath, 'utf8')) : {};
+        const sourceInfo = this.genSourceInfo(prevParams);
 
         const builderOptions: BuilderParams = {
             name: config.name,
@@ -285,7 +364,9 @@ export abstract class CodeBuilder {
             rom: memMaxSize?.rom,
             incDirs: this.getIncludeDirs().map((incPath) => { return this.project.ToRelativePath(incPath, false) || incPath; }),
             libDirs: this.getLibDirs().map((libPath) => { return this.project.ToRelativePath(libPath, false) || libPath; }),
-            sourceList: this.getSourceList().sort(),
+            sourceList: sourceInfo.sources.sort(),
+            sourceParams: sourceInfo.params,
+            sourceParamsMtime: sourceInfo.paramsModTime,
             defines: this.getDefineList(),
             options: JSON.parse(JSON.stringify(compileOptions)),
             env: this.project.getProjectEnv()
@@ -321,9 +402,6 @@ export abstract class CodeBuilder {
         // check whether need rebuild project
         if (this.isRebuild() == false) {
             try {
-                const prevParams: BuilderParams =
-                    File.IsFile(paramsPath) ? JSON.parse(fs.readFileSync(paramsPath, 'utf8')) : {};
-
                 // not found hash from old params file
                 if (prevParams.sha == undefined) {
                     this.enableRebuild();

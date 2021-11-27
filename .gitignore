@@ -29,3 +29,6 @@ bin_bk
 
 # shell script
 *.sh
+
+# test
+test

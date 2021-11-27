@@ -25,6 +25,7 @@
     "eide.project.clean": "Clean",
     "eide.project.upload": "Upload Program To Device",
     "eide.project.gen.makefile": "Generate Makefile Template",
+    "eide.project.modify.files.options": "Append Compiler Options For Files",
 
     "eide.workspace.build": "Build All",
     "eide.workspace.rebuild": "Rebuild All",

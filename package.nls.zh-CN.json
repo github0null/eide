@@ -25,6 +25,7 @@
     "eide.project.clean": "清理",
     "eide.project.upload": "烧录",
     "eide.project.gen.makefile": "生成 Makefile 模板",
+    "eide.project.modify.files.options": "向文件附加编译选项",
     
     "eide.workspace.build": "构建所有项目",
     "eide.workspace.rebuild": "重新构建所有项目",

@@ -83,7 +83,7 @@ export interface FileItem {
 }
 
 export interface FileGroup {
-    name: string;
+    name: string;       // dir name if it's system folder, else it's a virtual path
     files: FileItem[];
     disabled?: boolean; // for mdk group info
 }

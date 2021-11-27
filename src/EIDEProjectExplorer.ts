@@ -3246,6 +3246,12 @@ export class ProjectExplorer {
         }
     }
 
+    async showFilesOptions(item: ProjTreeItem) {
+        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        const optFile = prj.getFilesOptionsFile();
+        vscode.window.showTextDocument(vscode.Uri.parse(optFile.ToUri()), { preview: true });
+    }
+
     // callbk, if config file saved, apply the changes
     private onCustomDepYamlSaved(doc: vscode.TextDocument) {
 

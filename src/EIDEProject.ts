@@ -26,6 +26,9 @@ import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as NodePath from 'path';
 import * as events from 'events';
+import * as ini from 'ini';
+import * as os from 'os';
+import * as yaml from 'yaml';
 
 import { File } from '../lib/node-utility/File';
 import { FileWatcher } from '../lib/node-utility/FileWatcher';
@@ -50,8 +53,6 @@ import { isNullOrUndefined } from 'util';
 import { DeleteDir } from './Platform';
 import { IDebugConfigGenerator } from './DebugConfigGenerator';
 import { md5, copyObject } from './utility';
-import * as ini from 'ini';
-import * as os from 'os';
 import { ResInstaller } from './ResInstaller';
 import { view_str$prompt$not_found_compiler } from './StringTable';
 import { SettingManager } from './SettingManager';
@@ -649,6 +650,12 @@ export interface BaseProjectInfo {
     prjConfig: ProjectConfiguration<any>;
 }
 
+export interface FilesOptions {
+    version: string;
+    files?: { [key: string]: string };
+    virtualPathFiles?: { [key: string]: string };
+}
+
 export type DataChangeType = 'pack' | 'dependence' | 'compiler' | 'uploader' | 'files';
 
 export abstract class AbstractProject {
@@ -719,6 +726,10 @@ export abstract class AbstractProject {
 
     static equal(p1: AbstractProject, p2: AbstractProject) {
         return p1.getWsPath() === p2.getWsPath();
+    }
+
+    static isVirtualSourceGroup(grp: FileGroup): boolean {
+        return (<ProjectFileGroup>grp).dir == undefined;
     }
 
     private loadProjectDirectory() {
@@ -1333,6 +1344,32 @@ export abstract class AbstractProject {
             } catch (error) {
                 GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
             }
+        }
+    }
+
+    getFilesOptionsFile(): File {
+
+        const target = this.getCurrentTarget().toLowerCase();
+        const templateFile = File.fromArray([
+            ResManager.GetInstance().GetAppDataDir().path, 'template.files.options.yml'
+        ]);
+
+        const optFile = File.fromArray([this.getEideDir().path, `${target}.files.options.yml`]);
+        if (!optFile.IsFile()) {
+            optFile.Write(templateFile.Read());
+        }
+
+        return optFile;
+    }
+
+    getFilesOptions(): FilesOptions | undefined {
+
+        const optFile = this.getFilesOptionsFile();
+
+        try {
+            return yaml.parse(optFile.Read());
+        } catch (error) {
+            GlobalEvent.emit('msg', newMessage('Warning', `error format '${optFile.name}', it must be a yaml file !`));
         }
     }
 
