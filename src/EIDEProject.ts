@@ -1992,6 +1992,14 @@ class EIDEProject extends AbstractProject {
                 settings['C_Cpp.default.cStandard'] = "c99";
             }
 
+            if (settings['[yaml]'] === undefined) {
+                settings['[yaml]'] = {
+                    "editor.insertSpaces": true,
+                    "editor.tabSize": 4,
+                    "editor.autoIndent": "advanced"
+                }
+            }
+
             if (toolchain.name === 'Keil_C51') {
                 if (settings['C_Cpp.errorSquiggles'] === undefined) {
                     settings['C_Cpp.errorSquiggles'] = "Disabled";
@@ -2005,6 +2013,7 @@ class EIDEProject extends AbstractProject {
                     "keroc.hex-fmt",
                     "hars.cppsnippets",
                     "zixuanwang.linkerscript",
+                    "redhat.vscode-yaml"
                 ];
 
                 const prjInfo = this.GetConfiguration().config;

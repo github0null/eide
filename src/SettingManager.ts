@@ -242,6 +242,10 @@ export class SettingManager {
 
     //--------------------- Global Option ------------------------
 
+    getMapViewParserDepth(): number {
+        return this.getConfiguration().get<number>('Option.MapViewParserDepth') || 1;
+    }
+
     isDisplaySourceRefs(): boolean {
         return this.getConfiguration().get<boolean>('Option.ShowSourceReferences') || false;
     }

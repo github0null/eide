@@ -27,6 +27,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as unzipper from 'unzipper';
 import * as NodePath from 'path';
+import * as ChildProcess from 'child_process';
 
 import { GlobalEvent } from './GlobalEvents';
 import { OperationExplorer } from './OperationExplorer';
@@ -407,7 +408,7 @@ function exportEnvToSysPath() {
 
 async function InitComponents(context: vscode.ExtensionContext): Promise<boolean | undefined> {
 
-    // init all modules
+    // init resource manager
     ResManager.GetInstance(context);
 
     /* check binaries, if not found, install it ! */
@@ -470,6 +471,13 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
         }
     });
 
+    // register map view provider
+    context.subscriptions.push(
+        vscode.window.registerCustomEditorProvider('cl.eide.map.view', new MapViewEditorProvider(), {
+            webviewOptions: { enableFindWidget: true }
+        })
+    );
+
     return true;
 }
 
@@ -512,6 +520,140 @@ function RegisterGlobalEvent() {
         vscode.commands.executeCommand('setContext', 'cl.eide.projectActived', prj_count != 0);
         vscode.commands.executeCommand('setContext', 'cl.eide.enable.active', prj_count > 1);
     });
+}
+
+// --- .mapView viewer
+
+import * as yaml from 'yaml'
+import { FileWatcher } from '../lib/node-utility/FileWatcher';
+
+class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
+
+    private fileWatcher: FileWatcher | undefined;
+
+    resolveCustomTextEditor(document: vscode.TextDocument, webviewPanel: vscode.WebviewPanel, token: vscode.CancellationToken): void | Thenable<void> {
+
+        const viewFile = new File(document.fileName);
+        const title = viewFile.noSuffixName;
+
+        // init
+        webviewPanel.title = title;
+        webviewPanel.iconPath = vscode.Uri.parse(ResManager.GetInstance().GetIconByName('file_type_map.svg').ToUri());
+        webviewPanel.webview.html = this.genHtmlCont(title, 'No Content');
+        webviewPanel.onDidDispose(() => {
+            if (this.fileWatcher) {
+                this.fileWatcher.Close();
+                this.fileWatcher = undefined;
+            }
+        });
+
+        if (!viewFile.IsFile()) {
+            webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: file '${viewFile.path}' is not a file !`);
+            return;
+        }
+
+        const conf: { tool?: string, fileName?: string } = yaml.parse(viewFile.Read());
+        const defName = viewFile.noSuffixName + '.map';
+        const mapFile = File.fromArray([viewFile.dir, conf.fileName || defName]);
+
+        if (!mapFile.IsFile()) {
+            webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: file '${mapFile.path}' is not a file !`);
+            return;
+        }
+
+        if (!conf.tool) {
+            webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: invalid toolchain type !`);
+            return;
+        }
+
+        let toolName = 'ARM_MICRO';
+        let fileDepth = SettingManager.GetInstance().getMapViewParserDepth();
+
+        if (fileDepth < 0)
+            fileDepth = 1;
+
+        switch (conf.tool) {
+            case 'AC5':
+            case 'AC6':
+                toolName = 'ARM_MICRO';
+                break;
+            case 'GCC':
+                toolName = 'GCC_ARM';
+                break;
+            default:
+                webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: we not support this toolchain type: '${conf.tool}' !`);
+                return;
+        }
+
+        const showMapView = () => {
+            try {
+                const execPath = ResManager.GetInstance().getBuilderDir() + File.sep + 'memap';
+                const lines = ChildProcess
+                    .execSync(`${execPath} -t ${toolName} -d ${fileDepth} "${mapFile.path}"`)
+                    .toString().split(/\r\n|\n/);
+
+                // append color
+                for (let index = 0; index < lines.length; index++) {
+                    const line = lines[index];
+                    lines[index] = line
+                        .replace(/\((\+[^0]\d*)\)/g, `(<span class="success">$1</span>)`)
+                        .replace(/\((\-[^0]\d*)\)/g, `(<span class="error">$1</span>)`)
+                        .replace(/^(\s*\|\s*)(Subtotals)/, `$1<span class="info">$2</span>`)
+                        .replace(/^(\s*Total)/, `\n$1`);
+                }
+
+                webviewPanel.webview.html = this.genHtmlCont(title, lines.join('\n'));
+            } catch (error) {
+                webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Parse error</span>: \r\n${error.message}`);
+                return;
+            }
+        };
+
+        if (this.fileWatcher == undefined) {
+            try {
+                this.fileWatcher = new FileWatcher(mapFile, false);
+                this.fileWatcher.OnChanged = () => showMapView();
+                this.fileWatcher.Watch();
+            } catch (error) {
+                this.fileWatcher?.Close();
+                this.fileWatcher = undefined;
+            }
+        }
+
+        showMapView();
+    }
+
+    private genHtmlCont(title: string, cont: string): string {
+        return `
+        <!DOCTYPE html>
+			<html lang="en">
+			<head>
+				<meta charset="UTF-8">
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<title>${title}</title>
+                <style type="text/css">
+                    body {
+                        font-size: var(--vscode-editor-font-size);
+                    }
+                    .success {
+                        color: var(--vscode-terminal-ansiGreen);
+                    }
+                    .error {
+                        color: var(--vscode-errorForeground);
+                    }
+                    .info {
+                        color: var(--vscode-editorInfo-foreground);
+                    }
+                </style>
+			</head>
+			<body>
+                <section>
+				    <pre>${cont}</pre>
+                </section>
+			</body>
+			</html>
+        `;
+    }
 }
 
 //-----------------------------------------

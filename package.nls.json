@@ -82,6 +82,7 @@
     "settings.option.use.task.to.build": "Use Task to build project instead of Terminal",
     "settings.option.insert.extcommands.at.begin": "The built-in command lines will insert at the beginning of the `beforeBuildTasks / afterBuildTasks`",
     "settings.option.show.source.references": "Show c/c++ header references for source file",
+    "settings.option.mapView.parser.depth": "The depth limit of the obj file path when *.map.view is displayed. Obj files larger than this depth are ignored.",
     
     "settings.template.use.proxy": "Use github proxy to improve network speed (experimental function)",
     "settings.template.repo.url": "remote public github repository url, format: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",

@@ -83,6 +83,17 @@
         "yaml": "^1.10.2"
     },
     "contributes": {
+        "customEditors": [
+            {
+                "viewType": "cl.eide.map.view",
+                "displayName": "MapView",
+                "selector": [
+                    {
+                        "filenamePattern": "*.map.view"
+                    }
+                ]
+            }
+        ],
         "walkthroughs": [
             {
                 "id": "eide.startup.walkthroughs",
@@ -132,6 +143,12 @@
             {
                 "title": "Embedded IDE",
                 "properties": {
+                    "EIDE.Option.MapViewParserDepth": {
+                        "type": "integer",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.option.mapView.parser.depth%",
+                        "default": 5
+                    },
                     "EIDE.Option.ShowSourceReferences": {
                         "type": "boolean",
                         "scope": "resource",
