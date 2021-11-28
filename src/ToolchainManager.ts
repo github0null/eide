@@ -1008,6 +1008,7 @@ class AC6 implements IToolchian {
 
     readonly verifyFileName: string = 'arm.v6.verify.json';
 
+    /*
     private readonly defMacroList: string[];
 
     constructor() {
@@ -1038,6 +1039,7 @@ class AC6 implements IToolchian {
             return ['__GNUC__=4', '__GNUC_MINOR__=2', '__GNUC_PATCHLEVEL__=1'];
         }
     }
+    */
 
     newInstance(): IToolchian {
         return new AC6();
@@ -1065,7 +1067,7 @@ class AC6 implements IToolchian {
     }
 
     getInternalDefines(builderOpts: ICompileOptions): string[] {
-        return this.defMacroList;
+        return [];
     }
 
     getCustomDefines(): string[] | undefined {
