@@ -82,8 +82,9 @@
     "settings.option.use.task.to.build": "使用 vscode 任务执行编译命令",
     "settings.option.insert.extcommands.at.begin": "内置的构建任务将被插入到 `beforeBuildTasks / afterBuildTasks` 之前",
     
-    "settings.template.use.proxy": "使用 github 代理加速模板下载",
-    "settings.template.repo.url": "远程 github 模板仓库地址, 格式: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
+    "settings.repo.use.proxy": "使用代理加速 github 资源下载",
+    "settings.template.repo.url": "Github 模板仓库地址, 格式: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
+    "settings.cmsispack.repo.url": "Github cmsis 包仓库地址, 格式: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
 
     "settings.serial.def.port": "默认串口名称",
     "settings.serial.show.toolbar": "显示串口工具栏",

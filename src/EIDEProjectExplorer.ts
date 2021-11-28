@@ -68,7 +68,11 @@ import { HexUploaderManager, HexUploaderType } from './HexUploader';
 import { Compress, CompressOption } from './Compress';
 import { DependenceManager } from './DependenceManager';
 import { ArrayDelRepetition } from '../lib/node-utility/Utility';
-import { copyObject, downloadFileWithProgress, getDownloadUrlFromGit, runShellCommand } from './utility';
+import {
+    copyObject, downloadFileWithProgress, getDownloadUrlFromGit,
+    runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
+    genGithubHash
+} from './utility';
 import { append2SysEnv, DeleteDir, kill } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
 import { VirtualDocument } from './VirtualDocsProvider';
@@ -77,6 +81,7 @@ import { ExeCmd, ExecutableOption, ExeFile } from '../lib/node-utility/Executabl
 import { CmdLineHandler } from './CmdLineHandler';
 import { WebPanelManager } from './WebPanelManager';
 import * as yml from 'yaml'
+import { GitFileInfo } from './WebInterface/GithubInterface';
 
 enum TreeItemType {
     SOLUTION,
@@ -1549,33 +1554,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         }
     }
 
-    async InstallKeilPackage(prjIndex: number, reporter?: (progress?: number, message?: string) => void) {
-
-        if (this.prjList[prjIndex].GetPackManager().GetPack()) {
-            GlobalEvent.emit('msg', {
-                type: 'Warning',
-                contentType: 'string',
-                content: 'You should uninstall old package before install a new one !'
-            });
-            return;
-        }
-
-        const packFile = await vscode.window.showOpenDialog({
-            canSelectFolders: false,
-            canSelectFiles: true,
-            openLabel: install_this_pack,
-            filters: {
-                'CMSIS Package': ['pack']
-            }
-        });
-
-        if (packFile === undefined) {
-            return;
-        }
-
-        return this.prjList[prjIndex].InstallPack(new File(packFile[0].fsPath), reporter);
-    }
-
     async UninstallKeilPackage(item: ProjTreeItem) {
         const prj = this.prjList[item.val.projectIndex];
         if (prj.GetPackManager().GetPack()) {
@@ -1649,7 +1627,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                 return <vscode.QuickPickItem>{ label: dev.name, description: dev.core };
             });
             const item = await vscode.window.showQuickPick(devList, {
-                placeHolder: 'found ' + devList.length + ' devices, ' + set_device_hint,
+                placeHolder: 'Found ' + devList.length + ' devices, ' + set_device_hint,
                 canPickMany: false,
                 matchOnDescription: true
             });
@@ -1779,7 +1757,7 @@ export class ProjectExplorer {
     private async createTarget(prj: AbstractProject) {
 
         let targetName = await vscode.window.showInputBox({
-            placeHolder: 'input a target name',
+            placeHolder: 'Input a target name',
             validateInput: (val: string) => {
                 if (val.length > 25) { return `string is too long !, length must < 25, current is ${val.length}`; }
                 if (!/^[\w-]+$/.test(val)) { return `string can only contain word, number or '_' !`; }
@@ -1800,7 +1778,7 @@ export class ProjectExplorer {
 
     private async deleteTarget(prj: AbstractProject) {
 
-        const selTarget = await vscode.window.showQuickPick(prj.getTargets(), { placeHolder: 'select a target to delete' });
+        const selTarget = await vscode.window.showQuickPick(prj.getTargets(), { placeHolder: 'Select a target to delete' });
         if (selTarget === undefined) { return; }
 
         const curTarget = prj.getCurrentTarget();
@@ -1900,7 +1878,7 @@ export class ProjectExplorer {
 
         vscode.window.showQuickPick(records.reverse(), {
             canPickMany: false,
-            placeHolder: `found ${records.length} results, select one to open`,
+            placeHolder: `Found ${records.length} results, select one to open`,
             matchOnDescription: false,
             matchOnDetail: true,
             ignoreFocusOut: false
@@ -2111,27 +2089,202 @@ export class ProjectExplorer {
             return;
         }
 
+        if (prj.GetPackManager().GetPack()) {
+            GlobalEvent.emit('msg', {
+                type: 'Warning',
+                contentType: 'string',
+                content: 'You should uninstall old package before install a new one !'
+            });
+            this.installLocked = false;
+            return;
+        }
+
         vscode.window.withProgress<void>({
             location: vscode.ProgressLocation.Notification,
-            title: `Installing CMSIS package`
+            title: `Installing cmsis package`
         }, (progress) => {
-            return new Promise(async (resolve) => {
+            return new Promise(async (resolve_) => {
+
+                const resolve = () => {
+                    this.installLocked = false;
+                    resolve_();
+                };
+
                 try {
 
                     progress.report({ message: 'preparing ...' });
 
-                    await this.dataProvider.InstallKeilPackage(prjIndex, (_progress, msg) => {
+                    let packFile: File;
+
+                    const insType = await vscode.window.showQuickPick<vscode.QuickPickItem>([
+                        {
+                            label: 'From Repo',
+                            detail: 'Download cmsis pack from the repository and install'
+                        },
+                        {
+                            label: 'From Disk',
+                            detail: 'Select cmsis pack file from your computer and install'
+                        }
+                    ], {
+                        placeHolder: `Select an installation type. Press 'Esc' to exit`,
+                        canPickMany: false,
+                        ignoreFocusOut: true
+                    });
+
+                    if (insType === undefined) { // canceled, exit
+                        resolve();
+                        return;
+                    }
+
+                    // download from internet
+                    if (insType.label == 'From Repo') {
+
+                        progress.report({ message: 'waiting download task done ...' });
+
+                        const res = await this.startDownloadCmsisPack();
+
+                        if (res === undefined) { // canceled, exit
+                            resolve();
+                            return;
+                        }
+
+                        if (res instanceof Error) {
+                            GlobalEvent.emit('msg', ExceptionToMessage(res, 'Warning'));
+                            resolve();
+                            return;
+                        }
+
+                        packFile = res;
+                    }
+
+                    // from disk
+                    else {
+                        const urls = await vscode.window.showOpenDialog({
+                            canSelectFolders: false,
+                            canSelectFiles: true,
+                            openLabel: install_this_pack,
+                            filters: {
+                                'Cmsis Package': ['pack']
+                            }
+                        });
+
+                        if (urls === undefined) { // canceled, exit
+                            resolve();
+                            return;
+                        }
+
+                        packFile = new File(urls[0].fsPath);
+                    }
+
+                    await prj.InstallPack(packFile, (_progress, msg) => {
                         progress.report({
                             increment: _progress ? 12 : undefined,
                             message: msg
                         });
                     });
+
+                    resolve();
+
                 } catch (error) {
                     GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+                    resolve();
                 }
-                this.installLocked = false;
-                resolve();
             });
+        });
+    }
+
+    private async startDownloadCmsisPack(): Promise<File | Error | undefined> {
+
+        const redirectUri = (uri: string) => {
+            return SettingManager.GetInstance().isUseGithubProxy() ? redirectHost(uri) : uri;
+        };
+
+        // URL: https://api.github.com/repos/github0null/eide-cmsis-pack/contents/packages
+        const repoUrl = redirectUri('api.github.com/repos/' + SettingManager.GetInstance().getCmsisPackRepositoryUrl());
+
+        return await vscode.window.withProgress<File | Error | undefined>({
+            location: vscode.ProgressLocation.Notification,
+            title: `Download cmsis package`
+        }, async (progress, cancelToken) => {
+
+            progress.report({ message: `reading package list ...` });
+
+            const pkgList = await readGithubRepoFolder(repoUrl);
+            if (pkgList instanceof Error) {
+                return pkgList;
+            }
+
+            progress.report({ message: `waiting cmsis package selection ...` });
+
+            const itemList: vscode.QuickPickItem[] = pkgList
+                .filter((inf) => inf.type == 'file')
+                .map((fileInfo) => {
+                    return {
+                        label: fileInfo.name,
+                        detail: `Size: ${(fileInfo.size / 1000000).toFixed(1)} MB, Sha: ${fileInfo.sha}`,
+                        val: fileInfo
+                    };
+                });
+
+            const item: any = await vscode.window.showQuickPick(itemList, {
+                placeHolder: `Found ${pkgList.length} packages, select one to install. Press 'Esc' to exit`,
+                canPickMany: false,
+                ignoreFocusOut: true,
+                matchOnDescription: true
+            });
+
+            if (item == undefined) { // user canceled
+                return undefined;
+            }
+
+            try {
+
+                const gitFileInfo: GitFileInfo = item.val;
+                let packageFile: File | undefined;
+
+                const resManager = ResManager.GetInstance();
+                const packDir = File.fromArray([resManager.getEideHomeFolder().path, 'pack', 'cmsis']);
+                packDir.CreateDir(true);
+
+                // read cache
+                const cache = new FileCache(packDir);
+                packageFile = cache.get(gitFileInfo.name, gitFileInfo.sha);
+                if (packageFile) { // found cache, use it
+                    return packageFile;
+                }
+
+                // download it
+                progress.report({ message: `initializing download '${gitFileInfo.name}' ...` });
+
+                if (gitFileInfo.download_url == undefined) {
+                    return new Error(`Can't download '${gitFileInfo.name}', not download url found !`);
+                }
+
+                const url = redirectUri(gitFileInfo.download_url);
+                const buff = await downloadFileWithProgress(url, gitFileInfo.name, progress, cancelToken);
+
+                if (buff == undefined) { // canceled
+                    return undefined;
+                }
+
+                if (buff instanceof Error) {
+                    return buff;
+                }
+
+                // save file
+                packageFile = File.fromArray([packDir.path, gitFileInfo.name]);
+                fs.writeFileSync(packageFile.path, buff);
+
+                // add to cache
+                const sha = genGithubHash(buff);
+                cache.add(packageFile.name, sha);
+                cache.save();
+
+                return packageFile;
+
+            } catch (error) {
+                return error;
+            }
         });
     }
 

@@ -259,12 +259,17 @@ export class SettingManager {
     }
 
     getGithubRepositoryUrl(): string {
-        return (this.getConfiguration().get<string>('Template.Repository.Url') || 'null')
+        return (this.getConfiguration().get<string>('Repository.Template.Url') || 'null')
+            .trim().replace(/^https:\/\//i, '');
+    }
+
+    getCmsisPackRepositoryUrl(): string {
+        return (this.getConfiguration().get<string>('Repository.CmsisPack.Url') || 'null')
             .trim().replace(/^https:\/\//i, '');
     }
 
     isUseGithubProxy(): boolean {
-        return this.getConfiguration().get<boolean>('Template.Repository.UseProxy') || false;
+        return this.getConfiguration().get<boolean>('Repository.UseProxy') || false;
     }
 
     isUseTaskToBuild(): boolean {

@@ -138,22 +138,6 @@ export class ResManager extends events.EventEmitter {
         return codePage;
     }
 
-    static getGithubHash(f: File | Buffer): string {
-        if (f instanceof File) {
-            const header = Buffer.from('blob ' + f.getSize() + '\0');
-            const buf = Buffer.concat([header, fs.readFileSync(f.path)], header.length + f.getSize());
-            const hash = crypto.createHash('sha1');
-            hash.update(buf);
-            return hash.digest('hex');
-        } else {
-            const header = Buffer.from('blob ' + f.length + '\0');
-            const buf = Buffer.concat([header, f], header.length + f.length);
-            const hash = crypto.createHash('sha1');
-            hash.update(buf);
-            return hash.digest('hex');
-        }
-    }
-
     static getAppFullName(): string {
         return appName;
     }
@@ -323,6 +307,10 @@ export class ResManager extends events.EventEmitter {
         } else {
             throw new Error('Extension Context is undefined');
         }
+    }
+
+    getEideHomeFolder(): File {
+        return File.fromArray([os.homedir(), '.eide']);
     }
 
     GetLogDir(): File {

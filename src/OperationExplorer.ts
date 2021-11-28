@@ -825,7 +825,7 @@ export class OperationExplorer {
 
                 const res = await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
-                    title: 'searching from ' + hostName + ' ...',
+                    title: 'Searching from ' + hostName + ' ...',
                     cancellable: true
                 }, (_, token): Thenable<NetResponse<any>> => {
                     return new Promise(async (resolve) => {

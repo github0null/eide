@@ -84,8 +84,9 @@
     "settings.option.show.source.references": "Show c/c++ header references for source file",
     "settings.option.mapView.parser.depth": "The depth limit of the obj file path when *.map.view is displayed. Obj files larger than this depth are ignored.",
     
-    "settings.template.use.proxy": "Use github proxy to improve network speed (experimental function)",
-    "settings.template.repo.url": "remote public github repository url, format: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
+    "settings.repo.use.proxy": "Use proxy to improve network speed for github (experimental function)",
+    "settings.template.repo.url": "Public github template repository url, format: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
+    "settings.cmsispack.repo.url": "Public github cmsis-pack repository url, format: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
 
     "settings.serial.def.port": "Default port name",
     "settings.serial.show.toolbar": "Show serialport status bar",

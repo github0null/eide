@@ -233,17 +233,23 @@
                         "markdownDescription": "%settings.option.insert.extcommands.at.begin%",
                         "default": false
                     },
-                    "EIDE.Template.Repository.UseProxy": {
+                    "EIDE.Repository.UseProxy": {
                         "type": "boolean",
                         "scope": "machine",
-                        "markdownDescription": "%settings.template.use.proxy%",
+                        "markdownDescription": "%settings.repo.use.proxy%",
                         "default": true
                     },
-                    "EIDE.Template.Repository.Url": {
+                    "EIDE.Repository.Template.Url": {
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "%settings.template.repo.url%",
                         "default": "github0null/eide-resource/contents/eide-template-list"
+                    },
+                    "EIDE.Repository.CmsisPack.Url": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "%settings.cmsispack.repo.url%",
+                        "default": "github0null/eide-cmsis-pack/contents/packages"
                     },
                     "EIDE.SerialPortMonitor.DefaultPort": {
                         "type": "string",
