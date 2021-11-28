@@ -31,13 +31,35 @@
             list-style-type: none;
         }
 
-        #submit {
+        #header {
+            position: -webkit-sticky; /* Safari */
+            position: sticky;
+            padding: 12px;
+            top: 0px;
+            z-index: 10;
+            background-color: var(--vscode-editor-background);
+        }
+
+        #header-cont {
             display: flex;
-            justify-content: center;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        #button-cont {
+            display: flex;
+            justify-items: center;
+            justify-content: flex-end;
+        }
+
+        h3 {
+            margin: 10px 4px;
+            color: var(--vscode-editor-foreground) !important;
         }
 
         button {
             margin: 4px;
+            margin-left: 8px;
         }
 
         .form-group {
@@ -266,6 +288,15 @@
 </head>
 
 <body>
+    <div class="row" id="header">
+        <div class="col" id="header-cont">
+            <h3>Memory Layout</h3>
+            <div id="button-cont">
+                <button id="save" type="button" class="btn btn-info">Save</button>
+                <button id="reset" type="button" class="btn btn-warning">Reset</button>
+            </div>
+        </div>
+    </div>
     <div class="modal fade" id="notice-dialog" tabindex="-1" role="dialog" aria-labelledby="dialog-label">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -286,7 +317,7 @@
         <div class="panel-heading">
             <h4 class="panel-title">
                 <li data-parent="#body">
-                    Ram Layout
+                    RAM Layout
                 </li>
             </h4>
         </div>
@@ -527,7 +558,7 @@
         <div class="panel-heading">
             <h4 class="panel-title">
                 <li data-parent="#body">
-                    Rom Layout
+                    ROM Layout
                 </li>
             </h4>
         </div>
@@ -732,11 +763,6 @@
                 </table>
             </div>
         </div>
-    </div>
-
-    <div class="row" id="submit">
-        <button id="save" type="button" class="col-md-1 btn btn-info">Save</button>
-        <button id="reset" type="button" class="col-md-1 btn btn-warning">Reset</button>
     </div>
 </body>
 
