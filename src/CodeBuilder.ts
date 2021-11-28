@@ -441,11 +441,7 @@ export abstract class CodeBuilder {
         }
 
         // write project build params
-        if (this.useShowParamsMode) {
-            fs.writeFileSync(paramsPath, JSON.stringify(builderOptions, undefined, 4));
-        } else {
-            fs.writeFileSync(paramsPath, JSON.stringify(builderOptions));
-        }
+        fs.writeFileSync(paramsPath, JSON.stringify(builderOptions, undefined, 4));
 
         // generate makefile params
         if (settingManager.isGenerateMakefileParams()) {
