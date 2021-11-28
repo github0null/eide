@@ -111,12 +111,28 @@ export const toolsUrlMap = {
 };
 
 const hostMap: any = {
-    'api.github.com': 'api-github.em-ide.com',
-    'raw.githubusercontent.com': 'raw-github.em-ide.com'
+    'api.github.com': [
+        'api-github.em-ide.com'
+    ],
+    'raw.githubusercontent.com': [
+        'raw-github.em-ide.com',
+        'raw-github.github0null.io'
+    ]
 };
 
 export function redirectHost(url: string) {
-    for (const host in hostMap) { url = url.replace(host, hostMap[host]); }
+
+    // replace host
+    for (const host in hostMap) {
+        const hostList = <string[]>hostMap[host];
+        if (hostList.length > 1) {
+            const idx = Math.floor(Math.random() * hostList.length); // random index
+            url = url.replace(host, hostList[idx]);
+        } else {
+            url = url.replace(host, hostList[0]);
+        }
+    }
+
     return url;
 }
 
