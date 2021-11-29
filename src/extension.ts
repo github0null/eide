@@ -560,7 +560,7 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
         webviewPanel.title = title;
         webviewPanel.iconPath = vscode.Uri.parse(ResManager.GetInstance().GetIconByName('file_type_map.svg').ToUri());
         webviewPanel.webview.html = this.genHtmlCont(title, 'No Content');
-        webviewPanel.onDidDispose(() => this.deleteRef(viewFile.path, webviewPanel.webview));
+        webviewPanel.onDidDispose(() => this.deleteRef(viewFile.path)); // delete all ref when panel closed
 
         if (!viewFile.IsFile()) {
             webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: file '${viewFile.path}' is not a file !`);
@@ -637,14 +637,20 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
         }
     }
 
-    private deleteRef(viewFilePath: string, webview: vscode.Webview) {
+    private deleteRef(viewFilePath: string, webview?: vscode.Webview) {
 
         const mInfo = this.mapViews.get(viewFilePath);
         if (mInfo) {
 
-            const idx = mInfo.refList.findIndex((inf) => inf.webview == webview);
-            if (idx != -1) {
-                mInfo.refList.splice(idx, 1);
+            if (webview) {
+                const idx = mInfo.refList.findIndex((inf) => inf.webview == webview);
+                if (idx != -1) {
+                    mInfo.refList[idx].webview = undefined;
+                    mInfo.refList.splice(idx, 1);
+                }
+            } else {
+                mInfo.refList.forEach((inf) => inf.webview = undefined);
+                mInfo.refList = [];
             }
 
             if (mInfo.refList.length == 0) {
