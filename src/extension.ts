@@ -1,25 +1,25 @@
 /*
-	MIT License
+    MIT License
 
-	Copyright (c) 2019 github0null
+    Copyright (c) 2019 github0null
 
-	Permission is hereby granted, free of charge, to any person obtaining a copy
-	of this software and associated documentation files (the "Software"), to deal
-	in the Software without restriction, including without limitation the rights
-	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-	copies of the Software, and to permit persons to whom the Software is
-	furnished to do so, subject to the following conditions:
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
 
-	The above copyright notice and this permission notice shall be included in all
-	copies or substantial portions of the Software.
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
 
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-	SOFTWARE.
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
 */
 
 import * as vscode from 'vscode';
@@ -527,9 +527,29 @@ function RegisterGlobalEvent() {
 import * as yaml from 'yaml'
 import { FileWatcher } from '../lib/node-utility/FileWatcher';
 
+interface MapViewRef {
+
+    webview: vscode.Webview;
+
+    title: string;
+
+    toolName: string;
+
+    treeDepth: number;
+
+    mapPath: string;
+};
+
+interface MapViewInfo {
+
+    watcher: FileWatcher;
+
+    refList: MapViewRef[];
+};
+
 class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
 
-    private fileWatcher: FileWatcher | undefined;
+    private mapViews: Map<string, MapViewInfo> = new Map();
 
     resolveCustomTextEditor(document: vscode.TextDocument, webviewPanel: vscode.WebviewPanel, token: vscode.CancellationToken): void | Thenable<void> {
 
@@ -540,12 +560,7 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
         webviewPanel.title = title;
         webviewPanel.iconPath = vscode.Uri.parse(ResManager.GetInstance().GetIconByName('file_type_map.svg').ToUri());
         webviewPanel.webview.html = this.genHtmlCont(title, 'No Content');
-        webviewPanel.onDidDispose(() => {
-            if (this.fileWatcher) {
-                this.fileWatcher.Close();
-                this.fileWatcher = undefined;
-            }
-        });
+        webviewPanel.onDidDispose(() => this.deleteRef(viewFile.path, webviewPanel.webview));
 
         if (!viewFile.IsFile()) {
             webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: file '${viewFile.path}' is not a file !`);
@@ -585,42 +600,88 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
                 return;
         }
 
-        const showMapView = () => {
-            try {
-                const execPath = ResManager.GetInstance().getBuilderDir() + File.sep + 'memap';
-                const lines = ChildProcess
-                    .execSync(`${execPath} -t ${toolName} -d ${fileDepth} "${mapFile.path}"`)
-                    .toString().split(/\r\n|\n/);
+        // auto update when file changed 
+        try {
 
-                // append color
-                for (let index = 0; index < lines.length; index++) {
-                    const line = lines[index];
-                    lines[index] = line
-                        .replace(/\((\+[^0]\d*)\)/g, `(<span class="success">$1</span>)`)
-                        .replace(/\((\-[^0]\d*)\)/g, `(<span class="error">$1</span>)`)
-                        .replace(/^(\s*\|\s*)(Subtotals)/, `$1<span class="info">$2</span>`)
-                        .replace(/^(\s*Total)/, `\n$1`);
-                }
-
-                webviewPanel.webview.html = this.genHtmlCont(title, lines.join('\n'));
-            } catch (error) {
-                webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Parse error</span>: \r\n${error.message}`);
-                return;
+            let mInfo = this.mapViews.get(viewFile.path);
+            if (mInfo == undefined) {
+                mInfo = { watcher: new FileWatcher(mapFile, false), refList: [] };
+                mInfo.watcher.OnChanged = () => this.showMapView();
+                mInfo.watcher.Watch();
+                this.mapViews.set(viewFile.path, mInfo);
             }
-        };
 
-        if (this.fileWatcher == undefined) {
-            try {
-                this.fileWatcher = new FileWatcher(mapFile, false);
-                this.fileWatcher.OnChanged = () => showMapView();
-                this.fileWatcher.Watch();
-            } catch (error) {
-                this.fileWatcher?.Close();
-                this.fileWatcher = undefined;
-            }
+            this.pushRef(viewFile.path, {
+                webview: webviewPanel.webview,
+                title: title,
+                toolName: toolName,
+                treeDepth: fileDepth,
+                mapPath: mapFile.path
+            });
+
+        } catch (error) {
+            // do nothing
         }
 
-        showMapView();
+        this.showMapView();
+    }
+
+    private pushRef(viewFilePath: string, item: MapViewRef) {
+
+        const mInfo = this.mapViews.get(viewFilePath);
+        if (mInfo) {
+            const idx = mInfo.refList.findIndex((inf) => inf.webview == item.webview);
+            if (idx == -1) {
+                mInfo.refList.push(item);
+            }
+        }
+    }
+
+    private deleteRef(viewFilePath: string, webview: vscode.Webview) {
+
+        const mInfo = this.mapViews.get(viewFilePath);
+        if (mInfo) {
+
+            const idx = mInfo.refList.findIndex((inf) => inf.webview == webview);
+            if (idx != -1) {
+                mInfo.refList.splice(idx, 1);
+            }
+
+            if (mInfo.refList.length == 0) {
+                try { mInfo.watcher.Close(); } catch (error) { }
+                this.mapViews.delete(viewFilePath);
+            }
+        }
+    }
+
+    private showMapView() {
+
+        this.mapViews.forEach((mInfo) => {
+
+            for (const vInfo of mInfo.refList) {
+                try {
+                    const execPath = ResManager.GetInstance().getBuilderDir() + File.sep + 'memap';
+                    const lines = ChildProcess
+                        .execSync(`${execPath} -t ${vInfo.toolName} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`)
+                        .toString().split(/\r\n|\n/);
+
+                    // append color
+                    for (let index = 0; index < lines.length; index++) {
+                        const line = lines[index];
+                        lines[index] = line
+                            .replace(/\((\+[^0]\d*)\)/g, `(<span class="success">$1</span>)`)
+                            .replace(/\((\-[^0]\d*)\)/g, `(<span class="error">$1</span>)`)
+                            .replace(/^(\s*\|\s*)(Subtotals)/, `$1<span class="info">$2</span>`)
+                            .replace(/^(\s*Total)/, `\n$1`);
+                    }
+
+                    vInfo.webview.html = this.genHtmlCont(vInfo.title, lines.join('\n'));
+
+                } catch (error) {
+                    vInfo.webview.html = this.genHtmlCont(vInfo.title, `<span class="error">Parse error</span>: \r\n${error.message}`);
+                }
+            }
+        });
     }
 
     private genHtmlCont(title: string, cont: string): string {
