@@ -529,7 +529,9 @@ import { FileWatcher } from '../lib/node-utility/FileWatcher';
 
 interface MapViewRef {
 
-    webview: vscode.Webview;
+    uid: string;
+
+    vscWebview: vscode.Webview;
 
     title: string;
 
@@ -556,11 +558,14 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
         const viewFile = new File(document.fileName);
         const title = viewFile.noSuffixName;
 
+        // view uid
+        const uid = `${viewFile.path}-${Date.now().toString()}`;
+
         // init
         webviewPanel.title = title;
         webviewPanel.iconPath = vscode.Uri.parse(ResManager.GetInstance().GetIconByName('file_type_map.svg').ToUri());
         webviewPanel.webview.html = this.genHtmlCont(title, 'No Content');
-        webviewPanel.onDidDispose(() => this.deleteRef(viewFile.path)); // delete all ref when panel closed
+        webviewPanel.onDidDispose(() => this.deleteRef(viewFile.path, uid));
 
         if (!viewFile.IsFile()) {
             webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: file '${viewFile.path}' is not a file !`);
@@ -612,7 +617,8 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
             }
 
             this.pushRef(viewFile.path, {
-                webview: webviewPanel.webview,
+                uid: uid,
+                vscWebview: webviewPanel.webview,
                 title: title,
                 toolName: toolName,
                 treeDepth: fileDepth,
@@ -630,27 +636,22 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
 
         const mInfo = this.mapViews.get(viewFilePath);
         if (mInfo) {
-            const idx = mInfo.refList.findIndex((inf) => inf.webview == item.webview);
+            const idx = mInfo.refList.findIndex((inf) => inf.uid == item.uid);
             if (idx == -1) {
                 mInfo.refList.push(item);
             }
         }
     }
 
-    private deleteRef(viewFilePath: string, webview?: vscode.Webview) {
+    private deleteRef(viewFilePath: string, uid: string) {
 
         const mInfo = this.mapViews.get(viewFilePath);
         if (mInfo) {
 
-            if (webview) {
-                const idx = mInfo.refList.findIndex((inf) => inf.webview == webview);
-                if (idx != -1) {
-                    delete mInfo.refList[idx].webview;
-                    mInfo.refList.splice(idx, 1);
-                }
-            } else {
-                mInfo.refList.forEach((inf) => delete inf.webview);
-                mInfo.refList = [];
+            const idx = mInfo.refList.findIndex((inf) => inf.uid == uid);
+            if (idx != -1) {
+                delete mInfo.refList[idx].vscWebview;
+                mInfo.refList.splice(idx, 1);
             }
 
             if (mInfo.refList.length == 0) {
@@ -681,10 +682,10 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
                             .replace(/^(\s*Total)/, `\n$1`);
                     }
 
-                    vInfo.webview.html = this.genHtmlCont(vInfo.title, lines.join('\n'));
+                    vInfo.vscWebview.html = this.genHtmlCont(vInfo.title, lines.join('\n'));
 
                 } catch (error) {
-                    vInfo.webview.html = this.genHtmlCont(vInfo.title, `<span class="error">Parse error</span>: \r\n${error.message}`);
+                    vInfo.vscWebview.html = this.genHtmlCont(vInfo.title, `<span class="error">Parse error</span>: \r\n${error.message}`);
                 }
             }
         });

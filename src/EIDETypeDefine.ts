@@ -442,6 +442,7 @@ export interface VirtualFolder {
 }
 
 export interface ProjectConfigData<T extends CompileData> {
+
     name: string;
     type: ProjectType;
     mode: string; // target name

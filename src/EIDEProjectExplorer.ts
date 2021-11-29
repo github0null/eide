@@ -34,7 +34,7 @@ import { ResManager } from './ResManager';
 import { GlobalEvent } from './GlobalEvents';
 import { AbstractProject, CheckError, DataChangeType, VirtualSource } from './EIDEProject';
 import { ToolchainName, ToolchainManager } from './ToolchainManager';
-import { CreateOptions, PackInfo, ComponentFileItem, DeviceInfo, getComponentKeyDescription, VirtualFolder, VirtualFile, ImportOptions, ProjectTargetInfo, ArmBaseCompileData } from './EIDETypeDefine';
+import { CreateOptions, PackInfo, ComponentFileItem, DeviceInfo, getComponentKeyDescription, VirtualFolder, VirtualFile, ImportOptions, ProjectTargetInfo, ArmBaseCompileData, ProjectConfigData } from './EIDETypeDefine';
 import { WorkspaceManager } from './WorkspaceManager';
 import {
     can_not_close_project, project_is_opened, project_load_failed,
@@ -1529,6 +1529,20 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
                         // convert .EIDE to .eide
                         this.toLowercaseEIDEFolder(targetDir);
+
+                        // rename project name
+                        {
+                            const prjFile = File.fromArray([targetDir.path, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
+                            if (!prjFile.IsFile()) throw Error(`project file: '${prjFile.path}' is not exist !`);
+
+                            try {
+                                const prjConf: ProjectConfigData<any> = JSON.parse(prjFile.Read());
+                                prjConf.name = option.name; // set project name
+                                prjFile.Write(JSON.stringify(prjConf));
+                            } catch (error) {
+                                throw Error(`change project name failed !, msg: ${error.message}`);
+                            }
+                        }
 
                         // switch workspace if user select `yes`
                         const item = await vscode.window.showInformationMessage(
