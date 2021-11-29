@@ -645,11 +645,11 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
             if (webview) {
                 const idx = mInfo.refList.findIndex((inf) => inf.webview == webview);
                 if (idx != -1) {
-                    mInfo.refList[idx].webview = undefined;
+                    delete mInfo.refList[idx].webview;
                     mInfo.refList.splice(idx, 1);
                 }
             } else {
-                mInfo.refList.forEach((inf) => inf.webview = undefined);
+                mInfo.refList.forEach((inf) => delete inf.webview);
                 mInfo.refList = [];
             }
 
