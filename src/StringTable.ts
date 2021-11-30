@@ -210,13 +210,23 @@ export const view_str$project$sel_folder_type = [
 ][langIndex];
 
 export const view_str$project$folder_type_fs = [
-    '文件系统文件夹',
-    'Filesystem Folder'
+    '普通文件夹',
+    'Normal Folder'
+][langIndex];
+
+export const view_str$project$folder_type_fs_desc = [
+    '从磁盘中选择一个文件夹，eide 将其直接链接到项目中，并自动搜索和添加其中的源文件以及包含路径',
+    'Select a folder from disk, eide will link it directly into your project, and automatically search and add source files and include paths to it.'
 ][langIndex];
 
 export const view_str$project$folder_type_virtual = [
     '虚拟文件夹',
     'Virtual Folder'
+][langIndex];
+
+export const view_str$project$folder_type_virtual_desc = [
+    '新建一个虚拟文件夹（该文件夹在磁盘上是不存在的）来组织源文件的结构',
+    'Create a VirtualFolder (The folder does not exist on disk) to organize the source file structure.'
 ][langIndex];
 
 export const view_str$project$add_source = [

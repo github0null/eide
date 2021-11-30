@@ -706,8 +706,8 @@ export class OperationExplorer {
         let prevGroupStack: TemplateGroup[] = [];
         let curTempGroup: TemplateGroup = templateGroup;
 
-        const goBackItemForGroup: vscode.QuickPickItem = { label: '..', description: 'Back' };
-        const goBackItemForItem: vscode.QuickPickItem = { label: '..', detail: 'Back' };
+        const goBackItemForGroup: vscode.QuickPickItem = { label: '..', description: 'Back', alwaysShow: true };
+        const goBackItemForItem: vscode.QuickPickItem = { label: '..', detail: 'Back', alwaysShow: true };
 
         // selection loop
         while (true) {

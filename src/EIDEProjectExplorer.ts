@@ -59,7 +59,9 @@ import {
     view_str$settings$prjEnv,
     view_str$prompt$unresolved_deps,
     view_str$prompt$prj_location,
-    view_str$prompt$src_folder_must_be_a_child_of_root
+    view_str$prompt$src_folder_must_be_a_child_of_root,
+    view_str$project$folder_type_virtual_desc,
+    view_str$project$folder_type_fs_desc
 } from './StringTable';
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
@@ -744,7 +746,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                 value: vFolder.name,
                                 obj: <VirtualFolderInfo>{ path: vFolderPath, vFolder: vFolder },
                                 projectIndex: element.val.projectIndex,
-                                tooltip: vFolder.name
+                                tooltip: `${vFolder.name} (${vFolder.files.length} files, ${vFolder.folders.length} folders)`
                             }));
                         });
                     break;
@@ -931,33 +933,39 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                         const curFolder = <VirtualFolderInfo>element.val.obj;
 
                         // put child folders
-                        curFolder.vFolder.folders.forEach((vFolder) => {
-                            const vFolderPath = `${curFolder.path}/${vFolder.name}`;
-                            const isFolderExcluded = project.isExcluded(vFolderPath);
-                            const itemType = isFolderExcluded ? TreeItemType.V_EXCFOLDER : TreeItemType.V_FOLDER;
-                            iList.push(new ProjTreeItem(itemType, {
-                                value: vFolder.name,
-                                obj: <VirtualFolderInfo>{ path: vFolderPath, vFolder: vFolder },
-                                projectIndex: element.val.projectIndex,
-                                tooltip: isFolderExcluded ? view_str$project$excludeFolder : vFolder.name,
-                            }));
-                        });
+                        curFolder.vFolder.folders
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .forEach((vFolder) => {
+                                const vFolderPath = `${curFolder.path}/${vFolder.name}`;
+                                const isFolderExcluded = project.isExcluded(vFolderPath);
+                                const itemType = isFolderExcluded ? TreeItemType.V_EXCFOLDER : TreeItemType.V_FOLDER;
+                                iList.push(new ProjTreeItem(itemType, {
+                                    value: vFolder.name,
+                                    obj: <VirtualFolderInfo>{ path: vFolderPath, vFolder: vFolder },
+                                    projectIndex: element.val.projectIndex,
+                                    tooltip: isFolderExcluded
+                                        ? view_str$project$excludeFolder
+                                        : `${vFolder.name} (${vFolder.files.length} files, ${vFolder.folders.length} folders)`,
+                                }));
+                            });
 
                         // put child files
-                        curFolder.vFolder.files.forEach((vFile) => {
-                            const file = new File(project.ToAbsolutePath(vFile.path));
-                            const vFilePath = `${curFolder.path}/${file.name}`;
-                            const isFileExcluded = project.isExcluded(vFilePath);
-                            const itemType = isFileExcluded ? TreeItemType.V_EXCFILE_ITEM : TreeItemType.V_FILE_ITEM;
-                            iList.push(new ProjTreeItem(itemType, {
-                                value: file,
-                                collapsibleState: project.getSourceRefs(file).length > 0 ?
-                                    vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
-                                obj: <VirtualFileInfo>{ path: vFilePath, vFile: vFile },
-                                projectIndex: element.val.projectIndex,
-                                tooltip: isFileExcluded ? view_str$project$excludeFile : file.path,
-                            }));
-                        });
+                        curFolder.vFolder.files
+                            .sort((a, b) => a.path.localeCompare(b.path))
+                            .forEach((vFile) => {
+                                const file = new File(project.ToAbsolutePath(vFile.path));
+                                const vFilePath = `${curFolder.path}/${file.name}`;
+                                const isFileExcluded = project.isExcluded(vFilePath);
+                                const itemType = isFileExcluded ? TreeItemType.V_EXCFILE_ITEM : TreeItemType.V_FILE_ITEM;
+                                iList.push(new ProjTreeItem(itemType, {
+                                    value: file,
+                                    collapsibleState: project.getSourceRefs(file).length > 0 ?
+                                        vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
+                                    obj: <VirtualFileInfo>{ path: vFilePath, vFile: vFile },
+                                    projectIndex: element.val.projectIndex,
+                                    tooltip: isFileExcluded ? view_str$project$excludeFile : file.path,
+                                }));
+                            });
                     }
                     break;
                 case TreeItemType.EXCFOLDER:
@@ -1696,6 +1704,8 @@ interface BuildCommandInfo {
 }
 
 export class ProjectExplorer {
+
+    private readonly vFolderNameMatcher = /^\w[\w\t \-:@\.]*$/;
 
     private view: vscode.TreeView<ProjTreeItem>;
     private dataProvider: ProjectDataProvider;
@@ -2496,16 +2506,27 @@ export class ProjectExplorer {
 
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
 
-        const folderType = await vscode.window.showQuickPick(
-            [view_str$project$folder_type_fs, view_str$project$folder_type_virtual],
-            { placeHolder: view_str$project$sel_folder_type });
+        const folderType = await vscode.window.showQuickPick<vscode.QuickPickItem>(
+            [
+                {
+                    label: view_str$project$folder_type_virtual,
+                    detail: view_str$project$folder_type_virtual_desc
+                },
+                {
+                    label: view_str$project$folder_type_fs,
+                    detail: view_str$project$folder_type_fs_desc
+                }
+            ],
+            {
+                placeHolder: view_str$project$sel_folder_type
+            });
 
         if (folderType === undefined) {
             return;
         }
 
         // add folder from filesystem
-        if (folderType === view_str$project$folder_type_fs) {
+        if (folderType.label === view_str$project$folder_type_fs) {
 
             const folderList = await vscode.window.showOpenDialog({
                 canSelectMany: true,
@@ -2540,15 +2561,16 @@ export class ProjectExplorer {
             }
         }
 
-        // add virtual folder
+        // add root virtual folder
         else {
 
             const folderName = await vscode.window.showInputBox({
-                placeHolder: 'Input folder name',
+                placeHolder: 'Input a folder name',
                 ignoreFocusOut: true,
                 validateInput: (input) => {
-                    if (!/^\w+$/.test(input)) { return `must match '^\\w+$'`; }
-                    return undefined;
+                    if (!this.vFolderNameMatcher.test(input)) {
+                        return `must match '${this.vFolderNameMatcher.source}'`;
+                    }
                 }
             });
 
@@ -2626,11 +2648,12 @@ export class ProjectExplorer {
         const curFolder = <VirtualFolderInfo>item.val.obj;
 
         const folderName = await vscode.window.showInputBox({
-            placeHolder: 'Input folder name',
+            placeHolder: 'Input a folder name',
             ignoreFocusOut: true,
             validateInput: (input) => {
-                if (!/^\w+$/.test(input)) { return `must match '^\\w+$'`; }
-                return undefined;
+                if (!this.vFolderNameMatcher.test(input)) {
+                    return `must match '${this.vFolderNameMatcher.source}'`;
+                }
             }
         });
 

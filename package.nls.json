@@ -16,7 +16,7 @@
     "eide.project.save.all": "Save All Projects",
     "eide.project.active": "Active Project",
     "eide.project.close": "Close",
-    "eide.project.export.template": "Export Eide Template",
+    "eide.project.export.template": "Export Eide Project Template",
     "eide.project.export.keil": "Export Keil Project",
     "eide.project.show.commands": "Show Compiler CommandLine",
     "eide.project.switch.target": "Switch Target",
@@ -26,6 +26,13 @@
     "eide.project.upload": "Upload Program To Device",
     "eide.project.gen.makefile": "Generate Makefile Template",
     "eide.project.modify.files.options": "Append Compiler Options For Files",
+
+    "eide.prj.menus.main.cppcheck": "Static Check",
+    "eide.prj.menus.sub.cppcheck.run": "Check Project by Cppcheck",
+    "eide.prj.menus.sub.cppcheck.clear": "Clear Cppcheck Diagnostic Informations",
+    "eide.prj.menus.main.export": "Export As ...",
+    "eide.prj.menus.main.export.keil": "Keil Project",
+    "eide.prj.menus.main.export.eide": "Eide Project Template",
 
     "eide.workspace.build": "Build All",
     "eide.workspace.rebuild": "Rebuild All",
