@@ -165,7 +165,7 @@ export abstract class HexUploader<InvokeParamsType> {
 
     protected toAbsolute(_path: string): File {
         const nomalPath = NodePath.normalize(_path);
-        const file = NodePath.isAbsolute(nomalPath) ?
+        const file = File.isAbsolute(nomalPath) ?
             new File(nomalPath) : File.fromArray([this.project.GetRootDir().path, nomalPath]);
         return file;
     }

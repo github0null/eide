@@ -897,7 +897,7 @@ export abstract class AbstractProject {
     }
 
     ToAbsolutePath(path: string): string {
-        if (!NodePath.isAbsolute(path)) {
+        if (!File.isAbsolute(path)) {
             return NodePath.normalize(this.GetRootDir().path + NodePath.sep + path);
         }
         return NodePath.normalize(path);

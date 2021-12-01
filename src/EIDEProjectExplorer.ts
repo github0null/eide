@@ -672,7 +672,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                         iList.push(new ProjTreeItem(TreeItemType.PROJECT, {
                             value: view_str$project$title,
                             projectIndex: element.val.projectIndex,
-                            tooltip: view_str$project$title
+                            tooltip: view_str$project$title,
+                            obj: <VirtualFolderInfo>{ path: VirtualSource.rootName, vFolder: project.getVirtualSourceRoot() }
                         }));
 
                         if (prjType === 'ARM') { // only display for ARM project 
@@ -717,57 +718,59 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                     }
                     break;
                 case TreeItemType.PROJECT:
-                    // push filesystem source folder
-                    project.getSourceRootFolders()
-                        .sort((info_1, info_2) => {
-                            const isComponent = info_1.displayName === DependenceManager.DEPENDENCE_DIR;
-                            return isComponent ? -1 : info_1.displayName.localeCompare(info_2.displayName);
-                        })
-                        .forEach((rootInfo) => {
-                            const isComponent = rootInfo.displayName === DependenceManager.DEPENDENCE_DIR;
-                            const folderDispName = isComponent ? view_str$project$cmsis_components : rootInfo.displayName;
-                            iList.push(new ProjTreeItem(TreeItemType.FOLDER_ROOT, {
-                                value: folderDispName,
-                                obj: rootInfo.fileWatcher.file,
-                                projectIndex: element.val.projectIndex,
-                                contextVal: isComponent ? 'FOLDER_ROOT_DEPS' : undefined,
-                                tooltip: rootInfo.needUpdate ? view_str$project$needRefresh : folderDispName,
-                                icon: rootInfo.needUpdate ?
-                                    'StatusWarning_16x.svg' : (isComponent ? 'DependencyGraph_16x.svg' : undefined)
-                            }));
-                        });
+                    {
+                        // push filesystem source folder
+                        project.getSourceRootFolders()
+                            .sort((info_1, info_2) => {
+                                const isComponent = info_1.displayName === DependenceManager.DEPENDENCE_DIR;
+                                return isComponent ? -1 : info_1.displayName.localeCompare(info_2.displayName);
+                            })
+                            .forEach((rootInfo) => {
+                                const isComponent = rootInfo.displayName === DependenceManager.DEPENDENCE_DIR;
+                                const folderDispName = isComponent ? view_str$project$cmsis_components : rootInfo.displayName;
+                                iList.push(new ProjTreeItem(TreeItemType.FOLDER_ROOT, {
+                                    value: folderDispName,
+                                    obj: rootInfo.fileWatcher.file,
+                                    projectIndex: element.val.projectIndex,
+                                    contextVal: isComponent ? 'FOLDER_ROOT_DEPS' : undefined,
+                                    tooltip: rootInfo.needUpdate ? view_str$project$needRefresh : folderDispName,
+                                    icon: rootInfo.needUpdate ?
+                                        'StatusWarning_16x.svg' : (isComponent ? 'DependencyGraph_16x.svg' : undefined)
+                                }));
+                            });
 
-                    // push virtual source folder
-                    project.getVirtualSourceRoot().folders
-                        .sort((folder1, folder2) => { return folder1.name.localeCompare(folder2.name); })
-                        .forEach((vFolder) => {
-                            const vFolderPath = `${VirtualSource.rootName}/${vFolder.name}`;
-                            const itemType = project.isExcluded(vFolderPath) ? TreeItemType.V_EXCFOLDER : TreeItemType.V_FOLDER_ROOT;
-                            iList.push(new ProjTreeItem(itemType, {
-                                value: vFolder.name,
-                                obj: <VirtualFolderInfo>{ path: vFolderPath, vFolder: vFolder },
-                                projectIndex: element.val.projectIndex,
-                                tooltip: `${vFolder.name} (${vFolder.files.length} files, ${vFolder.folders.length} folders)`
-                            }));
-                        });
+                        // push virtual source folder
+                        project.getVirtualSourceRoot().folders
+                            .sort((folder1, folder2) => { return folder1.name.localeCompare(folder2.name); })
+                            .forEach((vFolder) => {
+                                const vFolderPath = `${VirtualSource.rootName}/${vFolder.name}`;
+                                const itemType = project.isExcluded(vFolderPath) ? TreeItemType.V_EXCFOLDER : TreeItemType.V_FOLDER_ROOT;
+                                iList.push(new ProjTreeItem(itemType, {
+                                    value: vFolder.name,
+                                    obj: <VirtualFolderInfo>{ path: vFolderPath, vFolder: vFolder },
+                                    projectIndex: element.val.projectIndex,
+                                    tooltip: `${vFolder.name} (${vFolder.files.length} files, ${vFolder.folders.length} folders)`
+                                }));
+                            });
 
-                    // put virtual source files
-                    project.getVirtualSourceRoot().files
-                        .sort((a, b) => a.path.localeCompare(b.path))
-                        .forEach((vFile) => {
-                            const file = new File(project.ToAbsolutePath(vFile.path));
-                            const vFilePath = `${VirtualSource.rootName}/${file.name}`;
-                            const isFileExcluded = project.isExcluded(vFilePath);
-                            const itemType = isFileExcluded ? TreeItemType.V_EXCFILE_ITEM : TreeItemType.V_FILE_ITEM;
-                            iList.push(new ProjTreeItem(itemType, {
-                                value: file,
-                                collapsibleState: project.getSourceRefs(file).length > 0 ?
-                                    vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
-                                obj: <VirtualFileInfo>{ path: vFilePath, vFile: vFile },
-                                projectIndex: element.val.projectIndex,
-                                tooltip: isFileExcluded ? view_str$project$excludeFile : file.path,
-                            }));
-                        });
+                        // put virtual source files
+                        project.getVirtualSourceRoot().files
+                            .sort((a, b) => a.path.localeCompare(b.path))
+                            .forEach((vFile) => {
+                                const file = new File(project.ToAbsolutePath(vFile.path));
+                                const vFilePath = `${VirtualSource.rootName}/${file.name}`;
+                                const isFileExcluded = project.isExcluded(vFilePath);
+                                const itemType = isFileExcluded ? TreeItemType.V_EXCFILE_ITEM : TreeItemType.V_FILE_ITEM;
+                                iList.push(new ProjTreeItem(itemType, {
+                                    value: file,
+                                    collapsibleState: project.getSourceRefs(file).length > 0 ?
+                                        vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
+                                    obj: <VirtualFileInfo>{ path: vFilePath, vFile: vFile },
+                                    projectIndex: element.val.projectIndex,
+                                    tooltip: isFileExcluded ? view_str$project$excludeFile : file.path,
+                                }));
+                            });
+                    }
                     break;
                 case TreeItemType.PACK:
                     {
@@ -1289,7 +1292,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
             // init project info
             projectInfo.virtualFolder = {
-                name: VirtualSource.rootName, 
+                name: VirtualSource.rootName,
                 files: [],
                 folders: []
             };
@@ -1722,6 +1725,12 @@ interface BuildCommandInfo {
     command: string;
     program?: string;
     order?: number;
+}
+
+interface ImporterProjectInfo {
+    incList: string[];
+    defineList: string[];
+    files: VirtualFolder;
 }
 
 export class ProjectExplorer {
@@ -3208,6 +3217,91 @@ export class ProjectExplorer {
                 break;
             default:
                 break;
+        }
+    }
+
+    async ImportSourceFromExtProject(item: ProjTreeItem) {
+
+        try {
+            //
+            // select importer
+            //
+            const scriptRoot = File.fromArray([ResManager.GetInstance().GetBinDir().path, 'scripts']);
+            const imptrFolder = File.fromArray([scriptRoot.path, 'importer']);
+            const items: any[] = [];
+
+            imptrFolder.GetList([/^(?:[^\.]+)\.(?:[^\.]+)\.js$/i])
+                .forEach((imptrFile) => {
+                    const m = /^(?<type>[^\.]+)\.(?<suffix>[^\.]+)\.js$/i.exec(imptrFile.name);
+                    if (m && m.groups) {
+                        items.push({
+                            label: m.groups['type'].replace(/\-/g, ' ').replace(/_/g, ' '),
+                            detail: `project file suffix: '${m.groups['suffix']}'`,
+                            suffix: m.groups['suffix'],
+                            file: imptrFile
+                        });
+                    }
+                });
+
+            const imptrType: any = await vscode.window.showQuickPick<vscode.QuickPickItem>(items, {
+                placeHolder: `Select an importer`,
+                canPickMany: false
+            });
+
+            if (imptrType == undefined) {
+                return;
+            }
+
+            const filter: any = {};
+            filter[<string>imptrType.label] = [imptrType.suffix];
+
+            const uri = await vscode.window.showOpenDialog({
+                openLabel: 'Import This File',
+                canSelectFiles: true,
+                filters: filter
+            });
+
+            if (uri == undefined) {
+                return;
+            }
+
+            //
+            // run importer
+            //
+            const prjFile = new File(uri[0].fsPath);
+            const imptrName = (<File>imptrType.file).noSuffixName;
+            const cmds = ['--std', './importer/index.js', imptrName, prjFile.path];
+            const result = child_process.execFileSync(`${scriptRoot.path}/qjs.exe`, cmds, { cwd: scriptRoot.path }).toString();
+
+            let prjInfo: ImporterProjectInfo;
+            try {
+                prjInfo = JSON.parse(result);
+            } catch (error) {
+                GlobalEvent.emit('msg', newMessage(`Error`, `Import Error !, msg: '${result}'`));
+                return;
+            }
+
+            //
+            // start import project
+            //
+            const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+            const prjConf = prj.GetConfiguration();
+            prjConf.config.virtualFolder = prjInfo.files;
+            const deps = prjConf.CustomDep_getDependence();
+            deps.incList = prjInfo.incList;
+            deps.libList = [];
+            deps.defineList = prjInfo.defineList;
+
+            //
+            // notify update
+            //
+            prj.getVirtualSourceManager().load();
+            prjConf.CustomDep_NotifyChanged();
+
+            GlobalEvent.emit('msg', newMessage('Info', 'Import Done !'));
+
+        } catch (error) {
+            GlobalEvent.emit('error', error);
         }
     }
 

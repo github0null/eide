@@ -532,7 +532,7 @@ export class ProjectConfiguration<T extends CompileData>
 
     private toAbsolutePath(path: string): string {
         const _path = path.trim();
-        if (NodePath.isAbsolute(_path)) {
+        if (File.isAbsolute(_path)) {
             return _path;
         }
         return NodePath.normalize(this.getRootDir().path + File.sep + _path);
@@ -540,12 +540,16 @@ export class ProjectConfiguration<T extends CompileData>
 
     private toRelativePath(path: string): string {
 
-        if (!NodePath.isAbsolute(path)) {
+        if (File.isEnvPath(path)) { // env path have no repath
+            return path;
+        }
+
+        if (!File.isAbsolute(path)) {
             return path;
         }
 
         const rePath = NodePath.relative(this.getRootDir().path, path);
-        if (NodePath.isAbsolute(rePath)) {
+        if (File.isAbsolute(rePath)) {
             return rePath;
         }
 

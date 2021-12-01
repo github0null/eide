@@ -25,7 +25,8 @@
     "eide.project.clean": "Clean",
     "eide.project.upload": "Upload Program To Device",
     "eide.project.gen.makefile": "Generate Makefile Template",
-    "eide.project.modify.files.options": "Append Compiler Options For Files",
+    "eide.project.modify.files.options": "Append separate compiler options to the file",
+    "eide.project.import.ext.project.src.struct": "Import source file resources from other IDE's project",
 
     "eide.prj.menus.main.cppcheck": "Static Check",
     "eide.prj.menus.sub.cppcheck.run": "Check Project by Cppcheck",

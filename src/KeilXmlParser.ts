@@ -181,7 +181,7 @@ export abstract class KeilParser<T> {
 
     // example: file: 'c:\aa\bb', path: '../cc/f.txt', result: 'c:\aa\cc\f.txt'
     protected ToAbsolutePath(path: string): string {
-        if (NodePath.isAbsolute(path)) {
+        if (File.isAbsolute(path)) {
             return path.replace(/\//g, '\\');
         } else {
             return NodePath.normalize(this._file.dir + File.sep + path);

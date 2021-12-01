@@ -510,6 +510,14 @@
                 }
             },
             {
+                "command": "_cl.eide.project.import.ext.source.struct",
+                "title": "%eide.project.import.ext.project.src.struct%",
+                "icon": {
+                    "dark": "./res/icon/Import_16x.svg",
+                    "light": "./res/icon/Import_16x.svg"
+                }
+            },
+            {
                 "command": "_cl.eide.project.cppcheck.check_all",
                 "title": "%eide.project.run.cppcheck%"
             },
@@ -1022,7 +1030,7 @@
                 },
                 {
                     "command": "_cl.eide.project.source.virtual_folder_add_file",
-                    "when": "viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == Project"
+                    "when": "viewItem == PROJECT || viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == Project"
                 },
                 {
                     "command": "_cl.eide.project.source.virtual_folder_add",
@@ -1147,6 +1155,10 @@
                 },
                 {
                     "command": "_cl.eide.project.modify.files.options",
+                    "when": "viewItem == PROJECT && view == Project"
+                },
+                {
+                    "command": "_cl.eide.project.import.ext.source.struct",
                     "when": "viewItem == PROJECT && view == Project"
                 },
                 {
