@@ -736,8 +736,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                     'StatusWarning_16x.svg' : (isComponent ? 'DependencyGraph_16x.svg' : undefined)
                             }));
                         });
+
                     // push virtual source folder
-                    project.getVirtualSourceRootFolders()
+                    project.getVirtualSourceRoot().folders
                         .sort((folder1, folder2) => { return folder1.name.localeCompare(folder2.name); })
                         .forEach((vFolder) => {
                             const vFolderPath = `${VirtualSource.rootName}/${vFolder.name}`;
@@ -747,6 +748,24 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                 obj: <VirtualFolderInfo>{ path: vFolderPath, vFolder: vFolder },
                                 projectIndex: element.val.projectIndex,
                                 tooltip: `${vFolder.name} (${vFolder.files.length} files, ${vFolder.folders.length} folders)`
+                            }));
+                        });
+
+                    // put virtual source files
+                    project.getVirtualSourceRoot().files
+                        .sort((a, b) => a.path.localeCompare(b.path))
+                        .forEach((vFile) => {
+                            const file = new File(project.ToAbsolutePath(vFile.path));
+                            const vFilePath = `${VirtualSource.rootName}/${file.name}`;
+                            const isFileExcluded = project.isExcluded(vFilePath);
+                            const itemType = isFileExcluded ? TreeItemType.V_EXCFILE_ITEM : TreeItemType.V_FILE_ITEM;
+                            iList.push(new ProjTreeItem(itemType, {
+                                value: file,
+                                collapsibleState: project.getSourceRefs(file).length > 0 ?
+                                    vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
+                                obj: <VirtualFileInfo>{ path: vFilePath, vFile: vFile },
+                                projectIndex: element.val.projectIndex,
+                                tooltip: isFileExcluded ? view_str$project$excludeFile : file.path,
                             }));
                         });
                     break;
@@ -1269,7 +1288,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             const projectInfo = baseInfo.prjConfig.config;
 
             // init project info
-            projectInfo.virtualFolder = [];
+            projectInfo.virtualFolder = {
+                name: VirtualSource.rootName, 
+                files: [],
+                folders: []
+            };
 
             const getVirtualFolder = (path: string, noCreate?: boolean): VirtualFolder | undefined => {
 
@@ -1280,10 +1303,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                 const pathList = path.split('/');
                 pathList.splice(0, 1); // remvoe root
 
-                let curFolder: VirtualFolder = {
-                    name: VirtualSource.rootName, files: [],
-                    folders: projectInfo.virtualFolder
-                };
+                // init start search folder
+                let curFolder: VirtualFolder = projectInfo.virtualFolder;
 
                 for (const name of pathList) {
                     const index = curFolder.folders.findIndex((folder) => { return folder.name === name; });

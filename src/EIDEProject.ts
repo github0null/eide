@@ -122,12 +122,8 @@ export class VirtualSource implements SourceProvider {
         return path.startsWith(VirtualSource.rootName);
     }
 
-    private getRoot(): VirtualFolder {
-        return {
-            name: VirtualSource.rootName,
-            files: [],
-            folders: this.config.virtualFolder
-        };
+    public getRoot(): VirtualFolder {
+        return this.config.virtualFolder;
     }
 
     private getFolderByName(vFolder: VirtualFolder, name: string): VirtualFolder | undefined {
@@ -860,8 +856,8 @@ export abstract class AbstractProject {
         return this.sourceRoots.getRootFolderList();
     }
 
-    getVirtualSourceRootFolders(): VirtualFolder[] {
-        return this.virtualSource.getFolder()?.folders || [];
+    getVirtualSourceRoot(): VirtualFolder {
+        return this.virtualSource.getRoot();
     }
 
     getVirtualSourceManager(): VirtualSource {

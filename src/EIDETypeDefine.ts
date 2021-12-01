@@ -60,12 +60,12 @@ import * as os from 'os';
 import * as vscode from 'vscode';
 import * as NodePath from 'path';
 import { isNullOrUndefined } from "util";
-import { AbstractProject } from "./EIDEProject";
+import { AbstractProject, VirtualSource } from "./EIDEProject";
 import { SettingManager } from "./SettingManager";
 
 import { jsonc } from 'jsonc';
 import { WorkspaceManager } from "./WorkspaceManager";
-import * as utility from './utility'
+import * as utility from './utility';
 
 // -------------------------------------------
 
@@ -460,7 +460,7 @@ export interface ProjectConfigData<T extends CompileData> {
 
     // source
     srcDirs: string[];
-    virtualFolder: VirtualFolder[];
+    virtualFolder: VirtualFolder;
 
     dependenceList: DependenceGroup[];
     outDir: string;
@@ -492,6 +492,15 @@ export class ProjectConfiguration<T extends CompileData>
 
     constructor(f: File, type?: ProjectType) {
         super(f, type);
+
+        // compate old version
+        if (Array.isArray(this.config.virtualFolder)) {
+            this.config.virtualFolder = {
+                name: VirtualSource.rootName,
+                files: [],
+                folders: this.config.virtualFolder
+            };
+        }
 
         this.compileConfigModel = CompileConfigModel.getInstance(this.config);
         this.uploadConfigModel = UploadConfigModel.getInstance(this.config.uploader);
@@ -592,7 +601,7 @@ export class ProjectConfiguration<T extends CompileData>
                     dependenceList: [],
                     compileConfig: SdccCompileConfigModel.getDefaultConfig(),
                     srcDirs: [],
-                    virtualFolder: [],
+                    virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
                     excludeList: [],
                     outDir: '.\\build',
                     deviceName: null,
@@ -613,7 +622,7 @@ export class ProjectConfiguration<T extends CompileData>
                     compileConfig: GccCompileConfigModel.getDefaultConfig(),
                     uploader: 'JLink',
                     srcDirs: [],
-                    virtualFolder: [],
+                    virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
                     excludeList: [],
                     outDir: '.\\build',
                     deviceName: null,
@@ -634,7 +643,7 @@ export class ProjectConfiguration<T extends CompileData>
                     compileConfig: RiscvCompileConfigModel.getDefaultConfig(),
                     uploader: 'JLink',
                     srcDirs: [],
-                    virtualFolder: [],
+                    virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
                     excludeList: [],
                     outDir: '.\\build',
                     deviceName: null,
