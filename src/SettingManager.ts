@@ -242,8 +242,12 @@ export class SettingManager {
 
     //--------------------- Global Option ------------------------
 
+    getBuilderAdditionalCommandLine(): string | undefined {
+        return this.getConfiguration().get<string>('Builder.AdditionalCommandLine');
+    }
+
     getMapViewParserDepth(): number {
-        return this.getConfiguration().get<number>('Option.MapViewParserDepth') || 1;
+        return this.getConfiguration().get<number>('Option.MapViewParserDepth') || 3;
     }
 
     isDisplaySourceRefs(): boolean {

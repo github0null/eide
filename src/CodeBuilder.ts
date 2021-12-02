@@ -142,10 +142,11 @@ export abstract class CodeBuilder {
                     for (const expr in parttenInfo) {
                         const path = (<string>srcInf[fieldName]).replace(/\\/g, '/');
                         if (globmatch.isMatch(path, expr)) {
+                            const val = parttenInfo[expr]?.trim().replace(/(?:\r\n|\n)$/, '')
                             if (srcParams[srcInf.path]) {
-                                srcParams[srcInf.path] += ' ' + (parttenInfo[expr] || '')
+                                srcParams[srcInf.path] += ` ${val || ''}`
                             } else {
-                                srcParams[srcInf.path] = parttenInfo[expr] || '';
+                                srcParams[srcInf.path] = val || '';
                             }
                         }
                     }
@@ -347,7 +348,8 @@ export abstract class CodeBuilder {
             .compileConfigModel.getOptions(this.project.getEideDir().path, config);
         const memMaxSize = this.getMaxSize();
         const modeList: string[] = [];
-        const prevParams: BuilderParams = File.IsFile(paramsPath) ? JSON.parse(fs.readFileSync(paramsPath, 'utf8')) : {};
+        const oldParamsPath = `${paramsPath}.old`;
+        const prevParams: BuilderParams = File.IsFile(oldParamsPath) ? JSON.parse(fs.readFileSync(oldParamsPath, 'utf8')) : {};
         const sourceInfo = this.genSourceInfo(prevParams);
 
         const builderOptions: BuilderParams = {
@@ -453,12 +455,19 @@ export abstract class CodeBuilder {
             }
         }
 
-        return [
+        let cmds = [
             '-b', binDir,
             '-M', toolchain.modelName,
             '-p', paramsPath,
             '-m', modeList.join('-')
         ];
+
+        const extraCmd = settingManager.getBuilderAdditionalCommandLine()?.trim();
+        if (extraCmd) {
+            cmds = cmds.concat(extraCmd.split(/\s+/));
+        }
+
+        return cmds;
     }
 
     private getBuilderExe(): File {
@@ -885,7 +894,7 @@ class ARMCodeBuilder extends CodeBuilder {
 
                 extraCommands.push({
                     name: 'axf to elf',
-                    command: `"\${exeDir}\\mono.exe" "\${exeDir}\\axf2elf.exe" -d "${tool_root_folder}" -b "${ouput_path}.bin" -i "${ouput_path}.axf" -o "${ouput_path}.elf" > "${axf2elf_log}"`
+                    command: `"\${BuilderFolder}\\mono.exe" "\${BuilderFolder}\\axf2elf.exe" -d "${tool_root_folder}" -b "${ouput_path}.bin" -i "${ouput_path}.axf" -o "${ouput_path}.elf" > "${axf2elf_log}"`
                 });
             }
 

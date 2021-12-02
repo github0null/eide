@@ -1318,9 +1318,9 @@ class IARSTM8 implements IToolchian {
                 options.linker['linker-config'] = `"${prjInfo.toAbsolutePath(options.linker['linker-config'])}"`;
             }
 
-            // use toolchain root folder, like ${ToolDir}\stm8\config
-            else if (linkerConfig.toLowerCase().startsWith('${tooldir}')) {
-                const absPath = (<string>options.linker['linker-config']).replace(/\$\{ToolDir\}/i, this.getToolchainDir().path);
+            // use toolchain root folder, like ${ToolchainRoot}\stm8\config
+            else if (linkerConfig.toLowerCase().startsWith('${ToolchainRoot}')) {
+                const absPath = (<string>options.linker['linker-config']).replace(/\$\{ToolchainRoot\}/i, this.getToolchainDir().path);
                 options.linker['linker-config'] = `"${NodePath.normalize(absPath)}"`;
             }
         }

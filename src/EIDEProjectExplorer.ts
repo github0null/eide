@@ -3265,40 +3265,57 @@ export class ProjectExplorer {
                 return;
             }
 
-            //
-            // run importer
-            //
-            const prjFile = new File(uri[0].fsPath);
-            const imptrName = (<File>imptrType.file).noSuffixName;
-            const cmds = ['--std', './importer/index.js', imptrName, prjFile.path];
-            const result = child_process.execFileSync(`${scriptRoot.path}/qjs.exe`, cmds, { cwd: scriptRoot.path }).toString();
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: `Importing Resources`
+            }, (progress) => {
+                return new Promise((resolve) => {
+                    try {
 
-            let prjInfo: ImporterProjectInfo;
-            try {
-                prjInfo = JSON.parse(result);
-            } catch (error) {
-                GlobalEvent.emit('msg', newMessage(`Error`, `Import Error !, msg: '${result}'`));
-                return;
-            }
+                        progress.report({ message: `running importer ...` });
 
-            //
-            // start import project
-            //
-            const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
-            const prjConf = prj.GetConfiguration();
-            prjConf.config.virtualFolder = prjInfo.files;
-            const deps = prjConf.CustomDep_getDependence();
-            deps.incList = prjInfo.incList;
-            deps.libList = [];
-            deps.defineList = prjInfo.defineList;
+                        //
+                        // run importer
+                        //
+                        const prjFile = new File(uri[0].fsPath);
+                        const imptrName = (<File>imptrType.file).noSuffixName;
+                        const cmds = ['--std', './importer/index.js', imptrName, prjFile.path];
+                        const result = child_process.execFileSync(`${scriptRoot.path}/qjs.exe`, cmds, { cwd: scriptRoot.path }).toString();
 
-            //
-            // notify update
-            //
-            prj.getVirtualSourceManager().load();
-            prjConf.CustomDep_NotifyChanged();
+                        let prjInfo: ImporterProjectInfo;
+                        try {
+                            prjInfo = JSON.parse(result);
+                        } catch (error) {
+                            throw new Error(`Import Error !, msg: '${result}'`);
+                        }
 
-            GlobalEvent.emit('msg', newMessage('Info', 'Import Done !'));
+                        //
+                        // start import project
+                        //
+                        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+                        const prjConf = prj.GetConfiguration();
+                        prjConf.config.virtualFolder = prjInfo.files;
+                        const deps = prjConf.CustomDep_getDependence();
+                        deps.incList = prjInfo.incList;
+                        deps.libList = [];
+                        deps.defineList = prjInfo.defineList;
+
+                        //
+                        // notify update
+                        //
+                        prj.getVirtualSourceManager().load();
+                        prjConf.CustomDep_NotifyChanged();
+
+                        // show message and exit
+                        progress.report({ message: `done !` });
+                        setTimeout(() => resolve(), 1000);
+
+                    } catch (error) {
+                        GlobalEvent.emit('error', error);
+                        resolve();
+                    }
+                });
+            });
 
         } catch (error) {
             GlobalEvent.emit('error', error);

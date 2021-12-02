@@ -207,7 +207,13 @@
                         "type": "boolean",
                         "scope": "resource",
                         "markdownDescription": "%settings.builder.gen.makefile.params%",
-                        "default": true
+                        "default": false
+                    },
+                    "EIDE.Builder.AdditionalCommandLine": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "Append additional commandline when invoke unify_builder",
+                        "default": ""
                     },
                     "EIDE.Option.ShowToolbarInEditerTitle": {
                         "type": "boolean",
