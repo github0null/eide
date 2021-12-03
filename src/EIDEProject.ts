@@ -54,7 +54,10 @@ import { DeleteDir } from './Platform';
 import { IDebugConfigGenerator } from './DebugConfigGenerator';
 import { md5, copyObject } from './utility';
 import { ResInstaller } from './ResInstaller';
-import { view_str$prompt$not_found_compiler } from './StringTable';
+import {
+    view_str$prompt$not_found_compiler, view_str$operation$name_can_not_be_blank,
+    view_str$operation$name_can_not_have_invalid_char
+} from './StringTable';
 import { SettingManager } from './SettingManager';
 
 export class CheckError extends Error {
@@ -726,6 +729,17 @@ export abstract class AbstractProject {
 
     static isVirtualSourceGroup(grp: FileGroup): boolean {
         return (<ProjectFileGroup>grp).dir == undefined;
+    }
+
+    static validateProjectName(value: string): string | undefined {
+
+        if (value.trim() === '') {
+            return view_str$operation$name_can_not_be_blank;
+        }
+
+        if (/&|<|>|\(|\)|@|\^|\|/.test(value)) {
+            return view_str$operation$name_can_not_have_invalid_char;
+        }
     }
 
     private loadProjectDirectory() {

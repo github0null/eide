@@ -60,6 +60,7 @@ import * as vscode from 'vscode';
 import * as NodePath from 'path';
 import { append2SysEnv } from './Platform';
 import { ResInstaller } from './ResInstaller';
+import { AbstractProject } from './EIDEProject';
 
 interface TemplatePickItem extends vscode.QuickPickItem, TemplateInfo {
     cacheFileName: string | undefined;
@@ -290,17 +291,6 @@ export class OperationExplorer {
         this.provider.Update();
     }
 
-    private validateProjectName(value: string): string | undefined {
-
-        if (value.trim() === '') {
-            return view_str$operation$name_can_not_be_blank;
-        }
-
-        if (/&|<|>|\(|\)|@|\^|\|/.test(value)) {
-            return view_str$operation$name_can_not_have_invalid_char;
-        }
-    }
-
     //--------------- event -----------------
 
     OnOpenProject() {
@@ -458,7 +448,7 @@ export class OperationExplorer {
         const name = await vscode.window.showInputBox({
             placeHolder: input_project_name,
             ignoreFocusOut: true,
-            validateInput: (name) => this.validateProjectName(name)
+            validateInput: (name) => AbstractProject.validateProjectName(name)
         });
         if (name === undefined) {
             return;
@@ -1092,7 +1082,7 @@ export class OperationExplorer {
         const name = await vscode.window.showInputBox({
             placeHolder: input_project_name,
             ignoreFocusOut: true,
-            validateInput: (name) => this.validateProjectName(name)
+            validateInput: (name) => AbstractProject.validateProjectName(name)
         });
 
         if (name === undefined) {
@@ -1165,7 +1155,7 @@ export class OperationExplorer {
         const name = await vscode.window.showInputBox({
             placeHolder: input_project_name,
             ignoreFocusOut: true,
-            validateInput: (name) => this.validateProjectName(name)
+            validateInput: (name) => AbstractProject.validateProjectName(name)
         });
 
         if (name === undefined) {
