@@ -57,6 +57,8 @@
     "eide.explorer.rename.folder": "Rename",
     "eide.explorer.exclude.folder": "Exclude Folder",
     "eide.explorer.include.folder": "Include Folder",
+    "eide.explorer.show.file.dir": "Show In File Explorer",
+    "eide.explorer.modify.file.path": "Modify File Path",
     
     "eide.source.show_cmsis_config_wizard": "CMSIS Configuration Wizard",
     "eide.source.show.disassembly": "Show Disassembly",

@@ -556,6 +556,14 @@
                 "title": "%eide.explorer.add.folder%"
             },
             {
+                "command": "_cl.eide.project.source.file.show.dir",
+                "title": "%eide.explorer.show.file.dir%"
+            },
+            {
+                "command": "_cl.eide.project.source.modify.path",
+                "title": "%eide.explorer.modify.file.path%"
+            },
+            {
                 "command": "_cl.eide.project.source.virtual_folder_remove",
                 "title": "%eide.explorer.remove.folder%"
             },
@@ -1055,6 +1063,14 @@
                     "when": "viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
                 },
                 {
+                    "command": "_cl.eide.project.source.file.show.dir",
+                    "when": "viewItem == FILE_ITEM || viewItem == EXCFILE_ITEM || viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
+                },
+                {
+                    "command": "_cl.eide.project.source.modify.path",
+                    "when": "viewItem == V_FOLDER || viewItem == V_FOLDER_ROOT || viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
+                },
+                {
                     "command": "_cl.eide.project.addPackage",
                     "group": "inline",
                     "when": "viewItem == PACK && view == Project"
@@ -1205,6 +1221,10 @@
                 {
                     "command": "_cl.eide.project.modify.deps",
                     "group": "inline",
+                    "when": "viewItem == DEPENDENCE && view == Project"
+                },
+                {
+                    "command": "_cl.eide.project.modify.deps",
                     "when": "viewItem == DEPENDENCE && view == Project"
                 },
                 {

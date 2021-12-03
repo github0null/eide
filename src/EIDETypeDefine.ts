@@ -432,6 +432,8 @@ export interface ProjectTargetInfo {
 }
 
 export interface VirtualFile {
+    // this must be an relative path
+    // because virtual file path may be outside the project root directory
     path: string;
 }
 

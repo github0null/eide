@@ -50,6 +50,8 @@
     "eide.explorer.rename.folder": "重命名",
     "eide.explorer.exclude.folder": "从项目中排除",
     "eide.explorer.include.folder": "取消排除",
+    "eide.explorer.show.file.dir": "在文件浏览器中显示",
+    "eide.explorer.modify.file.path": "修改源文件路径",
     
     "eide.source.show_cmsis_config_wizard": "CMSIS Configuration Wizard",
     "eide.source.show.disassembly": "查看反汇编",

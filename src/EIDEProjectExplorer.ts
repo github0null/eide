@@ -146,7 +146,7 @@ type GroupRegion = 'PACK' | 'Components' | 'ComponentItem';
 interface TreeItemValue {
     key?: string;
     alias?: string;
-    value: string | File;
+    value: string | File; // if TreeItem refer to a file, the value type is 'File'
     contextVal?: string;
     tooltip?: string;
     icon?: string;
@@ -451,8 +451,8 @@ interface VirtualFolderInfo {
 }
 
 interface VirtualFileInfo {
-    path: string;
-    vFile: VirtualFile;
+    path: string;       // virtual path
+    vFile: VirtualFile; // virtual file info
 }
 
 class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
@@ -1760,8 +1760,14 @@ export class ProjectExplorer {
         this.cppcheck_out = vscode.window.createOutputChannel('eide-cppcheck');
 
         // register doc event
-        context.subscriptions.push(vscode.workspace.onDidSaveTextDocument((doc) => this.onCustomDepYamlSaved(doc)));
-        context.subscriptions.push(vscode.workspace.onDidCloseTextDocument((doc) => this.onCustomDepYamlClosed(doc)));
+        context.subscriptions.push(vscode.workspace.onDidSaveTextDocument((doc) => {
+            this.onCustomDepYamlSaved(doc);
+            this.onFolderSourceYamlSaved(doc);
+        }));
+        context.subscriptions.push(vscode.workspace.onDidCloseTextDocument((doc) => {
+            this.onCustomDepYamlClosed(doc);
+            this.onFolderSourceYamlClosed(doc);
+        }));
 
         this.on('request_open_project', (fsPath: string) => this.dataProvider.OpenProject(fsPath));
         this.on('request_create_project', (option: CreateOptions) => this.dataProvider.CreateProject(option));
@@ -2707,7 +2713,7 @@ export class ProjectExplorer {
             placeHolder: 'Input the new name',
             ignoreFocusOut: true,
             validateInput: (input) => {
-                if (!/^\w+$/.test(input)) { return `must match '^\\w+$'`; }
+                if (!this.vFolderNameMatcher.test(input)) { return `must match '${this.vFolderNameMatcher.source}'`; }
                 return undefined;
             }
         });
@@ -3197,9 +3203,7 @@ export class ProjectExplorer {
                         value: prjConfig.name,
                         ignoreFocusOut: true,
                         placeHolder: 'Input project name',
-                        validateInput: (input: string): string | undefined => {
-                            return input.trim() === '' ? 'project name can not be empty' : undefined;
-                        }
+                        validateInput: (name) => AbstractProject.validateProjectName(name)
                     });
 
                     if (newName && newName !== prjConfig.name) {
@@ -3502,9 +3506,12 @@ export class ProjectExplorer {
 
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
 
+        // if it's a virtual file, we use virtual path
         if (item.type === TreeItemType.V_FILE_ITEM) {
             prj.excludeSourceFile((<VirtualFileInfo>item.val.obj).path);
         }
+
+        // if it's a fs file, we use fs path
         else if (item.val.value instanceof File) {
             prj.excludeSourceFile(item.val.value.path);
         }
@@ -3557,6 +3564,151 @@ export class ProjectExplorer {
                 break;
             default:
                 break;
+        }
+    }
+
+    async showFileInExplorer(item: ProjTreeItem) {
+
+        let file: File | undefined;
+
+        if (item.val.value instanceof File) { // if value is a file, use it
+            file = new File(NodePath.normalize(item.val.value.path));
+        }
+
+        if (file) {
+            vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(file.path));
+        }
+    }
+
+    // KV: <ymlFileName, {vFolderPath: string, project: EideProject}>
+    private prjFolderSourceChangesMap: Map<string, { vFolderPath: string, project: AbstractProject }> = new Map();
+    async modifySourcesPath(item: ProjTreeItem) {
+
+        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        const vSourceManager = prj.getVirtualSourceManager();
+
+        // virtual file
+        if (item.type === TreeItemType.V_FILE_ITEM ||
+            item.type === TreeItemType.V_EXCFILE_ITEM) {
+
+            const vInfo = <VirtualFileInfo>item.val.obj;
+            const path = await vscode.window.showInputBox({
+                value: vInfo.vFile.path,
+                ignoreFocusOut: true,
+                prompt: `Input a file path (allow relative path)`
+            });
+
+            if (path == undefined) {
+                return;
+            }
+
+            const repath = prj.ToRelativePath(path) || path;
+            const vFileInfo = vSourceManager.getFile(vInfo.path);
+            if (vFileInfo) {
+                vFileInfo.path = repath;
+                vSourceManager.notifyUpdateFile(vInfo.path);
+            } else {
+                GlobalEvent.emit('msg', newMessage('Error', `Internal error: can't get obj from virtual path: '${vInfo.path}'`));
+            }
+        }
+
+        // virtual folder
+        else if (item.type === TreeItemType.V_FOLDER ||
+            item.type === TreeItemType.V_FOLDER_ROOT) {
+
+            const vInfo = <VirtualFolderInfo>item.val.obj;
+            const vFolderInfo = vSourceManager.getFolder(vInfo.path);
+            if (vFolderInfo) {
+
+                const getOldFileNameByProject = (vPath: string, prj: AbstractProject) => {
+                    for (const KV of this.prjFolderSourceChangesMap) {
+                        if (KV[1].vFolderPath == vPath &&
+                            KV[1].project.getWsPath().toLowerCase() == prj.getWsPath().toLowerCase()) {
+                            return KV[0];
+                        }
+                    }
+                };
+
+                let tmpFile: File;
+
+                let oldName = getOldFileNameByProject(vInfo.path, prj);
+                if (oldName) {
+                    tmpFile = File.fromArray([os.tmpdir(), oldName]);
+                } else { // if file not exist, add to mapper
+                    tmpFile = File.fromArray([os.tmpdir(), `eide-vfolder-${Date.now()}.yaml`]);
+                    this.prjFolderSourceChangesMap.set(tmpFile.name, { vFolderPath: vInfo.path, project: prj });
+                }
+
+                const yamlLines: string[] = [
+                    `#`,
+                    `# You can modify files path by editing and saving this file (allow relative path).`,
+                    `#`,
+                    ``,
+                    yml.stringify(vFolderInfo.files, { indent: 4 })
+                ];
+
+                tmpFile.Write(yamlLines.join(os.EOL));
+                vscode.window.showTextDocument(vscode.Uri.file(tmpFile.path), { preview: false });
+
+            } else {
+                GlobalEvent.emit('msg', newMessage('Error', `Internal error: can't get obj from virtual path: '${vInfo.path}'`));
+            }
+        }
+    }
+
+    // callbk, if config file saved, apply the changes
+    private onFolderSourceYamlSaved(doc: vscode.TextDocument) {
+
+        const tmpFileName = NodePath.basename(doc.fileName);
+        const info = this.prjFolderSourceChangesMap.get(tmpFileName);
+
+        // skip irrelevant files
+        if (info == undefined) return;
+
+        // save to config
+        try {
+
+            const vSrcManger = info.project.getVirtualSourceManager();
+            const vFolderInfo = vSrcManger.getFolder(info.vFolderPath);
+            if (!vFolderInfo) {
+                throw new Error(`Virtual folder '${info.vFolderPath}' is not exist !`);
+            }
+
+            let fileList: VirtualFile[] = yml.parse(doc.getText());
+            if (fileList != undefined && !Array.isArray(fileList)) {
+                throw new Error(`Type error, files list must be an array, please check your yaml config file !`);
+            }
+
+            // convert to repath
+            if (fileList) {
+                fileList = fileList.map((vFile) => {
+                    return {
+                        path: info.project.ToRelativePath(vFile.path) || vFile.path
+                    };
+                });
+            }
+
+            vFolderInfo.files = fileList || [];
+            vSrcManger.notifyUpdateFolder(info.vFolderPath);
+
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+        }
+    }
+
+    // callbk, if config file closed, rm tmp file
+    private onFolderSourceYamlClosed(doc: vscode.TextDocument) {
+
+        // skip irrelevant files
+        const tmpFileName = NodePath.basename(doc.fileName);
+        if (!this.prjFolderSourceChangesMap.has(tmpFileName)) return;
+
+        // do 
+        try {
+            this.prjFolderSourceChangesMap.delete(tmpFileName); // remove from mapper
+            fs.unlinkSync(`${os.tmpdir()}/${tmpFileName}`);
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
     }
 
