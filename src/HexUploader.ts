@@ -47,6 +47,8 @@ let _mInstance: HexUploaderManager | undefined;
 export type HexUploaderType = 'JLink' | 'STVP' | 'STLink' | 'stcgal' | 'pyOCD' | 'OpenOCD' | 'Custom';
 
 export interface UploadOption {
+    // program file path
+    // format: "<file1_path>[,addr1];<file2_path>[,addr2]"
     bin: string;
 }
 
@@ -123,9 +125,18 @@ export class HexUploaderManager {
 //------------------------------------------------------
 
 interface UploaderPreData<T> {
+
     isOk: boolean | Error;
+
     params?: T;
 }
+
+interface FlashProgramFile {
+
+    path: string;
+
+    addr?: string;
+};
 
 export abstract class HexUploader<InvokeParamsType> {
 
@@ -141,9 +152,9 @@ export abstract class HexUploader<InvokeParamsType> {
         this.isPowershell = /powershell.exe$/i.test(vscode.env.shell);
     }
 
-    async upload() {
+    async upload(eraseAll?: boolean) {
 
-        const dat = await this._prepare();
+        const dat = await this._prepare(eraseAll);
 
         if (dat.isOk === false) { // canceled
             return;
@@ -158,9 +169,25 @@ export abstract class HexUploader<InvokeParamsType> {
     }
 
     protected getUploadOptions<T extends UploadOption>(): T {
-        const option: T = JSON.parse(JSON.stringify(this.project.GetConfiguration().uploadConfigModel.data));
-        option.bin = this.project.ToAbsolutePath(option.bin);
-        return option;
+        return JSON.parse(JSON.stringify(this.project.GetConfiguration().uploadConfigModel.data));
+    }
+
+    protected parseProgramFiles<T extends UploadOption>(options: T): FlashProgramFile[] {
+
+        const result: FlashProgramFile[] = [];
+        const matcher = /(?<path>[^,]+)(?:,(?<addr>0x[a-f0-9]+))?/i;
+
+        options.bin.split(';').forEach((path) => {
+            const m = matcher.exec(path);
+            if (m && m.groups && m.groups['path']) {
+                result.push({
+                    path: this.project.ToAbsolutePath(m.groups['path']),
+                    addr: m.groups['addr']
+                });
+            }
+        });
+
+        return result;
     }
 
     protected toAbsolute(_path: string): File {
@@ -170,7 +197,7 @@ export abstract class HexUploader<InvokeParamsType> {
         return file;
     }
 
-    protected abstract _prepare(): Promise<UploaderPreData<InvokeParamsType>>;
+    protected abstract _prepare(eraseAll?: boolean): Promise<UploaderPreData<InvokeParamsType>>;
 
     protected abstract _launch(params: InvokeParamsType | undefined): void;
 }
@@ -209,33 +236,61 @@ class JLinkUploader extends HexUploader<any> {
 
     toolType: HexUploaderType = 'JLink';
 
-    protected async _prepare(): Promise<UploaderPreData<string[]>> {
+    protected async _prepare(eraseAll?: boolean): Promise<UploaderPreData<string[]>> {
 
         if (!new File(SettingManager.GetInstance().getJlinkDir()).IsDir()) {
             await ResInstaller.instance().setOrInstallTools(this.toolType, `Not found 'JLink' install directory !`);
             return { isOk: false };
         }
 
-        const option = this.getUploadOptions<JLinkOptions>();
+        const jlinkCmdFileLines: string[] = [];
 
         // create output dir
         const outFolder = new File(this.project.ToAbsolutePath(this.project.getOutputDir()));
         outFolder.CreateDir(true);
+        const jlinkCommandsFile = File.fromArray([outFolder.path, 'commands.jlink']);
 
-        // clear base addr for hex file
-        if (/\.hex$/i.test(option.bin)) {
-            option.baseAddr = undefined;
+        const option = this.getUploadOptions<JLinkOptions>();
+        const files = this.parseProgramFiles(option);
+
+        // program
+        if (!eraseAll) {
+
+            if (files.length == 0) {
+                return { isOk: new Error(`no any program files !`) };
+            }
+
+            jlinkCmdFileLines.push(
+                'r',
+                'halt'
+            );
+
+            files.forEach((file) => {
+                if (/\.bin$/i.test(file.path)) {
+                    const addr = file.addr || option.baseAddr
+                    jlinkCmdFileLines.push(`loadfile "${file.path}"${addr ? (`,${addr}`) : ''}`);
+                } else {
+                    jlinkCmdFileLines.push(`loadfile "${file.path}"`);
+                }
+            });
+
+            jlinkCmdFileLines.push(
+                'r',
+                'go',
+                'exit'
+            );
         }
 
-        const jlinkCommandsFile = File.fromArray([outFolder.path, 'commands.jlink']);
-        const jlinkCmdFileLines: string[] = [
-            'r',
-            'halt',
-            `loadfile "${option.bin}"${option.baseAddr ? (`,${option.baseAddr}`) : ''}`,
-            'r',
-            'go',
-            'exit'
-        ];
+        // erase internal falsh
+        else {
+            jlinkCmdFileLines.push(
+                'r',
+                'halt',
+                'erase',
+                'r',
+                'exit'
+            );
+        }
 
         const codeConverter = new CodeConverter();
         const codePage = ResManager.getLocalCodePage();
@@ -301,7 +356,7 @@ class StcgalUploader extends HexUploader<string[]> {
         super(prj);
     }
 
-    protected async _prepare(): Promise<UploaderPreData<string[]>> {
+    protected async _prepare(eraseAll?: boolean): Promise<UploaderPreData<string[]>> {
 
         const resManager = ResManager.GetInstance();
 
@@ -385,8 +440,13 @@ class StcgalUploader extends HexUploader<string[]> {
     protected _launch(commands: string[]): void {
 
         const option = this.getUploadOptions<C51FlashOption>();
+        const programs = this.parseProgramFiles(option);
 
-        commands.push('"' + option.bin + '"');
+        if (programs.length == 0) {
+            throw new Error(`no any program files !`);
+        }
+
+        commands.push('"' + programs[0].path + '"');
 
         const eepromFile = this.toAbsolute(option.eepromImgPath);
         if (eepromFile.IsFile()) {
@@ -430,10 +490,15 @@ class STLinkUploader extends HexUploader<string[]> {
         super(prj);
     }
 
-    private genCommandForStlinkCli(exe: File): string[] {
+    private genCommandForStlinkCli(exe: File, eraseAll?: boolean): string[] {
 
         const commands: string[] = [];
         const options = this.getUploadOptions<STLinkOptions>();
+        const programs = this.parseProgramFiles(options);
+
+        if (programs.length == 0) {
+            throw new Error(`no any program files !`);
+        }
 
         /* connection commands */
         commands.push(
@@ -447,35 +512,45 @@ class STLinkUploader extends HexUploader<string[]> {
         }
 
         /* flash commands */
-        commands.push(
-            '-P', options.bin
-        );
+        if (!eraseAll) {
 
-        if (/\.bin$/i.test(options.bin)) {
-            commands.push(options.address || '0x08000000');
-        }
+            commands.push(
+                '-P', programs[0].path
+            );
 
-        if (/\.stldr$/i.test(options.elFile)) {
-            const elFolder = File.fromArray([NodePath.dirname(exe.path), 'ExternalLoader']);
-            commands.push('-EL', options.elFile.replace('<stlink>', elFolder.path));
-        }
-
-        // option bytes commands
-        const optionFile = new File(this.project.ToAbsolutePath(options.optionBytes));
-        if (optionFile.IsFile()) {
-            const conf = <any>ini.parse(optionFile.Read());
-            const confList: string[] = [];
-            for (const key in conf) { confList.push(`${key}=${conf[key]}`) }
-            if (confList.length > 0) {
-                commands.push('-OB');
-                confList.forEach((val) => { commands.push(val) });
-                commands.push('-rOB');
+            if (/\.bin$/i.test(programs[0].path)) {
+                commands.push(options.address || programs[0].addr || '0x08000000');
             }
+
+            if (/\.stldr$/i.test(options.elFile)) {
+                const elFolder = File.fromArray([NodePath.dirname(exe.path), 'ExternalLoader']);
+                commands.push('-EL', options.elFile.replace('<stlink>', elFolder.path));
+            }
+
+            // option bytes commands
+            const optionFile = new File(this.project.ToAbsolutePath(options.optionBytes));
+            if (optionFile.IsFile()) {
+                const conf = <any>ini.parse(optionFile.Read());
+                const confList: string[] = [];
+                for (const key in conf) { confList.push(`${key}=${conf[key]}`) }
+                if (confList.length > 0) {
+                    commands.push('-OB');
+                    confList.forEach((val) => { commands.push(val) });
+                    commands.push('-rOB');
+                }
+            }
+
+            commands.push(
+                '-V', 'after_programming'
+            );
         }
 
-        commands.push(
-            '-V', 'after_programming'
-        );
+        // eraseAll
+        else {
+            commands.push(
+                '-ME'
+            );
+        }
 
         /* misc commands */
         commands.push(
@@ -490,10 +565,15 @@ class STLinkUploader extends HexUploader<string[]> {
         return commands;
     }
 
-    private genCommandForCubeProgramer(exe: File): string[] {
+    private genCommandForCubeProgramer(exe: File, eraseAll?: boolean): string[] {
 
         const commands: string[] = [];
         const options = this.getUploadOptions<STLinkOptions>();
+        const programs = this.parseProgramFiles(options);
+
+        if (programs.length == 0) {
+            throw new Error(`no any program files !`);
+        }
 
         /* connect cmd */
         commands.push('-c', `port=${options.proType}`, `freq=${options.speed}`);
@@ -503,41 +583,52 @@ class STLinkUploader extends HexUploader<string[]> {
             commands.push(`reset=${options.resetMode}`);
         }
 
-        /* external loader */
-        if (/\.stldr$/i.test(options.elFile)) {
-            const elFolder = File.fromArray([NodePath.dirname(exe.path), 'ExternalLoader']);
-            commands.push('-el', options.elFile.replace('<stlink>', elFolder.path));
-        }
+        // program
+        if (!eraseAll) {
 
-        // option bytes commands
-        const optionFile = new File(this.project.ToAbsolutePath(options.optionBytes));
-        if (optionFile.IsFile()) {
-            const conf = <any>ini.parse(optionFile.Read());
-            const confList: string[] = [];
-            for (const key in conf) { confList.push(`${key}=${conf[key]}`) }
-            if (confList.length > 0) {
-                commands.push('-ob');
-                confList.forEach((val) => { commands.push(val) });
-                commands.push('-ob', 'displ');
+            /* external loader */
+            if (/\.stldr$/i.test(options.elFile)) {
+                const elFolder = File.fromArray([NodePath.dirname(exe.path), 'ExternalLoader']);
+                commands.push('-el', options.elFile.replace('<stlink>', elFolder.path));
             }
+
+            // option bytes commands
+            const optionFile = new File(this.project.ToAbsolutePath(options.optionBytes));
+            if (optionFile.IsFile()) {
+                const conf = <any>ini.parse(optionFile.Read());
+                const confList: string[] = [];
+                for (const key in conf) { confList.push(`${key}=${conf[key]}`) }
+                if (confList.length > 0) {
+                    commands.push('-ob');
+                    confList.forEach((val) => { commands.push(val) });
+                    commands.push('-ob', 'displ');
+                }
+            }
+
+            /* download program */
+            commands.push('--download', programs[0].path);
+
+            if (/\.bin$/i.test(programs[0].path)) {
+                commands.push(options.address || programs[0].addr || '0x08000000');
+            }
+
+            /* verify program */
+            commands.push('-v');
         }
 
-        /* download program */
-        commands.push('--download', options.bin);
-
-        if (/\.bin$/i.test(options.bin)) {
-            commands.push(options.address || '0x08000000');
+        // erase all
+        else {
+            commands.push(
+                '-e', 'all'
+            );
         }
-
-        /* verify program */
-        commands.push('-v');
 
         if (options.runAfterProgram) { commands.push('--go') }
 
         return commands;
     }
 
-    protected async _prepare(): Promise<UploaderPreData<string[]>> {
+    protected async _prepare(eraseAll?: boolean): Promise<UploaderPreData<string[]>> {
 
         const exe = new File(SettingManager.GetInstance().getSTLinkExePath());
         if (!exe.IsFile()) {
@@ -549,12 +640,12 @@ class STLinkUploader extends HexUploader<string[]> {
 
         /* use stlink cli */
         if (exe.noSuffixName.toLowerCase().startsWith('st-link_cli')) {
-            commands = this.genCommandForStlinkCli(exe);
+            commands = this.genCommandForStlinkCli(exe, eraseAll);
         }
 
         /* use cube programer */
         else {
-            commands = this.genCommandForCubeProgramer(exe);
+            commands = this.genCommandForCubeProgramer(exe, eraseAll);
         }
 
         return {
@@ -596,7 +687,7 @@ class STVPHexUploader extends HexUploader<string[]> {
         super(prj);
     }
 
-    protected async _prepare(): Promise<UploaderPreData<string[]>> {
+    protected async _prepare(eraseAll?: boolean): Promise<UploaderPreData<string[]>> {
 
         const exe = new File(SettingManager.GetInstance().getStvpExePath());
         if (!exe.IsFile()) {
@@ -605,6 +696,8 @@ class STVPHexUploader extends HexUploader<string[]> {
         }
 
         const options = this.getUploadOptions<STVPFlasherOptions>();
+        const programs = this.parseProgramFiles(options);
+
         const commands: string[] = [];
 
         // connection commands
@@ -618,28 +711,41 @@ class STVPHexUploader extends HexUploader<string[]> {
         commands.push('-no_loop');
         commands.push('-no_log');
 
-        // not verify
-        commands.push('-no_verif');
+        // program
+        if (!eraseAll) {
 
-        const binFile = this.toAbsolute(options.bin);
-        if (binFile.IsFile()) {
-            commands.push('-FileProg=\"' + binFile.path + '\"');
-        } else {
-            commands.push('-no_progProg');
+            if (programs.length == 0) {
+                throw new Error(`no any program files !`);
+            }
+
+            // not verify
+            commands.push('-no_verif');
+
+            const binFile = this.toAbsolute(programs[0].path);
+            if (binFile.IsFile()) {
+                commands.push('-FileProg=\"' + binFile.path + '\"');
+            } else {
+                commands.push('-no_progProg');
+            }
+
+            const eepromFile = this.toAbsolute(options.eepromFile);
+            if (eepromFile.IsFile()) {
+                commands.push('-FileData=\"' + eepromFile.path + '\"');
+            } else {
+                commands.push('-no_progData');
+            }
+
+            const opFile = this.toAbsolute(options.optionByteFile);
+            if (opFile.IsFile()) {
+                commands.push('-FileOption=\"' + opFile.path + '\"');
+            } else {
+                commands.push('-no_progOption');
+            }
         }
 
-        const eepromFile = this.toAbsolute(options.eepromFile);
-        if (eepromFile.IsFile()) {
-            commands.push('-FileData=\"' + eepromFile.path + '\"');
-        } else {
-            commands.push('-no_progData');
-        }
-
-        const opFile = this.toAbsolute(options.optionByteFile);
-        if (opFile.IsFile()) {
-            commands.push('-FileOption=\"' + opFile.path + '\"');
-        } else {
-            commands.push('-no_progOption');
+        // erase all
+        else {
+            commands.push('-erase');
         }
 
         return {
@@ -677,10 +783,27 @@ class PyOCDUploader extends HexUploader<string[]> {
 
     toolType: HexUploaderType = 'pyOCD';
 
-    protected async _prepare(): Promise<UploaderPreData<string[]>> {
+    protected async _prepare(eraseAll?: boolean): Promise<UploaderPreData<string[]>> {
 
         const commandLines: string[] = [];
+
         const option = this.getUploadOptions<PyOCDFlashOptions>();
+        const programs = this.parseProgramFiles(option);
+
+        // program
+        if (!eraseAll) {
+
+            if (programs.length == 0) {
+                throw new Error(`no any program files !`);
+            }
+
+            commandLines.push('flash');
+        }
+
+        // erase all
+        else {
+            commandLines.push('erase');
+        }
 
         if (option.config) {
             const confFile = new File(this.project.ToAbsolutePath(option.config));
@@ -688,11 +811,6 @@ class PyOCDUploader extends HexUploader<string[]> {
                 commandLines.push('--config');
                 commandLines.push(confFile.path);
             }
-        }
-
-        if (/\.bin$/i.test(option.bin)) {
-            commandLines.push('-a');
-            commandLines.push(option.baseAddr || '0x08000000');
         }
 
         // target name
@@ -706,7 +824,16 @@ class PyOCDUploader extends HexUploader<string[]> {
         }
 
         // file path
-        commandLines.push(option.bin);
+        if (!eraseAll) {
+            programs.forEach((file) => {
+                if (/\.bin$/i.test(file.path)) {
+                    const baseAddr = option.baseAddr || programs[0].addr || '0x08000000';
+                    commandLines.push(`${file.path}@${baseAddr}`);
+                } else {
+                    commandLines.push(file.path);
+                }
+            });
+        }
 
         return {
             isOk: true,
@@ -716,7 +843,7 @@ class PyOCDUploader extends HexUploader<string[]> {
 
     protected _launch(commands: string[]): void {
 
-        const commandLine: string = 'python -m pyocd flash ' + commands.map((line) => {
+        const commandLine: string = 'python -m pyocd ' + commands.map((line) => {
             return CmdLineHandler.quoteString(line, '"');
         }).join(' ');
 
@@ -741,7 +868,7 @@ class OpenOCDUploader extends HexUploader<string[]> {
 
     toolType: HexUploaderType = 'OpenOCD';
 
-    protected async _prepare(): Promise<UploaderPreData<string[]>> {
+    protected async _prepare(eraseAll?: boolean): Promise<UploaderPreData<string[]>> {
 
         const exe = new File(SettingManager.GetInstance().getOpenOCDExePath());
         if (!exe.IsFile()) {
@@ -750,7 +877,12 @@ class OpenOCDUploader extends HexUploader<string[]> {
         }
 
         const option = this.getUploadOptions<OpenOCDFlashOptions>();
-        const addrStr = /\.bin$/i.test(option.bin) ? (option.baseAddr || '0x08000000') : '';
+        const programs = this.parseProgramFiles(option);
+
+        if (programs.length == 0) {
+            throw new Error(`no any program files !`);
+        }
+
         const commands: string[] = [];
 
         const interfaceFileName = option.interface.startsWith('${workspaceFolder}/')
@@ -770,9 +902,19 @@ class OpenOCDUploader extends HexUploader<string[]> {
             `-f ${interfaceFileName}.cfg`,
             `-f ${targetFileName}.cfg`,
             `-c "init"`,
-            `-c "reset init"`,
-            `-c "program \\"${option.bin.replace(/\\{1,}/g, '/')}\\" ${addrStr} verify reset exit"`
+            `-c "reset init"`
         );
+
+        programs.forEach(file => {
+            if (/\.bin$/i.test(file.path)) {
+                const addrStr = option.baseAddr || file.addr || '0x08000000';
+                commands.push(`-c "program \\"${file.path.replace(/\\{1,}/g, '/')}\\" ${addrStr} verify reset"`);
+            } else {
+                commands.push(`-c "program \\"${file.path.replace(/\\{1,}/g, '/')}\\" verify reset"`);
+            }
+        });
+
+        commands.push(`-c "exit"`);
 
         return {
             isOk: true,
@@ -797,9 +939,16 @@ class CustomUploader extends HexUploader<string> {
 
     toolType: HexUploaderType = 'Custom';
 
-    protected async _prepare(): Promise<UploaderPreData<string>> {
+    protected async _prepare(eraseAll?: boolean): Promise<UploaderPreData<string>> {
 
         const option = this.getUploadOptions<CustomFlashOptions>();
+        const programs = this.parseProgramFiles(option);
+
+        if (programs.length == 0) {
+            return {
+                isOk: new Error(`no any program files !`)
+            };
+        }
 
         if (option.commandLine === undefined) {
             return {
@@ -808,9 +957,23 @@ class CustomUploader extends HexUploader<string> {
         }
 
         const portList = ResManager.GetInstance().enumSerialPort();
-        const commandLine = option.commandLine
-            .replace(/\$\{hexFile\}|\$\{binFile\}|\$\{programFile\}/ig, option.bin)
+
+        let commandLine = option.commandLine
+            .replace(/\$\{hexFile\}|\$\{binFile\}|\$\{programFile\}/ig, programs[0].path)
             .replace(/\$\{port\}/ig, portList[0] || 'none');
+
+        programs.forEach((file, index) => {
+
+            commandLine = commandLine
+                .replace(`\${hexFile[${index}]}`, file.path)
+                .replace(`\${binFile[${index}]}`, file.path)
+                .replace(`\${programFile[${index}]}`, file.path);
+
+            if (file.addr) {
+                commandLine = commandLine
+                    .replace(`\${binAddr[${index}]}`, file.addr || '0x00000000')
+            }
+        });
 
         return {
             isOk: true,
