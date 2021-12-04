@@ -125,6 +125,7 @@
     "settings.option.disable.explorer_context.menu": "禁用资源浏览器上下文菜单",
     "settings.option.show.source.references": "显示源文件的头文件引用",
     "settings.option.mapView.parser.depth": "显示 *.map.view 时，obj 文件路径的深度限制。大于该深度的 obj 文件将被忽略",
+    "settings.option.show.output.files": "在项目资源管理器中显示编译输出文件",
 
     "string.eide.startup.walkthroughs": "Embedded IDE 演示",
     "string.eide.startup.walkthroughs.detail": "我们将向您展示如何开始使用 Embedded IDE 。",

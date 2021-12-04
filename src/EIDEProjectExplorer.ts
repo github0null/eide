@@ -137,6 +137,10 @@ enum TreeItemType {
     // source refs
     SRCREF_FILE_ITEM,
 
+    // output 
+    OUTPUT_FOLDER,
+    OUTPUT_FILE_ITEM,
+
     ACTIVED_ITEM,
     ACTIVED_GROUP
 }
@@ -304,11 +308,14 @@ export class ProjTreeItem extends vscode.TreeItem {
         }
     }
 
-    private getSourceFileIconName(suffix: string): string | undefined {
+    private getSourceFileIconName(fileName_: string, suffix_: string): string | undefined {
 
         let name: string | undefined;
 
-        switch (suffix.toLowerCase()) {
+        const fileName = fileName_.toLowerCase();
+        const suffix = suffix_.toLowerCase();
+
+        switch (suffix) {
             case '.c':
                 name = 'file_type_c.svg';
                 break;
@@ -337,10 +344,22 @@ export class ProjTreeItem extends vscode.TreeItem {
                 break;
             case '.o':
             case '.obj':
+            case '.axf':
+            case '.elf':
+            case '.bin':
+            case '.out':
                 name = 'file_type_binary.svg';
                 break;
+            case '.map':
+                name = 'file_type_map.svg';
+                break;
+            // other suffix
             default:
-                name = 'document-light.svg';
+                if (fileName.endsWith('.map.view')) {
+                    name = 'Report_16x.svg';
+                } else {
+                    name = 'document-light.svg';
+                }
                 break;
         }
 
@@ -413,6 +432,9 @@ export class ProjTreeItem extends vscode.TreeItem {
             case TreeItemType.ACTIVED_GROUP:
                 name = 'TestCoveredPassing_16x.svg';//'RecursivelyCheckAll_16x.svg';
                 break;
+            case TreeItemType.OUTPUT_FOLDER:
+                name = 'folder_type_binary.svg';
+                break;
             default:
                 {
                     // if it's a source file, get icon
@@ -420,7 +442,7 @@ export class ProjTreeItem extends vscode.TreeItem {
                         const file: File = this.val.value;
                         // if file is existed, get icon by suffix
                         if (file.IsFile()) {
-                            name = this.getSourceFileIconName(file.suffix);
+                            name = this.getSourceFileIconName(file.name, file.suffix);
                         }
                         // if file not existed, show warning icon
                         else {
@@ -455,6 +477,46 @@ interface VirtualFileInfo {
     vFile: VirtualFile; // virtual file info
 }
 
+class ProjectItemCache {
+
+    // <projectPath, {root: TreeItem, itemList: TreeItem[]}>
+    private itemCache: Map<string, ItemCache> = new Map();
+
+    getTreeItem(prj: AbstractProject, itemType: TreeItemType): ProjTreeItem | undefined {
+        const cache = this.itemCache.get(prj.getWsPath());
+        if (cache) {
+            return cache[TreeItemType[itemType]];
+        }
+    }
+
+    setTreeItem(prj: AbstractProject, item: ProjTreeItem, isRoot?: boolean) {
+        const cache = this.itemCache.get(prj.getWsPath());
+        if (cache) {
+            if (isRoot) {
+                cache.root = item;
+            } else {
+                cache[TreeItemType[item.type]] = item;
+            }
+        } else if (isRoot) { // if not found and type is root, set it
+            this.itemCache.set(prj.getWsPath(), { root: item });
+        }
+    }
+
+    delTreeItem(prj: AbstractProject, itemType?: TreeItemType): ProjTreeItem | undefined {
+        const cache = this.itemCache.get(prj.getWsPath());
+        if (cache) {
+            if (itemType) {
+                const key = TreeItemType[itemType];
+                const deleted = cache[key];
+                cache[key] = <any>undefined; // del item
+                return deleted;
+            } else { // del all
+                this.itemCache.delete(prj.getWsPath());
+            }
+        }
+    }
+}
+
 class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
     private static readonly recName = 'sln.record';
@@ -465,7 +527,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
     private recFile: File;
     private context: vscode.ExtensionContext;
     private activePrjPath: string | undefined;
-    private itemCache: Map<string, ItemCache> = new Map();
+
+    // project tree item refresh cache
+    treeCache: ProjectItemCache = new ProjectItemCache();
 
     onDidChangeTreeData?: vscode.Event<ProjTreeItem | null | undefined> | undefined;
     dataChangedEvent: vscode.EventEmitter<ProjTreeItem | undefined>;
@@ -489,30 +553,23 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         this.LoadWorkspaceProject();
     }
 
-    getCacheItem(prj: AbstractProject, itemType: TreeItemType): ProjTreeItem | undefined {
-        const cache = this.itemCache.get(prj.getWsPath());
-        if (cache) {
-            return cache[TreeItemType[itemType]];
-        }
-    }
-
     onProjectChanged(prj: AbstractProject, type?: DataChangeType) {
         switch (type) {
             case 'files':
-                this.UpdateView(this.getCacheItem(prj, TreeItemType.PROJECT));
+                this.UpdateView(this.treeCache.getTreeItem(prj, TreeItemType.PROJECT));
                 break;
             case 'compiler':
-                this.UpdateView(this.getCacheItem(prj, TreeItemType.COMPILE_CONFIGURATION));
+                this.UpdateView(this.treeCache.getTreeItem(prj, TreeItemType.COMPILE_CONFIGURATION));
                 break;
             case 'uploader':
-                this.UpdateView(this.getCacheItem(prj, TreeItemType.UPLOAD_OPTION));
+                this.UpdateView(this.treeCache.getTreeItem(prj, TreeItemType.UPLOAD_OPTION));
                 break;
             case 'pack':
-                this.UpdateView(this.getCacheItem(prj, TreeItemType.PACK));
+                this.UpdateView(this.treeCache.getTreeItem(prj, TreeItemType.PACK));
                 break;
             case 'dependence':
-                this.UpdateView(this.getCacheItem(prj, TreeItemType.PACK));
-                this.UpdateView(this.getCacheItem(prj, TreeItemType.DEPENDENCE));
+                this.UpdateView(this.treeCache.getTreeItem(prj, TreeItemType.PACK));
+                this.UpdateView(this.treeCache.getTreeItem(prj, TreeItemType.DEPENDENCE));
                 break;
             default:
                 this.UpdateView();
@@ -653,13 +710,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                 });
                 iList.push(cItem);
 
-                // cache item
-                const oldItem = this.itemCache.get(sln.getWsPath());
-                if (oldItem) {
-                    oldItem.root = cItem;
-                } else {
-                    this.itemCache.set(sln.getWsPath(), { root: cItem });
-                }
+                // cache project root item
+                this.treeCache.setTreeItem(sln, cItem, true);
             });
         } else {
 
@@ -711,10 +763,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                         }));
 
                         // cache sub root view
-                        const iCache = this.itemCache.get(project.getWsPath());
-                        if (iCache) {
-                            iList.forEach((item) => { iCache[TreeItemType[item.type]] = item; });
-                        }
+                        iList.forEach((item) => {
+                            this.treeCache.setTreeItem(project, item);
+                        });
                     }
                     break;
                 case TreeItemType.PROJECT:
@@ -770,6 +821,21 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                     tooltip: isFileExcluded ? view_str$project$excludeFile : file.path,
                                 }));
                             });
+
+                        // show output files
+                        if (SettingManager.GetInstance().isShowOutputFilesInExplorer()) {
+                            const label = `Output Files`;
+                            const tItem = new ProjTreeItem(TreeItemType.OUTPUT_FOLDER, {
+                                value: label,
+                                collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
+                                projectIndex: element.val.projectIndex,
+                                tooltip: label,
+                            });
+                            iList.push(tItem);
+                            this.treeCache.setTreeItem(project, tItem);
+                        } else {
+                            this.treeCache.delTreeItem(project, TreeItemType.OUTPUT_FOLDER);
+                        }
                     }
                     break;
                 case TreeItemType.PACK:
@@ -1011,6 +1077,24 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                             }));
                         }
                     }
+                    break;
+                // output folder
+                case TreeItemType.OUTPUT_FOLDER:
+                    {
+                        const outFolder = project.getOutputFolder();
+                        const fList = outFolder.GetList([AbstractProject.buildOutputMatcher], File.EMPTY_FILTER);
+                        fList.forEach((file) => {
+                            iList.push(new ProjTreeItem(TreeItemType.OUTPUT_FILE_ITEM, {
+                                value: file,
+                                collapsibleState: vscode.TreeItemCollapsibleState.None,
+                                projectIndex: element.val.projectIndex,
+                                tooltip: file.path,
+                            }));
+                        });
+                    }
+                    break;
+                // output file item
+                case TreeItemType.OUTPUT_FILE_ITEM:
                     break;
                 case TreeItemType.COMPONENT_GROUP:
                 case TreeItemType.ACTIVED_GROUP:
@@ -1957,6 +2041,13 @@ export class ProjectExplorer {
         this.dataProvider.clearAllRecords();
     }
 
+    notifyUpdateOutputFolder(prj: AbstractProject) {
+        const item = this.dataProvider.treeCache.getTreeItem(prj, TreeItemType.OUTPUT_FOLDER);
+        if (item) {
+            this.dataProvider.UpdateView(item);
+        }
+    }
+
     private _buildLock: boolean = false;
     BuildSolution(prjItem?: ProjTreeItem, options?: BuildOptions) {
 
@@ -1982,7 +2073,12 @@ export class ProjectExplorer {
 
             // set event handler
             const toolchain = prj.getToolchain().name;
-            codeBuilder.on('finished', () => prj.notifyUpdateSourceRefs(toolchain));
+
+            // notify view update after build done !
+            codeBuilder.on('finished', () => {
+                prj.notifyUpdateSourceRefs(toolchain);
+                this.notifyUpdateOutputFolder(prj);
+            });
 
             // start build
             codeBuilder.build(options);
@@ -2630,6 +2726,9 @@ export class ProjectExplorer {
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
 
         switch (item.type) {
+            case TreeItemType.OUTPUT_FOLDER:
+                this.notifyUpdateOutputFolder(prj);
+                break;
             case TreeItemType.V_FOLDER_ROOT:
                 prj.refreshSourceRoot((<VirtualFolderInfo>item.val.obj).path);
                 break;
@@ -3163,7 +3262,7 @@ export class ProjectExplorer {
     }
 
     private updateSettingsView(prj: AbstractProject) {
-        this.dataProvider.UpdateView(this.dataProvider.getCacheItem(prj, TreeItemType.SETTINGS));
+        this.dataProvider.UpdateView(this.dataProvider.treeCache.getTreeItem(prj, TreeItemType.SETTINGS));
     }
 
     async ModifyOtherSettings(item: ProjTreeItem) {

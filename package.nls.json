@@ -93,6 +93,7 @@
     "settings.option.insert.extcommands.at.begin": "The built-in command lines will insert at the beginning of the `beforeBuildTasks / afterBuildTasks`",
     "settings.option.show.source.references": "Show c/c++ header references for source file",
     "settings.option.mapView.parser.depth": "The depth limit of the obj file path when *.map.view is displayed. Obj files larger than this depth are ignored.",
+    "settings.option.show.output.files": "Show output files in project resource explorer",
     
     "settings.repo.use.proxy": "Use proxy to improve network speed for github (experimental function)",
     "settings.template.repo.url": "Public github template repository url, format: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",

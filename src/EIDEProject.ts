@@ -672,8 +672,9 @@ export abstract class AbstractProject {
     static readonly libFileFilter: RegExp[] = [/\.lib$/i, /\.a$/i, /\.o$/i, /\.obj$/i];
     static readonly asmfileFilter: RegExp[] = [/\.s$/i, /\.a51$/i, /\.asm$/i];
 
-    static readonly excludeDirFilter: RegExp[] = [/^\.git$/i, /^\.vs$/i, /^\.vscode$/i, /^\.eide$/i];
+    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|hex|bin|s19|map|map\.view)$/i;
 
+    static readonly excludeDirFilter: RegExp[] = [/^\.git$/i, /^\.vs$/i, /^\.vscode$/i, /^\.eide$/i];
     // this folder list will be excluded when search include path
     static readonly excludeIncSearchList: string[] = [DependenceManager.DEPENDENCE_DIR];
 

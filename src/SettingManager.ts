@@ -242,12 +242,16 @@ export class SettingManager {
 
     //--------------------- Global Option ------------------------
 
+    isShowOutputFilesInExplorer(): boolean {
+        return this.getConfiguration().get<boolean>('Option.ShowOutputFilesInExplorer') || false;
+    }
+
     getBuilderAdditionalCommandLine(): string | undefined {
         return this.getConfiguration().get<string>('Builder.AdditionalCommandLine');
     }
 
     getMapViewParserDepth(): number {
-        return this.getConfiguration().get<number>('Option.MapViewParserDepth') || 3;
+        return this.getConfiguration().get<number>('Option.MapViewParserDepth') || 1;
     }
 
     isDisplaySourceRefs(): boolean {

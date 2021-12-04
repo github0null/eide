@@ -143,6 +143,12 @@
             {
                 "title": "Embedded IDE",
                 "properties": {
+                    "EIDE.Option.ShowOutputFilesInExplorer": {
+                        "type": "boolean",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.option.show.output.files%",
+                        "default": true
+                    },
                     "EIDE.Option.MapViewParserDepth": {
                         "type": "integer",
                         "scope": "resource",
@@ -1064,7 +1070,7 @@
                 },
                 {
                     "command": "_cl.eide.project.source.file.show.dir",
-                    "when": "viewItem == FILE_ITEM || viewItem == EXCFILE_ITEM || viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
+                    "when": "viewItem == OUTPUT_FILE_ITEM || viewItem == FILE_ITEM || viewItem == EXCFILE_ITEM || viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
                 },
                 {
                     "command": "_cl.eide.project.source.modify.path",
@@ -1186,7 +1192,7 @@
                 {
                     "command": "_cl.eide.project.sourceRoot.refresh",
                     "group": "inline",
-                    "when": "viewItem == FOLDER_ROOT_DEPS || viewItem == FOLDER_ROOT || viewItem == V_FOLDER_ROOT && view == Project"
+                    "when": "viewItem == OUTPUT_FOLDER || viewItem == FOLDER_ROOT_DEPS || viewItem == FOLDER_ROOT || viewItem == V_FOLDER_ROOT && view == Project"
                 },
                 {
                     "command": "_cl.eide.project.removeSrcDir",

@@ -577,7 +577,7 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
 
         // init
         webviewPanel.title = title;
-        webviewPanel.iconPath = vscode.Uri.parse(ResManager.GetInstance().GetIconByName('file_type_map.svg').ToUri());
+        webviewPanel.iconPath = vscode.Uri.file(ResManager.GetInstance().GetIconByName('Report_16x.svg').path);
         webviewPanel.webview.html = this.genHtmlCont(title, 'No Content');
         webviewPanel.onDidDispose(() => this.deleteRef(viewFile.path, uid));
 
