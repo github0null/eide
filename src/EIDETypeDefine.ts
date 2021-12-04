@@ -2287,6 +2287,15 @@ export abstract class UploadConfigModel<T> extends ConfigModel<T> {
                 return 'Property_16x.svg';
         }
     }
+    
+    getKeyValue(key: string): string {
+        switch (key) {
+            case 'bin':
+                return (<any>this.data)[key] || '${projectName}.hex';
+            default:
+                return (<any>this.data)[key] || 'null';
+        }
+    }
 
     protected GetKeyType(key: string): FieldType {
         switch (key) {
@@ -2351,7 +2360,7 @@ class StcgalUploadModel extends UploadConfigModel<C51FlashOption> {
             case 'options':
                 return 'Object {...}';
             default:
-                return (<any>this.data)[key] || 'null';
+                return super.getKeyValue(key);
         }
     }
 
@@ -2401,7 +2410,7 @@ class StcgalUploadModel extends UploadConfigModel<C51FlashOption> {
 
     GetDefault() {
         return {
-            bin: 'null',
+            bin: '',
             eepromImgPath: 'null',
             options: `${AbstractProject.EIDE_DIR}/stc.flash.json`
         };
@@ -2473,7 +2482,7 @@ class JLinkUploadModel extends UploadConfigModel<JLinkOptions> {
             case 'cpuInfo':
                 return this.data.cpuInfo.cpuName;
             default:
-                return (<any>this.data)[key] || 'null';
+                return super.getKeyValue(key);
         }
     }
 
@@ -2538,7 +2547,7 @@ class JLinkUploadModel extends UploadConfigModel<JLinkOptions> {
 
     GetDefault(): JLinkOptions {
         return {
-            bin: 'null',
+            bin: '',
             baseAddr: '0x08000000',
             cpuInfo: {
                 vendor: 'ST',
@@ -2649,7 +2658,7 @@ class STLinkUploadModel extends UploadConfigModel<STLinkOptions> {
             case 'elFile':
                 return NodePath.basename(this.data.elFile);
             default:
-                return (<any>this.data)[key] || 'null';
+                return super.getKeyValue(key);
         }
     }
 
@@ -2794,7 +2803,7 @@ class StvpUploadModel extends UploadConfigModel<STVPFlasherOptions> {
     }
 
     getKeyValue(key: string): string {
-        return (<any>this.data)[key];
+        return super.getKeyValue(key);
     }
 
     protected GetKeyType(key: string): FieldType {
@@ -2830,7 +2839,6 @@ class StvpUploadModel extends UploadConfigModel<STVPFlasherOptions> {
 
     protected VerifyString(key: string, input: string): string | undefined {
         switch (key) {
-            case 'bin':
             case 'eepromFile':
             case 'optionByteFile':
                 if (/(?:\.hex|\.s19)$/i.test(input) || /^null$/.test(input)) {
@@ -2864,7 +2872,7 @@ class StvpUploadModel extends UploadConfigModel<STVPFlasherOptions> {
     GetDefault(): STVPFlasherOptions {
         return {
             deviceName: 'STM8S105x4',
-            bin: 'null',
+            bin: '',
             eepromFile: 'null',
             optionByteFile: 'null'
         };
@@ -2904,7 +2912,7 @@ class PyOCDUploadModel extends UploadConfigModel<PyOCDFlashOptions> {
             case 'config':
                 return 'Object {...}';
             default:
-                return (<any>this.data)[key] || 'null';
+                return super.getKeyValue(key);
         }
     }
 
@@ -2991,7 +2999,7 @@ class PyOCDUploadModel extends UploadConfigModel<PyOCDFlashOptions> {
 
     GetDefault(): PyOCDFlashOptions {
         return {
-            bin: 'null',
+            bin: '',
             targetName: 'cortex_m',
             baseAddr: '0x08000000',
             speed: '4M',
@@ -3034,7 +3042,7 @@ class OpenOCDUploadModel extends UploadConfigModel<OpenOCDFlashOptions> {
                 }
                 return 'null';
             default:
-                return (<any>this.data)[key] || 'null';
+                return super.getKeyValue(key);
         }
     }
 
@@ -3150,7 +3158,7 @@ class OpenOCDUploadModel extends UploadConfigModel<OpenOCDFlashOptions> {
 
     GetDefault(): OpenOCDFlashOptions {
         return {
-            bin: 'null',
+            bin: '',
             target: 'stm32f1x',
             interface: 'stlink',
             baseAddr: '0x08000000'
@@ -3172,7 +3180,7 @@ class CustomUploadModel extends UploadConfigModel<CustomFlashOptions> {
     }
 
     getKeyValue(key: string): string {
-        return (<any>this.data)[key] || 'null';
+        return super.getKeyValue(key);
     }
 
     isKeyEnable(key: string): boolean {
@@ -3227,7 +3235,7 @@ class CustomUploadModel extends UploadConfigModel<CustomFlashOptions> {
 
     GetDefault(): CustomFlashOptions {
         return {
-            bin: 'null',
+            bin: '',
             commandLine: 'null'
         };
     }

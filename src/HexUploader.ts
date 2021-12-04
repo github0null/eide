@@ -177,6 +177,17 @@ export abstract class HexUploader<InvokeParamsType> {
         const result: FlashProgramFile[] = [];
         const matcher = /(?<path>[^,]+)(?:,(?<addr>0x[a-f0-9]+))?/i;
 
+        // if 'bin' path is empty, use default program path 
+        if (options.bin.trim() === '') {
+
+            const hexPath = [
+                this.project.getOutputDir(),
+                this.project.GetConfiguration().config.name + '.hex'
+            ].join(File.sep);
+
+            return [{ path: this.project.ToAbsolutePath(hexPath) }];
+        }
+
         options.bin.split(';').forEach((path) => {
             const m = matcher.exec(path);
             if (m && m.groups && m.groups['path']) {
