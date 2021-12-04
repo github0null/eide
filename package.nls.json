@@ -24,6 +24,7 @@
     "eide.project.rebuild": "Rebuild",
     "eide.project.clean": "Clean",
     "eide.project.upload": "Upload Program To Device",
+    "eide.project.flash.erase.all": "Erase Chip",
     "eide.project.gen.makefile": "Generate Makefile Template",
     "eide.project.modify.files.options": "Append separate compiler options to the file",
     "eide.project.import.ext.project.src.struct": "Import source file resources from other IDE's project",

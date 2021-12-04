@@ -2171,7 +2171,7 @@ export class ProjectExplorer {
     }
 
     private _uploadLock: boolean = false;
-    async UploadToDevice(prjItem?: ProjTreeItem) {
+    async UploadToDevice(prjItem?: ProjTreeItem, eraseAll?: boolean) {
 
         const prj = this.getProjectByTreeItem(prjItem);
 
@@ -2189,7 +2189,7 @@ export class ProjectExplorer {
         const uploader = HexUploaderManager.getInstance().createUploader(prj);
 
         try {
-            await uploader.upload();
+            await uploader.upload(eraseAll);
         } catch (error) {
             GlobalEvent.emit('error', error);
         }

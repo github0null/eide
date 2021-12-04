@@ -1169,9 +1169,10 @@ export abstract class AbstractProject {
         this.reloadUploader(oldUploader);
     }
 
+    // @deprecated
     updateUploaderHexFile(notEmitEvent?: boolean) {
         // set upload file path if prev value is not existed
-        const prevBinFile = new File(this.ToAbsolutePath(this.GetConfiguration().uploadConfigModel.getKeyValue('bin')));
+        /* const prevBinFile = new File(this.ToAbsolutePath(this.GetConfiguration().uploadConfigModel.getKeyValue('bin')));
         if (!prevBinFile.IsFile()) {
             const binPath = this.getOutputDir() + File.sep + this.GetConfiguration().config.name + '.hex';
             if (notEmitEvent) {
@@ -1179,7 +1180,7 @@ export abstract class AbstractProject {
             } else {
                 this.GetConfiguration().uploadConfigModel.SetKeyValue('bin', binPath);
             }
-        }
+        } */
     }
 
     //--

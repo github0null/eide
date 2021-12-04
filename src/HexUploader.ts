@@ -802,7 +802,7 @@ class PyOCDUploader extends HexUploader<string[]> {
 
         // erase all
         else {
-            commandLines.push('erase');
+            commandLines.push('erase', '--chip');
         }
 
         if (option.config) {

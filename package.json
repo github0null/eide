@@ -658,6 +658,15 @@
                 }
             },
             {
+                "command": "eide.project.flash.erase.all",
+                "title": "%eide.project.flash.erase.all%",
+                "category": "eide",
+                "icon": {
+                    "dark": "./res/icon/TransferDownload_16x.svg",
+                    "light": "./res/icon/TransferDownload_16x.svg"
+                }
+            },
+            {
                 "command": "_cl.eide.project.showBuildParams",
                 "title": "%eide.project.show.commands%"
             },
