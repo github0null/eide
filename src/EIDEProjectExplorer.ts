@@ -4088,12 +4088,75 @@ export class ProjectExplorer {
             };
 
             try {
+
+                // try to show it by eide, if failed, show it 
+                // by vscode default api
+                if (this.showBinaryFiles(file, isPreview)) return;
+
                 /* We need use 'vscode.open' command, not 'showTextDocument' API, 
                  * because API can't open bin file */
                 vscode.commands.executeCommand('vscode.open', vsUri, { preview: isPreview });
+
             } catch (error) {
                 GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
             }
+        }
+    }
+
+    private showBinaryFiles(binFile: File, isPreview?: boolean): boolean | undefined {
+
+        try {
+
+            const suffix = binFile.suffix.toLowerCase();
+
+            // show armcc axf file
+            if (suffix == '.axf') {
+
+                const fromelf = File.fromArray([
+                    SettingManager.GetInstance().getArmcc5Dir().path, 'bin', 'fromelf.exe'
+                ]);
+
+                if (!fromelf.IsFile()) return;
+
+                const cont = child_process
+                    .execFileSync(fromelf.path, ['--text', '-e', binFile.path])
+                    .toString();
+
+                const vDoc = VirtualDocument.instance();
+                const docName = `${binFile.path}.info`;
+                vDoc.updateDocument(docName, cont);
+
+                const uri = vscode.Uri.parse(vDoc.getUriByPath(docName));
+                vscode.window.showTextDocument(uri, { preview: isPreview });
+
+                return true;
+            }
+
+            // show gnu elf file
+            else if (suffix == '.elf') {
+
+                const readelf = File.fromArray([
+                    ResManager.GetInstance().getBuilderDir(), 'readelf.exe'
+                ]);
+
+                if (!readelf.IsFile()) return;
+
+                const cont = child_process
+                    .execFileSync(readelf.path, ['-e', binFile.path])
+                    .toString();
+
+                const vDoc = VirtualDocument.instance();
+                const docName = `${binFile.path}.info`;
+                vDoc.updateDocument(docName, cont);
+
+                const uri = vscode.Uri.parse(vDoc.getUriByPath(docName));
+                vscode.window.showTextDocument(uri, { preview: isPreview });
+
+                return true;
+            }
+
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
     }
 }

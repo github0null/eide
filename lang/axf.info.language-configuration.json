@@ -1,0 +1,9 @@
+{
+	"comments": {
+		"lineComment": ";"
+	},
+	"indentationRules": {
+		"increaseIndentPattern": "^[a-zA-Z_]\\w*\\s*:\\s*",
+		"decreaseIndentPattern": "^[a-zA-Z_]\\w*\\s*:\\s*"
+	}
+}

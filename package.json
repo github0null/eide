@@ -1326,6 +1326,32 @@
                     "**/*.edasm"
                 ],
                 "configuration": "./lang/edasm.language-configuration.json"
+            },
+            {
+                "id": "axf.info",
+                "aliases": [
+                    "Armcc Axf Info"
+                ],
+                "extensions": [
+                    ".axf.info"
+                ],
+                "filenamePatterns": [
+                    "**/*.axf.info"
+                ],
+                "configuration": "./lang/axf.info.language-configuration.json"
+            },
+            {
+                "id": "elf.info",
+                "aliases": [
+                    "Gnu Elf Info"
+                ],
+                "extensions": [
+                    ".elf.info"
+                ],
+                "filenamePatterns": [
+                    "**/*.elf.info"
+                ],
+                "configuration": "./lang/elf.info.language-configuration.json"
             }
         ],
         "jsonValidation": [
@@ -1381,6 +1407,16 @@
                 "language": "edasm",
                 "scopeName": "source.dasm.gcc",
                 "path": "./lang/edasm.tmLanguage.json"
+            },
+            {
+                "language": "axf.info",
+                "scopeName": "source.axf.info",
+                "path": "./lang/axf.info.tmLanguage.json"
+            },
+            {
+                "language": "elf.info",
+                "scopeName": "source.elf.info",
+                "path": "./lang/elf.info.tmLanguage.json"
             }
         ],
         "problemMatchers": [
