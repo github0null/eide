@@ -2278,6 +2278,46 @@ export abstract class UploadConfigModel<T> extends ConfigModel<T> {
                 return 'none';
         }
     }
+
+    getKeyIcon(key: string): KeyIcon | undefined {
+        switch (key) {
+            case 'bin':
+                return 'BinaryFile_16x.svg';
+            default:
+                return 'Property_16x.svg';
+        }
+    }
+
+    protected GetKeyType(key: string): FieldType {
+        switch (key) {
+            case 'bin':
+                return 'INPUT';
+            default:
+                return 'Disable';
+        }
+    }
+
+    protected GetOpenFileFilters(key: string): OpenFileFilter | undefined {
+        switch (key) {
+            default:
+                return undefined;
+        }
+    }
+
+    protected getEventData(key: string): EventData | undefined {
+        switch (key) {
+            default:
+                return undefined;
+        }
+    }
+
+    protected VerifyString(key: string, input: string): string | undefined {
+        return undefined;
+    }
+
+    protected GetSelectionList(key: string): CompileConfigPickItem[] | undefined {
+        return undefined;
+    }
 }
 
 class StcgalUploadModel extends UploadConfigModel<C51FlashOption> {
@@ -2297,13 +2337,12 @@ class StcgalUploadModel extends UploadConfigModel<C51FlashOption> {
 
     getKeyIcon(key: string): KeyIcon | undefined {
         switch (key) {
-            case 'bin':
             case 'eepromImgPath':
                 return 'BinaryFile_16x.svg';
             case 'options':
                 return 'ConfigurationEditor_16x.svg';
             default:
-                return undefined;
+                return super.getKeyIcon(key);
         }
     }
 
@@ -2330,40 +2369,34 @@ class StcgalUploadModel extends UploadConfigModel<C51FlashOption> {
                     }
                 };
             default:
-                return undefined;
+                return super.getEventData(key);
         }
     }
 
     protected GetKeyType(key: string): FieldType {
         switch (key) {
-            case 'bin':
-                return 'OPEN_FILE';
             case 'eepromImgPath':
                 return 'INPUT';
             case 'options':
                 return 'EVENT';
             default:
-                return 'Disable';
+                return super.GetKeyType(key);
         }
     }
 
     protected GetOpenFileFilters(key: string): OpenFileFilter | undefined {
         switch (key) {
-            case 'bin':
-                return {
-                    'program file': ['hex', 'bin', 's19']
-                };
             default:
-                return undefined;
+                return super.GetOpenFileFilters(key);
         }
     }
 
     protected VerifyString(key: string, input: string): string | undefined {
-        return undefined;
+        return super.VerifyString(key, input);
     }
 
-    protected GetSelectionList(key: string): CompileConfigPickItem[] {
-        return [];
+    protected GetSelectionList(key: string): CompileConfigPickItem[] | undefined {
+        return super.GetSelectionList(key);
     }
 
     GetDefault() {
@@ -2409,12 +2442,10 @@ class JLinkUploadModel extends UploadConfigModel<JLinkOptions> {
                 return 'CPU_16x.svg';
             case 'proType':
                 return 'ConnectUnplugged_16x.svg';
-            case 'bin':
-                return 'BinaryFile_16x.svg';
             case 'otherCmds':
                 return 'terminal_16x.svg';
             default:
-                return 'Property_16x.svg';
+                return super.getKeyIcon(key);
         }
     }
 
@@ -2447,7 +2478,7 @@ class JLinkUploadModel extends UploadConfigModel<JLinkOptions> {
     }
 
     protected getEventData(key: string): EventData | undefined {
-        return undefined;
+        return super.getEventData(key);
     }
 
     protected GetKeyType(key: string): FieldType {
@@ -2460,21 +2491,15 @@ class JLinkUploadModel extends UploadConfigModel<JLinkOptions> {
                 return 'INPUT';
             case 'speed':
                 return 'INPUT_INTEGER';
-            case 'bin':
-                return 'OPEN_FILE';
             default:
-                return 'Disable';
+                return super.GetKeyType(key);
         }
     }
 
     protected GetOpenFileFilters(key: string): OpenFileFilter | undefined {
         switch (key) {
-            case 'bin':
-                return {
-                    'program file': ['hex', 'bin', 's19']
-                };
             default:
-                return undefined;
+                return super.GetOpenFileFilters(key);
         }
     }
 
@@ -2485,11 +2510,11 @@ class JLinkUploadModel extends UploadConfigModel<JLinkOptions> {
             case 'baseAddr':
                 return /^0x[0-9a-f]{1,8}$/i.test(input) ? undefined : 'must be a hex number, like: 0x08000000';
             default:
-                return undefined;
+                return super.VerifyString(key, input);
         }
     }
 
-    protected GetSelectionList(key: string): CompileConfigPickItem[] {
+    protected GetSelectionList(key: string): CompileConfigPickItem[] | undefined {
         switch (key) {
             case 'proType':
                 return this.protocolList.map<CompileConfigPickItem>((protocol) => {
@@ -2507,7 +2532,7 @@ class JLinkUploadModel extends UploadConfigModel<JLinkOptions> {
                     };
                 });
             default:
-                return [];
+                return super.GetSelectionList(key);
         }
     }
 
@@ -2582,8 +2607,6 @@ class STLinkUploadModel extends UploadConfigModel<STLinkOptions> {
 
     getKeyIcon(key: string): KeyIcon | undefined {
         switch (key) {
-            case 'bin':
-                return 'BinaryFile_16x.svg';
             case 'proType':
                 return 'ConnectUnplugged_16x.svg';
             case 'optionBytes':
@@ -2591,7 +2614,7 @@ class STLinkUploadModel extends UploadConfigModel<STLinkOptions> {
             case 'otherCmds':
                 return 'terminal_16x.svg';
             default:
-                return 'Property_16x.svg';
+                return super.getKeyIcon(key);
         }
     }
 
@@ -2632,8 +2655,6 @@ class STLinkUploadModel extends UploadConfigModel<STLinkOptions> {
 
     protected GetKeyType(key: string): FieldType {
         switch (key) {
-            case 'bin':
-                return 'OPEN_FILE';
             case 'runAfterProgram':
             case 'proType':
             case 'resetMode':
@@ -2647,18 +2668,14 @@ class STLinkUploadModel extends UploadConfigModel<STLinkOptions> {
             case 'optionBytes':
                 return 'EVENT';
             default:
-                return 'Disable';
+                return super.GetKeyType(key);
         }
     }
 
     protected GetOpenFileFilters(key: string): OpenFileFilter | undefined {
         switch (key) {
-            case 'bin':
-                return {
-                    'program file': ['hex', 'bin', 's19']
-                };
             default:
-                return undefined;
+                return super.GetOpenFileFilters(key);
         }
     }
 
@@ -2669,11 +2686,11 @@ class STLinkUploadModel extends UploadConfigModel<STLinkOptions> {
             case 'address':
                 return /^0x[0-9a-f]+$/i.test(input) ? undefined : 'must be a hex number';
             default:
-                return undefined;
+                return super.VerifyString(key, input);
         }
     }
 
-    protected GetSelectionList(key: string): CompileConfigPickItem[] {
+    protected GetSelectionList(key: string): CompileConfigPickItem[] | undefined {
         switch (key) {
             case 'runAfterProgram':
                 return [
@@ -2719,7 +2736,7 @@ class STLinkUploadModel extends UploadConfigModel<STLinkOptions> {
                     return resultList;
                 }
             default:
-                return [];
+                return super.GetSelectionList(key);
         }
     }
 
@@ -2740,7 +2757,7 @@ class STLinkUploadModel extends UploadConfigModel<STLinkOptions> {
                     };
                 }
             default:
-                return undefined;
+                return super.getEventData(key);
         }
     }
 
@@ -2784,32 +2801,30 @@ class StvpUploadModel extends UploadConfigModel<STVPFlasherOptions> {
         switch (key) {
             case 'deviceName':
                 return 'SELECTION';
-            case 'bin':
             case 'eepromFile':
             case 'optionByteFile':
                 return 'INPUT';
             default:
-                return 'Disable';
+                return super.GetKeyType(key);
         }
     }
 
     getKeyIcon(key: string): KeyIcon | undefined {
         switch (key) {
-            case 'bin':
             case 'eepromFile':
             case 'optionByteFile':
                 return 'BinaryFile_16x.svg';
             case 'deviceName':
                 return 'CPU_16x.svg';
             default:
-                return 'Property_16x.svg';
+                return super.getKeyIcon(key);
         }
     }
 
     protected GetOpenFileFilters(key: string): OpenFileFilter | undefined {
         switch (key) {
             default:
-                return undefined;
+                return super.GetOpenFileFilters(key);
         }
     }
 
@@ -2824,11 +2839,11 @@ class StvpUploadModel extends UploadConfigModel<STVPFlasherOptions> {
                     return 'the value must be a hex/s19 file path or \'null\'';
                 }
             default:
-                return undefined;
+                return super.VerifyString(key, input);
         }
     }
 
-    protected GetSelectionList(key: string): CompileConfigPickItem[] {
+    protected GetSelectionList(key: string): CompileConfigPickItem[] | undefined {
         switch (key) {
             case 'deviceName':
                 return ResManager.GetInstance().getStm8DevList()
@@ -2838,12 +2853,12 @@ class StvpUploadModel extends UploadConfigModel<STVPFlasherOptions> {
                         };
                     });
             default:
-                return [];
+                return super.GetSelectionList(key);
         }
     }
 
     protected getEventData(key: string): EventData | undefined {
-        return undefined;
+        return super.getEventData(key);
     }
 
     GetDefault(): STVPFlasherOptions {
@@ -2904,8 +2919,6 @@ class PyOCDUploadModel extends UploadConfigModel<PyOCDFlashOptions> {
 
     getKeyIcon(key: string): KeyIcon | undefined {
         switch (key) {
-            case 'bin':
-                return 'BinaryFile_16x.svg';
             case 'targetName':
                 return 'CPU_16x.svg';
             case 'speed':
@@ -2915,14 +2928,12 @@ class PyOCDUploadModel extends UploadConfigModel<PyOCDFlashOptions> {
             case 'config':
                 return 'ConfigurationEditor_16x.svg';
             default:
-                return undefined;
+                return super.getKeyIcon(key);
         }
     }
 
     protected GetKeyType(key: string): FieldType {
         switch (key) {
-            case 'bin':
-                return 'OPEN_FILE';
             case 'targetName':
                 return 'INPUT';
             case 'speed':
@@ -2932,18 +2943,14 @@ class PyOCDUploadModel extends UploadConfigModel<PyOCDFlashOptions> {
             case 'config':
                 return 'EVENT';
             default:
-                return 'Disable';
+                return super.GetKeyType(key);
         }
     }
 
     protected GetOpenFileFilters(key: string): OpenFileFilter | undefined {
         switch (key) {
-            case 'bin':
-                return {
-                    'program file': ['hex', 'bin', 's19']
-                };
             default:
-                return undefined;
+                return super.GetOpenFileFilters(key);
         }
     }
 
@@ -2956,14 +2963,14 @@ class PyOCDUploadModel extends UploadConfigModel<PyOCDFlashOptions> {
             case 'targetName':
                 return /^[^\s]+$/i.test(input) ? undefined : 'must be a chip name, like: stm32f103c8';
             default:
-                return undefined;
+                return super.VerifyString(key, input);
         }
     }
 
-    protected GetSelectionList(key: string): CompileConfigPickItem[] {
+    protected GetSelectionList(key: string): CompileConfigPickItem[] | undefined {
         switch (key) {
             default:
-                return [];
+                return super.GetSelectionList(key);
         }
     }
 
@@ -2978,7 +2985,7 @@ class PyOCDUploadModel extends UploadConfigModel<PyOCDFlashOptions> {
                     }
                 };
             default:
-                return undefined;
+                return super.getEventData(key);
         }
     }
 
@@ -3042,8 +3049,6 @@ class OpenOCDUploadModel extends UploadConfigModel<OpenOCDFlashOptions> {
 
     getKeyIcon(key: string): KeyIcon | undefined {
         switch (key) {
-            case 'bin':
-                return 'BinaryFile_16x.svg';
             case 'target':
                 return 'CPU_16x.svg';
             case 'interface':
@@ -3051,14 +3056,12 @@ class OpenOCDUploadModel extends UploadConfigModel<OpenOCDFlashOptions> {
             case 'baseAddr':
                 return 'Property_16x.svg';
             default:
-                return undefined;
+                return super.getKeyIcon(key);
         }
     }
 
     protected GetKeyType(key: string): FieldType {
         switch (key) {
-            case 'bin':
-                return 'OPEN_FILE';
             case 'target':
                 return 'SELECTION';
             case 'interface':
@@ -3066,18 +3069,14 @@ class OpenOCDUploadModel extends UploadConfigModel<OpenOCDFlashOptions> {
             case 'baseAddr':
                 return 'INPUT';
             default:
-                return 'Disable';
+                return super.GetKeyType(key);
         }
     }
 
     protected GetOpenFileFilters(key: string): OpenFileFilter | undefined {
         switch (key) {
-            case 'bin':
-                return {
-                    'program file': ['hex', 's19', 'bin']
-                };
             default:
-                return undefined;
+                return super.GetOpenFileFilters(key);
         }
     }
 
@@ -3086,7 +3085,7 @@ class OpenOCDUploadModel extends UploadConfigModel<OpenOCDFlashOptions> {
             case 'baseAddr':
                 return /^0x[0-9a-f]{1,8}$/i.test(input) ? undefined : 'must be a hex number, like: 0x08000000';
             default:
-                return undefined;
+                return super.VerifyString(key, input);
         }
     }
 
@@ -3141,12 +3140,12 @@ class OpenOCDUploadModel extends UploadConfigModel<OpenOCDFlashOptions> {
                     };
                 });
             default:
-                return undefined;
+                return super.GetSelectionList(key);
         }
     }
 
     protected getEventData(key: string): EventData | undefined {
-        return undefined;
+        return super.getEventData(key);
     }
 
     GetDefault(): OpenOCDFlashOptions {
@@ -3185,53 +3184,45 @@ class CustomUploadModel extends UploadConfigModel<CustomFlashOptions> {
 
     getKeyIcon(key: string): KeyIcon | undefined {
         switch (key) {
-            case 'bin':
-                return 'BinaryFile_16x.svg';
             case 'commandLine':
                 return 'terminal_16x.svg';
             default:
-                return undefined;
+                return super.getKeyIcon(key);
         }
     }
 
     protected GetKeyType(key: string): FieldType {
         switch (key) {
-            case 'bin':
-                return 'OPEN_FILE';
             case 'commandLine':
                 return 'INPUT';
             default:
-                return 'Disable';
+                return super.GetKeyType(key);
         }
     }
 
     protected GetOpenFileFilters(key: string): OpenFileFilter | undefined {
         switch (key) {
-            case 'bin':
-                return {
-                    'program file': ['hex', 's19', 'bin']
-                };
             default:
-                return undefined;
+                return super.GetOpenFileFilters(key);
         }
     }
 
     protected VerifyString(key: string, input: string): string | undefined {
         switch (key) {
             default:
-                return undefined;
+                return super.VerifyString(key, input);
         }
     }
 
     protected GetSelectionList(key: string): CompileConfigPickItem[] | undefined {
         switch (key) {
             default:
-                return undefined;
+                return super.GetSelectionList(key);
         }
     }
 
     protected getEventData(key: string): EventData | undefined {
-        return undefined;
+        return super.getEventData(key);
     }
 
     GetDefault(): CustomFlashOptions {
