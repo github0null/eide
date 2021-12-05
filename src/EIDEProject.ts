@@ -2023,6 +2023,7 @@ class EIDEProject extends AbstractProject {
                 let recommendExt: string[] = [
                     "cl.eide",
                     "keroc.hex-fmt",
+                    "xiaoyongdong.srecord",
                     "hars.cppsnippets",
                     "zixuanwang.linkerscript",
                     "redhat.vscode-yaml"

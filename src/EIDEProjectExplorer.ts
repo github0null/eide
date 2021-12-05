@@ -1812,6 +1812,8 @@ interface BuildCommandInfo {
 }
 
 interface ImporterProjectInfo {
+    name: string;
+    target?: string;
     incList: string[];
     defineList: string[];
     files: VirtualFolder;
@@ -3372,9 +3374,8 @@ export class ProjectExplorer {
                 location: vscode.ProgressLocation.Notification,
                 title: `Importing Resources`
             }, (progress) => {
-                return new Promise((resolve) => {
+                return new Promise(async (resolve) => {
                     try {
-
                         progress.report({ message: `running importer ...` });
 
                         //
@@ -3385,11 +3386,52 @@ export class ProjectExplorer {
                         const cmds = ['--std', './importer/index.js', imptrName, prjFile.path];
                         const result = child_process.execFileSync(`${scriptRoot.path}/qjs.exe`, cmds, { cwd: scriptRoot.path }).toString();
 
-                        let prjInfo: ImporterProjectInfo;
+                        let prjList: ImporterProjectInfo[];
                         try {
-                            prjInfo = JSON.parse(result);
+                            prjList = JSON.parse(result);
+                            if (!Array.isArray(prjList)) throw new Error('project list must be an array !');
                         } catch (error) {
                             throw new Error(`Import Error !, msg: '${result}'`);
+                        }
+
+                        //
+                        // select project
+                        //
+                        let prjInfo: ImporterProjectInfo | undefined;
+
+                        if (prjList.length > 0) {
+                            // if have multi project, select one to import
+                            if (prjList.length > 1) {
+                                const item = await vscode.window.showQuickPick<vscode.QuickPickItem>(
+                                    prjList.map((prj) => {
+                                        return {
+                                            label: prj.name,
+                                            description: prj.target,
+                                            detail: `${prjFile.name} -> ${prj.name}${prj.target ? (': ' + prj.target) : ''}`
+                                        }
+                                    }),
+                                    {
+                                        placeHolder: `Found ${prjList.length} sub project, select one to import`,
+                                        ignoreFocusOut: true,
+                                        canPickMany: false
+                                    }
+                                );
+                                if (item != undefined) {
+                                    const index = prjList.findIndex((prj) => prj.name == item.label);
+                                    if (index != -1) {
+                                        prjInfo = prjList[index];
+                                    }
+                                }
+                            }
+                            // if only have one, use it
+                            else {
+                                prjInfo = prjList[0];
+                            }
+                        }
+
+                        if (prjInfo == undefined) {
+                            resolve();
+                            return;
                         }
 
                         //
