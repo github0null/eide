@@ -2871,39 +2871,61 @@ export class ProjectExplorer {
 
     async showDisassembly(uri: vscode.Uri) {
 
+        const supportList = ['RISCV_GCC', 'GCC', 'AC5', 'AC6'];
+
         try {
 
-            /* parser ref json */
+            // check condition
             const activePrj = this.dataProvider.getActiveProject();
             if (!activePrj) { throw new Error('Not found active project !'); }
             const toolchainName = activePrj.getToolchain().name;
-            if (!['RISCV_GCC', 'GCC'].includes(toolchainName)) { throw new Error('Only support GCC compiler !'); }
+            if (!supportList.includes(toolchainName)) {
+                throw new Error(`Only support '${supportList.join(',')}' compiler !`);
+            }
+
+            // parser ref json
             const srcPath = uri.fsPath;
             const refFile = File.fromArray([activePrj.ToAbsolutePath(activePrj.getOutputDir()), 'ref.json']);
             if (!refFile.IsFile()) { throw new Error(`Not found 'ref.json' at output folder, you need build project !`) }
             const ref = JSON.parse(refFile.Read());
             if (!ref[srcPath]) { throw new Error(`Not found any reference for this source file !`) }
 
-            /* get obj file */
+            // get obj file
             let objPath: string | undefined;
-
-            if (typeof ref[srcPath] == 'string') {
-                objPath = <string>ref[srcPath];
-            } else if (Array.isArray(ref[srcPath])) {
-                objPath = ref[srcPath][0];
-            }
-
+            if (typeof ref[srcPath] == 'string') { objPath = <string>ref[srcPath]; }
+            else if (Array.isArray(ref[srcPath])) { objPath = ref[srcPath][0]; }
             if (objPath == undefined) { throw new Error(`Not found any reference for this source file !`) }
 
-            /* get objdump.exe */
-            const toolPrefix = toolchainName == 'GCC' ?
-                SettingManager.GetInstance().getGCCPrefix() :
-                SettingManager.GetInstance().getRiscvToolPrefix();
-            const exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `${toolPrefix}objdump.exe`]);
-            if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
+            // prepare command
+            let exeFile: File;
+            let cmds: string[];
+
+            switch (toolchainName) {
+                case 'GCC':
+                case 'RISCV_GCC':
+                    {
+                        const toolPrefix = toolchainName == 'GCC' ?
+                            SettingManager.GetInstance().getGCCPrefix() :
+                            SettingManager.GetInstance().getRiscvToolPrefix();
+                        exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `${toolPrefix}objdump.exe`]);
+                        if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
+                        cmds = ['-S', objPath];
+                    }
+                    break;
+                case 'AC5':
+                case 'AC6':
+                    {
+                        exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `fromelf.exe`]);
+                        if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
+                        cmds = ['-c', objPath];
+                    }
+                    break;
+                default:
+                    throw new Error(`Only support '${supportList.join(',')}' compiler !`);
+            }
 
             /* executable */
-            const asmTxt = child_process.execFileSync(exeFile.path, ['-S', objPath], { encoding: 'ascii' });
+            const asmTxt = child_process.execFileSync(exeFile.path, cmds, { encoding: 'ascii' });
             const asmFile = `${srcPath}.edasm`;
             const asmFileUri = vscode.Uri.parse(VirtualDocument.instance().getUriByPath(asmFile));
             VirtualDocument.instance().updateDocument(asmFile, asmTxt);
