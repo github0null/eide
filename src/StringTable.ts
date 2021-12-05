@@ -240,8 +240,8 @@ export const view_str$project$sel_target = [
 ][langIndex];
 
 export const view_str$project$other_settings = [
-    '其他设置',
-    'Other Settings'
+    '项目设置',
+    'Project Settings'
 ][langIndex];
 
 export const view_str$project$cmsis_components = [
@@ -280,7 +280,7 @@ export const include_desc = [
 ][langIndex];
 
 export const lib_desc = [
-    '库目录',
+    '链接库目录',
     'Library Directories'
 ][langIndex];
 
@@ -290,13 +290,13 @@ export const source_dir_desc = [
 ][langIndex];
 
 export const definition_list_desc = [
-    '宏定义',
-    'Macro List'
+    '预处理器定义',
+    'Preprocessor Definitions'
 ][langIndex];
 
 export const project_dependence = [
-    '项目依赖',
-    'Project Dependences'
+    '项目属性',
+    'Project Attributes'
 ][langIndex];
 
 export const view_str$dialog$add_to_source_folder = [

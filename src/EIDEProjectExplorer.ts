@@ -417,8 +417,10 @@ export class ProjTreeItem extends vscode.TreeItem {
                 name = 'TransferDownload_16x.svg';
                 break;
             case TreeItemType.DEPENDENCE_GROUP:
-            case TreeItemType.DEPENDENCE:
                 name = 'DependencyGraph_16x.svg';
+                break;
+            case TreeItemType.DEPENDENCE:
+                name = 'Property_16x.svg';
                 break;
             case TreeItemType.SETTINGS:
                 name = 'Settings_16x.svg';
@@ -1082,15 +1084,17 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                 case TreeItemType.OUTPUT_FOLDER:
                     {
                         const outFolder = project.getOutputFolder();
-                        const fList = outFolder.GetList([AbstractProject.buildOutputMatcher], File.EMPTY_FILTER);
-                        fList.forEach((file) => {
-                            iList.push(new ProjTreeItem(TreeItemType.OUTPUT_FILE_ITEM, {
-                                value: file,
-                                collapsibleState: vscode.TreeItemCollapsibleState.None,
-                                projectIndex: element.val.projectIndex,
-                                tooltip: file.path,
-                            }));
-                        });
+                        if (outFolder.IsDir()) {
+                            const fList = outFolder.GetList([AbstractProject.buildOutputMatcher], File.EMPTY_FILTER);
+                            fList.forEach((file) => {
+                                iList.push(new ProjTreeItem(TreeItemType.OUTPUT_FILE_ITEM, {
+                                    value: file,
+                                    collapsibleState: vscode.TreeItemCollapsibleState.None,
+                                    projectIndex: element.val.projectIndex,
+                                    tooltip: file.path,
+                                }));
+                            });
+                        }
                     }
                     break;
                 // output file item
@@ -1904,9 +1908,10 @@ export class ProjectExplorer {
 
         let targetName = await vscode.window.showInputBox({
             placeHolder: 'Input a target name',
+            ignoreFocusOut: true,
             validateInput: (val: string) => {
                 if (val.length > 25) { return `string is too long !, length must < 25, current is ${val.length}`; }
-                if (!/^[\w-]+$/.test(val)) { return `string can only contain word, number or '_' !`; }
+                if (!/^[\w\-]+$/.test(val)) { return `string can only contain word, number '-' or '_' !`; }
                 return undefined;
             }
         });
@@ -2811,8 +2816,9 @@ export class ProjectExplorer {
         const curFolder = <VirtualFolderInfo>item.val.obj;
 
         const folderName = await vscode.window.showInputBox({
-            placeHolder: 'Input the new name',
+            prompt: 'Input the new name',
             ignoreFocusOut: true,
+            value: curFolder.vFolder.name,
             validateInput: (input) => {
                 if (!this.vFolderNameMatcher.test(input)) { return `must match '${this.vFolderNameMatcher.source}'`; }
                 return undefined;
@@ -3456,12 +3462,29 @@ export class ProjectExplorer {
                             return;
                         }
 
+                        // make abs path to relative path
+                        const formatVirtualFolder = (vFolderRoot: VirtualFolder) => {
+                            const folderStack: VirtualFolder[] = [vFolderRoot];
+                            while (folderStack.length > 0) {
+                                const vFolder = folderStack.pop();
+                                if (vFolder) {
+                                    vFolder.files = vFolder.files.map((file) => {
+                                        return { path: prj.ToRelativePath(file.path) || file.path }
+                                    });
+                                    vFolder.folders.forEach((folder) => {
+                                        folderStack.push(folder)
+                                    });
+                                }
+                            }
+                        };
+
                         //
                         // start import project
                         //
                         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
                         const prjConf = prj.GetConfiguration();
                         prjConf.config.virtualFolder = prjInfo.files;
+                        formatVirtualFolder(prjConf.config.virtualFolder);
                         const deps = prjConf.CustomDep_getDependence();
                         deps.incList = prjInfo.incList;
                         deps.libList = [];
@@ -3997,7 +4020,7 @@ export class ProjectExplorer {
             // push macros
             yamlLines.push(
                 ``,
-                `# Global Macro Defines`,
+                `# Preprocessor Definitions`,
                 `Defines:`,
                 `#   - TEST=1`
             );

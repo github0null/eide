@@ -583,21 +583,14 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
         webviewPanel.onDidDispose(() => this.deleteRef(viewFile.path, uid));
 
         if (!viewFile.IsFile()) {
-            webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: file '${viewFile.path}' is not a file !`);
+            webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: Not found file '${viewFile.path}' !`);
             return;
         }
 
+        // check tool type
         const conf: { tool?: string, fileName?: string } = yaml.parse(viewFile.Read());
-        const defName = viewFile.noSuffixName + '.map';
-        const mapFile = File.fromArray([viewFile.dir, conf.fileName || defName]);
-
-        if (!mapFile.IsFile()) {
-            webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: file '${mapFile.path}' is not a file !`);
-            return;
-        }
-
         if (!conf.tool) {
-            webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: invalid toolchain type !`);
+            webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: Invalid toolchain type !`);
             return;
         }
 
@@ -616,8 +609,17 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
                 toolName = 'GCC_ARM';
                 break;
             default:
-                webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: we not support this toolchain type: '${conf.tool}' !`);
+                webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: We not support this toolchain type: '${conf.tool}' !`);
                 return;
+        }
+
+        // get map file
+        const defName = viewFile.noSuffixName + '.map';
+        const mapFile = File.fromArray([viewFile.dir, conf.fileName || defName]);
+
+        if (!mapFile.IsFile()) {
+            webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: Not found file '${mapFile.path}' !`);
+            return;
         }
 
         // auto update when file changed 
