@@ -447,7 +447,7 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
     const spBar = statusBarManager.create('serialport');
     spBar.text = '$(plug) ' + view_str$operation$serialport;
     spBar.tooltip = view_str$operation$serialport;
-    spBar.command = 'Operation.OpenSerialPortMonitor';
+    spBar.command = '_cl.eide.Operation.OpenSerialPortMonitor';
 
     // serial baudrate btn
     const baudBar = statusBarManager.create('serialport-baud');
