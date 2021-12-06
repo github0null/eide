@@ -1,6 +1,3 @@
-[submodule "res/eide_makefile_template"]
-	path = res/eide_makefile_template
-	url = git@github0null.io:root/eide_makefile_template.git
 [submodule "lib/node-utility"]
 	path = lib/node-utility
 	url = git@github.com:github0null/node-utility.git
