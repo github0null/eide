@@ -27,9 +27,9 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "A singlechip development environment for 8051/STM8/Cortex-M/RISC-V",
-    "version": "2.14.0",
+    "version": "2.15.0",
     "engines": {
-        "vscode": "^1.38.0"
+        "vscode": "^1.60.0"
     },
     "categories": [
         "Programming Languages",
@@ -61,6 +61,7 @@
         "@types/ftp": "^0.3.31",
         "@types/iconv-lite": "0.0.1",
         "@types/ini": "^1.3.30",
+        "@types/micromatch": "^4.0.2",
         "@types/mocha": "^5.2.7",
         "@types/node": "^12.12.17",
         "@types/vscode": "^1.38.0",
@@ -76,11 +77,23 @@
         "iconv-lite": "^0.5.0",
         "ini": "^2.0.0",
         "jsonc": "^2.0.0",
+        "micromatch": "^4.0.4",
         "unzipper": "^0.10.11",
         "x2js": "3.4.1",
         "yaml": "^1.10.2"
     },
     "contributes": {
+        "customEditors": [
+            {
+                "viewType": "cl.eide.map.view",
+                "displayName": "MapView",
+                "selector": [
+                    {
+                        "filenamePattern": "*.map.view"
+                    }
+                ]
+            }
+        ],
         "walkthroughs": [
             {
                 "id": "eide.startup.walkthroughs",
@@ -130,6 +143,18 @@
             {
                 "title": "Embedded IDE",
                 "properties": {
+                    "EIDE.Option.ShowOutputFilesInExplorer": {
+                        "type": "boolean",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.option.show.output.files%",
+                        "default": true
+                    },
+                    "EIDE.Option.MapViewParserDepth": {
+                        "type": "integer",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.option.mapView.parser.depth%",
+                        "default": 5
+                    },
                     "EIDE.Option.ShowSourceReferences": {
                         "type": "boolean",
                         "scope": "resource",
@@ -188,7 +213,13 @@
                         "type": "boolean",
                         "scope": "resource",
                         "markdownDescription": "%settings.builder.gen.makefile.params%",
-                        "default": true
+                        "default": false
+                    },
+                    "EIDE.Builder.AdditionalCommandLine": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "Append additional commandline when invoke unify_builder",
+                        "default": ""
                     },
                     "EIDE.Option.ShowToolbarInEditerTitle": {
                         "type": "boolean",
@@ -214,17 +245,23 @@
                         "markdownDescription": "%settings.option.insert.extcommands.at.begin%",
                         "default": false
                     },
-                    "EIDE.Template.Repository.UseProxy": {
+                    "EIDE.Repository.UseProxy": {
                         "type": "boolean",
                         "scope": "machine",
-                        "markdownDescription": "%settings.template.use.proxy%",
+                        "markdownDescription": "%settings.repo.use.proxy%",
                         "default": true
                     },
-                    "EIDE.Template.Repository.Url": {
+                    "EIDE.Repository.Template.Url": {
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "%settings.template.repo.url%",
                         "default": "github0null/eide-resource/contents/eide-template-list"
+                    },
+                    "EIDE.Repository.CmsisPack.Url": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "%settings.cmsispack.repo.url%",
+                        "default": "github0null/eide-cmsis-pack/contents/packages"
                     },
                     "EIDE.SerialPortMonitor.DefaultPort": {
                         "type": "string",
@@ -303,6 +340,18 @@
                         "scope": "machine",
                         "markdownDescription": "gnu sdcc for stm8 installation path",
                         "default": "${userRoot}/.eide/tools/stm8_gnu_sdcc"
+                    },
+                    "EIDE.ARM.ARMCC5.InstallDirectory": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.arm.armcc5.install.folder%",
+                        "default": ""
+                    },
+                    "EIDE.ARM.ARMCC6.InstallDirectory": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.arm.armcc6.install.folder%",
+                        "default": ""
                     },
                     "EIDE.ARM.GCC.Prefix": {
                         "type": "string",
@@ -465,51 +514,75 @@
                 "title": "%eide.workspace.make.template%"
             },
             {
-                "command": "_project.cppcheck.check_all",
+                "command": "_cl.eide.project.modify.deps",
+                "title": "%eide.item.modify%",
+                "icon": {
+                    "dark": "./res/icon/ConfigurationFile_16x.svg",
+                    "light": "./res/icon/ConfigurationFile_16x.svg"
+                }
+            },
+            {
+                "command": "_cl.eide.project.import.ext.source.struct",
+                "title": "%eide.project.import.ext.project.src.struct%",
+                "icon": {
+                    "dark": "./res/icon/Import_16x.svg",
+                    "light": "./res/icon/Import_16x.svg"
+                }
+            },
+            {
+                "command": "_cl.eide.project.cppcheck.check_all",
                 "title": "%eide.project.run.cppcheck%"
             },
             {
-                "command": "_project.cppcheck.clear_all",
+                "command": "_cl.eide.project.cppcheck.clear_all",
                 "title": "%eide.project.clear.cppcheck%"
             },
             {
-                "command": "_project.source.show_disassembly",
+                "command": "_cl.eide.project.source.show_disassembly",
                 "title": "%eide.source.show.disassembly%"
             },
             {
-                "command": "_project.source.show_cmsis_config_wizard",
+                "command": "_cl.eide.project.source.show_cmsis_config_wizard",
                 "title": "%eide.source.show_cmsis_config_wizard%"
             },
             {
-                "command": "_project.source.filesystem_folder_add_file",
+                "command": "_cl.eide.project.source.filesystem_folder_add_file",
                 "title": "%eide.explorer.new.file%"
             },
             {
-                "command": "_project.source.filesystem_folder_add",
+                "command": "_cl.eide.project.source.filesystem_folder_add",
                 "title": "%eide.explorer.new.folder%"
             },
             {
-                "command": "_project.source.virtual_folder_add_file",
+                "command": "_cl.eide.project.source.virtual_folder_add_file",
                 "title": "%eide.explorer.add.file%"
             },
             {
-                "command": "_project.source.virtual_folder_add",
+                "command": "_cl.eide.project.source.virtual_folder_add",
                 "title": "%eide.explorer.add.folder%"
             },
             {
-                "command": "_project.source.virtual_folder_remove",
+                "command": "_cl.eide.project.source.file.show.dir",
+                "title": "%eide.explorer.show.file.dir%"
+            },
+            {
+                "command": "_cl.eide.project.source.modify.path",
+                "title": "%eide.explorer.modify.file.path%"
+            },
+            {
+                "command": "_cl.eide.project.source.virtual_folder_remove",
                 "title": "%eide.explorer.remove.folder%"
             },
             {
-                "command": "_project.source.virtual_file_remove",
+                "command": "_cl.eide.project.source.virtual_file_remove",
                 "title": "%eide.explorer.remove.file%"
             },
             {
-                "command": "_project.source.virtual_folder_rename",
+                "command": "_cl.eide.project.source.virtual_folder_rename",
                 "title": "%eide.explorer.rename.folder%"
             },
             {
-                "command": "_project.refresh",
+                "command": "_cl.eide.project.refresh",
                 "title": "%eide.project.refresh%",
                 "icon": {
                     "dark": "./res/icon/refresh-dark.svg",
@@ -517,7 +590,7 @@
                 }
             },
             {
-                "command": "_project.sourceRoot.refresh",
+                "command": "_cl.eide.project.sourceRoot.refresh",
                 "title": "%eide.explorer.root.refresh.folder%",
                 "icon": {
                     "dark": "./res/icon/refresh-dark.svg",
@@ -525,7 +598,7 @@
                 }
             },
             {
-                "command": "_project.historyRecord",
+                "command": "_cl.eide.project.historyRecord",
                 "title": "%eide.operation.open.history%",
                 "icon": {
                     "dark": "./res/icon/Note_16x.svg",
@@ -533,11 +606,11 @@
                 }
             },
             {
-                "command": "_project.clearHistoryRecord",
+                "command": "_cl.eide.project.clearHistoryRecord",
                 "title": "%eide.operation.clear.history%"
             },
             {
-                "command": "_project.saveAll",
+                "command": "_cl.eide.project.saveAll",
                 "title": "%eide.project.save.all%",
                 "icon": {
                     "dark": "./res/icon/SaveAll_16x.svg",
@@ -545,7 +618,7 @@
                 }
             },
             {
-                "command": "_project.setActive",
+                "command": "_cl.eide.project.setActive",
                 "title": "%eide.project.active%"
             },
             {
@@ -585,15 +658,24 @@
                 }
             },
             {
-                "command": "_project.showBuildParams",
+                "command": "eide.project.flash.erase.all",
+                "title": "%eide.project.flash.erase.all%",
+                "category": "eide",
+                "icon": {
+                    "dark": "./res/icon/TransferDownload_16x.svg",
+                    "light": "./res/icon/TransferDownload_16x.svg"
+                }
+            },
+            {
+                "command": "_cl.eide.project.showBuildParams",
                 "title": "%eide.project.show.commands%"
             },
             {
-                "command": "_project.generate.makefile",
+                "command": "_cl.eide.project.generate.makefile",
                 "title": "%eide.project.gen.makefile%"
             },
             {
-                "command": "_project.installCMSISHeaders",
+                "command": "_cl.eide.project.installCMSISHeaders",
                 "title": "%eide.package.install.cmsis%",
                 "icon": {
                     "dark": "./res/icon/AddBuildQueue_16x.svg",
@@ -601,7 +683,7 @@
                 }
             },
             {
-                "command": "_project.addSrcDir",
+                "command": "_cl.eide.project.addSrcDir",
                 "title": "%eide.explorer.root.add.folder%",
                 "icon": {
                     "dark": "./res/icon/AddFolder_16x.svg",
@@ -609,7 +691,15 @@
                 }
             },
             {
-                "command": "_project.removeSrcDir",
+                "command": "_cl.eide.project.modify.files.options",
+                "title": "%eide.project.modify.files.options%",
+                "icon": {
+                    "dark": "./res/icon/ConfigurationFile_16x.svg",
+                    "light": "./res/icon/ConfigurationFile_16x.svg"
+                }
+            },
+            {
+                "command": "_cl.eide.project.removeSrcDir",
                 "title": "%eide.explorer.root.remove.folder%",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
@@ -617,7 +707,7 @@
                 }
             },
             {
-                "command": "_project.close",
+                "command": "_cl.eide.project.close",
                 "title": "%eide.project.close%",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
@@ -625,7 +715,7 @@
                 }
             },
             {
-                "command": "_project.addPackage",
+                "command": "_cl.eide.project.addPackage",
                 "title": "%eide.package.install%",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
@@ -633,7 +723,7 @@
                 }
             },
             {
-                "command": "_project.removePackage",
+                "command": "_cl.eide.project.removePackage",
                 "title": "%eide.package.remove%",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
@@ -641,7 +731,7 @@
                 }
             },
             {
-                "command": "_project.setDevice",
+                "command": "_cl.eide.project.setDevice",
                 "title": "%eide.package.select.device%",
                 "icon": {
                     "dark": "./res/icon/FieldAdded_16x.svg",
@@ -649,7 +739,7 @@
                 }
             },
             {
-                "command": "_project.exportXml",
+                "command": "_cl.eide.project.exportXml",
                 "title": "%eide.project.export.keil%",
                 "icon": {
                     "dark": "./res/icon/ExportFile_16x.svg",
@@ -657,7 +747,7 @@
                 }
             },
             {
-                "command": "_project.modifyCompileConfig",
+                "command": "_cl.eide.project.modifyCompileConfig",
                 "title": "%eide.item.modify%",
                 "icon": {
                     "dark": "./res/icon/Pen4_16x.svg",
@@ -665,7 +755,7 @@
                 }
             },
             {
-                "command": "_project.switchToolchain",
+                "command": "_cl.eide.project.switchToolchain",
                 "title": "%eide.builder.switch%",
                 "icon": {
                     "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
@@ -673,7 +763,7 @@
                 }
             },
             {
-                "command": "_project.switchUploader",
+                "command": "_cl.eide.project.switchUploader",
                 "title": "%eide.flash.switch%",
                 "icon": {
                     "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
@@ -681,7 +771,7 @@
                 }
             },
             {
-                "command": "_project.modifyUploadConfig",
+                "command": "_cl.eide.project.modifyUploadConfig",
                 "title": "%eide.item.modify%",
                 "icon": {
                     "dark": "./res/icon/Pen4_16x.svg",
@@ -689,7 +779,7 @@
                 }
             },
             {
-                "command": "_project.modifyOtherSettings",
+                "command": "_cl.eide.project.modifyOtherSettings",
                 "title": "%eide.item.modify%",
                 "icon": {
                     "dark": "./res/icon/Pen4_16x.svg",
@@ -697,7 +787,7 @@
                 }
             },
             {
-                "command": "_project.addIncludeDir",
+                "command": "_cl.eide.project.addIncludeDir",
                 "title": "%eide.deps.include.add%",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
@@ -705,7 +795,7 @@
                 }
             },
             {
-                "command": "_project.addLibDir",
+                "command": "_cl.eide.project.addLibDir",
                 "title": "%eide.deps.inclib.add%",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
@@ -713,7 +803,7 @@
                 }
             },
             {
-                "command": "_project.addDefine",
+                "command": "_cl.eide.project.addDefine",
                 "title": "%eide.deps.macro.add%",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
@@ -721,7 +811,7 @@
                 }
             },
             {
-                "command": "_project.showIncludeDir",
+                "command": "_cl.eide.project.showIncludeDir",
                 "title": "%eide.deps.include.show%",
                 "icon": {
                     "dark": "./res/icon/eye_16x_dark.svg",
@@ -729,7 +819,7 @@
                 }
             },
             {
-                "command": "_project.showLibDir",
+                "command": "_cl.eide.project.showLibDir",
                 "title": "%eide.deps.inclib.show%",
                 "icon": {
                     "dark": "./res/icon/eye_16x_dark.svg",
@@ -737,7 +827,7 @@
                 }
             },
             {
-                "command": "_project.showDefine",
+                "command": "_cl.eide.project.showDefine",
                 "title": "%eide.deps.macro.show%",
                 "icon": {
                     "dark": "./res/icon/eye_16x_dark.svg",
@@ -745,7 +835,7 @@
                 }
             },
             {
-                "command": "_project.excludeSource",
+                "command": "_cl.eide.project.excludeSource",
                 "title": "%eide.explorer.exclude.file%",
                 "icon": {
                     "dark": "./res/icon/StatusNo_16x.svg",
@@ -753,7 +843,7 @@
                 }
             },
             {
-                "command": "_project.unexcludeSource",
+                "command": "_cl.eide.project.unexcludeSource",
                 "title": "%eide.explorer.include.file%",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
@@ -761,7 +851,7 @@
                 }
             },
             {
-                "command": "_project.excludeFolder",
+                "command": "_cl.eide.project.excludeFolder",
                 "title": "%eide.explorer.exclude.folder%",
                 "icon": {
                     "dark": "./res/icon/StatusNo_16x.svg",
@@ -769,7 +859,7 @@
                 }
             },
             {
-                "command": "_project.unexcludeFolder",
+                "command": "_cl.eide.project.unexcludeFolder",
                 "title": "%eide.explorer.include.folder%",
                 "icon": {
                     "dark": "./res/icon/Add_16xMD.svg",
@@ -777,7 +867,7 @@
                 }
             },
             {
-                "command": "_project.removeDependenceItem",
+                "command": "_cl.eide.project.removeDependenceItem",
                 "title": "%eide.item.remove%",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
@@ -785,7 +875,7 @@
                 }
             },
             {
-                "command": "_project.importDependenceFromPack",
+                "command": "_cl.eide.project.importDependenceFromPack",
                 "title": "%eide.package.comp.install%",
                 "icon": {
                     "dark": "./res/icon/AddToCollection_16x.svg",
@@ -793,7 +883,7 @@
                 }
             },
             {
-                "command": "_project.removeDependenceFromPack",
+                "command": "_cl.eide.project.removeDependenceFromPack",
                 "title": "%eide.package.comp.uninstall%",
                 "icon": {
                     "dark": "./res/icon/TestCoveredFailing_16x.svg",
@@ -801,7 +891,7 @@
                 }
             },
             {
-                "command": "_project.copyItemValue",
+                "command": "_cl.eide.project.copyItemValue",
                 "title": "%eide.item.copy%",
                 "icon": {
                     "dark": "./res/icon/CopyToClipboard_16x.svg",
@@ -809,7 +899,7 @@
                 }
             },
             {
-                "command": "_project.switchMode",
+                "command": "_cl.eide.project.switchMode",
                 "title": "%eide.project.switch.target%",
                 "icon": {
                     "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
@@ -817,7 +907,7 @@
                 }
             },
             {
-                "command": "_project.exportAsTemplate",
+                "command": "_cl.eide.project.exportAsTemplate",
                 "title": "%eide.project.export.template%",
                 "icon": {
                     "dark": "./res/icon/TableToFile_16x.svg",
@@ -862,7 +952,7 @@
                 "when": "cl.eide.projectActived && !isInDiffEditor"
             },
             {
-                "command": "_project.cppcheck.check_all",
+                "command": "_cl.eide.project.cppcheck.check_all",
                 "key": "ctrl+alt+c",
                 "when": "cl.eide.projectActived"
             }
@@ -885,21 +975,21 @@
                     "when": "view == Project && cl.eide.isWorkspaceProject"
                 },
                 {
-                    "command": "_project.refresh",
+                    "command": "_cl.eide.project.refresh",
                     "group": "navigation",
                     "when": "view == Project"
                 },
                 {
-                    "command": "_project.historyRecord",
+                    "command": "_cl.eide.project.historyRecord",
                     "group": "navigation",
                     "when": "view == Operation"
                 },
                 {
-                    "command": "_project.clearHistoryRecord",
+                    "command": "_cl.eide.project.clearHistoryRecord",
                     "when": "view == Operation"
                 },
                 {
-                    "command": "_project.saveAll",
+                    "command": "_cl.eide.project.saveAll",
                     "group": "navigation",
                     "when": "view == Project"
                 }
@@ -923,12 +1013,12 @@
             ],
             "editor/context": [
                 {
-                    "command": "_project.source.show_disassembly",
+                    "command": "_cl.eide.project.source.show_disassembly",
                     "group": "commands",
                     "when": "resourceLangId =~ /^c$|^cpp$/ && cl.eide.projectActived && !config.EIDE.Option.DisableEditorContextMenu"
                 },
                 {
-                    "command": "_project.source.show_cmsis_config_wizard",
+                    "command": "_cl.eide.project.source.show_cmsis_config_wizard",
                     "group": "commands",
                     "when": "resourceLangId =~ /^c$|^cpp$/ && !config.EIDE.Option.DisableEditorContextMenu"
                 }
@@ -940,90 +1030,98 @@
                     "when": "resourceLangId =~ /^c$|^cpp$/ && cl.eide.projectActived && !config.EIDE.Option.DisableExplorerContextMenu"
                 },
                 {
-                    "command": "_project.source.show_disassembly",
+                    "command": "_cl.eide.project.source.show_disassembly",
                     "group": "commands",
                     "when": "resourceLangId =~ /^c$|^cpp$/ && cl.eide.projectActived && !config.EIDE.Option.DisableExplorerContextMenu"
                 },
                 {
-                    "command": "_project.source.show_cmsis_config_wizard",
+                    "command": "_cl.eide.project.source.show_cmsis_config_wizard",
                     "group": "commands",
                     "when": "resourceLangId =~ /^c$|^cpp$/ && !config.EIDE.Option.DisableExplorerContextMenu"
                 }
             ],
             "view/item/context": [
                 {
-                    "command": "_project.cppcheck.check_all",
+                    "command": "_cl.eide.project.cppcheck.check_all",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "_project.cppcheck.clear_all",
+                    "command": "_cl.eide.project.cppcheck.clear_all",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "_project.source.filesystem_folder_add_file",
+                    "command": "_cl.eide.project.source.filesystem_folder_add_file",
                     "when": "viewItem == FOLDER || viewItem == FOLDER_ROOT && view == Project"
                 },
                 {
-                    "command": "_project.source.filesystem_folder_add",
+                    "command": "_cl.eide.project.source.filesystem_folder_add",
                     "when": "viewItem == FOLDER || viewItem == FOLDER_ROOT && view == Project"
                 },
                 {
-                    "command": "_project.source.virtual_folder_add_file",
+                    "command": "_cl.eide.project.source.virtual_folder_add_file",
+                    "when": "viewItem == PROJECT || viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == Project"
+                },
+                {
+                    "command": "_cl.eide.project.source.virtual_folder_add",
                     "when": "viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == Project"
                 },
                 {
-                    "command": "_project.source.virtual_folder_add",
+                    "command": "_cl.eide.project.source.virtual_folder_remove",
                     "when": "viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == Project"
                 },
                 {
-                    "command": "_project.source.virtual_folder_remove",
+                    "command": "_cl.eide.project.source.virtual_folder_rename",
                     "when": "viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == Project"
                 },
                 {
-                    "command": "_project.source.virtual_folder_rename",
-                    "when": "viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == Project"
-                },
-                {
-                    "command": "_project.source.virtual_file_remove",
+                    "command": "_cl.eide.project.source.virtual_file_remove",
                     "when": "viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
                 },
                 {
-                    "command": "_project.addPackage",
+                    "command": "_cl.eide.project.source.file.show.dir",
+                    "when": "viewItem == OUTPUT_FILE_ITEM || viewItem == FILE_ITEM || viewItem == EXCFILE_ITEM || viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
+                },
+                {
+                    "command": "_cl.eide.project.source.modify.path",
+                    "when": "viewItem == V_FOLDER || viewItem == V_FOLDER_ROOT || viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
+                },
+                {
+                    "command": "_cl.eide.project.addPackage",
                     "group": "inline",
                     "when": "viewItem == PACK && view == Project"
                 },
                 {
-                    "command": "_project.removePackage",
+                    "command": "_cl.eide.project.removePackage",
                     "group": "inline",
                     "when": "viewItem == PACK_GROUP && view == Project"
                 },
                 {
-                    "command": "_project.setDevice",
+                    "command": "_cl.eide.project.setDevice",
                     "group": "inline",
                     "when": "viewItem == PACK_GROUP && view == Project"
                 },
                 {
-                    "command": "_project.addPackage",
+                    "command": "_cl.eide.project.addPackage",
                     "when": "viewItem == PACK && view == Project"
                 },
                 {
-                    "command": "_project.installCMSISHeaders",
+                    "command": "_cl.eide.project.installCMSISHeaders",
                     "when": "viewItem == PACK && view == Project"
                 },
                 {
-                    "command": "_project.setActive",
+                    "command": "_cl.eide.project.setActive",
                     "when": "viewItem == SOLUTION && view == Project && cl.eide.enable.active"
                 },
                 {
-                    "command": "_project.switchMode",
+                    "command": "_cl.eide.project.switchMode",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "_project.exportAsTemplate",
+                    "command": "_cl.eide.project.exportAsTemplate",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "_project.exportXml",
+                    "command": "_cl.eide.project.exportXml",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
@@ -1042,11 +1140,11 @@
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "_project.showBuildParams",
+                    "command": "_cl.eide.project.showBuildParams",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "_project.generate.makefile",
+                    "command": "_cl.eide.project.generate.makefile",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
@@ -1055,120 +1153,142 @@
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "_project.close",
+                    "command": "_cl.eide.project.close",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
-                    "command": "_project.excludeSource",
+                    "command": "_cl.eide.project.excludeSource",
                     "group": "inline",
                     "when": "viewItem == FILE_ITEM || viewItem == V_FILE_ITEM && view == Project"
                 },
                 {
-                    "command": "_project.unexcludeSource",
+                    "command": "_cl.eide.project.unexcludeSource",
                     "group": "inline",
                     "when": "viewItem == EXCFILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
                 },
                 {
-                    "command": "_project.excludeFolder",
+                    "command": "_cl.eide.project.excludeFolder",
                     "group": "inline",
                     "when": "viewItem == FOLDER || viewItem == V_FOLDER || viewItem == V_FOLDER_ROOT && view == Project"
                 },
                 {
-                    "command": "_project.unexcludeFolder",
+                    "command": "_cl.eide.project.unexcludeFolder",
                     "group": "inline",
                     "when": "viewItem == EXCFOLDER || viewItem == V_EXCFOLDER && view == Project"
                 },
                 {
-                    "command": "_project.addSrcDir",
+                    "command": "_cl.eide.project.addSrcDir",
                     "group": "inline",
                     "when": "viewItem == PROJECT && view == Project"
                 },
                 {
-                    "command": "_project.addSrcDir",
+                    "command": "_cl.eide.project.addSrcDir",
                     "when": "viewItem == PROJECT && view == Project"
                 },
                 {
-                    "command": "_project.sourceRoot.refresh",
+                    "command": "_cl.eide.project.modify.files.options",
                     "group": "inline",
-                    "when": "viewItem == FOLDER_ROOT_DEPS || viewItem == FOLDER_ROOT || viewItem == V_FOLDER_ROOT && view == Project"
+                    "when": "viewItem == PROJECT && view == Project"
                 },
                 {
-                    "command": "_project.removeSrcDir",
+                    "command": "_cl.eide.project.modify.files.options",
+                    "when": "viewItem == PROJECT && view == Project"
+                },
+                {
+                    "command": "_cl.eide.project.import.ext.source.struct",
+                    "when": "viewItem == PROJECT && view == Project"
+                },
+                {
+                    "command": "_cl.eide.project.sourceRoot.refresh",
+                    "group": "inline",
+                    "when": "viewItem == OUTPUT_FOLDER || viewItem == FOLDER_ROOT_DEPS || viewItem == FOLDER_ROOT || viewItem == V_FOLDER_ROOT && view == Project"
+                },
+                {
+                    "command": "_cl.eide.project.removeSrcDir",
                     "group": "inline",
                     "when": "viewItem == FOLDER_ROOT && view == Project"
                 },
                 {
-                    "command": "_project.switchToolchain",
+                    "command": "_cl.eide.project.switchToolchain",
                     "group": "inline",
                     "when": "viewItem == COMPILE_CONFIGURATION && view == Project"
                 },
                 {
-                    "command": "_project.switchUploader",
+                    "command": "_cl.eide.project.switchUploader",
                     "group": "inline",
                     "when": "viewItem == UPLOAD_OPTION_C51 || viewItem == UPLOAD_OPTION"
                 },
                 {
-                    "command": "_project.modifyCompileConfig",
+                    "command": "_cl.eide.project.modifyCompileConfig",
                     "group": "inline",
                     "when": "viewItem == COMPILE_CONFIGURATION_ITEM && view == Project"
                 },
                 {
-                    "command": "_project.modifyUploadConfig",
+                    "command": "_cl.eide.project.modifyUploadConfig",
                     "group": "inline",
                     "when": "viewItem == UPLOAD_OPTION_ITEM && view == Project"
                 },
                 {
-                    "command": "_project.modifyOtherSettings",
+                    "command": "_cl.eide.project.modifyOtherSettings",
                     "group": "inline",
                     "when": "viewItem == SETTINGS_ITEM && view == Project"
                 },
                 {
-                    "command": "_project.addIncludeDir",
+                    "command": "_cl.eide.project.modify.deps",
+                    "group": "inline",
+                    "when": "viewItem == DEPENDENCE && view == Project"
+                },
+                {
+                    "command": "_cl.eide.project.modify.deps",
+                    "when": "viewItem == DEPENDENCE && view == Project"
+                },
+                {
+                    "command": "_cl.eide.project.addIncludeDir",
                     "group": "inline",
                     "when": "viewItem == INC_GROUP && view == Project"
                 },
                 {
-                    "command": "_project.showIncludeDir",
+                    "command": "_cl.eide.project.showIncludeDir",
                     "group": "inline",
                     "when": "viewItem == INC_GROUP && view == Project"
                 },
                 {
-                    "command": "_project.addLibDir",
+                    "command": "_cl.eide.project.addLibDir",
                     "group": "inline",
                     "when": "viewItem == LIB_GROUP && view == Project"
                 },
                 {
-                    "command": "_project.showLibDir",
+                    "command": "_cl.eide.project.showLibDir",
                     "group": "inline",
                     "when": "viewItem == LIB_GROUP && view == Project"
                 },
                 {
-                    "command": "_project.addDefine",
+                    "command": "_cl.eide.project.addDefine",
                     "group": "inline",
                     "when": "viewItem == DEFINE_GROUP && view == Project"
                 },
                 {
-                    "command": "_project.showDefine",
+                    "command": "_cl.eide.project.showDefine",
                     "group": "inline",
                     "when": "viewItem == DEFINE_GROUP && view == Project"
                 },
                 {
-                    "command": "_project.removeDependenceItem",
+                    "command": "_cl.eide.project.removeDependenceItem",
                     "group": "inline",
                     "when": "viewItem == INC_ITEM || viewItem == DEFINE_ITEM || viewItem == LIB_ITEM || viewItem == SOURCE_ITEM && view == Project"
                 },
                 {
-                    "command": "_project.copyItemValue",
+                    "command": "_cl.eide.project.copyItemValue",
                     "group": "inline",
                     "when": "viewItem == EXCFILE_ITEM || viewItem == FILE_ITEM || viewItem == SRCREF_FILE_ITEM || viewItem == ITEM || viewItem == DEPENDENCE_ITEM || viewItem == INC_ITEM || viewItem == DEFINE_ITEM || viewItem == LIB_ITEM || viewItem == SOURCE_ITEM && view == Project"
                 },
                 {
-                    "command": "_project.importDependenceFromPack",
+                    "command": "_cl.eide.project.importDependenceFromPack",
                     "group": "inline",
                     "when": "viewItem == COMPONENT_GROUP && view == Project"
                 },
                 {
-                    "command": "_project.removeDependenceFromPack",
+                    "command": "_cl.eide.project.removeDependenceFromPack",
                     "group": "inline",
                     "when": "viewItem == ACTIVED_GROUP && view == Project"
                 }
@@ -1215,6 +1335,32 @@
                     "**/*.edasm"
                 ],
                 "configuration": "./lang/edasm.language-configuration.json"
+            },
+            {
+                "id": "axf.info",
+                "aliases": [
+                    "Armcc Axf Info"
+                ],
+                "extensions": [
+                    ".axf.info"
+                ],
+                "filenamePatterns": [
+                    "**/*.axf.info"
+                ],
+                "configuration": "./lang/axf.info.language-configuration.json"
+            },
+            {
+                "id": "elf.info",
+                "aliases": [
+                    "Gnu Elf Info"
+                ],
+                "extensions": [
+                    ".elf.info"
+                ],
+                "filenamePatterns": [
+                    "**/*.elf.info"
+                ],
+                "configuration": "./lang/elf.info.language-configuration.json"
             }
         ],
         "jsonValidation": [
@@ -1270,6 +1416,16 @@
                 "language": "edasm",
                 "scopeName": "source.dasm.gcc",
                 "path": "./lang/edasm.tmLanguage.json"
+            },
+            {
+                "language": "axf.info",
+                "scopeName": "source.axf.info",
+                "path": "./lang/axf.info.tmLanguage.json"
+            },
+            {
+                "language": "elf.info",
+                "scopeName": "source.elf.info",
+                "path": "./lang/elf.info.tmLanguage.json"
             }
         ],
         "problemMatchers": [

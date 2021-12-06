@@ -26,6 +26,9 @@ import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as NodePath from 'path';
 import * as events from 'events';
+import * as ini from 'ini';
+import * as os from 'os';
+import * as yaml from 'yaml';
 
 import { File } from '../lib/node-utility/File';
 import { FileWatcher } from '../lib/node-utility/FileWatcher';
@@ -50,10 +53,11 @@ import { isNullOrUndefined } from 'util';
 import { DeleteDir } from './Platform';
 import { IDebugConfigGenerator } from './DebugConfigGenerator';
 import { md5, copyObject } from './utility';
-import * as ini from 'ini';
-import * as os from 'os';
 import { ResInstaller } from './ResInstaller';
-import { view_str$prompt$not_found_compiler } from './StringTable';
+import {
+    view_str$prompt$not_found_compiler, view_str$operation$name_can_not_be_blank,
+    view_str$operation$name_can_not_have_invalid_char
+} from './StringTable';
 import { SettingManager } from './SettingManager';
 
 export class CheckError extends Error {
@@ -121,12 +125,8 @@ export class VirtualSource implements SourceProvider {
         return path.startsWith(VirtualSource.rootName);
     }
 
-    private getRoot(): VirtualFolder {
-        return {
-            name: VirtualSource.rootName,
-            files: [],
-            folders: this.config.virtualFolder
-        };
+    public getRoot(): VirtualFolder {
+        return this.config.virtualFolder;
     }
 
     private getFolderByName(vFolder: VirtualFolder, name: string): VirtualFolder | undefined {
@@ -649,6 +649,12 @@ export interface BaseProjectInfo {
     prjConfig: ProjectConfiguration<any>;
 }
 
+export interface FilesOptions {
+    version: string;
+    files?: { [key: string]: string };
+    virtualPathFiles?: { [key: string]: string };
+}
+
 export type DataChangeType = 'pack' | 'dependence' | 'compiler' | 'uploader' | 'files';
 
 export abstract class AbstractProject {
@@ -666,8 +672,9 @@ export abstract class AbstractProject {
     static readonly libFileFilter: RegExp[] = [/\.lib$/i, /\.a$/i, /\.o$/i, /\.obj$/i];
     static readonly asmfileFilter: RegExp[] = [/\.s$/i, /\.a51$/i, /\.asm$/i];
 
-    static readonly excludeDirFilter: RegExp[] = [/^\.git$/i, /^\.vs$/i, /^\.vscode$/i, /^\.eide$/i];
+    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|hex|bin|s19|map|map\.view)$/i;
 
+    static readonly excludeDirFilter: RegExp[] = [/^\.git$/i, /^\.vs$/i, /^\.vscode$/i, /^\.eide$/i];
     // this folder list will be excluded when search include path
     static readonly excludeIncSearchList: string[] = [DependenceManager.DEPENDENCE_DIR];
 
@@ -719,6 +726,21 @@ export abstract class AbstractProject {
 
     static equal(p1: AbstractProject, p2: AbstractProject) {
         return p1.getWsPath() === p2.getWsPath();
+    }
+
+    static isVirtualSourceGroup(grp: FileGroup): boolean {
+        return (<ProjectFileGroup>grp).dir == undefined;
+    }
+
+    static validateProjectName(value: string): string | undefined {
+
+        if (value.trim() === '') {
+            return view_str$operation$name_can_not_be_blank;
+        }
+
+        if (/&|<|>|\(|\)|@|\^|\|/.test(value)) {
+            return view_str$operation$name_can_not_have_invalid_char;
+        }
     }
 
     private loadProjectDirectory() {
@@ -849,8 +871,8 @@ export abstract class AbstractProject {
         return this.sourceRoots.getRootFolderList();
     }
 
-    getVirtualSourceRootFolders(): VirtualFolder[] {
-        return this.virtualSource.getFolder()?.folders || [];
+    getVirtualSourceRoot(): VirtualFolder {
+        return this.virtualSource.getRoot();
     }
 
     getVirtualSourceManager(): VirtualSource {
@@ -890,7 +912,7 @@ export abstract class AbstractProject {
     }
 
     ToAbsolutePath(path: string): string {
-        if (!NodePath.isAbsolute(path)) {
+        if (!File.isAbsolute(path)) {
             return NodePath.normalize(this.GetRootDir().path + NodePath.sep + path);
         }
         return NodePath.normalize(path);
@@ -1147,9 +1169,10 @@ export abstract class AbstractProject {
         this.reloadUploader(oldUploader);
     }
 
+    // @deprecated
     updateUploaderHexFile(notEmitEvent?: boolean) {
         // set upload file path if prev value is not existed
-        const prevBinFile = new File(this.ToAbsolutePath(this.GetConfiguration().uploadConfigModel.getKeyValue('bin')));
+        /* const prevBinFile = new File(this.ToAbsolutePath(this.GetConfiguration().uploadConfigModel.getKeyValue('bin')));
         if (!prevBinFile.IsFile()) {
             const binPath = this.getOutputDir() + File.sep + this.GetConfiguration().config.name + '.hex';
             if (notEmitEvent) {
@@ -1157,7 +1180,7 @@ export abstract class AbstractProject {
             } else {
                 this.GetConfiguration().uploadConfigModel.SetKeyValue('bin', binPath);
             }
-        }
+        } */
     }
 
     //--
@@ -1290,9 +1313,9 @@ export abstract class AbstractProject {
 
         if (!envFile.IsFile()) {
             const defTxt: string[] = [
-                `###############################################################################################`,
-                `# project environment config, can be used for 'builder options', 'custom download command'`,
-                `###############################################################################################`,
+                `##################################################################################`,
+                `# project environment config, can be used for 'builder', 'downloader' ...`,
+                `##################################################################################`,
                 ``,
                 `# mcu ram size`,
                 `#MCU_RAM_SIZE=0x00`,
@@ -1333,6 +1356,32 @@ export abstract class AbstractProject {
             } catch (error) {
                 GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
             }
+        }
+    }
+
+    getFilesOptionsFile(): File {
+
+        const target = this.getCurrentTarget().toLowerCase();
+        const templateFile = File.fromArray([
+            ResManager.GetInstance().GetAppDataDir().path, 'template.files.options.yml'
+        ]);
+
+        const optFile = File.fromArray([this.getEideDir().path, `${target}.files.options.yml`]);
+        if (!optFile.IsFile()) {
+            optFile.Write(templateFile.Read());
+        }
+
+        return optFile;
+    }
+
+    getFilesOptions(): FilesOptions | undefined {
+
+        const optFile = this.getFilesOptionsFile();
+
+        try {
+            return yaml.parse(optFile.Read());
+        } catch (error) {
+            GlobalEvent.emit('msg', newMessage('Warning', `error format '${optFile.name}', it must be a yaml file !`));
         }
     }
 
@@ -1724,27 +1773,28 @@ class EIDEProject extends AbstractProject {
         // project type is ARM
         if (cConfig instanceof ArmBaseCompileConfigModel) {
 
+            const newDevInfo = this.GetPackManager().getCurrentDevInfo();
+
             // clear old device
             if (oldDevice) {
                 const dev = this.packManager.getCurrentDevInfo(oldDevice);
                 const define = dev?.define?.split(/ |,/g);
-                if (define) {
+                if (define && newDevInfo) { // if we switch device, remove old device macros 
                     this.GetConfiguration().CustomDep_RemoveFromDefineList(define);
                 }
             }
 
             // update new device
-            const deviceInfo = this.GetPackManager().getCurrentDevInfo();
-            if (deviceInfo) {
+            if (newDevInfo) {
 
                 // update compile options
-                cConfig.SetKeyValue('cpuType', deviceInfo.core || 'Cortex-M3');
-                cConfig.updateStorageLayout(deviceInfo.storageLayout);
+                cConfig.SetKeyValue('cpuType', newDevInfo.core || 'Cortex-M3');
+                cConfig.updateStorageLayout(newDevInfo.storageLayout);
 
                 // update device, set macro
-                prjConfig.config.deviceName = deviceInfo.name;
-                if (deviceInfo.define) {
-                    this.GetConfiguration().CustomDep_AddAllFromDefineList(deviceInfo.define.split(/ |,/g));
+                prjConfig.config.deviceName = newDevInfo.name;
+                if (newDevInfo.define) {
+                    this.GetConfiguration().CustomDep_AddAllFromDefineList(newDevInfo.define.split(/ |,/g));
                 }
             }
 
@@ -1954,6 +2004,14 @@ class EIDEProject extends AbstractProject {
                 settings['C_Cpp.default.cStandard'] = "c99";
             }
 
+            if (settings['[yaml]'] === undefined) {
+                settings['[yaml]'] = {
+                    "editor.insertSpaces": true,
+                    "editor.tabSize": 4,
+                    "editor.autoIndent": "advanced"
+                }
+            }
+
             if (toolchain.name === 'Keil_C51') {
                 if (settings['C_Cpp.errorSquiggles'] === undefined) {
                     settings['C_Cpp.errorSquiggles'] = "Disabled";
@@ -1965,8 +2023,10 @@ class EIDEProject extends AbstractProject {
                 let recommendExt: string[] = [
                     "cl.eide",
                     "keroc.hex-fmt",
+                    "xiaoyongdong.srecord",
                     "hars.cppsnippets",
                     "zixuanwang.linkerscript",
+                    "redhat.vscode-yaml"
                 ];
 
                 const prjInfo = this.GetConfiguration().config;

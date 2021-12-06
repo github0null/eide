@@ -37,7 +37,12 @@ import {
     view_str$operation$create_from_internal_temp,
     view_str$operation$empty_8bit_prj,
     view_str$operation$empty_cortex_prj,
-    import_project_hit, view_str$import_project, view_str$operation$import_sel_out_folder, view_str$operation$empty_riscv_prj, view_str$operation$create_from_remote_repo, view_str$operation$create_from_local_disk, view_str$operation$create_empty_project_detail, view_str$operation$create_from_internal_temp_detail, view_str$operation$create_from_local_disk_detail, view_str$operation$create_from_remote_repo_detail, view_str$operation$openSettings, view_str$prompt$select_file, view_str$prompt$select_folder, view_str$prompt$select_tool_install_mode, view_str$prompt$tool_install_mode_online, view_str$prompt$tool_install_mode_local
+    import_project_hit, view_str$import_project, view_str$operation$import_sel_out_folder, view_str$operation$empty_riscv_prj,
+    view_str$operation$create_from_remote_repo, view_str$operation$create_from_local_disk, view_str$operation$create_empty_project_detail,
+    view_str$operation$create_from_internal_temp_detail, view_str$operation$create_from_local_disk_detail,
+    view_str$operation$create_from_remote_repo_detail, view_str$operation$openSettings,
+    view_str$prompt$select_file, view_str$prompt$select_folder, view_str$prompt$select_file_or_folder, view_str$prompt$select_tool_install_mode,
+    view_str$prompt$tool_install_mode_online, view_str$prompt$tool_install_mode_local
 } from './StringTable';
 import { CreateOptions, ImportOptions, ProjectType } from './EIDETypeDefine';
 import { File } from '../lib/node-utility/File';
@@ -55,6 +60,7 @@ import * as vscode from 'vscode';
 import * as NodePath from 'path';
 import { append2SysEnv } from './Platform';
 import { ResInstaller } from './ResInstaller';
+import { AbstractProject } from './EIDEProject';
 
 interface TemplatePickItem extends vscode.QuickPickItem, TemplateInfo {
     cacheFileName: string | undefined;
@@ -195,7 +201,7 @@ export class OperationExplorer {
             label: create_project,
             command: {
                 title: create_project,
-                command: 'Operation.Create'
+                command: '_cl.eide.Operation.Create'
             },
             tooltip: create_project_hit,
             iconPath: {
@@ -209,7 +215,7 @@ export class OperationExplorer {
             label: view_str$import_project,
             command: {
                 title: view_str$import_project,
-                command: 'Operation.Import'
+                command: '_cl.eide.Operation.Import'
             },
             tooltip: import_project_hit,
             iconPath: {
@@ -223,7 +229,7 @@ export class OperationExplorer {
             label: open_project,
             command: {
                 title: open_project,
-                command: 'Operation.Open'
+                command: '_cl.eide.Operation.Open'
             },
             tooltip: open_project_hit,
             iconPath: {
@@ -237,7 +243,7 @@ export class OperationExplorer {
             label: view_str$operation$open_serialport,
             command: {
                 title: view_str$operation$open_serialport,
-                command: 'Operation.OpenSerialPortMonitor'
+                command: '_cl.eide.Operation.OpenSerialPortMonitor'
             },
             tooltip: view_str$operation$open_serialport,
             iconPath: {
@@ -256,7 +262,7 @@ export class OperationExplorer {
             label: view_str$operation$setToolchainPath,
             command: {
                 title: view_str$operation$setToolchainPath,
-                command: 'Operation.SetToolchainPath'
+                command: '_cl.eide.Operation.SetToolchainPath'
             },
             tooltip: view_str$operation$setToolchainPath,
             iconPath: {
@@ -273,7 +279,7 @@ export class OperationExplorer {
             label: view_str$operation$openSettings,
             command: {
                 title: view_str$operation$openSettings,
-                command: 'Operation.openSettings'
+                command: '_cl.eide.Operation.openSettings'
             },
             tooltip: view_str$operation$openSettings,
             iconPath: {
@@ -283,17 +289,6 @@ export class OperationExplorer {
         });
 
         this.provider.Update();
-    }
-
-    private validateProjectName(value: string): string | undefined {
-
-        if (value.trim() === '') {
-            return view_str$operation$name_can_not_be_blank;
-        }
-
-        if (/&|<|>|\(|\)|@|\^|\|/.test(value)) {
-            return view_str$operation$name_can_not_have_invalid_char;
-        }
     }
 
     //--------------- event -----------------
@@ -453,7 +448,7 @@ export class OperationExplorer {
         const name = await vscode.window.showInputBox({
             placeHolder: input_project_name,
             ignoreFocusOut: true,
-            validateInput: (name) => this.validateProjectName(name)
+            validateInput: (name) => AbstractProject.validateProjectName(name)
         });
         if (name === undefined) {
             return;
@@ -560,10 +555,22 @@ export class OperationExplorer {
                 detail: view_str$operation$setKeil51Path
             },
             {
-                label: 'ARMCC',
+                label: 'MDK',
+                type: 'AC5',
+                description: this.getStatusTxt(settingManager.isMDKIniReady()),
+                detail: view_str$operation$setMDKPath
+            },
+            {
+                label: 'ARMCC V5',
                 type: 'AC5',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC5')),
-                detail: view_str$operation$setMDKPath
+                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V5 Toolchain')
+            },
+            {
+                label: 'ARMCC V6',
+                type: 'AC6',
+                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC6')),
+                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V6 Toolchain')
             },
             {
                 label: 'GNU Arm Embedded Toolchain',
@@ -640,27 +647,23 @@ export class OperationExplorer {
 
         let dialogOption: vscode.OpenDialogOptions;
 
-        switch (item.type) {
-            case 'AC5':
-            case 'Keil_C51':
-                dialogOption = {
-                    openLabel: view_str$prompt$select_file,
-                    filters: {
-                        "TOOLS.INI file": ['INI']
-                    },
-                    canSelectFiles: true,
-                    canSelectFolders: false,
-                    canSelectMany: false
-                };
-                break;
-            default:
-                dialogOption = {
-                    openLabel: view_str$prompt$select_folder,
-                    canSelectFiles: false,
-                    canSelectFolders: true,
-                    canSelectMany: false
-                };
-                break;
+        if (item.type == 'Keil_C51' || item.label == 'MDK') {
+            dialogOption = {
+                openLabel: view_str$prompt$select_file,
+                filters: {
+                    "TOOLS.INI file": ['INI']
+                },
+                canSelectFiles: true,
+                canSelectFolders: false,
+                canSelectMany: false
+            };
+        } else {
+            dialogOption = {
+                openLabel: view_str$prompt$select_folder,
+                canSelectFiles: false,
+                canSelectFolders: true,
+                canSelectMany: false
+            };
         }
 
         const path = await vscode.window.showOpenDialog(dialogOption);
@@ -670,21 +673,21 @@ export class OperationExplorer {
 
         const tcManager = ToolchainManager.getInstance();
 
-        switch (item.type) {
-            case 'AC5':
-                settingManager.SetARMINIPath(path[0].fsPath);
-                break;
-            case 'Keil_C51':
-                settingManager.SetC51INIPath(path[0].fsPath);
-                break;
-            default:
-                const iToolchian = tcManager.getToolchainByName(item.type);
-                if (iToolchian) {
-                    vscode.workspace.getConfiguration().update(
-                        iToolchian.settingName, path[0].fsPath, vscode.ConfigurationTarget.Global
-                    );
-                }
-                break;
+        if (item.type == 'Keil_C51') {
+            settingManager.SetC51INIPath(path[0].fsPath);
+        }
+
+        else if (item.label == 'MDK') {
+            settingManager.SetMdkINIPath(path[0].fsPath);
+        }
+
+        else {
+            const iToolchian = tcManager.getToolchainByName(item.type);
+            if (iToolchian) {
+                vscode.workspace.getConfiguration().update(
+                    iToolchian.settingName, path[0].fsPath, vscode.ConfigurationTarget.Global
+                );
+            }
         }
     }
 
@@ -693,8 +696,8 @@ export class OperationExplorer {
         let prevGroupStack: TemplateGroup[] = [];
         let curTempGroup: TemplateGroup = templateGroup;
 
-        const goBackItemForGroup: vscode.QuickPickItem = { label: '..', description: 'Back' };
-        const goBackItemForItem: vscode.QuickPickItem = { label: '..', detail: 'Back' };
+        const goBackItemForGroup: vscode.QuickPickItem = { label: '..', description: 'Back', alwaysShow: true };
+        const goBackItemForItem: vscode.QuickPickItem = { label: '..', detail: 'Back', alwaysShow: true };
 
         // selection loop
         while (true) {
@@ -812,7 +815,7 @@ export class OperationExplorer {
 
                 const res = await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
-                    title: 'searching from ' + hostName + ' ...',
+                    title: 'Searching from ' + hostName + ' ...',
                     cancellable: true
                 }, (_, token): Thenable<NetResponse<any>> => {
                     return new Promise(async (resolve) => {
@@ -1079,7 +1082,7 @@ export class OperationExplorer {
         const name = await vscode.window.showInputBox({
             placeHolder: input_project_name,
             ignoreFocusOut: true,
-            validateInput: (name) => this.validateProjectName(name)
+            validateInput: (name) => AbstractProject.validateProjectName(name)
         });
 
         if (name === undefined) {
@@ -1152,7 +1155,7 @@ export class OperationExplorer {
         const name = await vscode.window.showInputBox({
             placeHolder: input_project_name,
             ignoreFocusOut: true,
-            validateInput: (name) => this.validateProjectName(name)
+            validateInput: (name) => AbstractProject.validateProjectName(name)
         });
 
         if (name === undefined) {

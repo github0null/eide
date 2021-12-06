@@ -34,7 +34,7 @@ import { ResManager } from './ResManager';
 import { GlobalEvent } from './GlobalEvents';
 import { AbstractProject, CheckError, DataChangeType, VirtualSource } from './EIDEProject';
 import { ToolchainName, ToolchainManager } from './ToolchainManager';
-import { CreateOptions, PackInfo, ComponentFileItem, DeviceInfo, getComponentKeyDescription, VirtualFolder, VirtualFile, ImportOptions, ProjectTargetInfo, ArmBaseCompileData } from './EIDETypeDefine';
+import { CreateOptions, PackInfo, ComponentFileItem, DeviceInfo, getComponentKeyDescription, VirtualFolder, VirtualFile, ImportOptions, ProjectTargetInfo, ArmBaseCompileData, ProjectConfigData } from './EIDETypeDefine';
 import { WorkspaceManager } from './WorkspaceManager';
 import {
     can_not_close_project, project_is_opened, project_load_failed,
@@ -59,7 +59,9 @@ import {
     view_str$settings$prjEnv,
     view_str$prompt$unresolved_deps,
     view_str$prompt$prj_location,
-    view_str$prompt$src_folder_must_be_a_child_of_root
+    view_str$prompt$src_folder_must_be_a_child_of_root,
+    view_str$project$folder_type_virtual_desc,
+    view_str$project$folder_type_fs_desc
 } from './StringTable';
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
@@ -68,16 +70,20 @@ import { HexUploaderManager, HexUploaderType } from './HexUploader';
 import { Compress, CompressOption } from './Compress';
 import { DependenceManager } from './DependenceManager';
 import { ArrayDelRepetition } from '../lib/node-utility/Utility';
-import { copyObject, downloadFileWithProgress, getDownloadUrlFromGit, runShellCommand } from './utility';
+import {
+    copyObject, downloadFileWithProgress, getDownloadUrlFromGit,
+    runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
+    genGithubHash
+} from './utility';
 import { append2SysEnv, DeleteDir, kill } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
 import { VirtualDocument } from './VirtualDocsProvider';
 import { ResInstaller } from './ResInstaller';
 import { ExeCmd, ExecutableOption, ExeFile } from '../lib/node-utility/Executable';
 import { CmdLineHandler } from './CmdLineHandler';
-import * as CmsisConfigParser from './CmsisConfigParser'
-import * as ini from 'ini';
 import { WebPanelManager } from './WebPanelManager';
+import * as yml from 'yaml'
+import { GitFileInfo } from './WebInterface/GithubInterface';
 
 enum TreeItemType {
     SOLUTION,
@@ -131,6 +137,10 @@ enum TreeItemType {
     // source refs
     SRCREF_FILE_ITEM,
 
+    // output 
+    OUTPUT_FOLDER,
+    OUTPUT_FILE_ITEM,
+
     ACTIVED_ITEM,
     ACTIVED_GROUP
 }
@@ -140,7 +150,7 @@ type GroupRegion = 'PACK' | 'Components' | 'ComponentItem';
 interface TreeItemValue {
     key?: string;
     alias?: string;
-    value: string | File;
+    value: string | File; // if TreeItem refer to a file, the value type is 'File'
     contextVal?: string;
     tooltip?: string;
     icon?: string;
@@ -298,11 +308,14 @@ export class ProjTreeItem extends vscode.TreeItem {
         }
     }
 
-    private getSourceFileIconName(suffix: string): string | undefined {
+    private getSourceFileIconName(fileName_: string, suffix_: string): string | undefined {
 
         let name: string | undefined;
 
-        switch (suffix.toLowerCase()) {
+        const fileName = fileName_.toLowerCase();
+        const suffix = suffix_.toLowerCase();
+
+        switch (suffix) {
             case '.c':
                 name = 'file_type_c.svg';
                 break;
@@ -331,10 +344,22 @@ export class ProjTreeItem extends vscode.TreeItem {
                 break;
             case '.o':
             case '.obj':
+            case '.axf':
+            case '.elf':
+            case '.bin':
+            case '.out':
                 name = 'file_type_binary.svg';
                 break;
+            case '.map':
+                name = 'file_type_map.svg';
+                break;
+            // other suffix
             default:
-                name = 'document-light.svg';
+                if (fileName.endsWith('.map.view')) {
+                    name = 'Report_16x.svg';
+                } else {
+                    name = 'document-light.svg';
+                }
                 break;
         }
 
@@ -392,8 +417,10 @@ export class ProjTreeItem extends vscode.TreeItem {
                 name = 'TransferDownload_16x.svg';
                 break;
             case TreeItemType.DEPENDENCE_GROUP:
-            case TreeItemType.DEPENDENCE:
                 name = 'DependencyGraph_16x.svg';
+                break;
+            case TreeItemType.DEPENDENCE:
+                name = 'Property_16x.svg';
                 break;
             case TreeItemType.SETTINGS:
                 name = 'Settings_16x.svg';
@@ -407,6 +434,9 @@ export class ProjTreeItem extends vscode.TreeItem {
             case TreeItemType.ACTIVED_GROUP:
                 name = 'TestCoveredPassing_16x.svg';//'RecursivelyCheckAll_16x.svg';
                 break;
+            case TreeItemType.OUTPUT_FOLDER:
+                name = 'folder_type_binary.svg';
+                break;
             default:
                 {
                     // if it's a source file, get icon
@@ -414,7 +444,7 @@ export class ProjTreeItem extends vscode.TreeItem {
                         const file: File = this.val.value;
                         // if file is existed, get icon by suffix
                         if (file.IsFile()) {
-                            name = this.getSourceFileIconName(file.suffix);
+                            name = this.getSourceFileIconName(file.name, file.suffix);
                         }
                         // if file not existed, show warning icon
                         else {
@@ -445,8 +475,48 @@ interface VirtualFolderInfo {
 }
 
 interface VirtualFileInfo {
-    path: string;
-    vFile: VirtualFile;
+    path: string;       // virtual path
+    vFile: VirtualFile; // virtual file info
+}
+
+class ProjectItemCache {
+
+    // <projectPath, {root: TreeItem, itemList: TreeItem[]}>
+    private itemCache: Map<string, ItemCache> = new Map();
+
+    getTreeItem(prj: AbstractProject, itemType: TreeItemType): ProjTreeItem | undefined {
+        const cache = this.itemCache.get(prj.getWsPath());
+        if (cache) {
+            return cache[TreeItemType[itemType]];
+        }
+    }
+
+    setTreeItem(prj: AbstractProject, item: ProjTreeItem, isRoot?: boolean) {
+        const cache = this.itemCache.get(prj.getWsPath());
+        if (cache) {
+            if (isRoot) {
+                cache.root = item;
+            } else {
+                cache[TreeItemType[item.type]] = item;
+            }
+        } else if (isRoot) { // if not found and type is root, set it
+            this.itemCache.set(prj.getWsPath(), { root: item });
+        }
+    }
+
+    delTreeItem(prj: AbstractProject, itemType?: TreeItemType): ProjTreeItem | undefined {
+        const cache = this.itemCache.get(prj.getWsPath());
+        if (cache) {
+            if (itemType) {
+                const key = TreeItemType[itemType];
+                const deleted = cache[key];
+                cache[key] = <any>undefined; // del item
+                return deleted;
+            } else { // del all
+                this.itemCache.delete(prj.getWsPath());
+            }
+        }
+    }
 }
 
 class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
@@ -459,7 +529,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
     private recFile: File;
     private context: vscode.ExtensionContext;
     private activePrjPath: string | undefined;
-    private itemCache: Map<string, ItemCache> = new Map();
+
+    // project tree item refresh cache
+    treeCache: ProjectItemCache = new ProjectItemCache();
 
     onDidChangeTreeData?: vscode.Event<ProjTreeItem | null | undefined> | undefined;
     dataChangedEvent: vscode.EventEmitter<ProjTreeItem | undefined>;
@@ -483,30 +555,23 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         this.LoadWorkspaceProject();
     }
 
-    getCacheItem(prj: AbstractProject, itemType: TreeItemType): ProjTreeItem | undefined {
-        const cache = this.itemCache.get(prj.getWsPath());
-        if (cache) {
-            return cache[TreeItemType[itemType]];
-        }
-    }
-
     onProjectChanged(prj: AbstractProject, type?: DataChangeType) {
         switch (type) {
             case 'files':
-                this.UpdateView(this.getCacheItem(prj, TreeItemType.PROJECT));
+                this.UpdateView(this.treeCache.getTreeItem(prj, TreeItemType.PROJECT));
                 break;
             case 'compiler':
-                this.UpdateView(this.getCacheItem(prj, TreeItemType.COMPILE_CONFIGURATION));
+                this.UpdateView(this.treeCache.getTreeItem(prj, TreeItemType.COMPILE_CONFIGURATION));
                 break;
             case 'uploader':
-                this.UpdateView(this.getCacheItem(prj, TreeItemType.UPLOAD_OPTION));
+                this.UpdateView(this.treeCache.getTreeItem(prj, TreeItemType.UPLOAD_OPTION));
                 break;
             case 'pack':
-                this.UpdateView(this.getCacheItem(prj, TreeItemType.PACK));
+                this.UpdateView(this.treeCache.getTreeItem(prj, TreeItemType.PACK));
                 break;
             case 'dependence':
-                this.UpdateView(this.getCacheItem(prj, TreeItemType.PACK));
-                this.UpdateView(this.getCacheItem(prj, TreeItemType.DEPENDENCE));
+                this.UpdateView(this.treeCache.getTreeItem(prj, TreeItemType.PACK));
+                this.UpdateView(this.treeCache.getTreeItem(prj, TreeItemType.DEPENDENCE));
                 break;
             default:
                 this.UpdateView();
@@ -647,13 +712,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                 });
                 iList.push(cItem);
 
-                // cache item
-                const oldItem = this.itemCache.get(sln.getWsPath());
-                if (oldItem) {
-                    oldItem.root = cItem;
-                } else {
-                    this.itemCache.set(sln.getWsPath(), { root: cItem });
-                }
+                // cache project root item
+                this.treeCache.setTreeItem(sln, cItem, true);
             });
         } else {
 
@@ -666,7 +726,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                         iList.push(new ProjTreeItem(TreeItemType.PROJECT, {
                             value: view_str$project$title,
                             projectIndex: element.val.projectIndex,
-                            tooltip: view_str$project$title
+                            tooltip: view_str$project$title,
+                            obj: <VirtualFolderInfo>{ path: VirtualSource.rootName, vFolder: project.getVirtualSourceRoot() }
                         }));
 
                         if (prjType === 'ARM') { // only display for ARM project 
@@ -704,45 +765,80 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                         }));
 
                         // cache sub root view
-                        const iCache = this.itemCache.get(project.getWsPath());
-                        if (iCache) {
-                            iList.forEach((item) => { iCache[TreeItemType[item.type]] = item; });
-                        }
+                        iList.forEach((item) => {
+                            this.treeCache.setTreeItem(project, item);
+                        });
                     }
                     break;
                 case TreeItemType.PROJECT:
-                    // push filesystem source folder
-                    project.getSourceRootFolders()
-                        .sort((info_1, info_2) => {
-                            const isComponent = info_1.displayName === DependenceManager.DEPENDENCE_DIR;
-                            return isComponent ? -1 : info_1.displayName.localeCompare(info_2.displayName);
-                        })
-                        .forEach((rootInfo) => {
-                            const isComponent = rootInfo.displayName === DependenceManager.DEPENDENCE_DIR;
-                            const folderDispName = isComponent ? view_str$project$cmsis_components : rootInfo.displayName;
-                            iList.push(new ProjTreeItem(TreeItemType.FOLDER_ROOT, {
-                                value: folderDispName,
-                                obj: rootInfo.fileWatcher.file,
+                    {
+                        // push filesystem source folder
+                        project.getSourceRootFolders()
+                            .sort((info_1, info_2) => {
+                                const isComponent = info_1.displayName === DependenceManager.DEPENDENCE_DIR;
+                                return isComponent ? -1 : info_1.displayName.localeCompare(info_2.displayName);
+                            })
+                            .forEach((rootInfo) => {
+                                const isComponent = rootInfo.displayName === DependenceManager.DEPENDENCE_DIR;
+                                const folderDispName = isComponent ? view_str$project$cmsis_components : rootInfo.displayName;
+                                iList.push(new ProjTreeItem(TreeItemType.FOLDER_ROOT, {
+                                    value: folderDispName,
+                                    obj: rootInfo.fileWatcher.file,
+                                    projectIndex: element.val.projectIndex,
+                                    contextVal: isComponent ? 'FOLDER_ROOT_DEPS' : undefined,
+                                    tooltip: rootInfo.needUpdate ? view_str$project$needRefresh : folderDispName,
+                                    icon: rootInfo.needUpdate ?
+                                        'StatusWarning_16x.svg' : (isComponent ? 'DependencyGraph_16x.svg' : undefined)
+                                }));
+                            });
+
+                        // push virtual source folder
+                        project.getVirtualSourceRoot().folders
+                            .sort((folder1, folder2) => { return folder1.name.localeCompare(folder2.name); })
+                            .forEach((vFolder) => {
+                                const vFolderPath = `${VirtualSource.rootName}/${vFolder.name}`;
+                                const itemType = project.isExcluded(vFolderPath) ? TreeItemType.V_EXCFOLDER : TreeItemType.V_FOLDER_ROOT;
+                                iList.push(new ProjTreeItem(itemType, {
+                                    value: vFolder.name,
+                                    obj: <VirtualFolderInfo>{ path: vFolderPath, vFolder: vFolder },
+                                    projectIndex: element.val.projectIndex,
+                                    tooltip: `${vFolder.name} (${vFolder.files.length} files, ${vFolder.folders.length} folders)`
+                                }));
+                            });
+
+                        // put virtual source files
+                        project.getVirtualSourceRoot().files
+                            .sort((a, b) => a.path.localeCompare(b.path))
+                            .forEach((vFile) => {
+                                const file = new File(project.ToAbsolutePath(vFile.path));
+                                const vFilePath = `${VirtualSource.rootName}/${file.name}`;
+                                const isFileExcluded = project.isExcluded(vFilePath);
+                                const itemType = isFileExcluded ? TreeItemType.V_EXCFILE_ITEM : TreeItemType.V_FILE_ITEM;
+                                iList.push(new ProjTreeItem(itemType, {
+                                    value: file,
+                                    collapsibleState: project.getSourceRefs(file).length > 0 ?
+                                        vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
+                                    obj: <VirtualFileInfo>{ path: vFilePath, vFile: vFile },
+                                    projectIndex: element.val.projectIndex,
+                                    tooltip: isFileExcluded ? view_str$project$excludeFile : file.path,
+                                }));
+                            });
+
+                        // show output files
+                        if (SettingManager.GetInstance().isShowOutputFilesInExplorer()) {
+                            const label = `Output Files`;
+                            const tItem = new ProjTreeItem(TreeItemType.OUTPUT_FOLDER, {
+                                value: label,
+                                collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
                                 projectIndex: element.val.projectIndex,
-                                contextVal: isComponent ? 'FOLDER_ROOT_DEPS' : undefined,
-                                tooltip: rootInfo.needUpdate ? view_str$project$needRefresh : folderDispName,
-                                icon: rootInfo.needUpdate ?
-                                    'StatusWarning_16x.svg' : (isComponent ? 'DependencyGraph_16x.svg' : undefined)
-                            }));
-                        });
-                    // push virtual source folder
-                    project.getVirtualSourceRootFolders()
-                        .sort((folder1, folder2) => { return folder1.name.localeCompare(folder2.name); })
-                        .forEach((vFolder) => {
-                            const vFolderPath = `${VirtualSource.rootName}/${vFolder.name}`;
-                            const itemType = project.isExcluded(vFolderPath) ? TreeItemType.V_EXCFOLDER : TreeItemType.V_FOLDER_ROOT;
-                            iList.push(new ProjTreeItem(itemType, {
-                                value: vFolder.name,
-                                obj: <VirtualFolderInfo>{ path: vFolderPath, vFolder: vFolder },
-                                projectIndex: element.val.projectIndex,
-                                tooltip: vFolder.name
-                            }));
-                        });
+                                tooltip: label,
+                            });
+                            iList.push(tItem);
+                            this.treeCache.setTreeItem(project, tItem);
+                        } else {
+                            this.treeCache.delTreeItem(project, TreeItemType.OUTPUT_FOLDER);
+                        }
+                    }
                     break;
                 case TreeItemType.PACK:
                     {
@@ -927,33 +1023,39 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                         const curFolder = <VirtualFolderInfo>element.val.obj;
 
                         // put child folders
-                        curFolder.vFolder.folders.forEach((vFolder) => {
-                            const vFolderPath = `${curFolder.path}/${vFolder.name}`;
-                            const isFolderExcluded = project.isExcluded(vFolderPath);
-                            const itemType = isFolderExcluded ? TreeItemType.V_EXCFOLDER : TreeItemType.V_FOLDER;
-                            iList.push(new ProjTreeItem(itemType, {
-                                value: vFolder.name,
-                                obj: <VirtualFolderInfo>{ path: vFolderPath, vFolder: vFolder },
-                                projectIndex: element.val.projectIndex,
-                                tooltip: isFolderExcluded ? view_str$project$excludeFolder : vFolder.name,
-                            }));
-                        });
+                        curFolder.vFolder.folders
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .forEach((vFolder) => {
+                                const vFolderPath = `${curFolder.path}/${vFolder.name}`;
+                                const isFolderExcluded = project.isExcluded(vFolderPath);
+                                const itemType = isFolderExcluded ? TreeItemType.V_EXCFOLDER : TreeItemType.V_FOLDER;
+                                iList.push(new ProjTreeItem(itemType, {
+                                    value: vFolder.name,
+                                    obj: <VirtualFolderInfo>{ path: vFolderPath, vFolder: vFolder },
+                                    projectIndex: element.val.projectIndex,
+                                    tooltip: isFolderExcluded
+                                        ? view_str$project$excludeFolder
+                                        : `${vFolder.name} (${vFolder.files.length} files, ${vFolder.folders.length} folders)`,
+                                }));
+                            });
 
                         // put child files
-                        curFolder.vFolder.files.forEach((vFile) => {
-                            const file = new File(project.ToAbsolutePath(vFile.path));
-                            const vFilePath = `${curFolder.path}/${file.name}`;
-                            const isFileExcluded = project.isExcluded(vFilePath);
-                            const itemType = isFileExcluded ? TreeItemType.V_EXCFILE_ITEM : TreeItemType.V_FILE_ITEM;
-                            iList.push(new ProjTreeItem(itemType, {
-                                value: file,
-                                collapsibleState: project.getSourceRefs(file).length > 0 ?
-                                    vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
-                                obj: <VirtualFileInfo>{ path: vFilePath, vFile: vFile },
-                                projectIndex: element.val.projectIndex,
-                                tooltip: isFileExcluded ? view_str$project$excludeFile : file.path,
-                            }));
-                        });
+                        curFolder.vFolder.files
+                            .sort((a, b) => a.path.localeCompare(b.path))
+                            .forEach((vFile) => {
+                                const file = new File(project.ToAbsolutePath(vFile.path));
+                                const vFilePath = `${curFolder.path}/${file.name}`;
+                                const isFileExcluded = project.isExcluded(vFilePath);
+                                const itemType = isFileExcluded ? TreeItemType.V_EXCFILE_ITEM : TreeItemType.V_FILE_ITEM;
+                                iList.push(new ProjTreeItem(itemType, {
+                                    value: file,
+                                    collapsibleState: project.getSourceRefs(file).length > 0 ?
+                                        vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
+                                    obj: <VirtualFileInfo>{ path: vFilePath, vFile: vFile },
+                                    projectIndex: element.val.projectIndex,
+                                    tooltip: isFileExcluded ? view_str$project$excludeFile : file.path,
+                                }));
+                            });
                     }
                     break;
                 case TreeItemType.EXCFOLDER:
@@ -977,6 +1079,26 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                             }));
                         }
                     }
+                    break;
+                // output folder
+                case TreeItemType.OUTPUT_FOLDER:
+                    {
+                        const outFolder = project.getOutputFolder();
+                        if (outFolder.IsDir()) {
+                            const fList = outFolder.GetList([AbstractProject.buildOutputMatcher], File.EMPTY_FILTER);
+                            fList.forEach((file) => {
+                                iList.push(new ProjTreeItem(TreeItemType.OUTPUT_FILE_ITEM, {
+                                    value: file,
+                                    collapsibleState: vscode.TreeItemCollapsibleState.None,
+                                    projectIndex: element.val.projectIndex,
+                                    tooltip: file.path,
+                                }));
+                            });
+                        }
+                    }
+                    break;
+                // output file item
+                case TreeItemType.OUTPUT_FILE_ITEM:
                     break;
                 case TreeItemType.COMPONENT_GROUP:
                 case TreeItemType.ACTIVED_GROUP:
@@ -1257,7 +1379,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             const projectInfo = baseInfo.prjConfig.config;
 
             // init project info
-            projectInfo.virtualFolder = [];
+            projectInfo.virtualFolder = {
+                name: VirtualSource.rootName,
+                files: [],
+                folders: []
+            };
 
             const getVirtualFolder = (path: string, noCreate?: boolean): VirtualFolder | undefined => {
 
@@ -1268,10 +1394,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                 const pathList = path.split('/');
                 pathList.splice(0, 1); // remvoe root
 
-                let curFolder: VirtualFolder = {
-                    name: VirtualSource.rootName, files: [],
-                    folders: projectInfo.virtualFolder
-                };
+                // init start search folder
+                let curFolder: VirtualFolder = projectInfo.virtualFolder;
 
                 for (const name of pathList) {
                     const index = curFolder.folders.findIndex((folder) => { return folder.name === name; });
@@ -1311,51 +1435,53 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                 const incs: string[] = this.importCmsisHeaders(baseInfo.rootFolder).map((f) => f.path);
 
                 /* try resolve all deps */
-                const mdkRoot = SettingManager.GetInstance().GetMdkDir();
-                const fileTypes: string[] = ['source', 'header'];
-                rte_deps.forEach((dep) => {
-                    /* check dep whether is valid */
-                    if (fileTypes.includes(dep.category || '') && dep.class && dep.packPath) {
-                        const srcFileLi: File[] = [];
-                        const vFolder = getVirtualFolder(`${VirtualSource.rootName}/::${dep.class}`, true);
+                const mdkRoot = SettingManager.GetInstance().GetMdkArmDir();
+                if (mdkRoot) { // MDK ARM dir, like: 'D:\keil\ARM'
+                    const fileTypes: string[] = ['source', 'header'];
+                    rte_deps.forEach((dep) => {
+                        /* check dep whether is valid */
+                        if (fileTypes.includes(dep.category || '') && dep.class && dep.packPath) {
+                            const srcFileLi: File[] = [];
+                            const vFolder = getVirtualFolder(`${VirtualSource.rootName}/::${dep.class}`, true);
 
-                        /* add all candidate files */
-                        if (dep.instance) { srcFileLi.push(new File(dep.instance[0])) }
-                        srcFileLi.push(File.fromArray([mdkRoot.path, 'PACK', dep.packPath, dep.path]));
+                            /* add all candidate files */
+                            if (dep.instance) { srcFileLi.push(new File(dep.instance[0])) }
+                            srcFileLi.push(File.fromArray([mdkRoot.path, 'PACK', dep.packPath, dep.path]));
 
-                        /* resolve dependences */
-                        for (const srcFile of srcFileLi) {
+                            /* resolve dependences */
+                            for (const srcFile of srcFileLi) {
 
-                            /* check condition */
-                            if (!srcFile.IsFile()) { continue; }
-                            if (dep.category == 'source' && !vFolder) { continue; }
+                                /* check condition */
+                                if (!srcFile.IsFile()) { continue; }
+                                if (dep.category == 'source' && !vFolder) { continue; }
 
-                            let srcRePath: string | undefined = baseInfo.rootFolder.ToRelativePath(srcFile.path, false);
+                                let srcRePath: string | undefined = baseInfo.rootFolder.ToRelativePath(srcFile.path, false);
 
-                            /* if it's not in workspace, copy it */
-                            if (srcRePath == undefined) {
-                                srcRePath = ['.cmsis', dep.packPath, dep.path].join(File.sep);
-                                const realFolder = File.fromArray([baseInfo.rootFolder.path, NodePath.dirname(srcRePath)]);
-                                realFolder.CreateDir(true);
-                                realFolder.CopyFile(srcFile);
+                                /* if it's not in workspace, copy it */
+                                if (srcRePath == undefined) {
+                                    srcRePath = ['.cmsis', dep.packPath, dep.path].join(File.sep);
+                                    const realFolder = File.fromArray([baseInfo.rootFolder.path, NodePath.dirname(srcRePath)]);
+                                    realFolder.CreateDir(true);
+                                    realFolder.CopyFile(srcFile);
+                                }
+
+                                /* if it's a source, add to project */
+                                if (dep.category == 'source' && vFolder) {
+                                    vFolder.files.push({ path: srcRePath });
+                                }
+
+                                /* if it's a header, add to include path */
+                                else if (dep.category == 'header') {
+                                    incs.push(`${baseInfo.rootFolder.path}${File.sep}${NodePath.dirname(srcRePath)}`);
+                                }
+
+                                return; /* resolved !, exit */
                             }
-
-                            /* if it's a source, add to project */
-                            if (dep.category == 'source' && vFolder) {
-                                vFolder.files.push({ path: srcRePath });
-                            }
-
-                            /* if it's a header, add to include path */
-                            else if (dep.category == 'header') {
-                                incs.push(`${baseInfo.rootFolder.path}${File.sep}${NodePath.dirname(srcRePath)}`);
-                            }
-
-                            return; /* resolved !, exit */
                         }
-                    }
-                    /* resolve failed !, store dep */
-                    unresolved_deps.push(dep);
-                });
+                        /* resolve failed !, store dep */
+                        unresolved_deps.push(dep);
+                    });
+                }
 
                 /* add include paths for targets */
                 const mdk_rte_folder = File.fromArray([`${keilPrjFile.dir}`, 'RTE']);
@@ -1366,26 +1492,38 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
                 /* log unresolved deps */
                 if (unresolved_deps.length > 0) {
+
+                    const title = `!!! ${WARNING} !!!`;
+
                     const lines: string[] = [
-                        `!!! ${WARNING} !!!`,
+                        `${title}`,
                         view_str$prompt$unresolved_deps,
                         view_str$prompt$prj_location.replace('{}', baseInfo.workspaceFile.path),
                         '---'
                     ];
+
                     unresolved_deps.forEach((dep) => {
-                        const nLine: string[] = [];
+
                         let locate = dep.packPath;
-                        if (dep.instance) { locate = baseInfo.rootFolder.ToRelativePath(dep.instance[0], false) || dep.instance[0] }
-                        nLine.push(
+                        if (dep.instance) {
+                            locate = baseInfo.rootFolder
+                                .ToRelativePath(dep.instance[0], false) || dep.instance[0]
+                        }
+
+                        const nLine: string[] = [
                             `FileName: '${dep.path}'`,
                             `\tClass:     '${dep.class}'`,
                             `\tCategory:  '${dep.category}'`,
                             `\tLocation:  '${locate}'`,
-                        );
+                        ];
+
                         lines.push(nLine.join(os.EOL));
                     });
+
                     const cont = lines.join(`${os.EOL}${os.EOL}`);
-                    const doc = await vscode.workspace.openTextDocument({ content: cont });
+                    const file = File.fromArray([baseInfo.rootFolder.path, `${title}.txt`]);
+                    file.Write(cont); // write content to file
+                    const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(file.ToUri()));
                     vscode.window.showTextDocument(doc, { preview: false });
                 }
             }
@@ -1512,6 +1650,20 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                         // convert .EIDE to .eide
                         this.toLowercaseEIDEFolder(targetDir);
 
+                        // rename project name
+                        {
+                            const prjFile = File.fromArray([targetDir.path, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
+                            if (!prjFile.IsFile()) throw Error(`project file: '${prjFile.path}' is not exist !`);
+
+                            try {
+                                const prjConf: ProjectConfigData<any> = JSON.parse(prjFile.Read());
+                                prjConf.name = option.name; // set project name
+                                prjFile.Write(JSON.stringify(prjConf));
+                            } catch (error) {
+                                throw Error(`change project name failed !, msg: ${error.message}`);
+                            }
+                        }
+
                         // switch workspace if user select `yes`
                         const item = await vscode.window.showInformationMessage(
                             view_str$operation$create_prj_done, 'Yes', 'Later'
@@ -1534,33 +1686,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             GlobalEvent.emit('msg', newMessage('Warning', `Create project failed !, msg: ${(<Error>error).message}`));
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
-    }
-
-    async InstallKeilPackage(prjIndex: number, reporter?: (progress?: number, message?: string) => void) {
-
-        if (this.prjList[prjIndex].GetPackManager().GetPack()) {
-            GlobalEvent.emit('msg', {
-                type: 'Warning',
-                contentType: 'string',
-                content: 'You should uninstall old package before install a new one !'
-            });
-            return;
-        }
-
-        const packFile = await vscode.window.showOpenDialog({
-            canSelectFolders: false,
-            canSelectFiles: true,
-            openLabel: install_this_pack,
-            filters: {
-                'CMSIS Package': ['pack']
-            }
-        });
-
-        if (packFile === undefined) {
-            return;
-        }
-
-        return this.prjList[prjIndex].InstallPack(new File(packFile[0].fsPath), reporter);
     }
 
     async UninstallKeilPackage(item: ProjTreeItem) {
@@ -1636,7 +1761,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                 return <vscode.QuickPickItem>{ label: dev.name, description: dev.core };
             });
             const item = await vscode.window.showQuickPick(devList, {
-                placeHolder: 'found ' + devList.length + ' devices, ' + set_device_hint,
+                placeHolder: 'Found ' + devList.length + ' devices, ' + set_device_hint,
                 canPickMany: false,
                 matchOnDescription: true
             });
@@ -1690,7 +1815,17 @@ interface BuildCommandInfo {
     order?: number;
 }
 
+interface ImporterProjectInfo {
+    name: string;
+    target?: string;
+    incList: string[];
+    defineList: string[];
+    files: VirtualFolder;
+}
+
 export class ProjectExplorer {
+
+    private readonly vFolderNameMatcher = /^\w[\w\t \-:@\.]*$/;
 
     private view: vscode.TreeView<ProjTreeItem>;
     private dataProvider: ProjectDataProvider;
@@ -1714,13 +1849,15 @@ export class ProjectExplorer {
         // create cppcheck output channel
         this.cppcheck_out = vscode.window.createOutputChannel('eide-cppcheck');
 
-        // when file saved, clear diagnostic
-        /* vscode.workspace.onDidSaveTextDocument((document) => {
-            const uri = document.uri;
-            if (this.cppcheck_diag.has(uri)) {
-                this.cppcheck_diag.delete(uri);
-            }
-        }); */
+        // register doc event
+        context.subscriptions.push(vscode.workspace.onDidSaveTextDocument((doc) => {
+            this.onCustomDepYamlSaved(doc);
+            this.onFolderSourceYamlSaved(doc);
+        }));
+        context.subscriptions.push(vscode.workspace.onDidCloseTextDocument((doc) => {
+            this.onCustomDepYamlClosed(doc);
+            this.onFolderSourceYamlClosed(doc);
+        }));
 
         this.on('request_open_project', (fsPath: string) => this.dataProvider.OpenProject(fsPath));
         this.on('request_create_project', (option: CreateOptions) => this.dataProvider.CreateProject(option));
@@ -1770,10 +1907,11 @@ export class ProjectExplorer {
     private async createTarget(prj: AbstractProject) {
 
         let targetName = await vscode.window.showInputBox({
-            placeHolder: 'input a target name',
+            placeHolder: 'Input a target name',
+            ignoreFocusOut: true,
             validateInput: (val: string) => {
                 if (val.length > 25) { return `string is too long !, length must < 25, current is ${val.length}`; }
-                if (!/^[\w-]+$/.test(val)) { return `string can only contain word, number or '_' !`; }
+                if (!/^[\w\-]+$/.test(val)) { return `string can only contain word, number '-' or '_' !`; }
                 return undefined;
             }
         });
@@ -1791,7 +1929,7 @@ export class ProjectExplorer {
 
     private async deleteTarget(prj: AbstractProject) {
 
-        const selTarget = await vscode.window.showQuickPick(prj.getTargets(), { placeHolder: 'select a target to delete' });
+        const selTarget = await vscode.window.showQuickPick(prj.getTargets(), { placeHolder: 'Select a target to delete' });
         if (selTarget === undefined) { return; }
 
         const curTarget = prj.getCurrentTarget();
@@ -1891,7 +2029,7 @@ export class ProjectExplorer {
 
         vscode.window.showQuickPick(records.reverse(), {
             canPickMany: false,
-            placeHolder: `found ${records.length} results, select one to open`,
+            placeHolder: `Found ${records.length} results, select one to open`,
             matchOnDescription: false,
             matchOnDetail: true,
             ignoreFocusOut: false
@@ -1908,6 +2046,13 @@ export class ProjectExplorer {
 
     clearAllHistoryRecords() {
         this.dataProvider.clearAllRecords();
+    }
+
+    notifyUpdateOutputFolder(prj: AbstractProject) {
+        const item = this.dataProvider.treeCache.getTreeItem(prj, TreeItemType.OUTPUT_FOLDER);
+        if (item) {
+            this.dataProvider.UpdateView(item);
+        }
     }
 
     private _buildLock: boolean = false;
@@ -1927,10 +2072,6 @@ export class ProjectExplorer {
 
         this._buildLock = true;
 
-        vscode.window.visibleTextEditors.forEach(editor => {
-            editor.document.save();
-        });
-
         // save project before build
         prj.Save();
 
@@ -1939,7 +2080,12 @@ export class ProjectExplorer {
 
             // set event handler
             const toolchain = prj.getToolchain().name;
-            codeBuilder.on('finished', () => prj.notifyUpdateSourceRefs(toolchain));
+
+            // notify view update after build done !
+            codeBuilder.on('finished', () => {
+                prj.notifyUpdateSourceRefs(toolchain);
+                this.notifyUpdateOutputFolder(prj);
+            });
 
             // start build
             codeBuilder.build(options);
@@ -1965,9 +2111,6 @@ export class ProjectExplorer {
             GlobalEvent.emit('msg', newMessage('Warning', 'No project is opened !'));
             return;
         }
-
-        /* save all editor */
-        vscode.window.visibleTextEditors.forEach(editor => { editor.document.save(); });
 
         const cmdList: BuildCommandInfo[] = [];
 
@@ -2035,7 +2178,7 @@ export class ProjectExplorer {
     }
 
     private _uploadLock: boolean = false;
-    async UploadToDevice(prjItem?: ProjTreeItem) {
+    async UploadToDevice(prjItem?: ProjTreeItem, eraseAll?: boolean) {
 
         const prj = this.getProjectByTreeItem(prjItem);
 
@@ -2053,7 +2196,7 @@ export class ProjectExplorer {
         const uploader = HexUploaderManager.getInstance().createUploader(prj);
 
         try {
-            await uploader.upload();
+            await uploader.upload(eraseAll);
         } catch (error) {
             GlobalEvent.emit('error', error);
         }
@@ -2109,27 +2252,202 @@ export class ProjectExplorer {
             return;
         }
 
+        if (prj.GetPackManager().GetPack()) {
+            GlobalEvent.emit('msg', {
+                type: 'Warning',
+                contentType: 'string',
+                content: 'You should uninstall old package before install a new one !'
+            });
+            this.installLocked = false;
+            return;
+        }
+
         vscode.window.withProgress<void>({
             location: vscode.ProgressLocation.Notification,
-            title: `Installing CMSIS package`
+            title: `Installing cmsis package`
         }, (progress) => {
-            return new Promise(async (resolve) => {
+            return new Promise(async (resolve_) => {
+
+                const resolve = () => {
+                    this.installLocked = false;
+                    resolve_();
+                };
+
                 try {
 
                     progress.report({ message: 'preparing ...' });
 
-                    await this.dataProvider.InstallKeilPackage(prjIndex, (_progress, msg) => {
+                    let packFile: File;
+
+                    const insType = await vscode.window.showQuickPick<vscode.QuickPickItem>([
+                        {
+                            label: 'From Repo',
+                            detail: 'Download cmsis pack from the repository and install'
+                        },
+                        {
+                            label: 'From Disk',
+                            detail: 'Select cmsis pack file from your computer and install'
+                        }
+                    ], {
+                        placeHolder: `Select an installation type. Press 'Esc' to exit`,
+                        canPickMany: false,
+                        ignoreFocusOut: true
+                    });
+
+                    if (insType === undefined) { // canceled, exit
+                        resolve();
+                        return;
+                    }
+
+                    // download from internet
+                    if (insType.label == 'From Repo') {
+
+                        progress.report({ message: 'waiting download task done ...' });
+
+                        const res = await this.startDownloadCmsisPack();
+
+                        if (res === undefined) { // canceled, exit
+                            resolve();
+                            return;
+                        }
+
+                        if (res instanceof Error) {
+                            GlobalEvent.emit('msg', ExceptionToMessage(res, 'Warning'));
+                            resolve();
+                            return;
+                        }
+
+                        packFile = res;
+                    }
+
+                    // from disk
+                    else {
+                        const urls = await vscode.window.showOpenDialog({
+                            canSelectFolders: false,
+                            canSelectFiles: true,
+                            openLabel: install_this_pack,
+                            filters: {
+                                'Cmsis Package': ['pack']
+                            }
+                        });
+
+                        if (urls === undefined) { // canceled, exit
+                            resolve();
+                            return;
+                        }
+
+                        packFile = new File(urls[0].fsPath);
+                    }
+
+                    await prj.InstallPack(packFile, (_progress, msg) => {
                         progress.report({
                             increment: _progress ? 12 : undefined,
                             message: msg
                         });
                     });
+
+                    resolve();
+
                 } catch (error) {
                     GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+                    resolve();
                 }
-                this.installLocked = false;
-                resolve();
             });
+        });
+    }
+
+    private async startDownloadCmsisPack(): Promise<File | Error | undefined> {
+
+        const redirectUri = (uri: string) => {
+            return SettingManager.GetInstance().isUseGithubProxy() ? redirectHost(uri) : uri;
+        };
+
+        // URL: https://api.github.com/repos/github0null/eide-cmsis-pack/contents/packages
+        const repoUrl = redirectUri('api.github.com/repos/' + SettingManager.GetInstance().getCmsisPackRepositoryUrl());
+
+        return await vscode.window.withProgress<File | Error | undefined>({
+            location: vscode.ProgressLocation.Notification,
+            title: `Download cmsis package`
+        }, async (progress, cancelToken) => {
+
+            progress.report({ message: `reading package list ...` });
+
+            const pkgList = await readGithubRepoFolder(repoUrl);
+            if (pkgList instanceof Error) {
+                return pkgList;
+            }
+
+            progress.report({ message: `waiting cmsis package selection ...` });
+
+            const itemList: vscode.QuickPickItem[] = pkgList
+                .filter((inf) => inf.type == 'file')
+                .map((fileInfo) => {
+                    return {
+                        label: fileInfo.name,
+                        detail: `Size: ${(fileInfo.size / 1000000).toFixed(1)} MB, Sha: ${fileInfo.sha}`,
+                        val: fileInfo
+                    };
+                });
+
+            const item: any = await vscode.window.showQuickPick(itemList, {
+                placeHolder: `Found ${pkgList.length} packages, select one to install. Press 'Esc' to exit`,
+                canPickMany: false,
+                ignoreFocusOut: true,
+                matchOnDescription: true
+            });
+
+            if (item == undefined) { // user canceled
+                return undefined;
+            }
+
+            try {
+
+                const gitFileInfo: GitFileInfo = item.val;
+                let packageFile: File | undefined;
+
+                const resManager = ResManager.GetInstance();
+                const packDir = File.fromArray([resManager.getEideHomeFolder().path, 'pack', 'cmsis']);
+                packDir.CreateDir(true);
+
+                // read cache
+                const cache = new FileCache(packDir);
+                packageFile = cache.get(gitFileInfo.name, gitFileInfo.sha);
+                if (packageFile) { // found cache, use it
+                    return packageFile;
+                }
+
+                // download it
+                progress.report({ message: `initializing download '${gitFileInfo.name}' ...` });
+
+                if (gitFileInfo.download_url == undefined) {
+                    return new Error(`Can't download '${gitFileInfo.name}', not download url found !`);
+                }
+
+                const url = redirectUri(gitFileInfo.download_url);
+                const buff = await downloadFileWithProgress(url, gitFileInfo.name, progress, cancelToken);
+
+                if (buff == undefined) { // canceled
+                    return undefined;
+                }
+
+                if (buff instanceof Error) {
+                    return buff;
+                }
+
+                // save file
+                packageFile = File.fromArray([packDir.path, gitFileInfo.name]);
+                fs.writeFileSync(packageFile.path, buff);
+
+                // add to cache
+                const sha = genGithubHash(buff);
+                cache.add(packageFile.name, sha);
+                cache.save();
+
+                return packageFile;
+
+            } catch (error) {
+                return error;
+            }
         });
     }
 
@@ -2327,16 +2645,27 @@ export class ProjectExplorer {
 
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
 
-        const folderType = await vscode.window.showQuickPick(
-            [view_str$project$folder_type_fs, view_str$project$folder_type_virtual],
-            { placeHolder: view_str$project$sel_folder_type });
+        const folderType = await vscode.window.showQuickPick<vscode.QuickPickItem>(
+            [
+                {
+                    label: view_str$project$folder_type_virtual,
+                    detail: view_str$project$folder_type_virtual_desc
+                },
+                {
+                    label: view_str$project$folder_type_fs,
+                    detail: view_str$project$folder_type_fs_desc
+                }
+            ],
+            {
+                placeHolder: view_str$project$sel_folder_type
+            });
 
         if (folderType === undefined) {
             return;
         }
 
         // add folder from filesystem
-        if (folderType === view_str$project$folder_type_fs) {
+        if (folderType.label === view_str$project$folder_type_fs) {
 
             const folderList = await vscode.window.showOpenDialog({
                 canSelectMany: true,
@@ -2371,15 +2700,16 @@ export class ProjectExplorer {
             }
         }
 
-        // add virtual folder
+        // add root virtual folder
         else {
 
             const folderName = await vscode.window.showInputBox({
-                placeHolder: 'Input folder name',
+                placeHolder: 'Input a folder name',
                 ignoreFocusOut: true,
                 validateInput: (input) => {
-                    if (!/^\w+$/.test(input)) { return `must match '^\\w+$'`; }
-                    return undefined;
+                    if (!this.vFolderNameMatcher.test(input)) {
+                        return `must match '${this.vFolderNameMatcher.source}'`;
+                    }
                 }
             });
 
@@ -2403,6 +2733,9 @@ export class ProjectExplorer {
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
 
         switch (item.type) {
+            case TreeItemType.OUTPUT_FOLDER:
+                this.notifyUpdateOutputFolder(prj);
+                break;
             case TreeItemType.V_FOLDER_ROOT:
                 prj.refreshSourceRoot((<VirtualFolderInfo>item.val.obj).path);
                 break;
@@ -2457,11 +2790,12 @@ export class ProjectExplorer {
         const curFolder = <VirtualFolderInfo>item.val.obj;
 
         const folderName = await vscode.window.showInputBox({
-            placeHolder: 'Input folder name',
+            placeHolder: 'Input a folder name',
             ignoreFocusOut: true,
             validateInput: (input) => {
-                if (!/^\w+$/.test(input)) { return `must match '^\\w+$'`; }
-                return undefined;
+                if (!this.vFolderNameMatcher.test(input)) {
+                    return `must match '${this.vFolderNameMatcher.source}'`;
+                }
             }
         });
 
@@ -2482,10 +2816,11 @@ export class ProjectExplorer {
         const curFolder = <VirtualFolderInfo>item.val.obj;
 
         const folderName = await vscode.window.showInputBox({
-            placeHolder: 'Input the new name',
+            prompt: 'Input the new name',
             ignoreFocusOut: true,
+            value: curFolder.vFolder.name,
             validateInput: (input) => {
-                if (!/^\w+$/.test(input)) { return `must match '^\\w+$'`; }
+                if (!this.vFolderNameMatcher.test(input)) { return `must match '${this.vFolderNameMatcher.source}'`; }
                 return undefined;
             }
         });
@@ -2542,39 +2877,61 @@ export class ProjectExplorer {
 
     async showDisassembly(uri: vscode.Uri) {
 
+        const supportList = ['RISCV_GCC', 'GCC', 'AC5', 'AC6'];
+
         try {
 
-            /* parser ref json */
+            // check condition
             const activePrj = this.dataProvider.getActiveProject();
             if (!activePrj) { throw new Error('Not found active project !'); }
             const toolchainName = activePrj.getToolchain().name;
-            if (!['RISCV_GCC', 'GCC'].includes(toolchainName)) { throw new Error('Only support GCC compiler !'); }
+            if (!supportList.includes(toolchainName)) {
+                throw new Error(`Only support '${supportList.join(',')}' compiler !`);
+            }
+
+            // parser ref json
             const srcPath = uri.fsPath;
             const refFile = File.fromArray([activePrj.ToAbsolutePath(activePrj.getOutputDir()), 'ref.json']);
             if (!refFile.IsFile()) { throw new Error(`Not found 'ref.json' at output folder, you need build project !`) }
             const ref = JSON.parse(refFile.Read());
             if (!ref[srcPath]) { throw new Error(`Not found any reference for this source file !`) }
 
-            /* get obj file */
+            // get obj file
             let objPath: string | undefined;
-
-            if (typeof ref[srcPath] == 'string') {
-                objPath = <string>ref[srcPath];
-            } else if (Array.isArray(ref[srcPath])) {
-                objPath = ref[srcPath][0];
-            }
-
+            if (typeof ref[srcPath] == 'string') { objPath = <string>ref[srcPath]; }
+            else if (Array.isArray(ref[srcPath])) { objPath = ref[srcPath][0]; }
             if (objPath == undefined) { throw new Error(`Not found any reference for this source file !`) }
 
-            /* get objdump.exe */
-            const toolPrefix = toolchainName == 'GCC' ?
-                SettingManager.GetInstance().getGCCPrefix() :
-                SettingManager.GetInstance().getRiscvToolPrefix();
-            const exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `${toolPrefix}objdump.exe`]);
-            if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
+            // prepare command
+            let exeFile: File;
+            let cmds: string[];
+
+            switch (toolchainName) {
+                case 'GCC':
+                case 'RISCV_GCC':
+                    {
+                        const toolPrefix = toolchainName == 'GCC' ?
+                            SettingManager.GetInstance().getGCCPrefix() :
+                            SettingManager.GetInstance().getRiscvToolPrefix();
+                        exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `${toolPrefix}objdump.exe`]);
+                        if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
+                        cmds = ['-S', objPath];
+                    }
+                    break;
+                case 'AC5':
+                case 'AC6':
+                    {
+                        exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `fromelf.exe`]);
+                        if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
+                        cmds = ['-c', objPath];
+                    }
+                    break;
+                default:
+                    throw new Error(`Only support '${supportList.join(',')}' compiler !`);
+            }
 
             /* executable */
-            const asmTxt = child_process.execFileSync(exeFile.path, ['-S', objPath], { encoding: 'ascii' });
+            const asmTxt = child_process.execFileSync(exeFile.path, cmds, { encoding: 'ascii' });
             const asmFile = `${srcPath}.edasm`;
             const asmFileUri = vscode.Uri.parse(VirtualDocument.instance().getUriByPath(asmFile));
             VirtualDocument.instance().updateDocument(asmFile, asmTxt);
@@ -2935,7 +3292,7 @@ export class ProjectExplorer {
     }
 
     private updateSettingsView(prj: AbstractProject) {
-        this.dataProvider.UpdateView(this.dataProvider.getCacheItem(prj, TreeItemType.SETTINGS));
+        this.dataProvider.UpdateView(this.dataProvider.treeCache.getTreeItem(prj, TreeItemType.SETTINGS));
     }
 
     async ModifyOtherSettings(item: ProjTreeItem) {
@@ -2975,9 +3332,7 @@ export class ProjectExplorer {
                         value: prjConfig.name,
                         ignoreFocusOut: true,
                         placeHolder: 'Input project name',
-                        validateInput: (input: string): string | undefined => {
-                            return input.trim() === '' ? 'project name can not be empty' : undefined;
-                        }
+                        validateInput: (name) => AbstractProject.validateProjectName(name)
                     });
 
                     if (newName && newName !== prjConfig.name) {
@@ -2995,6 +3350,165 @@ export class ProjectExplorer {
                 break;
             default:
                 break;
+        }
+    }
+
+    async ImportSourceFromExtProject(item: ProjTreeItem) {
+
+        try {
+            //
+            // select importer
+            //
+            const scriptRoot = File.fromArray([ResManager.GetInstance().GetBinDir().path, 'scripts']);
+            const imptrFolder = File.fromArray([scriptRoot.path, 'importer']);
+            const items: any[] = [];
+
+            imptrFolder.GetList([/^(?:[^\.]+)\.(?:[^\.]+)\.js$/i])
+                .forEach((imptrFile) => {
+                    const m = /^(?<type>[^\.]+)\.(?<suffix>[^\.]+)\.js$/i.exec(imptrFile.name);
+                    if (m && m.groups) {
+                        items.push({
+                            label: m.groups['type'].replace(/\-/g, ' ').replace(/_/g, ' '),
+                            detail: `project file suffix: '${m.groups['suffix']}'`,
+                            suffix: m.groups['suffix'],
+                            file: imptrFile
+                        });
+                    }
+                });
+
+            const imptrType: any = await vscode.window.showQuickPick<vscode.QuickPickItem>(items, {
+                placeHolder: `Select an importer`,
+                canPickMany: false
+            });
+
+            if (imptrType == undefined) {
+                return;
+            }
+
+            const filter: any = {};
+            filter[<string>imptrType.label] = [imptrType.suffix];
+
+            const uri = await vscode.window.showOpenDialog({
+                openLabel: 'Import This File',
+                canSelectFiles: true,
+                filters: filter
+            });
+
+            if (uri == undefined) {
+                return;
+            }
+
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: `Importing Resources`
+            }, (progress) => {
+                return new Promise(async (resolve) => {
+                    try {
+                        progress.report({ message: `running importer ...` });
+
+                        //
+                        // run importer
+                        //
+                        const prjFile = new File(uri[0].fsPath);
+                        const imptrName = (<File>imptrType.file).noSuffixName;
+                        const cmds = ['--std', './importer/index.js', imptrName, prjFile.path];
+                        const result = child_process.execFileSync(`${scriptRoot.path}/qjs.exe`, cmds, { cwd: scriptRoot.path }).toString();
+
+                        let prjList: ImporterProjectInfo[];
+                        try {
+                            prjList = JSON.parse(result);
+                            if (!Array.isArray(prjList)) throw new Error('project list must be an array !');
+                        } catch (error) {
+                            throw new Error(`Import Error !, msg: '${result}'`);
+                        }
+
+                        //
+                        // select project
+                        //
+                        let prjInfo: ImporterProjectInfo | undefined;
+
+                        if (prjList.length > 0) {
+                            // if have multi project, select one to import
+                            if (prjList.length > 1) {
+                                const item = await vscode.window.showQuickPick<vscode.QuickPickItem>(
+                                    prjList.map((prj) => {
+                                        return {
+                                            label: prj.name,
+                                            description: prj.target,
+                                            detail: `${prjFile.name} -> ${prj.name}${prj.target ? (': ' + prj.target) : ''}`
+                                        }
+                                    }),
+                                    {
+                                        placeHolder: `Found ${prjList.length} sub project, select one to import`,
+                                        ignoreFocusOut: true,
+                                        canPickMany: false
+                                    }
+                                );
+                                if (item != undefined) {
+                                    const index = prjList.findIndex((prj) => prj.name == item.label);
+                                    if (index != -1) {
+                                        prjInfo = prjList[index];
+                                    }
+                                }
+                            }
+                            // if only have one, use it
+                            else {
+                                prjInfo = prjList[0];
+                            }
+                        }
+
+                        if (prjInfo == undefined) {
+                            resolve();
+                            return;
+                        }
+
+                        // make abs path to relative path
+                        const formatVirtualFolder = (vFolderRoot: VirtualFolder) => {
+                            const folderStack: VirtualFolder[] = [vFolderRoot];
+                            while (folderStack.length > 0) {
+                                const vFolder = folderStack.pop();
+                                if (vFolder) {
+                                    vFolder.files = vFolder.files.map((file) => {
+                                        return { path: prj.ToRelativePath(file.path) || file.path }
+                                    });
+                                    vFolder.folders.forEach((folder) => {
+                                        folderStack.push(folder)
+                                    });
+                                }
+                            }
+                        };
+
+                        //
+                        // start import project
+                        //
+                        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+                        const prjConf = prj.GetConfiguration();
+                        prjConf.config.virtualFolder = prjInfo.files;
+                        formatVirtualFolder(prjConf.config.virtualFolder);
+                        const deps = prjConf.CustomDep_getDependence();
+                        deps.incList = prjInfo.incList;
+                        deps.libList = [];
+                        deps.defineList = prjInfo.defineList;
+
+                        //
+                        // notify update
+                        //
+                        prj.getVirtualSourceManager().load();
+                        prjConf.CustomDep_NotifyChanged();
+
+                        // show message and exit
+                        progress.report({ message: `done !` });
+                        setTimeout(() => resolve(), 1000);
+
+                    } catch (error) {
+                        GlobalEvent.emit('error', error);
+                        resolve();
+                    }
+                });
+            });
+
+        } catch (error) {
+            GlobalEvent.emit('error', error);
         }
     }
 
@@ -3178,9 +3692,12 @@ export class ProjectExplorer {
 
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
 
+        // if it's a virtual file, we use virtual path
         if (item.type === TreeItemType.V_FILE_ITEM) {
             prj.excludeSourceFile((<VirtualFileInfo>item.val.obj).path);
         }
+
+        // if it's a fs file, we use fs path
         else if (item.val.value instanceof File) {
             prj.excludeSourceFile(item.val.value.path);
         }
@@ -3236,12 +3753,304 @@ export class ProjectExplorer {
         }
     }
 
+    async showFileInExplorer(item: ProjTreeItem) {
+
+        let file: File | undefined;
+
+        if (item.val.value instanceof File) { // if value is a file, use it
+            file = new File(NodePath.normalize(item.val.value.path));
+        }
+
+        if (file) {
+            vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(file.path));
+        }
+    }
+
+    // KV: <ymlFileName, {vFolderPath: string, project: EideProject}>
+    private prjFolderSourceChangesMap: Map<string, { vFolderPath: string, project: AbstractProject }> = new Map();
+    async modifySourcesPath(item: ProjTreeItem) {
+
+        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        const vSourceManager = prj.getVirtualSourceManager();
+
+        // virtual file
+        if (item.type === TreeItemType.V_FILE_ITEM ||
+            item.type === TreeItemType.V_EXCFILE_ITEM) {
+
+            const vInfo = <VirtualFileInfo>item.val.obj;
+            const path = await vscode.window.showInputBox({
+                value: vInfo.vFile.path,
+                ignoreFocusOut: true,
+                prompt: `Input a file path (allow relative path)`
+            });
+
+            if (path == undefined) {
+                return;
+            }
+
+            const repath = prj.ToRelativePath(path) || path;
+            const vFileInfo = vSourceManager.getFile(vInfo.path);
+            if (vFileInfo) {
+                vFileInfo.path = repath;
+                vSourceManager.notifyUpdateFile(vInfo.path);
+            } else {
+                GlobalEvent.emit('msg', newMessage('Error', `Internal error: can't get obj from virtual path: '${vInfo.path}'`));
+            }
+        }
+
+        // virtual folder
+        else if (item.type === TreeItemType.V_FOLDER ||
+            item.type === TreeItemType.V_FOLDER_ROOT) {
+
+            const vInfo = <VirtualFolderInfo>item.val.obj;
+            const vFolderInfo = vSourceManager.getFolder(vInfo.path);
+            if (vFolderInfo) {
+
+                const getOldFileNameByProject = (vPath: string, prj: AbstractProject) => {
+                    for (const KV of this.prjFolderSourceChangesMap) {
+                        if (KV[1].vFolderPath == vPath &&
+                            KV[1].project.getWsPath().toLowerCase() == prj.getWsPath().toLowerCase()) {
+                            return KV[0];
+                        }
+                    }
+                };
+
+                let tmpFile: File;
+
+                let oldName = getOldFileNameByProject(vInfo.path, prj);
+                if (oldName) {
+                    tmpFile = File.fromArray([os.tmpdir(), oldName]);
+                } else { // if file not exist, add to mapper
+                    tmpFile = File.fromArray([os.tmpdir(), `eide-vfolder-${Date.now()}.yaml`]);
+                    this.prjFolderSourceChangesMap.set(tmpFile.name, { vFolderPath: vInfo.path, project: prj });
+                }
+
+                const yamlLines: string[] = [
+                    `#`,
+                    `# You can modify files path by editing and saving this file (allow relative path).`,
+                    `#`,
+                    ``,
+                    yml.stringify(vFolderInfo.files, { indent: 4 })
+                ];
+
+                tmpFile.Write(yamlLines.join(os.EOL));
+                vscode.window.showTextDocument(vscode.Uri.file(tmpFile.path), { preview: false });
+
+            } else {
+                GlobalEvent.emit('msg', newMessage('Error', `Internal error: can't get obj from virtual path: '${vInfo.path}'`));
+            }
+        }
+    }
+
+    // callbk, if config file saved, apply the changes
+    private onFolderSourceYamlSaved(doc: vscode.TextDocument) {
+
+        const tmpFileName = NodePath.basename(doc.fileName);
+        const info = this.prjFolderSourceChangesMap.get(tmpFileName);
+
+        // skip irrelevant files
+        if (info == undefined) return;
+
+        // save to config
+        try {
+
+            const vSrcManger = info.project.getVirtualSourceManager();
+            const vFolderInfo = vSrcManger.getFolder(info.vFolderPath);
+            if (!vFolderInfo) {
+                throw new Error(`Virtual folder '${info.vFolderPath}' is not exist !`);
+            }
+
+            let fileList: VirtualFile[] = yml.parse(doc.getText());
+            if (fileList != undefined && !Array.isArray(fileList)) {
+                throw new Error(`Type error, files list must be an array, please check your yaml config file !`);
+            }
+
+            // convert to repath
+            if (fileList) {
+                fileList = fileList.map((vFile) => {
+                    return {
+                        path: info.project.ToRelativePath(vFile.path) || vFile.path
+                    };
+                });
+            }
+
+            vFolderInfo.files = fileList || [];
+            vSrcManger.notifyUpdateFolder(info.vFolderPath);
+
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+        }
+    }
+
+    // callbk, if config file closed, rm tmp file
+    private onFolderSourceYamlClosed(doc: vscode.TextDocument) {
+
+        // skip irrelevant files
+        const tmpFileName = NodePath.basename(doc.fileName);
+        if (!this.prjFolderSourceChangesMap.has(tmpFileName)) return;
+
+        // do 
+        try {
+            this.prjFolderSourceChangesMap.delete(tmpFileName); // remove from mapper
+            fs.unlinkSync(`${os.tmpdir()}/${tmpFileName}`);
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+        }
+    }
+
     CopyItemValue(item: ProjTreeItem) {
         if (item.val.value instanceof File) {
             vscode.env.clipboard.writeText(item.val.value.path);
         } else {
             vscode.env.clipboard.writeText(item.val.value);
         }
+    }
+
+    async showFilesOptions(item: ProjTreeItem) {
+        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        const optFile = prj.getFilesOptionsFile();
+        vscode.window.showTextDocument(vscode.Uri.parse(optFile.ToUri()), { preview: true });
+    }
+
+    // callbk, if config file saved, apply the changes
+    private onCustomDepYamlSaved(doc: vscode.TextDocument) {
+
+        const tmpFileName = NodePath.basename(doc.fileName);
+        const prj = this.prjCusDepChangesMap.get(tmpFileName);
+
+        // skip irrelevant files
+        if (prj == undefined) return;
+
+        // save to config
+        try {
+
+            const cusDep = prj.GetConfiguration().CustomDep_getDependence();
+            const cfg = yml.parse(doc.getText());
+
+            // inc list
+            if (Array.isArray(cfg.IncludeFolders)) {
+                const li = cfg.IncludeFolders
+                    .filter((path: any) => typeof (path) == 'string')
+                    .map((path: string) => prj.ToAbsolutePath(path));
+                cusDep.incList = ArrayDelRepetition(li);
+            } else {
+                cusDep.incList = [];
+            }
+
+            // lib list
+            if (Array.isArray(cfg.LibraryFolders)) {
+                const li = cfg.LibraryFolders
+                    .filter((path: any) => typeof (path) == 'string')
+                    .map((path: string) => prj.ToAbsolutePath(path));
+                cusDep.libList = ArrayDelRepetition(li);
+            } else {
+                cusDep.libList = [];
+            }
+
+            // macro list
+            if (Array.isArray(cfg.Defines)) {
+                const li = cfg.Defines
+                    .filter((path: any) => typeof (path) == 'string');
+                cusDep.defineList = ArrayDelRepetition(li);
+            } else {
+                cusDep.defineList = [];
+            }
+
+            prj.GetConfiguration().CustomDep_NotifyChanged();
+
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+        }
+    }
+
+    // callbk, if config file closed, rm tmp file
+    private onCustomDepYamlClosed(doc: vscode.TextDocument) {
+
+        // skip irrelevant files
+        const tmpFileName = NodePath.basename(doc.fileName);
+        if (!this.prjCusDepChangesMap.has(tmpFileName)) return;
+
+        // do 
+        try {
+            this.prjCusDepChangesMap.delete(tmpFileName); // remove from mapper
+            fs.unlinkSync(`${os.tmpdir()}/${tmpFileName}`);
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+        }
+    }
+
+    // KV: <ymlFileName, EideProject>
+    private prjCusDepChangesMap: Map<string, AbstractProject> = new Map();
+    async ModifyCustomDependence(item: ProjTreeItem) {
+
+        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        const cusDep = prj.GetConfiguration().CustomDep_getDependence();
+
+        // gen deps yaml content
+        const yamlLines: string[] = [
+            `#`,
+            `# You can modify the configuration by editing and saving this file.`,
+            `#`
+        ];
+
+        // fill data
+        {
+            // push include path
+            yamlLines.push(
+                ``,
+                `# Header Include Path`,
+                `IncludeFolders:`,
+                `#   - ./Your/Include/Folder/Path`
+            );
+            cusDep.incList.forEach((path) => {
+                yamlLines.push(`    - ${prj.ToRelativePath(path) || path}`)
+            });
+
+            // push lib folder path
+            yamlLines.push(
+                ``,
+                `# Library Search Path`,
+                `LibraryFolders:`,
+                `#   - ./Your/Library/Path`
+            );
+            cusDep.libList.forEach((path) => {
+                yamlLines.push(`    - ${prj.ToRelativePath(path) || path}`)
+            });
+
+            // push macros
+            yamlLines.push(
+                ``,
+                `# Preprocessor Definitions`,
+                `Defines:`,
+                `#   - TEST=1`
+            );
+            cusDep.defineList.forEach((macro) => {
+                yamlLines.push(`    - ${macro}`)
+            });
+        }
+
+        const getTmpPathByProject = (prj: AbstractProject) => {
+            for (const KV of this.prjCusDepChangesMap) {
+                if (KV[1].getWsPath().toLowerCase() == prj.getWsPath().toLowerCase()) {
+                    return KV[0];
+                }
+            }
+        };
+
+        // write and open file
+        const yamlStr = yamlLines.join(os.EOL);
+        const oldName = getTmpPathByProject(prj);
+        let tmpFile: File;
+
+        if (oldName) {
+            tmpFile = File.fromArray([os.tmpdir(), oldName]);
+        } else {// if file not exist, add to mapper
+            tmpFile = File.fromArray([os.tmpdir(), `eide-deps-${Date.now()}.yaml`]);
+            this.prjCusDepChangesMap.set(tmpFile.name, prj);
+        }
+
+        tmpFile.Write(yamlStr);
+        vscode.window.showTextDocument(vscode.Uri.parse(tmpFile.ToUri()), { preview: false });
     }
 
     RemoveDependenceItem(item: ProjTreeItem) {
@@ -3366,12 +4175,75 @@ export class ProjectExplorer {
             };
 
             try {
+
+                // try to show it by eide, if failed, show it 
+                // by vscode default api
+                if (this.showBinaryFiles(file, isPreview)) return;
+
                 /* We need use 'vscode.open' command, not 'showTextDocument' API, 
                  * because API can't open bin file */
                 vscode.commands.executeCommand('vscode.open', vsUri, { preview: isPreview });
+
             } catch (error) {
                 GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
             }
+        }
+    }
+
+    private showBinaryFiles(binFile: File, isPreview?: boolean): boolean | undefined {
+
+        try {
+
+            const suffix = binFile.suffix.toLowerCase();
+
+            // show armcc axf file
+            if (suffix == '.axf') {
+
+                const fromelf = File.fromArray([
+                    SettingManager.GetInstance().getArmcc5Dir().path, 'bin', 'fromelf.exe'
+                ]);
+
+                if (!fromelf.IsFile()) return;
+
+                const cont = child_process
+                    .execFileSync(fromelf.path, ['--text', '-e', binFile.path])
+                    .toString();
+
+                const vDoc = VirtualDocument.instance();
+                const docName = `${binFile.path}.info`;
+                vDoc.updateDocument(docName, cont);
+
+                const uri = vscode.Uri.parse(vDoc.getUriByPath(docName));
+                vscode.window.showTextDocument(uri, { preview: isPreview });
+
+                return true;
+            }
+
+            // show gnu elf file
+            else if (suffix == '.elf') {
+
+                const readelf = File.fromArray([
+                    ResManager.GetInstance().getBuilderDir(), 'readelf.exe'
+                ]);
+
+                if (!readelf.IsFile()) return;
+
+                const cont = child_process
+                    .execFileSync(readelf.path, ['-e', binFile.path])
+                    .toString();
+
+                const vDoc = VirtualDocument.instance();
+                const docName = `${binFile.path}.info`;
+                vDoc.updateDocument(docName, cont);
+
+                const uri = vscode.Uri.parse(vDoc.getUriByPath(docName));
+                vscode.window.showTextDocument(uri, { preview: isPreview });
+
+                return true;
+            }
+
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
     }
 }

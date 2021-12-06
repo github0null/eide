@@ -25,15 +25,16 @@
 import * as vscode from 'vscode';
 import * as crypto from 'crypto';
 import * as child_process from 'child_process';
+import * as fs from 'fs';
 
 import { WorkspaceManager } from "./WorkspaceManager";
 import { CmdLineHandler } from "./CmdLineHandler";
-import { GlobalEvent } from "./GlobalEvents";
 import { ExceptionToMessage } from "./Message";
 import { NetRequest, NetResponse } from '../lib/node-utility/NetRequest';
 import { File } from '../lib/node-utility/File';
+import { GitFileInfo } from './WebInterface/GithubInterface';
 
-export function runShellCommand(title: string, commandLine: string, cmdPath?: string, env?: any) {
+export function runShellCommand(title: string, commandLine: string, cmdPath?: string, env?: any): Error | undefined {
     try {
         if (WorkspaceManager.getInstance().hasWorkspaces()) {
             // use task
@@ -54,7 +55,7 @@ export function runShellCommand(title: string, commandLine: string, cmdPath?: st
             terminal.sendText(CmdLineHandler.DeleteCmdPrefix(commandLine));
         }
     } catch (error) {
-        GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+        return error;
     }
 }
 
@@ -110,12 +111,28 @@ export const toolsUrlMap = {
 };
 
 const hostMap: any = {
-    'api.github.com': 'api-github.em-ide.com',
-    'raw.githubusercontent.com': 'raw-github.em-ide.com'
+    'api.github.com': [
+        'api-github.em-ide.com'
+    ],
+    'raw.githubusercontent.com': [
+        'raw-github.em-ide.com',
+        'raw-github.github0null.io'
+    ]
 };
 
 export function redirectHost(url: string) {
-    for (const host in hostMap) { url = url.replace(host, hostMap[host]); }
+
+    // replace host
+    for (const host in hostMap) {
+        const hostList = <string[]>hostMap[host];
+        if (hostList.length > 1) {
+            const idx = Math.floor(Math.random() * hostList.length); // random index
+            url = url.replace(host, hostList[idx]);
+        } else {
+            url = url.replace(host, hostList[0]);
+        }
+    }
+
     return url;
 }
 
@@ -248,4 +265,129 @@ export async function getDownloadUrlFromGit(repo: string, folder: string, fileNa
 
         resolve(fInfo);
     });
+}
+
+export async function readGithubRepoFolder(remoteUrl_: string, token?: vscode.CancellationToken): Promise<GitFileInfo[] | Error> {
+
+    // URL: https://api.github.com/repos/github0null/eide-doc/contents/eide-template-list
+    const remoteUrl = remoteUrl_.replace(/^http[s]?:\/\//, '');
+    const netReq = new NetRequest();
+
+    let reqError: Error | undefined;
+    netReq.on('error', (err) => {
+        (<Error>err).message = `Failed to connect '${remoteUrl}'`;
+        reqError = err;
+    });
+
+    const pathArr = (remoteUrl).split('/');
+    const hostName = pathArr[0];
+    const path = '/' + pathArr.slice(1).join('/');
+
+    token?.onCancellationRequested(() => {
+        netReq.emit('abort');
+    });
+
+    const res = await netReq.Request<any, any>({
+        host: hostName,
+        path: path,
+        timeout: 3000,
+        headers: { 'User-Agent': 'Mozilla/5.0' }
+    }, 'https');
+
+    if (!res.success) {
+        const errMsg = res.msg ? `, msg: ${res.msg}` : '';
+        return new Error(`Can't connect to github repository !${errMsg}`);
+    } else if (res.content === undefined) {
+        const errMsg = res.msg ? `, msg: ${res.msg}` : '';
+        return new Error(`Can't get content from github repository !${errMsg}`);
+    }
+
+    if (reqError) {
+        return reqError;
+    }
+
+    return <GitFileInfo[]>res.content;
+}
+
+export function genGithubHash(f: File | Buffer): string {
+    if (f instanceof File) {
+        const header = Buffer.from('blob ' + f.getSize() + '\0');
+        const buf = Buffer.concat([header, fs.readFileSync(f.path)], header.length + f.getSize());
+        const hash = crypto.createHash('sha1');
+        hash.update(buf);
+        return hash.digest('hex');
+    } else {
+        const header = Buffer.from('blob ' + f.length + '\0');
+        const buf = Buffer.concat([header, f], header.length + f.length);
+        const hash = crypto.createHash('sha1');
+        hash.update(buf);
+        return hash.digest('hex');
+    }
+}
+
+interface FileCacheInfo {
+
+    version: string;
+
+    files: { name: string; sha: string; }[];
+}
+
+export class FileCache {
+
+    private folder: File;
+    private cacheFile: File;
+    private cache: FileCacheInfo;
+
+    public constructor(rootFolder: File) {
+        this.folder = rootFolder;
+        this.cacheFile = File.fromArray([rootFolder.path, 'cache.json']);
+        this.cache = this.cacheFile.IsFile() ? JSON.parse(this.cacheFile.Read()) : { version: '1.0', files: [] };
+    }
+
+    public add(name: string, sha: string) {
+
+        const idx = this.cache.files.findIndex((inf) => inf.name == name);
+
+        if (idx != -1) {
+            this.cache.files[idx].sha = sha;
+        } else {
+            this.cache.files.push({
+                name: name,
+                sha: sha
+            });
+        }
+    }
+
+    public get(name: string, sha: string): File | undefined {
+
+        const idx = this.cache.files.findIndex((inf) => {
+            return inf.name == name && inf.sha == sha;
+        });
+
+        if (idx == -1) {
+            return undefined;
+        }
+
+        const f = File.fromArray([this.folder.path, this.cache.files[idx].name]);
+        if (!f.IsFile()) {
+            return undefined;
+        }
+
+        return f;
+    }
+
+    public clear(name?: string) {
+        if (name) {
+            const idx = this.cache.files.findIndex((inf) => inf.name == name);
+            if (idx != -1) {
+                this.cache.files.splice(idx, 1);
+            }
+        } else {
+            this.cache.files = [];
+        }
+    }
+
+    public save() {
+        this.cacheFile.Write(JSON.stringify(this.cache));
+    }
 }

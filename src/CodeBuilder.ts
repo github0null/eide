@@ -22,6 +22,12 @@
 	SOFTWARE.
 */
 
+import * as fs from 'fs';
+import * as vscode from 'vscode';
+import * as NodePath from 'path';
+import * as events from 'events';
+import * as globmatch from 'micromatch'
+
 import { AbstractProject } from "./EIDEProject";
 import { ResManager } from "./ResManager";
 import { File } from "../lib/node-utility/File";
@@ -35,9 +41,6 @@ import { GlobalEvent } from "./GlobalEvents";
 import { ExceptionToMessage, newMessage } from "./Message";
 import { CmdLineHandler } from "./CmdLineHandler";
 
-import * as fs from 'fs';
-import * as vscode from 'vscode';
-import * as NodePath from 'path';
 import { ArrayDelRepetition } from "../lib/node-utility/Utility";
 import { DependenceManager } from "./DependenceManager";
 import { WorkspaceManager } from "./WorkspaceManager";
@@ -45,7 +48,6 @@ import { ToolchainName } from "./ToolchainManager";
 import { md5, sha256 } from "./utility";
 import { MakefileGen } from "./Makefile";
 import { append2SysEnv } from "./Platform";
-import * as events from 'events';
 import { FileWatcher } from "../lib/node-utility/FileWatcher";
 
 export interface BuildOptions {
@@ -68,6 +70,8 @@ export interface BuilderParams {
     ram?: number;
     rom?: number;
     sourceList: string[];
+    sourceParams?: { [name: string]: string; };
+    sourceParamsMtime?: number;
     incDirs: string[];
     libDirs: string[];
     defines: string[];
@@ -101,23 +105,97 @@ export abstract class CodeBuilder {
         this._event.emit(event, arg);
     }
 
-    getSourceList(): string[] {
+    genSourceInfo(prevBuilderParams: BuilderParams): {
+        sources: string[],
+        params?: { [name: string]: string; }
+        paramsModTime?: number;
+    } {
 
-        const srcList: string[] = [];
+        const srcList: { path: string, virtualPath?: string; }[] = [];
+        const srcParams: { [name: string]: string; } = {};
         const fGoups = this.project.getFileGroups();
         const filter = AbstractProject.getSourceFileFilter();
 
+        // filter source files
         for (const group of fGoups) {
             if (group.disabled) continue; // skip disabled group
             for (const source of group.files) {
                 if (source.disabled) continue; // skip disabled file
                 if (!filter.some((reg) => reg.test(source.file.path))) continue; // skip non-source
                 const rePath = this.project.ToRelativePath(source.file.path, false);
-                srcList.push(rePath || source.file.path);
+                const fInfo: any = { path: rePath || source.file.path }
+                if (AbstractProject.isVirtualSourceGroup(group)) {
+                    fInfo.virtualPath = `${group.name}/${source.file.name}`
+                }
+                srcList.push(fInfo);
             }
         }
 
-        return srcList;
+        // append user options for files
+        try {
+            const options = this.project.getFilesOptions();
+
+            // parser
+            const matcher = (parttenInfo: any, fieldName: string) => {
+                srcList.forEach((srcInf: any) => {
+                    if (!srcInf[fieldName]) return; // skip if not exist
+                    for (const expr in parttenInfo) {
+                        const path = (<string>srcInf[fieldName]).replace(/\\/g, '/');
+                        if (globmatch.isMatch(path, expr)) {
+                            const val = parttenInfo[expr]?.trim().replace(/(?:\r\n|\n)$/, '')
+                            if (srcParams[srcInf.path]) {
+                                srcParams[srcInf.path] += ` ${val || ''}`
+                            } else {
+                                srcParams[srcInf.path] = val || '';
+                            }
+                        }
+                    }
+                });
+            };
+
+            if (options) {
+
+                // virtual folder files
+                if (typeof options?.virtualPathFiles == 'object') {
+                    const parttenInfo = options?.virtualPathFiles;
+                    matcher(parttenInfo, 'virtualPath');
+                }
+
+                // filesystem files
+                if (typeof options?.files == 'object') {
+                    const parttenInfo = options?.files;
+                    matcher(parttenInfo, 'path');
+                }
+
+                // if src options is modified to null but old is not null,
+                // we need make source recompile
+                const oldSrcParams = prevBuilderParams.sourceParams;
+                for (const path in oldSrcParams) {
+                    if (srcParams[path] == undefined && oldSrcParams[path] != undefined &&
+                        oldSrcParams[path] != '') {
+                        srcParams[path] = ""; // make it empty to trigger recompile 
+                    }
+                }
+            }
+
+        } catch (err) {
+            GlobalEvent.emit('msg', ExceptionToMessage(err, 'Hidden'));
+            GlobalEvent.emit('msg', newMessage('Warning', `Append files options failed !, msg: ${err.message || ''}`));
+        }
+
+        let mTimeMs: number | undefined;
+
+        try {
+            mTimeMs = fs.statSync(this.project.getFilesOptionsFile().path).mtimeMs
+        } catch (error) {
+            // do nothing
+        }
+
+        return {
+            sources: srcList.map((inf) => inf.path),
+            params: srcParams,
+            paramsModTime: mTimeMs
+        }
     }
 
     getIncludeDirs(): string[] {
@@ -270,6 +348,9 @@ export abstract class CodeBuilder {
             .compileConfigModel.getOptions(this.project.getEideDir().path, config);
         const memMaxSize = this.getMaxSize();
         const modeList: string[] = [];
+        const oldParamsPath = `${paramsPath}.old`;
+        const prevParams: BuilderParams = File.IsFile(oldParamsPath) ? JSON.parse(fs.readFileSync(oldParamsPath, 'utf8')) : {};
+        const sourceInfo = this.genSourceInfo(prevParams);
 
         const builderOptions: BuilderParams = {
             name: config.name,
@@ -285,7 +366,9 @@ export abstract class CodeBuilder {
             rom: memMaxSize?.rom,
             incDirs: this.getIncludeDirs().map((incPath) => { return this.project.ToRelativePath(incPath, false) || incPath; }),
             libDirs: this.getLibDirs().map((libPath) => { return this.project.ToRelativePath(libPath, false) || libPath; }),
-            sourceList: this.getSourceList().sort(),
+            sourceList: sourceInfo.sources.sort(),
+            sourceParams: sourceInfo.params,
+            sourceParamsMtime: sourceInfo.paramsModTime,
             defines: this.getDefineList(),
             options: JSON.parse(JSON.stringify(compileOptions)),
             env: this.project.getProjectEnv()
@@ -321,9 +404,6 @@ export abstract class CodeBuilder {
         // check whether need rebuild project
         if (this.isRebuild() == false) {
             try {
-                const prevParams: BuilderParams =
-                    File.IsFile(paramsPath) ? JSON.parse(fs.readFileSync(paramsPath, 'utf8')) : {};
-
                 // not found hash from old params file
                 if (prevParams.sha == undefined) {
                     this.enableRebuild();
@@ -363,11 +443,7 @@ export abstract class CodeBuilder {
         }
 
         // write project build params
-        if (this.useShowParamsMode) {
-            fs.writeFileSync(paramsPath, JSON.stringify(builderOptions, undefined, 4));
-        } else {
-            fs.writeFileSync(paramsPath, JSON.stringify(builderOptions));
-        }
+        fs.writeFileSync(paramsPath, JSON.stringify(builderOptions, undefined, 4));
 
         // generate makefile params
         if (settingManager.isGenerateMakefileParams()) {
@@ -379,12 +455,19 @@ export abstract class CodeBuilder {
             }
         }
 
-        return [
+        let cmds = [
             '-b', binDir,
             '-M', toolchain.modelName,
             '-p', paramsPath,
             '-m', modeList.join('-')
         ];
+
+        const extraCmd = settingManager.getBuilderAdditionalCommandLine()?.trim();
+        if (extraCmd) {
+            cmds = cmds.concat(extraCmd.split(/\s+/));
+        }
+
+        return cmds;
     }
 
     private getBuilderExe(): File {
@@ -805,14 +888,13 @@ class ARMCodeBuilder extends CodeBuilder {
             // convert elf
             if (['AC5', 'AC6'].includes(config.toolchain) && settingManager.IsConvertAxf2Elf()) {
 
-                const toolFolderName = config.toolchain === 'AC6' ? 'ARMCLANG' : 'ARMCC';
-                const tool_root_folder = `${toolchain.getToolchainDir().path}\\${toolFolderName}`;
+                const tool_root_folder = toolchain.getToolchainDir().path;
                 const ouput_path = `\${outDir}\\${config.name}`;
                 const axf2elf_log = `\${outDir}\\axf2elf.log`;
 
                 extraCommands.push({
                     name: 'axf to elf',
-                    command: `"\${exeDir}\\mono.exe" "\${exeDir}\\axf2elf.exe" -d "${tool_root_folder}" -b "${ouput_path}.bin" -i "${ouput_path}.axf" -o "${ouput_path}.elf" > "${axf2elf_log}"`
+                    command: `"\${BuilderFolder}\\mono.exe" "\${BuilderFolder}\\axf2elf.exe" -d "${tool_root_folder}" -b "${ouput_path}.bin" -i "${ouput_path}.axf" -o "${ouput_path}.elf" > "${axf2elf_log}"`
                 });
             }
 

@@ -38,6 +38,7 @@ bin/builder/*.xml
 bin/builder/*.exe.config
 bin/tools
 docs
+test
 
 # shell script
 *.sh

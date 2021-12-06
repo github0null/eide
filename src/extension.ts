@@ -1,25 +1,25 @@
 /*
-	MIT License
+    MIT License
 
-	Copyright (c) 2019 github0null
+    Copyright (c) 2019 github0null
 
-	Permission is hereby granted, free of charge, to any person obtaining a copy
-	of this software and associated documentation files (the "Software"), to deal
-	in the Software without restriction, including without limitation the rights
-	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-	copies of the Software, and to permit persons to whom the Software is
-	furnished to do so, subject to the following conditions:
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
 
-	The above copyright notice and this permission notice shall be included in all
-	copies or substantial portions of the Software.
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
 
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-	SOFTWARE.
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
 */
 
 import * as vscode from 'vscode';
@@ -27,6 +27,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as unzipper from 'unzipper';
 import * as NodePath from 'path';
+import * as ChildProcess from 'child_process';
 
 import { GlobalEvent } from './GlobalEvents';
 import { OperationExplorer } from './OperationExplorer';
@@ -77,97 +78,114 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('eide.c51ToSdcc', () => c51ToSDCC()));
     subscriptions.push(vscode.commands.registerCommand('eide.ReloadJlinkDevs', () => reloadJlinkDevices()));
     subscriptions.push(vscode.commands.registerCommand('eide.ReloadStm8Devs', () => reloadStm8Devices()));
-
-    // other commands
     subscriptions.push(vscode.commands.registerCommand('eide.selectBaudrate', () => onSelectSerialBaudrate()));
 
+    // operations
     const operationExplorer = new OperationExplorer(context);
-    subscriptions.push(vscode.commands.registerCommand('Operation.Open', () => operationExplorer.OnOpenProject()));
-    subscriptions.push(vscode.commands.registerCommand('Operation.Create', () => operationExplorer.OnCreateProject()));
-    subscriptions.push(vscode.commands.registerCommand('Operation.Import', () => operationExplorer.OnImportProject()));
-    subscriptions.push(vscode.commands.registerCommand('Operation.SetToolchainPath', () => operationExplorer.OnSetToolchainPath()));
-    subscriptions.push(vscode.commands.registerCommand('Operation.OpenSerialPortMonitor', () => operationExplorer.onOpenSerialPortMonitor()));
-    subscriptions.push(vscode.commands.registerCommand('Operation.openSettings', () => SettingManager.jumpToSettings('@ext:cl.eide')));
-    /* export commands */
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.Open', () => operationExplorer.OnOpenProject()));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.Create', () => operationExplorer.OnCreateProject()));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.Import', () => operationExplorer.OnImportProject()));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.SetToolchainPath', () => operationExplorer.OnSetToolchainPath()));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.OpenSerialPortMonitor', () => operationExplorer.onOpenSerialPortMonitor()));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.openSettings', () => SettingManager.jumpToSettings('@ext:cl.eide')));
+
+    // operations user cmds
     subscriptions.push(vscode.commands.registerCommand('eide.operation.install_toolchain', () => operationExplorer.OnSetToolchainPath()));
     subscriptions.push(vscode.commands.registerCommand('eide.operation.import_project', () => operationExplorer.OnImportProject()));
     subscriptions.push(vscode.commands.registerCommand('eide.operation.new_project', () => operationExplorer.OnCreateProject()));
 
+    // projects
     projectExplorer = new ProjectExplorer(context);
-
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.workspace.build', () => projectExplorer.buildWorkspace()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.workspace.rebuild', () => projectExplorer.buildWorkspace(true)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.workspace.open.config', () => projectExplorer.openWorkspaceConfig()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.workspace.make.template', (item) => projectExplorer.ExportToTemplate(undefined, true)));
 
+    // project user cmds
     subscriptions.push(vscode.commands.registerCommand('eide.project.rebuild', (item) => projectExplorer.BuildSolution(item)));
     subscriptions.push(vscode.commands.registerCommand('eide.project.build', (item) => projectExplorer.BuildSolution(item, { useFastMode: true })));
     subscriptions.push(vscode.commands.registerCommand('eide.project.clean', (item) => projectExplorer.BuildClean(item)));
     subscriptions.push(vscode.commands.registerCommand('eide.project.uploadToDevice', (item) => projectExplorer.UploadToDevice(item)));
     subscriptions.push(vscode.commands.registerCommand('eide.reinstall.binaries', () => checkAndInstallBinaries(context, true)));
+    subscriptions.push(vscode.commands.registerCommand('eide.project.flash.erase.all', (item) => projectExplorer.UploadToDevice(item, true)));
 
-    subscriptions.push(vscode.commands.registerCommand('_project.historyRecord', () => projectExplorer.openHistoryRecords()));
-    subscriptions.push(vscode.commands.registerCommand('_project.clearHistoryRecord', () => projectExplorer.clearAllHistoryRecords()));
-    subscriptions.push(vscode.commands.registerCommand('_project.showBuildParams', (item) => projectExplorer.BuildSolution(item, { useDebug: true })));
-    subscriptions.push(vscode.commands.registerCommand('_project.generate.makefile', (item) => projectExplorer.generateMakefile(item)));
+    // operations bar
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.historyRecord', () => projectExplorer.openHistoryRecords()));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.clearHistoryRecord', () => projectExplorer.clearAllHistoryRecords()));
 
-    subscriptions.push(vscode.commands.registerCommand('_project.setActive', (item) => projectExplorer.setActiveProject(item)));
-    subscriptions.push(vscode.commands.registerCommand('_project.close', (item) => projectExplorer.Close(item)));
-    subscriptions.push(vscode.commands.registerCommand('_project.saveAll', () => projectExplorer.SaveAll()));
-    subscriptions.push(vscode.commands.registerCommand('_project.refresh', () => projectExplorer.Refresh()));
-    subscriptions.push(vscode.commands.registerCommand('_project.switchMode', (item) => projectExplorer.switchTarget(item)));
-    subscriptions.push(vscode.commands.registerCommand('_project.exportAsTemplate', (item) => projectExplorer.ExportToTemplate(item)));
+    // project
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.showBuildParams', (item) => projectExplorer.BuildSolution(item, { useDebug: true })));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.generate.makefile', (item) => projectExplorer.generateMakefile(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.setActive', (item) => projectExplorer.setActiveProject(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.close', (item) => projectExplorer.Close(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.saveAll', () => projectExplorer.SaveAll()));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.refresh', () => projectExplorer.Refresh()));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.switchMode', (item) => projectExplorer.switchTarget(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.exportAsTemplate', (item) => projectExplorer.ExportToTemplate(item)));
 
-    subscriptions.push(vscode.commands.registerCommand('_project.addSrcDir', (item) => projectExplorer.AddSrcDir(item)));
-    subscriptions.push(vscode.commands.registerCommand('_project.removeSrcDir', (item) => projectExplorer.RemoveSrcDir(item)));
-    subscriptions.push(vscode.commands.registerCommand('_project.sourceRoot.refresh', (item) => projectExplorer.refreshSrcRoot(item)));
+    // project explorer
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.addSrcDir', (item) => projectExplorer.AddSrcDir(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.removeSrcDir', (item) => projectExplorer.RemoveSrcDir(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.sourceRoot.refresh', (item) => projectExplorer.refreshSrcRoot(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.modify.files.options', (item) => projectExplorer.showFilesOptions(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.import.ext.source.struct', (item) => projectExplorer.ImportSourceFromExtProject(item)));
 
-    subscriptions.push(vscode.commands.registerCommand('_project.source.filesystem_folder_add_file', (item) => projectExplorer.fs_folderAddFile(item)));
-    subscriptions.push(vscode.commands.registerCommand('_project.source.filesystem_folder_add', (item) => projectExplorer.fs_folderAdd(item)));
+    // filesystem files
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.filesystem_folder_add_file', (item) => projectExplorer.fs_folderAddFile(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.filesystem_folder_add', (item) => projectExplorer.fs_folderAdd(item)));
 
-    subscriptions.push(vscode.commands.registerCommand('_project.source.virtual_folder_add_file', (item) => projectExplorer.Virtual_folderAddFile(item)));
-    subscriptions.push(vscode.commands.registerCommand('_project.source.virtual_folder_add', (item) => projectExplorer.Virtual_folderAdd(item)));
-    subscriptions.push(vscode.commands.registerCommand('_project.source.virtual_folder_remove', (item) => projectExplorer.Virtual_removeFolder(item)));
-    subscriptions.push(vscode.commands.registerCommand('_project.source.virtual_folder_rename', (item) => projectExplorer.Virtual_renameFolder(item)));
-    subscriptions.push(vscode.commands.registerCommand('_project.source.virtual_file_remove', (item) => projectExplorer.Virtual_removeFile(item)));
+    // virtual files
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.virtual_folder_add_file', (item) => projectExplorer.Virtual_folderAddFile(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.virtual_folder_add', (item) => projectExplorer.Virtual_folderAdd(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.virtual_folder_remove', (item) => projectExplorer.Virtual_removeFolder(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.virtual_folder_rename', (item) => projectExplorer.Virtual_renameFolder(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.virtual_file_remove', (item) => projectExplorer.Virtual_removeFile(item)));
 
-    subscriptions.push(vscode.commands.registerCommand('_project.excludeSource', (item) => projectExplorer.ExcludeSourceFile(item)));
-    subscriptions.push(vscode.commands.registerCommand('_project.unexcludeSource', (item) => projectExplorer.UnexcludeSourceFile(item)));
-    subscriptions.push(vscode.commands.registerCommand('_project.excludeFolder', (item) => projectExplorer.ExcludeFolder(item)));
-    subscriptions.push(vscode.commands.registerCommand('_project.unexcludeFolder', (item) => projectExplorer.UnexcludeFolder(item)));
+    // file other operations
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.excludeSource', (item) => projectExplorer.ExcludeSourceFile(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.unexcludeSource', (item) => projectExplorer.UnexcludeSourceFile(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.excludeFolder', (item) => projectExplorer.ExcludeFolder(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.unexcludeFolder', (item) => projectExplorer.UnexcludeFolder(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.file.show.dir', (item) => projectExplorer.showFileInExplorer(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.modify.path', (item) => projectExplorer.modifySourcesPath(item)));
 
-    subscriptions.push(vscode.commands.registerCommand('_project.installCMSISHeaders', (item) => projectExplorer.installCMSISHeaders(item)));
-    subscriptions.push(vscode.commands.registerCommand('_project.removePackage', (item) => projectExplorer.UninstallKeilPackage(item)));
-    subscriptions.push(vscode.commands.registerCommand('_project.addPackage', (item) => projectExplorer.InstallKeilPackage(item.val.projectIndex)));
-    subscriptions.push(vscode.commands.registerCommand('_project.exportXml', (item) => projectExplorer.ExportKeilXml(item.val.projectIndex)));
-    subscriptions.push(vscode.commands.registerCommand('_project.setDevice', (item) => projectExplorer.SetDevice(item.val.projectIndex)));
-    subscriptions.push(vscode.commands.registerCommand('_project.modifyCompileConfig', (item) => projectExplorer.ModifyCompileConfig(item)));
-    subscriptions.push(vscode.commands.registerCommand('_project.switchToolchain', (item) => projectExplorer.onSwitchCompileTools(item)));
+    // package
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.installCMSISHeaders', (item) => projectExplorer.installCMSISHeaders(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.removePackage', (item) => projectExplorer.UninstallKeilPackage(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.addPackage', (item) => projectExplorer.InstallKeilPackage(item.val.projectIndex)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.exportXml', (item) => projectExplorer.ExportKeilXml(item.val.projectIndex)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.setDevice', (item) => projectExplorer.SetDevice(item.val.projectIndex)));
 
-    subscriptions.push(vscode.commands.registerCommand('_project.modifyUploadConfig', (item) => projectExplorer.ModifyUploadConfig(item)));
-    subscriptions.push(vscode.commands.registerCommand('_project.switchUploader', (item) => projectExplorer.switchUploader(item)));
+    // builder
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.modifyCompileConfig', (item) => projectExplorer.ModifyCompileConfig(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.switchToolchain', (item) => projectExplorer.onSwitchCompileTools(item)));
 
-    subscriptions.push(vscode.commands.registerCommand('_project.addIncludeDir', (item) => projectExplorer.AddIncludeDir(item.val.projectIndex)));
-    subscriptions.push(vscode.commands.registerCommand('_project.addDefine', (item) => projectExplorer.AddDefine(item.val.projectIndex)));
-    subscriptions.push(vscode.commands.registerCommand('_project.addLibDir', (item) => projectExplorer.AddLibDir(item.val.projectIndex)));
-    subscriptions.push(vscode.commands.registerCommand('_project.showIncludeDir', (item) => projectExplorer.showIncludeDir(item.val.projectIndex)));
-    subscriptions.push(vscode.commands.registerCommand('_project.showDefine', (item) => projectExplorer.showDefine(item.val.projectIndex)));
-    subscriptions.push(vscode.commands.registerCommand('_project.showLibDir', (item) => projectExplorer.showLibDir(item.val.projectIndex)));
+    // flasher
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.modifyUploadConfig', (item) => projectExplorer.ModifyUploadConfig(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.switchUploader', (item) => projectExplorer.switchUploader(item)));
 
-    subscriptions.push(vscode.commands.registerCommand('_project.modifyOtherSettings', (item) => projectExplorer.ModifyOtherSettings(item)));
+    // project deps
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.addIncludeDir', (item) => projectExplorer.AddIncludeDir(item.val.projectIndex)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.addDefine', (item) => projectExplorer.AddDefine(item.val.projectIndex)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.addLibDir', (item) => projectExplorer.AddLibDir(item.val.projectIndex)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.showIncludeDir', (item) => projectExplorer.showIncludeDir(item.val.projectIndex)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.showDefine', (item) => projectExplorer.showDefine(item.val.projectIndex)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.showLibDir', (item) => projectExplorer.showLibDir(item.val.projectIndex)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.modifyOtherSettings', (item) => projectExplorer.ModifyOtherSettings(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.modify.deps', (item) => projectExplorer.ModifyCustomDependence(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.removeDependenceItem', (item) => projectExplorer.RemoveDependenceItem(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.importDependenceFromPack', (item) => projectExplorer.ImportPackageDependence(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.removeDependenceFromPack', (item) => projectExplorer.RemovePackageDependence(item)));
 
-    subscriptions.push(vscode.commands.registerCommand('_project.removeDependenceItem', (item) => projectExplorer.RemoveDependenceItem(item)));
-    subscriptions.push(vscode.commands.registerCommand('_project.importDependenceFromPack', (item) => projectExplorer.ImportPackageDependence(item)));
-    subscriptions.push(vscode.commands.registerCommand('_project.removeDependenceFromPack', (item) => projectExplorer.RemovePackageDependence(item)));
+    // tree view global
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.copyItemValue', (item) => projectExplorer.CopyItemValue(item)));
 
-    subscriptions.push(vscode.commands.registerCommand('_project.copyItemValue', (item) => projectExplorer.CopyItemValue(item)));
-
-    /* other project tools */
-    subscriptions.push(vscode.commands.registerCommand('_project.source.show_disassembly', (url) => projectExplorer.showDisassembly(url)));
-    subscriptions.push(vscode.commands.registerCommand('_project.source.show_cmsis_config_wizard', (url) => projectExplorer.showCmsisConfigWizard(url)));
-    //subscriptions.push(vscode.commands.registerCommand('_project.cppcheck.check_file', (url) => projectExplorer.cppcheckFile(url)));
-    subscriptions.push(vscode.commands.registerCommand('_project.cppcheck.check_all', (item) => projectExplorer.cppcheckProject(item)));
-    subscriptions.push(vscode.commands.registerCommand('_project.cppcheck.clear_all', (item) => projectExplorer.clearCppcheckDiagnostic()));
+    // other project tools
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.show_disassembly', (url) => projectExplorer.showDisassembly(url)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.show_cmsis_config_wizard', (url) => projectExplorer.showCmsisConfigWizard(url)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.cppcheck.check_all', (item) => projectExplorer.cppcheckProject(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.cppcheck.clear_all', (item) => projectExplorer.clearCppcheckDiagnostic()));
+    //subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.cppcheck.check_file', (url) => projectExplorer.cppcheckFile(url)));
 
     operationExplorer.on('request_open_project', (fsPath) => projectExplorer.emit('request_open_project', fsPath));
     operationExplorer.on('request_create_project', (option) => projectExplorer.emit('request_create_project', option));
@@ -227,7 +245,7 @@ async function onSelectSerialBaudrate() {
         '4800', '9600', '14400',
         '19200', '28800', '38400',
         '57600', '115200', '230400',
-        '460800', '576000'
+        '460800', '576000', '921600'
     ];
 
     const baudrate = await vscode.window.showQuickPick(baudList, {
@@ -244,9 +262,12 @@ async function onSelectSerialBaudrate() {
 
 async function checkAndInstallBinaries(constex: vscode.ExtensionContext, forceInstall?: boolean): Promise<boolean> {
 
+    const eideCfg = ResManager.GetInstance().getAppConfig<any>();
+    const binVersion = eideCfg['binaray_version'] ? `-${eideCfg['binaray_version']}` : ''
+
     const downloadSites: string[] = [
-        `https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/bin.zip`,
-        `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/bin.zip`
+        `https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/bin${binVersion}.zip`,
+        `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/bin${binVersion}.zip`
     ];
 
     /* random select the order of site */
@@ -270,7 +291,7 @@ async function checkAndInstallBinaries(constex: vscode.ExtensionContext, forceIn
     let installedDone = false;
 
     try {
-        const tmpFile = File.fromArray([os.tmpdir(), 'eide-binaries.zip']);
+        const tmpFile = File.fromArray([os.tmpdir(), `eide-binaries${binVersion}.zip`]);
 
         /* make dir */
         binFolder.CreateDir(true);
@@ -354,6 +375,11 @@ async function checkAndInstallBinaries(constex: vscode.ExtensionContext, forceIn
             });
         }
 
+        /* del tmp file */
+        if (tmpFile.IsFile()) {
+            try { fs.unlinkSync(tmpFile.path) } catch (error) { }
+        }
+
     } catch (error) {
         GlobalEvent.emit('error', error);
     }
@@ -397,7 +423,7 @@ function exportEnvToSysPath() {
 
 async function InitComponents(context: vscode.ExtensionContext): Promise<boolean | undefined> {
 
-    // init all modules
+    // init resource manager
     ResManager.GetInstance(context);
 
     /* check binaries, if not found, install it ! */
@@ -460,6 +486,13 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
         }
     });
 
+    // register map view provider
+    context.subscriptions.push(
+        vscode.window.registerCustomEditorProvider('cl.eide.map.view', new MapViewEditorProvider(), {
+            webviewOptions: { enableFindWidget: true }
+        })
+    );
+
     return true;
 }
 
@@ -502,6 +535,210 @@ function RegisterGlobalEvent() {
         vscode.commands.executeCommand('setContext', 'cl.eide.projectActived', prj_count != 0);
         vscode.commands.executeCommand('setContext', 'cl.eide.enable.active', prj_count > 1);
     });
+}
+
+// --- .mapView viewer
+
+import * as yaml from 'yaml'
+import { FileWatcher } from '../lib/node-utility/FileWatcher';
+
+interface MapViewRef {
+
+    uid: string;
+
+    vscWebview: vscode.Webview;
+
+    title: string;
+
+    toolName: string;
+
+    treeDepth: number;
+
+    mapPath: string;
+};
+
+interface MapViewInfo {
+
+    watcher: FileWatcher;
+
+    refList: MapViewRef[];
+};
+
+class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
+
+    private mapViews: Map<string, MapViewInfo> = new Map();
+
+    resolveCustomTextEditor(document: vscode.TextDocument, webviewPanel: vscode.WebviewPanel, token: vscode.CancellationToken): void | Thenable<void> {
+
+        const viewFile = new File(document.fileName);
+        const title = viewFile.noSuffixName;
+
+        // view uid
+        const uid = `${viewFile.path}-${Date.now().toString()}`;
+
+        // init
+        webviewPanel.title = title;
+        webviewPanel.iconPath = vscode.Uri.file(ResManager.GetInstance().GetIconByName('Report_16x.svg').path);
+        webviewPanel.webview.html = this.genHtmlCont(title, 'No Content');
+        webviewPanel.onDidDispose(() => this.deleteRef(viewFile.path, uid));
+
+        if (!viewFile.IsFile()) {
+            webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: Not found file '${viewFile.path}' !`);
+            return;
+        }
+
+        // check tool type
+        const conf: { tool?: string, fileName?: string } = yaml.parse(viewFile.Read());
+        if (!conf.tool) {
+            webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: Invalid toolchain type !`);
+            return;
+        }
+
+        let toolName = 'ARM_MICRO';
+        let fileDepth = SettingManager.GetInstance().getMapViewParserDepth();
+
+        if (fileDepth < 0)
+            fileDepth = 1;
+
+        switch (conf.tool) {
+            case 'AC5':
+            case 'AC6':
+                toolName = 'ARM_MICRO';
+                break;
+            case 'GCC':
+                toolName = 'GCC_ARM';
+                break;
+            default:
+                webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: We not support this toolchain type: '${conf.tool}' !`);
+                return;
+        }
+
+        // get map file
+        const defName = viewFile.noSuffixName + '.map';
+        const mapFile = File.fromArray([viewFile.dir, conf.fileName || defName]);
+
+        if (!mapFile.IsFile()) {
+            webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: Not found file '${mapFile.path}' !`);
+            return;
+        }
+
+        // auto update when file changed 
+        try {
+
+            let mInfo = this.mapViews.get(viewFile.path);
+            if (mInfo == undefined) {
+                mInfo = { watcher: new FileWatcher(mapFile, false), refList: [] };
+                mInfo.watcher.OnChanged = () => this.showMapView();
+                mInfo.watcher.Watch();
+                this.mapViews.set(viewFile.path, mInfo);
+            }
+
+            this.pushRef(viewFile.path, {
+                uid: uid,
+                vscWebview: webviewPanel.webview,
+                title: title,
+                toolName: toolName,
+                treeDepth: fileDepth,
+                mapPath: mapFile.path
+            });
+
+        } catch (error) {
+            // do nothing
+        }
+
+        this.showMapView();
+    }
+
+    private pushRef(viewFilePath: string, item: MapViewRef) {
+
+        const mInfo = this.mapViews.get(viewFilePath);
+        if (mInfo) {
+            const idx = mInfo.refList.findIndex((inf) => inf.uid == item.uid);
+            if (idx == -1) {
+                mInfo.refList.push(item);
+            }
+        }
+    }
+
+    private deleteRef(viewFilePath: string, uid: string) {
+
+        const mInfo = this.mapViews.get(viewFilePath);
+        if (mInfo) {
+
+            const idx = mInfo.refList.findIndex((inf) => inf.uid == uid);
+            if (idx != -1) {
+                delete mInfo.refList[idx].vscWebview;
+                mInfo.refList.splice(idx, 1);
+            }
+
+            if (mInfo.refList.length == 0) {
+                try { mInfo.watcher.Close(); } catch (error) { }
+                this.mapViews.delete(viewFilePath);
+            }
+        }
+    }
+
+    private showMapView() {
+
+        this.mapViews.forEach((mInfo) => {
+
+            for (const vInfo of mInfo.refList) {
+                try {
+                    const execPath = ResManager.GetInstance().getBuilderDir() + File.sep + 'memap';
+                    const lines = ChildProcess
+                        .execSync(`${execPath} -t ${vInfo.toolName} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`)
+                        .toString().split(/\r\n|\n/);
+
+                    // append color
+                    for (let index = 0; index < lines.length; index++) {
+                        const line = lines[index];
+                        lines[index] = line
+                            .replace(/\((\+[^0]\d*)\)/g, `(<span class="success">$1</span>)`)
+                            .replace(/\((\-[^0]\d*)\)/g, `(<span class="error">$1</span>)`)
+                            .replace(/^(\s*\|\s*)(Subtotals)/, `$1<span class="info">$2</span>`)
+                            .replace(/^(\s*Total)/, `\n$1`);
+                    }
+
+                    vInfo.vscWebview.html = this.genHtmlCont(vInfo.title, lines.join('\n'));
+
+                } catch (error) {
+                    vInfo.vscWebview.html = this.genHtmlCont(vInfo.title, `<span class="error">Parse error</span>: \r\n${error.message}`);
+                }
+            }
+        });
+    }
+
+    private genHtmlCont(title: string, cont: string): string {
+        return `
+        <!DOCTYPE html>
+			<html lang="en">
+			<head>
+				<meta charset="UTF-8">
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<title>${title}</title>
+                <style type="text/css">
+                    body {
+                        font-size: var(--vscode-editor-font-size);
+                    }
+                    .success {
+                        color: var(--vscode-terminal-ansiGreen);
+                    }
+                    .error {
+                        color: var(--vscode-errorForeground);
+                    }
+                    .info {
+                        color: var(--vscode-editorInfo-foreground);
+                    }
+                </style>
+			</head>
+			<body>
+                <section>
+				    <pre>${cont}</pre>
+                </section>
+			</body>
+			</html>
+        `;
+    }
 }
 
 //-----------------------------------------

@@ -323,10 +323,11 @@ export class ToolchainManager {
 
         switch (name) {
             case 'AC5':
+                return File.fromArray([settingManager.getArmcc5Dir().path, 'bin']).IsDir();
             case 'AC6':
-                return settingManager.getINIStatus()['ARM'];
+                return File.fromArray([settingManager.getArmcc6Dir().path, 'bin']).IsDir();
             case 'Keil_C51':
-                return settingManager.getINIStatus()['C51'];
+                return settingManager.isKeilC51IniReady();
             case 'GCC':
                 return File.fromArray([settingManager.getGCCDir().path, 'bin']).IsDir();
             case 'IAR_STM8':
@@ -910,7 +911,7 @@ class AC5 implements IToolchian {
 
     readonly version = 4;
 
-    readonly settingName: string = 'EIDE.ARM.INI.Path';
+    readonly settingName: string = 'EIDE.ARM.ARMCC5.InstallDirectory';
 
     readonly categoryName: string = 'ARMCC';
 
@@ -934,7 +935,7 @@ class AC5 implements IToolchian {
     }
 
     getToolchainDir(): File {
-        return SettingManager.GetInstance().GetMdkDir();
+        return SettingManager.GetInstance().getArmcc5Dir();
     }
 
     getForceIncludeHeaders(): string[] {
@@ -952,7 +953,7 @@ class AC5 implements IToolchian {
     }
 
     getSystemIncludeList(builderOpts: ICompileOptions): string[] {
-        const incDir = new File(this.getToolchainDir().path + File.sep + 'ARMCC' + File.sep + 'include');
+        const incDir = File.fromArray([this.getToolchainDir().path, 'include']);
         if (incDir.IsDir()) {
             return [incDir].concat(incDir.GetList(File.EMPTY_FILTER)).map((f) => { return f.path; });
         }
@@ -964,7 +965,7 @@ class AC5 implements IToolchian {
     }
 
     getLibDirs(): string[] {
-        return [File.fromArray([this.getToolchainDir().path, 'ARMCC', 'lib']).path];
+        return [File.fromArray([this.getToolchainDir().path, 'lib']).path];
     }
 
     getDefaultConfig(): ICompileOptions {
@@ -995,7 +996,7 @@ class AC6 implements IToolchian {
 
     readonly version = 3;
 
-    readonly settingName: string = 'EIDE.ARM.INI.Path';
+    readonly settingName: string = 'EIDE.ARM.ARMCC6.InstallDirectory';
 
     readonly categoryName: string = 'ARMCC';
 
@@ -1007,10 +1008,11 @@ class AC6 implements IToolchian {
 
     readonly verifyFileName: string = 'arm.v6.verify.json';
 
+    /*
     private readonly defMacroList: string[];
 
     constructor() {
-        const armClang = File.fromArray([this.getToolchainDir().path, 'ARMCLANG', 'bin', 'armclang.exe']);
+        const armClang = File.fromArray([this.getToolchainDir().path, 'bin', 'armclang.exe']);
         this.defMacroList = this.getMacroList(armClang.path);
     }
 
@@ -1037,6 +1039,7 @@ class AC6 implements IToolchian {
             return ['__GNUC__=4', '__GNUC_MINOR__=2', '__GNUC_PATCHLEVEL__=1'];
         }
     }
+    */
 
     newInstance(): IToolchian {
         return new AC6();
@@ -1060,11 +1063,11 @@ class AC6 implements IToolchian {
     }
 
     getToolchainDir(): File {
-        return SettingManager.GetInstance().GetMdkDir();
+        return SettingManager.GetInstance().getArmcc6Dir();
     }
 
     getInternalDefines(builderOpts: ICompileOptions): string[] {
-        return this.defMacroList;
+        return [];
     }
 
     getCustomDefines(): string[] | undefined {
@@ -1073,8 +1076,8 @@ class AC6 implements IToolchian {
 
     getSystemIncludeList(builderOpts: ICompileOptions): string[] {
         return [
-            File.fromArray([this.getToolchainDir().path, 'ARMCLANG', 'include']).path,
-            File.fromArray([this.getToolchainDir().path, 'ARMCLANG', 'include', 'libcxx']).path
+            File.fromArray([this.getToolchainDir().path, 'include']).path,
+            File.fromArray([this.getToolchainDir().path, 'include', 'libcxx']).path
         ];
     }
 
@@ -1089,7 +1092,7 @@ class AC6 implements IToolchian {
     }
 
     getLibDirs(): string[] {
-        return [File.fromArray([this.getToolchainDir().path, 'ARMCLANG', 'lib']).path];
+        return [File.fromArray([this.getToolchainDir().path, 'lib']).path];
     }
 
     getDefaultConfig(): ICompileOptions {
@@ -1315,9 +1318,9 @@ class IARSTM8 implements IToolchian {
                 options.linker['linker-config'] = `"${prjInfo.toAbsolutePath(options.linker['linker-config'])}"`;
             }
 
-            // use toolchain root folder, like ${ToolDir}\stm8\config
-            else if (linkerConfig.toLowerCase().startsWith('${tooldir}')) {
-                const absPath = (<string>options.linker['linker-config']).replace(/\$\{ToolDir\}/i, this.getToolchainDir().path);
+            // use toolchain root folder, like ${ToolchainRoot}\stm8\config
+            else if (linkerConfig.toLowerCase().startsWith('${ToolchainRoot}')) {
+                const absPath = (<string>options.linker['linker-config']).replace(/\$\{ToolchainRoot\}/i, this.getToolchainDir().path);
                 options.linker['linker-config'] = `"${NodePath.normalize(absPath)}"`;
             }
         }

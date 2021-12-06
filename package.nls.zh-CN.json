@@ -24,7 +24,10 @@
     "eide.project.rebuild": "重新构建",
     "eide.project.clean": "清理",
     "eide.project.upload": "烧录",
+    "eide.project.flash.erase.all": "擦除芯片",
     "eide.project.gen.makefile": "生成 Makefile 模板",
+    "eide.project.modify.files.options": "为文件附加单独的编译选项",
+    "eide.project.import.ext.project.src.struct": "从其他 IDE 的项目中导入源文件资源",
     
     "eide.workspace.build": "构建所有项目",
     "eide.workspace.rebuild": "重新构建所有项目",
@@ -48,6 +51,8 @@
     "eide.explorer.rename.folder": "重命名",
     "eide.explorer.exclude.folder": "从项目中排除",
     "eide.explorer.include.folder": "取消排除",
+    "eide.explorer.show.file.dir": "在文件浏览器中显示",
+    "eide.explorer.modify.file.path": "修改源文件路径",
     
     "eide.source.show_cmsis_config_wizard": "CMSIS Configuration Wizard",
     "eide.source.show.disassembly": "查看反汇编",
@@ -81,8 +86,9 @@
     "settings.option.use.task.to.build": "使用 vscode 任务执行编译命令",
     "settings.option.insert.extcommands.at.begin": "内置的构建任务将被插入到 `beforeBuildTasks / afterBuildTasks` 之前",
     
-    "settings.template.use.proxy": "使用 github 代理加速模板下载",
-    "settings.template.repo.url": "远程 github 模板仓库地址, 格式: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
+    "settings.repo.use.proxy": "使用代理加速 github 资源下载",
+    "settings.template.repo.url": "Github 模板仓库地址, 格式: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
+    "settings.cmsispack.repo.url": "Github cmsis 包仓库地址, 格式: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
 
     "settings.serial.def.port": "默认串口名称",
     "settings.serial.show.toolbar": "显示串口工具栏",
@@ -96,6 +102,8 @@
     "settings.iar.stm8.install.folder": "IAR for STM8 安装目录 [`example: D:\\IAR`]",
     "settings.sdcc.install.folder": "SDCC 安装目录 [`example: C:\\Program Files (x86)\\SDCC`]",
 
+    "settings.arm.armcc5.install.folder": "Armcc v5 toolchain 安装目录 [`example: D:\\ac5`]",
+    "settings.arm.armcc6.install.folder": "Armcc v6 toolchain 安装目录 [`example: D:\\ac6`]",
     "settings.arm.gcc.install.folder": "GNU Arm Embedded Toolchain 安装目录 [`example: D:\\arm-gcc\\8 2019-q3-update`]",
     "settings.arm.gcc.prefix": "GNU Arm Embedded Toolchain 编译器前缀 [`example: arm-none-eabi-`]",
 
@@ -117,6 +125,8 @@
     "settings.option.disable.editor_context.menu": "禁用编辑器上下文菜单",
     "settings.option.disable.explorer_context.menu": "禁用资源浏览器上下文菜单",
     "settings.option.show.source.references": "显示源文件的头文件引用",
+    "settings.option.mapView.parser.depth": "显示 *.map.view 时，obj 文件路径的深度限制。大于该深度的 obj 文件将被忽略",
+    "settings.option.show.output.files": "在项目资源管理器中显示编译输出文件",
 
     "string.eide.startup.walkthroughs": "Embedded IDE 演示",
     "string.eide.startup.walkthroughs.detail": "我们将向您展示如何开始使用 Embedded IDE 。",

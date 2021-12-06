@@ -51,7 +51,7 @@ export interface PortSerialOption {
 
 let _instance: SettingManager | undefined;
 
-export interface INIStatus {
+interface INIStatus {
     [name: string]: boolean;
 }
 
@@ -69,7 +69,7 @@ export class SettingManager {
     private eideEnv: Map<string, string>;
 
     private _checkStatus: INIStatus = {
-        'ARM': false,
+        'MDK': false,
         'C51': false
     };
 
@@ -242,6 +242,18 @@ export class SettingManager {
 
     //--------------------- Global Option ------------------------
 
+    isShowOutputFilesInExplorer(): boolean {
+        return this.getConfiguration().get<boolean>('Option.ShowOutputFilesInExplorer') || false;
+    }
+
+    getBuilderAdditionalCommandLine(): string | undefined {
+        return this.getConfiguration().get<string>('Builder.AdditionalCommandLine');
+    }
+
+    getMapViewParserDepth(): number {
+        return this.getConfiguration().get<number>('Option.MapViewParserDepth') || 1;
+    }
+
     isDisplaySourceRefs(): boolean {
         return this.getConfiguration().get<boolean>('Option.ShowSourceReferences') || false;
     }
@@ -255,20 +267,29 @@ export class SettingManager {
     }
 
     getGithubRepositoryUrl(): string {
-        return (this.getConfiguration().get<string>('Template.Repository.Url') || 'null')
+        return (this.getConfiguration().get<string>('Repository.Template.Url') || 'null')
+            .trim().replace(/^https:\/\//i, '');
+    }
+
+    getCmsisPackRepositoryUrl(): string {
+        return (this.getConfiguration().get<string>('Repository.CmsisPack.Url') || 'null')
             .trim().replace(/^https:\/\//i, '');
     }
 
     isUseGithubProxy(): boolean {
-        return this.getConfiguration().get<boolean>('Template.Repository.UseProxy') || false;
+        return this.getConfiguration().get<boolean>('Repository.UseProxy') || false;
     }
 
     isUseTaskToBuild(): boolean {
         return this.getConfiguration().get<boolean>('Option.UseTaskToBuild') || false;
     }
 
-    getINIStatus(): INIStatus {
-        return JSON.parse(JSON.stringify(this._checkStatus));
+    isKeilC51IniReady(): boolean {
+        return this._checkStatus['C51'];
+    }
+
+    isMDKIniReady(): boolean {
+        return this._checkStatus['MDK'];
     }
 
     isInsertCommandsAtBegin(): boolean {
@@ -391,20 +412,85 @@ export class SettingManager {
         return new File(this.getGccFolderFromConfig('ARM.GCC.InstallDirectory', execName) || 'null');
     }
 
-    SetARMINIPath(path: string) {
+    // ---
+
+    getArmcc5Dir(): File {
+        return new File(
+            this.getGccFolderFromConfig('ARM.ARMCC5.InstallDirectory', 'armcc') ||
+            this.pathCache.get('ARMCC5') ||
+            'null'
+        );
+    }
+
+    getArmcc6Dir(): File {
+        return new File(
+            this.getGccFolderFromConfig('ARM.ARMCC6.InstallDirectory', 'armclang') ||
+            this.pathCache.get('ARMCC6') ||
+            'null'
+        );
+    }
+
+    SetMdkINIPath(path: string) {
         this.setConfigValue('ARM.INI.Path', path);
     }
 
-    private GetARMINIFile(): File {
+    private GetMdkINIFile(): File {
         const iniPath = this.getConfiguration().get<string>('ARM.INI.Path') || '';
         return new File(Utility.formatPath(iniPath));
     }
 
-    GetMdkDir(): File {
-        return new File(this.pathCache.get('MDK') || 'null');
+    GetMdkArmDir(): File | undefined {
+        const path = this.pathCache.get('MDK');
+        if (path) {
+            return new File(path);
+        }
     }
 
     private refreshMDKStatus(): void {
+
+        /* parse from ini file */
+        const iniFile = this.GetMdkINIFile();
+        if (iniFile.IsFile()) {
+            try {
+                const iniData = ini.parse(iniFile.Read());
+
+                // check ini file fields
+                if (iniData["ARM"] && iniData["ARM"]["PATH"]) {
+
+                    // mdk ARM dir
+                    const mdkArmDir = new File(formatPath((<string>iniData["ARM"]["PATH"]).replace(/"/g, '')));
+
+                    // cache arm dir
+                    if (mdkArmDir.IsDir()) {
+                        this.pathCache.set('MDK', mdkArmDir.path);
+                    }
+
+                    // cache armcc5 path
+                    const armcc5Dir = File.fromArray([mdkArmDir.path, 'ARMCC', 'bin']);
+                    if (!armcc5Dir.IsDir()) { throw new Error('Not found folder, [path]: ' + armcc5Dir.path); }
+                    this.pathCache.set('ARMCC5', armcc5Dir.dir);
+
+                    // update status
+                    this._checkStatus['MDK'] = true;
+
+                    // cache armcc6 path
+                    const armcc6Dir = File.fromArray([mdkArmDir.path, 'ARMCLANG', 'bin']);
+                    if (armcc6Dir.IsDir()) { this.pathCache.set('ARMCC6', armcc6Dir.dir);; }
+
+                    return; // mdk path is valid, return it
+                }
+
+                // invalid ini file
+                else {
+                    this.pathCache.delete('ARMCC5');
+                    this.pathCache.delete('ARMCC6');
+                    throw new Error('Invalid ARM INI file, [path] : ' + iniFile.path);
+                }
+
+            } catch (error) {
+                GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Hidden'));
+            }
+        }
 
         /* parse from env */
         if (process.env && process.env['Keil_Root']) {
@@ -413,39 +499,12 @@ export class SettingManager {
             if (armFolder.IsDir() &&
                 File.fromArray([armFolder.path, 'ARMCC']).IsDir()) {
                 this.pathCache.set('MDK', armFolder.path);
-                this._checkStatus['ARM'] = true;
+                this._checkStatus['MDK'] = true;
                 return; /* found it, exit */
             }
         }
 
-        /* parse from ini file */
-        const iniFile = this.GetARMINIFile();
-        if (iniFile.IsFile()) {
-            try {
-                const iniData = ini.parse(iniFile.Read());
-
-                // check ini file fields
-                if (iniData["ARM"] && iniData["ARM"]["PATH"]) {
-                    const binDir = new File(formatPath((<string>iniData["ARM"]["PATH"]).replace(/"/g, '')));
-                    // update and check
-                    this.pathCache.set('MDK', binDir.path);
-                    const cDir = File.fromArray([binDir.path, 'ARMCC']);
-                    if (!cDir.IsDir()) { throw new Error('Not found folder, [path]: ' + cDir.path); }
-                    this._checkStatus['ARM'] = true;
-                    return; // mdk path is valid, return it
-                }
-
-                // invalid ini file
-                else {
-                    this.pathCache.delete('MDK');
-                    throw new Error('Invalid ARM INI file, [path] : ' + iniFile.path);
-                }
-            } catch (error) {
-                GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Hidden'));
-            }
-        }
-
-        this._checkStatus['ARM'] = false;
+        this._checkStatus['MDK'] = false;
     }
 
     //------------------------------- SDCC --------------------------------
@@ -486,18 +545,6 @@ export class SettingManager {
 
     private refreshC51Status(): void {
 
-        /* parse from env */
-        if (process.env && process.env['Keil_Root']) {
-            const rootFolder = Utility.formatPath(process.env['Keil_Root']);
-            const c51Folder = File.fromArray([rootFolder, 'C51']);
-            if (c51Folder.IsDir() &&
-                File.fromArray([c51Folder.path, 'BIN']).IsDir()) {
-                this.pathCache.set('C51', c51Folder.path);
-                this._checkStatus['C51'] = true;
-                return; /* found it, exit */
-            }
-        }
-
         /* parse from ini file */
         const iniFile = this.GetC51INIFile();
         if (iniFile.IsFile()) {
@@ -522,6 +569,18 @@ export class SettingManager {
                 }
             } catch (error) {
                 GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Hidden'));
+            }
+        }
+
+        /* parse from env */
+        if (process.env && process.env['Keil_Root']) {
+            const rootFolder = Utility.formatPath(process.env['Keil_Root']);
+            const c51Folder = File.fromArray([rootFolder, 'C51']);
+            if (c51Folder.IsDir() &&
+                File.fromArray([c51Folder.path, 'BIN']).IsDir()) {
+                this.pathCache.set('C51', c51Folder.path);
+                this._checkStatus['C51'] = true;
+                return; /* found it, exit */
             }
         }
 

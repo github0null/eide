@@ -163,7 +163,7 @@
                 },
                 "optimize-for-time": {
                     "markdownDescription": "Optimize for time",
-                    "description.zh-cn": "代码时间优化",
+                    "description.zh-cn": "Optimize for time",
                     "type": "boolean",
                     "enum": [
                         true,
@@ -233,7 +233,7 @@
                 },
                 "strict-ANSI-C": {
                     "markdownDescription": "strict ANSI C",
-                    "description.zh-cn": "使用标准（严格）的 ANSI C",
+                    "description.zh-cn": "strict ANSI C",
                     "type": "boolean",
                     "enum": [
                         true,

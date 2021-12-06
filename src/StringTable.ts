@@ -210,13 +210,23 @@ export const view_str$project$sel_folder_type = [
 ][langIndex];
 
 export const view_str$project$folder_type_fs = [
-    '文件系统文件夹',
-    'Filesystem Folder'
+    '普通文件夹',
+    'Normal Folder'
+][langIndex];
+
+export const view_str$project$folder_type_fs_desc = [
+    '从磁盘中选择一个文件夹，eide 将其直接链接到项目中，并自动搜索和添加其中的源文件以及包含路径',
+    'Select a folder from disk, eide will link it directly into your project, and automatically search and add source files and include paths to it.'
 ][langIndex];
 
 export const view_str$project$folder_type_virtual = [
     '虚拟文件夹',
     'Virtual Folder'
+][langIndex];
+
+export const view_str$project$folder_type_virtual_desc = [
+    '新建一个虚拟文件夹（该文件夹在磁盘上是不存在的）来组织源文件的结构',
+    'Create a VirtualFolder (The folder does not exist on disk) to organize the source file structure.'
 ][langIndex];
 
 export const view_str$project$add_source = [
@@ -230,8 +240,8 @@ export const view_str$project$sel_target = [
 ][langIndex];
 
 export const view_str$project$other_settings = [
-    '其他设置',
-    'Other Settings'
+    '项目设置',
+    'Project Settings'
 ][langIndex];
 
 export const view_str$project$cmsis_components = [
@@ -270,7 +280,7 @@ export const include_desc = [
 ][langIndex];
 
 export const lib_desc = [
-    '库目录',
+    '链接库目录',
     'Library Directories'
 ][langIndex];
 
@@ -280,13 +290,13 @@ export const source_dir_desc = [
 ][langIndex];
 
 export const definition_list_desc = [
-    '宏定义',
-    'Macro List'
+    '预处理器定义',
+    'Preprocessor Definitions'
 ][langIndex];
 
 export const project_dependence = [
-    '项目依赖',
-    'Project Dependences'
+    '项目属性',
+    'Project Attributes'
 ][langIndex];
 
 export const view_str$dialog$add_to_source_folder = [
@@ -424,6 +434,11 @@ export const view_str$prompt$select_file = [
 export const view_str$prompt$select_folder = [
     `选择该文件夹`,
     `Select This Folder`
+][langIndex];
+
+export const view_str$prompt$select_file_or_folder = [
+    `选择该文件或文件夹`,
+    `Select This File Or Folder`
 ][langIndex];
 
 export const view_str$prompt$not_found_compiler = [
@@ -662,13 +677,13 @@ export const view_str$operation$baudrate = [
 ][langIndex];
 
 export const view_str$operation$setKeil51Path = [
-    '设置 Keil_C51 工具链的 TOOLS.INI 路径',
-    'Set Keil_C51 toolchain\'s \'TOOLS.INI\' path'
+    '设置 Keil_C51 的 TOOLS.INI 路径',
+    'Set Keil_C51\'s \'TOOLS.INI\' path'
 ][langIndex];
 
 export const view_str$operation$setMDKPath = [
-    '设置 ARMCC 工具链的 TOOLS.INI 路径',
-    'Set ARMCC Toolchain\'s \'TOOLS.INI\' path'
+    '设置 MDK 的 TOOLS.INI 路径',
+    'Set MDK\'s \'TOOLS.INI\' path'
 ][langIndex];
 
 export const view_str$operation$setToolchainInstallDir = [

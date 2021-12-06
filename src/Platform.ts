@@ -80,7 +80,7 @@ export function find(fileName: string): string | undefined {
             { windowsHide: true, encoding: 'ascii', shell: 'cmd' }).split(/\r\n|\n/);
         if (nameList.length > 0) {
             const path = nameList[0].replace(/"/g, '');
-            if (NodePath.isAbsolute(path)) {
+            if (File.isAbsolute(path)) {
                 return path;
             }
         }

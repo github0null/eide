@@ -4,12 +4,40 @@
 
 ***
 
+### [v2.15.0] (**requirements: VsCode ^1.60.0**)
+- 新增：向**项目属性**视图增加一个**修改**按钮，允许以直接修改 yaml 配置文件的形式修改其配置，[文档](https://docs.em-ide.com/#/zh-cn/project_deps)
+- 新增：向**项目资源**视图增加一个配置按钮，允许**为单个的文件或组增加任意编译选项**，支持使用 glob 模式匹配源文件和组，[文档](https://docs.em-ide.com/#/zh-cn/project_manager?id=为源文件附加单独的编译选项)
+- 新增：为 **虚拟文件夹**/**源文件** 增加修改路径选项，允许修改文件的路径（方便直接修改整个虚拟文件夹树以及其链接到的源文件）
+- 新增：将烧录选项 `程序文件` 的文件选择器取消，改为输入框；允许一次烧录多个程序文件，**程序文件** 字段格式 '`<filePath>[,addr][;<filePath>...]`'
+- 新增：增加全片擦除功能，`ctrl+shift+p` 打开命令面板，输入 `Erase Chip`，即可执行（某些烧录器可能不支持，则该命令将退化为普通的烧录命令）
+- 新增：在 **项目资源** 树中增加 `Output Files` 目录，用于查看生成的编译产物; 同时增加 axf, elf 信息查看功能，点击 axf/elf 文件即可打开
+- 新增：增加文件右键菜单项：打开所在目录
+- 新增：支持 armcc 反汇编查看，通过编辑器右键菜单 `查看反汇编` 即可打开
+- 新增：鼠标悬停显示文件,文件夹数量（仅虚拟文件夹）
+- 新增：支持通过编写外部 js 脚本来导入其他IDE项目文件中的文件树，宏，头文件等信息（方便导入 `SEGGER Embedded Studio`，`IAR For ARM` 等其他任意 IDE 的项目），[文档](https://docs.em-ide.com/#/zh-cn/project_manager?id=从其他-ide-项目导入源文件资源)
+- 新增：在输出目录生成 .map.view 文件，打开即可显示 map 文件的资源统计视图（仅支持ARMCC/GCC工程），[文档](https://docs.em-ide.com/#/zh-cn/utility_functions?id=查看程序资源视图)
+- 新增：支持在线下载安装 Keil 芯片支持包，默认远程仓库地址：https://github.com/github0null/eide-cmsis-pack
+- 修复：CMSIS Config Wizard 在解析不符合要求的字符串类型时，出现误判
+- 修复：删除 CMSIS 包之后，相应的 MCU 预定义宏被删除
+- **更改：调整某些配置的显示名称**，如 **项目依赖** 更改为 **项目属性**
+- 更改：使用 Linux VT100 颜色代码添加更完备的编译输出日志高亮（**win10 以下的系统可能不支持**；可通过向插件配置 `Builder.AdditionalCommandLine` 添加 `-no-color` 关闭色彩输出）
+- **更改：支持为 Armcc v5/v6 工具链单独设置编译器路径，同时保留旧的 MDK TOOLS.INI 设置方法**
+- 更改：生成 *.obj 时，根据相对路径将 obj 生成至相应的文件夹树中（若有无法计算相对路径的文件，统一生成至 `obj` 目录）
+- 优化：当烧录选项 `程序文件` 为空时，使用默认的程序文件路径（ui 上显示为 `${projectName}.hex`）
+- 优化：允许带空格的虚拟文件夹命名
+- 优化：项目资源文件夹树排序显示
+- 优化：读取完 JLink Device 列表后，删除临时文件
+- 优化：调整构建工具的 Log 显示
+- 优化 CMSIS Wizard UI：使被禁用的子项表单控件无法被选中
+- 优化 CMSIS Wizard UI：调整布局，优化 vscode 主题颜色适配
+- 优化 完善 CMSIS Wizard 的语法支持程度
+***
+
 ### [v2.14.0]
 - 优化：增加一些编译器预定义宏
 - 优化：优化 Builder Config UI，修复选项卡阴影区域显示不正常的问题
 - 新增：支持显示源文件的头文件引用，默认开启，可在插件设置中关闭
-- 新增：增加 [CMSIS Configuration Wizard](https://arm-software.github.io/CMSIS_5/Pack/html/configWizard.html) 功能。 打开带有 CMSIS Config 格式的头文件，右键菜单选择 `CMSIS Configuration Wizard` 即可打开配置UI
-  ![preview](./img/cmsis_wizard_preview.png)
+- 新增：增加 [CMSIS Configuration Wizard](https://arm-software.github.io/CMSIS_5/Pack/html/configWizard.html) 功能。 打开带有 CMSIS Config 格式的头文件，右键菜单选择 `CMSIS Configuration Wizard` 即可打开配置UI，[文档](https://docs.em-ide.com/#/zh-cn/cmsis_wizard)
 ***
 
 ### [v2.13.0]

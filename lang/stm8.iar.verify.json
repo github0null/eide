@@ -504,7 +504,7 @@
                 "linker-config": {
                     "readable_name": "Linker config file path",
                     "readable_name.zh-cn": "链接脚本路径",
-                    "description": "linker config file path.\n Example: \"lnkstm8xxx.icf\"\n or \"./lnkstm8xxx.icf\" (relative by workspace folder)\n or \"${ToolDir}/stm8/config/lnkstm8xxx.icf\"",
+                    "description": "linker config file path.\n Example: \"lnkstm8xxx.icf\"\n or \"./lnkstm8xxx.icf\" (relative by workspace folder)\n or \"${ToolchainRoot}/stm8/config/lnkstm8xxx.icf\"",
                     "type": "string",
                     "default": "lnkstm8s103f3.icf"
                 },
