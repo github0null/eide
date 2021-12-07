@@ -2120,7 +2120,7 @@ export class ProjectExplorer {
             let projectOrder: number | undefined = undefined;
 
             /* get project order */
-            const envConfig = project.getEnvConfig();
+            const envConfig = project.getProjectEnv();
             if (envConfig && envConfig['workspace'] &&
                 envConfig['workspace']['order']) {
                 projectOrder = parseInt(envConfig['workspace']['order']) || undefined;

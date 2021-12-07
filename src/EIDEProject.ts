@@ -913,15 +913,16 @@ export abstract class AbstractProject {
 
     private replacePathEnv(path: string): string {
 
-        const prjConfig = this.GetConfiguration().config;
-        const outDir = this.getOutputFolder().path;
+        const prjConfig = this.GetConfiguration();
+        const prjRootDir = this.GetRootDir();
+        const outDir = NodePath.normalize(prjRootDir.path + File.sep + prjConfig.getOutDir());
 
         // replace prj env
         path = path
             .replace(/\$\(OutDir\)|\$\{OutDir\}/ig, outDir)
-            .replace(/\$\(ProjectName\)|\$\{ProjectName\}/ig, prjConfig.name)
-            .replace(/\$\(ExecutableName\)|\$\{ExecutableName\}/ig, `${outDir}${File.sep}${prjConfig.name}`)
-            .replace(/\$\(ProjectRoot\)|\$\{ProjectRoot\}/ig, this.GetRootDir().path);
+            .replace(/\$\(ProjectName\)|\$\{ProjectName\}/ig, prjConfig.config.name)
+            .replace(/\$\(ExecutableName\)|\$\{ExecutableName\}/ig, `${outDir}${File.sep}${prjConfig.config.name}`)
+            .replace(/\$\(ProjectRoot\)|\$\{ProjectRoot\}/ig, prjRootDir.path);
 
         // replace user env
         const prjEnv = this.getProjectEnv();
@@ -1337,9 +1338,9 @@ export abstract class AbstractProject {
 
         if (!envFile.IsFile()) {
             const defTxt: string[] = [
-                `##################################################################################`,
-                `# project environment config, can be used for 'builder', 'downloader' ...`,
-                `##################################################################################`,
+                `###########################################################`,
+                `#              project environment variables`,
+                `###########################################################`,
                 ``,
                 `# mcu ram size`,
                 `#MCU_RAM_SIZE=0x00`,
@@ -1356,7 +1357,7 @@ export abstract class AbstractProject {
 
     getProjectEnv(): { [name: string]: any } | undefined {
 
-        const envs = this.getEnvConfig();
+        const envs = this.getRawEnv();
         if (envs == undefined) { return; }
 
         // remove none-string obj
@@ -1372,14 +1373,22 @@ export abstract class AbstractProject {
         return envs;
     }
 
-    getEnvConfig(): { [name: string]: any } | undefined {
-        const envFile = this.getEnvFile();
-        if (envFile.IsFile()) {
-            try {
-                return ini.parse(envFile.Read());
-            } catch (error) {
-                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+    private lastReadTime: number = 0;
+    private lastRawEnvObj: { [name: string]: any } | undefined;
+    private getRawEnv(): { [name: string]: any } | undefined {
+        try {
+            const envFile = this.getEnvFile();
+            if (envFile.IsFile()) {
+                const lastMdTime = fs.statSync(envFile.path).mtimeMs;
+                if (this.lastRawEnvObj == undefined ||
+                    lastMdTime > this.lastReadTime) { // update env
+                    this.lastRawEnvObj = ini.parse(envFile.Read());
+                    this.lastReadTime = fs.statSync(envFile.path).mtimeMs;
+                }
+                return this.lastRawEnvObj;
             }
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
     }
 

@@ -140,8 +140,10 @@ export abstract class CodeBuilder {
                 srcList.forEach((srcInf: any) => {
                     if (!srcInf[fieldName]) return; // skip if not exist
                     for (const expr in parttenInfo) {
-                        const path = (<string>srcInf[fieldName]).replace(/\\/g, '/');
-                        if (globmatch.isMatch(path, expr)) {
+                        const searchPath = (<string>srcInf[fieldName]).replace(/\\/g, '/')
+                            .replace(/\.\.\//g, '')
+                            .replace(/\.\//g, ''); // globmatch bug ? it can't parse path which have '.' or '..'
+                        if (globmatch.isMatch(searchPath, expr)) {
                             const val = parttenInfo[expr]?.trim().replace(/(?:\r\n|\n)$/, '')
                             if (srcParams[srcInf.path]) {
                                 srcParams[srcInf.path] += ` ${val || ''}`
