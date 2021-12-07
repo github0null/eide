@@ -911,11 +911,35 @@ export abstract class AbstractProject {
         return this.configMap;
     }
 
-    ToAbsolutePath(path: string): string {
-        if (!File.isAbsolute(path)) {
-            return NodePath.normalize(this.GetRootDir().path + NodePath.sep + path);
+    private replacePathEnv(path: string): string {
+
+        const prjConfig = this.GetConfiguration().config;
+        const outDir = this.getOutputFolder().path;
+
+        // replace prj env
+        path = path
+            .replace(/\$\(OutDir\)|\$\{OutDir\}/ig, outDir)
+            .replace(/\$\(ProjectName\)|\$\{ProjectName\}/ig, prjConfig.name)
+            .replace(/\$\(ExecutableName\)|\$\{ExecutableName\}/ig, `${outDir}${File.sep}${prjConfig.name}`)
+            .replace(/\$\(ProjectRoot\)|\$\{ProjectRoot\}/ig, this.GetRootDir().path);
+
+        // replace user env
+        const prjEnv = this.getProjectEnv();
+        if (prjEnv) {
+            for (const key in prjEnv) {
+                if (!/^\w+$/.test(key)) continue;
+                const reg = new RegExp(String.raw`\$\(${key}\)|\$\{${key}\}`, 'ig');
+                path = path.replace(reg, prjEnv[key]);
+            }
         }
-        return NodePath.normalize(path);
+
+        return path;
+    }
+
+    ToAbsolutePath(path_: string): string {
+        const path = this.replacePathEnv(path_);
+        if (File.isAbsolute(path)) { return NodePath.normalize(path); }
+        return NodePath.normalize(this.GetRootDir().path + NodePath.sep + path);
     }
 
     ToRelativePath(path: string, hasPrefix: boolean = true): string | undefined {

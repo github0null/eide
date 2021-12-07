@@ -105,7 +105,7 @@ export abstract class CodeBuilder {
         this._event.emit(event, arg);
     }
 
-    genSourceInfo(prevBuilderParams: BuilderParams): {
+    genSourceInfo(prevBuilderParams: BuilderParams | undefined): {
         sources: string[],
         params?: { [name: string]: string; }
         paramsModTime?: number;
@@ -169,11 +169,13 @@ export abstract class CodeBuilder {
 
                 // if src options is modified to null but old is not null,
                 // we need make source recompile
-                const oldSrcParams = prevBuilderParams.sourceParams;
-                for (const path in oldSrcParams) {
-                    if (srcParams[path] == undefined && oldSrcParams[path] != undefined &&
-                        oldSrcParams[path] != '') {
-                        srcParams[path] = ""; // make it empty to trigger recompile 
+                if (prevBuilderParams) {
+                    const oldSrcParams = prevBuilderParams.sourceParams;
+                    for (const path in oldSrcParams) {
+                        if (srcParams[path] == undefined && oldSrcParams[path] != undefined &&
+                            oldSrcParams[path] != '') {
+                            srcParams[path] = ""; // make it empty to trigger recompile 
+                        }
                     }
                 }
             }
@@ -349,7 +351,7 @@ export abstract class CodeBuilder {
         const memMaxSize = this.getMaxSize();
         const modeList: string[] = [];
         const oldParamsPath = `${paramsPath}.old`;
-        const prevParams: BuilderParams = File.IsFile(oldParamsPath) ? JSON.parse(fs.readFileSync(oldParamsPath, 'utf8')) : {};
+        const prevParams: BuilderParams | undefined = File.IsFile(oldParamsPath) ? JSON.parse(fs.readFileSync(oldParamsPath, 'utf8')) : undefined;
         const sourceInfo = this.genSourceInfo(prevParams);
 
         const builderOptions: BuilderParams = {
@@ -402,7 +404,7 @@ export abstract class CodeBuilder {
         builderOptions.sha = this.genHashFromCompilerOptions(builderOptions);
 
         // check whether need rebuild project
-        if (this.isRebuild() == false) {
+        if (this.isRebuild() == false && prevParams) {
             try {
                 // not found hash from old params file
                 if (prevParams.sha == undefined) {

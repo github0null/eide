@@ -28,9 +28,9 @@
 - 优化：项目资源文件夹树排序显示
 - 优化：读取完 JLink Device 列表后，删除临时文件
 - 优化：调整构建工具的 Log 显示
-- 优化 CMSIS Wizard UI：使被禁用的子项表单控件无法被选中
-- 优化 CMSIS Wizard UI：调整布局，优化 vscode 主题颜色适配
-- 优化 完善 CMSIS Wizard 的语法支持程度
+- 优化：CMSIS Wizard UI：使被禁用的子项表单控件无法被选中
+- 优化：CMSIS Wizard UI：调整布局，优化 vscode 主题颜色适配
+- 优化：完善 CMSIS Wizard 的语法支持程度
 ***
 
 ### [v2.14.0]

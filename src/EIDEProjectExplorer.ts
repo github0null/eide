@@ -2323,6 +2323,7 @@ export class ProjectExplorer {
                     // from disk
                     else {
                         const urls = await vscode.window.showOpenDialog({
+                            defaultUri: vscode.Uri.file(prj.GetRootDir().path),
                             canSelectFolders: false,
                             canSelectFiles: true,
                             openLabel: install_this_pack,
@@ -2672,7 +2673,7 @@ export class ProjectExplorer {
                 canSelectFiles: false,
                 canSelectFolders: true,
                 openLabel: view_str$dialog$add_to_source_folder,
-                defaultUri: vscode.Uri.parse(prj.GetRootDir().ToUri())
+                defaultUri: vscode.Uri.file(prj.GetRootDir().path),
             });
 
             if (folderList && folderList.length > 0) {
@@ -2759,7 +2760,7 @@ export class ProjectExplorer {
             canSelectFiles: true,
             canSelectFolders: false,
             openLabel: view_str$project$add_source,
-            defaultUri: vscode.Uri.parse(project.GetRootDir().ToUri()),
+            defaultUri: vscode.Uri.file(project.GetRootDir().path),
             filters: {
                 'c/c++ files': ['c', 'cpp', 'cxx', 'cc', 'c++'],
                 'header files': ['h', 'hxx', 'hpp', 'inc'],
@@ -3355,6 +3356,8 @@ export class ProjectExplorer {
 
     async ImportSourceFromExtProject(item: ProjTreeItem) {
 
+        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+
         try {
             //
             // select importer
@@ -3391,7 +3394,8 @@ export class ProjectExplorer {
             const uri = await vscode.window.showOpenDialog({
                 openLabel: 'Import This File',
                 canSelectFiles: true,
-                filters: filter
+                filters: filter,
+                defaultUri: vscode.Uri.file(prj.GetRootDir().path)
             });
 
             if (uri == undefined) {
@@ -3430,14 +3434,15 @@ export class ProjectExplorer {
                         if (prjList.length > 0) {
                             // if have multi project, select one to import
                             if (prjList.length > 1) {
-                                const item = await vscode.window.showQuickPick<vscode.QuickPickItem>(
-                                    prjList.map((prj) => {
-                                        return {
-                                            label: prj.name,
-                                            description: prj.target,
-                                            detail: `${prjFile.name} -> ${prj.name}${prj.target ? (': ' + prj.target) : ''}`
-                                        }
-                                    }),
+                                const itemList = prjList.map((prj) => {
+                                    return {
+                                        id: `${prj.name}-${prj.target}`,
+                                        label: prj.name,
+                                        description: prj.target,
+                                        detail: `${prjFile.name} -> ${prj.name}${prj.target ? (': ' + prj.target) : ''}`
+                                    }
+                                });
+                                const selectedItem = await vscode.window.showQuickPick<any>(itemList,
                                     {
                                         placeHolder: `Found ${prjList.length} sub project, select one to import`,
                                         ignoreFocusOut: true,
@@ -3445,7 +3450,7 @@ export class ProjectExplorer {
                                     }
                                 );
                                 if (item != undefined) {
-                                    const index = prjList.findIndex((prj) => prj.name == item.label);
+                                    const index = itemList.findIndex((item) => item.id == selectedItem.id);
                                     if (index != -1) {
                                         prjInfo = prjList[index];
                                     }
@@ -3519,7 +3524,7 @@ export class ProjectExplorer {
             canSelectFiles: false,
             canSelectFolders: true,
             openLabel: add_include_path,
-            defaultUri: vscode.Uri.parse(prj.GetRootDir().ToUri())
+            defaultUri: vscode.Uri.file(prj.GetRootDir().path)
         });
         if (uri && uri.length > 0) {
             prj.addIncludePaths(uri.map(_uri => { return _uri.fsPath; }));
@@ -3557,7 +3562,8 @@ export class ProjectExplorer {
             canSelectMany: true,
             canSelectFiles: false,
             canSelectFolders: true,
-            openLabel: add_lib_path
+            openLabel: add_lib_path,
+            defaultUri: vscode.Uri.file(prj.GetRootDir().path)
         });
         if (uri && uri.length > 0) {
             prj.GetConfiguration().CustomDep_AddAllFromLibList(uri.map(_uri => { return _uri.fsPath; }));

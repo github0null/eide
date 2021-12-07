@@ -534,9 +534,7 @@ export class ProjectConfiguration<T extends CompileData>
 
     private toAbsolutePath(path: string): string {
         const _path = path.trim();
-        if (File.isAbsolute(_path)) {
-            return _path;
-        }
+        if (File.isAbsolute(_path)) { return _path; }
         return NodePath.normalize(this.getRootDir().path + File.sep + _path);
     }
 
@@ -1372,7 +1370,7 @@ export abstract class ConfigModel<DataType> {
             case 'OPEN_FILE':
                 {
                     const uri = await vscode.window.showOpenDialog({
-                        defaultUri: vscode.Uri.parse(prjRootDir.ToUri()),
+                        defaultUri: vscode.Uri.file(prjRootDir.path),
                         filters: this.GetOpenFileFilters(key) || { '*.*': ['*'] },
                         canSelectFiles: true,
                         canSelectMany: this.IsOpenFileCanSelectMany(key)
@@ -2291,7 +2289,7 @@ export abstract class UploadConfigModel<T> extends ConfigModel<T> {
     getKeyValue(key: string): string {
         switch (key) {
             case 'bin':
-                return (<any>this.data)[key] || '${projectName}.hex';
+                return (<any>this.data)[key] || '${ExecutableName}.hex';
             default:
                 return (<any>this.data)[key] || 'null';
         }
