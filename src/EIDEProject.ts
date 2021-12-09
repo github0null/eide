@@ -1,25 +1,25 @@
 /*
-	MIT License
+    MIT License
 
-	Copyright (c) 2019 github0null
+    Copyright (c) 2019 github0null
 
-	Permission is hereby granted, free of charge, to any person obtaining a copy
-	of this software and associated documentation files (the "Software"), to deal
-	in the Software without restriction, including without limitation the rights
-	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-	copies of the Software, and to permit persons to whom the Software is
-	furnished to do so, subject to the following conditions:
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
 
-	The above copyright notice and this permission notice shall be included in all
-	copies or substantial portions of the Software.
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
 
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-	SOFTWARE.
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
 */
 
 import * as fs from 'fs';
@@ -137,7 +137,7 @@ export class VirtualSource implements SourceProvider {
         }
     }
 
-    private traverse(func: (folderInfo: { path: string, folder: VirtualFolder }) => void) {
+    traverse(func: (folderInfo: { path: string, folder: VirtualFolder }) => void) {
 
         const folderStack: { path: string, folder: VirtualFolder }[] = [];
 
@@ -165,9 +165,10 @@ export class VirtualSource implements SourceProvider {
 
     // load
 
-    load() {
+    load(notEmitEvt?: boolean) {
         this.config = this.project.GetConfiguration().config;
-        this.forceUpdateAllFolders(); // refresh all
+        // refresh all
+        if (!notEmitEvt) { this.forceUpdateAllFolders(); }
     }
 
     // get
@@ -373,7 +374,7 @@ class SourceRootList implements SourceProvider {
         this.srcFolderMaps = new Map();
     }
 
-    load() {
+    load(notEmitEvt?: boolean) {
 
         this.DisposeAll();
 
@@ -395,7 +396,7 @@ class SourceRootList implements SourceProvider {
             this.updateFolder(info);
         }
 
-        this.emit('dataChanged', 'dataChanged');
+        if (!notEmitEvt) { this.emit('dataChanged', 'dataChanged'); }
     }
 
     add(absPath: string): boolean {
@@ -1450,8 +1451,9 @@ export abstract class AbstractProject {
     }
 
     protected LoadSourceRootFolders() {
-        this.sourceRoots.load();
-        this.virtualSource.load();
+        this.sourceRoots.load(true);
+        this.virtualSource.load(true);
+        this.onSourceRootChanged('dataChanged');
     }
 
     protected UpdateCppConfig() {
@@ -1471,15 +1473,33 @@ export abstract class AbstractProject {
             return rePath ? `\${workspaceFolder}${File.sep}${rePath}` : _path;
         });
 
+        // update virtual src search folder
+        let srcBrowseFolders: string[] = [];
+        this.getVirtualSourceManager().traverse((vFolder) => {
+            vFolder.folder.files.forEach((vFile) => {
+                const dir = File.ToUnixPath(NodePath.dirname(NodePath.normalize(vFile.path)))
+                    .replace(/^(?:\.\/)+/, '');
+                if (dir.startsWith('../')) { // if source is out of cur prj dir
+                    srcBrowseFolders.push(`${dir}/*`);
+                }
+            });
+        });
+        srcBrowseFolders = ArrayDelRepetition(srcBrowseFolders);
+
         // update includes to browse info
         cppConfigItem.browse = {
             limitSymbolsToIncludedHeaders: true,
-            databaseFilename: '${default}'
+            databaseFilename: '${default}',
+            path: srcBrowseFolders
         };
 
         // update includes and defines 
         cppConfigItem.includePath = ['${default}'].concat(includeList);
         cppConfigItem.defines = ['${default}'].concat(depMerge.defineList);
+
+        // compiler path
+        cppConfigItem.compilerPath = this.getToolchain().getGccCompilerPath();
+        cppConfigItem.compilerArgs = this.getToolchain().getGccCompilerCmdArgsForIntelliSense();
 
         // update forceinclude headers
         cppConfigItem.forcedInclude = this.getToolchain().getForceIncludeHeaders()?.map((f_path) => {

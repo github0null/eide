@@ -3251,6 +3251,8 @@ export interface CppConfigItem {
     name: string;
     includePath: string[];
     defines: string[];
+    compilerPath?: string;
+    compilerArgs?: string[];
     forcedInclude?: string[];
     browse?: CppBrowseInfo;
     intelliSenseMode: string;
