@@ -1506,7 +1506,9 @@ export abstract class AbstractProject {
 
         // update forceinclude headers
         cppConfigItem.forcedInclude = this.getToolchain().getForceIncludeHeaders()?.map((f_path) => {
-            return this.ToRelativePath(f_path) || f_path;
+            const rePath = this.ToRelativePath(f_path);
+            if (rePath) { return `\${workspaceFolder}/${rePath}` }
+            return f_path;
         });
 
         cppConfig.Save();
