@@ -1480,7 +1480,9 @@ export abstract class AbstractProject {
                 const dir = File.ToUnixPath(NodePath.dirname(NodePath.normalize(vFile.path)))
                     .replace(/^(?:\.\/)+/, '');
                 // if source is out of cur prj dir, add it
-                if (dir.startsWith('../') || NodePath.isAbsolute(dir)) {
+                if (dir.startsWith('../')) {
+                    srcBrowseFolders.push(`\${workspaceFolder}/${dir}/*`);
+                } else if (NodePath.isAbsolute(dir)) {
                     srcBrowseFolders.push(`${dir}/*`);
                 }
             });
