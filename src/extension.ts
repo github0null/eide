@@ -265,15 +265,19 @@ async function checkAndInstallBinaries(constex: vscode.ExtensionContext, forceIn
     const eideCfg = ResManager.GetInstance().getAppConfig<any>();
     const binVersion = eideCfg['binaray_version'] ? `-${eideCfg['binaray_version']}` : ''
 
+    // binaries download site
     const downloadSites: string[] = [
-        `https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/bin${binVersion}.zip`,
-        `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/bin${binVersion}.zip`
+        `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/bin${binVersion}.zip`,
+        `https://raw-github.em-ide.com/github0null/eide-resource/master/binaries/bin${binVersion}.zip`,
     ];
 
     /* random select the order of site */
     if (Math.random() > 0.5) {
         downloadSites.reverse();
     }
+
+    // add github default download url
+    downloadSites.push(`https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/bin${binVersion}.zip`);
 
     const rootFolder = new File(constex.extensionPath);
     const binFolder = File.fromArray([rootFolder.path, 'bin']);
@@ -305,10 +309,9 @@ async function checkAndInstallBinaries(constex: vscode.ExtensionContext, forceIn
             let res: Buffer | undefined | Error = undefined;
 
             for (const site of downloadSites) {
-                const realUrl = utility.redirectHost(site);
-                res = await utility.downloadFileWithProgress(realUrl, tmpFile.name, progress, token);
+                res = await utility.downloadFileWithProgress(site, tmpFile.name, progress, token);
                 if (res instanceof Buffer) { break; } /* if done, exit loop */
-                progress.report({ message: 'Switch to next download site !' });
+                progress.report({ message: 'failed, switch to next download site ...' });
             }
 
             if (res instanceof Error) { /* download failed */
