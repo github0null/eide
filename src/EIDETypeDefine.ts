@@ -2285,7 +2285,7 @@ export abstract class UploadConfigModel<T> extends ConfigModel<T> {
                 return 'Property_16x.svg';
         }
     }
-    
+
     getKeyValue(key: string): string {
         switch (key) {
             case 'bin':
@@ -3255,7 +3255,10 @@ export interface CppConfigItem {
     compilerArgs?: string[];
     forcedInclude?: string[];
     browse?: CppBrowseInfo;
-    intelliSenseMode: string;
+    intelliSenseMode?: string;
+    cStandard?: string,
+    cppStandard?: string,
+    configurationProvider?: string;
 }
 
 export interface CppConfig {
@@ -3305,7 +3308,7 @@ export class CppConfiguration extends Configuration<CppConfig> {
         return item;
     }
 
-    private setConfig(config: CppConfigItem) {
+    setConfig(config: CppConfigItem) {
         const index = this.config.configurations.findIndex((_conf) => { return _conf.name === config.name; });
         if (index !== -1) {
             this.config.configurations[index] = config;

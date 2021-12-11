@@ -79,6 +79,7 @@
         "jsonc": "^2.0.0",
         "micromatch": "^4.0.4",
         "unzipper": "^0.10.11",
+        "vscode-cpptools": "^5.0.0",
         "x2js": "3.4.1",
         "yaml": "^1.10.2"
     },

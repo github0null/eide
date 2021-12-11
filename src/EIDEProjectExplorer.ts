@@ -977,12 +977,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                         const dir: File = element.val.obj;
                         if (dir.IsDir()) {
 
-                            const fchildren = dir.GetList(AbstractProject.getFileFilters())
-                                .filter((f) => {
-                                    return !AbstractProject.excludeDirFilter.some((regexp) => {
-                                        return regexp.test(f.name);
-                                    });
-                                });
+                            const fchildren = dir
+                                .GetList(AbstractProject.getFileFilters())
+                                .filter((f) => !AbstractProject.excludeDirFilter.test(f.name));
 
                             const iFileList: ProjTreeItem[] = [];
                             const iFolderList: ProjTreeItem[] = [];
@@ -2762,16 +2759,11 @@ export class ProjectExplorer {
             openLabel: view_str$project$add_source,
             defaultUri: vscode.Uri.file(project.GetRootDir().path),
             filters: {
-                'c/c++ files': ['c', 'cpp', 'cxx', 'cc', 'c++'],
-                'header files': ['h', 'hxx', 'hpp', 'inc'],
-                'asm files': ['s', 'asm', 'a51'],
-                'lib files': ['lib', 'a', 'o', 'obj'],
-                'any files': [
-                    'c', 'cpp', 'cxx', 'cc', 'c++',
-                    's', 'asm', 'a51',
-                    'lib', 'a', 'o', 'obj',
-                    'h', 'hxx', 'hpp', 'inc'
-                ]
+                'c/c++': ['c', 'cpp', 'cxx', 'cc', 'c++'],
+                'header': ['h', 'hxx', 'hpp', 'inc'],
+                'asm': ['s', 'asm', 'a51'],
+                'lib': ['lib', 'a', 'o', 'obj'],
+                'any (*.*)': ['*']
             }
         });
 
@@ -3033,7 +3025,7 @@ export class ProjectExplorer {
 
             const srcList: string[] = [];
             const fGoups = project.getFileGroups();
-            const filter = AbstractProject.srcfileFilter;
+            const srcFilter = AbstractProject.cppfileFilter;
 
             for (const group of fGoups) {
                 // skip disabled group
@@ -3042,7 +3034,7 @@ export class ProjectExplorer {
                     // skip disabled file
                     if (source.disabled) continue;
                     // skip non-source and asm file
-                    if (!filter.some((reg) => reg.test(source.file.path))) continue;
+                    if (!srcFilter.test(source.file.path)) continue;
                     const rePath = confRootDir.ToRelativePath(source.file.path, false);
                     srcList.push(rePath || source.file.path);
                 }
