@@ -26,8 +26,8 @@
     ],
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
-    "description": "A singlechip development environment for 8051/STM8/Cortex-M/RISC-V",
-    "version": "2.15.0",
+    "description": "An embedded development environment for 8051/STM8/Cortex-M/RISC-V",
+    "version": "2.15.1",
     "engines": {
         "vscode": "^1.60.0"
     },

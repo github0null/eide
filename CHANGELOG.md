@@ -18,6 +18,7 @@
 - 优化：打开文件选取对话框时，设置初始路径为项目根目录
 - 优化：在使用 Importer 导入多 Target 项目时，使用 \<prjName>+\<targetName> 作为 id，区分列表项
 - 优化：优化下载 eide-binaries 时的站点选择
+- 优化：若某些烧录器不支持 `Erase Chip`，则忽略该命令
 ***
 
 ### [v2.15.0] (**requirements: VsCode ^1.60.0**)

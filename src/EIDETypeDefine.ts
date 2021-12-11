@@ -2770,7 +2770,7 @@ class STLinkUploadModel extends UploadConfigModel<STLinkOptions> {
 
     GetDefault(): STLinkOptions {
         return {
-            bin: 'none path',
+            bin: '',
             proType: 'SWD',
             resetMode: 'default',
             runAfterProgram: true,

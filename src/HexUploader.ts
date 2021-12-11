@@ -38,9 +38,9 @@ import * as vscode from "vscode";
 import * as NodePath from 'path';
 import * as os from "os";
 import * as fs from 'fs';
-import * as utility from './utility';
 import * as ini from 'ini';
 import { ResInstaller } from "./ResInstaller";
+import { newMessage } from "./Message";
 
 let _mInstance: HexUploaderManager | undefined;
 
@@ -365,6 +365,11 @@ class StcgalUploader extends HexUploader<string[]> {
     }
 
     protected async _prepare(eraseAll?: boolean): Promise<UploaderPreData<string[]>> {
+
+        if (eraseAll) {
+            GlobalEvent.emit('msg', newMessage('Warning', `not support 'Erase Chip' for '${this.toolType}' flasher`));
+            return { isOk: false };
+        }
 
         const resManager = ResManager.GetInstance();
 
@@ -878,6 +883,11 @@ class OpenOCDUploader extends HexUploader<string[]> {
 
     protected async _prepare(eraseAll?: boolean): Promise<UploaderPreData<string[]>> {
 
+        if (eraseAll) {
+            GlobalEvent.emit('msg', newMessage('Warning', `not support 'Erase Chip' for '${this.toolType}' flasher`));
+            return { isOk: false };
+        }
+
         const exe = new File(SettingManager.GetInstance().getOpenOCDExePath());
         if (!exe.IsFile()) {
             await ResInstaller.instance().setOrInstallTools(this.toolType, `Not found \'OpenOCD.exe\' !`);
@@ -948,6 +958,11 @@ class CustomUploader extends HexUploader<string> {
     toolType: HexUploaderType = 'Custom';
 
     protected async _prepare(eraseAll?: boolean): Promise<UploaderPreData<string>> {
+
+        if (eraseAll) {
+            GlobalEvent.emit('msg', newMessage('Warning', `not support 'Erase Chip' for '${this.toolType}' flasher`));
+            return { isOk: false };
+        }
 
         const option = this.getUploadOptions<CustomFlashOptions>();
         const programs = this.parseProgramFiles(option);
