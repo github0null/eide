@@ -2927,8 +2927,51 @@ export class ProjectExplorer {
             const asmTxt = child_process.execFileSync(exeFile.path, cmds, { encoding: 'ascii' });
             const asmFile = `${srcPath}.edasm`;
             const asmFileUri = vscode.Uri.parse(VirtualDocument.instance().getUriByPath(asmFile));
+
+            // try jump to target line in asm
+            let selection: vscode.Range | undefined;
+            if (vscode.window.activeTextEditor &&
+                vscode.window.activeTextEditor.document.uri.toString() == uri.toString()) {
+                const activeTextEditor = vscode.window.activeTextEditor;
+                const doc = activeTextEditor.document;
+                const lines = asmTxt.split(/\r\n|\n/);
+                // search full line
+                {
+                    const tLine = doc.lineAt(activeTextEditor.selection.start.line).text.trim();
+                    if (tLine.length >= 3) { // skip short lines
+                        for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+                            if (lines[lineIdx].includes(tLine)) {
+                                const pos = new vscode.Position(lineIdx, 0);
+                                selection = new vscode.Selection(pos, pos);
+                                break;
+                            }
+                        }
+                    }
+                }
+                // search word
+                if (!selection) {
+                    const rng = doc.getWordRangeAtPosition(activeTextEditor.selection.start, /[a-z_]\w*/i);
+                    if (rng) {
+                        const tWord = doc.getText(rng);
+                        for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+                            const idx = lines[lineIdx].indexOf(tWord);
+                            if (idx != -1) {
+                                const pos = new vscode.Position(lineIdx, idx);
+                                selection = new vscode.Selection(pos, pos);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // show
             VirtualDocument.instance().updateDocument(asmFile, asmTxt);
-            vscode.window.showTextDocument(asmFileUri, { preview: true, viewColumn: vscode.ViewColumn.Two });
+            vscode.window.showTextDocument(asmFileUri, {
+                preview: true,
+                viewColumn: vscode.ViewColumn.Two,
+                selection: selection
+            });
 
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
