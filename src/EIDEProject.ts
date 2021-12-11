@@ -679,7 +679,7 @@ export abstract class AbstractProject {
     static readonly excludeDirFilter: RegExp = /^\.(?:git|vs|vscode|eide)$/i;
 
     // to show output files
-    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|hex|bin|s19|map|map\.view)$/i;
+    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|hex|bin|s19|sct|map|map\.view)$/i;
 
     //-------
 
@@ -1476,7 +1476,7 @@ export abstract class AbstractProject {
         let srcBrowseFolders: string[] = [];
         this.getVirtualSourceManager().traverse((vFolder) => {
             vFolder.folder.files.forEach((vFile) => {
-                const dir = File.ToUnixPath(NodePath.dirname(NodePath.normalize(vFile.path)))
+                const dir = File.ToUnixPath(NodePath.dirname(vFile.path))
                     .replace(/^(?:\.\/)+/, '');
                 // if source is out of cur prj dir, add it
                 if (dir.startsWith('../')) {
