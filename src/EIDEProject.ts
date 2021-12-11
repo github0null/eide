@@ -1342,11 +1342,17 @@ export abstract class AbstractProject {
                 `#              project environment variables`,
                 `###########################################################`,
                 ``,
-                `# mcu ram size`,
+                `# append command prefix for toolchain`,
+                `#COMPILER_CMD_PREFIX=`,
+                ``,
+                `# mcu ram size (used to print memory usage)`,
                 `#MCU_RAM_SIZE=0x00`,
                 ``,
-                `# mcu rom size`,
+                `# mcu rom size (used to print memory usage)`,
                 `#MCU_ROM_SIZE=0x00`,
+                ``,
+                `# put your variables ...`,
+                `#VAR=`,
                 ``
             ];
             envFile.Write(defTxt.join(os.EOL));
