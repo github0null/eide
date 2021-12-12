@@ -679,7 +679,7 @@ export abstract class AbstractProject {
     static readonly excludeDirFilter: RegExp = /^\.(?:git|vs|vscode|eide)$/i;
 
     // to show output files
-    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|hex|bin|s19|sct|map|map\.view)$/i;
+    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|hex|bin|s19|sct|ld|lds|map|map\.view)$/i;
 
     //-------
 
@@ -1243,8 +1243,8 @@ export abstract class AbstractProject {
     }
 
     excludeSourceFile(path: string) {
-        // it is not a header file
-        if (!AbstractProject.headerFilter.test(path)) {
+        const srcFilter = AbstractProject.getSourceFileFilter();
+        if (srcFilter.some((reg) => reg.test(path))) {
             if (this.addExclude(path)) {
                 this.sourceRoots.notifyUpdateFile(path);
                 this.virtualSource.notifyUpdateFile(path);
