@@ -1328,7 +1328,7 @@ export abstract class AbstractProject {
         return [];
     }
 
-    getEnvFile(): File {
+    getEnvFile(notInitFile?: boolean): File {
 
         const prjConfig = this.GetConfiguration();
         const targetName = prjConfig.config.mode.toLowerCase();
@@ -1336,7 +1336,7 @@ export abstract class AbstractProject {
         const envFilePath = `${this.getEideDir().path}${File.sep}${targetName}.env.ini`;
         const envFile = new File(envFilePath);
 
-        if (!envFile.IsFile()) {
+        if (!notInitFile && !envFile.IsFile()) {
             const defTxt: string[] = [
                 `###########################################################`,
                 `#              project environment variables`,
@@ -1361,37 +1361,42 @@ export abstract class AbstractProject {
         return envFile;
     }
 
+    private env_lastGetTime: number = 0;
+    private env_lastReadTime: number = 0;
+    private env_lastRawEnvObj: { [name: string]: any } | undefined;
     getProjectEnv(): { [name: string]: any } | undefined {
-
-        const envs = this.getRawEnv();
-        if (envs == undefined) { return; }
-
-        // remove none-string obj
-        for (const key in envs) {
-            if (typeof envs[key] == 'object' ||
-                Array.isArray(envs[key]) ||
-                key.includes(' ')) {
-                delete envs[key];
-            }
-        }
-
-        // return env objects
-        return envs;
-    }
-
-    private lastReadTime: number = 0;
-    private lastRawEnvObj: { [name: string]: any } | undefined;
-    private getRawEnv(): { [name: string]: any } | undefined {
         try {
-            const envFile = this.getEnvFile();
+
+            // limit read interval (150 ms), increase speed
+            if (this.env_lastRawEnvObj != undefined &&
+                Date.now() - this.env_lastGetTime < 150) {
+                return this.env_lastRawEnvObj;
+            }
+
+            // is env need update ?
+            const envFile = this.getEnvFile(true);
             if (envFile.IsFile()) {
                 const lastMdTime = fs.statSync(envFile.path).mtimeMs;
-                if (this.lastRawEnvObj == undefined ||
-                    lastMdTime > this.lastReadTime) { // update env
-                    this.lastRawEnvObj = ini.parse(envFile.Read());
-                    this.lastReadTime = fs.statSync(envFile.path).mtimeMs;
+                if (this.env_lastRawEnvObj == undefined ||
+                    lastMdTime > this.env_lastReadTime) {
+
+                    // update env
+                    this.env_lastRawEnvObj = ini.parse(envFile.Read());
+                    this.env_lastReadTime = lastMdTime;
+
+                    // delete non-string obj
+                    for (const key in this.env_lastRawEnvObj) {
+                        if (typeof this.env_lastRawEnvObj[key] == 'object' ||
+                            Array.isArray(this.env_lastRawEnvObj[key]) ||
+                            key.includes(' ')) {
+                            delete this.env_lastRawEnvObj[key];
+                        }
+                    }
                 }
-                return this.lastRawEnvObj;
+
+                // return env objects
+                this.env_lastGetTime = Date.now();
+                return this.env_lastRawEnvObj;
             }
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
