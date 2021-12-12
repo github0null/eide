@@ -51,7 +51,7 @@ export class LogDumper {
 
         const time = Time.GetInstance().GetTimeInfo();
         this._console.log(
-            `\r\n[${time.year}/${time.month}/${time.date} ${time.hour}:${time.minute}:${time.second} ${time.region}] : launched`
+            `[${time.year}/${time.month}/${time.date} ${time.hour}:${time.minute}:${time.second} ${time.region}] : launched`
         );
 
         LogAnalyzer.on('Log', (logData) => {

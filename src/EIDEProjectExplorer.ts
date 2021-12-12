@@ -1,25 +1,25 @@
 /*
-	MIT License
+    MIT License
 
-	Copyright (c) 2019 github0null
+    Copyright (c) 2019 github0null
 
-	Permission is hereby granted, free of charge, to any person obtaining a copy
-	of this software and associated documentation files (the "Software"), to deal
-	in the Software without restriction, including without limitation the rights
-	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-	copies of the Software, and to permit persons to whom the Software is
-	furnished to do so, subject to the following conditions:
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
 
-	The above copyright notice and this permission notice shall be included in all
-	copies or substantial portions of the Software.
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
 
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-	SOFTWARE.
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
 */
 
 import * as vscode from 'vscode';
@@ -977,12 +977,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                         const dir: File = element.val.obj;
                         if (dir.IsDir()) {
 
-                            const fchildren = dir.GetList(AbstractProject.getFileFilters())
-                                .filter((f) => {
-                                    return !AbstractProject.excludeDirFilter.some((regexp) => {
-                                        return regexp.test(f.name);
-                                    });
-                                });
+                            const fchildren = dir
+                                .GetList(AbstractProject.getFileFilters())
+                                .filter((f) => !AbstractProject.excludeDirFilter.test(f.name));
 
                             const iFileList: ProjTreeItem[] = [];
                             const iFolderList: ProjTreeItem[] = [];
@@ -2120,7 +2117,7 @@ export class ProjectExplorer {
             let projectOrder: number | undefined = undefined;
 
             /* get project order */
-            const envConfig = project.getEnvConfig();
+            const envConfig = project.getProjectEnv();
             if (envConfig && envConfig['workspace'] &&
                 envConfig['workspace']['order']) {
                 projectOrder = parseInt(envConfig['workspace']['order']) || undefined;
@@ -2323,6 +2320,7 @@ export class ProjectExplorer {
                     // from disk
                     else {
                         const urls = await vscode.window.showOpenDialog({
+                            defaultUri: vscode.Uri.file(prj.GetRootDir().path),
                             canSelectFolders: false,
                             canSelectFiles: true,
                             openLabel: install_this_pack,
@@ -2672,7 +2670,7 @@ export class ProjectExplorer {
                 canSelectFiles: false,
                 canSelectFolders: true,
                 openLabel: view_str$dialog$add_to_source_folder,
-                defaultUri: vscode.Uri.parse(prj.GetRootDir().ToUri())
+                defaultUri: vscode.Uri.file(prj.GetRootDir().path),
             });
 
             if (folderList && folderList.length > 0) {
@@ -2759,18 +2757,13 @@ export class ProjectExplorer {
             canSelectFiles: true,
             canSelectFolders: false,
             openLabel: view_str$project$add_source,
-            defaultUri: vscode.Uri.parse(project.GetRootDir().ToUri()),
+            defaultUri: vscode.Uri.file(project.GetRootDir().path),
             filters: {
-                'c/c++ files': ['c', 'cpp', 'cxx', 'cc', 'c++'],
-                'header files': ['h', 'hxx', 'hpp', 'inc'],
-                'asm files': ['s', 'asm', 'a51'],
-                'lib files': ['lib', 'a', 'o', 'obj'],
-                'any files': [
-                    'c', 'cpp', 'cxx', 'cc', 'c++',
-                    's', 'asm', 'a51',
-                    'lib', 'a', 'o', 'obj',
-                    'h', 'hxx', 'hpp', 'inc'
-                ]
+                'c/c++': ['c', 'cpp', 'cxx', 'cc', 'c++'],
+                'header': ['h', 'hxx', 'hpp', 'inc'],
+                'asm': ['s', 'asm', 'a51'],
+                'lib': ['lib', 'a', 'o', 'obj'],
+                'any (*.*)': ['*']
             }
         });
 
@@ -2934,8 +2927,51 @@ export class ProjectExplorer {
             const asmTxt = child_process.execFileSync(exeFile.path, cmds, { encoding: 'ascii' });
             const asmFile = `${srcPath}.edasm`;
             const asmFileUri = vscode.Uri.parse(VirtualDocument.instance().getUriByPath(asmFile));
+
+            // try jump to target line in asm
+            let selection: vscode.Range | undefined;
+            if (vscode.window.activeTextEditor &&
+                vscode.window.activeTextEditor.document.uri.toString() == uri.toString()) {
+                const activeTextEditor = vscode.window.activeTextEditor;
+                const doc = activeTextEditor.document;
+                const lines = asmTxt.split(/\r\n|\n/);
+                // search full line
+                {
+                    const tLine = doc.lineAt(activeTextEditor.selection.start.line).text.trim();
+                    if (tLine.length >= 3) { // skip short lines
+                        for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+                            if (lines[lineIdx].includes(tLine)) {
+                                const pos = new vscode.Position(lineIdx, 0);
+                                selection = new vscode.Selection(pos, pos);
+                                break;
+                            }
+                        }
+                    }
+                }
+                // search word
+                if (!selection) {
+                    const rng = doc.getWordRangeAtPosition(activeTextEditor.selection.start, /[a-z_]\w*/i);
+                    if (rng) {
+                        const tWord = doc.getText(rng);
+                        for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+                            const idx = lines[lineIdx].indexOf(tWord);
+                            if (idx != -1) {
+                                const pos = new vscode.Position(lineIdx, idx);
+                                selection = new vscode.Selection(pos, pos);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // show
             VirtualDocument.instance().updateDocument(asmFile, asmTxt);
-            vscode.window.showTextDocument(asmFileUri, { preview: true, viewColumn: vscode.ViewColumn.Two });
+            vscode.window.showTextDocument(asmFileUri, {
+                preview: true,
+                viewColumn: vscode.ViewColumn.Two,
+                selection: selection
+            });
 
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
@@ -3032,7 +3068,7 @@ export class ProjectExplorer {
 
             const srcList: string[] = [];
             const fGoups = project.getFileGroups();
-            const filter = AbstractProject.srcfileFilter;
+            const srcFilter = AbstractProject.cppfileFilter;
 
             for (const group of fGoups) {
                 // skip disabled group
@@ -3041,7 +3077,7 @@ export class ProjectExplorer {
                     // skip disabled file
                     if (source.disabled) continue;
                     // skip non-source and asm file
-                    if (!filter.some((reg) => reg.test(source.file.path))) continue;
+                    if (!srcFilter.test(source.file.path)) continue;
                     const rePath = confRootDir.ToRelativePath(source.file.path, false);
                     srcList.push(rePath || source.file.path);
                 }
@@ -3355,6 +3391,8 @@ export class ProjectExplorer {
 
     async ImportSourceFromExtProject(item: ProjTreeItem) {
 
+        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+
         try {
             //
             // select importer
@@ -3391,7 +3429,8 @@ export class ProjectExplorer {
             const uri = await vscode.window.showOpenDialog({
                 openLabel: 'Import This File',
                 canSelectFiles: true,
-                filters: filter
+                filters: filter,
+                defaultUri: vscode.Uri.file(prj.GetRootDir().path)
             });
 
             if (uri == undefined) {
@@ -3400,111 +3439,120 @@ export class ProjectExplorer {
 
             await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
-                title: `Importing Resources`
-            }, (progress) => {
-                return new Promise(async (resolve) => {
+                title: `Importing Resources`,
+                cancellable: false
+            }, async (progress, __) => {
+                try {
+                    //
+                    // show progress message
+                    //
+                    progress.report({ message: `running importer ...` });
+                    await new Promise((resolve) => {
+                        setTimeout(() => resolve(), 500);
+                    });
+
+                    //
+                    // run importer
+                    //
+                    const prjFile = new File(uri[0].fsPath);
+                    const imptrName = (<File>imptrType.file).noSuffixName;
+                    const cmds = ['--std', './importer/index.js', imptrName, prjFile.path];
+                    const result = child_process
+                        .execFileSync(`${scriptRoot.path}/qjs.exe`, cmds, { cwd: scriptRoot.path })
+                        .toString();
+
+                    let prjList: ImporterProjectInfo[];
                     try {
-                        progress.report({ message: `running importer ...` });
-
-                        //
-                        // run importer
-                        //
-                        const prjFile = new File(uri[0].fsPath);
-                        const imptrName = (<File>imptrType.file).noSuffixName;
-                        const cmds = ['--std', './importer/index.js', imptrName, prjFile.path];
-                        const result = child_process.execFileSync(`${scriptRoot.path}/qjs.exe`, cmds, { cwd: scriptRoot.path }).toString();
-
-                        let prjList: ImporterProjectInfo[];
-                        try {
-                            prjList = JSON.parse(result);
-                            if (!Array.isArray(prjList)) throw new Error('project list must be an array !');
-                        } catch (error) {
-                            throw new Error(`Import Error !, msg: '${result}'`);
-                        }
-
-                        //
-                        // select project
-                        //
-                        let prjInfo: ImporterProjectInfo | undefined;
-
-                        if (prjList.length > 0) {
-                            // if have multi project, select one to import
-                            if (prjList.length > 1) {
-                                const item = await vscode.window.showQuickPick<vscode.QuickPickItem>(
-                                    prjList.map((prj) => {
-                                        return {
-                                            label: prj.name,
-                                            description: prj.target,
-                                            detail: `${prjFile.name} -> ${prj.name}${prj.target ? (': ' + prj.target) : ''}`
-                                        }
-                                    }),
-                                    {
-                                        placeHolder: `Found ${prjList.length} sub project, select one to import`,
-                                        ignoreFocusOut: true,
-                                        canPickMany: false
-                                    }
-                                );
-                                if (item != undefined) {
-                                    const index = prjList.findIndex((prj) => prj.name == item.label);
-                                    if (index != -1) {
-                                        prjInfo = prjList[index];
-                                    }
-                                }
-                            }
-                            // if only have one, use it
-                            else {
-                                prjInfo = prjList[0];
-                            }
-                        }
-
-                        if (prjInfo == undefined) {
-                            resolve();
-                            return;
-                        }
-
-                        // make abs path to relative path
-                        const formatVirtualFolder = (vFolderRoot: VirtualFolder) => {
-                            const folderStack: VirtualFolder[] = [vFolderRoot];
-                            while (folderStack.length > 0) {
-                                const vFolder = folderStack.pop();
-                                if (vFolder) {
-                                    vFolder.files = vFolder.files.map((file) => {
-                                        return { path: prj.ToRelativePath(file.path) || file.path }
-                                    });
-                                    vFolder.folders.forEach((folder) => {
-                                        folderStack.push(folder)
-                                    });
-                                }
-                            }
-                        };
-
-                        //
-                        // start import project
-                        //
-                        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
-                        const prjConf = prj.GetConfiguration();
-                        prjConf.config.virtualFolder = prjInfo.files;
-                        formatVirtualFolder(prjConf.config.virtualFolder);
-                        const deps = prjConf.CustomDep_getDependence();
-                        deps.incList = prjInfo.incList;
-                        deps.libList = [];
-                        deps.defineList = prjInfo.defineList;
-
-                        //
-                        // notify update
-                        //
-                        prj.getVirtualSourceManager().load();
-                        prjConf.CustomDep_NotifyChanged();
-
-                        // show message and exit
-                        progress.report({ message: `done !` });
-                        setTimeout(() => resolve(), 1000);
-
+                        prjList = JSON.parse(result);
+                        if (!Array.isArray(prjList)) throw new Error('project list must be an array !');
                     } catch (error) {
-                        GlobalEvent.emit('error', error);
-                        resolve();
+                        throw new Error(`Import Error !, msg: '${result}'`);
                     }
-                });
+
+                    //
+                    // select project
+                    //
+                    let prjInfo: ImporterProjectInfo | undefined;
+
+                    if (prjList.length > 0) {
+                        // if have multi project, select one to import
+                        if (prjList.length > 1) {
+                            const itemList = prjList.map((prj) => {
+                                return {
+                                    id: `${prj.name}-${prj.target}`,
+                                    label: prj.name,
+                                    description: prj.target,
+                                    detail: `${prjFile.name} -> ${prj.name}${prj.target ? (': ' + prj.target) : ''}`
+                                }
+                            });
+                            const selectedItem = await vscode.window.showQuickPick<any>(itemList,
+                                {
+                                    placeHolder: `Found ${prjList.length} sub project, select one to import`,
+                                    ignoreFocusOut: true,
+                                    canPickMany: false
+                                }
+                            );
+                            if (item != undefined) {
+                                const index = itemList.findIndex((item) => item.id == selectedItem.id);
+                                if (index != -1) {
+                                    prjInfo = prjList[index];
+                                }
+                            }
+                        }
+                        // if only have one, use it
+                        else {
+                            prjInfo = prjList[0];
+                        }
+                    }
+
+                    if (prjInfo == undefined) {
+                        return;
+                    }
+
+                    // make abs path to relative path
+                    const formatVirtualFolder = (vFolderRoot: VirtualFolder) => {
+                        const folderStack: VirtualFolder[] = [vFolderRoot];
+                        while (folderStack.length > 0) {
+                            const vFolder = folderStack.pop();
+                            if (vFolder) {
+                                vFolder.files = vFolder.files.map((file) => {
+                                    return { path: prj.ToRelativePath(file.path) || file.path }
+                                });
+                                vFolder.folders.forEach((folder) => {
+                                    folderStack.push(folder)
+                                });
+                            }
+                        }
+                    };
+
+                    //
+                    // start import project
+                    //
+                    const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+                    const prjConf = prj.GetConfiguration();
+                    prjConf.config.virtualFolder = prjInfo.files;
+                    formatVirtualFolder(prjConf.config.virtualFolder);
+                    const deps = prjConf.CustomDep_getDependence();
+                    deps.incList = prjInfo.incList;
+                    deps.libList = [];
+                    deps.defineList = prjInfo.defineList;
+
+                    //
+                    // notify update
+                    //
+                    prj.getVirtualSourceManager().load();
+                    prjConf.CustomDep_NotifyChanged();
+
+                    // show message and exit
+                    progress.report({ message: `done !` });
+
+                    await new Promise((resolve) => {
+                        setTimeout(() => resolve(), 1000);
+                    });
+
+                } catch (error) {
+                    GlobalEvent.emit('error', error);
+                }
             });
 
         } catch (error) {
@@ -3519,7 +3567,7 @@ export class ProjectExplorer {
             canSelectFiles: false,
             canSelectFolders: true,
             openLabel: add_include_path,
-            defaultUri: vscode.Uri.parse(prj.GetRootDir().ToUri())
+            defaultUri: vscode.Uri.file(prj.GetRootDir().path)
         });
         if (uri && uri.length > 0) {
             prj.addIncludePaths(uri.map(_uri => { return _uri.fsPath; }));
@@ -3557,7 +3605,8 @@ export class ProjectExplorer {
             canSelectMany: true,
             canSelectFiles: false,
             canSelectFolders: true,
-            openLabel: add_lib_path
+            openLabel: add_lib_path,
+            defaultUri: vscode.Uri.file(prj.GetRootDir().path)
         });
         if (uri && uri.length > 0) {
             prj.GetConfiguration().CustomDep_AddAllFromLibList(uri.map(_uri => { return _uri.fsPath; }));
@@ -3792,7 +3841,10 @@ export class ProjectExplorer {
             const vFileInfo = vSourceManager.getFile(vInfo.path);
             if (vFileInfo) {
                 vFileInfo.path = repath;
-                vSourceManager.notifyUpdateFile(vInfo.path);
+                const vDir = NodePath.dirname(vInfo.path);
+                // we use 'notifyUpdateFolder', not 'notifyUpdateFile', 
+                // because we need to update c/c++ intellisense config
+                vSourceManager.notifyUpdateFolder(vDir);
             } else {
                 GlobalEvent.emit('msg', newMessage('Error', `Internal error: can't get obj from virtual path: '${vInfo.path}'`));
             }

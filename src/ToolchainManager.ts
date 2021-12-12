@@ -1,25 +1,25 @@
 /*
-	MIT License
+    MIT License
 
-	Copyright (c) 2019 github0null
+    Copyright (c) 2019 github0null
 
-	Permission is hereby granted, free of charge, to any person obtaining a copy
-	of this software and associated documentation files (the "Software"), to deal
-	in the Software without restriction, including without limitation the rights
-	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-	copies of the Software, and to permit persons to whom the Software is
-	furnished to do so, subject to the following conditions:
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
 
-	The above copyright notice and this permission notice shall be included in all
-	copies or substantial portions of the Software.
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
 
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-	SOFTWARE.
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
 */
 
 import { ProjectType, ICompileOptions } from "./EIDETypeDefine";
@@ -65,6 +65,10 @@ export interface IToolchian {
     readonly version: number;
 
     getToolchainDir(): File;
+
+    getGccCompilerPath(): string | undefined;
+
+    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined;
 
     getInternalDefines(builderOpts: ICompileOptions): string[];
 
@@ -399,6 +403,15 @@ class KeilC51 implements IToolchian {
         return new KeilC51();
     }
 
+    getGccCompilerPath(): string | undefined {
+        const gcc = File.fromArray([this.getToolchainDir().path, 'BIN', 'C51.exe']);
+        return gcc.path;
+    }
+
+    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
+        return undefined;
+    }
+
     preHandleOptions(prjInfo: IProjectInfo, c51Options: ICompileOptions): void {
 
         // convert optimization
@@ -525,6 +538,15 @@ class SDCC implements IToolchian {
 
     newInstance(): IToolchian {
         return new SDCC();
+    }
+
+    getGccCompilerPath(): string | undefined {
+        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', 'sdcc.exe']);
+        return gcc.path;
+    }
+
+    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
+        return undefined;
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
@@ -741,6 +763,15 @@ class GnuStm8Sdcc implements IToolchian {
         return new SDCC();
     }
 
+    getGccCompilerPath(): string | undefined {
+        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', 'sdcc.exe']);
+        return gcc.path;
+    }
+
+    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
+        return undefined;
+    }
+
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
 
         if (options['linker'] == undefined) {
@@ -927,6 +958,15 @@ class AC5 implements IToolchian {
         return new AC5();
     }
 
+    getGccCompilerPath(): string | undefined {
+        const armccFile = File.fromArray([this.getToolchainDir().path, 'bin', 'armcc.exe']);
+        return armccFile.path;
+    }
+
+    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
+        return undefined;
+    }
+
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
         // convert output lib commmand
         if (options['linker'] && options['linker']['output-format'] === 'lib') {
@@ -1043,6 +1083,15 @@ class AC6 implements IToolchian {
 
     newInstance(): IToolchian {
         return new AC6();
+    }
+
+    getGccCompilerPath(): string | undefined {
+        const armccFile = File.fromArray([this.getToolchainDir().path, 'bin', 'armclang.exe']);
+        return armccFile.path;
+    }
+
+    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
+        return ['--target=arm-arm-none-eabi'];
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
@@ -1200,6 +1249,15 @@ class GCC implements IToolchian {
         return new GCC();
     }
 
+    getGccCompilerPath(): string | undefined {
+        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
+        return gcc.path;
+    }
+
+    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
+        return undefined;
+    }
+
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
 
         // convert output lib commmand
@@ -1293,6 +1351,15 @@ class IARSTM8 implements IToolchian {
 
     newInstance(): IToolchian {
         return new IARSTM8();
+    }
+
+    getGccCompilerPath(): string | undefined {
+        const gcc = File.fromArray([this.getToolchainDir().path, 'stm8', 'bin', 'iccstm8.exe']);
+        return gcc.path;
+    }
+    
+    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
+        return undefined;
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
@@ -1493,6 +1560,15 @@ class RISCV_GCC implements IToolchian {
 
     newInstance(): IToolchian {
         return new RISCV_GCC();
+    }
+
+    getGccCompilerPath(): string | undefined {
+        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
+        return gcc.path;
+    }
+    
+    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
+        return undefined;
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {

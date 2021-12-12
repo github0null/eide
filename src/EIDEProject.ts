@@ -1,25 +1,25 @@
 /*
-	MIT License
+    MIT License
 
-	Copyright (c) 2019 github0null
+    Copyright (c) 2019 github0null
 
-	Permission is hereby granted, free of charge, to any person obtaining a copy
-	of this software and associated documentation files (the "Software"), to deal
-	in the Software without restriction, including without limitation the rights
-	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-	copies of the Software, and to permit persons to whom the Software is
-	furnished to do so, subject to the following conditions:
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
 
-	The above copyright notice and this permission notice shall be included in all
-	copies or substantial portions of the Software.
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
 
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-	SOFTWARE.
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
 */
 
 import * as fs from 'fs';
@@ -29,6 +29,10 @@ import * as events from 'events';
 import * as ini from 'ini';
 import * as os from 'os';
 import * as yaml from 'yaml';
+import {
+    CppToolsApi, Version, CustomConfigurationProvider, getCppToolsApi,
+    SourceFileConfigurationItem, WorkspaceBrowseConfiguration
+} from 'vscode-cpptools';
 
 import { File } from '../lib/node-utility/File';
 import { FileWatcher } from '../lib/node-utility/FileWatcher';
@@ -39,7 +43,7 @@ import {
     CurrentDevice, ConfigMap, FileGroup,
     ProjectConfiguration, ProjectConfigData, WorkspaceConfiguration,
     CppConfiguration, CreateOptions,
-    ProjectConfigEvent, ProjectFileGroup, EventData, FileItem, EIDE_CONF_VERSION, ProjectTargetInfo, VirtualFolder, VirtualFile, CompileConfigModel, ArmBaseCompileData, ArmBaseCompileConfigModel, Dependence
+    ProjectConfigEvent, ProjectFileGroup, EventData, FileItem, EIDE_CONF_VERSION, ProjectTargetInfo, VirtualFolder, VirtualFile, CompileConfigModel, ArmBaseCompileData, ArmBaseCompileConfigModel, Dependence, CppConfigItem
 } from './EIDETypeDefine';
 import { ToolchainName, IToolchian, ToolchainManager } from './ToolchainManager';
 import { GlobalEvent } from './GlobalEvents';
@@ -137,7 +141,7 @@ export class VirtualSource implements SourceProvider {
         }
     }
 
-    private traverse(func: (folderInfo: { path: string, folder: VirtualFolder }) => void) {
+    traverse(func: (folderInfo: { path: string, folder: VirtualFolder }) => void) {
 
         const folderStack: { path: string, folder: VirtualFolder }[] = [];
 
@@ -165,9 +169,10 @@ export class VirtualSource implements SourceProvider {
 
     // load
 
-    load() {
+    load(notEmitEvt?: boolean) {
         this.config = this.project.GetConfiguration().config;
-        this.forceUpdateAllFolders(); // refresh all
+        // refresh all
+        if (!notEmitEvt) { this.forceUpdateAllFolders(); }
     }
 
     // get
@@ -373,7 +378,7 @@ class SourceRootList implements SourceProvider {
         this.srcFolderMaps = new Map();
     }
 
-    load() {
+    load(notEmitEvt?: boolean) {
 
         this.DisposeAll();
 
@@ -395,7 +400,7 @@ class SourceRootList implements SourceProvider {
             this.updateFolder(info);
         }
 
-        this.emit('dataChanged', 'dataChanged');
+        if (!notEmitEvt) { this.emit('dataChanged', 'dataChanged'); }
     }
 
     add(absPath: string): boolean {
@@ -624,14 +629,8 @@ class SourceRootList implements SourceProvider {
 
                 // push subfolders
                 cFolder.GetList(File.EMPTY_FILTER)
-                    .filter((folder) => {
-                        return !AbstractProject.excludeDirFilter.some((regexp) => {
-                            return regexp.test(folder.name);
-                        });
-                    })
-                    .forEach((folder) => {
-                        folderStack.push(folder);
-                    });
+                    .filter((folder) => !AbstractProject.excludeDirFilter.test(folder.name))
+                    .forEach((folder) => folderStack.push(folder));
             }
 
         } catch (error) {
@@ -667,21 +666,22 @@ export abstract class AbstractProject {
     static readonly cppConfigName = 'c_cpp_properties.json';
     static readonly prjConfigName = 'eide.json';
 
-    static readonly headerFilter: RegExp[] = [/\.h$/i, /\.hxx$/i, /\.hpp$/i, /\.inc$/i];
-    static readonly srcfileFilter: RegExp[] = [/\.cxx$/i, /\.cc$/i, /\.c\+\+$/i, /\.cpp$/i, /\.c$/i];
-    static readonly libFileFilter: RegExp[] = [/\.lib$/i, /\.a$/i, /\.o$/i, /\.obj$/i];
-    static readonly asmfileFilter: RegExp[] = [/\.s$/i, /\.a51$/i, /\.asm$/i];
+    // avaliable source files
+    static readonly headerFilter: RegExp = /\.(?:h|hxx|hpp|inc)$/i;
+    static readonly cppfileFilter: RegExp = /\.(?:c|cpp|c\+\+|cc|cxx)$/i;
+    static readonly libFileFilter: RegExp = /\.(?:lib|a|o|obj)$/i;
+    static readonly asmfileFilter: RegExp = /\.(?:s|asm|a51)$/i;
 
-    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|hex|bin|s19|map|map\.view)$/i;
-
-    static readonly excludeDirFilter: RegExp[] = [/^\.git$/i, /^\.vs$/i, /^\.vscode$/i, /^\.eide$/i];
     // this folder list will be excluded when search include path
     static readonly excludeIncSearchList: string[] = [DependenceManager.DEPENDENCE_DIR];
 
-    //-------
+    // this folder will be excluded when search source path
+    static readonly excludeDirFilter: RegExp = /^\.(?:git|vs|vscode|eide)$/i;
 
-    private static readonly dataChangedCountLimit = 5;
-    private dataChangedCount = 0;
+    // to show output files
+    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|hex|bin|s19|sct|map|map\.view)$/i;
+
+    //-------
 
     protected _event: events.EventEmitter;
     protected configMap: ConfigMap;
@@ -717,11 +717,11 @@ export abstract class AbstractProject {
     }
 
     static getFileFilters(): RegExp[] {
-        return this.srcfileFilter.concat(this.headerFilter, this.libFileFilter, this.asmfileFilter);
+        return [this.cppfileFilter, this.headerFilter, this.libFileFilter, this.asmfileFilter];
     }
 
     static getSourceFileFilter(): RegExp[] {
-        return this.srcfileFilter.concat(this.libFileFilter, this.asmfileFilter);
+        return [this.cppfileFilter, this.libFileFilter, this.asmfileFilter];
     }
 
     static equal(p1: AbstractProject, p2: AbstractProject) {
@@ -911,11 +911,36 @@ export abstract class AbstractProject {
         return this.configMap;
     }
 
-    ToAbsolutePath(path: string): string {
-        if (!File.isAbsolute(path)) {
-            return NodePath.normalize(this.GetRootDir().path + NodePath.sep + path);
+    private replacePathEnv(path: string): string {
+
+        const prjConfig = this.GetConfiguration();
+        const prjRootDir = this.GetRootDir();
+        const outDir = NodePath.normalize(prjRootDir.path + File.sep + prjConfig.getOutDir());
+
+        // replace prj env
+        path = path
+            .replace(/\$\(OutDir\)|\$\{OutDir\}/ig, outDir)
+            .replace(/\$\(ProjectName\)|\$\{ProjectName\}/ig, prjConfig.config.name)
+            .replace(/\$\(ExecutableName\)|\$\{ExecutableName\}/ig, `${outDir}${File.sep}${prjConfig.config.name}`)
+            .replace(/\$\(ProjectRoot\)|\$\{ProjectRoot\}/ig, prjRootDir.path);
+
+        // replace user env
+        const prjEnv = this.getProjectEnv();
+        if (prjEnv) {
+            for (const key in prjEnv) {
+                if (!/^\w+$/.test(key)) continue;
+                const reg = new RegExp(String.raw`\$\(${key}\)|\$\{${key}\}`, 'ig');
+                path = path.replace(reg, prjEnv[key]);
+            }
         }
-        return NodePath.normalize(path);
+
+        return path;
+    }
+
+    ToAbsolutePath(path_: string): string {
+        const path = this.replacePathEnv(path_);
+        if (File.isAbsolute(path)) { return NodePath.normalize(path); }
+        return NodePath.normalize(this.GetRootDir().path + NodePath.sep + path);
     }
 
     ToRelativePath(path: string, hasPrefix: boolean = true): string | undefined {
@@ -1219,7 +1244,7 @@ export abstract class AbstractProject {
 
     excludeSourceFile(path: string) {
         // it is not a header file
-        if (!AbstractProject.headerFilter.some((reg) => { return reg.test(path); })) {
+        if (!AbstractProject.headerFilter.test(path)) {
             if (this.addExclude(path)) {
                 this.sourceRoots.notifyUpdateFile(path);
                 this.virtualSource.notifyUpdateFile(path);
@@ -1313,15 +1338,21 @@ export abstract class AbstractProject {
 
         if (!envFile.IsFile()) {
             const defTxt: string[] = [
-                `##################################################################################`,
-                `# project environment config, can be used for 'builder', 'downloader' ...`,
-                `##################################################################################`,
+                `###########################################################`,
+                `#              project environment variables`,
+                `###########################################################`,
                 ``,
-                `# mcu ram size`,
+                `# append command prefix for toolchain`,
+                `#COMPILER_CMD_PREFIX=`,
+                ``,
+                `# mcu ram size (used to print memory usage)`,
                 `#MCU_RAM_SIZE=0x00`,
                 ``,
-                `# mcu rom size`,
+                `# mcu rom size (used to print memory usage)`,
                 `#MCU_ROM_SIZE=0x00`,
+                ``,
+                `# put your variables ...`,
+                `#VAR=`,
                 ``
             ];
             envFile.Write(defTxt.join(os.EOL));
@@ -1332,7 +1363,7 @@ export abstract class AbstractProject {
 
     getProjectEnv(): { [name: string]: any } | undefined {
 
-        const envs = this.getEnvConfig();
+        const envs = this.getRawEnv();
         if (envs == undefined) { return; }
 
         // remove none-string obj
@@ -1348,14 +1379,22 @@ export abstract class AbstractProject {
         return envs;
     }
 
-    getEnvConfig(): { [name: string]: any } | undefined {
-        const envFile = this.getEnvFile();
-        if (envFile.IsFile()) {
-            try {
-                return ini.parse(envFile.Read());
-            } catch (error) {
-                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+    private lastReadTime: number = 0;
+    private lastRawEnvObj: { [name: string]: any } | undefined;
+    private getRawEnv(): { [name: string]: any } | undefined {
+        try {
+            const envFile = this.getEnvFile();
+            if (envFile.IsFile()) {
+                const lastMdTime = fs.statSync(envFile.path).mtimeMs;
+                if (this.lastRawEnvObj == undefined ||
+                    lastMdTime > this.lastReadTime) { // update env
+                    this.lastRawEnvObj = ini.parse(envFile.Read());
+                    this.lastReadTime = fs.statSync(envFile.path).mtimeMs;
+                }
+                return this.lastRawEnvObj;
             }
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
     }
 
@@ -1417,8 +1456,9 @@ export abstract class AbstractProject {
     }
 
     protected LoadSourceRootFolders() {
-        this.sourceRoots.load();
-        this.virtualSource.load();
+        this.sourceRoots.load(true);
+        this.virtualSource.load(true);
+        this.onSourceRootChanged('dataChanged');
     }
 
     protected UpdateCppConfig() {
@@ -1438,20 +1478,40 @@ export abstract class AbstractProject {
             return rePath ? `\${workspaceFolder}${File.sep}${rePath}` : _path;
         });
 
+        // update virtual src search folder
+        let srcBrowseFolders: string[] = [];
+        this.getVirtualSourceManager().traverse((vFolder) => {
+            vFolder.folder.files.forEach((vFile) => {
+                const dir = File.ToUnixPath(NodePath.dirname(vFile.path))
+                    .replace(/^(?:\.\/)+/, '');
+                // if source is out of cur prj dir, add it
+                if (dir.startsWith('../')) {
+                    srcBrowseFolders.push(`\${workspaceFolder}/${dir}/*`);
+                } else if (NodePath.isAbsolute(dir)) {
+                    srcBrowseFolders.push(`${dir}/*`);
+                }
+            });
+        });
+        srcBrowseFolders = ArrayDelRepetition(srcBrowseFolders);
+
         // update includes to browse info
         cppConfigItem.browse = {
             limitSymbolsToIncludedHeaders: true,
-            databaseFilename: '${default}'
+            databaseFilename: '${default}',
+            path: srcBrowseFolders
         };
 
         // update includes and defines 
         cppConfigItem.includePath = ['${default}'].concat(includeList);
         cppConfigItem.defines = ['${default}'].concat(depMerge.defineList);
 
+        // compiler path
+        cppConfigItem.compilerPath = this.getToolchain().getGccCompilerPath();
+        cppConfigItem.compilerArgs = this.getToolchain().getGccCompilerCmdArgsForIntelliSense();
+
         // update forceinclude headers
-        cppConfigItem.forcedInclude = this.getToolchain().getForceIncludeHeaders()?.map((f_path) => {
-            return this.ToRelativePath(f_path) || f_path;
-        });
+        cppConfigItem.forcedInclude = this.getToolchain()
+            .getForceIncludeHeaders()?.map((f_path) => NodePath.normalize(f_path));
 
         cppConfig.Save();
     }
@@ -1480,13 +1540,13 @@ export abstract class AbstractProject {
         this.configMap.Set(new CppConfiguration(File.fromArray([wsFile.dir, AbstractProject.vsCodeDir, AbstractProject.cppConfigName])));
     }
 
+    private prevSaveTask: NodeJS.Timeout | undefined;
     protected UpdateDataChangedCount() {
-
-        this.dataChangedCount++;
-
-        if (this.dataChangedCount >= AbstractProject.dataChangedCountLimit) {
-            this.dataChangedCount = 0;
-            this.GetConfiguration().Save();
+        if (this.prevSaveTask == undefined) {
+            this.prevSaveTask = setTimeout(() => {
+                try { this.GetConfiguration().Save(); } catch (error) { }
+                this.prevSaveTask = undefined;
+            }, 300);
         }
     }
 
@@ -1669,7 +1729,7 @@ export abstract class AbstractProject {
     }
 }
 
-class EIDEProject extends AbstractProject {
+class EIDEProject extends AbstractProject implements CustomConfigurationProvider {
 
     //======================= Event handler ===========================
 
@@ -2060,6 +2120,45 @@ class EIDEProject extends AbstractProject {
 
         /* update src refs */
         this.notifyUpdateSourceRefs(undefined);
+
+        // allow intellisense provider for workspace if we have not
+        // and notify cpptools launch
+        /* {
+            const cppConfig = this.GetCppConfig();
+            const cppConfigItem = cppConfig.getConfig();
+            if (!cppConfigItem.configurationProvider) {
+                const newCfg: CppConfigItem = {
+                    name: os.platform(),
+                    includePath: <any>undefined,
+                    defines: <any>undefined,
+                    intelliSenseMode: '${default}',
+                    cStandard: '${default}',
+                    cppStandard: '${default}',
+                    configurationProvider: this.extensionId
+                };
+                cppConfig.setConfig(newCfg);
+                cppConfig.Save();
+            }
+
+            getCppToolsApi(Version.v2).then((api) => {
+
+                if (!api) {
+                    GlobalEvent.emit('msg', newMessage('Error', `can't get C/C++ intellisense provider api !`));
+                    return;
+                }
+
+                this.cppToolsApi = api;
+
+                if (api.notifyReady) {
+                    api.registerCustomConfigurationProvider(this);
+                    api.notifyReady(this);
+                } else {
+                    // Inform cpptools that a custom config provider will be able to service the current workspace.
+                    api.registerCustomConfigurationProvider(this);
+                    api.didChangeCustomConfiguration(this);
+                }
+            });
+        } */
     }
 
     ExportToKeilProject(): File | undefined {
@@ -2141,5 +2240,130 @@ class EIDEProject extends AbstractProject {
         keilParser.SetKeilXml(this, fileGroups, cDevice);
 
         return keilParser.Save(this.GetRootDir(), localKeilFile.noSuffixName);
+    }
+
+    ////////////////////////////////// cpptools intellisense provider ///////////////////////////////////
+
+    name: string = 'eide';
+    extensionId: string = 'cl.eide';
+
+    private cppToolsApi: CppToolsApi | undefined;
+
+    private cppToolsConfig: CppConfigItem = {
+        name: os.platform(),
+        includePath: [],
+        defines: []
+    };
+    /* 
+        UpdateCppConfig() {
+    
+            super.UpdateCppConfig();
+    
+            const prjConfig = this.GetConfiguration();
+            const builderOpts = prjConfig.compileConfigModel.getOptions(this.getEideDir().path, prjConfig.config);
+    
+            const depMerge = this.GetConfiguration().GetAllMergeDep();
+            const defMacros: string[] = ['__VSCODE_CPPTOOL']; // it's for internal force include header
+            depMerge.defineList = ArrayDelRepetition(defMacros.concat(depMerge.defineList, this.getToolchain().getInternalDefines(builderOpts)));
+            depMerge.incList = ArrayDelRepetition(depMerge.incList.concat(this.getSourceIncludeList()));
+    
+            const includeList: string[] = depMerge.incList.map((_path) => File.ToUnixPath(NodePath.normalize(_path)));
+    
+            // update virtual src search folder
+            let srcBrowseFolders: string[] = [];
+            this.getVirtualSourceManager().traverse((vFolder) => {
+                vFolder.folder.files.forEach((vFile) => {
+                    const dir = File.ToUnixPath(NodePath.dirname(NodePath.normalize(vFile.path)))
+                        .replace(/^(?:\.\/)+/, '');
+                    // if source is out of cur prj dir, add it
+                    if (dir.startsWith('../')) {
+                        srcBrowseFolders.push(`${this.ToAbsolutePath(dir)}/*`);
+                    } else if (NodePath.isAbsolute(dir)) {
+                        srcBrowseFolders.push(`${dir}/*`);
+                    }
+                });
+            });
+            srcBrowseFolders = ArrayDelRepetition(srcBrowseFolders);
+    
+            // update includes to browse info
+            this.cppToolsConfig.browse = {
+                limitSymbolsToIncludedHeaders: true,
+                path: srcBrowseFolders
+            };
+    
+            // update includes and defines 
+            this.cppToolsConfig.includePath = includeList;
+            this.cppToolsConfig.defines = depMerge.defineList;
+    
+            // compiler path
+            this.cppToolsConfig.compilerPath = this.getToolchain().getGccCompilerPath();
+            this.cppToolsConfig.compilerArgs = this.getToolchain().getGccCompilerCmdArgsForIntelliSense();
+    
+            // update forceinclude headers
+            this.cppToolsConfig.forcedInclude = this.getToolchain()
+                .getForceIncludeHeaders()?.map((f_path) => NodePath.normalize(f_path));
+    
+            // notify config changed
+            this.cppToolsApi?.didChangeCustomConfiguration(this);
+            this.cppToolsApi?.didChangeCustomBrowseConfiguration(this);
+        } */
+
+    canProvideConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<boolean> {
+        return new Promise((resolve) => {
+            resolve(true);
+        });
+    }
+
+    provideConfigurations(uris: vscode.Uri[], token?: vscode.CancellationToken | undefined): Thenable<SourceFileConfigurationItem[]> {
+        return new Promise((resolve) => {
+            resolve(uris.map((uri) => {
+                return {
+                    uri: vscode.Uri.file(uri.fsPath),
+                    configuration: {
+                        includePath: [], //this.cppToolsConfig.includePath,
+                        defines: [], //this.cppToolsConfig.defines,
+                        forcedInclude: [], //this.cppToolsConfig.forcedInclude,
+                        //compilerPath: this.cppToolsConfig.compilerPath,
+                        //compilerArgs: this.cppToolsConfig.compilerArgs
+                    }
+                };
+            }));
+        });
+    }
+
+    canProvideBrowseConfiguration(token?: vscode.CancellationToken | undefined): Thenable<boolean> {
+        return new Promise((resolve) => {
+            resolve(true);
+        });
+    }
+
+    provideBrowseConfiguration(token?: vscode.CancellationToken | undefined): Thenable<WorkspaceBrowseConfiguration | null> {
+        return new Promise((resolve) => {
+            resolve({
+                browsePath: this.cppToolsConfig.browse?.path || [],
+                compilerPath: this.cppToolsConfig.compilerPath,
+                compilerArgs: this.cppToolsConfig.compilerArgs
+            });
+        });
+    }
+
+    canProvideBrowseConfigurationsPerFolder(token?: vscode.CancellationToken | undefined): Thenable<boolean> {
+        return new Promise((resolve) => {
+            resolve(true);
+        });
+    }
+
+    provideFolderBrowseConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<WorkspaceBrowseConfiguration | null> {
+        return new Promise((resolve) => {
+            resolve({
+                browsePath: this.cppToolsConfig.browse?.path || [],
+                compilerPath: this.cppToolsConfig.compilerPath,
+                compilerArgs: this.cppToolsConfig.compilerArgs
+            });
+        });
+    }
+
+    dispose() {
+        // nothing todo
     }
 }
