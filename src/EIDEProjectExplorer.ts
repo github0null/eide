@@ -3439,112 +3439,120 @@ export class ProjectExplorer {
 
             await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
-                title: `Importing Resources`
-            }, (progress) => {
-                return new Promise(async (resolve) => {
+                title: `Importing Resources`,
+                cancellable: false
+            }, async (progress, __) => {
+                try {
+                    //
+                    // show progress message
+                    //
+                    progress.report({ message: `running importer ...` });
+                    await new Promise((resolve) => {
+                        setTimeout(() => resolve(), 500);
+                    });
+
+                    //
+                    // run importer
+                    //
+                    const prjFile = new File(uri[0].fsPath);
+                    const imptrName = (<File>imptrType.file).noSuffixName;
+                    const cmds = ['--std', './importer/index.js', imptrName, prjFile.path];
+                    const result = child_process
+                        .execFileSync(`${scriptRoot.path}/qjs.exe`, cmds, { cwd: scriptRoot.path })
+                        .toString();
+
+                    let prjList: ImporterProjectInfo[];
                     try {
-                        progress.report({ message: `running importer ...` });
-
-                        //
-                        // run importer
-                        //
-                        const prjFile = new File(uri[0].fsPath);
-                        const imptrName = (<File>imptrType.file).noSuffixName;
-                        const cmds = ['--std', './importer/index.js', imptrName, prjFile.path];
-                        const result = child_process.execFileSync(`${scriptRoot.path}/qjs.exe`, cmds, { cwd: scriptRoot.path }).toString();
-
-                        let prjList: ImporterProjectInfo[];
-                        try {
-                            prjList = JSON.parse(result);
-                            if (!Array.isArray(prjList)) throw new Error('project list must be an array !');
-                        } catch (error) {
-                            throw new Error(`Import Error !, msg: '${result}'`);
-                        }
-
-                        //
-                        // select project
-                        //
-                        let prjInfo: ImporterProjectInfo | undefined;
-
-                        if (prjList.length > 0) {
-                            // if have multi project, select one to import
-                            if (prjList.length > 1) {
-                                const itemList = prjList.map((prj) => {
-                                    return {
-                                        id: `${prj.name}-${prj.target}`,
-                                        label: prj.name,
-                                        description: prj.target,
-                                        detail: `${prjFile.name} -> ${prj.name}${prj.target ? (': ' + prj.target) : ''}`
-                                    }
-                                });
-                                const selectedItem = await vscode.window.showQuickPick<any>(itemList,
-                                    {
-                                        placeHolder: `Found ${prjList.length} sub project, select one to import`,
-                                        ignoreFocusOut: true,
-                                        canPickMany: false
-                                    }
-                                );
-                                if (item != undefined) {
-                                    const index = itemList.findIndex((item) => item.id == selectedItem.id);
-                                    if (index != -1) {
-                                        prjInfo = prjList[index];
-                                    }
-                                }
-                            }
-                            // if only have one, use it
-                            else {
-                                prjInfo = prjList[0];
-                            }
-                        }
-
-                        if (prjInfo == undefined) {
-                            resolve();
-                            return;
-                        }
-
-                        // make abs path to relative path
-                        const formatVirtualFolder = (vFolderRoot: VirtualFolder) => {
-                            const folderStack: VirtualFolder[] = [vFolderRoot];
-                            while (folderStack.length > 0) {
-                                const vFolder = folderStack.pop();
-                                if (vFolder) {
-                                    vFolder.files = vFolder.files.map((file) => {
-                                        return { path: prj.ToRelativePath(file.path) || file.path }
-                                    });
-                                    vFolder.folders.forEach((folder) => {
-                                        folderStack.push(folder)
-                                    });
-                                }
-                            }
-                        };
-
-                        //
-                        // start import project
-                        //
-                        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
-                        const prjConf = prj.GetConfiguration();
-                        prjConf.config.virtualFolder = prjInfo.files;
-                        formatVirtualFolder(prjConf.config.virtualFolder);
-                        const deps = prjConf.CustomDep_getDependence();
-                        deps.incList = prjInfo.incList;
-                        deps.libList = [];
-                        deps.defineList = prjInfo.defineList;
-
-                        //
-                        // notify update
-                        //
-                        prj.getVirtualSourceManager().load();
-                        prjConf.CustomDep_NotifyChanged();
-
-                        // show message and exit
-                        progress.report({ message: `done !` });
-                        setTimeout(() => resolve(), 1000);
-
+                        prjList = JSON.parse(result);
+                        if (!Array.isArray(prjList)) throw new Error('project list must be an array !');
                     } catch (error) {
-                        GlobalEvent.emit('error', error);
-                        resolve();
+                        throw new Error(`Import Error !, msg: '${result}'`);
                     }
-                });
+
+                    //
+                    // select project
+                    //
+                    let prjInfo: ImporterProjectInfo | undefined;
+
+                    if (prjList.length > 0) {
+                        // if have multi project, select one to import
+                        if (prjList.length > 1) {
+                            const itemList = prjList.map((prj) => {
+                                return {
+                                    id: `${prj.name}-${prj.target}`,
+                                    label: prj.name,
+                                    description: prj.target,
+                                    detail: `${prjFile.name} -> ${prj.name}${prj.target ? (': ' + prj.target) : ''}`
+                                }
+                            });
+                            const selectedItem = await vscode.window.showQuickPick<any>(itemList,
+                                {
+                                    placeHolder: `Found ${prjList.length} sub project, select one to import`,
+                                    ignoreFocusOut: true,
+                                    canPickMany: false
+                                }
+                            );
+                            if (item != undefined) {
+                                const index = itemList.findIndex((item) => item.id == selectedItem.id);
+                                if (index != -1) {
+                                    prjInfo = prjList[index];
+                                }
+                            }
+                        }
+                        // if only have one, use it
+                        else {
+                            prjInfo = prjList[0];
+                        }
+                    }
+
+                    if (prjInfo == undefined) {
+                        return;
+                    }
+
+                    // make abs path to relative path
+                    const formatVirtualFolder = (vFolderRoot: VirtualFolder) => {
+                        const folderStack: VirtualFolder[] = [vFolderRoot];
+                        while (folderStack.length > 0) {
+                            const vFolder = folderStack.pop();
+                            if (vFolder) {
+                                vFolder.files = vFolder.files.map((file) => {
+                                    return { path: prj.ToRelativePath(file.path) || file.path }
+                                });
+                                vFolder.folders.forEach((folder) => {
+                                    folderStack.push(folder)
+                                });
+                            }
+                        }
+                    };
+
+                    //
+                    // start import project
+                    //
+                    const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+                    const prjConf = prj.GetConfiguration();
+                    prjConf.config.virtualFolder = prjInfo.files;
+                    formatVirtualFolder(prjConf.config.virtualFolder);
+                    const deps = prjConf.CustomDep_getDependence();
+                    deps.incList = prjInfo.incList;
+                    deps.libList = [];
+                    deps.defineList = prjInfo.defineList;
+
+                    //
+                    // notify update
+                    //
+                    prj.getVirtualSourceManager().load();
+                    prjConf.CustomDep_NotifyChanged();
+
+                    // show message and exit
+                    progress.report({ message: `done !` });
+
+                    await new Promise((resolve) => {
+                        setTimeout(() => resolve(), 1000);
+                    });
+
+                } catch (error) {
+                    GlobalEvent.emit('error', error);
+                }
             });
 
         } catch (error) {
