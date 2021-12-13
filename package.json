@@ -1084,7 +1084,7 @@
                 },
                 {
                     "command": "_cl.eide.project.source.modify.path",
-                    "when": "viewItem == V_FOLDER || viewItem == V_FOLDER_ROOT || viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
+                    "when": "viewItem == PROJECT || viewItem == V_FOLDER || viewItem == V_FOLDER_ROOT || viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
                 },
                 {
                     "command": "_cl.eide.project.addPackage",

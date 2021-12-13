@@ -146,12 +146,13 @@ export class VirtualSource implements SourceProvider {
         const folderStack: { path: string, folder: VirtualFolder }[] = [];
 
         // put root folders
-        this.getFolder()?.folders.forEach((vFolder) => {
+        const rootFolder = this.getFolder();
+        if (rootFolder) {
             folderStack.push({
-                path: `${VirtualSource.rootName}/${vFolder.name}`,
-                folder: vFolder
+                path: rootFolder.name,
+                folder: rootFolder
             });
-        });
+        }
 
         let curFolder: { path: string, folder: VirtualFolder };
 
@@ -1330,12 +1331,7 @@ export abstract class AbstractProject {
 
     getEnvFile(notInitFile?: boolean): File {
 
-        const prjConfig = this.GetConfiguration();
-        const targetName = prjConfig.config.mode.toLowerCase();
-
-        const envFilePath = `${this.getEideDir().path}${File.sep}${targetName}.env.ini`;
-        const envFile = new File(envFilePath);
-
+        const envFile = new File(`${this.getEideDir().path}${File.sep}env.ini`);
         if (!notInitFile && !envFile.IsFile()) {
             const defTxt: string[] = [
                 `###########################################################`,
@@ -1351,7 +1347,11 @@ export abstract class AbstractProject {
                 `# mcu rom size (used to print memory usage)`,
                 `#MCU_ROM_SIZE=0x00`,
                 ``,
-                `# put your variables ...`,
+                `# put your global variables ...`,
+                `#GLOBAL_VAR=`,
+                ``,
+                `[debug]`,
+                `# put your variables for 'debug' target ...`,
                 `#VAR=`,
                 ``
             ];
@@ -1361,46 +1361,85 @@ export abstract class AbstractProject {
         return envFile;
     }
 
-    private env_lastGetTime: number = 0;
-    private env_lastReadTime: number = 0;
-    private env_lastRawEnvObj: { [name: string]: any } | undefined;
-    getProjectEnv(): { [name: string]: any } | undefined {
+    private __env_raw_lastGetTime: number = 0;
+    private __env_raw_lastUpdateTime: number = 0;
+    private __env_raw_lastEnvObj: { [name: string]: any } | undefined;
+    getProjectRawEnv(): { [name: string]: any } | undefined {
         try {
 
-            // limit read interval (150 ms), increase speed
-            if (this.env_lastRawEnvObj != undefined &&
-                Date.now() - this.env_lastGetTime < 150) {
-                return this.env_lastRawEnvObj;
+            // limit read interval (100 ms), increase speed
+            if (this.__env_raw_lastEnvObj != undefined &&
+                Date.now() - this.__env_raw_lastGetTime < 100) {
+                return this.__env_raw_lastEnvObj;
             }
 
             // is env need update ?
             const envFile = this.getEnvFile(true);
             if (envFile.IsFile()) {
                 const lastMdTime = fs.statSync(envFile.path).mtimeMs;
-                if (this.env_lastRawEnvObj == undefined ||
-                    lastMdTime > this.env_lastReadTime) {
-
+                if (this.__env_raw_lastEnvObj == undefined ||
+                    lastMdTime > this.__env_raw_lastUpdateTime) {
                     // update env
-                    this.env_lastRawEnvObj = ini.parse(envFile.Read());
-                    this.env_lastReadTime = lastMdTime;
-
-                    // delete non-string obj
-                    for (const key in this.env_lastRawEnvObj) {
-                        if (typeof this.env_lastRawEnvObj[key] == 'object' ||
-                            Array.isArray(this.env_lastRawEnvObj[key]) ||
-                            key.includes(' ')) {
-                            delete this.env_lastRawEnvObj[key];
-                        }
-                    }
+                    this.__env_raw_lastEnvObj = ini.parse(envFile.Read());
+                    this.__env_raw_lastUpdateTime = lastMdTime;
                 }
 
                 // return env objects
-                this.env_lastGetTime = Date.now();
-                return this.env_lastRawEnvObj;
+                this.__env_raw_lastGetTime = Date.now();
+                return this.__env_raw_lastEnvObj;
             }
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
+    }
+
+    private __env_lastUpdateTime: number = 0;
+    private __env_lastEnvObj: { [name: string]: any } | undefined;
+    getProjectEnv(): { [name: string]: any } | undefined {
+
+        // limit read interval (150 ms), increase speed
+        if (this.__env_lastEnvObj != undefined &&
+            Date.now() - this.__env_lastUpdateTime < 150) {
+            return this.__env_lastEnvObj;
+        }
+
+        let env: { [name: string]: any } | undefined;
+
+        const rawEnv = this.getProjectRawEnv();
+        if (rawEnv != undefined) {
+            env = JSON.parse(JSON.stringify(rawEnv));
+
+            // override target env var
+            const targetName = this.getCurrentTarget().toLowerCase();
+            for (const key in env) {
+                if (typeof env[key] == 'object' &&
+                    Array.isArray(env[key]) == false &&
+                    key === targetName) {
+                    try {
+                        const targetObj = env[key];
+                        for (const var_name in targetObj) {
+                            env[var_name] = targetObj[var_name];
+                        }
+                    } catch (error) {
+                        // nothing todo
+                    }
+                }
+            }
+
+            // delete non-string obj
+            for (const key in env) {
+                if (typeof env[key] == 'object' ||
+                    Array.isArray(env[key]) ||
+                    key.includes(' ')) {
+                    delete env[key];
+                }
+            }
+        }
+
+        // update and ret
+        this.__env_lastEnvObj = env;
+        this.__env_lastUpdateTime = Date.now();
+        return this.__env_lastEnvObj;
     }
 
     getFilesOptionsFile(): File {

@@ -308,9 +308,9 @@ export class ProjTreeItem extends vscode.TreeItem {
         }
     }
 
-    private getSourceFileIconName(fileName_: string, suffix_: string): string | undefined {
+    private getSourceFileIconName(fileName_: string, suffix_: string): string | vscode.ThemeIcon | undefined {
 
-        let name: string | undefined;
+        let name: string | vscode.ThemeIcon | undefined;
 
         const fileName = fileName_.toLowerCase();
         const suffix = suffix_.toLowerCase();
@@ -358,7 +358,7 @@ export class ProjTreeItem extends vscode.TreeItem {
                 if (fileName.endsWith('.map.view')) {
                     name = 'Report_16x.svg';
                 } else {
-                    name = 'document-light.svg';
+                    name = vscode.ThemeIcon.File; //'document-light.svg';
                 }
                 break;
         }
@@ -2117,17 +2117,25 @@ export class ProjectExplorer {
             let projectOrder: number | undefined = undefined;
 
             /* get project order */
-            const envConfig = project.getProjectEnv();
-            if (envConfig && envConfig['workspace'] &&
-                envConfig['workspace']['order']) {
-                projectOrder = parseInt(envConfig['workspace']['order']) || undefined;
+            const envConfig = project.getProjectRawEnv();
+            const targetName = project.getCurrentTarget().toLowerCase();
+            if (envConfig) {
+                const cfgName = 'EIDE_BUILD_ORDER';
+                // parse global config
+                if (envConfig[cfgName]) {
+                    projectOrder = parseInt(envConfig[cfgName]) || undefined;
+                }
+                // parse target config
+                if (envConfig[targetName] && envConfig[targetName][cfgName]) {
+                    projectOrder = parseInt(envConfig[targetName][cfgName]) || undefined;
+                }
             }
 
             /* gen command */
             const builder = CodeBuilder.NewBuilder(project);
             const cmdLine = builder.genBuildCommand({ useFastMode: !rebuild }, true);
             if (cmdLine) {
-                if (projectOrder == undefined) {
+                if (projectOrder == undefined || projectOrder == NaN) {
                     projectOrder = 100; /* make default order is 100 */
                 }
                 cmdList.push({
@@ -3851,7 +3859,8 @@ export class ProjectExplorer {
         }
 
         // virtual folder
-        else if (item.type === TreeItemType.V_FOLDER ||
+        else if (item.type === TreeItemType.PROJECT ||
+            item.type === TreeItemType.V_FOLDER ||
             item.type === TreeItemType.V_FOLDER_ROOT) {
 
             const vInfo = <VirtualFolderInfo>item.val.obj;
