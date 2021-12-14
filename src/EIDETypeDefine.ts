@@ -69,7 +69,7 @@ import * as utility from './utility';
 
 // -------------------------------------------
 
-export const EIDE_CONF_VERSION = '2.6';
+export const EIDE_CONF_VERSION = '2.7';
 
 // -------------------------------------------
 

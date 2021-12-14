@@ -789,6 +789,29 @@ export abstract class AbstractProject {
                 }
             }
         }
+
+        // merge old 'env.ini' files for v2.15.3^
+        const envFile: File = this.getEnvFile(true);
+        if (!envFile.IsFile()) { // if 'env.ini' file is not existed, we try to merge it
+            const oldEnv: string[] = [];
+            this.eideDir.GetList([/[^\.]+\.env\.ini$/], File.EMPTY_FILTER)
+                .forEach((file) => {
+                    const tName = NodePath.basename(file.path, '.env.ini');
+                    if (tName) {
+                        try {
+                            const str = ini.stringify(ini.parse(file.Read()));
+                            fs.unlinkSync(file.path); // delete file before
+                            if (str) { oldEnv.push(`[${tName}]`, `${str}`); }
+                        } catch (error) {
+                            // nothing todo
+                        }
+                    }
+                });
+            if (oldEnv.length > 0) {
+                const cont = this.getEnvFileDefCont().concat(oldEnv);
+                envFile.Write(cont.join(os.EOL));
+            }
+        }
     }
 
     private initProjectConfig() {
@@ -1329,32 +1352,37 @@ export abstract class AbstractProject {
         return [];
     }
 
+    private getEnvFileDefCont(): string[] {
+        return [
+            `###########################################################`,
+            `#              project environment variables`,
+            `###########################################################`,
+            ``,
+            `# append command prefix for toolchain`,
+            `#COMPILER_CMD_PREFIX=`,
+            ``,
+            `# mcu ram size (used to print memory usage)`,
+            `#MCU_RAM_SIZE=0x00`,
+            ``,
+            `# mcu rom size (used to print memory usage)`,
+            `#MCU_ROM_SIZE=0x00`,
+            ``,
+            `# put your global variables ...`,
+            `#GLOBAL_VAR=`,
+            ``,
+        ].map((line) => line);
+    }
+
     getEnvFile(notInitFile?: boolean): File {
 
         const envFile = new File(`${this.getEideDir().path}${File.sep}env.ini`);
         if (!notInitFile && !envFile.IsFile()) {
-            const defTxt: string[] = [
-                `###########################################################`,
-                `#              project environment variables`,
-                `###########################################################`,
-                ``,
-                `# append command prefix for toolchain`,
-                `#COMPILER_CMD_PREFIX=`,
-                ``,
-                `# mcu ram size (used to print memory usage)`,
-                `#MCU_RAM_SIZE=0x00`,
-                ``,
-                `# mcu rom size (used to print memory usage)`,
-                `#MCU_ROM_SIZE=0x00`,
-                ``,
-                `# put your global variables ...`,
-                `#GLOBAL_VAR=`,
-                ``,
+            const defTxt: string[] = this.getEnvFileDefCont();
+            defTxt.push(
                 `[debug]`,
                 `# put your variables for 'debug' target ...`,
-                `#VAR=`,
-                ``
-            ];
+                `#VAR=`
+            )
             envFile.Write(defTxt.join(os.EOL));
         }
 
@@ -1639,16 +1667,17 @@ export abstract class AbstractProject {
     //---
 
     protected BeforeLoad(wsFile: File): void {
+
         // check project version
         const eideFile = File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
         const conf = <ProjectConfigData<any>>JSON.parse(eideFile.Read());
         if (conf.version) {
-            const cur_v = parseInt(conf.version.replace(/\./g, ''));
-            const eide_conf_v = parseInt(EIDE_CONF_VERSION.replace(/\./g, ''));
-            if (cur_v > eide_conf_v) { // now < old, error
-                throw Error(`The project version is '${conf.version}', but eide is '${EIDE_CONF_VERSION}'. Please update eide to the latest version !`);
-            }
-            else if (eide_conf_v > cur_v) { // now > old, update it
+            const prj_version = conf.version;
+            const eide_conf_v = EIDE_CONF_VERSION;
+            const prjv_vs_eidev = prj_version.localeCompare(eide_conf_v);
+            if (prjv_vs_eidev > 0) { // prj version > eide, error
+                throw Error(`The project config version is '${conf.version}', but eide is '${EIDE_CONF_VERSION}'. Please update 'eide' to the latest version !`);
+            } else if (prjv_vs_eidev < 0) { // prj version < eide, update it
                 conf.version = EIDE_CONF_VERSION;
                 eideFile.Write(JSON.stringify(conf));
             }
