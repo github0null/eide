@@ -802,7 +802,7 @@ export abstract class AbstractProject {
                             const cfg = ini.parse(file.Read());
                             if (cfg['workspace']) { // merge old prj order cfg
                                 cfg['EIDE_BUILD_ORDER'] = cfg['workspace']['order'];
-                                cfg['workspace'] = undefined;
+                                delete cfg['workspace'];
                             }
                             const cfg_str = ini.stringify(cfg);
                             fs.unlinkSync(file.path); // delete file before
