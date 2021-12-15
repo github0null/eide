@@ -1635,29 +1635,35 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
             setTimeout(async () => {
 
-                const wsFileList = targetDir.GetList([/\.code-workspace$/i], File.EMPTY_FILTER);
-                const wsFile: File | undefined = wsFileList.length > 0 ? wsFileList[0] : undefined;
+                try {
 
-                if (wsFile) {
-                    try {
+                    const wsFileList = targetDir.GetList([/\.code-workspace$/i], File.EMPTY_FILTER);
+                    const wsFile: File | undefined = wsFileList.length > 0 ? wsFileList[0] : undefined;
+
+                    if (wsFile) {
+
                         // rename workspace file name
                         const targetPath = targetDir.path + File.sep + option.name + AbstractProject.workspaceSuffix;
                         fs.renameSync(wsFile.path, targetPath);
 
-                        // convert .EIDE to .eide
-                        this.toLowercaseEIDEFolder(targetDir);
+                        // rename project
+                        if (templateFile.suffix != 'ewt') { // ignore eide workspace project
 
-                        // rename project name
-                        {
-                            const prjFile = File.fromArray([targetDir.path, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
-                            if (!prjFile.IsFile()) throw Error(`project file: '${prjFile.path}' is not exist !`);
+                            // convert .EIDE to .eide
+                            this.toLowercaseEIDEFolder(targetDir);
 
-                            try {
-                                const prjConf: ProjectConfigData<any> = JSON.parse(prjFile.Read());
-                                prjConf.name = option.name; // set project name
-                                prjFile.Write(JSON.stringify(prjConf));
-                            } catch (error) {
-                                throw Error(`change project name failed !, msg: ${error.message}`);
+                            // rename project name
+                            {
+                                const prjFile = File.fromArray([targetDir.path, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
+                                if (!prjFile.IsFile()) throw Error(`project file: '${prjFile.path}' is not exist !`);
+
+                                try {
+                                    const prjConf: ProjectConfigData<any> = JSON.parse(prjFile.Read());
+                                    prjConf.name = option.name; // set project name
+                                    prjFile.Write(JSON.stringify(prjConf));
+                                } catch (error) {
+                                    throw Error(`change project name failed !, msg: ${error.message}`);
+                                }
                             }
                         }
 
@@ -1673,9 +1679,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                 WorkspaceManager.getInstance().openWorkspace(wsFile);
                             }
                         }
-                    } catch (error) {
-                        GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
                     }
+                } catch (error) {
+                    GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
                 }
             }, 400);
 
