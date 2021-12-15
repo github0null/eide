@@ -321,30 +321,34 @@ export class ToolchainManager {
         }
     }
 
-    isToolchainPathReady(name: ToolchainName): boolean {
+    getToolchainExecutableFolder(name: ToolchainName): File | undefined {
 
         const settingManager = SettingManager.GetInstance();
 
         switch (name) {
             case 'AC5':
-                return File.fromArray([settingManager.getArmcc5Dir().path, 'bin']).IsDir();
+                return File.fromArray([settingManager.getArmcc5Dir().path, 'bin']);
             case 'AC6':
-                return File.fromArray([settingManager.getArmcc6Dir().path, 'bin']).IsDir();
+                return File.fromArray([settingManager.getArmcc6Dir().path, 'bin']);
             case 'Keil_C51':
-                return settingManager.isKeilC51IniReady();
+                return File.fromArray([settingManager.GetC51Dir().path, 'BIN']);
             case 'GCC':
-                return File.fromArray([settingManager.getGCCDir().path, 'bin']).IsDir();
+                return File.fromArray([settingManager.getGCCDir().path, 'bin']);
             case 'IAR_STM8':
-                return File.fromArray([settingManager.getIARForStm8Dir().path, 'stm8', 'bin']).IsDir();
+                return File.fromArray([settingManager.getIARForStm8Dir().path, 'stm8', 'bin']);
             case 'SDCC':
-                return File.fromArray([settingManager.getSdccDir().path, 'bin']).IsDir();
+                return File.fromArray([settingManager.getSdccDir().path, 'bin']);
             case 'RISCV_GCC':
-                return File.fromArray([settingManager.getRiscvToolFolder().path, 'bin']).IsDir();
+                return File.fromArray([settingManager.getRiscvToolFolder().path, 'bin']);
             case 'GNU_SDCC_STM8':
-                return File.fromArray([settingManager.getGnuSdccStm8Dir().path, 'bin']).IsDir();
+                return File.fromArray([settingManager.getGnuSdccStm8Dir().path, 'bin']);
             default:
-                return false;
+                return undefined;
         }
+    }
+
+    isToolchainPathReady(name: ToolchainName): boolean {
+        return this.getToolchainExecutableFolder(name)?.IsDir() || false;
     }
 
     //----------------------
@@ -1357,7 +1361,7 @@ class IARSTM8 implements IToolchian {
         const gcc = File.fromArray([this.getToolchainDir().path, 'stm8', 'bin', 'iccstm8.exe']);
         return gcc.path;
     }
-    
+
     getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
         return undefined;
     }
@@ -1566,7 +1570,7 @@ class RISCV_GCC implements IToolchian {
         const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
         return gcc.path;
     }
-    
+
     getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
         return undefined;
     }

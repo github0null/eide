@@ -3317,6 +3317,10 @@ export class CppConfiguration extends Configuration<CppConfig> {
     }
 
     Save() {
+        // nothing todo
+    }
+
+    saveToFile() {
         const config = this.getConfig();
         this.Update(this.watcher.file.Read());
         this.setConfig(config);

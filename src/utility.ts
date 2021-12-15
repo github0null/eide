@@ -102,6 +102,29 @@ export function openUrl(url: string): Promise<Error | undefined> {
     });
 }
 
+export function compareVersion(v1: string, v2: string): number {
+
+    const v1_li = v1.split('.').filter((s) => s.trim() != '');
+    const v2_li = v2.split('.').filter((s) => s.trim() != '');
+
+    // compare per number
+    const minLen = Math.min(v1_li.length, v2_li.length);
+    for (let index = 0; index < minLen; index++) {
+        const v_1 = parseInt(v1_li[index]);
+        if (isNaN(v_1)) throw new Error(`version string '${v1}' must only contain 'number' and '.'`);
+        const v_2 = parseInt(v2_li[index]);
+        if (isNaN(v_2)) throw new Error(`version string '${v2}' must only contain 'number' and '.'`);
+        if (v_1 > v_2) return 1;
+        if (v_1 < v_2) return -1;
+    }
+
+    // if prefix is equal, compare len
+    if (v1_li.length > v2_li.length) return 1;
+    if (v1_li.length < v2_li.length) return -1;
+
+    return 0;
+}
+
 export const toolsUrlMap = {
     "jlink": "https://www.segger.com/downloads/jlink/JLink_Windows_V650.exe",
     "sdcc": "https://sourceforge.net/projects/sdcc/files/latest/download",

@@ -56,13 +56,14 @@ import { DependenceManager } from './DependenceManager';
 import { isNullOrUndefined } from 'util';
 import { DeleteDir } from './Platform';
 import { IDebugConfigGenerator } from './DebugConfigGenerator';
-import { md5, copyObject } from './utility';
+import { md5, copyObject, compareVersion } from './utility';
 import { ResInstaller } from './ResInstaller';
 import {
     view_str$prompt$not_found_compiler, view_str$operation$name_can_not_be_blank,
     view_str$operation$name_can_not_have_invalid_char
 } from './StringTable';
 import { SettingManager } from './SettingManager';
+import { WorkspaceManager } from './WorkspaceManager';
 
 export class CheckError extends Error {
 }
@@ -892,6 +893,9 @@ export abstract class AbstractProject {
             .concat(this.virtualSource.getFileGroups());
     }
 
+    /**
+     * get project root folder
+    */
     GetRootDir(): File {
         return (<FileWatcher>this.rootDirWatcher).file;
     }
@@ -1538,13 +1542,17 @@ export abstract class AbstractProject {
         this.onSourceRootChanged('dataChanged');
     }
 
+    /** 
+     * @deprecated
+     * for old version, now is overrided by CustomConfigurationProvider
+    */
+    /* 
     protected UpdateCppConfig() {
-
         const prjConfig = this.GetConfiguration();
         const builderOpts = prjConfig.compileConfigModel.getOptions(this.getEideDir().path, prjConfig.config);
 
         const depMerge = this.GetConfiguration().GetAllMergeDep();
-        const defMacros: string[] = ['__VSCODE_CPPTOOL']; /* it's for internal force include header */
+        const defMacros: string[] = ['__VSCODE_CPPTOOL']; // it's for internal force include header
         depMerge.defineList = ArrayDelRepetition(defMacros.concat(depMerge.defineList, this.getToolchain().getInternalDefines(builderOpts)));
         depMerge.incList = ArrayDelRepetition(depMerge.incList.concat(this.getSourceIncludeList()));
 
@@ -1591,7 +1599,7 @@ export abstract class AbstractProject {
             .getForceIncludeHeaders()?.map((f_path) => NodePath.normalize(f_path));
 
         cppConfig.Save();
-    }
+    } */
 
     public updateDebugConfig() {
         const debugConfigGenerator = IDebugConfigGenerator.newInstance(this);
@@ -1679,7 +1687,7 @@ export abstract class AbstractProject {
         if (conf.version) {
             const prj_version = conf.version;
             const eide_conf_v = EIDE_CONF_VERSION;
-            const prjv_vs_eidev = prj_version.localeCompare(eide_conf_v);
+            const prjv_vs_eidev = compareVersion(prj_version, eide_conf_v);
             if (prjv_vs_eidev > 0) { // prj version > eide, error
                 throw Error(`The project config version is '${conf.version}', but eide is '${EIDE_CONF_VERSION}'. Please update 'eide' to the latest version !`);
             } else if (prjv_vs_eidev < 0) { // prj version < eide, update it
@@ -1759,7 +1767,9 @@ export abstract class AbstractProject {
         const toolchainManager = ToolchainManager.getInstance();
         const toolchain = this.getToolchain();
         if (!toolchainManager.isToolchainPathReady(toolchain.name)) {
-            const msg = view_str$prompt$not_found_compiler.replace('{}', toolchain.name);
+            const dir = toolchainManager.getToolchainExecutableFolder(toolchain.name);
+            const msg = view_str$prompt$not_found_compiler.replace('{}', toolchain.name)
+                + `, [path]: ${dir?.path}`;
             ResInstaller.instance().setOrInstallTools(toolchain.name, msg, toolchain.settingName);
             return false;
         }
@@ -2201,7 +2211,7 @@ class EIDEProject extends AbstractProject implements CustomConfigurationProvider
 
         // allow intellisense provider for workspace if we have not
         // and notify cpptools launch
-        /* {
+        {
             const cppConfig = this.GetCppConfig();
             const cppConfigItem = cppConfig.getConfig();
             if (!cppConfigItem.configurationProvider) {
@@ -2215,28 +2225,33 @@ class EIDEProject extends AbstractProject implements CustomConfigurationProvider
                     configurationProvider: this.extensionId
                 };
                 cppConfig.setConfig(newCfg);
-                cppConfig.Save();
+                cppConfig.saveToFile();
             }
 
-            getCppToolsApi(Version.v2).then((api) => {
+            const curWsDirPath = WorkspaceManager.getInstance().getWorkspaceRoot()?.path;
+            const prjWsDirPath = this.getWsFile().dir;
+            if (prjWsDirPath == curWsDirPath) { // if current active workspace is project workspace
 
-                if (!api) {
-                    GlobalEvent.emit('msg', newMessage('Error', `can't get C/C++ intellisense provider api !`));
-                    return;
-                }
+                getCppToolsApi(Version.v5).then((api) => {
 
-                this.cppToolsApi = api;
+                    if (!api) {
+                        GlobalEvent.emit('msg', newMessage('Error', `can't get C/C++ intellisense provider api !`));
+                        return;
+                    }
 
-                if (api.notifyReady) {
-                    api.registerCustomConfigurationProvider(this);
-                    api.notifyReady(this);
-                } else {
-                    // Inform cpptools that a custom config provider will be able to service the current workspace.
-                    api.registerCustomConfigurationProvider(this);
-                    api.didChangeCustomConfiguration(this);
-                }
-            });
-        } */
+                    this.cppToolsApi = api;
+
+                    if (api.notifyReady) {
+                        api.registerCustomConfigurationProvider(this);
+                        api.notifyReady(this);
+                    } else {
+                        // Inform cpptools that a custom config provider will be able to service the current workspace.
+                        api.registerCustomConfigurationProvider(this);
+                        api.didChangeCustomConfiguration(this);
+                    }
+                });
+            }
+        }
     }
 
     ExportToKeilProject(): File | undefined {
@@ -2332,63 +2347,64 @@ class EIDEProject extends AbstractProject implements CustomConfigurationProvider
         includePath: [],
         defines: []
     };
-    /* 
-        UpdateCppConfig() {
-    
-            super.UpdateCppConfig();
-    
-            const prjConfig = this.GetConfiguration();
-            const builderOpts = prjConfig.compileConfigModel.getOptions(this.getEideDir().path, prjConfig.config);
-    
-            const depMerge = this.GetConfiguration().GetAllMergeDep();
-            const defMacros: string[] = ['__VSCODE_CPPTOOL']; // it's for internal force include header
-            depMerge.defineList = ArrayDelRepetition(defMacros.concat(depMerge.defineList, this.getToolchain().getInternalDefines(builderOpts)));
-            depMerge.incList = ArrayDelRepetition(depMerge.incList.concat(this.getSourceIncludeList()));
-    
-            const includeList: string[] = depMerge.incList.map((_path) => File.ToUnixPath(NodePath.normalize(_path)));
-    
-            // update virtual src search folder
-            let srcBrowseFolders: string[] = [];
-            this.getVirtualSourceManager().traverse((vFolder) => {
-                vFolder.folder.files.forEach((vFile) => {
-                    const dir = File.ToUnixPath(NodePath.dirname(NodePath.normalize(vFile.path)))
-                        .replace(/^(?:\.\/)+/, '');
-                    // if source is out of cur prj dir, add it
-                    if (dir.startsWith('../')) {
-                        srcBrowseFolders.push(`${this.ToAbsolutePath(dir)}/*`);
-                    } else if (NodePath.isAbsolute(dir)) {
-                        srcBrowseFolders.push(`${dir}/*`);
-                    }
-                });
+
+    private vSourceList: string[] = [];
+
+    UpdateCppConfig() {
+
+        const prjConfig = this.GetConfiguration();
+        const builderOpts = prjConfig.compileConfigModel.getOptions(this.getEideDir().path, prjConfig.config);
+
+        // update includes and defines 
+        const depMerge = this.GetConfiguration().GetAllMergeDep();
+        const defMacros: string[] = ['__VSCODE_CPPTOOL']; // it's for internal force include header
+        depMerge.defineList = ArrayDelRepetition(defMacros.concat(depMerge.defineList, this.getToolchain().getInternalDefines(builderOpts)));
+        depMerge.incList = ArrayDelRepetition(depMerge.incList.concat(this.getSourceIncludeList()));
+        this.cppToolsConfig.includePath = depMerge.incList.map((_path) => File.ToUnixPath(_path));
+        this.cppToolsConfig.defines = depMerge.defineList;
+
+        // update virtual src search folder
+        let srcBrowseFolders: string[] = [];
+        this.vSourceList = [];
+        this.getVirtualSourceManager().traverse((vFolder) => {
+            vFolder.folder.files.forEach((vFile) => {
+                const fAbsPath = this.ToAbsolutePath(vFile.path);
+                this.vSourceList.push(fAbsPath);
+                srcBrowseFolders.push(`${File.ToUnixPath(NodePath.dirname(fAbsPath))}/*`);
             });
-            srcBrowseFolders = ArrayDelRepetition(srcBrowseFolders);
-    
-            // update includes to browse info
-            this.cppToolsConfig.browse = {
-                limitSymbolsToIncludedHeaders: true,
-                path: srcBrowseFolders
-            };
-    
-            // update includes and defines 
-            this.cppToolsConfig.includePath = includeList;
-            this.cppToolsConfig.defines = depMerge.defineList;
-    
-            // compiler path
-            this.cppToolsConfig.compilerPath = this.getToolchain().getGccCompilerPath();
-            this.cppToolsConfig.compilerArgs = this.getToolchain().getGccCompilerCmdArgsForIntelliSense();
-    
-            // update forceinclude headers
-            this.cppToolsConfig.forcedInclude = this.getToolchain()
-                .getForceIncludeHeaders()?.map((f_path) => NodePath.normalize(f_path));
-    
-            // notify config changed
-            this.cppToolsApi?.didChangeCustomConfiguration(this);
-            this.cppToolsApi?.didChangeCustomBrowseConfiguration(this);
-        } */
+        });
+
+        // update includes to browse info
+        this.cppToolsConfig.browse = {
+            limitSymbolsToIncludedHeaders: true,
+            path: ArrayDelRepetition(srcBrowseFolders)
+        };
+
+        // compiler path
+        this.cppToolsConfig.compilerPath = this.getToolchain().getGccCompilerPath();
+        this.cppToolsConfig.compilerArgs = this.getToolchain().getGccCompilerCmdArgsForIntelliSense();
+
+        // update forceinclude headers
+        this.cppToolsConfig.forcedInclude = this.getToolchain()
+            .getForceIncludeHeaders()?.map((f_path) => NodePath.normalize(f_path));
+
+        // notify config changed
+        this.cppToolsApi?.didChangeCustomConfiguration(this);
+        this.cppToolsApi?.didChangeCustomBrowseConfiguration(this);
+
+        // log
+        console.log(`[eide] cpptools config update`);
+        console.log(this.cppToolsConfig);
+    }
 
     canProvideConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<boolean> {
         return new Promise((resolve) => {
-            resolve(true);
+            const prjRoot = this.GetRootDir();
+            if (uri.fsPath.startsWith(prjRoot.path)) {
+                resolve(true);
+            } else {
+                resolve(this.vSourceList.includes(uri.fsPath));
+            }
         });
     }
 
@@ -2396,32 +2412,16 @@ class EIDEProject extends AbstractProject implements CustomConfigurationProvider
         return new Promise((resolve) => {
             resolve(uris.map((uri) => {
                 return {
-                    uri: vscode.Uri.file(uri.fsPath),
+                    uri: uri,
                     configuration: {
-                        includePath: [], //this.cppToolsConfig.includePath,
-                        defines: [], //this.cppToolsConfig.defines,
-                        forcedInclude: [], //this.cppToolsConfig.forcedInclude,
-                        //compilerPath: this.cppToolsConfig.compilerPath,
-                        //compilerArgs: this.cppToolsConfig.compilerArgs
+                        includePath: this.cppToolsConfig.includePath,
+                        defines: this.cppToolsConfig.defines,
+                        forcedInclude: this.cppToolsConfig.forcedInclude,
+                        compilerPath: this.cppToolsConfig.compilerPath,
+                        compilerArgs: this.cppToolsConfig.compilerArgs
                     }
                 };
             }));
-        });
-    }
-
-    canProvideBrowseConfiguration(token?: vscode.CancellationToken | undefined): Thenable<boolean> {
-        return new Promise((resolve) => {
-            resolve(true);
-        });
-    }
-
-    provideBrowseConfiguration(token?: vscode.CancellationToken | undefined): Thenable<WorkspaceBrowseConfiguration | null> {
-        return new Promise((resolve) => {
-            resolve({
-                browsePath: this.cppToolsConfig.browse?.path || [],
-                compilerPath: this.cppToolsConfig.compilerPath,
-                compilerArgs: this.cppToolsConfig.compilerArgs
-            });
         });
     }
 
@@ -2433,11 +2433,27 @@ class EIDEProject extends AbstractProject implements CustomConfigurationProvider
 
     provideFolderBrowseConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<WorkspaceBrowseConfiguration | null> {
         return new Promise((resolve) => {
-            resolve({
-                browsePath: this.cppToolsConfig.browse?.path || [],
-                compilerPath: this.cppToolsConfig.compilerPath,
-                compilerArgs: this.cppToolsConfig.compilerArgs
-            });
+            if (this.GetRootDir().path == uri.fsPath) {
+                resolve({
+                    browsePath: this.cppToolsConfig.browse?.path || [],
+                    compilerPath: this.cppToolsConfig.compilerPath,
+                    compilerArgs: this.cppToolsConfig.compilerArgs
+                });
+            } else {
+                resolve(null);
+            }
+        });
+    }
+
+    canProvideBrowseConfiguration(token?: vscode.CancellationToken | undefined): Thenable<boolean> {
+        return new Promise((resolve) => {
+            resolve(false);
+        });
+    }
+
+    provideBrowseConfiguration(token?: vscode.CancellationToken | undefined): Thenable<WorkspaceBrowseConfiguration | null> {
+        return new Promise((resolve) => {
+            resolve(null);
         });
     }
 
