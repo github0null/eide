@@ -67,11 +67,12 @@ import { jsonc } from 'jsonc';
 import { WorkspaceManager } from "./WorkspaceManager";
 import * as utility from './utility';
 
-// -------------------------------------------
+////////////////////////////////////////////////////////
 
-export const EIDE_CONF_VERSION = '2.7';
+// eide project config file version
+export const EIDE_CONF_VERSION = '2.15';
 
-// -------------------------------------------
+////////////////////////////////////////////////////////
 
 export abstract class ManagerInterface {
     abstract Init(): void;
