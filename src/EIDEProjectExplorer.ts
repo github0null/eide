@@ -1647,7 +1647,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                         fs.renameSync(wsFile.path, targetPath);
 
                         // rename project
-                        if (templateFile.suffix != 'ewt') { // ignore eide workspace project
+                        if (templateFile.suffix != '.ewt') { // ignore eide workspace project
 
                             // convert .EIDE to .eide
                             this.toLowercaseEIDEFolder(targetDir);
