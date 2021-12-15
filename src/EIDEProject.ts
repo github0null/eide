@@ -799,9 +799,14 @@ export abstract class AbstractProject {
                     const tName = NodePath.basename(file.path, '.env.ini');
                     if (tName) {
                         try {
-                            const str = ini.stringify(ini.parse(file.Read()));
+                            const cfg = ini.parse(file.Read());
+                            if (cfg['workspace']) { // merge old prj order cfg
+                                cfg['EIDE_BUILD_ORDER'] = cfg['workspace']['order'];
+                                cfg['workspace'] = undefined;
+                            }
+                            const cfg_str = ini.stringify(cfg);
                             fs.unlinkSync(file.path); // delete file before
-                            if (str) { oldEnv.push(`[${tName}]`, `${str}`); }
+                            oldEnv.push(`[${tName}]`, `${cfg_str}`);
                         } catch (error) {
                             // nothing todo
                         }
