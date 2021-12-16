@@ -22,7 +22,7 @@
     SOFTWARE.
 */
 
-import { ProjectType, ICompileOptions } from "./EIDETypeDefine";
+import { ProjectType, ICompileOptions, CppConfigItem } from "./EIDETypeDefine";
 import { File } from "../lib/node-utility/File";
 import { SettingManager } from "./SettingManager";
 import { ResManager } from "./ResManager";
@@ -66,19 +66,40 @@ export interface IToolchian {
 
     getToolchainDir(): File;
 
+    /**
+     * get gcc c/c++ compiler path
+     */
     getGccCompilerPath(): string | undefined;
 
-    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined;
-
+    /**
+     * get compiler internal defines (for cpptools)
+     */
     getInternalDefines(builderOpts: ICompileOptions): string[];
 
+    /**
+     * force append some custom macro
+     */
     getCustomDefines(): string[] | undefined;
 
+    /**
+     * the system header include path (not be added to compiler params)
+     */
     getSystemIncludeList(builderOpts: ICompileOptions): string[];
 
+    /**
+     * the default source file include path which will be added in compiler params.
+     */
     getDefaultIncludeList(): string[];
 
+    /**
+     * force include headers for cpptools intellisence config
+     */
     getForceIncludeHeaders(): string[] | undefined;
+
+    /**
+     * update cpptools intellisence config
+     */
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void;
 
     getLibDirs(): string[];
 
@@ -412,8 +433,9 @@ class KeilC51 implements IToolchian {
         return gcc.path;
     }
 
-    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
-        return undefined;
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+        cppToolsConfig.cStandard = 'c89';
+        cppToolsConfig.cppStandard = 'c++98';
     }
 
     preHandleOptions(prjInfo: IProjectInfo, c51Options: ICompileOptions): void {
@@ -549,8 +571,10 @@ class SDCC implements IToolchian {
         return gcc.path;
     }
 
-    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
-        return undefined;
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+        if (builderOpts["c/cpp-compiler"]) {
+            cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'] || 'c99';
+        }
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
@@ -772,8 +796,10 @@ class GnuStm8Sdcc implements IToolchian {
         return gcc.path;
     }
 
-    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
-        return undefined;
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+        if (builderOpts["c/cpp-compiler"]) {
+            cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'] || 'c99';
+        }
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
@@ -967,8 +993,25 @@ class AC5 implements IToolchian {
         return armccFile.path;
     }
 
-    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
-        return undefined;
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+
+        cppToolsConfig.cStandard = 'c89';
+        cppToolsConfig.cppStandard = 'c++11';
+
+        if (builderOpts["c/cpp-compiler"]) {
+
+            if (builderOpts["c/cpp-compiler"]['c99-mode']) {
+                cppToolsConfig.cStandard = 'c99';
+            }
+
+            if (builderOpts["c/cpp-compiler"]['gnu-extensions']) {
+                if (cppToolsConfig.cStandard === 'c99') {
+                    cppToolsConfig.cStandard = 'gnu99';
+                } else {
+                    cppToolsConfig.cStandard = 'gnu98';
+                }
+            }
+        }
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
@@ -1094,8 +1137,23 @@ class AC6 implements IToolchian {
         return armccFile.path;
     }
 
-    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
-        return ['--target=arm-arm-none-eabi'];
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+
+        cppToolsConfig.cStandard = 'gnu11';
+        cppToolsConfig.cppStandard = 'gnu++98';
+
+        cppToolsConfig.compilerArgs = ['--target=arm-arm-none-eabi'];
+
+        if (builderOpts["c/cpp-compiler"]) {
+
+            if (builderOpts["c/cpp-compiler"]['language-c']) {
+                cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'];
+            }
+
+            if (builderOpts["c/cpp-compiler"]['language-cpp']) {
+                cppToolsConfig.cppStandard = builderOpts["c/cpp-compiler"]['language-cpp'];
+            }
+        }
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
@@ -1258,8 +1316,21 @@ class GCC implements IToolchian {
         return gcc.path;
     }
 
-    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
-        return undefined;
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+
+        cppToolsConfig.cStandard = 'c11';
+        cppToolsConfig.cppStandard = 'c++11';
+
+        if (builderOpts["c/cpp-compiler"]) {
+
+            if (builderOpts["c/cpp-compiler"]['language-c']) {
+                cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'];
+            }
+
+            if (builderOpts["c/cpp-compiler"]['language-cpp']) {
+                cppToolsConfig.cppStandard = builderOpts["c/cpp-compiler"]['language-cpp'];
+            }
+        }
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
@@ -1362,8 +1433,16 @@ class IARSTM8 implements IToolchian {
         return gcc.path;
     }
 
-    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
-        return undefined;
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+
+        cppToolsConfig.cStandard = 'c99';
+        cppToolsConfig.cppStandard = 'c++11';
+
+        if (builderOpts["c/cpp-compiler"]) {
+            if (builderOpts["c/cpp-compiler"]['language-c']) {
+                cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'];
+            }
+        }
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
@@ -1571,8 +1650,21 @@ class RISCV_GCC implements IToolchian {
         return gcc.path;
     }
 
-    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
-        return undefined;
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+
+        cppToolsConfig.cStandard = 'c11';
+        cppToolsConfig.cppStandard = 'c++11';
+
+        if (builderOpts["c/cpp-compiler"]) {
+
+            if (builderOpts["c/cpp-compiler"]['language-c']) {
+                cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'];
+            }
+
+            if (builderOpts["c/cpp-compiler"]['language-cpp']) {
+                cppToolsConfig.cppStandard = builderOpts["c/cpp-compiler"]['language-cpp'];
+            }
+        }
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {

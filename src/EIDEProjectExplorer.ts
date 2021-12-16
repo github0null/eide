@@ -1867,10 +1867,11 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     constructor(context: vscode.ExtensionContext) {
 
+        this._event = new events.EventEmitter();
+
         // register hook
         GlobalEvent.on('project.opened', (prj) => this.onProjectOpened(prj));
 
-        this._event = new events.EventEmitter();
         this.dataProvider = new ProjectDataProvider(context);
         this.cppcheck_diag = vscode.languages.createDiagnosticCollection('cppcheck');
 

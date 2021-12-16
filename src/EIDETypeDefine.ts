@@ -3257,8 +3257,8 @@ export interface CppConfigItem {
     forcedInclude?: string[];
     browse?: CppBrowseInfo;
     intelliSenseMode?: string;
-    cStandard?: string,
-    cppStandard?: string,
+    cStandard?: string;
+    cppStandard?: string;
     configurationProvider?: string;
 }
 

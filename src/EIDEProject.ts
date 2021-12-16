@@ -697,7 +697,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     // sources
     protected sourceRoots: SourceRootList;
     protected virtualSource: VirtualSource;
-    
+
     ////////////////////////////////// cpptools provider interface ///////////////////////////////////
 
     name: string = 'eide';
@@ -1009,7 +1009,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         this.AfterLoad();
     }
 
-    Close() {
+    protected Close() {
 
         if (this.rootDirWatcher) {
             this.rootDirWatcher.Close();
@@ -1823,6 +1823,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
 class EIDEProject extends AbstractProject {
 
+    private builderCfgWatcher: FileWatcher | undefined;
+
     //======================= Event handler ===========================
 
     protected onComponentUpdate(updateList: ComponentUpdateItem[]): void {
@@ -1963,10 +1965,6 @@ class EIDEProject extends AbstractProject {
         }
         this.dependenceManager.Refresh();
         this.emit('dataChanged', 'pack');
-    }
-
-    protected onToolchainChanged(oldToolchain: ToolchainName) {
-        super.onToolchainChanged(oldToolchain);
     }
 
     //==================================================================
@@ -2165,7 +2163,7 @@ class EIDEProject extends AbstractProject {
                     "editor.insertSpaces": true,
                     "editor.tabSize": 4,
                     "editor.autoIndent": "advanced"
-                }
+                };
             }
 
             if (toolchain.name === 'Keil_C51') {
@@ -2235,6 +2233,17 @@ class EIDEProject extends AbstractProject {
                 cppConfig.setConfig(newCfg);
                 cppConfig.saveToFile();
             }
+        }
+
+        //
+        // start watch .eide folder, watch builder config changed
+        // 
+        try {
+            this.builderCfgWatcher = new FileWatcher(this.getEideDir(), false);
+            this.builderCfgWatcher.OnChanged = (f) => {};
+            this.builderCfgWatcher.Watch();
+        } catch (error) {
+            GlobalEvent.emit('error', error);
         }
     }
 
@@ -2319,7 +2328,7 @@ class EIDEProject extends AbstractProject {
         return keilParser.Save(this.GetRootDir(), localKeilFile.noSuffixName);
     }
 
-    ////////////////////////////////// cpptools intellisense provider ///////////////////////////////////
+    ////////////////////////////////// cpptools intellisence provider ///////////////////////////////////
 
     name: string = 'eide';
     extensionId: string = 'cl.eide';
@@ -2334,14 +2343,18 @@ class EIDEProject extends AbstractProject {
     UpdateCppConfig() {
 
         const builderOpts = this.getBuilderOptions();
+        const toolchain = this.getToolchain();
 
         // update includes and defines 
         const depMerge = this.GetConfiguration().GetAllMergeDep();
         const defMacros: string[] = ['__VSCODE_CPPTOOL']; // it's for internal force include header
-        const defLi = defMacros.concat(depMerge.defineList, this.getToolchain().getInternalDefines(builderOpts));
+        const defLi = defMacros.concat(depMerge.defineList, toolchain.getInternalDefines(builderOpts));
         depMerge.incList = ArrayDelRepetition(depMerge.incList.concat(this.getSourceIncludeList()));
         this.cppToolsConfig.includePath = depMerge.incList.map((_path) => File.ToUnixPath(_path));
         this.cppToolsConfig.defines = ArrayDelRepetition(defLi);
+
+        // update intellisence info
+        toolchain.updateCppIntellisenceCfg(builderOpts, this.cppToolsConfig);
 
         // update virtual src search folder
         let srcBrowseFolders: string[] = [];
@@ -2362,7 +2375,6 @@ class EIDEProject extends AbstractProject {
 
         // compiler path
         this.cppToolsConfig.compilerPath = this.getToolchain().getGccCompilerPath();
-        this.cppToolsConfig.compilerArgs = this.getToolchain().getGccCompilerCmdArgsForIntelliSense();
 
         // update forceinclude headers
         this.cppToolsConfig.forcedInclude = this.getToolchain()
@@ -2374,7 +2386,6 @@ class EIDEProject extends AbstractProject {
         //this.cppToolsApi?.didChangeCustomBrowseConfiguration(this);
 
         // log
-        console.log(`[eide] cpptools config update`);
         console.log(this.cppToolsConfig);
     }
 
@@ -2395,6 +2406,8 @@ class EIDEProject extends AbstractProject {
                 return {
                     uri: uri,
                     configuration: {
+                        standard: uri.fsPath.toLowerCase().endsWith('.c') ?
+                            (<any>this.cppToolsConfig.cStandard) : (<any>this.cppToolsConfig.cppStandard),
                         includePath: this.cppToolsConfig.includePath,
                         defines: this.cppToolsConfig.defines,
                         forcedInclude: this.cppToolsConfig.forcedInclude,
@@ -2414,8 +2427,10 @@ class EIDEProject extends AbstractProject {
 
     provideFolderBrowseConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<WorkspaceBrowseConfiguration | null> {
         return new Promise((resolve) => {
-            if (this.GetRootDir().path == uri.fsPath) {
+            if (this.GetRootDir().path === uri.fsPath) {
                 resolve({
+                    standard: uri.fsPath.toLowerCase().endsWith('.c') ?
+                        (<any>this.cppToolsConfig.cStandard) : (<any>this.cppToolsConfig.cppStandard),
                     browsePath: this.cppToolsConfig.browse?.path || [],
                     compilerPath: this.cppToolsConfig.compilerPath,
                     compilerArgs: this.cppToolsConfig.compilerArgs
