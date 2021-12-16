@@ -227,7 +227,13 @@ export class DependenceManager extends ManagerInterface {
     }
 
     Refresh(flushToolchain?: boolean) {
-        if (flushToolchain) { this.flushToolchainDep(); } else { this.RepairIf(); }
+
+        if (flushToolchain) {
+            this.flushToolchainDep();
+        } else {
+            this.RepairIf();
+        }
+
         this.ClearObsoleteComponentDependence(); // clear invalid dependencies
     }
 
@@ -239,9 +245,9 @@ export class DependenceManager extends ManagerInterface {
     }
 
     // force flush toolchain dependence
-    flushToolchainDep() {
+    flushToolchainDep(notCacheEvt?: boolean) {
         try {
-            this.reinstallToolchainDep();
+            this.reinstallToolchainDep(notCacheEvt);
         } catch (error) {
             GlobalEvent.emit(error, ExceptionToMessage(error, 'Hidden'));
         }
@@ -464,13 +470,13 @@ export class DependenceManager extends ManagerInterface {
 
     //--
 
-    private reinstallToolchainDep() {
+    private reinstallToolchainDep(notCacheEvt?: boolean) {
         const prjConfig = this.project.GetConfiguration();
-        prjConfig.beginCacheEvents();
         const depGroup = this.getToolchainDep();
+        if (!notCacheEvt) { prjConfig.beginCacheEvents(); }
         this.UninstallBuildInComponent(depGroup.groupName, depGroup.component.groupName);
         this.InstallBuildInComponent(depGroup.groupName, depGroup.component);
-        prjConfig.endCachedEvents();
+        if (!notCacheEvt) { prjConfig.endCachedEvents(); }
     }
 
     private RepairIf() {

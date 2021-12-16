@@ -1958,11 +1958,14 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     provideConfigurations(uris: vscode.Uri[], token?: vscode.CancellationToken | undefined): Thenable<SourceFileConfigurationItem[]> {
         return new Promise(async (resolve) => {
             let result: SourceFileConfigurationItem[] = [];
-            await this.dataProvider.traverseProjectsAsync(async (prj) => {
-                (await prj.provideConfigurations(uris, token))
-                    .forEach((e) => result.push(e));
-                return false;
-            });
+            for (const uri of uris) {
+                await this.dataProvider.traverseProjectsAsync(async (prj) => {
+                    if (await prj.canProvideConfiguration(uri, token)) {
+                        result = result.concat(await prj.provideConfigurations([uri], token));
+                        return true;
+                    }
+                });
+            }
             resolve(result);
         });
     }

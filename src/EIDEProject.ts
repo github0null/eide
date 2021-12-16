@@ -1009,7 +1009,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         this.AfterLoad();
     }
 
-    protected Close() {
+    Close() {
 
         if (this.rootDirWatcher) {
             this.rootDirWatcher.Close();
@@ -1068,13 +1068,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         return this.packManager.Uninstall(packName);
     }
 
-    //=========== events ============
-
-    NotifyBuilderConfigUpdate(name: string): void {
-        this.dependenceManager.flushToolchainDep();
-    }
-
-    //=========== project targets ==============
+    //////////////////////// project targets //////////////////////////
 
     getCurrentTarget(): string {
         return this.GetConfiguration().config.mode;
@@ -1802,6 +1796,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
     protected abstract onPackageChanged(): void;
 
+    abstract NotifyBuilderConfigUpdate(fileName: string): void;
+
     //-----------------------------------------------------------
 
     public abstract notifyUpdateSourceRefs(toolchain: ToolchainName | undefined): void;
@@ -1823,9 +1819,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
 class EIDEProject extends AbstractProject {
 
-    private builderCfgWatcher: FileWatcher | undefined;
-
-    //======================= Event handler ===========================
+    //////////////////////////////// Event handler ///////////////////////////////////
 
     protected onComponentUpdate(updateList: ComponentUpdateItem[]): void {
 
@@ -1967,7 +1961,11 @@ class EIDEProject extends AbstractProject {
         this.emit('dataChanged', 'pack');
     }
 
-    //==================================================================
+    NotifyBuilderConfigUpdate(fileName: string): void {
+        this.dependenceManager.flushToolchainDep();
+    }
+
+    //////////////////////////////// source refs ///////////////////////////////////
 
     private srcRefMap: Map<string, File[]> = new Map();
 
@@ -2069,7 +2067,7 @@ class EIDEProject extends AbstractProject {
         }
     }
 
-    //==================================================================
+    //////////////////////////////// create project ///////////////////////////////////
 
     public createBase(option: CreateOptions, createNewPrjFolder: boolean = true): BaseProjectInfo {
 
@@ -2118,133 +2116,6 @@ class EIDEProject extends AbstractProject {
         baseInfo.prjConfig.Save();
 
         return baseInfo.workspaceFile;
-    }
-
-    protected BeforeLoad(wsFile: File): void {
-        super.BeforeLoad(wsFile);
-    }
-
-    protected AfterLoad(): void {
-
-        super.AfterLoad();
-
-        /* update workspace settings */
-        {
-            const workspaceConfig = this.GetWorkspaceConfig();
-            const settings = workspaceConfig.config.settings;
-            const toolchain = this.getToolchain();
-
-            if (isNullOrUndefined(settings['files.associations'])) {
-                settings['files.associations'] = {
-                    ".eideignore": "ignore"
-                };
-            } else if (isNullOrUndefined(settings['files.associations']['.eideignore'])) {
-                settings['files.associations']['.eideignore'] = 'ignore';
-            }
-
-            if (settings['C_Cpp.default.intelliSenseMode'] === undefined) {
-                settings['C_Cpp.default.intelliSenseMode'] = "gcc-arm";
-            }
-
-            if (settings['files.autoGuessEncoding'] === undefined) {
-                settings['files.autoGuessEncoding'] = true;
-            }
-
-            if (settings['C_Cpp.default.cppStandard'] === undefined) {
-                settings['C_Cpp.default.cppStandard'] = "c++14";
-            }
-
-            if (settings['C_Cpp.default.cStandard'] === undefined) {
-                settings['C_Cpp.default.cStandard'] = "c99";
-            }
-
-            if (settings['[yaml]'] === undefined) {
-                settings['[yaml]'] = {
-                    "editor.insertSpaces": true,
-                    "editor.tabSize": 4,
-                    "editor.autoIndent": "advanced"
-                };
-            }
-
-            if (toolchain.name === 'Keil_C51') {
-                if (settings['C_Cpp.errorSquiggles'] === undefined) {
-                    settings['C_Cpp.errorSquiggles'] = "Disabled";
-                }
-            }
-
-            /* add extension recommendation */
-            {
-                let recommendExt: string[] = [
-                    "cl.eide",
-                    "keroc.hex-fmt",
-                    "xiaoyongdong.srecord",
-                    "hars.cppsnippets",
-                    "zixuanwang.linkerscript",
-                    "redhat.vscode-yaml"
-                ];
-
-                const prjInfo = this.GetConfiguration().config;
-
-                if (prjInfo.type == 'ARM') {
-                    recommendExt.push(
-                        "dan-c-underwood.arm",
-                        "zixuanwang.linkerscript",
-                        "marus25.cortex-debug",
-                    );
-                }
-
-                else if (prjInfo.type == 'C51') {
-                    recommendExt.push('cl.stm8-debug');
-                }
-
-                if (workspaceConfig.config.extensions &&
-                    workspaceConfig.config.extensions.recommendations instanceof Array) {
-                    recommendExt = ArrayDelRepetition(recommendExt.concat(workspaceConfig.config.extensions.recommendations));
-                }
-
-                if (workspaceConfig.config.extensions == undefined) {
-                    workspaceConfig.config.extensions = {};
-                }
-
-                workspaceConfig.config.extensions.recommendations = recommendExt;
-            }
-
-            workspaceConfig.forceSave();
-        }
-
-        /* update src refs */
-        this.notifyUpdateSourceRefs(undefined);
-
-        // allow intellisense provider for workspace if we have not
-        // and notify cpptools launch
-        {
-            const cppConfig = this.GetCppConfig();
-            const cppConfigItem = cppConfig.getConfig();
-            if (!cppConfigItem.configurationProvider) {
-                const newCfg: CppConfigItem = {
-                    name: os.platform(),
-                    includePath: <any>undefined,
-                    defines: <any>undefined,
-                    intelliSenseMode: '${default}',
-                    cStandard: '${default}',
-                    cppStandard: '${default}',
-                    configurationProvider: this.extensionId
-                };
-                cppConfig.setConfig(newCfg);
-                cppConfig.saveToFile();
-            }
-        }
-
-        //
-        // start watch .eide folder, watch builder config changed
-        // 
-        try {
-            this.builderCfgWatcher = new FileWatcher(this.getEideDir(), false);
-            this.builderCfgWatcher.OnChanged = (f) => {};
-            this.builderCfgWatcher.Watch();
-        } catch (error) {
-            GlobalEvent.emit('error', error);
-        }
     }
 
     ExportToKeilProject(): File | undefined {
@@ -2326,6 +2197,113 @@ class EIDEProject extends AbstractProject {
         keilParser.SetKeilXml(this, fileGroups, cDevice);
 
         return keilParser.Save(this.GetRootDir(), localKeilFile.noSuffixName);
+    }
+
+    //////////////////////////////// overrride ///////////////////////////////////
+
+    protected BeforeLoad(wsFile: File): void {
+        super.BeforeLoad(wsFile);
+    }
+
+    protected AfterLoad(): void {
+
+        super.AfterLoad();
+
+        /* update workspace settings */
+        {
+            const workspaceConfig = this.GetWorkspaceConfig();
+            const settings = workspaceConfig.config.settings;
+            const toolchain = this.getToolchain();
+
+            if (isNullOrUndefined(settings['files.associations'])) {
+                settings['files.associations'] = {
+                    ".eideignore": "ignore"
+                };
+            } else if (isNullOrUndefined(settings['files.associations']['.eideignore'])) {
+                settings['files.associations']['.eideignore'] = 'ignore';
+            }
+
+            if (settings['C_Cpp.default.intelliSenseMode'] === undefined) {
+                settings['C_Cpp.default.intelliSenseMode'] = "gcc-arm";
+            }
+
+            if (settings['files.autoGuessEncoding'] === undefined) {
+                settings['files.autoGuessEncoding'] = true;
+            }
+
+            if (settings['[yaml]'] === undefined) {
+                settings['[yaml]'] = {
+                    "editor.insertSpaces": true,
+                    "editor.tabSize": 4,
+                    "editor.autoIndent": "advanced"
+                };
+            }
+
+            if (toolchain.name === 'Keil_C51') {
+                if (settings['C_Cpp.errorSquiggles'] === undefined) {
+                    settings['C_Cpp.errorSquiggles'] = "Disabled";
+                }
+            }
+
+            /* add extension recommendation */
+            {
+                let recommendExt: string[] = [
+                    "cl.eide",
+                    "keroc.hex-fmt",
+                    "xiaoyongdong.srecord",
+                    "hars.cppsnippets",
+                    "zixuanwang.linkerscript",
+                    "redhat.vscode-yaml"
+                ];
+
+                const prjInfo = this.GetConfiguration().config;
+
+                if (prjInfo.type == 'ARM') {
+                    recommendExt.push(
+                        "dan-c-underwood.arm",
+                        "zixuanwang.linkerscript",
+                        "marus25.cortex-debug",
+                    );
+                }
+
+                else if (prjInfo.type == 'C51') {
+                    recommendExt.push('cl.stm8-debug');
+                }
+
+                if (workspaceConfig.config.extensions &&
+                    workspaceConfig.config.extensions.recommendations instanceof Array) {
+                    recommendExt = ArrayDelRepetition(recommendExt.concat(workspaceConfig.config.extensions.recommendations));
+                }
+
+                if (workspaceConfig.config.extensions == undefined) {
+                    workspaceConfig.config.extensions = {};
+                }
+
+                workspaceConfig.config.extensions.recommendations = recommendExt;
+            }
+
+            workspaceConfig.forceSave();
+        }
+
+        /* update src refs */
+        this.notifyUpdateSourceRefs(undefined);
+
+        // allow intellisense provider for workspace if we have not
+        // and notify cpptools launch
+        {
+            const cppConfig = this.GetCppConfig();
+            const cppConfigItem = cppConfig.getConfig();
+            if (!cppConfigItem.configurationProvider) {
+                const newCfg: CppConfigItem = {
+                    name: os.platform(),
+                    includePath: <any>undefined,
+                    defines: <any>undefined,
+                    configurationProvider: this.extensionId
+                };
+                cppConfig.setConfig(newCfg);
+                cppConfig.saveToFile();
+            }
+        }
     }
 
     ////////////////////////////////// cpptools intellisence provider ///////////////////////////////////
@@ -2429,14 +2407,14 @@ class EIDEProject extends AbstractProject {
         return new Promise((resolve) => {
             if (this.GetRootDir().path === uri.fsPath) {
                 resolve({
-                    standard: uri.fsPath.toLowerCase().endsWith('.c') ?
-                        (<any>this.cppToolsConfig.cStandard) : (<any>this.cppToolsConfig.cppStandard),
                     browsePath: this.cppToolsConfig.browse?.path || [],
                     compilerPath: this.cppToolsConfig.compilerPath,
                     compilerArgs: this.cppToolsConfig.compilerArgs
                 });
             } else {
-                resolve(null);
+                // can't not be null, 
+                // if no browse info, must return a empty config
+                resolve({ browsePath: [] });
             }
         });
     }
