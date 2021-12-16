@@ -1864,6 +1864,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     private cppcheck_out: vscode.OutputChannel;
 
     private cppToolsApi: CppToolsApi | undefined;
+    private cppToolsOut: vscode.OutputChannel;
 
     constructor(context: vscode.ExtensionContext) {
 
@@ -1881,8 +1882,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         // item click event
         context.subscriptions.push(vscode.commands.registerCommand(ProjTreeItem.ITEM_CLICK_EVENT, (item) => this.OnTreeItemClick(item)));
 
-        // create cppcheck output channel
+        // create vsc output channel
         this.cppcheck_out = vscode.window.createOutputChannel('eide-cppcheck');
+        this.cppToolsOut = vscode.window.createOutputChannel('eide-cpptools-cfg');
 
         // register doc event
         context.subscriptions.push(vscode.workspace.onDidSaveTextDocument((doc) => {
@@ -1906,7 +1908,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     extensionId: string = 'cl.eide';
 
-    private onProjectOpened(prj: AbstractProject) {
+    private isRegisteredCpptoolsProvider: boolean = false;
+
+    private async onProjectOpened(prj: AbstractProject) {
 
         // notify cpptools update when project config changed
         prj.on('cppConfigChanged', () => {
@@ -1920,28 +1924,31 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
         });
 
-        // register cpptools provider, skip if already registered
-        if (this.cppToolsApi) {
-            return;
-        }
-
-        getCppToolsApi(Version.v5).then((api) => {
-
-            if (!api) {
+        // get cpptools api if we have not get
+        if (!this.cppToolsApi) {
+            this.cppToolsApi = await getCppToolsApi(Version.v5);
+            if (!this.cppToolsApi) {
                 GlobalEvent.emit('msg', newMessage('Error', `can't get C/C++ intellisense provider api !`));
                 return;
             }
+        }
 
-            api.registerCustomConfigurationProvider(this);
+        // register cpptools provider, skip if already registered
+        if (this.cppToolsApi && !this.isRegisteredCpptoolsProvider) {
 
-            if (api.notifyReady) {
-                api.notifyReady(this);
+            this.cppToolsApi.registerCustomConfigurationProvider(this);
+            this.cppToolsOut.appendLine(`[init] register CustomConfigurationProvider done !`);
+
+            if (this.cppToolsApi.notifyReady) {
+                this.cppToolsApi.notifyReady(this);
             } else {
-                api.didChangeCustomConfiguration(this);
+                this.cppToolsApi.didChangeCustomConfiguration(this);
+                this.cppToolsApi.didChangeCustomBrowseConfiguration(this);
             }
 
-            this.cppToolsApi = api;
-        });
+            // set flag
+            this.isRegisteredCpptoolsProvider = true;
+        }
     }
 
     canProvideConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<boolean> {
@@ -1967,28 +1974,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 });
             }
             resolve(result);
-        });
-    }
-
-    canProvideBrowseConfiguration(token?: vscode.CancellationToken | undefined): Thenable<boolean> {
-        return new Promise(async (resolve) => {
-            let result = false;
-            await this.dataProvider.traverseProjectsAsync(async (prj) => {
-                result = await prj.canProvideBrowseConfiguration(token);
-                return result;
-            });
-            resolve(result);
-        });
-    }
-
-    provideBrowseConfiguration(token?: vscode.CancellationToken | undefined): Thenable<WorkspaceBrowseConfiguration | null> {
-        return new Promise(async (resolve) => {
-            let result: WorkspaceBrowseConfiguration | null = null;
-            await this.dataProvider.traverseProjectsAsync(async (prj) => {
-                result = await prj.provideBrowseConfiguration(token);
-                return result !== null;
-            });
-            resolve(result);
+            this.cppToolsOut.appendLine(`[source] provideConfigurations`);
+            this.cppToolsOut.appendLine(JSON.stringify(result, undefined, 2));
         });
     }
 
@@ -2011,6 +1998,26 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 return result !== null;
             });
             resolve(result);
+            this.cppToolsOut.appendLine(`[folder] provideFolderBrowseConfiguration for '${uri.fsPath}'`);
+            this.cppToolsOut.appendLine(JSON.stringify(result, undefined, 2));
+        });
+    }
+
+    /**
+     * @note we not support
+    */
+    canProvideBrowseConfiguration(token?: vscode.CancellationToken | undefined): Thenable<boolean> {
+        return new Promise((resolve) => {
+            resolve(false);
+        });
+    }
+
+    /**
+     * @note we not support
+    */
+    provideBrowseConfiguration(token?: vscode.CancellationToken | undefined): Thenable<WorkspaceBrowseConfiguration | null> {
+        return new Promise((resolve) => {
+            resolve(null);
         });
     }
 

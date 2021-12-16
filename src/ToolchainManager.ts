@@ -1262,7 +1262,12 @@ class GCC implements IToolchian {
 
     constructor() {
         const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
-        this.defMacroList = this.getMacroList(gcc.path);
+        const intrMacros = this.getMacroList(gcc.path);
+        if (intrMacros === undefined) { // if not found gcc, use def macro
+            this.defMacroList = ['__GNUC__=8', '__GNUC_MINOR__=3', '__GNUC_PATCHLEVEL__=1'];
+        } else { // if found, cpptools will parse intr macros, so we don't provide
+            this.defMacroList = [];
+        }
         this.incList = this.getIncludeList(gcc.path);
     }
 
@@ -1280,12 +1285,12 @@ class GCC implements IToolchian {
                     return f.path;
                 });
         } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            //GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
             return [];
         }
     }
 
-    private getMacroList(gccPath: string): string[] {
+    private getMacroList(gccPath: string): string[] | undefined {
         try {
             const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
                 + ' ' + ['-E', '-dM', '-', '<nul'].join(' ');
@@ -1304,8 +1309,7 @@ class GCC implements IToolchian {
 
             return results;
         } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
-            return ['__GNUC__=8', '__GNUC_MINOR__=3', '__GNUC_PATCHLEVEL__=1'];
+            //GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
     }
 
@@ -1596,7 +1600,12 @@ class RISCV_GCC implements IToolchian {
 
     constructor() {
         const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
-        this.defMacroList = this.getMacroList(gcc.path);
+        const intrMacros = this.getMacroList(gcc.path);
+        if (intrMacros === undefined) { // if not found gcc, use def macro
+            this.defMacroList = ['__GNUC__=8', '__GNUC_MINOR__=3', '__GNUC_PATCHLEVEL__=1'];
+        } else { // if found, cpptools will parse intr macros, so we don't provide
+            this.defMacroList = [];
+        }
         this.incList = this.getIncludeList(gcc.path);
     }
 
@@ -1614,12 +1623,12 @@ class RISCV_GCC implements IToolchian {
                     return f.path;
                 });
         } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            //GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
             return [];
         }
     }
 
-    private getMacroList(gccPath: string): string[] {
+    private getMacroList(gccPath: string): string[] | undefined {
         try {
             const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
                 + ' ' + ['-E', '-dM', '-', '<nul'].join(' ');
@@ -1638,8 +1647,7 @@ class RISCV_GCC implements IToolchian {
 
             return results;
         } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
-            return ['__GNUC__=8', '__GNUC_MINOR__=3', '__GNUC_PATCHLEVEL__=1'];
+            //GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
     }
 
