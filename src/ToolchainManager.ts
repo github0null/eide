@@ -572,6 +572,10 @@ class SDCC implements IToolchian {
     }
 
     updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+
+        cppToolsConfig.cStandard = 'c99';
+        cppToolsConfig.cppStandard = 'c++98';
+
         if (builderOpts["c/cpp-compiler"]) {
             cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'] || 'c99';
         }
@@ -797,6 +801,10 @@ class GnuStm8Sdcc implements IToolchian {
     }
 
     updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+
+        cppToolsConfig.cStandard = 'c99';
+        cppToolsConfig.cppStandard = 'c++98';
+
         if (builderOpts["c/cpp-compiler"]) {
             cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'] || 'c99';
         }
