@@ -43,7 +43,7 @@ import {
     CurrentDevice, ConfigMap, FileGroup,
     ProjectConfiguration, ProjectConfigData, WorkspaceConfiguration,
     CppConfiguration, CreateOptions,
-    ProjectConfigEvent, ProjectFileGroup, EventData, FileItem, EIDE_CONF_VERSION, ProjectTargetInfo, VirtualFolder, VirtualFile, CompileConfigModel, ArmBaseCompileData, ArmBaseCompileConfigModel, Dependence, CppConfigItem
+    ProjectConfigEvent, ProjectFileGroup, EventData, FileItem, EIDE_CONF_VERSION, ProjectTargetInfo, VirtualFolder, VirtualFile, CompileConfigModel, ArmBaseCompileData, ArmBaseCompileConfigModel, Dependence, CppConfigItem, ICompileOptions
 } from './EIDETypeDefine';
 import { ToolchainName, IToolchian, ToolchainManager } from './ToolchainManager';
 import { GlobalEvent } from './GlobalEvents';
@@ -658,7 +658,7 @@ export interface FilesOptions {
 
 export type DataChangeType = 'pack' | 'dependence' | 'compiler' | 'uploader' | 'files';
 
-export abstract class AbstractProject {
+export abstract class AbstractProject implements CustomConfigurationProvider {
 
     static readonly workspaceSuffix = '.code-workspace';
     static readonly vsCodeDir = '.vscode';
@@ -697,6 +697,20 @@ export abstract class AbstractProject {
     // sources
     protected sourceRoots: SourceRootList;
     protected virtualSource: VirtualSource;
+    
+    ////////////////////////////////// cpptools provider interface ///////////////////////////////////
+
+    name: string = 'eide';
+    extensionId: string = 'cl.eide';
+    abstract canProvideConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<boolean>;
+    abstract provideConfigurations(uris: vscode.Uri[], token?: vscode.CancellationToken | undefined): Thenable<SourceFileConfigurationItem[]>;
+    abstract canProvideBrowseConfiguration(token?: vscode.CancellationToken | undefined): Thenable<boolean>;
+    abstract provideBrowseConfiguration(token?: vscode.CancellationToken | undefined): Thenable<WorkspaceBrowseConfiguration | null>;
+    abstract canProvideBrowseConfigurationsPerFolder(token?: vscode.CancellationToken | undefined): Thenable<boolean>;
+    abstract provideFolderBrowseConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<WorkspaceBrowseConfiguration | null>;
+    abstract dispose(): void;
+
+    ////////////////////////////////// Abstract Project ///////////////////////////////////
 
     constructor() {
         this._event = new events.EventEmitter();
@@ -708,11 +722,13 @@ export abstract class AbstractProject {
     }
 
     protected emit(event: 'dataChanged', type?: DataChangeType): boolean;
+    protected emit(event: 'cppConfigChanged'): boolean;
     protected emit(event: any, argc?: any): boolean {
         return this._event.emit(event, argc);
     }
 
     on(event: 'dataChanged', listener: (type?: DataChangeType) => void): this;
+    on(event: 'cppConfigChanged', listener: () => void): this;
     on(event: any, listener: (argc?: any) => void): this {
         this._event.on(event, listener);
         return this;
@@ -1227,20 +1243,6 @@ export abstract class AbstractProject {
         this.reloadUploader(oldUploader);
     }
 
-    // @deprecated
-    updateUploaderHexFile(notEmitEvent?: boolean) {
-        // set upload file path if prev value is not existed
-        /* const prevBinFile = new File(this.ToAbsolutePath(this.GetConfiguration().uploadConfigModel.getKeyValue('bin')));
-        if (!prevBinFile.IsFile()) {
-            const binPath = this.getOutputDir() + File.sep + this.GetConfiguration().config.name + '.hex';
-            if (notEmitEvent) {
-                this.GetConfiguration().uploadConfigModel.data['bin'] = binPath;
-            } else {
-                this.GetConfiguration().uploadConfigModel.SetKeyValue('bin', binPath);
-            }
-        } */
-    }
-
     //--
 
     isExcluded(path: string): boolean {
@@ -1503,6 +1505,11 @@ export abstract class AbstractProject {
         } catch (error) {
             GlobalEvent.emit('msg', newMessage('Warning', `error format '${optFile.name}', it must be a yaml file !`));
         }
+    }
+
+    getBuilderOptions(): ICompileOptions {
+        const cfg = this.GetConfiguration();
+        return cfg.compileConfigModel.getOptions(this.getEideDir().path, cfg.config);
     }
 
     //---
@@ -1777,14 +1784,11 @@ export abstract class AbstractProject {
     }
 
     protected onToolchainChanged(oldToolchain: ToolchainName) {
-        /* update hex file path for new config */
-        this.updateUploaderHexFile(true);
         /* check toolchain is installed ? */
         this.checkAndNotifyInstallToolchain();
     }
 
     protected onUploaderChanged(oldToolchain: HexUploaderType) {
-        this.updateUploaderHexFile(true); // update hex file path for new config
         this.updateDebugConfig(); // update debug config after uploader changed
     }
 
@@ -1817,7 +1821,7 @@ export abstract class AbstractProject {
     }
 }
 
-class EIDEProject extends AbstractProject implements CustomConfigurationProvider {
+class EIDEProject extends AbstractProject {
 
     //======================= Event handler ===========================
 
@@ -1959,6 +1963,10 @@ class EIDEProject extends AbstractProject implements CustomConfigurationProvider
         }
         this.dependenceManager.Refresh();
         this.emit('dataChanged', 'pack');
+    }
+
+    protected onToolchainChanged(oldToolchain: ToolchainName) {
+        super.onToolchainChanged(oldToolchain);
     }
 
     //==================================================================
@@ -2227,30 +2235,6 @@ class EIDEProject extends AbstractProject implements CustomConfigurationProvider
                 cppConfig.setConfig(newCfg);
                 cppConfig.saveToFile();
             }
-
-            const curWsDirPath = WorkspaceManager.getInstance().getWorkspaceRoot()?.path;
-            const prjWsDirPath = this.getWsFile().dir;
-            if (prjWsDirPath == curWsDirPath) { // if current active workspace is project workspace
-
-                getCppToolsApi(Version.v5).then((api) => {
-
-                    if (!api) {
-                        GlobalEvent.emit('msg', newMessage('Error', `can't get C/C++ intellisense provider api !`));
-                        return;
-                    }
-
-                    this.cppToolsApi = api;
-
-                    if (api.notifyReady) {
-                        api.registerCustomConfigurationProvider(this);
-                        api.notifyReady(this);
-                    } else {
-                        // Inform cpptools that a custom config provider will be able to service the current workspace.
-                        api.registerCustomConfigurationProvider(this);
-                        api.didChangeCustomConfiguration(this);
-                    }
-                });
-            }
         }
     }
 
@@ -2340,28 +2324,24 @@ class EIDEProject extends AbstractProject implements CustomConfigurationProvider
     name: string = 'eide';
     extensionId: string = 'cl.eide';
 
-    private cppToolsApi: CppToolsApi | undefined;
-
+    private vSourceList: string[] = [];
     private cppToolsConfig: CppConfigItem = {
         name: os.platform(),
         includePath: [],
         defines: []
     };
 
-    private vSourceList: string[] = [];
-
     UpdateCppConfig() {
 
-        const prjConfig = this.GetConfiguration();
-        const builderOpts = prjConfig.compileConfigModel.getOptions(this.getEideDir().path, prjConfig.config);
+        const builderOpts = this.getBuilderOptions();
 
         // update includes and defines 
         const depMerge = this.GetConfiguration().GetAllMergeDep();
         const defMacros: string[] = ['__VSCODE_CPPTOOL']; // it's for internal force include header
-        depMerge.defineList = ArrayDelRepetition(defMacros.concat(depMerge.defineList, this.getToolchain().getInternalDefines(builderOpts)));
+        const defLi = defMacros.concat(depMerge.defineList, this.getToolchain().getInternalDefines(builderOpts));
         depMerge.incList = ArrayDelRepetition(depMerge.incList.concat(this.getSourceIncludeList()));
         this.cppToolsConfig.includePath = depMerge.incList.map((_path) => File.ToUnixPath(_path));
-        this.cppToolsConfig.defines = depMerge.defineList;
+        this.cppToolsConfig.defines = ArrayDelRepetition(defLi);
 
         // update virtual src search folder
         let srcBrowseFolders: string[] = [];
@@ -2389,8 +2369,9 @@ class EIDEProject extends AbstractProject implements CustomConfigurationProvider
             .getForceIncludeHeaders()?.map((f_path) => NodePath.normalize(f_path));
 
         // notify config changed
-        this.cppToolsApi?.didChangeCustomConfiguration(this);
-        this.cppToolsApi?.didChangeCustomBrowseConfiguration(this);
+        this.emit('cppConfigChanged');
+        //this.cppToolsApi?.didChangeCustomConfiguration(this);
+        //this.cppToolsApi?.didChangeCustomBrowseConfiguration(this);
 
         // log
         console.log(`[eide] cpptools config update`);

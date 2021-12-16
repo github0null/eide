@@ -82,8 +82,12 @@ import { ResInstaller } from './ResInstaller';
 import { ExeCmd, ExecutableOption, ExeFile } from '../lib/node-utility/Executable';
 import { CmdLineHandler } from './CmdLineHandler';
 import { WebPanelManager } from './WebPanelManager';
-import * as yml from 'yaml'
+import * as yml from 'yaml';
 import { GitFileInfo } from './WebInterface/GithubInterface';
+import {
+    CppToolsApi, Version, CustomConfigurationProvider, getCppToolsApi,
+    SourceFileConfigurationItem, WorkspaceBrowseConfiguration
+} from 'vscode-cpptools';
 
 enum TreeItemType {
     SOLUTION,
@@ -658,6 +662,28 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
     getProjectCount(): number {
         return this.prjList.length;
+    }
+
+    /**
+     * traverse all projects by async mode
+     * @note if callbk_func's return code == true, loop will be break
+     */
+    async traverseProjectsAsync(fn: (prj: AbstractProject, index: number) => Promise<boolean | undefined>) {
+        for (let index = 0; index < this.prjList.length; index++) {
+            const res = await fn(this.prjList[index], index);
+            if (res) { break; }
+        }
+    }
+
+    /**
+     * traverse all projects by block mode
+     * @note if callbk_func's return code == true, loop will be break
+     */
+    traverseProjects(fn: (prj: AbstractProject, index: number) => boolean | undefined) {
+        for (let index = 0; index < this.prjList.length; index++) {
+            const res = fn(this.prjList[index], index);
+            if (res) { break; }
+        }
     }
 
     foreachProject(callbk: (val: AbstractProject, index: number) => void): void {
@@ -1826,7 +1852,7 @@ interface ImporterProjectInfo {
     files: VirtualFolder;
 }
 
-export class ProjectExplorer {
+export class ProjectExplorer implements CustomConfigurationProvider {
 
     private readonly vFolderNameMatcher = /^\w[\w\t \-:@\.]*$/;
 
@@ -1837,7 +1863,12 @@ export class ProjectExplorer {
     private cppcheck_diag: vscode.DiagnosticCollection;
     private cppcheck_out: vscode.OutputChannel;
 
+    private cppToolsApi: CppToolsApi | undefined;
+
     constructor(context: vscode.ExtensionContext) {
+
+        // register hook
+        GlobalEvent.on('project.opened', (prj) => this.onProjectOpened(prj));
 
         this._event = new events.EventEmitter();
         this.dataProvider = new ProjectDataProvider(context);
@@ -1867,6 +1898,126 @@ export class ProjectExplorer {
         this.on('request_create_from_template', (option) => this.dataProvider.CreateFromTemplate(option));
         this.on('request_import_project', (option) => this.dataProvider.ImportProject(option));
     }
+
+    ////////////////////////////////// cpptools intellisense provider ///////////////////////////////////
+
+    name: string = 'eide';
+
+    extensionId: string = 'cl.eide';
+
+    private onProjectOpened(prj: AbstractProject) {
+
+        // notify cpptools update when project config changed
+        prj.on('cppConfigChanged', () => {
+            if (this.cppToolsApi) {
+                if (this.cppToolsApi.notifyReady) {
+                    this.cppToolsApi.notifyReady(this);
+                } else {
+                    this.cppToolsApi.didChangeCustomConfiguration(this);
+                    this.cppToolsApi.didChangeCustomBrowseConfiguration(this);
+                }
+            }
+        });
+
+        // register cpptools provider, skip if already registered
+        if (this.cppToolsApi) {
+            return;
+        }
+
+        getCppToolsApi(Version.v5).then((api) => {
+
+            if (!api) {
+                GlobalEvent.emit('msg', newMessage('Error', `can't get C/C++ intellisense provider api !`));
+                return;
+            }
+
+            api.registerCustomConfigurationProvider(this);
+
+            if (api.notifyReady) {
+                api.notifyReady(this);
+            } else {
+                api.didChangeCustomConfiguration(this);
+            }
+
+            this.cppToolsApi = api;
+        });
+    }
+
+    canProvideConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<boolean> {
+        return new Promise(async (resolve) => {
+            let result = false;
+            await this.dataProvider.traverseProjectsAsync(async (prj) => {
+                result = await prj.canProvideConfiguration(uri, token);
+                return result;
+            });
+            resolve(result);
+        });
+    }
+
+    provideConfigurations(uris: vscode.Uri[], token?: vscode.CancellationToken | undefined): Thenable<SourceFileConfigurationItem[]> {
+        return new Promise(async (resolve) => {
+            let result: SourceFileConfigurationItem[] = [];
+            await this.dataProvider.traverseProjectsAsync(async (prj) => {
+                (await prj.provideConfigurations(uris, token))
+                    .forEach((e) => result.push(e));
+                return false;
+            });
+            resolve(result);
+        });
+    }
+
+    canProvideBrowseConfiguration(token?: vscode.CancellationToken | undefined): Thenable<boolean> {
+        return new Promise(async (resolve) => {
+            let result = false;
+            await this.dataProvider.traverseProjectsAsync(async (prj) => {
+                result = await prj.canProvideBrowseConfiguration(token);
+                return result;
+            });
+            resolve(result);
+        });
+    }
+
+    provideBrowseConfiguration(token?: vscode.CancellationToken | undefined): Thenable<WorkspaceBrowseConfiguration | null> {
+        return new Promise(async (resolve) => {
+            let result: WorkspaceBrowseConfiguration | null = null;
+            await this.dataProvider.traverseProjectsAsync(async (prj) => {
+                result = await prj.provideBrowseConfiguration(token);
+                return result !== null;
+            });
+            resolve(result);
+        });
+    }
+
+    canProvideBrowseConfigurationsPerFolder(token?: vscode.CancellationToken | undefined): Thenable<boolean> {
+        return new Promise(async (resolve) => {
+            let result = false;
+            await this.dataProvider.traverseProjectsAsync(async (prj) => {
+                result = await prj.canProvideBrowseConfigurationsPerFolder(token);
+                return result;
+            });
+            resolve(result);
+        });
+    }
+
+    provideFolderBrowseConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<WorkspaceBrowseConfiguration | null> {
+        return new Promise(async (resolve) => {
+            let result: WorkspaceBrowseConfiguration | null = null;
+            await this.dataProvider.traverseProjectsAsync(async (prj) => {
+                result = await prj.provideFolderBrowseConfiguration(uri, token);
+                return result !== null;
+            });
+            resolve(result);
+        });
+    }
+
+    dispose() {
+        this.dataProvider.traverseProjects((prj) => {
+            prj.dispose();
+            return undefined;
+        });
+    }
+
+    ////////////////////////////////// Project Explorer ///////////////////////////////////
 
     private on(event: 'request_open_project', listener: (fsPath: string) => void): void;
     private on(event: 'request_create_project', listener: (option: CreateOptions) => void): void;
@@ -2092,9 +2243,6 @@ export class ProjectExplorer {
 
             // start build
             codeBuilder.build(options);
-
-            // update uploader hex file path
-            prj.updateUploaderHexFile();
 
             // update debug configuration
             prj.updateDebugConfig();
