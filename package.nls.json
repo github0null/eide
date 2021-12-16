@@ -84,6 +84,8 @@
     "eide.deps.macro.show": "Display All Macros",
     "eide.deps.macro.add": "Add Macro",
 
+    "settings.enable.telemetry": "Enable telemetry for extension. We will collect information from the logs to help improve the functionality of this extension.",
+
     "settings.builder.jobs": "The number of threads when build",
     "settings.builder.gen.makefile.params": "Generate the Makefile parameters file",
     

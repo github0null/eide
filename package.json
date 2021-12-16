@@ -144,6 +144,12 @@
             {
                 "title": "Embedded IDE",
                 "properties": {
+                    "EIDE.Option.EnableTelemetry": {
+                        "type": "boolean",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.enable.telemetry%",
+                        "default": true
+                    },
                     "EIDE.Option.ShowOutputFilesInExplorer": {
                         "type": "boolean",
                         "scope": "resource",
