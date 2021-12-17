@@ -2412,9 +2412,7 @@ class EIDEProject extends AbstractProject {
                     compilerArgs: this.cppToolsConfig.compilerArgs
                 });
             } else {
-                // can't not be null, 
-                // if no browse info, must return a empty config
-                resolve({ browsePath: [] });
+                resolve(null);
             }
         });
     }

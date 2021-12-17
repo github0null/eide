@@ -1928,7 +1928,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (!this.cppToolsApi) {
             this.cppToolsApi = await getCppToolsApi(Version.v5);
             if (!this.cppToolsApi) {
-                GlobalEvent.emit('msg', newMessage('Error', `can't get C/C++ intellisense provider api !`));
+                GlobalEvent.emit('msg', newMessage('Error', `Can't get api from c/c++ extension, please active it !`));
                 return;
             }
         }
@@ -1975,7 +1975,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
             resolve(result);
             this.cppToolsOut.appendLine(`[source] provideConfigurations`);
-            this.cppToolsOut.appendLine(JSON.stringify(result, undefined, 2));
+            this.cppToolsOut.appendLine(yml.stringify(result));
         });
     }
 
@@ -1999,7 +1999,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             });
             resolve(result);
             this.cppToolsOut.appendLine(`[folder] provideFolderBrowseConfiguration for '${uri.fsPath}'`);
-            this.cppToolsOut.appendLine(JSON.stringify(result, undefined, 2));
+            this.cppToolsOut.appendLine(yml.stringify(result));
         });
     }
 
