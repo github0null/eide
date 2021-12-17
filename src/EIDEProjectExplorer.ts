@@ -1928,7 +1928,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (!this.cppToolsApi) {
             this.cppToolsApi = await getCppToolsApi(Version.v5);
             if (!this.cppToolsApi) {
-                GlobalEvent.emit('msg', newMessage('Error', `Can't get api from c/c++ extension, please active it !`));
+                GlobalEvent.emit('msg', newMessage('Warning', `Can't get cpptools api, please active c/c++ extension, otherwise, the c/++ intellisence config cannot be provided !`));
                 return;
             }
         }
