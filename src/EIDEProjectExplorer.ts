@@ -1884,7 +1884,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         // create vsc output channel
         this.cppcheck_out = vscode.window.createOutputChannel('eide-cppcheck');
-        this.cppToolsOut = vscode.window.createOutputChannel('eide-cpptools-cfg');
+        this.cppToolsOut = vscode.window.createOutputChannel('eide-cpptools-log');
 
         // register doc event
         context.subscriptions.push(vscode.workspace.onDidSaveTextDocument((doc) => {
@@ -1928,7 +1928,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (!this.cppToolsApi) {
             this.cppToolsApi = await getCppToolsApi(Version.v5);
             if (!this.cppToolsApi) {
-                GlobalEvent.emit('msg', newMessage('Warning', `Can't get cpptools api, please active c/c++ extension, otherwise, the c/++ intellisence config cannot be provided !`));
+                const msg = `Can't get cpptools api, please active c/c++ extension, otherwise, the c/++ intellisence config cannot be provided !`;
+                GlobalEvent.emit('msg', newMessage('Warning', msg));
+                this.cppToolsOut.appendLine(`[error] ${msg}`);
                 return;
             }
         }
