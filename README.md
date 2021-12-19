@@ -8,9 +8,9 @@
 
 ## Summary 📑
 
-An embedded development environment for 8051/STM8/Cortex-M\[0/0+/3/4/7]/RISC-V on VsCode.
+An embedded development environment for `8051/STM8/Cortex-M[0/0+/3/4/7]/RISC-V` on VsCode. 
 
-Provide `8051/STM8/Cortex-M/RISC-V` Project development, compilation, burning and other functions.
+Provide `8051/STM8/Cortex-M/RISC-V` project development, compilation, burning and other functions.
 
 **Note:**
  - **Support only Windows platform, Windows 7 SP1 and later**
