@@ -269,7 +269,8 @@ export async function getDownloadUrlFromGit(repo: string, folder: string, fileNa
             host: `git.github0null.io`,
             path: `/api/v1/repos/root/${repo}/contents/${folder}`,
             timeout: 3000,
-            headers: { 'User-Agent': 'Mozilla/5.0' }
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            rejectUnauthorized: false, // ignore cert failed
         }, 'https');
 
         if (res.success == false || res.content == undefined) {
