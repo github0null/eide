@@ -80,8 +80,11 @@ export class WorkspaceManager {
         return resList;
     }
 
-    openWorkspace(wsFile: File) {
-        vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.parse(wsFile.ToUri()));
+    /**
+     * @param workspaceFile '.code-workspace' file obj
+    */
+    openWorkspace(workspaceFile: File) {
+        vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(workspaceFile.path));
     }
 
     static getInstance(): WorkspaceManager {

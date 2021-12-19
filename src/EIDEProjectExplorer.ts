@@ -1322,11 +1322,21 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
     async OpenProject(workspaceFilePath: string): Promise<AbstractProject | undefined> {
 
+        const wsFolder = new File(NodePath.dirname(workspaceFilePath));
+
         // convert .EIDE to .eide
-        this.toLowercaseEIDEFolder(new File(NodePath.dirname(workspaceFilePath)));
+        this.toLowercaseEIDEFolder(wsFolder);
+
+        // check workspace
+        const prjFile = File.fromArray([wsFolder.path, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
+        if (!prjFile.IsFile()) { // not found project file, open workspace ?
+            const msg = `Not found eide project in this workspace !, Open this workspace directly ?`;
+            const selection = await vscode.window.showInformationMessage(msg, continue_text, cancel_text);
+            if (selection === continue_text) { WorkspaceManager.getInstance().openWorkspace(new File(workspaceFilePath)); }
+            return undefined;
+        }
 
         const prj = this._OpenProject(workspaceFilePath);
-
         if (prj) {
             this.SwitchProject(prj);
             return prj;
