@@ -4,38 +4,66 @@
 
 ***
 
-## [English](./README_EN.md)
+## [中文](./README_ZH-CN.md)
 
-## 简述 📑
+## Summary 📑
 
-一款适用于 8051/STM8/Cortex-M/RISC-V 的单片机开发环境。
+An embedded development environment for 8051/STM8/Cortex-M\[0/0+/3/4/7]/RISC-V on VsCode.
 
-在 vscode 上提供 **8051**, **STM8**, **Cortex-M**, **RISC-V** ... 项目的 开发, 编译, 烧录 等功能。
+Provide `8051/STM8/Cortex-M/RISC-V` Project development, compilation, burning and other functions.
 
-**注意：**
- - **仅支持 Windows 平台，Win7 及以上**
+**Note:**
+ - **Support only Windows platform, Windows 7 SP1 and later**
 
 ![preview](https://docs.em-ide.com/preview.png)
 
 ***
 
-## 功能特性 🎉
+## Features 🎉
 
-* 支持开发 8051，STM8，Cortex-M，RISC-V 项目
-* 支持导入 KEIL 项目 (仅支持 KEIL 5 及以上版本)
-* 支持安装标准的 KEIL 芯片支持包 (仅用于 Cortex-M 项目)
-* 提供丰富的项目模板方便快速开始项目
-* 一键编译、快速编译，支持多种主流的编译工具 (armcc, gcc-arm-none-eabi, keil_c51, sdcc ...)
-* 一键烧录到芯片，支持多种主流的烧录器 (jlink, stlink, openocd, pyocd ...)
-* 内置的串口监视器，一键打开串口
-* 支持使用 Cppcheck 对项目进行静态检查
-* 自动生成默认调试配置，为调试器插件 Cortex-debug / STM8-debug 生成默认配置
-* 支持编写 js 脚本来导入任意的 IDE 项目源文件资源
-* 内置多种实用工具，`CMSIS Config Wizard UI`, `反汇编查看`，`程序资源视图` ...
+* Support development of 8051, STM8, Cortex-M\[0/0+/3/4/7], RISC-V projects
+* Support to import KEIL projects (KEIL 5 and later only)
+* Support for installing standard KEIL chip support packs (only for Cortex-M projects)
+* Provides rich project templates for quick start projects
+* One-click compilation, fast compilation, support a variety of mainstream compilation tools (support: armcc, gcc-arm-none-eabi, keil_c51, sdcc ...)
+* One key to burn chip, support a variety of mainstream burn device (support: jlink, stlink, openocd, pyocd ...)
+* Built-in serial port monitor, one click to open the serial port
+* Supports static checking of projects using Cppcheck
+* Automatically generates default debug configurations for debugger plug-in `cortex-debug/STM8-Debug`
+* Support for writing JS scripts to import arbitrary IDE project source file resources
+* Built in a variety of utilities, 'CMSIS Config Wizard UI', 'disassembly view', 'program resource view'...
 
 ***
 
-## 支持的编译器 🔨
+## Example
+
+- Create An RISC-V Project By Internal Template
+
+![](https://docs.em-ide.com/img/show/new_prj.gif)
+
+- Build Project
+
+![](https://docs.em-ide.com/img/show/build_prj.gif)
+
+- Flash Project (It failed because there was no connection to the development board, for demonstration purposes only)
+
+![](https://docs.em-ide.com/img/show/flash_prj.gif)
+
+- Show Source File Disassembly Code
+
+![](https://docs.em-ide.com/img/show/show_disasm.gif)
+
+- Static Check Project By Cppcheck
+
+![](https://docs.em-ide.com/img/show/cppcheck_prj.gif)
+
+- Program Resource View
+
+![](https://docs.em-ide.com/img/show/show_prj_res.gif)
+
+***
+
+## Toolchain Support 🔨
  
  ![8051](https://img.shields.io/badge/-8051_:-grey.svg) ![status](https://img.shields.io/badge/Keil_C51-✔-brightgreen.svg) ![status](https://img.shields.io/badge/SDCC-✔-brightgreen.svg)
  
@@ -47,32 +75,32 @@
 
 ***
 
-## 快速开始 🏃‍♀️
+## Quick Start 🏃‍♀️
 
-1. 安装上述的任意一款编译器
+1. Install any of the above compilers
 
-2. 打开扩展的 Operations 栏，设置编译器的安装路径
+2. Open the **Operations** bar of the extension to set the compiler installation path
 
-3. 点击 Operations 栏的 `新建` 或 `导入` 功能，开始你的项目
-
-***
-
-## 使用文档 📖
-
-[文档地址: https://docs.em-ide.com](https://docs.em-ide.com)
+3. Click on the `New` or `Import` function in the Operations bar to start your project
 
 ***
 
-## 更新日志 📌
+## Document 📖
+
+[https://docs.em-ide.com](https://docs.em-ide.com)
+
+> The English document is being translated
+
+***
+
+## ChangeLog 📌
 
 [ChangeLog](https://marketplace.visualstudio.com/items/CL.eide/changelog)
 
 ***
 
-## 遇到了问题 ? 😥
+## Community 🌈
 
-反馈途径: 
+- [Forum https://discuss.em-ide.com](https://discuss.em-ide.com/)
 
-- [论坛: https://discuss.em-ide.com](https://discuss.em-ide.com/)
-
-- [Github Issue](https://github.com/github0null/eide/issues)
+- [Github](https://github.com/github0null/eide/issues)
