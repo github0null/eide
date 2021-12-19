@@ -2233,10 +2233,6 @@ class EIDEProject extends AbstractProject {
                 settings['files.associations']['.eideignore'] = 'ignore';
             }
 
-            if (settings['C_Cpp.default.intelliSenseMode'] === undefined) {
-                settings['C_Cpp.default.intelliSenseMode'] = "gcc-arm";
-            }
-
             if (settings['files.autoGuessEncoding'] === undefined) {
                 settings['files.autoGuessEncoding'] = true;
             }

@@ -4,6 +4,30 @@
 
 ***
 
+### [v2.15.3] (revision)
+
+**New Features**:
+  - Support `SC000`, `SC300` chips for armcc/armclang
+
+**Bug Fixes**:
+  - **Source files** under project resources **root** are ignored.
+  - A warning appears when creating a project using a workspace template.
+
+**Changes**:
+  - English README are preferred.
+  - Use CustomConfigurationProvider provide Intellisence information for `C/C++`, no longer use `c_cpp_properties. Json`.
+  - Use unify `env.ini` file for each target in a project. Instead of creating a separate '\<taregt\>.env.ini' file for each target. (**so the old env configuration will be invalid**)
+  - In the `env.ini` file, the `"workspace.order"` variable will be **invalid**, please use the `"EIDE_BUILD_ORDER"` variable instead. [docs](https://docs.em-ide.com/#/zh-cn/multi_prj_workspace?id=%e6%9e%84%e5%bb%ba%e4%bc%98%e5%85%88%e7%ba%a7)
+
+**Optimized**:
+  - Better build output rendering for `keil_c51, iar_stm8` toolchain
+  - Provide more complete brows Info to C/C++ plug-in.
+  - Output a more detailed log to "unify_builder.log".
+  - In dark theme, some 'file' icon has low contrast.
+  - When using the Exclude file function, use filters to ignore files with invalid file suffixes.
+
+***
+
 ### [v2.15.2] (revision)
 - **修复：v2.15.1 更新增加了源文件路径变量支持，导致打开项目时加载速度过慢的问题**
 - 优化：当开启 VT100 终端颜色失败时，自动禁用编译输出的关键字高亮（可通过向 Builder.AdditionalCommandLine 设置添加 `-force-color` 强制开启高亮）
