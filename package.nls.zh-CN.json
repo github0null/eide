@@ -26,7 +26,7 @@
     "eide.project.upload": "烧录",
     "eide.project.flash.erase.all": "擦除芯片",
     "eide.project.gen.makefile": "生成 Makefile 模板",
-    "eide.project.modify.files.options": "为文件附加单独的编译选项",
+    "eide.project.modify.files.options": "为源文件附加单独的编译参数",
     "eide.project.import.ext.project.src.struct": "从其他 IDE 的项目中导入源文件资源",
     
     "eide.workspace.build": "构建所有项目",

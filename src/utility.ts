@@ -273,7 +273,7 @@ export async function getDownloadUrlFromGit(repo: string, folder: string, fileNa
         }, 'https');
 
         if (res.success == false || res.content == undefined) {
-            resolve(new Error(res.msg || `can't connect to git repo !`));
+            resolve(new Error(res.msg || `Can't connect to git repo !`));
             return;
         }
 
