@@ -1060,19 +1060,29 @@ export class ProjectConfiguration<T extends CompileData>
         }
     }
 
-    CustomDep_AddIncFromPathList(pathList: string[]) {
+    /**
+     * @return duplicated paths list
+    */
+    CustomDep_AddIncFromPathList(pathList: string[]): string[] {
+        
         let needNotify: boolean = false;
+        const dupList: string[] = [];
         const dep = this.CustomDep_getDependence();
+
         pathList.forEach((path) => {
             if (!dep.incList.includes(path)) {
                 dep.incList.push(path);
                 needNotify = true;
+            } else {
+                dupList.push(path);
             }
         });
 
         if (needNotify) {
             this.emit('dataChanged', { type: 'dependence' });
         }
+
+        return dupList;
     }
 
     CustomDep_RemoveIncDir(_path: string) {

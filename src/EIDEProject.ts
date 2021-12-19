@@ -840,11 +840,6 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
         const prjConfig = this.GetConfiguration();
 
-        // clear invalid exclude files (disabled, because we will add virtual folder support)
-        /* prjConfig.config.excludeList = prjConfig.config.excludeList.filter((_path) => {
-            return new File(this.ToAbsolutePath(_path)).IsExist();
-        }); */
-
         // clear duplicated items
         prjConfig.config.excludeList = ArrayDelRepetition(prjConfig.config.excludeList);
 
@@ -857,11 +852,6 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
             && !(new File(this.ToAbsolutePath(prjConfig.config.packDir))).IsDir()) {
             prjConfig.config.packDir = null;
         }
-
-        // set project name, (disabled, we will support custom project name)
-        /* if (prjConfig.config.name !== (<FileWatcher>this.rootDirWatcher).file.name) {
-            prjConfig.config.name = (<FileWatcher>this.rootDirWatcher).file.name;
-        } */
     }
 
     private initProjectComponents() {
@@ -1306,11 +1296,28 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
     //--
 
-    addIncludePaths(pathList: string[]) {
-        const includeList = this.sourceRoots.getIncludeList();
-        this.GetConfiguration().CustomDep_AddIncFromPathList(pathList.filter((absPath) => {
-            return !includeList.includes(absPath);
-        }));
+    /**
+     * @return duplicated paths list
+    */
+    addIncludePaths(pathList: string[]): string[] {
+
+        const srcIncList = this.sourceRoots.getIncludeList();
+        const dupList: string[] = [];
+        const incList: string[] = [];
+
+        pathList.forEach((path) => {
+            if (srcIncList.includes(path)) {
+                dupList.push(path);
+            } else {
+                incList.push(path);
+            }
+        });
+
+        this.GetConfiguration()
+            .CustomDep_AddIncFromPathList(incList)
+            .forEach((p) => { dupList.push(p); });
+
+        return dupList;
     }
 
     installCMSISHeaders() {
@@ -2076,6 +2083,9 @@ class EIDEProject extends AbstractProject {
         rootDir.CreateDir(true);
 
         const wsFile = File.fromArray([rootDir.path, option.name + AbstractProject.workspaceSuffix]);
+
+        // if workspace is existed, force delete it
+        if (wsFile.IsFile()) { try { fs.unlinkSync(wsFile.path); } catch (error) { } }
 
         File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR]).CreateDir(true);
         File.fromArray([wsFile.dir, AbstractProject.vsCodeDir]).CreateDir(true);

@@ -1939,7 +1939,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (this.cppToolsApi && !this.isRegisteredCpptoolsProvider) {
 
             this.cppToolsApi.registerCustomConfigurationProvider(this);
-            this.cppToolsOut.appendLine(`[init] register CustomConfigurationProvider done !`);
+            this.cppToolsOut.appendLine(`[init] register CustomConfigurationProvider done !\r\n`);
 
             if (this.cppToolsApi.notifyReady) {
                 this.cppToolsApi.notifyReady(this);
@@ -3736,16 +3736,24 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     async AddIncludeDir(prjIndex: number) {
+
         const prj = this.dataProvider.GetProjectByIndex(prjIndex);
-        const uri = await vscode.window.showOpenDialog({
+        const uris = await vscode.window.showOpenDialog({
             canSelectMany: true,
             canSelectFiles: false,
             canSelectFolders: true,
             openLabel: add_include_path,
             defaultUri: vscode.Uri.file(prj.GetRootDir().path)
         });
-        if (uri && uri.length > 0) {
-            prj.addIncludePaths(uri.map(_uri => { return _uri.fsPath; }));
+
+        if (uris && uris.length > 0) {
+            const dupLi = prj
+                .addIncludePaths(uris.map(uri => { return uri.fsPath; }))
+                .map(path => prj.ToRelativePath(path, false) || path);
+            if (dupLi.length > 0) {
+                const msg = `${dupLi.length} redundant include paths (ignored): ${JSON.stringify(dupLi)}`;
+                GlobalEvent.emit('msg', newMessage('Warning', msg));
+            }
         }
     }
 
