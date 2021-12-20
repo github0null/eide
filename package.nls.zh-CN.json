@@ -26,7 +26,7 @@
     "eide.project.upload": "烧录",
     "eide.project.flash.erase.all": "擦除芯片",
     "eide.project.gen.makefile": "生成 Makefile 模板",
-    "eide.project.modify.files.options": "为文件附加单独的编译选项",
+    "eide.project.modify.files.options": "为源文件附加单独的编译参数",
     "eide.project.import.ext.project.src.struct": "从其他 IDE 的项目中导入源文件资源",
     
     "eide.workspace.build": "构建所有项目",
@@ -77,6 +77,8 @@
     "eide.deps.macro.show": "显示所有宏定义",
     "eide.deps.macro.add": "添加宏定义",
     
+    "settings.enable.telemetry": "启用遥测功能。我们将收集日志中的信息，帮助改进该扩展的功能",
+
     "settings.builder.jobs": "构建时使用的线程数",
     "settings.builder.gen.makefile.params": "生成 Makefile 参数文件",
     

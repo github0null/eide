@@ -67,11 +67,12 @@ import { jsonc } from 'jsonc';
 import { WorkspaceManager } from "./WorkspaceManager";
 import * as utility from './utility';
 
-// -------------------------------------------
+////////////////////////////////////////////////////////
 
-export const EIDE_CONF_VERSION = '2.6';
+// eide project config file version
+export const EIDE_CONF_VERSION = '2.15';
 
-// -------------------------------------------
+////////////////////////////////////////////////////////
 
 export abstract class ManagerInterface {
     abstract Init(): void;
@@ -1059,19 +1060,29 @@ export class ProjectConfiguration<T extends CompileData>
         }
     }
 
-    CustomDep_AddIncFromPathList(pathList: string[]) {
+    /**
+     * @return duplicated paths list
+    */
+    CustomDep_AddIncFromPathList(pathList: string[]): string[] {
+
         let needNotify: boolean = false;
+        const dupList: string[] = [];
         const dep = this.CustomDep_getDependence();
+
         pathList.forEach((path) => {
             if (!dep.incList.includes(path)) {
                 dep.incList.push(path);
                 needNotify = true;
+            } else {
+                dupList.push(path);
             }
         });
 
         if (needNotify) {
             this.emit('dataChanged', { type: 'dependence' });
         }
+
+        return dupList;
     }
 
     CustomDep_RemoveIncDir(_path: string) {
@@ -1623,8 +1634,16 @@ export abstract class ArmBaseCompileConfigModel
     }
 
     copyCommonCompileConfigFrom(model: ArmBaseCompileConfigModel) {
-        this.data.cpuType = model.data.cpuType;
+
         this.data.floatingPointHardware = model.data.floatingPointHardware;
+
+        if (this.cpuTypeList.includes(model.data.cpuType)) { // found target cpu, update it
+            this.data.cpuType = model.data.cpuType;
+        } else { // not found, use cpuList[0]
+            this.data.cpuType = this.cpuTypeList[0];
+        }
+
+        this.onPropertyChanged('cpuType');
     }
 
     GetKeyDescription(key: string): string {
@@ -1885,8 +1904,8 @@ export abstract class ArmBaseCompileConfigModel
         switch (key) {
             case 'scatterFilePath':
                 return {
-                    'gcc linker script': ['ld', 'lds'],
-                    'armcc scatter file': ['sct'],
+                    'gcc': ['ld', 'lds'],
+                    'armcc': ['sct'],
                     'all': ['*']
                 };
             default:
@@ -1936,6 +1955,16 @@ export abstract class ArmBaseCompileConfigModel
 }
 
 class Armcc5CompileConfigModel extends ArmBaseCompileConfigModel {
+
+    protected cpuTypeList = [
+        'Cortex-M0',
+        'Cortex-M0+',
+        'Cortex-M3',
+        'Cortex-M4',
+        'Cortex-M7',
+        'SC000',
+        'SC300'
+    ];
 }
 
 class Armcc6CompileConfigModel extends ArmBaseCompileConfigModel {
@@ -1947,7 +1976,9 @@ class Armcc6CompileConfigModel extends ArmBaseCompileConfigModel {
         'Cortex-M3',
         'Cortex-M33',
         'Cortex-M4',
-        'Cortex-M7'
+        'Cortex-M7',
+        'SC000',
+        'SC300'
     ];
 }
 
@@ -3256,8 +3287,8 @@ export interface CppConfigItem {
     forcedInclude?: string[];
     browse?: CppBrowseInfo;
     intelliSenseMode?: string;
-    cStandard?: string,
-    cppStandard?: string,
+    cStandard?: string;
+    cppStandard?: string;
     configurationProvider?: string;
 }
 
@@ -3316,6 +3347,10 @@ export class CppConfiguration extends Configuration<CppConfig> {
     }
 
     Save() {
+        // nothing todo
+    }
+
+    saveToFile() {
         const config = this.getConfig();
         this.Update(this.watcher.file.Read());
         this.setConfig(config);

@@ -1,7 +1,7 @@
 /node_modules
 /out
 /out.min
-src/Telemetry/TelemetryTask.ts
+src/Telemetry/
 vsc-extension-quickstart.md
 *.vsix
 .EIDE

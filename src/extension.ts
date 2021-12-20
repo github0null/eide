@@ -435,10 +435,12 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
 
     const settingManager = SettingManager.GetInstance(context);
 
+    // register telemetry hook if user enabled
     try {
-        // register telemetry hook
-        const TelemetryTask = require('./Telemetry/TelemetryTask');
-        TelemetryTask.registerTelemetryHook();
+        if (settingManager.isEnableTelemetry()) {
+            const TelemetryTask = require('./Telemetry/TelemetryTask');
+            TelemetryTask.registerTelemetryHook();
+        }
     } catch (error) {
         // ignore error
     }

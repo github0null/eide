@@ -539,7 +539,7 @@ export class OperationExplorer {
     }
 
     private getStatusTxt(status: boolean): string {
-        return status ? '✔' : '❌';
+        return status ? '✔' : '✘';
     }
 
     async OnSetToolchainPath() {

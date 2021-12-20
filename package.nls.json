@@ -26,7 +26,7 @@
     "eide.project.upload": "Upload Program To Device",
     "eide.project.flash.erase.all": "Erase Chip",
     "eide.project.gen.makefile": "Generate Makefile Template",
-    "eide.project.modify.files.options": "Append separate compiler options to the file",
+    "eide.project.modify.files.options": "Append separate compiler params for source files",
     "eide.project.import.ext.project.src.struct": "Import source file resources from other IDE's project",
 
     "eide.prj.menus.main.cppcheck": "Static Check",
@@ -83,6 +83,8 @@
     "eide.deps.inclib.add": "Add Library Folder",
     "eide.deps.macro.show": "Display All Macros",
     "eide.deps.macro.add": "Add Macro",
+
+    "settings.enable.telemetry": "Enable telemetry for extension. We will collect information from the logs to help improve the functionality of this extension.",
 
     "settings.builder.jobs": "The number of threads when build",
     "settings.builder.gen.makefile.params": "Generate the Makefile parameters file",

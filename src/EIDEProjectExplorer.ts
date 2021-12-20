@@ -82,8 +82,12 @@ import { ResInstaller } from './ResInstaller';
 import { ExeCmd, ExecutableOption, ExeFile } from '../lib/node-utility/Executable';
 import { CmdLineHandler } from './CmdLineHandler';
 import { WebPanelManager } from './WebPanelManager';
-import * as yml from 'yaml'
+import * as yml from 'yaml';
 import { GitFileInfo } from './WebInterface/GithubInterface';
+import {
+    CppToolsApi, Version, CustomConfigurationProvider, getCppToolsApi,
+    SourceFileConfigurationItem, WorkspaceBrowseConfiguration
+} from 'vscode-cpptools';
 
 enum TreeItemType {
     SOLUTION,
@@ -308,9 +312,9 @@ export class ProjTreeItem extends vscode.TreeItem {
         }
     }
 
-    private getSourceFileIconName(fileName_: string, suffix_: string): string | undefined {
+    private getSourceFileIconName(fileName_: string, suffix_: string): string | vscode.ThemeIcon | undefined {
 
-        let name: string | undefined;
+        let name: string | vscode.ThemeIcon | undefined;
 
         const fileName = fileName_.toLowerCase();
         const suffix = suffix_.toLowerCase();
@@ -358,7 +362,7 @@ export class ProjTreeItem extends vscode.TreeItem {
                 if (fileName.endsWith('.map.view')) {
                     name = 'Report_16x.svg';
                 } else {
-                    name = 'document-light.svg';
+                    name = vscode.ThemeIcon.File; //'document-light.svg';
                 }
                 break;
         }
@@ -658,6 +662,28 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
     getProjectCount(): number {
         return this.prjList.length;
+    }
+
+    /**
+     * traverse all projects by async mode
+     * @note if callbk_func's return code == true, loop will be break
+     */
+    async traverseProjectsAsync(fn: (prj: AbstractProject, index: number) => Promise<boolean | undefined>) {
+        for (let index = 0; index < this.prjList.length; index++) {
+            const res = await fn(this.prjList[index], index);
+            if (res) { break; }
+        }
+    }
+
+    /**
+     * traverse all projects by block mode
+     * @note if callbk_func's return code == true, loop will be break
+     */
+    traverseProjects(fn: (prj: AbstractProject, index: number) => boolean | undefined) {
+        for (let index = 0; index < this.prjList.length; index++) {
+            const res = fn(this.prjList[index], index);
+            if (res) { break; }
+        }
     }
 
     foreachProject(callbk: (val: AbstractProject, index: number) => void): void {
@@ -1296,11 +1322,21 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
     async OpenProject(workspaceFilePath: string): Promise<AbstractProject | undefined> {
 
+        const wsFolder = new File(NodePath.dirname(workspaceFilePath));
+
         // convert .EIDE to .eide
-        this.toLowercaseEIDEFolder(new File(NodePath.dirname(workspaceFilePath)));
+        this.toLowercaseEIDEFolder(wsFolder);
+
+        // check workspace
+        const prjFile = File.fromArray([wsFolder.path, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
+        if (!prjFile.IsFile()) { // not found project file, open workspace ?
+            const msg = `Not found eide project in this workspace !, Open this workspace directly ?`;
+            const selection = await vscode.window.showInformationMessage(msg, continue_text, cancel_text);
+            if (selection === continue_text) { WorkspaceManager.getInstance().openWorkspace(new File(workspaceFilePath)); }
+            return undefined;
+        }
 
         const prj = this._OpenProject(workspaceFilePath);
-
         if (prj) {
             this.SwitchProject(prj);
             return prj;
@@ -1635,29 +1671,35 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
             setTimeout(async () => {
 
-                const wsFileList = targetDir.GetList([/\.code-workspace$/i], File.EMPTY_FILTER);
-                const wsFile: File | undefined = wsFileList.length > 0 ? wsFileList[0] : undefined;
+                try {
 
-                if (wsFile) {
-                    try {
+                    const wsFileList = targetDir.GetList([/\.code-workspace$/i], File.EMPTY_FILTER);
+                    const wsFile: File | undefined = wsFileList.length > 0 ? wsFileList[0] : undefined;
+
+                    if (wsFile) {
+
                         // rename workspace file name
                         const targetPath = targetDir.path + File.sep + option.name + AbstractProject.workspaceSuffix;
                         fs.renameSync(wsFile.path, targetPath);
 
-                        // convert .EIDE to .eide
-                        this.toLowercaseEIDEFolder(targetDir);
+                        // rename project
+                        if (templateFile.suffix != '.ewt') { // ignore eide workspace project
 
-                        // rename project name
-                        {
-                            const prjFile = File.fromArray([targetDir.path, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
-                            if (!prjFile.IsFile()) throw Error(`project file: '${prjFile.path}' is not exist !`);
+                            // convert .EIDE to .eide
+                            this.toLowercaseEIDEFolder(targetDir);
 
-                            try {
-                                const prjConf: ProjectConfigData<any> = JSON.parse(prjFile.Read());
-                                prjConf.name = option.name; // set project name
-                                prjFile.Write(JSON.stringify(prjConf));
-                            } catch (error) {
-                                throw Error(`change project name failed !, msg: ${error.message}`);
+                            // rename project name
+                            {
+                                const prjFile = File.fromArray([targetDir.path, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
+                                if (!prjFile.IsFile()) throw Error(`project file: '${prjFile.path}' is not exist !`);
+
+                                try {
+                                    const prjConf: ProjectConfigData<any> = JSON.parse(prjFile.Read());
+                                    prjConf.name = option.name; // set project name
+                                    prjFile.Write(JSON.stringify(prjConf));
+                                } catch (error) {
+                                    throw Error(`change project name failed !, msg: ${error.message}`);
+                                }
                             }
                         }
 
@@ -1673,9 +1715,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                 WorkspaceManager.getInstance().openWorkspace(wsFile);
                             }
                         }
-                    } catch (error) {
-                        GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
                     }
+                } catch (error) {
+                    GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
                 }
             }, 400);
 
@@ -1820,7 +1862,7 @@ interface ImporterProjectInfo {
     files: VirtualFolder;
 }
 
-export class ProjectExplorer {
+export class ProjectExplorer implements CustomConfigurationProvider {
 
     private readonly vFolderNameMatcher = /^\w[\w\t \-:@\.]*$/;
 
@@ -1831,9 +1873,16 @@ export class ProjectExplorer {
     private cppcheck_diag: vscode.DiagnosticCollection;
     private cppcheck_out: vscode.OutputChannel;
 
+    private cppToolsApi: CppToolsApi | undefined;
+    private cppToolsOut: vscode.OutputChannel;
+
     constructor(context: vscode.ExtensionContext) {
 
         this._event = new events.EventEmitter();
+
+        // register hook
+        GlobalEvent.on('project.opened', (prj) => this.onProjectOpened(prj));
+
         this.dataProvider = new ProjectDataProvider(context);
         this.cppcheck_diag = vscode.languages.createDiagnosticCollection('cppcheck');
 
@@ -1843,8 +1892,9 @@ export class ProjectExplorer {
         // item click event
         context.subscriptions.push(vscode.commands.registerCommand(ProjTreeItem.ITEM_CLICK_EVENT, (item) => this.OnTreeItemClick(item)));
 
-        // create cppcheck output channel
+        // create vsc output channel
         this.cppcheck_out = vscode.window.createOutputChannel('eide-cppcheck');
+        this.cppToolsOut = vscode.window.createOutputChannel('eide-cpptools-log');
 
         // register doc event
         context.subscriptions.push(vscode.workspace.onDidSaveTextDocument((doc) => {
@@ -1861,6 +1911,136 @@ export class ProjectExplorer {
         this.on('request_create_from_template', (option) => this.dataProvider.CreateFromTemplate(option));
         this.on('request_import_project', (option) => this.dataProvider.ImportProject(option));
     }
+
+    ////////////////////////////////// cpptools intellisense provider ///////////////////////////////////
+
+    name: string = 'eide';
+
+    extensionId: string = 'cl.eide';
+
+    private isRegisteredCpptoolsProvider: boolean = false;
+
+    private async onProjectOpened(prj: AbstractProject) {
+
+        // notify cpptools update when project config changed
+        prj.on('cppConfigChanged', () => {
+            if (this.cppToolsApi) {
+                if (this.cppToolsApi.notifyReady) {
+                    this.cppToolsApi.notifyReady(this);
+                } else {
+                    this.cppToolsApi.didChangeCustomConfiguration(this);
+                    this.cppToolsApi.didChangeCustomBrowseConfiguration(this);
+                }
+            }
+        });
+
+        // get cpptools api if we have not get
+        if (!this.cppToolsApi) {
+            this.cppToolsApi = await getCppToolsApi(Version.v5);
+            if (!this.cppToolsApi) {
+                const msg = `Can't get cpptools api, please active c/c++ extension, otherwise, the c/++ intellisence config cannot be provided !`;
+                GlobalEvent.emit('msg', newMessage('Warning', msg));
+                this.cppToolsOut.appendLine(`[error] ${msg}`);
+                return;
+            }
+        }
+
+        // register cpptools provider, skip if already registered
+        if (this.cppToolsApi && !this.isRegisteredCpptoolsProvider) {
+
+            this.cppToolsApi.registerCustomConfigurationProvider(this);
+            this.cppToolsOut.appendLine(`[init] register CustomConfigurationProvider done !\r\n`);
+
+            if (this.cppToolsApi.notifyReady) {
+                this.cppToolsApi.notifyReady(this);
+            } else {
+                this.cppToolsApi.didChangeCustomConfiguration(this);
+                this.cppToolsApi.didChangeCustomBrowseConfiguration(this);
+            }
+
+            // set flag
+            this.isRegisteredCpptoolsProvider = true;
+        }
+    }
+
+    canProvideConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<boolean> {
+        return new Promise(async (resolve) => {
+            let result = false;
+            await this.dataProvider.traverseProjectsAsync(async (prj) => {
+                result = await prj.canProvideConfiguration(uri, token);
+                return result;
+            });
+            resolve(result);
+        });
+    }
+
+    provideConfigurations(uris: vscode.Uri[], token?: vscode.CancellationToken | undefined): Thenable<SourceFileConfigurationItem[]> {
+        return new Promise(async (resolve) => {
+            let result: SourceFileConfigurationItem[] = [];
+            for (const uri of uris) {
+                await this.dataProvider.traverseProjectsAsync(async (prj) => {
+                    if (await prj.canProvideConfiguration(uri, token)) {
+                        result = result.concat(await prj.provideConfigurations([uri], token));
+                        return true;
+                    }
+                });
+            }
+            resolve(result);
+            this.cppToolsOut.appendLine(`[source] provideConfigurations`);
+            this.cppToolsOut.appendLine(yml.stringify(result));
+        });
+    }
+
+    canProvideBrowseConfigurationsPerFolder(token?: vscode.CancellationToken | undefined): Thenable<boolean> {
+        return new Promise(async (resolve) => {
+            let result = false;
+            await this.dataProvider.traverseProjectsAsync(async (prj) => {
+                result = await prj.canProvideBrowseConfigurationsPerFolder(token);
+                return result;
+            });
+            resolve(result);
+        });
+    }
+
+    provideFolderBrowseConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<WorkspaceBrowseConfiguration | null> {
+        return new Promise(async (resolve) => {
+            let result: WorkspaceBrowseConfiguration | null = null;
+            await this.dataProvider.traverseProjectsAsync(async (prj) => {
+                result = await prj.provideFolderBrowseConfiguration(uri, token);
+                return result !== null;
+            });
+            resolve(result);
+            this.cppToolsOut.appendLine(`[folder] provideFolderBrowseConfiguration for '${uri.fsPath}'`);
+            this.cppToolsOut.appendLine(yml.stringify(result));
+        });
+    }
+
+    /**
+     * @note we not support
+    */
+    canProvideBrowseConfiguration(token?: vscode.CancellationToken | undefined): Thenable<boolean> {
+        return new Promise((resolve) => {
+            resolve(false);
+        });
+    }
+
+    /**
+     * @note we not support
+    */
+    provideBrowseConfiguration(token?: vscode.CancellationToken | undefined): Thenable<WorkspaceBrowseConfiguration | null> {
+        return new Promise((resolve) => {
+            resolve(null);
+        });
+    }
+
+    dispose() {
+        this.dataProvider.traverseProjects((prj) => {
+            prj.dispose();
+            return undefined;
+        });
+    }
+
+    ////////////////////////////////// Project Explorer ///////////////////////////////////
 
     private on(event: 'request_open_project', listener: (fsPath: string) => void): void;
     private on(event: 'request_create_project', listener: (option: CreateOptions) => void): void;
@@ -2087,9 +2267,6 @@ export class ProjectExplorer {
             // start build
             codeBuilder.build(options);
 
-            // update uploader hex file path
-            prj.updateUploaderHexFile();
-
             // update debug configuration
             prj.updateDebugConfig();
 
@@ -2117,17 +2294,25 @@ export class ProjectExplorer {
             let projectOrder: number | undefined = undefined;
 
             /* get project order */
-            const envConfig = project.getProjectEnv();
-            if (envConfig && envConfig['workspace'] &&
-                envConfig['workspace']['order']) {
-                projectOrder = parseInt(envConfig['workspace']['order']) || undefined;
+            const envConfig = project.getProjectRawEnv();
+            const targetName = project.getCurrentTarget().toLowerCase();
+            if (envConfig) {
+                const cfgName = 'EIDE_BUILD_ORDER';
+                // parse global config
+                if (envConfig[cfgName]) {
+                    projectOrder = parseInt(envConfig[cfgName]) || undefined;
+                }
+                // parse target config
+                if (envConfig[targetName] && envConfig[targetName][cfgName]) {
+                    projectOrder = parseInt(envConfig[targetName][cfgName]) || undefined;
+                }
             }
 
             /* gen command */
             const builder = CodeBuilder.NewBuilder(project);
             const cmdLine = builder.genBuildCommand({ useFastMode: !rebuild }, true);
             if (cmdLine) {
-                if (projectOrder == undefined) {
+                if (projectOrder == undefined || projectOrder == NaN) {
                     projectOrder = 100; /* make default order is 100 */
                 }
                 cmdList.push({
@@ -3561,16 +3746,24 @@ export class ProjectExplorer {
     }
 
     async AddIncludeDir(prjIndex: number) {
+
         const prj = this.dataProvider.GetProjectByIndex(prjIndex);
-        const uri = await vscode.window.showOpenDialog({
+        const uris = await vscode.window.showOpenDialog({
             canSelectMany: true,
             canSelectFiles: false,
             canSelectFolders: true,
             openLabel: add_include_path,
             defaultUri: vscode.Uri.file(prj.GetRootDir().path)
         });
-        if (uri && uri.length > 0) {
-            prj.addIncludePaths(uri.map(_uri => { return _uri.fsPath; }));
+
+        if (uris && uris.length > 0) {
+            const dupLi = prj
+                .addIncludePaths(uris.map(uri => { return uri.fsPath; }))
+                .map(path => prj.ToRelativePath(path, false) || path);
+            if (dupLi.length > 0) {
+                const msg = `${dupLi.length} redundant include paths (ignored): ${JSON.stringify(dupLi)}`;
+                GlobalEvent.emit('msg', newMessage('Warning', msg));
+            }
         }
     }
 
@@ -3851,7 +4044,8 @@ export class ProjectExplorer {
         }
 
         // virtual folder
-        else if (item.type === TreeItemType.V_FOLDER ||
+        else if (item.type === TreeItemType.PROJECT ||
+            item.type === TreeItemType.V_FOLDER ||
             item.type === TreeItemType.V_FOLDER_ROOT) {
 
             const vInfo = <VirtualFolderInfo>item.val.obj;

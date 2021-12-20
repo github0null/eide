@@ -22,7 +22,7 @@
     SOFTWARE.
 */
 
-import { ProjectType, ICompileOptions } from "./EIDETypeDefine";
+import { ProjectType, ICompileOptions, CppConfigItem } from "./EIDETypeDefine";
 import { File } from "../lib/node-utility/File";
 import { SettingManager } from "./SettingManager";
 import { ResManager } from "./ResManager";
@@ -66,19 +66,40 @@ export interface IToolchian {
 
     getToolchainDir(): File;
 
+    /**
+     * get gcc c/c++ compiler path
+     */
     getGccCompilerPath(): string | undefined;
 
-    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined;
-
+    /**
+     * get compiler internal defines (for cpptools)
+     */
     getInternalDefines(builderOpts: ICompileOptions): string[];
 
+    /**
+     * force append some custom macro
+     */
     getCustomDefines(): string[] | undefined;
 
+    /**
+     * the system header include path (not be added to compiler params)
+     */
     getSystemIncludeList(builderOpts: ICompileOptions): string[];
 
+    /**
+     * the default source file include path which will be added in compiler params.
+     */
     getDefaultIncludeList(): string[];
 
+    /**
+     * force include headers for cpptools intellisence config
+     */
     getForceIncludeHeaders(): string[] | undefined;
+
+    /**
+     * update cpptools intellisence config
+     */
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void;
 
     getLibDirs(): string[];
 
@@ -321,30 +342,34 @@ export class ToolchainManager {
         }
     }
 
-    isToolchainPathReady(name: ToolchainName): boolean {
+    getToolchainExecutableFolder(name: ToolchainName): File | undefined {
 
         const settingManager = SettingManager.GetInstance();
 
         switch (name) {
             case 'AC5':
-                return File.fromArray([settingManager.getArmcc5Dir().path, 'bin']).IsDir();
+                return File.fromArray([settingManager.getArmcc5Dir().path, 'bin']);
             case 'AC6':
-                return File.fromArray([settingManager.getArmcc6Dir().path, 'bin']).IsDir();
+                return File.fromArray([settingManager.getArmcc6Dir().path, 'bin']);
             case 'Keil_C51':
-                return settingManager.isKeilC51IniReady();
+                return File.fromArray([settingManager.GetC51Dir().path, 'BIN']);
             case 'GCC':
-                return File.fromArray([settingManager.getGCCDir().path, 'bin']).IsDir();
+                return File.fromArray([settingManager.getGCCDir().path, 'bin']);
             case 'IAR_STM8':
-                return File.fromArray([settingManager.getIARForStm8Dir().path, 'stm8', 'bin']).IsDir();
+                return File.fromArray([settingManager.getIARForStm8Dir().path, 'stm8', 'bin']);
             case 'SDCC':
-                return File.fromArray([settingManager.getSdccDir().path, 'bin']).IsDir();
+                return File.fromArray([settingManager.getSdccDir().path, 'bin']);
             case 'RISCV_GCC':
-                return File.fromArray([settingManager.getRiscvToolFolder().path, 'bin']).IsDir();
+                return File.fromArray([settingManager.getRiscvToolFolder().path, 'bin']);
             case 'GNU_SDCC_STM8':
-                return File.fromArray([settingManager.getGnuSdccStm8Dir().path, 'bin']).IsDir();
+                return File.fromArray([settingManager.getGnuSdccStm8Dir().path, 'bin']);
             default:
-                return false;
+                return undefined;
         }
+    }
+
+    isToolchainPathReady(name: ToolchainName): boolean {
+        return this.getToolchainExecutableFolder(name)?.IsDir() || false;
     }
 
     //----------------------
@@ -408,8 +433,9 @@ class KeilC51 implements IToolchian {
         return gcc.path;
     }
 
-    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
-        return undefined;
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+        cppToolsConfig.cStandard = 'c89';
+        cppToolsConfig.cppStandard = 'c++98';
     }
 
     preHandleOptions(prjInfo: IProjectInfo, c51Options: ICompileOptions): void {
@@ -545,8 +571,14 @@ class SDCC implements IToolchian {
         return gcc.path;
     }
 
-    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
-        return undefined;
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+
+        cppToolsConfig.cStandard = 'c99';
+        cppToolsConfig.cppStandard = 'c++98';
+
+        if (builderOpts["c/cpp-compiler"]) {
+            cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'] || 'c99';
+        }
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
@@ -768,8 +800,14 @@ class GnuStm8Sdcc implements IToolchian {
         return gcc.path;
     }
 
-    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
-        return undefined;
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+
+        cppToolsConfig.cStandard = 'c99';
+        cppToolsConfig.cppStandard = 'c++98';
+
+        if (builderOpts["c/cpp-compiler"]) {
+            cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'] || 'c99';
+        }
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
@@ -963,8 +1001,25 @@ class AC5 implements IToolchian {
         return armccFile.path;
     }
 
-    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
-        return undefined;
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+
+        cppToolsConfig.cStandard = 'c89';
+        cppToolsConfig.cppStandard = 'c++11';
+
+        if (builderOpts["c/cpp-compiler"]) {
+
+            if (builderOpts["c/cpp-compiler"]['c99-mode']) {
+                cppToolsConfig.cStandard = 'c99';
+            }
+
+            if (builderOpts["c/cpp-compiler"]['gnu-extensions']) {
+                if (cppToolsConfig.cStandard === 'c99') {
+                    cppToolsConfig.cStandard = 'gnu99';
+                } else {
+                    cppToolsConfig.cStandard = 'gnu98';
+                }
+            }
+        }
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
@@ -1090,8 +1145,23 @@ class AC6 implements IToolchian {
         return armccFile.path;
     }
 
-    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
-        return ['--target=arm-arm-none-eabi'];
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+
+        cppToolsConfig.cStandard = 'gnu11';
+        cppToolsConfig.cppStandard = 'gnu++98';
+
+        cppToolsConfig.compilerArgs = ['--target=arm-arm-none-eabi'];
+
+        if (builderOpts["c/cpp-compiler"]) {
+
+            if (builderOpts["c/cpp-compiler"]['language-c']) {
+                cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'];
+            }
+
+            if (builderOpts["c/cpp-compiler"]['language-cpp']) {
+                cppToolsConfig.cppStandard = builderOpts["c/cpp-compiler"]['language-cpp'];
+            }
+        }
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
@@ -1192,7 +1262,12 @@ class GCC implements IToolchian {
 
     constructor() {
         const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
-        this.defMacroList = this.getMacroList(gcc.path);
+        const intrMacros = this.getMacroList(gcc.path);
+        if (intrMacros === undefined) { // if not found gcc, use def macro
+            this.defMacroList = ['__GNUC__=8', '__GNUC_MINOR__=3', '__GNUC_PATCHLEVEL__=1'];
+        } else { // if found, cpptools will parse intr macros, so we don't provide
+            this.defMacroList = [];
+        }
         this.incList = this.getIncludeList(gcc.path);
     }
 
@@ -1210,12 +1285,12 @@ class GCC implements IToolchian {
                     return f.path;
                 });
         } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            //GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
             return [];
         }
     }
 
-    private getMacroList(gccPath: string): string[] {
+    private getMacroList(gccPath: string): string[] | undefined {
         try {
             const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
                 + ' ' + ['-E', '-dM', '-', '<nul'].join(' ');
@@ -1234,8 +1309,7 @@ class GCC implements IToolchian {
 
             return results;
         } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
-            return ['__GNUC__=8', '__GNUC_MINOR__=3', '__GNUC_PATCHLEVEL__=1'];
+            //GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
     }
 
@@ -1254,8 +1328,21 @@ class GCC implements IToolchian {
         return gcc.path;
     }
 
-    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
-        return undefined;
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+
+        cppToolsConfig.cStandard = 'c11';
+        cppToolsConfig.cppStandard = 'c++11';
+
+        if (builderOpts["c/cpp-compiler"]) {
+
+            if (builderOpts["c/cpp-compiler"]['language-c']) {
+                cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'];
+            }
+
+            if (builderOpts["c/cpp-compiler"]['language-cpp']) {
+                cppToolsConfig.cppStandard = builderOpts["c/cpp-compiler"]['language-cpp'];
+            }
+        }
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
@@ -1357,9 +1444,17 @@ class IARSTM8 implements IToolchian {
         const gcc = File.fromArray([this.getToolchainDir().path, 'stm8', 'bin', 'iccstm8.exe']);
         return gcc.path;
     }
-    
-    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
-        return undefined;
+
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+
+        cppToolsConfig.cStandard = 'c99';
+        cppToolsConfig.cppStandard = 'c++11';
+
+        if (builderOpts["c/cpp-compiler"]) {
+            if (builderOpts["c/cpp-compiler"]['language-c']) {
+                cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'];
+            }
+        }
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
@@ -1505,7 +1600,12 @@ class RISCV_GCC implements IToolchian {
 
     constructor() {
         const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
-        this.defMacroList = this.getMacroList(gcc.path);
+        const intrMacros = this.getMacroList(gcc.path);
+        if (intrMacros === undefined) { // if not found gcc, use def macro
+            this.defMacroList = ['__GNUC__=8', '__GNUC_MINOR__=3', '__GNUC_PATCHLEVEL__=1'];
+        } else { // if found, cpptools will parse intr macros, so we don't provide
+            this.defMacroList = [];
+        }
         this.incList = this.getIncludeList(gcc.path);
     }
 
@@ -1523,12 +1623,12 @@ class RISCV_GCC implements IToolchian {
                     return f.path;
                 });
         } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            //GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
             return [];
         }
     }
 
-    private getMacroList(gccPath: string): string[] {
+    private getMacroList(gccPath: string): string[] | undefined {
         try {
             const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
                 + ' ' + ['-E', '-dM', '-', '<nul'].join(' ');
@@ -1547,8 +1647,7 @@ class RISCV_GCC implements IToolchian {
 
             return results;
         } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
-            return ['__GNUC__=8', '__GNUC_MINOR__=3', '__GNUC_PATCHLEVEL__=1'];
+            //GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
     }
 
@@ -1566,9 +1665,22 @@ class RISCV_GCC implements IToolchian {
         const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
         return gcc.path;
     }
-    
-    getGccCompilerCmdArgsForIntelliSense(): string[] | undefined {
-        return undefined;
+
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+
+        cppToolsConfig.cStandard = 'c11';
+        cppToolsConfig.cppStandard = 'c++11';
+
+        if (builderOpts["c/cpp-compiler"]) {
+
+            if (builderOpts["c/cpp-compiler"]['language-c']) {
+                cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'];
+            }
+
+            if (builderOpts["c/cpp-compiler"]['language-cpp']) {
+                cppToolsConfig.cppStandard = builderOpts["c/cpp-compiler"]['language-cpp'];
+            }
+        }
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
