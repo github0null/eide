@@ -918,6 +918,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         return this.virtualSource;
     }
 
+    getNormalSourceManager(): SourceRootList {
+        return this.sourceRoots;
+    }
+
     refreshSourceRoot(rePath: string) {
         if (rePath.startsWith(VirtualSource.rootName)) {
             this.virtualSource.notifyUpdateFolder(rePath);
@@ -2340,14 +2344,23 @@ class EIDEProject extends AbstractProject {
         // update intellisence info
         toolchain.updateCppIntellisenceCfg(builderOpts, this.cppToolsConfig);
 
-        // update virtual src search folder
+        // update source browse path
         let srcBrowseFolders: string[] = [];
+
         this.vSourceList = [];
         this.getVirtualSourceManager().traverse((vFolder) => {
             vFolder.folder.files.forEach((vFile) => {
                 const fAbsPath = this.ToAbsolutePath(vFile.path);
                 this.vSourceList.push(fAbsPath);
                 srcBrowseFolders.push(`${File.ToUnixPath(NodePath.dirname(fAbsPath))}/*`);
+            });
+        });
+
+        this.getNormalSourceManager().getFileGroups().forEach(fGrp => {
+            if (fGrp.disabled) { return; } // skip disabled group
+            fGrp.files.forEach(fItem => {
+                if (fItem.disabled) { return; } // skip disabled file
+                srcBrowseFolders.push(`${File.ToUnixPath(fItem.file.dir)}/*`);
             });
         });
 
