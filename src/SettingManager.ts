@@ -231,6 +231,10 @@ export class SettingManager {
         return this.getConfiguration().get<boolean>('Option.AutoUpdateEideBinaries') || false;
     } */
 
+    getForceIncludeList(): string[] {
+        return this.getConfiguration().get<string[]>('Cpptools.ForceInclude') || [];
+    }
+
     isEnableTelemetry(): boolean {
         return this.getConfiguration().get<boolean>('Option.EnableTelemetry') || false;
     }

@@ -960,7 +960,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         const prjRootDir = this.GetRootDir();
         const outDir = NodePath.normalize(prjRootDir.path + File.sep + prjConfig.getOutDir());
 
-        // replace prj env
+        // replace stable env
         path = path
             .replace(/\$\(OutDir\)|\$\{OutDir\}/ig, outDir)
             .replace(/\$\(ProjectName\)|\$\{ProjectName\}/ig, prjConfig.config.name)
@@ -968,16 +968,21 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
             .replace(/\$\(ProjectRoot\)|\$\{ProjectRoot\}/ig, prjRootDir.path);
 
         // replace user env
+        path = this.replaceProjectEnv(path);
+
+        return path;
+    }
+
+    replaceProjectEnv(str: string): string {
         const prjEnv = this.getProjectEnv();
         if (prjEnv) {
             for (const key in prjEnv) {
                 if (!/^\w+$/.test(key)) continue;
                 const reg = new RegExp(String.raw`\$\(${key}\)|\$\{${key}\}`, 'ig');
-                path = path.replace(reg, prjEnv[key]);
+                str = str.replace(reg, prjEnv[key]);
             }
         }
-
-        return path;
+        return str;
     }
 
     ToAbsolutePath(path_: string): string {
@@ -2173,7 +2178,7 @@ class EIDEProject extends AbstractProject {
         this.getFileGroups().forEach((_group) => {
 
             // is filesystem source
-            if ((<ProjectFileGroup>_group).dir !== undefined) {
+            if (!AbstractProject.isVirtualSourceGroup(_group)) {
                 const group = <ProjectFileGroup>_group;
                 const rePath = this.ToRelativePath(group.dir.path, false);
                 // combine HAL folder
@@ -2374,13 +2379,18 @@ class EIDEProject extends AbstractProject {
         this.cppToolsConfig.compilerPath = this.getToolchain().getGccCompilerPath();
 
         // update forceinclude headers
-        this.cppToolsConfig.forcedInclude = this.getToolchain()
-            .getForceIncludeHeaders()?.map((f_path) => NodePath.normalize(f_path));
+        this.cppToolsConfig.forcedInclude = [];
+
+        toolchain.getForceIncludeHeaders()?.forEach((f_path) => {
+            this.cppToolsConfig.forcedInclude?.push(NodePath.normalize(f_path));
+        });
+
+        SettingManager.GetInstance().getForceIncludeList().forEach((path) => {
+            this.cppToolsConfig.forcedInclude?.push(this.ToAbsolutePath(path));
+        });
 
         // notify config changed
         this.emit('cppConfigChanged');
-        //this.cppToolsApi?.didChangeCustomConfiguration(this);
-        //this.cppToolsApi?.didChangeCustomBrowseConfiguration(this);
 
         // log
         console.log(this.cppToolsConfig);

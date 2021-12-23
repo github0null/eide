@@ -144,6 +144,12 @@
             {
                 "title": "Embedded IDE",
                 "properties": {
+                    "EIDE.Cpptools.ForceInclude": {
+                        "type": "array",
+                        "scope": "resource",
+                        "markdownDescription": "Force include file path list for c/c++ plug-in intellisence",
+                        "default": []
+                    },
                     "EIDE.Option.EnableTelemetry": {
                         "type": "boolean",
                         "scope": "resource",
