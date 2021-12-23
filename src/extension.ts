@@ -368,8 +368,8 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
 
     // binaries download site
     const downloadSites: string[] = [
-        `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/bin${binVersion}.zip`,
-        `https://raw-github.em-ide.com/github0null/eide-resource/master/binaries/bin${binVersion}.zip`,
+        `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/bin-${binVersion}.zip`,
+        `https://raw-github.em-ide.com/github0null/eide-resource/master/binaries/bin-${binVersion}.zip`,
     ];
 
     /* random select the order of site */
@@ -378,12 +378,12 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
     }
 
     // add github default download url
-    downloadSites.push(`https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/bin${binVersion}.zip`);
+    downloadSites.push(`https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/bin-${binVersion}.zip`);
 
     let installedDone = false;
 
     try {
-        const tmpFile = File.fromArray([os.tmpdir(), `eide-binaries${binVersion}.zip`]);
+        const tmpFile = File.fromArray([os.tmpdir(), `eide-binaries-${binVersion}.zip`]);
 
         /* make dir */
         binFolder.CreateDir(true);
