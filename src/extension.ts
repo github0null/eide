@@ -210,6 +210,8 @@ export function deactivate() {
     GlobalEvent.emit('extension_close');
 }
 
+///////////////////////////////////////////////////////////////////////
+
 function ShowUUID() {
     vscode.window.showInputBox({
         value: platform.GetUUID()
@@ -263,7 +265,106 @@ async function onSelectSerialBaudrate() {
 async function checkAndInstallBinaries(constex: vscode.ExtensionContext, forceInstall?: boolean): Promise<boolean> {
 
     const eideCfg = ResManager.GetInstance().getAppConfig<any>();
-    const binVersion = eideCfg['binaray_version'] ? `-${eideCfg['binaray_version']}` : ''
+    let localVersion = eideCfg['binaray_version'];
+
+    const rootFolder = new File(constex.extensionPath);
+    const binFolder = File.fromArray([rootFolder.path, 'bin']);
+
+    /* check eide binaries */
+    // if user force reinstall, delete old 'bin' dir
+    if (forceInstall) {
+        platform.DeleteDir(binFolder);
+    }
+
+    // if 'bin' dir is existed, we exit, if not, we need install eide-binaries
+    else if (binFolder.IsDir() &&
+        File.fromArray([binFolder.path, File.ToLocalPath('lib/mono/4.5/mscorlib.dll')]).IsFile()) {
+        // if user enabled auto-update, we try get new version from 
+        // github, and install it at background after 1 min delay
+        //if (SettingManager.GetInstance().isEnableAutoUpdateEideBinaries()) {
+            setTimeout(async () => {
+                // get local binary version from disk
+                const verFile = File.fromArray([binFolder.path, 'VERSION']);
+                if (verFile.IsFile()) {
+                    const cont = verFile.Read().trim();
+                    if (utility.isVersionString(cont)) {
+                        localVersion = cont;
+                    }
+                }
+                // try update
+                const done = await tryUpdateBinaries(binFolder, localVersion);
+                if (!done) {
+                    const msg = `Update eide-binaries failed, please restart vscode !`;
+                    const sel = await vscode.window.showErrorMessage(msg, 'Restart', 'Cancel');
+                    if (sel == 'Restart') {
+                        vscode.commands.executeCommand('workbench.action.reloadWindow');
+                    }
+                }
+            }, 5 * 1000);
+        //}
+        return true;
+    }
+
+    return await tryUpdateBinaries(binFolder, localVersion, true);
+}
+
+async function tryUpdateBinaries(binFolder: File, localVer: string, notConfirm?: boolean): Promise<boolean> {
+
+    let binVersion: string = localVer;
+
+    const getVersionFromRepo = async (): Promise<string | Error | undefined> => {
+        try {
+            const url = `https://api-github.em-ide.com/repos/github0null/eide-resource/contents/binaries/VERSION`;
+            const cont = await utility.requestTxt(url);
+            if (typeof cont != 'string') return cont;
+            let obj: any = undefined;
+            try { obj = JSON.parse(cont); } catch (error) { return error; }
+            if (typeof obj.content != 'string') return obj.content;
+            return Buffer.from(obj.content, 'base64').toString();
+        } catch (error) {
+            return error;
+        }
+    };
+
+    // get new version number from repo 
+    const newVersion = await getVersionFromRepo();
+    if (typeof newVersion == 'string') {
+        const remotVer = newVersion.trim();
+        if (utility.isVersionString(remotVer)) {
+            const localMainVer: string = localVer.split('.')[0];
+            const remotMainVer: string = remotVer.split('.')[0];
+            if (localMainVer == remotMainVer && // main version number must be equal
+                utility.compareVersion(remotVer, localVer) > 0) { // remote version > local version ?
+                binVersion = remotVer;
+            }
+        }
+    }
+
+    // check bin folder
+    if (binFolder.IsDir()) {
+
+        // not need update, exit now
+        if (binVersion == localVer) {
+            return true;
+        }
+
+        // if we found a new version, delete old bin Folder
+        else {
+            // show notify to user and request a confirm
+            if (!notConfirm) {
+                const msg = `New update for eide binaries, version: '${binVersion}', install now ?`;
+                const sel = await vscode.window.showInformationMessage(msg, 'Yes', 'Later');
+                if (sel != 'Yes') { return true; } // user canceled
+            }
+            // del old bin folder before install
+            platform.DeleteDir(binFolder);
+        }
+    }
+
+    return await tryInstallBinaries(binFolder, binVersion);
+}
+
+async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<boolean> {
 
     // binaries download site
     const downloadSites: string[] = [
@@ -278,19 +379,6 @@ async function checkAndInstallBinaries(constex: vscode.ExtensionContext, forceIn
 
     // add github default download url
     downloadSites.push(`https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/bin${binVersion}.zip`);
-
-    const rootFolder = new File(constex.extensionPath);
-    const binFolder = File.fromArray([rootFolder.path, 'bin']);
-
-    /* check bin folder */
-    if (forceInstall) {
-        platform.DeleteDir(binFolder);
-    } else {
-        if (binFolder.IsDir() &&
-            File.fromArray([binFolder.path, File.ToLocalPath('lib/mono/4.5/mscorlib.dll')]).IsFile()) {
-            return true; /* found it, exit */
-        }
-    }
 
     let installedDone = false;
 
@@ -426,14 +514,13 @@ function exportEnvToSysPath() {
 
 async function InitComponents(context: vscode.ExtensionContext): Promise<boolean | undefined> {
 
-    // init resource manager
+    // init managers
     ResManager.GetInstance(context);
+    const settingManager = SettingManager.GetInstance(context);
 
     /* check binaries, if not found, install it ! */
     const done = await checkAndInstallBinaries(context);
     if (!done) { return false; } /* exit if failed */
-
-    const settingManager = SettingManager.GetInstance(context);
 
     // register telemetry hook if user enabled
     try {

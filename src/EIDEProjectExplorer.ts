@@ -71,7 +71,7 @@ import { Compress, CompressOption } from './Compress';
 import { DependenceManager } from './DependenceManager';
 import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import {
-    copyObject, downloadFileWithProgress, getDownloadUrlFromGit,
+    copyObject, downloadFileWithProgress, getDownloadUrlFromGitea,
     runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
     genGithubHash
 } from './utility';
@@ -1852,6 +1852,7 @@ interface BuildCommandInfo {
     command: string;
     program?: string;
     order?: number;
+    ignoreFailed?: boolean;
 }
 
 interface ImporterProjectInfo {
@@ -2291,35 +2292,55 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         this.dataProvider.foreachProject((project, index) => {
 
             const projectName = project.GetConfiguration().config.name;
-            let projectOrder: number | undefined = undefined;
+
+            const buildCfg: BuildCommandInfo = {
+                title: `build '${projectName}'`,
+                command: ''
+            };
 
             /* get project order */
             const envConfig = project.getProjectRawEnv();
             const targetName = project.getCurrentTarget().toLowerCase();
             if (envConfig) {
-                const cfgName = 'EIDE_BUILD_ORDER';
+                /////////////////////////////
+                // prj build order
+                let cfgName = 'EIDE_BUILD_ORDER';
                 // parse global config
                 if (envConfig[cfgName]) {
-                    projectOrder = parseInt(envConfig[cfgName]) || undefined;
+                    buildCfg.order = parseInt(envConfig[cfgName]);
                 }
                 // parse target config
-                if (envConfig[targetName] && envConfig[targetName][cfgName]) {
-                    projectOrder = parseInt(envConfig[targetName][cfgName]) || undefined;
+                if (envConfig[targetName] &&
+                    envConfig[targetName][cfgName]) {
+                    buildCfg.order = parseInt(envConfig[targetName][cfgName]);
                 }
+                /////////////////////////////
+                // ignore if failed ?
+                cfgName = 'EIDE_BUILD_SKIP_IF_FAILED';
+                // parse global config
+                if (envConfig[cfgName]) {
+                    buildCfg.ignoreFailed = (parseInt(envConfig[cfgName])) === 1;
+                }
+                // parse target config
+                if (envConfig[targetName] &&
+                    envConfig[targetName][cfgName]) {
+                    buildCfg.ignoreFailed = (parseInt(envConfig[targetName][cfgName])) === 1;
+                }
+            }
+
+            // make default order is 100
+            if (buildCfg.order == undefined ||
+                buildCfg.order == null ||
+                buildCfg.order == NaN) {
+                buildCfg.order = 100;
             }
 
             /* gen command */
             const builder = CodeBuilder.NewBuilder(project);
             const cmdLine = builder.genBuildCommand({ useFastMode: !rebuild }, true);
             if (cmdLine) {
-                if (projectOrder == undefined || projectOrder == NaN) {
-                    projectOrder = 100; /* make default order is 100 */
-                }
-                cmdList.push({
-                    title: `build '${projectName}'`,
-                    command: CmdLineHandler.DeleteCmdPrefix(cmdLine),
-                    order: projectOrder
-                });
+                buildCfg.command = CmdLineHandler.DeleteCmdPrefix(cmdLine);
+                cmdList.push(buildCfg);
             }
         });
 
@@ -2742,7 +2763,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }, (progress, token): Thenable<Error | undefined> => {
                 return new Promise(async (resolve) => {
 
-                    const fileInfo = await getDownloadUrlFromGit('eide_makefile_template', '', mkFileName);
+                    const fileInfo = await getDownloadUrlFromGitea('eide_makefile_template', '', mkFileName);
                     if (fileInfo instanceof Error || fileInfo == undefined) {
                         if (hasCache) { /* can't get from network ? use cache */
                             resolve(undefined);

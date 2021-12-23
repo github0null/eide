@@ -107,21 +107,6 @@ export class SettingManager {
                 this._event.emit('onChanged', e);
             }
         });
-
-        /* compate old version config */
-        /* const confMap: any = {
-            'JLink.InstallDirectory': 'ARM.JLink.ToolDirectory',
-            'OpenOCD.ExePath': 'ARM.OpenOCD.ExePath',
-            'STLink.ExePath': 'ARM.StlinkExePath',
-        };
-        for (const key in confMap) {
-            const nowVal = this.getConfiguration().get<string>(key);
-            const oldVal = this.getConfiguration().get<string>(confMap[key]);
-            if (!nowVal && oldVal) { // not found value, and old value existed, set it
-                this.setConfigValue(key, oldVal);
-                this.getConfiguration().update(confMap[key], undefined); // clear old value
-            }
-        } */
     }
 
     static GetInstance(context?: vscode.ExtensionContext): SettingManager {
@@ -241,6 +226,10 @@ export class SettingManager {
     }
 
     //--------------------- Global Option ------------------------
+
+    /* isEnableAutoUpdateEideBinaries(): boolean {
+        return this.getConfiguration().get<boolean>('Option.AutoUpdateEideBinaries') || false;
+    } */
 
     isEnableTelemetry(): boolean {
         return this.getConfiguration().get<boolean>('Option.EnableTelemetry') || false;
