@@ -122,6 +122,15 @@
                         false
                     ]
                 },
+                "big-endian": {
+                    "markdownDescription": "Big Endian",
+                    "description.zh-cn": "Big Endian",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
                 "output-debug-info": {
                     "markdownDescription": "Output debug information",
                     "description.zh-cn": "输出调试信息",
