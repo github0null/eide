@@ -263,6 +263,10 @@ export class SettingManager {
         return this.getConfiguration().get<boolean>('Option.PrintRelativePathWhenBuild') || false;
     }
 
+    getGithubRepositoryToken(): string | undefined {
+        return this.getConfiguration().get<string>('Repository.Template.GithubPersonalToken')?.trim();
+    }
+
     getGithubRepositoryUrl(): string {
         return (this.getConfiguration().get<string>('Repository.Template.Url') || 'null')
             .trim().replace(/^https:\/\//i, '');

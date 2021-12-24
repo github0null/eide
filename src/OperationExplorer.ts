@@ -789,12 +789,13 @@ export class OperationExplorer {
 
         this.locked = true;
 
-        const redirectUri = (uri: string) => {
-            return SettingManager.GetInstance().isUseGithubProxy() ? utility.redirectHost(uri) : uri;
-        };
+        const settingManager = SettingManager.GetInstance();
+        const redirectUri = (uri: string) => settingManager.isUseGithubProxy() ? utility.redirectHost(uri) : uri;
 
         // URL: https://api.github.com/repos/github0null/eide-doc/contents/eide-template-list
-        const remoteUrl = redirectUri('api.github.com/repos/' + SettingManager.GetInstance().getGithubRepositoryUrl());
+        const rawUrl = `api.github.com/repos/${settingManager.getGithubRepositoryUrl()}`;
+        const acToken = settingManager.getGithubRepositoryToken();
+        const remoteUrl = acToken ? rawUrl : redirectUri(rawUrl); // if token is enabled, not proxy
 
         let targetTempFile: File | undefined;
 
@@ -824,11 +825,19 @@ export class OperationExplorer {
                             netReq.emit('abort');
                         });
 
+                        const headers: any = {
+                            'User-Agent': 'Mozilla/5.0'
+                        };
+
+                        if (acToken) { // if token is enabled, use it
+                            headers['Authorization'] = `token ${acToken}`;
+                        }
+
                         const res = await netReq.Request<any, any>({
                             host: hostName,
                             path: path,
                             timeout: 3000,
-                            headers: { 'User-Agent': 'Mozilla/5.0' }
+                            headers: headers
                         }, 'https');
 
                         resolve(res);
@@ -836,13 +845,11 @@ export class OperationExplorer {
                 });
 
                 if (!res.success) {
-                    const errMsg = res.msg ? `, msg: ${res.msg}` : '';
-                    GlobalEvent.emit('msg', newMessage('Warning', `Can't connect to Github repository !${errMsg}`));
+                    GlobalEvent.emit('msg', newMessage('Warning', `Can't connect to Github repository !, msg: ${res.msg || 'null'}`));
                     this.locked = false;
                     return;
                 } else if (res.content === undefined) {
-                    const errMsg = res.msg ? `, msg: ${res.msg}` : '';
-                    GlobalEvent.emit('msg', newMessage('Warning', `Can't get content from Github repository !${errMsg}`));
+                    GlobalEvent.emit('msg', newMessage('Warning', `Can't get content from Github repository !, msg: ${res.msg || 'null'}`));
                     this.locked = false;
                     return;
                 }

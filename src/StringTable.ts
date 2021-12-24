@@ -723,7 +723,7 @@ export const view_str$operation$setToolchainPath = [
 
 export const view_str$operation$openSettings = [
     '打开插件设置',
-    'Open plug-in settings'
+    'Open plug-in Settings'
 ][langIndex];
 
 export const invalid_keil_path = [

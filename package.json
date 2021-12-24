@@ -270,6 +270,12 @@
                         "markdownDescription": "%settings.template.repo.url%",
                         "default": "github0null/eide-resource/contents/eide-template-list"
                     },
+                    "EIDE.Repository.Template.GithubPersonalToken": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.template.repo.github_token%",
+                        "default": ""
+                    },
                     "EIDE.Repository.CmsisPack.Url": {
                         "type": "string",
                         "scope": "machine",

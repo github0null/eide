@@ -352,7 +352,7 @@ async function tryUpdateBinaries(binFolder: File, localVer: string, notConfirm?:
         else {
             // show notify to user and request a confirm
             if (!notConfirm) {
-                const msg = `New update for eide binaries, version: '${binVersion}', install now ?`;
+                const msg = `New update for eide binaries, version: '${binVersion}', [ChangeLog](https://github.com/github0null/eide-resource/pulls?q=is%3Apr+is%3Aclosed), install now ?`;
                 const sel = await vscode.window.showInformationMessage(msg, 'Yes', 'Later');
                 if (sel != 'Yes') { return true; } // user canceled
             }
