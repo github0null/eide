@@ -968,21 +968,17 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
             .replace(/\$\(ProjectRoot\)|\$\{ProjectRoot\}/ig, prjRootDir.path);
 
         // replace user env
-        path = this.replaceProjectEnv(path);
-
-        return path;
-    }
-
-    replaceProjectEnv(str: string): string {
         const prjEnv = this.getProjectEnv();
         if (prjEnv) {
+            const nameMatcher = /^\w+$/;
             for (const key in prjEnv) {
-                if (!/^\w+$/.test(key)) continue;
+                if (!nameMatcher.test(key)) continue;
                 const reg = new RegExp(String.raw`\$\(${key}\)|\$\{${key}\}`, 'ig');
-                str = str.replace(reg, prjEnv[key]);
+                path = path.replace(reg, prjEnv[key]);
             }
         }
-        return str;
+
+        return path;
     }
 
     ToAbsolutePath(path_: string): string {
@@ -1415,10 +1411,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     private __env_raw_lastEnvObj: { [name: string]: any } | undefined;
     getProjectRawEnv(): { [name: string]: any } | undefined {
         try {
-
-            // limit read interval (100 ms), increase speed
+            // limit read interval (150 ms), improve speed
             if (this.__env_raw_lastEnvObj != undefined &&
-                Date.now() - this.__env_raw_lastGetTime < 100) {
+                Date.now() - this.__env_raw_lastGetTime < 150) {
                 return this.__env_raw_lastEnvObj;
             }
 
@@ -1438,7 +1433,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
                 return this.__env_raw_lastEnvObj;
             }
         } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            // nothing todo
         }
     }
 
@@ -1446,9 +1441,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     private __env_lastEnvObj: { [name: string]: any } | undefined;
     getProjectEnv(): { [name: string]: any } | undefined {
 
-        // limit read interval (150 ms), increase speed
+        // limit read interval (200 ms), improve speed
         if (this.__env_lastEnvObj != undefined &&
-            Date.now() - this.__env_lastUpdateTime < 150) {
+            Date.now() - this.__env_lastUpdateTime < 200) {
             return this.__env_lastEnvObj;
         }
 

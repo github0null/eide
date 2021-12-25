@@ -2213,11 +2213,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             ignoreFocusOut: false
         }).then((item: vscode.QuickPickItem | undefined) => {
             if (item !== undefined && item.detail) {
-                this.dataProvider.OpenProject(item.detail).then((prj) => {
-                    if (prj === undefined) {
-                        this.dataProvider.removeRecord(<string>item.detail);
-                    }
-                });
+                this.dataProvider.OpenProject(item.detail);
             }
         });
     }
