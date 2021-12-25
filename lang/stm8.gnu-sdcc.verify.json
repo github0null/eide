@@ -307,10 +307,10 @@
             "type": "object",
             "properties": {
                 "defines": {
-                    "readable_name": "Macro Defines",
-                    "readable_name.zh-cn": "宏定义",
-                    "markdownDescription": "Macro Defines",
-                    "description.zh-cn": "宏定义",
+                    "readable_name": "Preprocessor Definitions",
+                    "readable_name.zh-cn": "预处理器定义",
+                    "markdownDescription": "Preprocessor Definitions",
+                    "description.zh-cn": "预处理器定义",
                     "type": "array",
                     "items": {
                         "type": "string"

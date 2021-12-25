@@ -307,8 +307,8 @@
             "type": "object",
             "properties": {
                 "defines": {
-                    "readable_name": "Macro Defines",
-                    "readable_name.zh-cn": "宏定义",
+                    "readable_name": "Preprocessor Definitions",
+                    "readable_name.zh-cn": "预处理器定义",
                     "markdownDescription": "Macro Defines (format: \"<key> SETA <value>\")",
                     "description.zh-cn": "宏定义（格式：\"<key> SETA <value>\"）",
                     "type": "array",
