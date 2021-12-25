@@ -20,7 +20,7 @@ Provide `8051/STM8/Cortex-M/RISC-V` project development, compilation, burning an
 
 ## Features 🎉
 
-* Support development of 8051, STM8, Cortex-M\[0/0+/3/4/7], RISC-V projects
+* Support development of 8051, STM8, Cortex-M\[0/0+/3/4/7], RISC-V, AnyGcc projects
 * Support to import KEIL projects (KEIL 5 and later only)
 * Support for installing standard KEIL chip support packs (only for Cortex-M projects)
 * Provides rich project templates for quick start projects
@@ -71,6 +71,8 @@ Provide `8051/STM8/Cortex-M/RISC-V` project development, compilation, burning an
  ![ARM](https://img.shields.io/badge/-ARM_:-grey.svg) ![status](https://img.shields.io/badge/ARMCC-✔-brightgreen.svg) ![status](https://img.shields.io/badge/ARMCLang-✔-brightgreen.svg) ![status](https://img.shields.io/badge/ARM_GCC-✔-brightgreen.svg)
 
  ![RISC-V](https://img.shields.io/badge/-RISCV_:-grey.svg) ![status](https://img.shields.io/badge/RISCV_GCC-✔-brightgreen.svg)
+
+ ![AnyGCC](https://img.shields.io/badge/-ANYGCC_:-grey.svg) ![status](https://img.shields.io/badge/GCC_Famliy_Compiler-✔-brightgreen.svg)
 
 ***
 

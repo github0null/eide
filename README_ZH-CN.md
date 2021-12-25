@@ -19,7 +19,7 @@
 
 ## 功能特性 🎉
 
-* 支持开发 8051，STM8，Cortex-M，RISC-V 项目
+* 支持开发 8051，STM8，Cortex-M，RISC-V, AnyGcc 项目
 * 支持导入 KEIL 项目 (仅支持 KEIL 5 及以上版本)
 * 支持安装标准的 KEIL 芯片支持包 (仅用于 Cortex-M 项目)
 * 提供丰富的项目模板方便快速开始项目
@@ -42,6 +42,8 @@
  ![ARM](https://img.shields.io/badge/-ARM_:-grey.svg) ![status](https://img.shields.io/badge/ARMCC-✔-brightgreen.svg) ![status](https://img.shields.io/badge/ARMCLang-✔-brightgreen.svg) ![status](https://img.shields.io/badge/ARM_GCC-✔-brightgreen.svg)
 
  ![RISC-V](https://img.shields.io/badge/-RISCV_:-grey.svg) ![status](https://img.shields.io/badge/RISCV_GCC-✔-brightgreen.svg)
+
+ ![AnyGCC](https://img.shields.io/badge/-ANYGCC_:-grey.svg) ![status](https://img.shields.io/badge/GCC_Famliy_Compiler-✔-brightgreen.svg)
 
 ***
 
