@@ -4,10 +4,15 @@
 
 ***
 
-### [v2.16.1] (revision)
+### [v2.16.2] (revision)
 
 **Bug Fixes**:
   - Some plug-in settings `TAG` missing.
+  - Can't use `Show Disassembly` for `any-gcc` and `riscv_gcc`
+
+**Optimized**:
+  - Add default `make hex` and `make bin` task for `any-gcc` project
+  - Auto pass `any-gcc` global compiler options to cpptools compiler args
 
 ***
 

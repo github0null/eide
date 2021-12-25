@@ -3074,9 +3074,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         const supportList = ['AC5', 'AC6'];
 
-        const isGccToolchain = (name: ToolchainName) => {
-            return /\bGCC\b/.test(name);
-        };
+        const isGccToolchain = (name: ToolchainName) => { return /GCC/.test(name); };
 
         try {
 

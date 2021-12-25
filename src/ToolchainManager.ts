@@ -1884,9 +1884,10 @@ class AnyGcc implements IToolchian {
         cppToolsConfig.cppStandard = 'c++11';
 
         // pass global args for cpptools
-        if (builderOpts.global &&
-            builderOpts.global['misc-control']) {
-            cppToolsConfig.compilerArgs = builderOpts.global['misc-control'];
+        cppToolsConfig.compilerArgs = undefined; // clear before set
+        if (builderOpts.global && typeof builderOpts.global['misc-control'] == 'string') {
+            const params = builderOpts.global['misc-control'];
+            cppToolsConfig.compilerArgs = params.trim().split(/\s+/);
         }
     }
 
@@ -1940,15 +1941,27 @@ class AnyGcc implements IToolchian {
         return <ICompileOptions>{
             version: this.version,
             beforeBuildTasks: [],
-            afterBuildTasks: [],
-            global: {
-            },
+            afterBuildTasks: [
+                {
+                    "name": "make hex",
+                    "disable": true,
+                    "abortAfterFailed": false,
+                    "command": "\"${CompilerFolder}\\${CompilerPrefix}objcopy\" -O ihex \"${OutDir}\\${TargetName}.elf\" \"${OutDir}\\${TargetName}.hex\""
+                },
+                {
+                    "name": "make bin",
+                    "disable": true,
+                    "abortAfterFailed": false,
+                    "command": "\"${CompilerFolder}\\${CompilerPrefix}objcopy\" -O binary \"${OutDir}\\${TargetName}.elf\" \"${OutDir}\\${TargetName}.bin\""
+                }
+            ],
+            global: {},
             'c/cpp-compiler': {
                 "C_FLAGS": "-c -x c -ffunction-sections -fdata-sections",
                 "CXX_FLAGS": "-c -x c++ -ffunction-sections -fdata-sections"
             },
             'asm-compiler': {
-                "ASM_FLAGS": "-c -x assembler"
+                "ASM_FLAGS": "-c"
             },
             linker: {
                 "output-format": "elf",
