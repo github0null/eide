@@ -1937,15 +1937,15 @@ class AnyGcc implements IToolchian {
             global: {
             },
             'c/cpp-compiler': {
-                "C_FLAGS": "-c -x c",
-                "CXX_FLAGS": "-c -x c++"
+                "C_FLAGS": "-c -x c -ffunction-sections -fdata-sections",
+                "CXX_FLAGS": "-c -x c++ -ffunction-sections -fdata-sections"
             },
             'asm-compiler': {
                 "ASM_FLAGS": "-c -x assembler"
             },
             linker: {
                 "output-format": "elf",
-                "LD_FLAGS": "-Wl,--print-memory-usage",
+                "LD_FLAGS": "-Wl,--gc-sections -Wl,--print-memory-usage",
                 "LIB_FLAGS": ""
             }
         };

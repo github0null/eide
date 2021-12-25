@@ -27,7 +27,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "An embedded development environment for 8051/STM8/Cortex-M/RISC-V",
-    "version": "2.16.0",
+    "version": "2.16.1",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -456,13 +456,13 @@
                         "markdownDescription": "%settings.riscv.gcc.prefix%",
                         "default": "riscv-none-embed-"
                     },
-                    "Toolchain.AnyGcc.InstallDirectory": {
+                    "EIDE.Toolchain.AnyGcc.InstallDirectory": {
                         "type": "string",
                         "scope": "resource",
                         "markdownDescription": "Any gcc toolchain install directory",
                         "default": ""
                     },
-                    "Toolchain.AnyGcc.ToolPrefix": {
+                    "EIDE.Toolchain.AnyGcc.ToolPrefix": {
                         "type": "string",
                         "scope": "resource",
                         "markdownDescription": "Any gcc **toolchain prefix**",
