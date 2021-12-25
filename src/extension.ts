@@ -262,6 +262,11 @@ async function onSelectSerialBaudrate() {
     }
 }
 
+function checkBinFolder(binFolder: File): boolean {
+    return binFolder.IsDir() &&
+        File.fromArray([binFolder.path, File.ToLocalPath('lib/mono/4.5/mscorlib.dll')]).IsFile();
+}
+
 async function checkAndInstallBinaries(constex: vscode.ExtensionContext, forceInstall?: boolean): Promise<boolean> {
 
     const eideCfg = ResManager.GetInstance().getAppConfig<any>();
@@ -277,30 +282,29 @@ async function checkAndInstallBinaries(constex: vscode.ExtensionContext, forceIn
     }
 
     // if 'bin' dir is existed, we exit, if not, we need install eide-binaries
-    else if (binFolder.IsDir() &&
-        File.fromArray([binFolder.path, File.ToLocalPath('lib/mono/4.5/mscorlib.dll')]).IsFile()) {
+    else if (checkBinFolder(binFolder)) {
         // if user enabled auto-update, we try get new version from 
         // github, and install it at background after 1 min delay
         //if (SettingManager.GetInstance().isEnableAutoUpdateEideBinaries()) {
-            setTimeout(async () => {
-                // get local binary version from disk
-                const verFile = File.fromArray([binFolder.path, 'VERSION']);
-                if (verFile.IsFile()) {
-                    const cont = verFile.Read().trim();
-                    if (utility.isVersionString(cont)) {
-                        localVersion = cont;
-                    }
+        setTimeout(async () => {
+            // get local binary version from disk
+            const verFile = File.fromArray([binFolder.path, 'VERSION']);
+            if (verFile.IsFile()) {
+                const cont = verFile.Read().trim();
+                if (utility.isVersionString(cont)) {
+                    localVersion = cont;
                 }
-                // try update
-                const done = await tryUpdateBinaries(binFolder, localVersion);
-                if (!done) {
-                    const msg = `Update eide-binaries failed, please restart vscode !`;
-                    const sel = await vscode.window.showErrorMessage(msg, 'Restart', 'Cancel');
-                    if (sel == 'Restart') {
-                        vscode.commands.executeCommand('workbench.action.reloadWindow');
-                    }
+            }
+            // try update
+            const done = await tryUpdateBinaries(binFolder, localVersion);
+            if (!done) {
+                const msg = `Update eide-binaries failed, please restart vscode !`;
+                const sel = await vscode.window.showErrorMessage(msg, 'Restart', 'Cancel');
+                if (sel == 'Restart') {
+                    vscode.commands.executeCommand('workbench.action.reloadWindow');
                 }
-            }, 5 * 1000);
+            }
+        }, 5 * 1000);
         //}
         return true;
     }
@@ -341,7 +345,7 @@ async function tryUpdateBinaries(binFolder: File, localVer: string, notConfirm?:
     }
 
     // check bin folder
-    if (binFolder.IsDir()) {
+    if (checkBinFolder(binFolder)) {
 
         // not need update, exit now
         if (binVersion == localVer) {
