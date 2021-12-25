@@ -4,6 +4,13 @@
 
 ***
 
+### [v2.16.1] (revision)
+
+**Bug Fixes**:
+  - Some plug-in settings `TAG` missing.
+
+***
+
 ### [v2.16.0]
 
 **New Features**:
