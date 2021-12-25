@@ -1344,7 +1344,7 @@ class GCC implements IToolchian {
         const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
         return gcc.path;
     }
-    
+
     getToolchainPrefix(): string {
         return this.getToolPrefix();
     }
@@ -1686,7 +1686,7 @@ class RISCV_GCC implements IToolchian {
         const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
         return gcc.path;
     }
-    
+
     getToolchainPrefix(): string {
         return this.getToolPrefix();
     }
@@ -1879,8 +1879,15 @@ class AnyGcc implements IToolchian {
     }
 
     updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+
         cppToolsConfig.cStandard = 'c11';
         cppToolsConfig.cppStandard = 'c++11';
+
+        // pass global args for cpptools
+        if (builderOpts.global &&
+            builderOpts.global['misc-control']) {
+            cppToolsConfig.compilerArgs = builderOpts.global['misc-control'];
+        }
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
