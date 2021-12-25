@@ -3076,16 +3076,22 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     async showDisassembly(uri: vscode.Uri) {
 
-        const supportList = ['RISCV_GCC', 'GCC', 'AC5', 'AC6'];
+        const supportList = ['AC5', 'AC6'];
+
+        const isGccToolchain = (name: ToolchainName) => {
+            return /\bGCC\b/.test(name);
+        };
 
         try {
+
+            const notSupprotMsg = `Only support '${supportList.join(',')}' and 'GCC' compiler !`;
 
             // check condition
             const activePrj = this.dataProvider.getActiveProject();
             if (!activePrj) { throw new Error('Not found active project !'); }
             const toolchainName = activePrj.getToolchain().name;
-            if (!supportList.includes(toolchainName)) {
-                throw new Error(`Only support '${supportList.join(',')}' compiler !`);
+            if (!supportList.includes(toolchainName) && !isGccToolchain(toolchainName)) {
+                throw new Error(notSupprotMsg);
             }
 
             // parser ref json
@@ -3105,28 +3111,27 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             let exeFile: File;
             let cmds: string[];
 
-            switch (toolchainName) {
-                case 'GCC':
-                case 'RISCV_GCC':
-                    {
-                        const toolPrefix = toolchainName == 'GCC' ?
-                            SettingManager.GetInstance().getGCCPrefix() :
-                            SettingManager.GetInstance().getRiscvToolPrefix();
-                        exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `${toolPrefix}objdump.exe`]);
-                        if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
-                        cmds = ['-S', objPath];
-                    }
-                    break;
-                case 'AC5':
-                case 'AC6':
-                    {
-                        exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `fromelf.exe`]);
-                        if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
-                        cmds = ['-c', objPath];
-                    }
-                    break;
-                default:
-                    throw new Error(`Only support '${supportList.join(',')}' compiler !`);
+            if (isGccToolchain(toolchainName)) {
+                const toolchain = ToolchainManager.getInstance().getToolchainByName(toolchainName);
+                if (!toolchain) throw new Error(`Can't get toolchain '${toolchainName}'`);
+                const toolPrefix = toolchain.getToolchainPrefix ? toolchain.getToolchainPrefix() : '';
+                exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `${toolPrefix}objdump.exe`]);
+                if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
+                cmds = ['-S', objPath];
+            }
+            else {
+                switch (toolchainName) {
+                    case 'AC5':
+                    case 'AC6':
+                        {
+                            exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `fromelf.exe`]);
+                            if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
+                            cmds = ['-c', objPath];
+                        }
+                        break;
+                    default:
+                        throw new Error(notSupprotMsg);
+                }
             }
 
             /* executable */
@@ -3296,8 +3301,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const is8bit = prjConfig.config.type == 'C51';
         const cfgList: string[] = ['gnu'];
 
-        if (['Keil_C51'].includes(toolchain.name)) {
-            GlobalEvent.emit('msg', newMessage('Warning', `We don't support cppcheck for ${toolchain.name} !`));
+        if (['Keil_C51', 'ANY_GCC'].includes(toolchain.name)) {
+            GlobalEvent.emit('msg', newMessage('Warning', `We don't support cppcheck for '${toolchain.name}' !`));
             return;
         }
 

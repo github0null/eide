@@ -455,6 +455,18 @@
                         "scope": "resource",
                         "markdownDescription": "%settings.riscv.gcc.prefix%",
                         "default": "riscv-none-embed-"
+                    },
+                    "Toolchain.AnyGcc.InstallDirectory": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "Any gcc toolchain install directory",
+                        "default": ""
+                    },
+                    "Toolchain.AnyGcc.ToolPrefix": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "Any gcc **toolchain prefix**",
+                        "default": ""
                     }
                 }
             }
@@ -1418,6 +1430,10 @@
             {
                 "fileMatch": "**/*riscv.gcc.options.json",
                 "url": "./lang/riscv.gcc.verify.json"
+            },
+            {
+                "fileMatch": "**/*.options.any.gcc.json",
+                "url": "./lang/any.gcc.verify.json"
             }
         ],
         "grammars": [

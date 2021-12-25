@@ -1,0 +1,228 @@
+{
+    "title": "Any Gcc Options",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "definitions": {
+        "FLAGS": {
+            "markdownDescription": "Options",
+            "description.zh-cn": "选项",
+            "size": "huge",
+            "type": [
+                "string",
+                "array"
+            ],
+            "items": {
+                "type": "string"
+            },
+            "default": []
+        }
+    },
+    "properties": {
+        "beforeBuildTasks": {
+            "markdownDescription": "List of commands to execute before build",
+            "description.zh-cn": "构建前要执行的命令列表",
+            "type": "array",
+            "default": [
+                {
+                    "name": "clean",
+                    "command": "del /Q \"${OutDir}\\*.*\""
+                }
+            ],
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "command"
+                ],
+                "properties": {
+                    "name": {
+                        "markdownDescription": "A readable name for display",
+                        "description.zh-cn": "用于显示的可读名称",
+                        "type": "string"
+                    },
+                    "command": {
+                        "markdownDescription": "Shell command line",
+                        "description.zh-cn": "Shell 命令行",
+                        "type": "string"
+                    },
+                    "disable": {
+                        "markdownDescription": "Disable this command",
+                        "description.zh-cn": "禁用此命令",
+                        "type": "boolean",
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    },
+                    "abortAfterFailed": {
+                        "markdownDescription": "Whether to skip subsequent commands if this command failed",
+                        "description.zh-cn": "是否在此命令失败时，跳过后续的命令",
+                        "type": "boolean",
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    },
+                    "stopBuildAfterFailed": {
+                        "markdownDescription": "Whether to stop compiling directly when this command failed",
+                        "description.zh-cn": "是否在此命令失败时，直接停止编译",
+                        "type": "boolean",
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    }
+                }
+            }
+        },
+        "afterBuildTasks": {
+            "markdownDescription": "List of commands to execute after build",
+            "description.zh-cn": "构建结束后要执行的命令列表",
+            "type": "array",
+            "default": [
+                {
+                    "name": "clean",
+                    "command": "del \"${OutDir}\\*._*\""
+                }
+            ],
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "command"
+                ],
+                "properties": {
+                    "name": {
+                        "markdownDescription": "A readable name for display",
+                        "description.zh-cn": "用于显示的可读名称",
+                        "type": "string"
+                    },
+                    "command": {
+                        "markdownDescription": "Shell command line",
+                        "description.zh-cn": "Shell 命令行",
+                        "type": "string"
+                    },
+                    "disable": {
+                        "markdownDescription": "Disable this command",
+                        "description.zh-cn": "禁用此命令",
+                        "type": "boolean",
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    },
+                    "abortAfterFailed": {
+                        "markdownDescription": "Whether to skip subsequent commands if this command failed",
+                        "description.zh-cn": "是否在此命令失败时，跳过后续的命令",
+                        "type": "boolean",
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    }
+                }
+            }
+        },
+        "global": {
+            "markdownDescription": "Global Options",
+            "description.zh-cn": "全局选项",
+            "type": "object",
+            "properties": {
+                "misc-control": {
+                    "markdownDescription": "Global Params",
+                    "description.zh-cn": "编译器全局参数",
+                    "$ref": "#/definitions/FLAGS",
+                    "default": ""
+                }
+            }
+        },
+        "c/cpp-compiler": {
+            "markdownDescription": "C/C++ Compiler Options",
+            "description.zh-cn": "C/C++ 编译器选项",
+            "type": "object",
+            "properties": {
+                "C_FLAGS": {
+                    "markdownDescription": "C Compiler Params",
+                    "description.zh-cn": "C 编译器参数",
+                    "$ref": "#/definitions/FLAGS",
+                    "default": "-c -x c"
+                },
+                "CXX_FLAGS": {
+                    "markdownDescription": "C++ Compiler Params",
+                    "description.zh-cn": "C++ 编译器参数",
+                    "$ref": "#/definitions/FLAGS",
+                    "default": "-c -x c++"
+                }
+            }
+        },
+        "asm-compiler": {
+            "markdownDescription": "Assembler Options",
+            "description.zh-cn": "汇编器选项",
+            "type": "object",
+            "properties": {
+                "defines": {
+                    "readable_name": "Preprocessor Definitions",
+                    "readable_name.zh-cn": "预处理器定义",
+                    "markdownDescription": "Preprocessor Definitions",
+                    "description.zh-cn": "预处理器定义",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "ASM_FLAGS": {
+                    "markdownDescription": "Assembler Params",
+                    "description.zh-cn": "汇编器参数",
+                    "$ref": "#/definitions/FLAGS",
+                    "default": "-c -x assembler"
+                }
+            }
+        },
+        "linker": {
+            "markdownDescription": "Linker Options",
+            "description.zh-cn": "链接器选项",
+            "type": "object",
+            "properties": {
+                "output-format": {
+                    "type": "string",
+                    "default": "elf",
+                    "description": "Output Format",
+                    "description.zh-cn": "输出格式",
+                    "enum": [
+                        "elf",
+                        "lib"
+                    ],
+                    "enumDescriptions": [
+                        "ELF (Executable Linkable Format)",
+                        "Static Library"
+                    ]
+                },
+                "elf-suffix": {
+                    "type": "string",
+                    "size": "small",
+                    "readable_name": "Executable Suffix",
+                    "readable_name.zh-cn": "可执行文件后缀",
+                    "description": ".elf (default)",
+                    "description.zh-cn": ".elf (default)",
+                    "default": ".elf"
+                },
+                "LD_FLAGS": {
+                    "readable_name": "Linker Flags",
+                    "readable_name.zh-cn": "链接器参数",
+                    "markdownDescription": "Use \"-Wl[,option]...\" pass options to the linker",
+                    "description.zh-cn": "使用 \"-Wl[,option]...\" 传递链接器选项",
+                    "$ref": "#/definitions/FLAGS",
+                    "default": ""
+                },
+                "LIB_FLAGS": {
+                    "readable_name": "Lib Flags",
+                    "readable_name.zh-cn": "链接库",
+                    "markdownDescription": "Lib Flags, like: -lxxx",
+                    "description.zh-cn": "链接库，例如：-lxxx",
+                    "$ref": "#/definitions/FLAGS",
+                    "default": ""
+                }
+            }
+        }
+    }
+}

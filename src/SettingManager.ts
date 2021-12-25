@@ -528,6 +528,17 @@ export class SettingManager {
     getRiscvToolPrefix(): string {
         return this.getConfiguration().get<string>('RISCV.ToolPrefix') || '';
     }
+    
+    //------------------------------- Any GCC ----------------------------------
+
+    getAnyGccToolFolder(): File {
+        const execName = `${this.getAnyGccToolPrefix()}gcc`;
+        return new File(this.getGccFolderFromConfig('Toolchain.AnyGcc.InstallDirectory', execName) || 'null');
+    }
+
+    getAnyGccToolPrefix(): string {
+        return this.getConfiguration().get<string>('Toolchain.AnyGcc.ToolPrefix') || '';
+    }
 
     //------------------------------- C51 ----------------------------------
 
