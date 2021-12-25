@@ -204,6 +204,51 @@ export async function downloadFile(url: string): Promise<Buffer | Error | undefi
     });
 }
 
+export function isVersionString(str: string): boolean {
+    return /^\s*\d+(?:\.\d+)+\s*$/.test(str);
+}
+
+export async function requestTxt(url: string): Promise<string | Error | undefined> {
+
+    return new Promise(async (resolve) => {
+
+        let locked = false;
+        const resolveIf = (data: string | Error | undefined) => {
+            if (!locked) {
+                locked = true;
+                resolve(data);
+            }
+        };
+
+        const netReq = new NetRequest();
+
+        netReq.on('error', (err) => {
+            resolveIf(err);
+        });
+
+        // parse path
+        const urlParts = url.replace('https://', '').split('/');
+        const hostName = urlParts[0];
+        const path = '/' + urlParts.slice(1).join('/');
+
+        const res = await netReq.RequestTxt<any>({
+            host: hostName,
+            path: path,
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+        }, 'https');
+
+        let result: string | Error | undefined;
+
+        if (res.success && res.content) { // received ok
+            result = res.content;
+        } else {
+            result = new Error(`Request failed !, https errCode: ${res.statusCode}, msg: ${res.msg}`);
+        }
+
+        resolveIf(result);
+    });
+}
+
 export async function downloadFileWithProgress(url: string, fileLable: string, progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken): Promise<Buffer | Error | undefined> {
 
     return new Promise(async (resolve) => {
@@ -259,7 +304,7 @@ export async function downloadFileWithProgress(url: string, fileLable: string, p
     });
 }
 
-export async function getDownloadUrlFromGit(repo: string, folder: string, fileName: string): Promise<any | Error | undefined> {
+export async function getDownloadUrlFromGitea(repo: string, folder: string, fileName: string): Promise<any | Error | undefined> {
 
     return new Promise(async (resolve) => {
 

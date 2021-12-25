@@ -89,8 +89,9 @@
     "settings.option.insert.extcommands.at.begin": "内置的构建任务将被插入到 `beforeBuildTasks / afterBuildTasks` 之前",
     
     "settings.repo.use.proxy": "使用代理加速 github 资源下载",
-    "settings.template.repo.url": "Github 模板仓库地址, 格式: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
+    "settings.template.repo.url": "Github 模板仓库地址, 格式: `<user_name>`/`<repository_name>`/contents/`<directory_path>`（若该仓库为私有，必须提供访问令牌）",
     "settings.cmsispack.repo.url": "Github cmsis 包仓库地址, 格式: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
+    "settings.template.repo.github_token": "为私有的模板仓库指定一个 Github 个人访问令牌，使 eide 可以访问该仓库并从中读取和下载模板",
 
     "settings.serial.def.port": "默认串口名称",
     "settings.serial.show.toolbar": "显示串口工具栏",

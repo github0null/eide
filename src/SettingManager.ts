@@ -107,21 +107,6 @@ export class SettingManager {
                 this._event.emit('onChanged', e);
             }
         });
-
-        /* compate old version config */
-        /* const confMap: any = {
-            'JLink.InstallDirectory': 'ARM.JLink.ToolDirectory',
-            'OpenOCD.ExePath': 'ARM.OpenOCD.ExePath',
-            'STLink.ExePath': 'ARM.StlinkExePath',
-        };
-        for (const key in confMap) {
-            const nowVal = this.getConfiguration().get<string>(key);
-            const oldVal = this.getConfiguration().get<string>(confMap[key]);
-            if (!nowVal && oldVal) { // not found value, and old value existed, set it
-                this.setConfigValue(key, oldVal);
-                this.getConfiguration().update(confMap[key], undefined); // clear old value
-            }
-        } */
     }
 
     static GetInstance(context?: vscode.ExtensionContext): SettingManager {
@@ -242,6 +227,14 @@ export class SettingManager {
 
     //--------------------- Global Option ------------------------
 
+    /* isEnableAutoUpdateEideBinaries(): boolean {
+        return this.getConfiguration().get<boolean>('Option.AutoUpdateEideBinaries') || false;
+    } */
+
+    getForceIncludeList(): string[] {
+        return this.getConfiguration().get<string[]>('Cpptools.ForceInclude') || [];
+    }
+
     isEnableTelemetry(): boolean {
         return this.getConfiguration().get<boolean>('Option.EnableTelemetry') || false;
     }
@@ -268,6 +261,10 @@ export class SettingManager {
 
     isPrintRelativePathWhenBuild(): boolean {
         return this.getConfiguration().get<boolean>('Option.PrintRelativePathWhenBuild') || false;
+    }
+
+    getGithubRepositoryToken(): string | undefined {
+        return this.getConfiguration().get<string>('Repository.Template.GithubPersonalToken')?.trim();
     }
 
     getGithubRepositoryUrl(): string {
@@ -530,6 +527,17 @@ export class SettingManager {
 
     getRiscvToolPrefix(): string {
         return this.getConfiguration().get<string>('RISCV.ToolPrefix') || '';
+    }
+    
+    //------------------------------- Any GCC ----------------------------------
+
+    getAnyGccToolFolder(): File {
+        const execName = `${this.getAnyGccToolPrefix()}gcc`;
+        return new File(this.getGccFolderFromConfig('Toolchain.AnyGcc.InstallDirectory', execName) || 'null');
+    }
+
+    getAnyGccToolPrefix(): string {
+        return this.getConfiguration().get<string>('Toolchain.AnyGcc.ToolPrefix') || '';
     }
 
     //------------------------------- C51 ----------------------------------

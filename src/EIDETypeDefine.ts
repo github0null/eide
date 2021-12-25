@@ -94,7 +94,7 @@ export interface ProjectFileGroup extends FileGroup {
     isRoot: boolean;
 }
 
-export type ProjectType = 'C51' | 'ARM' | 'RISC-V';
+export type ProjectType = 'C51' | 'ARM' | 'RISC-V' | 'ANY-GCC';
 
 export interface CreateOptions {
     name: string; // folder name
@@ -646,6 +646,27 @@ export class ProjectConfiguration<T extends CompileData>
                     toolchain: 'RISCV_GCC',
                     dependenceList: [],
                     compileConfig: RiscvCompileConfigModel.getDefaultConfig(),
+                    uploader: 'JLink',
+                    srcDirs: [],
+                    virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
+                    excludeList: [],
+                    outDir: '.\\build',
+                    deviceName: null,
+                    packDir: null,
+                    uploadConfig: null,
+                    uploadConfigMap: {},
+                    miscInfo: <any>{},
+                    targets: {},
+                    version: EIDE_CONF_VERSION
+                };
+            case 'ANY-GCC':
+                return {
+                    name: 'undefined',
+                    type: type,
+                    mode: 'Debug',
+                    toolchain: 'ANY_GCC',
+                    dependenceList: [],
+                    compileConfig: AnyGccCompileConfigModel.getDefaultConfig(),
                     uploader: 'JLink',
                     srcDirs: [],
                     virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
@@ -1521,6 +1542,8 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
                 return <any>new GccCompileConfigModel(prjConfigData);
             case 'RISCV_GCC':
                 return <any>new RiscvCompileConfigModel(prjConfigData);
+            case 'ANY_GCC':
+                return <any>new AnyGccCompileConfigModel(prjConfigData);
             case 'GNU_SDCC_STM8':
                 return <any>new SdccGnuStm8CompileConfigModel(prjConfigData);
             default:
@@ -2093,6 +2116,107 @@ class RiscvCompileConfigModel extends CompileConfigModel<RiscvCompileData> {
 
     GetDefault(): RiscvCompileData {
         return RiscvCompileConfigModel.getDefaultConfig();
+    }
+}
+
+// -------- ANY-GCC ---------
+
+export interface AnyGccCompileData extends CompileData {
+    linkerScriptPath: string;
+    options: string;
+}
+
+class AnyGccCompileConfigModel extends CompileConfigModel<AnyGccCompileData> {
+
+    GetKeyDescription(key: string): string {
+        switch (key) {
+            case 'linkerScriptPath':
+                return view_str$compile$scatterFilePath;
+            case 'options':
+                return view_str$compile$options;
+            default:
+                return view_str$compile$deprecated;
+        }
+    }
+
+    getKeyValue(key: string): string {
+        switch (key) {
+            case 'options':
+                return 'Object {...}';
+            default:
+                return (<any>this.data)[key] || 'null';
+        }
+    }
+
+    getKeyIcon(key: string): KeyIcon | undefined {
+        switch (key) {
+            case 'options':
+                return 'ConfigurationEditor_16x.svg';
+            default:
+                return 'Property_16x.svg';
+        }
+    }
+
+    protected GetKeyType(key: string): FieldType {
+        switch (key) {
+            case 'linkerScriptPath':
+                return 'INPUT';
+            case 'options':
+                return 'EVENT';
+            default:
+                return 'Disable';
+        }
+    }
+
+    protected IsOpenFileCanSelectMany(key: string): boolean {
+        switch (key) {
+            case 'linkerScriptPath':
+                return true;
+            default:
+                return super.IsOpenFileCanSelectMany(key);
+        }
+    }
+
+    protected GetOpenFileFilters(key: string): OpenFileFilter | undefined {
+        switch (key) {
+            case 'linkerScriptPath':
+                return {
+                    'linker script': ['ld', 'lds'],
+                    'any files': ['*']
+                };
+            default:
+                return undefined;
+        }
+    }
+
+    protected VerifyString(key: string, input: string): string | undefined {
+        return undefined;
+    }
+
+    protected GetSelectionList(key: string): CompileConfigPickItem[] | undefined {
+        return undefined;
+    }
+
+    protected getEventData(key: string): EventData | undefined {
+        switch (key) {
+            case 'options':
+                return {
+                    event: 'openCompileOptions'
+                };
+            default:
+                return undefined;
+        }
+    }
+
+    static getDefaultConfig(): AnyGccCompileData {
+        return {
+            linkerScriptPath: 'undefined',
+            options: 'null'
+        };
+    }
+
+    GetDefault(): AnyGccCompileData {
+        return AnyGccCompileConfigModel.getDefaultConfig();
     }
 }
 

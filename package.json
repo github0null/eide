@@ -27,7 +27,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "An embedded development environment for 8051/STM8/Cortex-M/RISC-V",
-    "version": "2.15.3",
+    "version": "2.16.0",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -144,6 +144,12 @@
             {
                 "title": "Embedded IDE",
                 "properties": {
+                    "EIDE.Cpptools.ForceInclude": {
+                        "type": "array",
+                        "scope": "resource",
+                        "markdownDescription": "Force include file path list for c/c++ plug-in intellisence",
+                        "default": []
+                    },
                     "EIDE.Option.EnableTelemetry": {
                         "type": "boolean",
                         "scope": "resource",
@@ -263,6 +269,12 @@
                         "scope": "machine",
                         "markdownDescription": "%settings.template.repo.url%",
                         "default": "github0null/eide-resource/contents/eide-template-list"
+                    },
+                    "EIDE.Repository.Template.GithubPersonalToken": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.template.repo.github_token%",
+                        "default": ""
                     },
                     "EIDE.Repository.CmsisPack.Url": {
                         "type": "string",
@@ -443,6 +455,18 @@
                         "scope": "resource",
                         "markdownDescription": "%settings.riscv.gcc.prefix%",
                         "default": "riscv-none-embed-"
+                    },
+                    "Toolchain.AnyGcc.InstallDirectory": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "Any gcc toolchain install directory",
+                        "default": ""
+                    },
+                    "Toolchain.AnyGcc.ToolPrefix": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "Any gcc **toolchain prefix**",
+                        "default": ""
                     }
                 }
             }
@@ -1406,6 +1430,10 @@
             {
                 "fileMatch": "**/*riscv.gcc.options.json",
                 "url": "./lang/riscv.gcc.verify.json"
+            },
+            {
+                "fileMatch": "**/*.options.any.gcc.json",
+                "url": "./lang/any.gcc.verify.json"
             }
         ],
         "grammars": [

@@ -8,12 +8,11 @@
 
 ## Summary 📑
 
+> **!!! Note: Currently we only support Windows platform (Windows 7 SP1 and later) !!!**
+
 An embedded development environment for `8051/STM8/Cortex-M[0/0+/3/4/7]/RISC-V` on VsCode. 
 
 Provide `8051/STM8/Cortex-M/RISC-V` project development, compilation, burning and other functions.
-
-**Note:**
- - **Support only Windows platform, Windows 7 SP1 and later**
 
 ![preview](https://docs.em-ide.com/preview.png)
 

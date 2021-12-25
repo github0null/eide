@@ -71,7 +71,7 @@ import { Compress, CompressOption } from './Compress';
 import { DependenceManager } from './DependenceManager';
 import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import {
-    copyObject, downloadFileWithProgress, getDownloadUrlFromGit,
+    copyObject, downloadFileWithProgress, getDownloadUrlFromGitea,
     runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
     genGithubHash
 } from './utility';
@@ -1852,6 +1852,7 @@ interface BuildCommandInfo {
     command: string;
     program?: string;
     order?: number;
+    ignoreFailed?: boolean;
 }
 
 interface ImporterProjectInfo {
@@ -2212,11 +2213,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             ignoreFocusOut: false
         }).then((item: vscode.QuickPickItem | undefined) => {
             if (item !== undefined && item.detail) {
-                this.dataProvider.OpenProject(item.detail).then((prj) => {
-                    if (prj === undefined) {
-                        this.dataProvider.removeRecord(<string>item.detail);
-                    }
-                });
+                this.dataProvider.OpenProject(item.detail);
             }
         });
     }
@@ -2291,35 +2288,55 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         this.dataProvider.foreachProject((project, index) => {
 
             const projectName = project.GetConfiguration().config.name;
-            let projectOrder: number | undefined = undefined;
+
+            const buildCfg: BuildCommandInfo = {
+                title: `build '${projectName}'`,
+                command: ''
+            };
 
             /* get project order */
             const envConfig = project.getProjectRawEnv();
             const targetName = project.getCurrentTarget().toLowerCase();
             if (envConfig) {
-                const cfgName = 'EIDE_BUILD_ORDER';
+                /////////////////////////////
+                // prj build order
+                let cfgName = 'EIDE_BUILD_ORDER';
                 // parse global config
                 if (envConfig[cfgName]) {
-                    projectOrder = parseInt(envConfig[cfgName]) || undefined;
+                    buildCfg.order = parseInt(envConfig[cfgName]);
                 }
                 // parse target config
-                if (envConfig[targetName] && envConfig[targetName][cfgName]) {
-                    projectOrder = parseInt(envConfig[targetName][cfgName]) || undefined;
+                if (envConfig[targetName] &&
+                    envConfig[targetName][cfgName]) {
+                    buildCfg.order = parseInt(envConfig[targetName][cfgName]);
                 }
+                /////////////////////////////
+                // ignore if failed ?
+                cfgName = 'EIDE_BUILD_SKIP_IF_FAILED';
+                // parse global config
+                if (envConfig[cfgName]) {
+                    buildCfg.ignoreFailed = (parseInt(envConfig[cfgName])) === 1;
+                }
+                // parse target config
+                if (envConfig[targetName] &&
+                    envConfig[targetName][cfgName]) {
+                    buildCfg.ignoreFailed = (parseInt(envConfig[targetName][cfgName])) === 1;
+                }
+            }
+
+            // make default order is 100
+            if (buildCfg.order == undefined ||
+                buildCfg.order == null ||
+                buildCfg.order == NaN) {
+                buildCfg.order = 100;
             }
 
             /* gen command */
             const builder = CodeBuilder.NewBuilder(project);
             const cmdLine = builder.genBuildCommand({ useFastMode: !rebuild }, true);
             if (cmdLine) {
-                if (projectOrder == undefined || projectOrder == NaN) {
-                    projectOrder = 100; /* make default order is 100 */
-                }
-                cmdList.push({
-                    title: `build '${projectName}'`,
-                    command: CmdLineHandler.DeleteCmdPrefix(cmdLine),
-                    order: projectOrder
-                });
+                buildCfg.command = CmdLineHandler.DeleteCmdPrefix(cmdLine);
+                cmdList.push(buildCfg);
             }
         });
 
@@ -2742,7 +2759,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }, (progress, token): Thenable<Error | undefined> => {
                 return new Promise(async (resolve) => {
 
-                    const fileInfo = await getDownloadUrlFromGit('eide_makefile_template', '', mkFileName);
+                    const fileInfo = await getDownloadUrlFromGitea('eide_makefile_template', '', mkFileName);
                     if (fileInfo instanceof Error || fileInfo == undefined) {
                         if (hasCache) { /* can't get from network ? use cache */
                             resolve(undefined);
@@ -3055,16 +3072,22 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     async showDisassembly(uri: vscode.Uri) {
 
-        const supportList = ['RISCV_GCC', 'GCC', 'AC5', 'AC6'];
+        const supportList = ['AC5', 'AC6'];
+
+        const isGccToolchain = (name: ToolchainName) => {
+            return /\bGCC\b/.test(name);
+        };
 
         try {
+
+            const notSupprotMsg = `Only support '${supportList.join(',')}' and 'GCC' compiler !`;
 
             // check condition
             const activePrj = this.dataProvider.getActiveProject();
             if (!activePrj) { throw new Error('Not found active project !'); }
             const toolchainName = activePrj.getToolchain().name;
-            if (!supportList.includes(toolchainName)) {
-                throw new Error(`Only support '${supportList.join(',')}' compiler !`);
+            if (!supportList.includes(toolchainName) && !isGccToolchain(toolchainName)) {
+                throw new Error(notSupprotMsg);
             }
 
             // parser ref json
@@ -3084,28 +3107,27 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             let exeFile: File;
             let cmds: string[];
 
-            switch (toolchainName) {
-                case 'GCC':
-                case 'RISCV_GCC':
-                    {
-                        const toolPrefix = toolchainName == 'GCC' ?
-                            SettingManager.GetInstance().getGCCPrefix() :
-                            SettingManager.GetInstance().getRiscvToolPrefix();
-                        exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `${toolPrefix}objdump.exe`]);
-                        if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
-                        cmds = ['-S', objPath];
-                    }
-                    break;
-                case 'AC5':
-                case 'AC6':
-                    {
-                        exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `fromelf.exe`]);
-                        if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
-                        cmds = ['-c', objPath];
-                    }
-                    break;
-                default:
-                    throw new Error(`Only support '${supportList.join(',')}' compiler !`);
+            if (isGccToolchain(toolchainName)) {
+                const toolchain = ToolchainManager.getInstance().getToolchainByName(toolchainName);
+                if (!toolchain) throw new Error(`Can't get toolchain '${toolchainName}'`);
+                const toolPrefix = toolchain.getToolchainPrefix ? toolchain.getToolchainPrefix() : '';
+                exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `${toolPrefix}objdump.exe`]);
+                if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
+                cmds = ['-S', objPath];
+            }
+            else {
+                switch (toolchainName) {
+                    case 'AC5':
+                    case 'AC6':
+                        {
+                            exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `fromelf.exe`]);
+                            if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
+                            cmds = ['-c', objPath];
+                        }
+                        break;
+                    default:
+                        throw new Error(notSupprotMsg);
+                }
             }
 
             /* executable */
@@ -3275,8 +3297,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const is8bit = prjConfig.config.type == 'C51';
         const cfgList: string[] = ['gnu'];
 
-        if (['Keil_C51'].includes(toolchain.name)) {
-            GlobalEvent.emit('msg', newMessage('Warning', `We don't support cppcheck for ${toolchain.name} !`));
+        if (['Keil_C51', 'ANY_GCC'].includes(toolchain.name)) {
+            GlobalEvent.emit('msg', newMessage('Warning', `We don't support cppcheck for '${toolchain.name}' !`));
             return;
         }
 

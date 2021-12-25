@@ -35,7 +35,7 @@ import * as fs from 'fs';
 import * as events from 'events';
 import * as NodePath from 'path';
 
-export type ToolchainName = 'SDCC' | 'Keil_C51' | 'AC5' | 'AC6' | 'GCC' | 'IAR_STM8' | 'GNU_SDCC_STM8' | 'RISCV_GCC' | 'None';
+export type ToolchainName = 'SDCC' | 'Keil_C51' | 'AC5' | 'AC6' | 'GCC' | 'IAR_STM8' | 'GNU_SDCC_STM8' | 'RISCV_GCC' | 'ANY_GCC' | 'None';
 
 export interface IProjectInfo {
 
@@ -64,7 +64,15 @@ export interface IToolchian {
 
     readonly version: number;
 
+    /**
+     * get toolchain install folder
+     */
     getToolchainDir(): File;
+
+    /**
+     * get toolchain executable prefix (optional)
+     */
+    getToolchainPrefix?: () => string;
 
     /**
      * get gcc c/c++ compiler path
@@ -121,7 +129,8 @@ export class ToolchainManager {
     private readonly toolchainNames: ToolchainEnums = {
         'C51': ['Keil_C51', 'SDCC', 'IAR_STM8'/*, 'GNU_SDCC_STM8'*/],
         'ARM': ['AC5', 'AC6', 'GCC'],
-        'RISC-V': ['RISCV_GCC']
+        'RISC-V': ['RISCV_GCC'],
+        'ANY-GCC': ['ANY_GCC']
     };
 
     private toolchainMap: Map<ToolchainName, IToolchian>;
@@ -149,6 +158,7 @@ export class ToolchainManager {
         this.add(new GCC());
         this.add(new IARSTM8());
         this.add(new RISCV_GCC());
+        this.add(new AnyGcc());
         //this.add(new GnuStm8Sdcc());
     }
 
@@ -174,6 +184,9 @@ export class ToolchainManager {
         switch (prjType) {
             case 'RISC-V':
                 res = this.toolchainMap.get('RISCV_GCC');
+                break;
+            case 'ANY-GCC':
+                res = this.toolchainMap.get('ANY_GCC');
                 break;
             case 'ARM':
                 switch (toolchainName) {
@@ -243,6 +256,8 @@ export class ToolchainManager {
                 return 'SDCC With GNU Patch For STM8';
             case 'RISCV_GCC':
                 return 'GCC for RISC-V';
+            case 'ANY_GCC':
+                return 'Any GNU Toolchain';
             default:
                 return '';
         }
@@ -363,6 +378,8 @@ export class ToolchainManager {
                 return File.fromArray([settingManager.getRiscvToolFolder().path, 'bin']);
             case 'GNU_SDCC_STM8':
                 return File.fromArray([settingManager.getGnuSdccStm8Dir().path, 'bin']);
+            case 'ANY_GCC':
+                return File.fromArray([settingManager.getAnyGccToolFolder().path, 'bin']);
             default:
                 return undefined;
         }
@@ -1327,6 +1344,10 @@ class GCC implements IToolchian {
         const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
         return gcc.path;
     }
+    
+    getToolchainPrefix(): string {
+        return this.getToolPrefix();
+    }
 
     updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
 
@@ -1665,6 +1686,10 @@ class RISCV_GCC implements IToolchian {
         const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
         return gcc.path;
     }
+    
+    getToolchainPrefix(): string {
+        return this.getToolPrefix();
+    }
 
     updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
 
@@ -1754,6 +1779,173 @@ class RISCV_GCC implements IToolchian {
             linker: {
                 "output-format": "elf",
                 "LD_FLAGS": "-Wl,--cref -Wl,--no-relax -Wl,--gc-sections --specs=nosys.specs --specs=nano.specs -nostartfiles",
+                "LIB_FLAGS": ""
+            }
+        };
+    }
+}
+
+class AnyGcc implements IToolchian {
+
+    readonly version = 1;
+
+    readonly settingName: string = 'EIDE.Toolchain.AnyGcc.InstallDirectory';
+
+    readonly categoryName: string = 'GCC';
+
+    readonly name: ToolchainName = 'ANY_GCC';
+
+    readonly modelName: string = 'any.gcc.model.json';
+
+    readonly configName: string = 'options.any.gcc.json';
+
+    readonly verifyFileName: string = 'any.gcc.verify.json';
+
+    private readonly defMacroList: string[];
+
+    //---
+
+    private incList: string[];
+
+    constructor() {
+        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
+        const intrMacros = this.getMacroList(gcc.path);
+        if (intrMacros === undefined) { // if not found gcc, use def macro
+            this.defMacroList = ['__GNUC__=8', '__GNUC_MINOR__=3', '__GNUC_PATCHLEVEL__=1'];
+        } else { // if found, cpptools will parse intr macros, so we don't provide
+            this.defMacroList = [];
+        }
+        this.incList = this.getIncludeList(gcc.path);
+    }
+
+    private getIncludeList(gccPath: string): string[] {
+        try {
+            const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
+                + ' ' + ['-xc++', '-E', '-v', '-', '<nul 2>&1'].join(' ');
+            const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
+            const iStart = lines.findIndex((line) => { return line.startsWith('#include <...>'); });
+            const iEnd = lines.indexOf('End of search list.', iStart);
+            return lines.slice(iStart + 1, iEnd)
+                .map((line) => { return new File(File.ToLocalPath(line.trim())); })
+                .filter((file) => { return file.IsDir(); })
+                .map((f) => {
+                    return f.path;
+                });
+        } catch (error) {
+            return [];
+        }
+    }
+
+    private getMacroList(gccPath: string): string[] | undefined {
+        try {
+            const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
+                + ' ' + ['-E', '-dM', '-', '<nul'].join(' ');
+
+            const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
+            const results: string[] = [];
+            const mHandler = new MacroHandler();
+
+            lines.filter((line) => { return line.trim() !== ''; })
+                .forEach((line) => {
+                    const value = mHandler.toExpression(line);
+                    if (value) {
+                        results.push(value);
+                    }
+                });
+
+            return results;
+        } catch (error) {
+            return undefined;
+        }
+    }
+
+    private getToolPrefix(): string {
+        return SettingManager.GetInstance().getAnyGccToolPrefix();
+    }
+
+    //-----------
+
+    newInstance(): IToolchian {
+        return new AnyGcc();
+    }
+
+    getGccCompilerPath(): string | undefined {
+        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
+        return gcc.path;
+    }
+
+    getToolchainPrefix(): string {
+        return this.getToolPrefix();
+    }
+
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+        cppToolsConfig.cStandard = 'c11';
+        cppToolsConfig.cppStandard = 'c++11';
+    }
+
+    preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
+
+        // convert output lib commmand
+        if (options['linker'] && options['linker']['output-format'] === 'lib') {
+            options['linker']['$use'] = 'linker-lib';
+        }
+
+        // if region 'global' is not exist, create it
+        if (typeof options['global'] !== 'object') {
+            options['global'] = {};
+        }
+
+        // set tool prefix
+        options['global'].toolPrefix = this.getToolPrefix();
+    }
+
+    getInternalDefines(builderOpts: ICompileOptions): string[] {
+        return this.defMacroList;
+    }
+
+    getCustomDefines(): string[] | undefined {
+        return undefined;
+    }
+
+    getToolchainDir(): File {
+        return SettingManager.GetInstance().getAnyGccToolFolder();
+    }
+
+    getSystemIncludeList(builderOpts: ICompileOptions): string[] {
+        return Array.from(this.incList);
+    }
+
+    getForceIncludeHeaders(): string[] | undefined {
+        return [
+            ResManager.GetInstance().getGccForceIncludeHeaders().path
+        ];
+    }
+
+    getDefaultIncludeList(): string[] {
+        return [];
+    }
+
+    getLibDirs(): string[] {
+        return [];
+    }
+
+    getDefaultConfig(): ICompileOptions {
+        return <ICompileOptions>{
+            version: this.version,
+            beforeBuildTasks: [],
+            afterBuildTasks: [],
+            global: {
+            },
+            'c/cpp-compiler': {
+                "C_FLAGS": "-c -x c",
+                "CXX_FLAGS": "-c -x c++"
+            },
+            'asm-compiler': {
+                "ASM_FLAGS": "-c -x assembler"
+            },
+            linker: {
+                "output-format": "elf",
+                "LD_FLAGS": "-Wl,--print-memory-usage",
                 "LIB_FLAGS": ""
             }
         };

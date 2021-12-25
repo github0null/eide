@@ -1,11 +1,11 @@
 {
-    "title": "ARM GCC Options",
+    "title": "Any Gcc Options",
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "definitions": {
         "FLAGS": {
-            "markdownDescription": "Other Options",
-            "description.zh-cn": "其他选项",
+            "markdownDescription": "Options",
+            "description.zh-cn": "选项",
             "size": "huge",
             "type": [
                 "string",
@@ -128,41 +128,9 @@
             "description.zh-cn": "全局选项",
             "type": "object",
             "properties": {
-                "output-debug-info": {
-                    "markdownDescription": "Output debug information",
-                    "description.zh-cn": "输出调试信息",
-                    "type": "string",
-                    "default": "disable",
-                    "enum": [
-                        "disable",
-                        "enable",
-                        "dwarf-2",
-                        "dwarf-3"
-                    ]
-                },
-                "arch": {
-                    "markdownDescription": "Arch",
-                    "description.zh-cn": "指令集（arch）",
-                    "size": "small",
-                    "type": "string"
-                },
-                "abi": {
-                    "readable_name": "ABI",
-                    "readable_name.zh-cn": "调用约定（abi）",
-                    "markdownDescription": "Integer and floating-point calling convention",
-                    "description.zh-cn": "整数和浮点调用约定",
-                    "size": "small",
-                    "type": "string"
-                },
-                "code-model": {
-                    "markdownDescription": "Code Model",
-                    "description.zh-cn": "代码模型（code-model）",
-                    "size": "small",
-                    "type": "string"
-                },
                 "misc-control": {
-                    "markdownDescription": "Other Global Options",
-                    "description.zh-cn": "编译器附加选项（全局）",
+                    "markdownDescription": "Global Params",
+                    "description.zh-cn": "编译器全局参数",
                     "$ref": "#/definitions/FLAGS",
                     "default": ""
                 }
@@ -173,90 +141,17 @@
             "description.zh-cn": "C/C++ 编译器选项",
             "type": "object",
             "properties": {
-                "language-c": {
-                    "markdownDescription": "C Standard",
-                    "description.zh-cn": "C 标准",
-                    "type": "string",
-                    "default": "c11",
-                    "enum": [
-                        "c89",
-                        "c90",
-                        "c99",
-                        "c11",
-                        "c17",
-                        "gnu89",
-                        "gnu90",
-                        "gnu99",
-                        "gnu11",
-                        "gnu17"
-                    ]
-                },
-                "language-cpp": {
-                    "markdownDescription": "C++ Standard",
-                    "description.zh-cn": "C++ 标准",
-                    "type": "string",
-                    "default": "c++11",
-                    "enum": [
-                        "c++98",
-                        "gnu++98",
-                        "c++11",
-                        "gnu++11",
-                        "c++14",
-                        "gnu++14",
-                        "c++17",
-                        "gnu++17"
-                    ]
-                },
-                "optimization": {
-                    "markdownDescription": "Optimization Level",
-                    "description.zh-cn": "代码优化级别",
-                    "type": "string",
-                    "default": "level-0",
-                    "enum": [
-                        "level-0",
-                        "level-1",
-                        "level-2",
-                        "level-3",
-                        "level-size",
-                        "level-fast",
-                        "level-debug"
-                    ],
-                    "enumDescriptions": [
-                        "-O0 (default)",
-                        "-O1",
-                        "-O2",
-                        "-O3",
-                        "-Os",
-                        "-Ofast",
-                        "-Og"
-                    ]
-                },
-                "warnings": {
-                    "markdownDescription": "Warning Level",
-                    "description.zh-cn": "警告等级",
-                    "type": "string",
-                    "default": "all-warnings",
-                    "enum": [
-                        "no-warnings",
-                        "all-warnings"
-                    ]
-                },
-                "turn-warning-into-errors": {
-                    "markdownDescription": "Turn warnings into errors",
-                    "description.zh-cn": "将警告转化为错误",
-                    "type": "boolean"
-                },
                 "C_FLAGS": {
-                    "markdownDescription": "Other C Compiler Options",
-                    "description.zh-cn": "C 编译器附加选项",
+                    "markdownDescription": "C Compiler Params",
+                    "description.zh-cn": "C 编译器参数",
                     "$ref": "#/definitions/FLAGS",
-                    "default": ""
+                    "default": "-c -x c"
                 },
                 "CXX_FLAGS": {
-                    "markdownDescription": "Other C++ Compiler Options",
-                    "description.zh-cn": "C++ 编译器附加选项",
+                    "markdownDescription": "C++ Compiler Params",
+                    "description.zh-cn": "C++ 编译器参数",
                     "$ref": "#/definitions/FLAGS",
-                    "default": ""
+                    "default": "-c -x c++"
                 }
             }
         },
@@ -276,10 +171,10 @@
                     }
                 },
                 "ASM_FLAGS": {
-                    "markdownDescription": "Other Assembler Options",
-                    "description.zh-cn": "汇编器附加选项",
+                    "markdownDescription": "Assembler Params",
+                    "description.zh-cn": "汇编器参数",
                     "$ref": "#/definitions/FLAGS",
-                    "default": ""
+                    "default": "-c -x assembler"
                 }
             }
         },
@@ -302,9 +197,18 @@
                         "Static Library"
                     ]
                 },
+                "elf-suffix": {
+                    "type": "string",
+                    "size": "small",
+                    "readable_name": "Executable Suffix",
+                    "readable_name.zh-cn": "可执行文件后缀",
+                    "description": ".elf (default)",
+                    "description.zh-cn": ".elf (default)",
+                    "default": ".elf"
+                },
                 "LD_FLAGS": {
-                    "readable_name": "Other Linker Options",
-                    "readable_name.zh-cn": "链接器附加选项",
+                    "readable_name": "Linker Flags",
+                    "readable_name.zh-cn": "链接器参数",
                     "markdownDescription": "Use \"-Wl[,option]...\" pass options to the linker",
                     "description.zh-cn": "使用 \"-Wl[,option]...\" 传递链接器选项",
                     "$ref": "#/definitions/FLAGS",
@@ -312,9 +216,9 @@
                 },
                 "LIB_FLAGS": {
                     "readable_name": "Lib Flags",
-                    "readable_name.zh-cn": "链接库选项",
+                    "readable_name.zh-cn": "链接库",
                     "markdownDescription": "Lib Flags, like: -lxxx",
-                    "description.zh-cn": "链接库选项，例如：-lxxx",
+                    "description.zh-cn": "链接库，例如：-lxxx",
                     "$ref": "#/definitions/FLAGS",
                     "default": ""
                 }

@@ -34,7 +34,7 @@ import { File } from "../lib/node-utility/File";
 import {
     ProjectConfigData, ArmBaseCompileData,
     Memory, ARMStorageLayout, ICompileOptions,
-    FloatingHardwareOption, ProjectConfiguration, C51BaseCompileData, RiscvCompileData
+    FloatingHardwareOption, ProjectConfiguration, C51BaseCompileData, RiscvCompileData, AnyGccCompileData
 } from "./EIDETypeDefine";
 import { SettingManager } from "./SettingManager";
 import { GlobalEvent } from "./GlobalEvents";
@@ -490,6 +490,8 @@ export abstract class CodeBuilder {
                 return new ARMCodeBuilder(_project);
             case 'RISC-V':
                 return new RiscvCodeBuilder(_project);
+            case 'ANY-GCC':
+                return new AnyGccCodeBuilder(_project);
             case 'C51':
                 return new C51CodeBuilder(_project);
             default:
@@ -937,6 +939,38 @@ class RiscvCodeBuilder extends CodeBuilder {
 
         // set linker script
         options.linker['linker-script'] = ldFileList;
+    }
+}
+
+class AnyGccCodeBuilder extends CodeBuilder {
+
+    protected getProblemMatcher(): string[] {
+        return ['$gcc'];
+    }
+
+    protected getMaxSize(): MemorySize | undefined {
+        return undefined;
+    }
+
+    protected preHandleOptions(options: ICompileOptions) {
+
+        const config = this.project.GetConfiguration<AnyGccCompileData>().config;
+
+        if (!options['linker']) {
+            options.linker = Object.create(null);
+        }
+
+        // set linker script
+        if (config.compileConfig.linkerScriptPath.trim() !== '') {
+            options.linker['linker-script'] = config.compileConfig.linkerScriptPath.split(',').map((sctPath) => {
+                const absPath = this.project.ToAbsolutePath(sctPath).replace(/\\/g, '/');
+                return absPath.includes(' ') ? `"${absPath}"` : absPath;
+            });
+        } else { // clear old
+            if (options.linker['linker-script']) {
+                delete options.linker['linker-script'];
+            }
+        }
     }
 }
 

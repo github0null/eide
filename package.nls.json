@@ -101,6 +101,7 @@
     "settings.repo.use.proxy": "Use proxy to improve network speed for github (experimental function)",
     "settings.template.repo.url": "Public github template repository url, format: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
     "settings.cmsispack.repo.url": "Public github cmsis-pack repository url, format: `<user_name>`/`<repository_name>`/contents/`<directory_path>`",
+    "settings.template.repo.github_token": "Specify a Github personal access token for a **private template repository** so that eide can access the repository and download templates from it.",
 
     "settings.serial.def.port": "Default port name",
     "settings.serial.show.toolbar": "Show serialport status bar",

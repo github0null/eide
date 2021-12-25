@@ -918,6 +918,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         return this.virtualSource;
     }
 
+    getNormalSourceManager(): SourceRootList {
+        return this.sourceRoots;
+    }
+
     refreshSourceRoot(rePath: string) {
         if (rePath.startsWith(VirtualSource.rootName)) {
             this.virtualSource.notifyUpdateFolder(rePath);
@@ -956,7 +960,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         const prjRootDir = this.GetRootDir();
         const outDir = NodePath.normalize(prjRootDir.path + File.sep + prjConfig.getOutDir());
 
-        // replace prj env
+        // replace stable env
         path = path
             .replace(/\$\(OutDir\)|\$\{OutDir\}/ig, outDir)
             .replace(/\$\(ProjectName\)|\$\{ProjectName\}/ig, prjConfig.config.name)
@@ -966,8 +970,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         // replace user env
         const prjEnv = this.getProjectEnv();
         if (prjEnv) {
+            const nameMatcher = /^\w+$/;
             for (const key in prjEnv) {
-                if (!/^\w+$/.test(key)) continue;
+                if (!nameMatcher.test(key)) continue;
                 const reg = new RegExp(String.raw`\$\(${key}\)|\$\{${key}\}`, 'ig');
                 path = path.replace(reg, prjEnv[key]);
             }
@@ -1406,10 +1411,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     private __env_raw_lastEnvObj: { [name: string]: any } | undefined;
     getProjectRawEnv(): { [name: string]: any } | undefined {
         try {
-
-            // limit read interval (100 ms), increase speed
+            // limit read interval (150 ms), improve speed
             if (this.__env_raw_lastEnvObj != undefined &&
-                Date.now() - this.__env_raw_lastGetTime < 100) {
+                Date.now() - this.__env_raw_lastGetTime < 150) {
                 return this.__env_raw_lastEnvObj;
             }
 
@@ -1429,7 +1433,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
                 return this.__env_raw_lastEnvObj;
             }
         } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            // nothing todo
         }
     }
 
@@ -1437,9 +1441,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     private __env_lastEnvObj: { [name: string]: any } | undefined;
     getProjectEnv(): { [name: string]: any } | undefined {
 
-        // limit read interval (150 ms), increase speed
+        // limit read interval (200 ms), improve speed
         if (this.__env_lastEnvObj != undefined &&
-            Date.now() - this.__env_lastUpdateTime < 150) {
+            Date.now() - this.__env_lastUpdateTime < 200) {
             return this.__env_lastEnvObj;
         }
 
@@ -2169,7 +2173,7 @@ class EIDEProject extends AbstractProject {
         this.getFileGroups().forEach((_group) => {
 
             // is filesystem source
-            if ((<ProjectFileGroup>_group).dir !== undefined) {
+            if (!AbstractProject.isVirtualSourceGroup(_group)) {
                 const group = <ProjectFileGroup>_group;
                 const rePath = this.ToRelativePath(group.dir.path, false);
                 // combine HAL folder
@@ -2340,14 +2344,23 @@ class EIDEProject extends AbstractProject {
         // update intellisence info
         toolchain.updateCppIntellisenceCfg(builderOpts, this.cppToolsConfig);
 
-        // update virtual src search folder
+        // update source browse path
         let srcBrowseFolders: string[] = [];
+
         this.vSourceList = [];
         this.getVirtualSourceManager().traverse((vFolder) => {
             vFolder.folder.files.forEach((vFile) => {
                 const fAbsPath = this.ToAbsolutePath(vFile.path);
                 this.vSourceList.push(fAbsPath);
                 srcBrowseFolders.push(`${File.ToUnixPath(NodePath.dirname(fAbsPath))}/*`);
+            });
+        });
+
+        this.getNormalSourceManager().getFileGroups().forEach(fGrp => {
+            if (fGrp.disabled) { return; } // skip disabled group
+            fGrp.files.forEach(fItem => {
+                if (fItem.disabled) { return; } // skip disabled file
+                srcBrowseFolders.push(`${File.ToUnixPath(fItem.file.dir)}/*`);
             });
         });
 
@@ -2361,13 +2374,18 @@ class EIDEProject extends AbstractProject {
         this.cppToolsConfig.compilerPath = this.getToolchain().getGccCompilerPath();
 
         // update forceinclude headers
-        this.cppToolsConfig.forcedInclude = this.getToolchain()
-            .getForceIncludeHeaders()?.map((f_path) => NodePath.normalize(f_path));
+        this.cppToolsConfig.forcedInclude = [];
+
+        toolchain.getForceIncludeHeaders()?.forEach((f_path) => {
+            this.cppToolsConfig.forcedInclude?.push(NodePath.normalize(f_path));
+        });
+
+        SettingManager.GetInstance().getForceIncludeList().forEach((path) => {
+            this.cppToolsConfig.forcedInclude?.push(this.ToAbsolutePath(path));
+        });
 
         // notify config changed
         this.emit('cppConfigChanged');
-        //this.cppToolsApi?.didChangeCustomConfiguration(this);
-        //this.cppToolsApi?.didChangeCustomBrowseConfiguration(this);
 
         // log
         console.log(this.cppToolsConfig);

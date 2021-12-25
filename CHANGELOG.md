@@ -4,6 +4,23 @@
 
 ***
 
+### [v2.16.0]
+
+**New Features**:
+  - Support `any-gcc` project and `any-gcc` toolchain. Used to support any gcc family compilers.
+  - Support auto update eide-binaries
+  - Support `BigEndian` options for `armcc/armclang`
+  - Support access to **private** template repo that need to provide `Github Personal Access Token` in plug-in Settings 
+
+**Bug Fixes**:
+  - Failed to jump definition. Not provide browsePath for the workspace causes the C/C ++ **Go To Definition** functionality is fail to jump to source files in the workspace
+
+**Optimized**:
+  - Allow user add custom forceIncludeFile for c/c++ intellisense. Go to eide plug-in settings to set it.
+  - Align inline input box for `builder options ui`.
+
+***
+
 ### [v2.15.3] (revision)
 
 **New Features**:

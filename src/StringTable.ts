@@ -661,6 +661,11 @@ export const view_str$operation$empty_riscv_prj = [
     'RISC-V Project'
 ][langIndex];
 
+export const view_str$operation$empty_anygcc_prj = [
+    'ANY GCC 项目',
+    'ANY GCC Project'
+][langIndex];
+
 export const view_str$operation$open_serialport = [
     '打开串口监视器',
     'Open Serialport Monitor'
@@ -723,7 +728,7 @@ export const view_str$operation$setToolchainPath = [
 
 export const view_str$operation$openSettings = [
     '打开插件设置',
-    'Open plug-in settings'
+    'Open plug-in Settings'
 ][langIndex];
 
 export const invalid_keil_path = [

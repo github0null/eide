@@ -42,7 +42,7 @@ import {
     view_str$operation$create_from_internal_temp_detail, view_str$operation$create_from_local_disk_detail,
     view_str$operation$create_from_remote_repo_detail, view_str$operation$openSettings,
     view_str$prompt$select_file, view_str$prompt$select_folder, view_str$prompt$select_file_or_folder, view_str$prompt$select_tool_install_mode,
-    view_str$prompt$tool_install_mode_online, view_str$prompt$tool_install_mode_local
+    view_str$prompt$tool_install_mode_online, view_str$prompt$tool_install_mode_local, view_str$operation$empty_anygcc_prj
 } from './StringTable';
 import { CreateOptions, ImportOptions, ProjectType } from './EIDETypeDefine';
 import { File } from '../lib/node-utility/File';
@@ -252,7 +252,7 @@ export class OperationExplorer {
             }
         });
 
-        const tcList: ToolchainName[] = ['AC5', 'GCC', 'IAR_STM8', 'SDCC', 'Keil_C51', 'RISCV_GCC', 'GNU_SDCC_STM8'];
+        const tcList: ToolchainName[] = ['AC5', 'GCC', 'IAR_STM8', 'SDCC', 'Keil_C51', 'RISCV_GCC', 'ANY_GCC', 'GNU_SDCC_STM8'];
         const toolchainManager = ToolchainManager.getInstance();
         const checkResults = tcList.map((tcName) => { return toolchainManager.isToolchainPathReady(tcName); });
         const status: CheckStatus = checkResults.every((val) => { return val; }) ?
@@ -360,6 +360,11 @@ export class OperationExplorer {
                             label: view_str$operation$empty_riscv_prj,
                             detail: 'for risc-v chips',
                             type: 'RISC-V'
+                        },
+                        {
+                            label: view_str$operation$empty_anygcc_prj,
+                            detail: 'for any gcc toolchain',
+                            type: 'ANY-GCC'
                         }
                     ];
 
@@ -601,6 +606,12 @@ export class OperationExplorer {
                 type: 'RISCV_GCC',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('RISCV_GCC')),
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'RISC-V GCC Toolchain')
+            },
+            {
+                label: 'ANY GCC Toolchain',
+                type: 'ANY_GCC',
+                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('ANY_GCC')),
+                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ANY GCC Toolchain')
             }
         ];
 
@@ -789,12 +800,13 @@ export class OperationExplorer {
 
         this.locked = true;
 
-        const redirectUri = (uri: string) => {
-            return SettingManager.GetInstance().isUseGithubProxy() ? utility.redirectHost(uri) : uri;
-        };
+        const settingManager = SettingManager.GetInstance();
+        const redirectUri = (uri: string) => settingManager.isUseGithubProxy() ? utility.redirectHost(uri) : uri;
 
         // URL: https://api.github.com/repos/github0null/eide-doc/contents/eide-template-list
-        const remoteUrl = redirectUri('api.github.com/repos/' + SettingManager.GetInstance().getGithubRepositoryUrl());
+        const rawUrl = `api.github.com/repos/${settingManager.getGithubRepositoryUrl()}`;
+        const acToken = settingManager.getGithubRepositoryToken();
+        const remoteUrl = acToken ? rawUrl : redirectUri(rawUrl); // if token is enabled, not proxy
 
         let targetTempFile: File | undefined;
 
@@ -824,11 +836,19 @@ export class OperationExplorer {
                             netReq.emit('abort');
                         });
 
+                        const headers: any = {
+                            'User-Agent': 'Mozilla/5.0'
+                        };
+
+                        if (acToken) { // if token is enabled, use it
+                            headers['Authorization'] = `token ${acToken}`;
+                        }
+
                         const res = await netReq.Request<any, any>({
                             host: hostName,
                             path: path,
                             timeout: 3000,
-                            headers: { 'User-Agent': 'Mozilla/5.0' }
+                            headers: headers
                         }, 'https');
 
                         resolve(res);
@@ -836,13 +856,11 @@ export class OperationExplorer {
                 });
 
                 if (!res.success) {
-                    const errMsg = res.msg ? `, msg: ${res.msg}` : '';
-                    GlobalEvent.emit('msg', newMessage('Warning', `Can't connect to Github repository !${errMsg}`));
+                    GlobalEvent.emit('msg', newMessage('Warning', `Can't connect to Github repository !, msg: ${res.msg || 'null'}`));
                     this.locked = false;
                     return;
                 } else if (res.content === undefined) {
-                    const errMsg = res.msg ? `, msg: ${res.msg}` : '';
-                    GlobalEvent.emit('msg', newMessage('Warning', `Can't get content from Github repository !${errMsg}`));
+                    GlobalEvent.emit('msg', newMessage('Warning', `Can't get content from Github repository !, msg: ${res.msg || 'null'}`));
                     this.locked = false;
                     return;
                 }

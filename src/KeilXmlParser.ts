@@ -68,7 +68,6 @@ export interface ICommonOptions {
 export abstract class KeilParser<T> {
 
     static TYPE_SUFFIX_MAP = {
-        'RISC-V': '.uvprojx',
         'ARM': '.uvprojx',
         'C51': '.uvproj',
     };
@@ -265,7 +264,9 @@ export abstract class KeilParser<T> {
     }
 
     Save(outDir: File, name: string): File {
-        const outFile = File.fromArray([outDir.path, name + KeilParser.TYPE_SUFFIX_MAP[this.TYPE_TAG]]);
+        const prjMap: any = KeilParser.TYPE_SUFFIX_MAP;
+        if (prjMap[this.TYPE_TAG] == undefined) { throw new Error(`Not support '${this.TYPE_TAG}' project !`); }
+        const outFile = File.fromArray([outDir.path, name + prjMap[this.TYPE_TAG]]);
         const header = '<?xml version="1.0" encoding="UTF-8" standalone="no" ?>';
         outFile.Write(header + this.parser.js2xml<any>(this.doc));
         return outFile;
