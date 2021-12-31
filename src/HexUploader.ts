@@ -988,13 +988,13 @@ class CustomUploader extends HexUploader<string> {
         programs.forEach((file, index) => {
 
             commandLine = commandLine
-                .replace(`\${hexFile[${index}]}`, file.path)
-                .replace(`\${binFile[${index}]}`, file.path)
-                .replace(`\${programFile[${index}]}`, file.path);
+                .replace(new RegExp(String.raw`\$\{hexFile\[${index}\]\}`, 'ig'), file.path)
+                .replace(new RegExp(String.raw`\$\{binFile\[${index}\]\}`, 'ig'), file.path)
+                .replace(new RegExp(String.raw`\$\{programFile\[${index}\]\}`, 'ig'), file.path);
 
             if (file.addr) {
                 commandLine = commandLine
-                    .replace(`\${binAddr[${index}]}`, file.addr || '0x00000000')
+                    .replace(new RegExp(String.raw`\$\{binAddr\[${index}\]\}`, 'ig'), file.addr || '0x00000000')
             }
         });
 
