@@ -102,7 +102,7 @@ export function exportToSysEnv(env: NodeJS.ProcessEnv, paths: string[]) {
     env[pName] = pList.join(sep);
 }
 
-export function append2SysEnv(paths: string[], isPowershell?: boolean, defEnv?: NodeJS.ProcessEnv): { [key: string]: string } {
+export function concatSystemEnvPath(paths: string[], isPowershell?: boolean, defEnv?: NodeJS.ProcessEnv): { [key: string]: string } {
 
     const env = JSON.parse(JSON.stringify(defEnv || process.env || {}));
 

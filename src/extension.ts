@@ -492,11 +492,13 @@ let isEnvSetuped: boolean = false;
 function exportEnvToSysPath() {
 
     const settingManager = SettingManager.GetInstance();
+    const resManager = ResManager.GetInstance();
 
     const pathList: { key: string, path: string }[] = [
         { key: 'EIDE_ARM_GCC', path: `${settingManager.getGCCDir().path}${File.sep}bin` },
         { key: 'EIDE_JLINK', path: `${settingManager.getJlinkDir()}` },
-        { key: 'EIDE_OPENOCD', path: `${NodePath.dirname(settingManager.getOpenOCDExePath())}` }
+        { key: 'EIDE_OPENOCD', path: `${NodePath.dirname(settingManager.getOpenOCDExePath())}` },
+        { key: 'EIDE_MSYS', path: `${[resManager.getBuilderDir(), 'msys', 'bin'].join(File.sep)}` }
     ];
 
     /* append to system env if we not */

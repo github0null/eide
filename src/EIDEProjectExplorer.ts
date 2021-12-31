@@ -75,7 +75,7 @@ import {
     runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
     genGithubHash
 } from './utility';
-import { append2SysEnv, DeleteDir, kill } from './Platform';
+import { concatSystemEnvPath, DeleteDir, kill } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
 import { VirtualDocument } from './VirtualDocsProvider';
 import { ResInstaller } from './ResInstaller';
@@ -1003,8 +1003,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                         const dir: File = element.val.obj;
                         if (dir.IsDir()) {
 
-                            const fchildren = dir
-                                .GetList(AbstractProject.getFileFilters())
+                            const fchildren = dir.GetList()
                                 .filter((f) => !AbstractProject.excludeDirFilter.test(f.name));
 
                             const iFileList: ProjTreeItem[] = [];
@@ -3364,7 +3363,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 const opts: ExecutableOption = {
                     encoding: 'utf8',
                     shell: ResManager.GetInstance().getCMDPath(),
-                    env: append2SysEnv([exeFile.dir, `${exeFile.dir}${File.sep}cfg`])
+                    env: concatSystemEnvPath([exeFile.dir, `${exeFile.dir}${File.sep}cfg`])
                 };
 
                 // user want cancel operations
