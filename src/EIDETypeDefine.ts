@@ -22,6 +22,14 @@
 	SOFTWARE.
 */
 
+import * as events from 'events';
+import * as os from 'os';
+import * as vscode from 'vscode';
+import * as NodePath from 'path';
+import { jsonc } from 'jsonc';
+import { isNullOrUndefined } from "util";
+import * as child_process from 'child_process';
+
 import { File } from "../lib/node-utility/File";
 import { FileWatcher } from "../lib/node-utility/FileWatcher";
 import {
@@ -54,16 +62,8 @@ import { GlobalEvent } from "./GlobalEvents";
 import { ExceptionToMessage, newMessage } from "./Message";
 import { ToolchainName, IToolchian, ToolchainManager } from './ToolchainManager';
 import { HexUploaderType, STLinkOptions, STVPFlasherOptions, C51FlashOption, JLinkOptions, ProtocolType, PyOCDFlashOptions, OpenOCDFlashOptions, STLinkProtocolType, CustomFlashOptions } from "./HexUploader";
-
-import * as events from 'events';
-import * as os from 'os';
-import * as vscode from 'vscode';
-import * as NodePath from 'path';
-import { isNullOrUndefined } from "util";
 import { AbstractProject, VirtualSource } from "./EIDEProject";
 import { SettingManager } from "./SettingManager";
-
-import { jsonc } from 'jsonc';
 import { WorkspaceManager } from "./WorkspaceManager";
 import * as utility from './utility';
 
@@ -481,6 +481,12 @@ export interface ProjectConfigEvent {
     data?: any;
 }
 
+interface ProjectConfigApi {
+    getRootDir: () => File;
+    toAbsolutePath: (path: string) => string;
+    toRelativePath: (path: string) => string;
+}
+
 export class ProjectConfiguration<T extends CompileData>
     extends Configuration<ProjectConfigData<T>, ProjectConfigEvent> {
 
@@ -492,8 +498,10 @@ export class ProjectConfiguration<T extends CompileData>
     uploadConfigModel: UploadConfigModel<any>;
 
     private rootDir: File | undefined;
+    private api: ProjectConfigApi;
 
     constructor(f: File, type?: ProjectType) {
+
         super(f, type);
 
         // compate old version
@@ -505,8 +513,14 @@ export class ProjectConfiguration<T extends CompileData>
             };
         }
 
+        this.api = {
+            getRootDir: () => this.getRootDir(),
+            toAbsolutePath: (path) => this.toAbsolutePath(path),
+            toRelativePath: (path) => this.toRelativePath(path)
+        };
+
         this.compileConfigModel = CompileConfigModel.getInstance(this.config);
-        this.uploadConfigModel = UploadConfigModel.getInstance(this.config.uploader);
+        this.uploadConfigModel = UploadConfigModel.getInstance(this.config.uploader, this.api);
 
         this.compileConfigModel.Update(this.config.compileConfig);
         this.config.compileConfig = this.compileConfigModel.data;
@@ -517,9 +531,7 @@ export class ProjectConfiguration<T extends CompileData>
         this.uploadConfigModel.on('dataChanged', () => this.emit('dataChanged', { type: 'uploader' }));
 
         // update upload model
-        this.compileConfigModel.on('dataChanged', () => {
-            this.uploadConfigModel.emit('NotifyUpdate', this);
-        });
+        this.compileConfigModel.on('dataChanged', () => this.uploadConfigModel.emit('NotifyUpdate', this));
     }
 
     protected Init(f: File) {
@@ -693,7 +705,7 @@ export class ProjectConfiguration<T extends CompileData>
         this.config.uploadConfigMap[oldModel.uploader] = utility.copyObject(oldModel.data);
 
         // update new config
-        this.uploadConfigModel = UploadConfigModel.getInstance(uploader);
+        this.uploadConfigModel = UploadConfigModel.getInstance(uploader, this.api);
         this.config.uploader = uploader;
         this.uploadConfigModel.data =
             utility.copyObject(this.config.uploadConfigMap[uploader]) || this.uploadConfigModel.data;
@@ -703,9 +715,7 @@ export class ProjectConfiguration<T extends CompileData>
         this.uploadConfigModel.copyListenerFrom(oldModel);
 
         // update compileConfigModel listener
-        this.compileConfigModel.on('dataChanged', () => {
-            this.uploadConfigModel.emit('NotifyUpdate', this);
-        });
+        this.compileConfigModel.on('dataChanged', () => this.uploadConfigModel.emit('NotifyUpdate', this));
     }
 
     setToolchain(toolchain: ToolchainName) {
@@ -1353,7 +1363,20 @@ export abstract class ConfigModel<DataType> {
 
     async ShowModifyWindow(key: string, prjRootDir: File) {
 
-        const keyType = this.GetKeyType(key);
+        let keyType = this.GetKeyType(key);
+
+        // redirect empty quick pick
+        let selections: CompileConfigPickItem[] | undefined;
+        if (this.redirectEmptyQuickPick) {
+            const nType = this.redirectEmptyQuickPick(key);
+            if (keyType == 'SELECTION' && nType) {
+                selections = this.GetSelectionList(key);
+                if (selections == undefined ||
+                    selections.length == 0) {
+                    keyType = nType;
+                }
+            }
+        }
 
         switch (keyType) {
             case 'INPUT':
@@ -1386,7 +1409,7 @@ export abstract class ConfigModel<DataType> {
                 break;
             case 'SELECTION':
                 {
-                    const itemList = this.GetSelectionList(key) || [];
+                    const itemList = selections || this.GetSelectionList(key) || [];
 
                     const pickItem = await vscode.window.showQuickPick(itemList, {
                         canPickMany: false,
@@ -1495,6 +1518,8 @@ export abstract class ConfigModel<DataType> {
     protected abstract VerifyString(key: string, input: string): string | undefined;
 
     protected abstract GetSelectionList(key: string): CompileConfigPickItem[] | undefined;
+
+    protected redirectEmptyQuickPick?: (key: string) => FieldType | undefined;
 
     protected abstract getEventData(key: string): EventData | undefined;
 
@@ -2402,22 +2427,29 @@ export abstract class UploadConfigModel<T> extends ConfigModel<T> {
 
     abstract readonly uploader: HexUploaderType;
 
-    static getInstance(uploaderType: HexUploaderType): UploadConfigModel<any> {
+    protected api: ProjectConfigApi;
+
+    constructor(api_: ProjectConfigApi) {
+        super();
+        this.api = api_;
+    }
+
+    static getInstance(uploaderType: HexUploaderType, api: ProjectConfigApi): UploadConfigModel<any> {
         switch (uploaderType) {
             case 'JLink':
-                return new JLinkUploadModel();
+                return new JLinkUploadModel(api);
             case 'STLink':
-                return new STLinkUploadModel();
+                return new STLinkUploadModel(api);
             case 'stcgal':
-                return new StcgalUploadModel();
+                return new StcgalUploadModel(api);
             case 'STVP':
-                return new StvpUploadModel();
+                return new StvpUploadModel(api);
             case 'pyOCD':
-                return new PyOCDUploadModel();
+                return new PyOCDUploadModel(api);
             case 'OpenOCD':
-                return new OpenOCDUploadModel();
+                return new OpenOCDUploadModel(api);
             case 'Custom':
-                return new CustomUploadModel();
+                return new CustomUploadModel(api);
             default:
                 throw new Error('Invalid uploader type !');
         }
@@ -2729,8 +2761,8 @@ class STLinkUploadModel extends UploadConfigModel<STLinkOptions> {
         { label: 'Core Reset', val: 'Crst' }
     ];
 
-    constructor() {
-        super();
+    constructor(api: ProjectConfigApi) {
+        super(api);
         this.on('NotifyUpdate', (prjConfig) => {
             // update start address
             const model = <ArmBaseCompileConfigModel>prjConfig.compileConfigModel;
@@ -3036,8 +3068,8 @@ class PyOCDUploadModel extends UploadConfigModel<PyOCDFlashOptions> {
 
     uploader: HexUploaderType = 'pyOCD';
 
-    constructor() {
-        super();
+    constructor(api: ProjectConfigApi) {
+        super(api);
         this.on('NotifyUpdate', (prjConfig) => {
             // update option bytes file name
             const targetID = prjConfig.config.mode.toLowerCase();
@@ -3096,7 +3128,7 @@ class PyOCDUploadModel extends UploadConfigModel<PyOCDFlashOptions> {
     protected GetKeyType(key: string): FieldType {
         switch (key) {
             case 'targetName':
-                return 'INPUT';
+                return 'SELECTION';
             case 'speed':
                 return 'INPUT';
             case 'baseAddr':
@@ -3128,8 +3160,62 @@ class PyOCDUploadModel extends UploadConfigModel<PyOCDFlashOptions> {
         }
     }
 
+    protected redirectEmptyQuickPick = (key: string) => {
+        switch (key) {
+            case 'targetName':
+                return 'INPUT'
+            default:
+                return undefined;
+        }
+    }
+
     protected GetSelectionList(key: string): CompileConfigPickItem[] | undefined {
         switch (key) {
+            case 'targetName':
+                {
+                    /* examples:
+                        {
+                            "name": "rp2040_core1",
+                            "vendor": "Raspberry Pi",
+                            "part_families": [],
+                            "part_number": "RP2040Core1",
+                            "source": "builtin"
+                        }
+                    */
+
+                    const cmdList: string[] = ['pyocd', 'json'];
+                    const cwd = this.api.getRootDir().path;
+
+                    cmdList.push('-j', `"${cwd}"`);
+
+                    if (this.data.config) {
+                        const absPath = this.api.toAbsolutePath(this.data.config);
+                        if (File.IsFile(absPath)) {
+                            cmdList.push('--config', `"${this.data.config}"`);
+                        }
+                    }
+
+                    cmdList.push('-t');
+
+                    try {
+                        const command = cmdList.join(' ');
+                        const result = JSON.parse(child_process.execSync(command).toString());
+                        if (!Array.isArray(result['targets'])) {
+                            throw new Error(`Wrong pyocd targets format, 'targets' must be an array !`);
+                        }
+
+                        return result['targets'].map((target) => {
+                            return {
+                                label: target['part_number'],
+                                val: target['part_number'],
+                                description: `${target['vendor']} (${target['source']})`
+                            };
+                        });
+                    } catch (error) {
+                        GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+                    }
+                }
+                break;
             default:
                 return super.GetSelectionList(key);
         }

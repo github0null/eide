@@ -856,7 +856,7 @@ class PyOCDUploader extends HexUploader<string[]> {
 
     protected _launch(commands: string[]): void {
 
-        const commandLine: string = 'python -m pyocd ' + commands.map((line) => {
+        const commandLine: string = 'pyocd ' + commands.map((line) => {
             return CmdLineHandler.quoteString(line, '"');
         }).join(' ');
 
