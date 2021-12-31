@@ -2152,18 +2152,19 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
         ];
 
-        pickBox.onDidTriggerButton(async (e) => {
+        pickBox.onDidTriggerButton((e) => {
 
             // create target
             if (e.tooltip === pickBox.buttons[0].tooltip) {
-                await this.createTarget(prj);
+                this.createTarget(prj);
             }
 
             // delete target
             if (e.tooltip === pickBox.buttons[1].tooltip) {
-                await this.deleteTarget(prj);
+                this.deleteTarget(prj);
             }
 
+            pickBox.hide();
             pickBox.dispose();
         });
 
@@ -2173,7 +2174,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             curItem = items.length > 0 ? items[0] : undefined;
         });
 
-        pickBox.onDidAccept(async () => {
+        pickBox.onDidAccept(() => {
 
             if (curItem !== undefined) {
                 const targetName = curItem.label;
@@ -2183,6 +2184,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 }
             }
 
+            pickBox.hide();
             pickBox.dispose();
         });
 

@@ -1085,10 +1085,12 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         return result;
     }
 
-    switchTarget(targetName: string) {
+    async switchTarget(targetName: string) {
         const prjConfig = this.GetConfiguration<any>().config;
         if (targetName !== prjConfig.mode) {
             this._switchTarget(targetName);
+            this.reloadToolchain();
+            this.reloadUploader();
         }
     }
 
@@ -1158,8 +1160,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         const oldTarget = <any>targets[targetName];
 
         // update project
-        this.setToolchain(targets[targetName].toolchain);
-        this.setUploader(targets[targetName].uploader);
+        this.setToolchain(targets[targetName].toolchain, true);
+        this.setUploader(targets[targetName].uploader, true);
 
         // update project data
         for (const name in oldTarget) {
@@ -1218,18 +1220,16 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         return <IToolchian>this.toolchain;
     }
 
-    setToolchain(name: ToolchainName) {
+    setToolchain(name: ToolchainName, notReload?: boolean) {
         const prjConfig = this.GetConfiguration();
-        const oldToolchain = this.getToolchain().name;
         prjConfig.setToolchain(name);
-        this.reloadToolchain(oldToolchain);
+        if (!notReload) this.reloadToolchain();
     }
 
-    setUploader(uploader: HexUploaderType) {
+    setUploader(uploader: HexUploaderType, notReload?: boolean) {
         const prjConfig = this.GetConfiguration();
-        const oldUploader = prjConfig.config.uploader;
         prjConfig.setHexUploader(uploader);
-        this.reloadUploader(oldUploader);
+        if (!notReload) this.reloadUploader();
     }
 
     //--
@@ -1527,25 +1527,25 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         toolManager.updateToolchainConfig(opFile, this.toolchain);
     }
 
-    protected reloadToolchain(oldToolchain?: ToolchainName) {
+    protected reloadToolchain() {
         this.loadToolchain();
         this.dependenceManager.flushToolchainDep();
         this.packManager.refreshComponents();
-        this.onToolchainChanged(oldToolchain || this.getToolchain().name);
+        this.onToolchainChanged();
         this.emit('dataChanged'); // must send global event to refresh view
     }
 
-    protected reloadUploader(oldUploader?: HexUploaderType) {
+    protected reloadUploader() {
         const prjConfig = this.GetConfiguration();
         prjConfig.uploadConfigModel.emit('NotifyUpdate', prjConfig); // notify update upload config
-        this.onUploaderChanged(oldUploader || prjConfig.config.uploader);
+        this.onUploaderChanged();
         this.emit('dataChanged'); // must send global event to refresh view
     }
 
     protected loadUploader() {
         const prjConfig = this.GetConfiguration();
         prjConfig.uploadConfigModel.emit('NotifyUpdate', prjConfig); // notify update upload config
-        this.onUploaderChanged(prjConfig.config.uploader);
+        this.onUploaderChanged();
     }
 
     protected LoadSourceRootFolders() {
@@ -1788,12 +1788,12 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         return true;
     }
 
-    protected onToolchainChanged(oldToolchain: ToolchainName) {
+    protected onToolchainChanged() {
         /* check toolchain is installed ? */
         this.checkAndNotifyInstallToolchain();
     }
 
-    protected onUploaderChanged(oldToolchain: HexUploaderType) {
+    protected onUploaderChanged() {
         this.updateDebugConfig(); // update debug config after uploader changed
     }
 
