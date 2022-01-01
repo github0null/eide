@@ -47,7 +47,7 @@ import { WorkspaceManager } from "./WorkspaceManager";
 import { ToolchainName } from "./ToolchainManager";
 import { md5, sha256 } from "./utility";
 import { MakefileGen } from "./Makefile";
-import { append2SysEnv } from "./Platform";
+import { concatSystemEnvPath } from "./Platform";
 import { FileWatcher } from "../lib/node-utility/FileWatcher";
 
 export interface BuildOptions {
@@ -241,7 +241,7 @@ export abstract class CodeBuilder {
         const title = options?.useDebug ? 'compiler params' : 'build';
         const resManager = ResManager.GetInstance();
         const shellPath = ResManager.checkWindowsShell() ? undefined : resManager.getCMDPath();
-        const cmdEnv = append2SysEnv([resManager.getBuilderDir()]);
+        const cmdEnv = concatSystemEnvPath([resManager.getBuilderDir()]);
 
         try { // watch log, to emit done event
             const builderLog = File.fromArray([this.project.getEideDir().path, 'log', 'unify_builder.log']);

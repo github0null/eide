@@ -61,7 +61,9 @@ import {
     view_str$prompt$prj_location,
     view_str$prompt$src_folder_must_be_a_child_of_root,
     view_str$project$folder_type_virtual_desc,
-    view_str$project$folder_type_fs_desc
+    view_str$project$folder_type_fs_desc,
+    view_str$msg$err_ewt_hash,
+    view_str$msg$err_ept_hash
 } from './StringTable';
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
@@ -73,9 +75,9 @@ import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import {
     copyObject, downloadFileWithProgress, getDownloadUrlFromGitea,
     runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
-    genGithubHash
+    genGithubHash, md5
 } from './utility';
-import { append2SysEnv, DeleteDir, kill } from './Platform';
+import { concatSystemEnvPath, DeleteDir, kill } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
 import { VirtualDocument } from './VirtualDocsProvider';
 import { ResInstaller } from './ResInstaller';
@@ -1003,8 +1005,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                         const dir: File = element.val.obj;
                         if (dir.IsDir()) {
 
-                            const fchildren = dir
-                                .GetList(AbstractProject.getFileFilters())
+                            const fchildren = dir.GetList()
                                 .filter((f) => !AbstractProject.excludeDirFilter.test(f.name));
 
                             const iFileList: ProjTreeItem[] = [];
@@ -1251,7 +1252,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         return iList;
     }
 
-    private _OpenProject(workspaceFilePath: string): AbstractProject | undefined {
+    private async _OpenProject(workspaceFilePath: string): Promise<AbstractProject | undefined> {
 
         const wsFile: File = new File(workspaceFilePath);
         if (!wsFile.IsFile()) {
@@ -1277,7 +1278,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         if (prjIndex === -1) {
             try {
                 const prj = AbstractProject.NewProject();
-                prj.Load(wsFile);
+                await prj.Load(wsFile);
                 this.AddProject(prj);
                 GlobalEvent.emit('project.opened', prj);
                 return prj;
@@ -1336,7 +1337,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             return undefined;
         }
 
-        const prj = this._OpenProject(workspaceFilePath);
+        const prj = await this._OpenProject(workspaceFilePath);
         if (prj) {
             this.SwitchProject(prj);
             return prj;
@@ -1358,7 +1359,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
         try {
             const prj = AbstractProject.NewProject();
-            prj.Create(option);
+            await prj.Create(option);
             this.AddProject(prj);
             this.SwitchProject(prj);
             return prj;
@@ -1666,6 +1667,37 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             const targetDir = new File(option.outDir.path + File.sep + option.name);
             targetDir.CreateDir(true);
 
+            let templateShaStr: string | undefined;
+            let isVerified: boolean | undefined;
+
+            // get template sha str
+            const li = templateFile.noSuffixName.split('.');
+            if (li.length > 1) {
+                templateShaStr = li[li.length - 1];
+            }
+
+            // verify template zip
+            if (templateShaStr) {
+                const sha256 = compresser.sha256(templateFile);
+                if (sha256) {
+                    const sha = md5(sha256);
+                    isVerified = templateShaStr == sha;
+                }
+            }
+
+            // if verify failed, notify to user
+            if (templateShaStr && !isVerified) {
+                if (templateFile.suffix != '.ewt') { // it's eide template project
+                    const selTxt = await vscode.window.showWarningMessage(
+                        view_str$msg$err_ept_hash, 'Yes', 'No');
+                    if (selTxt !== 'Yes') {
+                        return; // user canceled
+                    }
+                } else { // it's eide template workspace
+                    vscode.window.showWarningMessage(view_str$msg$err_ewt_hash);
+                }
+            }
+
             const res = await compresser.Unzip(templateFile, targetDir);
             if (res) { throw res; }
 
@@ -1687,6 +1719,17 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
                             // convert .EIDE to .eide
                             this.toLowercaseEIDEFolder(targetDir);
+
+                            // if not verified, del *.sh
+                            if (!isVerified) {
+                                const eideFolder = File.fromArray([targetDir.path, AbstractProject.EIDE_DIR]);
+                                if (eideFolder.IsDir()) {
+                                    eideFolder.GetList([/\-install\.sh$/i], File.EMPTY_FILTER)
+                                        .forEach((f) => {
+                                            try { fs.unlinkSync(f.path); } catch (err) { }
+                                        });
+                                }
+                            }
 
                             // rename project name
                             {
@@ -2153,18 +2196,19 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
         ];
 
-        pickBox.onDidTriggerButton(async (e) => {
+        pickBox.onDidTriggerButton((e) => {
 
             // create target
             if (e.tooltip === pickBox.buttons[0].tooltip) {
-                await this.createTarget(prj);
+                this.createTarget(prj);
             }
 
             // delete target
             if (e.tooltip === pickBox.buttons[1].tooltip) {
-                await this.deleteTarget(prj);
+                this.deleteTarget(prj);
             }
 
+            pickBox.hide();
             pickBox.dispose();
         });
 
@@ -2174,7 +2218,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             curItem = items.length > 0 ? items[0] : undefined;
         });
 
-        pickBox.onDidAccept(async () => {
+        pickBox.onDidAccept(() => {
 
             if (curItem !== undefined) {
                 const targetName = curItem.label;
@@ -2184,6 +2228,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 }
             }
 
+            pickBox.hide();
             pickBox.dispose();
         });
 
@@ -2672,8 +2717,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             let resIgnoreList: string[] = [];
 
             const defExcludeList: string[] = [
-                '.git',
-                '.git\\*',
                 '*.eide-template',
                 '*.log',
                 `${AbstractProject.EIDE_DIR}\\*.db3`,
@@ -2682,8 +2725,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             ];
 
             /* if this is a project, handle it ! */
+            let prj: AbstractProject | undefined;
             if (prjItem && isWorkspace == undefined) {
-                const prj = this.dataProvider.GetProjectByIndex(prjItem.val.projectIndex);
+                prj = this.dataProvider.GetProjectByIndex(prjItem.val.projectIndex);
                 const prjConfig = prj.GetConfiguration().config;
                 rootDir = prj.GetRootDir();
                 templateName = prjConfig.name;
@@ -2703,37 +2747,53 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 return;
             }
 
-            const templateFile: File = File.fromArray([rootDir.path, `${templateName}.${tmp_suffix}`]);
+            const prjRootDir = <File>rootDir;
+            const distDir = <File>rootDir;
+            const tFile: File = File.fromArray([distDir.path, `${templateName}.${tmp_suffix}`]);
 
             // delete old template file
-            if (templateFile.IsFile()) {
-                fs.unlinkSync(templateFile.path);
+            if (tFile.IsFile()) {
+                fs.unlinkSync(tFile.path);
             }
 
             const option: CompressOption = {
                 zipType: '7z',
-                fileName: templateFile.name,
+                fileName: tFile.name,
                 excludeList: ArrayDelRepetition(defExcludeList.concat(resIgnoreList))
             };
 
             const compresser = new Compress(ResManager.GetInstance().Get7zDir());
 
-            const err = await vscode.window.withProgress({
+            await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
                 title: isWorkspace ? `Packing workspace` : `Packing project`,
                 cancellable: false
             }, (progress, __): Thenable<Error | null> => {
                 return new Promise(async (resolve) => {
+
                     progress.report({ message: 'zipping ...' });
-                    const err = await compresser.Zip(<File>rootDir, option, rootDir);
-                    progress.report({ message: 'export done !' });
+
+                    const err = await compresser.Zip(prjRootDir, option, distDir);
+                    if (!err) { // export done, set hash str
+                        const sha256 = compresser.sha256(tFile);
+                        if (sha256) {
+                            const hash = md5(sha256);
+                            const name = `${tFile.dir}/${tFile.noSuffixName}.${hash}${tFile.suffix}`;
+                            try { fs.renameSync(tFile.path, name); } catch (err) { }
+                        }
+                        progress.report({ message: 'export done !' });
+                    } else { // export failed
+                        GlobalEvent.emit('msg', ExceptionToMessage(err, 'Warning'));
+                    }
+
                     setTimeout(() => resolve(err), 1500);
                 });
             });
 
-            if (err) {
-                GlobalEvent.emit('msg', ExceptionToMessage(err, 'Warning'));
+            if (prj) { // save prj
+                prj.Save();
             }
+
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
         }
@@ -3364,7 +3424,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 const opts: ExecutableOption = {
                     encoding: 'utf8',
                     shell: ResManager.GetInstance().getCMDPath(),
-                    env: append2SysEnv([exeFile.dir, `${exeFile.dir}${File.sep}cfg`])
+                    env: concatSystemEnvPath([exeFile.dir, `${exeFile.dir}${File.sep}cfg`])
                 };
 
                 // user want cancel operations

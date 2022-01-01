@@ -492,6 +492,7 @@ let isEnvSetuped: boolean = false;
 function exportEnvToSysPath() {
 
     const settingManager = SettingManager.GetInstance();
+    const resManager = ResManager.GetInstance();
 
     const pathList: { key: string, path: string }[] = [
         { key: 'EIDE_ARM_GCC', path: `${settingManager.getGCCDir().path}${File.sep}bin` },
@@ -499,16 +500,30 @@ function exportEnvToSysPath() {
         { key: 'EIDE_OPENOCD', path: `${NodePath.dirname(settingManager.getOpenOCDExePath())}` }
     ];
 
-    /* append to system env if we not */
+    // push other bin folders
+    const builderFolder = new File(resManager.getBuilderDir());
+    builderFolder.GetList(File.EMPTY_FILTER).forEach((subDir) => {
+        const binFolder = NodePath.normalize(`${subDir.path}/bin`);
+        if (File.IsDir(binFolder)) {
+            pathList.push({
+                key: `EIDE_${subDir.name.toUpperCase()}`,
+                path: binFolder
+            });
+        }
+    });
+
+    /* append to System Path if we not */
     if (isEnvSetuped == false) {
-        const pList = pathList.filter((env) => new File(env.path).IsDir()).map((env) => `${env.path}`);
+        const pList = pathList
+            .filter((env) => File.IsDir(env.path))
+            .map((env) => env.path);
         platform.exportToSysEnv(process.env, pList);
         isEnvSetuped = true;
     }
 
-    /* update env value */
+    /* update env key value */
     for (const env of pathList) {
-        if (new File(env.path).IsDir()) {
+        if (File.IsDir(env.path)) {
             process.env[env.key] = env.path;
         } else {
             process.env[env.key] = '';
@@ -616,9 +631,9 @@ function RegisterGlobalEvent() {
     });
 
     const outChannel = vscode.window.createOutputChannel('eide-log');
-    GlobalEvent.on('globalLog', (msg) => {
-        outChannel.appendLine(LogDumper.Msg2String(msg));
-    });
+    GlobalEvent.on('globalLog', (msg) => outChannel.appendLine(LogDumper.Msg2String(msg)));
+    GlobalEvent.on('eide.log.append', (log) => outChannel.append(log));
+    GlobalEvent.on('eide.log.show', () => outChannel.show());
 
     GlobalEvent.on('project.opened', () => {
         prj_count++; // increment cnt

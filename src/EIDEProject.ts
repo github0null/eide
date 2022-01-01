@@ -64,6 +64,7 @@ import {
 } from './StringTable';
 import { SettingManager } from './SettingManager';
 import { WorkspaceManager } from './WorkspaceManager';
+import { ExeCmd } from '../lib/node-utility/Executable';
 
 export class CheckError extends Error {
 }
@@ -991,8 +992,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         return this.GetRootDir().ToRelativePath(path.trim(), hasPrefix);
     }
 
-    Load(wsFile: File) {
-        this.BeforeLoad(wsFile);
+    async Load(wsFile: File) {
+        await this.BeforeLoad(wsFile);
         this.LoadConfigurations(wsFile);
         this.loadProjectDirectory();
         this.initProjectConfig();
@@ -1001,7 +1002,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         this.initProjectComponents();
         this.RegisterEvent();
         this.LoadSourceRootFolders();
-        this.AfterLoad();
+        await this.AfterLoad();
     }
 
     Close() {
@@ -1015,8 +1016,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         this.configMap.Dispose();
     }
 
-    Create(option: CreateOptions) {
-        this.Load(this.create(option));
+    async Create(option: CreateOptions) {
+        await this.Load(this.create(option));
     }
 
     InstallComponent(name: string) {
@@ -1085,10 +1086,12 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         return result;
     }
 
-    switchTarget(targetName: string) {
+    async switchTarget(targetName: string) {
         const prjConfig = this.GetConfiguration<any>().config;
         if (targetName !== prjConfig.mode) {
             this._switchTarget(targetName);
+            this.reloadToolchain();
+            this.reloadUploader();
         }
     }
 
@@ -1114,9 +1117,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         const uploadConfigMap_ = JSON.parse(JSON.stringify(target.uploadConfigMap));
 
         // clear invalid upload config fields
-        uploadConfig_.bin = null;
+        uploadConfig_.bin = '';
         for (let toolName in uploadConfigMap_) {
-            if (uploadConfigMap_[toolName].bin) { uploadConfigMap_[toolName].bin = null; }
+            uploadConfigMap_[toolName].bin = '';
         }
 
         return {
@@ -1158,8 +1161,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         const oldTarget = <any>targets[targetName];
 
         // update project
-        this.setToolchain(targets[targetName].toolchain);
-        this.setUploader(targets[targetName].uploader);
+        this.setToolchain(targets[targetName].toolchain, true);
+        this.setUploader(targets[targetName].uploader, true);
 
         // update project data
         for (const name in oldTarget) {
@@ -1218,18 +1221,16 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         return <IToolchian>this.toolchain;
     }
 
-    setToolchain(name: ToolchainName) {
+    setToolchain(name: ToolchainName, notReload?: boolean) {
         const prjConfig = this.GetConfiguration();
-        const oldToolchain = this.getToolchain().name;
         prjConfig.setToolchain(name);
-        this.reloadToolchain(oldToolchain);
+        if (!notReload) this.reloadToolchain();
     }
 
-    setUploader(uploader: HexUploaderType) {
+    setUploader(uploader: HexUploaderType, notReload?: boolean) {
         const prjConfig = this.GetConfiguration();
-        const oldUploader = prjConfig.config.uploader;
         prjConfig.setHexUploader(uploader);
-        this.reloadUploader(oldUploader);
+        if (!notReload) this.reloadUploader();
     }
 
     //--
@@ -1527,25 +1528,25 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         toolManager.updateToolchainConfig(opFile, this.toolchain);
     }
 
-    protected reloadToolchain(oldToolchain?: ToolchainName) {
+    protected reloadToolchain() {
         this.loadToolchain();
         this.dependenceManager.flushToolchainDep();
         this.packManager.refreshComponents();
-        this.onToolchainChanged(oldToolchain || this.getToolchain().name);
+        this.onToolchainChanged();
         this.emit('dataChanged'); // must send global event to refresh view
     }
 
-    protected reloadUploader(oldUploader?: HexUploaderType) {
+    protected reloadUploader() {
         const prjConfig = this.GetConfiguration();
         prjConfig.uploadConfigModel.emit('NotifyUpdate', prjConfig); // notify update upload config
-        this.onUploaderChanged(oldUploader || prjConfig.config.uploader);
+        this.onUploaderChanged();
         this.emit('dataChanged'); // must send global event to refresh view
     }
 
     protected loadUploader() {
         const prjConfig = this.GetConfiguration();
         prjConfig.uploadConfigModel.emit('NotifyUpdate', prjConfig); // notify update upload config
-        this.onUploaderChanged(prjConfig.config.uploader);
+        this.onUploaderChanged();
     }
 
     protected LoadSourceRootFolders() {
@@ -1553,65 +1554,6 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         this.virtualSource.load(true);
         this.onSourceRootChanged('dataChanged');
     }
-
-    /** 
-     * @deprecated
-     * for old version, now is overrided by CustomConfigurationProvider
-    */
-    /* 
-    protected UpdateCppConfig() {
-        const prjConfig = this.GetConfiguration();
-        const builderOpts = prjConfig.compileConfigModel.getOptions(this.getEideDir().path, prjConfig.config);
-
-        const depMerge = this.GetConfiguration().GetAllMergeDep();
-        const defMacros: string[] = ['__VSCODE_CPPTOOL']; // it's for internal force include header
-        depMerge.defineList = ArrayDelRepetition(defMacros.concat(depMerge.defineList, this.getToolchain().getInternalDefines(builderOpts)));
-        depMerge.incList = ArrayDelRepetition(depMerge.incList.concat(this.getSourceIncludeList()));
-
-        const cppConfig = this.GetCppConfig();
-        const cppConfigItem = cppConfig.getConfig();
-        const includeList: string[] = depMerge.incList.map((_path) => {
-            const rePath = this.ToRelativePath(_path, false);
-            return rePath ? `\${workspaceFolder}${File.sep}${rePath}` : _path;
-        });
-
-        // update virtual src search folder
-        let srcBrowseFolders: string[] = [];
-        this.getVirtualSourceManager().traverse((vFolder) => {
-            vFolder.folder.files.forEach((vFile) => {
-                const dir = File.ToUnixPath(NodePath.dirname(vFile.path))
-                    .replace(/^(?:\.\/)+/, '');
-                // if source is out of cur prj dir, add it
-                if (dir.startsWith('../')) {
-                    srcBrowseFolders.push(`\${workspaceFolder}/${dir}/*`);
-                } else if (NodePath.isAbsolute(dir)) {
-                    srcBrowseFolders.push(`${dir}/*`);
-                }
-            });
-        });
-        srcBrowseFolders = ArrayDelRepetition(srcBrowseFolders);
-
-        // update includes to browse info
-        cppConfigItem.browse = {
-            limitSymbolsToIncludedHeaders: true,
-            databaseFilename: '${default}',
-            path: srcBrowseFolders
-        };
-
-        // update includes and defines 
-        cppConfigItem.includePath = ['${default}'].concat(includeList);
-        cppConfigItem.defines = ['${default}'].concat(depMerge.defineList);
-
-        // compiler path
-        cppConfigItem.compilerPath = this.getToolchain().getGccCompilerPath();
-        cppConfigItem.compilerArgs = this.getToolchain().getGccCompilerCmdArgsForIntelliSense();
-
-        // update forceinclude headers
-        cppConfigItem.forcedInclude = this.getToolchain()
-            .getForceIncludeHeaders()?.map((f_path) => NodePath.normalize(f_path));
-
-        cppConfig.Save();
-    } */
 
     public updateDebugConfig() {
         const debugConfigGenerator = IDebugConfigGenerator.newInstance(this);
@@ -1691,7 +1633,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
     //---
 
-    protected BeforeLoad(wsFile: File): void {
+    protected isAnNewProject?: boolean | undefined;
+
+    protected async BeforeLoad(wsFile: File): Promise<void> {
 
         // check project version
         const eideFile = File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
@@ -1707,9 +1651,15 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
                 eideFile.Write(JSON.stringify(conf));
             }
         }
+
+        // check is an new project ?
+        if (conf.miscInfo == undefined ||
+            conf.miscInfo.uid == undefined) {
+            this.isAnNewProject = true;
+        }
     }
 
-    protected AfterLoad(): void {
+    protected async AfterLoad(): Promise<void> {
 
         const prjConfig = this.GetConfiguration();
 
@@ -1788,12 +1738,12 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         return true;
     }
 
-    protected onToolchainChanged(oldToolchain: ToolchainName) {
+    protected onToolchainChanged() {
         /* check toolchain is installed ? */
         this.checkAndNotifyInstallToolchain();
     }
 
-    protected onUploaderChanged(oldToolchain: HexUploaderType) {
+    protected onUploaderChanged() {
         this.updateDebugConfig(); // update debug config after uploader changed
     }
 
@@ -2215,13 +2165,68 @@ class EIDEProject extends AbstractProject {
 
     //////////////////////////////// overrride ///////////////////////////////////
 
-    protected BeforeLoad(wsFile: File): void {
-        super.BeforeLoad(wsFile);
+    private async runInstallScript(prjRoot: File, scriptName: string, title?: string): Promise<boolean> {
+
+        const script = File.fromArray([prjRoot.path, AbstractProject.EIDE_DIR, scriptName]);
+        const bash = ResManager.GetInstance().getMsysBash();
+        if (!script.IsFile()) return true; // not found script, exit
+
+        try {
+
+            const proc = new ExeCmd();
+            const cmd = `./${AbstractProject.EIDE_DIR}/${scriptName}`;
+
+            title = title || script.noSuffixName;
+
+            return vscode.window.withProgress({
+                title: title,
+                location: vscode.ProgressLocation.Notification
+            }, (): Thenable<boolean> => {
+
+                return new Promise((resolve) => {
+
+                    proc.on('launch', () => {
+                        GlobalEvent.emit('eide.log.append', os.EOL + `>> running '${scriptName}' ...` + os.EOL);
+                        GlobalEvent.emit('eide.log.show');
+                    });
+
+                    proc.on('line', (line) => GlobalEvent.emit('eide.log.append', line + os.EOL));
+                    proc.on('errLine', (line) => GlobalEvent.emit('eide.log.append', line + os.EOL));
+                    proc.on('error', (err) => GlobalEvent.emit('globalLog', ExceptionToMessage(err)));
+
+                    proc.on('close', (exitInf) => {
+                        GlobalEvent.emit('eide.log.append', os.EOL + `process exited, exitCode: ${exitInf.code}` + os.EOL)
+                        resolve(exitInf.code == 0);
+                    });
+
+                    proc.Run(cmd, undefined, { cwd: prjRoot.path, shell: bash.path });
+                });
+            });
+
+        } catch (error) {
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error));
+            GlobalEvent.emit('eide.log.show');
+        }
+
+        return false;
     }
 
-    protected AfterLoad(): void {
+    protected async BeforeLoad(wsFile: File): Promise<void> {
 
-        super.AfterLoad();
+        await super.BeforeLoad(wsFile);
+
+        // run pre-install.sh
+        if (this.isAnNewProject) {
+            const name = 'pre-install.sh';
+            const prjRoot = new File(wsFile.dir);
+            const ok = await this.runInstallScript(prjRoot, name, `Running 'post-install' ...`);
+            if (!ok) { throw new Error(`Run '${name}' failed !, please check logs in 'eide-log' output panel.`); }
+        }
+    }
+
+    protected async AfterLoad(): Promise<void> {
+
+        await super.AfterLoad();
 
         /* update workspace settings */
         {
@@ -2313,6 +2318,16 @@ class EIDEProject extends AbstractProject {
                 cppConfig.setConfig(newCfg);
                 cppConfig.saveToFile();
             }
+        }
+
+        // run post-install.sh
+        if (this.isAnNewProject) {
+            this.runInstallScript(this.GetRootDir(), 'post-install.sh', `Running 'post-install' ...`)
+                .then((done) => {
+                    if (!done) {
+                        GlobalEvent.emit('eide.log.show');
+                    }
+                });
         }
     }
 

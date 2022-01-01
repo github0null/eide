@@ -41,6 +41,7 @@ import * as fs from 'fs';
 import * as ini from 'ini';
 import { ResInstaller } from "./ResInstaller";
 import { newMessage } from "./Message";
+import { concatSystemEnvPath } from "./Platform";
 
 let _mInstance: HexUploaderManager | undefined;
 
@@ -467,7 +468,7 @@ class StcgalUploader extends HexUploader<string[]> {
         }
 
         // run
-        runShellCommand(this.toolType, 'python -m stcgal -a ' + commands.join(' '), ResManager.GetInstance().getCMDPath());
+        runShellCommand(this.toolType, 'stcgal -a ' + commands.join(' '), ResManager.GetInstance().getCMDPath());
     }
 }
 
@@ -856,7 +857,7 @@ class PyOCDUploader extends HexUploader<string[]> {
 
     protected _launch(commands: string[]): void {
 
-        const commandLine: string = 'python -m pyocd ' + commands.map((line) => {
+        const commandLine: string = 'pyocd ' + commands.map((line) => {
             return CmdLineHandler.quoteString(line, '"');
         }).join(' ');
 
@@ -988,13 +989,13 @@ class CustomUploader extends HexUploader<string> {
         programs.forEach((file, index) => {
 
             commandLine = commandLine
-                .replace(`\${hexFile[${index}]}`, file.path)
-                .replace(`\${binFile[${index}]}`, file.path)
-                .replace(`\${programFile[${index}]}`, file.path);
+                .replace(new RegExp(String.raw`\$\{hexFile\[${index}\]\}`, 'ig'), file.path)
+                .replace(new RegExp(String.raw`\$\{binFile\[${index}\]\}`, 'ig'), file.path)
+                .replace(new RegExp(String.raw`\$\{programFile\[${index}\]\}`, 'ig'), file.path);
 
             if (file.addr) {
                 commandLine = commandLine
-                    .replace(`\${binAddr[${index}]}`, file.addr || '0x00000000')
+                    .replace(new RegExp(String.raw`\$\{binAddr\[${index}\]\}`, 'ig'), file.addr || '0x00000000')
             }
         });
 
@@ -1005,7 +1006,27 @@ class CustomUploader extends HexUploader<string> {
     }
 
     protected _launch(commandLine: string): void {
-        runShellCommand(this.toolType, commandLine,
-            ResManager.GetInstance().getCMDPath(), this.project.getProjectEnv());
+
+        let env = process.env;
+
+        // set env
+        const prjEnv = this.project.getProjectEnv();
+        if (prjEnv) {
+            for (const key in prjEnv) {
+                if (key.toUpperCase() == 'PATH') {
+                    const pList: string[] = prjEnv[key]
+                        .split(/:|;/)
+                        .filter((p: string) => p.trim() !== '')
+                        .map((p: string) => this.project.ToAbsolutePath(p));
+                    if (pList.length > 0) {
+                        env = concatSystemEnvPath(pList, false, env);
+                    }
+                } else {
+                    env[key] = prjEnv[key]
+                }
+            }
+        }
+
+        runShellCommand(this.toolType, commandLine, ResManager.GetInstance().getCMDPath(), env);
     }
 }

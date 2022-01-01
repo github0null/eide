@@ -58,7 +58,7 @@ import * as events from 'events';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as NodePath from 'path';
-import { append2SysEnv } from './Platform';
+import { concatSystemEnvPath } from './Platform';
 import { ResInstaller } from './ResInstaller';
 import { AbstractProject } from './EIDEProject';
 
@@ -1253,7 +1253,7 @@ export class OperationExplorer {
             // close exist terminal
             if (cIndex !== -1) { vscode.window.terminals[cIndex].dispose(); }
 
-            const cmdEnv = append2SysEnv([resManager.getBuilderDir()]);
+            const cmdEnv = concatSystemEnvPath([resManager.getBuilderDir()]);
             const opts: vscode.TerminalOptions = { name: terminalName, shellPath: cmdPath, env: cmdEnv };
             terminal = vscode.window.createTerminal(opts);
             terminal.show(true);
