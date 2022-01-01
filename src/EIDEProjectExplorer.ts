@@ -1689,7 +1689,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             if (templateShaStr && !isVerified) {
                 if (templateFile.suffix != '.ewt') { // it's eide template project
                     const selTxt = await vscode.window.showWarningMessage(
-                        view_str$msg$err_ept_hash, 'Yes', 'Cancel');
+                        view_str$msg$err_ept_hash, 'Yes', 'No');
                     if (selTxt !== 'Yes') {
                         return; // user canceled
                     }
