@@ -1117,9 +1117,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         const uploadConfigMap_ = JSON.parse(JSON.stringify(target.uploadConfigMap));
 
         // clear invalid upload config fields
-        uploadConfig_.bin = null;
+        uploadConfig_.bin = '';
         for (let toolName in uploadConfigMap_) {
-            if (uploadConfigMap_[toolName].bin) { uploadConfigMap_[toolName].bin = null; }
+            uploadConfigMap_[toolName].bin = '';
         }
 
         return {

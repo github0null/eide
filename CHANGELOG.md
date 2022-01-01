@@ -14,6 +14,7 @@
 **Bug Fixes**:
   - When there is a case difference between variables in the shell flash command line, the replacement of variables cannot be completed.
   - When switch project target, some flash config not update.
+  - When switch project target, `programFilePath` become `null`.
 
 **Optimized**:
   - Allow display any files in file system folder for project explorer.

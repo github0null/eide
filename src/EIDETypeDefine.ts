@@ -701,14 +701,19 @@ export class ProjectConfiguration<T extends CompileData>
 
         const oldModel = this.uploadConfigModel;
 
-        // save old config
+        // save as old config
         this.config.uploadConfigMap[oldModel.uploader] = utility.copyObject(oldModel.data);
+
+        // get old config from map
+        const oldCfg = this.config.uploadConfigMap[uploader];
+        if (oldCfg && oldCfg.bin == null) {
+            oldCfg.bin = ''; // compat old cfg
+        }
 
         // update new config
         this.uploadConfigModel = UploadConfigModel.getInstance(uploader, this.api);
         this.config.uploader = uploader;
-        this.uploadConfigModel.data =
-            utility.copyObject(this.config.uploadConfigMap[uploader]) || this.uploadConfigModel.data;
+        this.uploadConfigModel.data = utility.copyObject(oldCfg) || this.uploadConfigModel.data;
         this.config.uploadConfig = this.uploadConfigModel.data; // bind obj
 
         // update listeners
@@ -2480,6 +2485,14 @@ export abstract class UploadConfigModel<T> extends ConfigModel<T> {
             default:
                 return (<any>this.data)[key] || 'null';
         }
+    }
+
+    protected UpdateConfigData(newConfig?: T): T {
+        const cfg: any = super.UpdateConfigData(newConfig);
+        if (cfg && cfg.bin == null) {
+            cfg.bin = ''; // compat old project
+        }
+        return cfg;
     }
 
     protected GetKeyType(key: string): FieldType {
