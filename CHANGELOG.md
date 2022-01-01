@@ -7,8 +7,8 @@
 ### [v2.16.3] (revision)
 
 **New Features**:
-  - Built-in MSYS environment. For "builder user task" and "shell flash command" is very useful.
-  - Support auto run "pre-install.sh/post-install.sh" when install a project from template. (please place '*-install.sh' in the '.eide' folder)
+  - Built-in MSYS environment. For `builder user task` and `shell flash command` is very useful.
+  - Support auto run `pre-install.sh / post-install.sh` when install a project from template. (please place `*-install.sh` in the `.eide` folder)
   - Auto check project template hash before install it. 
 
 **Bug Fixes**:
