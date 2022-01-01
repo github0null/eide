@@ -497,20 +497,33 @@ function exportEnvToSysPath() {
     const pathList: { key: string, path: string }[] = [
         { key: 'EIDE_ARM_GCC', path: `${settingManager.getGCCDir().path}${File.sep}bin` },
         { key: 'EIDE_JLINK', path: `${settingManager.getJlinkDir()}` },
-        { key: 'EIDE_OPENOCD', path: `${NodePath.dirname(settingManager.getOpenOCDExePath())}` },
-        { key: 'EIDE_MSYS', path: `${[resManager.getBuilderDir(), 'msys', 'bin'].join(File.sep)}` }
+        { key: 'EIDE_OPENOCD', path: `${NodePath.dirname(settingManager.getOpenOCDExePath())}` }
     ];
 
-    /* append to system env if we not */
+    // push other bin folders
+    const builderFolder = new File(resManager.getBuilderDir());
+    builderFolder.GetList(File.EMPTY_FILTER).forEach((subDir) => {
+        const binFolder = NodePath.normalize(`${subDir.path}/bin`);
+        if (File.IsDir(binFolder)) {
+            pathList.push({
+                key: `EIDE_${subDir.name.toUpperCase()}`,
+                path: binFolder
+            });
+        }
+    });
+
+    /* append to System Path if we not */
     if (isEnvSetuped == false) {
-        const pList = pathList.filter((env) => new File(env.path).IsDir()).map((env) => `${env.path}`);
+        const pList = pathList
+            .filter((env) => File.IsDir(env.path))
+            .map((env) => env.path);
         platform.exportToSysEnv(process.env, pList);
         isEnvSetuped = true;
     }
 
-    /* update env value */
+    /* update env key value */
     for (const env of pathList) {
-        if (new File(env.path).IsDir()) {
+        if (File.IsDir(env.path)) {
             process.env[env.key] = env.path;
         } else {
             process.env[env.key] = '';

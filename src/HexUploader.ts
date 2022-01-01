@@ -41,6 +41,7 @@ import * as fs from 'fs';
 import * as ini from 'ini';
 import { ResInstaller } from "./ResInstaller";
 import { newMessage } from "./Message";
+import { concatSystemEnvPath } from "./Platform";
 
 let _mInstance: HexUploaderManager | undefined;
 
@@ -467,7 +468,7 @@ class StcgalUploader extends HexUploader<string[]> {
         }
 
         // run
-        runShellCommand(this.toolType, 'python -m stcgal -a ' + commands.join(' '), ResManager.GetInstance().getCMDPath());
+        runShellCommand(this.toolType, 'stcgal -a ' + commands.join(' '), ResManager.GetInstance().getCMDPath());
     }
 }
 
@@ -1005,7 +1006,27 @@ class CustomUploader extends HexUploader<string> {
     }
 
     protected _launch(commandLine: string): void {
-        runShellCommand(this.toolType, commandLine,
-            ResManager.GetInstance().getCMDPath(), this.project.getProjectEnv());
+
+        let env = process.env;
+
+        // set env
+        const prjEnv = this.project.getProjectEnv();
+        if (prjEnv) {
+            for (const key in prjEnv) {
+                if (key.toUpperCase() == 'PATH') {
+                    const pList: string[] = prjEnv[key]
+                        .split(/:|;/)
+                        .filter((p: string) => p.trim() !== '')
+                        .map((p: string) => this.project.ToAbsolutePath(p));
+                    if (pList.length > 0) {
+                        env = concatSystemEnvPath(pList, false, env);
+                    }
+                } else {
+                    env[key] = prjEnv[key]
+                }
+            }
+        }
+
+        runShellCommand(this.toolType, commandLine, ResManager.GetInstance().getCMDPath(), env);
     }
 }
