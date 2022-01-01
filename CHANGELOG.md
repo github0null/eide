@@ -4,6 +4,24 @@
 
 ***
 
+### [v2.16.3] (revision)
+
+**New Features**:
+  - Built-in MSYS environment. For "builder user task" and "shell flash command" is very useful.
+  - Support auto run "pre-install.sh/post-install.sh" when install a project from template. (please place '*-install.sh' in the '.eide' folder)
+  - Auto check project template hash before install it. 
+
+**Bug Fixes**:
+  - When there is a case difference between variables in the shell flash command line, the replacement of variables cannot be completed.
+  - When switch project target, some flash config not update.
+
+**Optimized**:
+  - Allow display any files in file system folder for project explorer.
+  - Support the use of environment variables and Bash scripts in the command line of custom shell flash mode
+  - Support automatically read and load PyOCD chip list.
+
+***
+
 ### [v2.16.2] (revision)
 
 **Bug Fixes**:

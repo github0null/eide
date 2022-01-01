@@ -46,9 +46,9 @@ export class Compress {
         return this;
     }
 
-    constructor(binDir: File) {
+    constructor(_7zFolder: File) {
         this._event = new events.EventEmitter();
-        this._7za = File.fromArray([binDir.path, '7za.exe']);
+        this._7za = File.fromArray([_7zFolder.path, '7za.exe']);
         if (!this._7za.IsFile()) {
             throw new Error('\'7za.exe\' is not exist');
         }
@@ -183,5 +183,23 @@ export class Compress {
 
             process.Run(this._7za.path, paramList, { windowsHide: true });
         });
+    }
+
+    sha256(zipFile: File): string | undefined {
+        try {
+            const args = ['h', '-scrcSHA256', zipFile.path];
+            const resLi = child_process.execFileSync(this._7za.path, args).toString()
+                .split(/\r\n|\n/).map((s) => s.trim());
+
+            const header = 'SHA256 for data:';
+            for (const line of resLi) {
+                if (line.startsWith(header)) {
+                    const hashStr = line.replace(header, '').trim();
+                    if (hashStr.length == 64) return hashStr.toLowerCase();
+                }
+            }
+        } catch (error) {
+            // do nothing
+        }
     }
 }

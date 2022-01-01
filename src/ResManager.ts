@@ -360,6 +360,10 @@ export class ResManager extends events.EventEmitter {
         return (<File>this.GetDir('builder')).path;
     }
 
+    getMsysBash(): File {
+        return File.fromArray([this.getBuilderDir(), 'msys', 'bin', 'bash.exe']);
+    }
+
     getBuilder(): File {
         return File.fromArray([this.getBuilderDir(), 'unify_builder.exe']);
     }

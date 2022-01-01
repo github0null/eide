@@ -215,8 +215,8 @@ export const view_str$project$folder_type_fs = [
 ][langIndex];
 
 export const view_str$project$folder_type_fs_desc = [
-    '从磁盘中选择一个文件夹，eide 将其直接链接到项目中，并自动搜索和添加其中的源文件以及包含路径',
-    'Select a folder from disk, eide will link it directly into your project, and automatically search and add source files and include paths to it.'
+    '从磁盘中选择一个文件夹，将其直接链接到项目中，自动添加其中的源文件以及包含路径',
+    'Select a folder from disk, eide will link it directly into your project.'
 ][langIndex];
 
 export const view_str$project$folder_type_virtual = [
@@ -546,6 +546,16 @@ export const can_not_close_project = [
     'Workspace projects are not allowed to close, it\'s in use !'
 ][langIndex];
 
+export const view_str$msg$err_ept_hash = [
+    '这个模板的哈希值不正确，它可能被篡改了！您还想安装它吗？',
+    `This template has incorrect hash value and it may have been tampered ! Do you still want to install it ?`
+][langIndex];
+
+export const view_str$msg$err_ewt_hash = [
+    '这个模板的哈希值不正确，我们无法安装它！',
+    `This template has incorrect hash and we can't install it !`
+][langIndex];
+
 //---------------Select string------------------
 
 export const later_text = [
@@ -629,8 +639,8 @@ export const view_str$operation$create_from_internal_temp_detail = [
 ][langIndex];
 
 export const view_str$operation$create_from_local_disk = [
-    '从磁盘获取',
-    'From Local Disk'
+    '本地项目模板',
+    'Local Template'
 ][langIndex];
 export const view_str$operation$create_from_local_disk_detail = [
     '从本地磁盘选择一个项目模板，并通过该模板创建项目',

@@ -70,7 +70,7 @@ import * as utility from './utility';
 ////////////////////////////////////////////////////////
 
 // eide project config file version
-export const EIDE_CONF_VERSION = '2.15';
+export const EIDE_CONF_VERSION = '2.16';
 
 ////////////////////////////////////////////////////////
 
