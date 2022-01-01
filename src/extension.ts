@@ -631,9 +631,9 @@ function RegisterGlobalEvent() {
     });
 
     const outChannel = vscode.window.createOutputChannel('eide-log');
-    GlobalEvent.on('globalLog', (msg) => {
-        outChannel.appendLine(LogDumper.Msg2String(msg));
-    });
+    GlobalEvent.on('globalLog', (msg) => outChannel.appendLine(LogDumper.Msg2String(msg)));
+    GlobalEvent.on('eide.log.append', (log) => outChannel.append(log));
+    GlobalEvent.on('eide.log.show', () => outChannel.show());
 
     GlobalEvent.on('project.opened', () => {
         prj_count++; // increment cnt
