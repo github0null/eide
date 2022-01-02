@@ -3512,6 +3512,8 @@ export interface CppConfigItem {
     intelliSenseMode?: string;
     cStandard?: string;
     cppStandard?: string;
+    cCompilerArgs?: string[];
+    cppCompilerArgs?: string[];
     configurationProvider?: string;
 }
 

@@ -4,14 +4,16 @@
 
 ***
 
-### [v2.16.3] (revision)
+### [v2.16.4] (revision)
 
 **New Features**:
   - Built-in MSYS environment. For `builder user task` and `shell flash command` is very useful.
   - Support auto run `pre-install.sh / post-install.sh` when install a project from template. (please place `*-install.sh` in the `.eide` folder)
   - Auto check project template hash before install it. 
+  - Support automatically read and load PyOCD chip list.
 
 **Bug Fixes**:
+  - Using prefix matches when excluding folders causes other folders to be excluded
   - When there is a case difference between variables in the shell flash command line, the replacement of variables cannot be completed.
   - When switch project target, some flash config not update.
   - When switch project target, `programFilePath` become `null`.
@@ -19,7 +21,10 @@
 **Optimized**:
   - Allow display any files in file system folder for project explorer.
   - Support the use of environment variables and Bash scripts in the command line of custom shell flash mode
-  - Support automatically read and load PyOCD chip list.
+  - Don't delete duplicated user include path in source folder include paths.
+  - Pass more compilerArgs for cpptools (for `armclang`, `gcc family` compilers)
+  - Support independent c/c++ options for armclang
+  - Limit cpptools config provider update interval (>150ms)
 
 ***
 

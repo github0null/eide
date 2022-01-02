@@ -256,8 +256,34 @@
                     "type": "boolean"
                 },
                 "misc-controls": {
-                    "markdownDescription": "Other C/C++ Compiler Options",
-                    "description.zh-cn": "C/C++ 编译器附加选项",
+                    "markdownDescription": "Other Global Compiler Options",
+                    "description.zh-cn": "编译器附加选项（全局）",
+                    "size": "huge",
+                    "type": [
+                        "string",
+                        "array"
+                    ],
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": ""
+                },
+                "C_FLAGS": {
+                    "markdownDescription": "Other C Compiler Options",
+                    "description.zh-cn": "C 编译器附加选项",
+                    "size": "huge",
+                    "type": [
+                        "string",
+                        "array"
+                    ],
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": ""
+                },
+                "CXX_FLAGS": {
+                    "markdownDescription": "Other C++ Compiler Options",
+                    "description.zh-cn": "C++ 编译器附加选项",
                     "size": "huge",
                     "type": [
                         "string",
