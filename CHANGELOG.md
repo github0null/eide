@@ -21,6 +21,7 @@
   - Allow display any files in file system folder for project explorer.
   - Support the use of environment variables and Bash scripts in the command line of custom shell flash mode
   - Support automatically read and load PyOCD chip list.
+  - Don't delete duplicated user include path in source folder include paths.
 
 ***
 

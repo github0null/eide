@@ -1665,12 +1665,6 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
         const prjConfig = this.GetConfiguration();
 
-        // clear duplicate include path
-        const dep = prjConfig.CustomDep_getDependence();
-        const mergeDep = prjConfig.GetAllMergeDep([ProjectConfiguration.CUSTOM_GROUP_NAME]);
-        const buildInList = ArrayDelRepetition(this.getSourceIncludeList().concat(mergeDep.incList));
-        dep.incList = dep.incList.filter((incPath) => { return !buildInList.includes(incPath); });
-
         // force flush toolchain dependence
         this.dependenceManager.Refresh(true);
         this.emit('dataChanged', 'dependence');
