@@ -4,7 +4,7 @@
 
 ***
 
-### [v2.16.3] (revision)
+### [v2.16.4] (revision)
 
 **New Features**:
   - Built-in MSYS environment. For `builder user task` and `shell flash command` is very useful.
@@ -12,6 +12,7 @@
   - Auto check project template hash before install it. 
 
 **Bug Fixes**:
+  - Using prefix matches when excluding folders causes other folders to be excluded
   - When there is a case difference between variables in the shell flash command line, the replacement of variables cannot be completed.
   - When switch project target, some flash config not update.
   - When switch project target, `programFilePath` become `null`.

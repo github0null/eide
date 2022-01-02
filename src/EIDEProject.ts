@@ -1236,14 +1236,16 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     //--
 
     isExcluded(path: string): boolean {
-        const excludeList = this.GetConfiguration().config.excludeList;
-        const rePath = this.ToRelativePath(path) || path;
-        const isFolder = VirtualSource.isVirtualFile(path) ?
-            this.virtualSource.isFolder(path) : File.IsDir(path);
-        if (isFolder) {
-            return excludeList.findIndex(excPath => rePath.startsWith(excPath)) !== -1;
+
+        const excList = this.GetConfiguration().config.excludeList.map((p) => File.ToUnixPath(p));
+        const rePath = File.ToUnixPath(this.ToRelativePath(path) || path);
+        const isFolder = VirtualSource.isVirtualFile(path) ? this.virtualSource.isFolder(path) : File.IsDir(path);
+
+        if (isFolder) { // is a folder
+            return excList.findIndex(excPath => rePath === excPath || rePath.startsWith(`${excPath}/`)) !== -1;
+        } else { // is a file
+            return excList.findIndex(excPath => rePath === excPath) !== -1;
         }
-        return excludeList.findIndex(excPath => { return rePath === excPath; }) !== -1;
     }
 
     protected addExclude(path: string): boolean {
