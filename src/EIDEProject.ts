@@ -1822,23 +1822,24 @@ class EIDEProject extends AbstractProject {
         switch (event.type) {
             case 'srcRootAdd':
                 this.sourceRoots.add(<string>event.data);
-                this.UpdateCppConfig();
                 this.emit('dataChanged', 'files');
+                this.UpdateCppConfig();
                 break;
             case 'srcRootRemoved':
                 this.sourceRoots.remove(<string>event.data);
-                this.UpdateCppConfig();
                 this.emit('dataChanged', 'files');
+                this.UpdateCppConfig();
                 break;
             case 'compiler':
                 this.emit('dataChanged', 'compiler');
+                this.UpdateCppConfig();
                 break;
             case 'uploader':
                 this.emit('dataChanged', 'uploader');
                 break;
             case 'dependence':
-                this.UpdateCppConfig();
                 this.emit('dataChanged', 'dependence');
+                this.UpdateCppConfig();
                 break;
             default:
                 this.emit('dataChanged');
@@ -2339,13 +2340,21 @@ class EIDEProject extends AbstractProject {
         defines: []
     };
 
+    private __cpptools_lastUpdateTime: number = 0;
     UpdateCppConfig() {
+
+        // limit update freq, improve speed
+        const tNow = Date.now();
+        if (tNow - this.__cpptools_lastUpdateTime < 150) {
+            return; // exit
+        }
 
         const builderOpts = this.getBuilderOptions();
         const toolchain = this.getToolchain();
+        const prjConfig = this.GetConfiguration();
 
         // update includes and defines 
-        const depMerge = this.GetConfiguration().GetAllMergeDep();
+        const depMerge = prjConfig.GetAllMergeDep();
         const defMacros: string[] = ['__VSCODE_CPPTOOL']; // it's for internal force include header
         const defLi = defMacros.concat(depMerge.defineList, toolchain.getInternalDefines(builderOpts));
         depMerge.incList = ArrayDelRepetition(depMerge.incList.concat(this.getSourceIncludeList()));
@@ -2353,7 +2362,53 @@ class EIDEProject extends AbstractProject {
         this.cppToolsConfig.defines = ArrayDelRepetition(defLi);
 
         // update intellisence info
-        toolchain.updateCppIntellisenceCfg(builderOpts, this.cppToolsConfig);
+        {
+            // clear old value
+            this.cppToolsConfig.compilerArgs = undefined;
+            this.cppToolsConfig.cCompilerArgs = undefined;
+            this.cppToolsConfig.cppCompilerArgs = undefined;
+
+            // preset cpu info for arm project
+            if (prjConfig.compileConfigModel instanceof ArmBaseCompileConfigModel) {
+                builderOpts.global = builderOpts.global || {};
+                const cpuName = prjConfig.compileConfigModel.data.cpuType.toLowerCase();
+                const fpuName = prjConfig.compileConfigModel.data.floatingPointHardware.toLowerCase();
+                builderOpts.global['cpuType'] = cpuName.replace('cortex-m0+', 'cortex-m0plus');
+                builderOpts.global['fpuType'] = fpuName.replace('single', 'sp').replace('double', 'dp');
+            }
+
+            // update
+            toolchain.updateCppIntellisenceCfg(builderOpts, this.cppToolsConfig);
+
+            // merge c compiler args
+            if (this.cppToolsConfig.compilerArgs || this.cppToolsConfig.cCompilerArgs) {
+
+                this.cppToolsConfig.cCompilerArgs = (this.cppToolsConfig.compilerArgs || [])
+                    .concat(this.cppToolsConfig.cCompilerArgs || []);
+
+                this.cppToolsConfig.cCompilerArgs = this.cppToolsConfig.cCompilerArgs.map((param) => {
+                    return param.replace('${c_cppStandard}', this.cppToolsConfig.cStandard || 'c11');
+                });
+            }
+
+            // merge c++ compiler args
+            if (this.cppToolsConfig.compilerArgs || this.cppToolsConfig.cppCompilerArgs) {
+
+                this.cppToolsConfig.cppCompilerArgs = (this.cppToolsConfig.compilerArgs || [])
+                    .concat(this.cppToolsConfig.cppCompilerArgs || []);
+
+                this.cppToolsConfig.cppCompilerArgs = this.cppToolsConfig.cppCompilerArgs.map((param) => {
+                    return param.replace('${c_cppStandard}', this.cppToolsConfig.cppStandard || 'c++11');
+                });
+            }
+
+            // replace var value for global args
+            if (this.cppToolsConfig.compilerArgs) {
+                this.cppToolsConfig.compilerArgs = (<string[]>this.cppToolsConfig.compilerArgs).map((param) => {
+                    return param.replace('${c_cppStandard}', this.cppToolsConfig.cppStandard || 'c++11');
+                });
+            }
+        }
 
         // update source browse path
         let srcBrowseFolders: string[] = [];
@@ -2397,9 +2452,10 @@ class EIDEProject extends AbstractProject {
 
         // notify config changed
         this.emit('cppConfigChanged');
-
-        // log
         console.log(this.cppToolsConfig);
+
+        // update time
+        this.__cpptools_lastUpdateTime = Date.now();
     }
 
     canProvideConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<boolean> {
@@ -2413,21 +2469,36 @@ class EIDEProject extends AbstractProject {
         });
     }
 
+    private readonly cFileMatcher = /\.(?:c|h)$/i;
+
     provideConfigurations(uris: vscode.Uri[], token?: vscode.CancellationToken | undefined): Thenable<SourceFileConfigurationItem[]> {
         return new Promise((resolve) => {
             resolve(uris.map((uri) => {
-                return {
-                    uri: uri,
-                    configuration: {
-                        standard: uri.fsPath.toLowerCase().endsWith('.c') ?
-                            (<any>this.cppToolsConfig.cStandard) : (<any>this.cppToolsConfig.cppStandard),
-                        includePath: this.cppToolsConfig.includePath,
-                        defines: this.cppToolsConfig.defines,
-                        forcedInclude: this.cppToolsConfig.forcedInclude,
-                        compilerPath: this.cppToolsConfig.compilerPath,
-                        compilerArgs: this.cppToolsConfig.compilerArgs
-                    }
-                };
+                if (this.cFileMatcher.test(uri.fsPath)) { // c files
+                    return {
+                        uri: uri,
+                        configuration: {
+                            standard: <any>this.cppToolsConfig.cStandard,
+                            includePath: this.cppToolsConfig.includePath,
+                            defines: this.cppToolsConfig.defines,
+                            forcedInclude: this.cppToolsConfig.forcedInclude,
+                            compilerPath: this.cppToolsConfig.compilerPath,
+                            compilerArgs: this.cppToolsConfig.cCompilerArgs
+                        }
+                    };
+                } else { // c++ files
+                    return {
+                        uri: uri,
+                        configuration: {
+                            standard: <any>this.cppToolsConfig.cppStandard,
+                            includePath: this.cppToolsConfig.includePath,
+                            defines: this.cppToolsConfig.defines,
+                            forcedInclude: this.cppToolsConfig.forcedInclude,
+                            compilerPath: this.cppToolsConfig.compilerPath,
+                            compilerArgs: this.cppToolsConfig.cppCompilerArgs
+                        }
+                    };
+                }
             }));
         });
     }

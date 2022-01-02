@@ -1167,16 +1167,68 @@ class AC6 implements IToolchian {
         cppToolsConfig.cStandard = 'gnu11';
         cppToolsConfig.cppStandard = 'gnu++98';
 
-        cppToolsConfig.compilerArgs = ['--target=arm-arm-none-eabi'];
+        cppToolsConfig.compilerArgs = [
+            '--target=arm-arm-none-eabi',
+            '-std=${c_cppStandard}'
+        ];
+
+        // pass global args for cpptools
+        if (builderOpts.global) {
+
+            let cpuType = 'cortex-m3'; // default val
+
+            if (typeof builderOpts.global['cpuType'] == 'string') {
+                cpuType = builderOpts.global['cpuType'];
+                cppToolsConfig.compilerArgs.push(`-mcpu=${cpuType}`);
+            }
+
+            if (typeof builderOpts.global['fpuType'] == 'string') {
+                const fpuType = builderOpts.global['fpuType'];
+                switch (fpuType) {
+                    case 'sp':
+                        cppToolsConfig.compilerArgs.push(`-mfpu=fpv5-sp-d16`);
+                        break;
+                    case 'dp':
+                        cppToolsConfig.compilerArgs.push(`-mfpu=fpv5-d16`);
+                        break;
+                    case 'none':
+                        cppToolsConfig.compilerArgs.push(`-mfpu=none`);
+                        break;
+                    default:
+                        break;
+                }
+                if (['sp', 'dp'].includes(fpuType)) {
+                    if (typeof builderOpts.global['$float-abi-type'] == 'string') {
+                        const abiType = builderOpts.global['$float-abi-type'];
+                        cppToolsConfig.compilerArgs.push(`-mfloat-abi=${abiType}`);
+                    }
+                }
+            }
+
+            if (typeof builderOpts.global['misc-control'] == 'string') {
+                const pList = builderOpts.global['misc-control'].trim().split(/\s+/);
+                pList.forEach((p) => cppToolsConfig.compilerArgs?.push(p));
+            }
+        }
 
         if (builderOpts["c/cpp-compiler"]) {
 
-            if (builderOpts["c/cpp-compiler"]['language-c']) {
+            if (typeof builderOpts["c/cpp-compiler"]['language-c'] == 'string') {
                 cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'];
             }
 
-            if (builderOpts["c/cpp-compiler"]['language-cpp']) {
+            if (typeof builderOpts["c/cpp-compiler"]['language-cpp'] == 'string') {
                 cppToolsConfig.cppStandard = builderOpts["c/cpp-compiler"]['language-cpp'];
+            }
+
+            if (typeof builderOpts["c/cpp-compiler"]['C_FLAGS'] == 'string') {
+                const pList = builderOpts['c/cpp-compiler']['C_FLAGS'].trim().split(/\s+/);
+                cppToolsConfig.cCompilerArgs = pList;
+            }
+
+            if (typeof builderOpts["c/cpp-compiler"]['CXX_FLAGS'] == 'string') {
+                const pList = builderOpts['c/cpp-compiler']['CXX_FLAGS'].trim().split(/\s+/);
+                cppToolsConfig.cppCompilerArgs = pList;
             }
         }
     }
@@ -1354,6 +1406,42 @@ class GCC implements IToolchian {
         cppToolsConfig.cStandard = 'c11';
         cppToolsConfig.cppStandard = 'c++11';
 
+        cppToolsConfig.compilerArgs = ['-std=${c_cppStandard}', '-mthumb'];
+
+        // pass global args for cpptools
+        if (builderOpts.global) {
+
+            if (typeof builderOpts.global['cpuType'] == 'string') {
+                const cpuType = builderOpts.global['cpuType'];
+                cppToolsConfig.compilerArgs.push(`-mcpu=${cpuType}`);
+            }
+
+            if (typeof builderOpts.global['fpuType'] == 'string') {
+                const fpuType = builderOpts.global['fpuType'];
+                switch (fpuType) {
+                    case 'sp':
+                        cppToolsConfig.compilerArgs.push(`-mfpu=fpv5-sp-d16`);
+                        break;
+                    case 'dp':
+                        cppToolsConfig.compilerArgs.push(`-mfpu=fpv5-d16`);
+                        break;
+                    default:
+                        break;
+                }
+                if (['sp', 'dp'].includes(fpuType)) {
+                    if (typeof builderOpts.global['$float-abi-type'] == 'string') {
+                        const abiType = builderOpts.global['$float-abi-type'];
+                        cppToolsConfig.compilerArgs.push(`-mfloat-abi=${abiType}`);
+                    }
+                }
+            }
+
+            if (typeof builderOpts.global['misc-control'] == 'string') {
+                const pList = builderOpts.global['misc-control'].trim().split(/\s+/);
+                pList.forEach((p) => cppToolsConfig.compilerArgs?.push(p));
+            }
+        }
+
         if (builderOpts["c/cpp-compiler"]) {
 
             if (builderOpts["c/cpp-compiler"]['language-c']) {
@@ -1362,6 +1450,16 @@ class GCC implements IToolchian {
 
             if (builderOpts["c/cpp-compiler"]['language-cpp']) {
                 cppToolsConfig.cppStandard = builderOpts["c/cpp-compiler"]['language-cpp'];
+            }
+
+            if (typeof builderOpts["c/cpp-compiler"]['C_FLAGS'] == 'string') {
+                const pList = builderOpts['c/cpp-compiler']['C_FLAGS'].trim().split(/\s+/);
+                cppToolsConfig.cCompilerArgs = pList;
+            }
+
+            if (typeof builderOpts["c/cpp-compiler"]['CXX_FLAGS'] == 'string') {
+                const pList = builderOpts['c/cpp-compiler']['CXX_FLAGS'].trim().split(/\s+/);
+                cppToolsConfig.cppCompilerArgs = pList;
             }
         }
     }
@@ -1696,6 +1794,29 @@ class RISCV_GCC implements IToolchian {
         cppToolsConfig.cStandard = 'c11';
         cppToolsConfig.cppStandard = 'c++11';
 
+        cppToolsConfig.compilerArgs = ['-std=${c_cppStandard}'];
+
+        if (builderOpts.global) {
+
+            if (builderOpts.global['arch']) {
+                cppToolsConfig.compilerArgs.push(`-march=${builderOpts.global['arch']}`);
+            }
+
+            if (builderOpts.global['abi']) {
+                cppToolsConfig.compilerArgs.push(`-mabi=${builderOpts.global['abi']}`);
+            }
+
+            if (builderOpts.global['code-model']) {
+                cppToolsConfig.compilerArgs.push(`-mcmodel=${builderOpts.global['code-model']}`);
+            }
+
+            // pass global args for cpptools
+            if (typeof builderOpts.global['misc-control'] == 'string') {
+                const pList = builderOpts.global['misc-control'].trim().split(/\s+/);
+                pList.forEach((p) => cppToolsConfig.compilerArgs?.push(p));
+            }
+        }
+
         if (builderOpts["c/cpp-compiler"]) {
 
             if (builderOpts["c/cpp-compiler"]['language-c']) {
@@ -1704,6 +1825,16 @@ class RISCV_GCC implements IToolchian {
 
             if (builderOpts["c/cpp-compiler"]['language-cpp']) {
                 cppToolsConfig.cppStandard = builderOpts["c/cpp-compiler"]['language-cpp'];
+            }
+
+            if (typeof builderOpts["c/cpp-compiler"]['C_FLAGS'] == 'string') {
+                const pList = builderOpts['c/cpp-compiler']['C_FLAGS'].trim().split(/\s+/);
+                cppToolsConfig.cCompilerArgs = pList;
+            }
+
+            if (typeof builderOpts["c/cpp-compiler"]['CXX_FLAGS'] == 'string') {
+                const pList = builderOpts['c/cpp-compiler']['CXX_FLAGS'].trim().split(/\s+/);
+                cppToolsConfig.cppCompilerArgs = pList;
             }
         }
     }
@@ -1883,11 +2014,28 @@ class AnyGcc implements IToolchian {
         cppToolsConfig.cStandard = 'c11';
         cppToolsConfig.cppStandard = 'c++11';
 
+        cppToolsConfig.compilerArgs = ['-std=${c_cppStandard}'];
+
         // pass global args for cpptools
-        cppToolsConfig.compilerArgs = undefined; // clear before set
-        if (builderOpts.global && typeof builderOpts.global['misc-control'] == 'string') {
-            const params = builderOpts.global['misc-control'];
-            cppToolsConfig.compilerArgs = params.trim().split(/\s+/);
+        if (builderOpts.global) {
+            if (typeof builderOpts.global['misc-control'] == 'string') {
+                const pList = builderOpts.global['misc-control'].trim().split(/\s+/);
+                pList.forEach((p) => cppToolsConfig.compilerArgs?.push(p));
+            }
+        }
+
+        // pass user compiler args
+        if (builderOpts["c/cpp-compiler"]) {
+
+            if (typeof builderOpts["c/cpp-compiler"]['C_FLAGS'] == 'string') {
+                const pList = builderOpts['c/cpp-compiler']['C_FLAGS'].trim().split(/\s+/);
+                cppToolsConfig.cCompilerArgs = pList;
+            }
+
+            if (typeof builderOpts["c/cpp-compiler"]['CXX_FLAGS'] == 'string') {
+                const pList = builderOpts['c/cpp-compiler']['CXX_FLAGS'].trim().split(/\s+/);
+                cppToolsConfig.cppCompilerArgs = pList;
+            }
         }
     }
 
