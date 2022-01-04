@@ -1983,7 +1983,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             this.cppToolsApi = await getCppToolsApi(Version.v5);
             if (!this.cppToolsApi) {
                 const msg = `Can't get cpptools api, please active c/c++ extension, otherwise, the c/++ intellisence config cannot be provided !`;
-                GlobalEvent.emit('msg', newMessage('Warning', msg));
                 this.cppToolsOut.appendLine(`[error] ${msg}`);
                 return;
             }
