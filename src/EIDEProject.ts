@@ -2257,7 +2257,54 @@ class EIDEProject extends AbstractProject {
                 }
             }
 
-            /* add extension recommendation */
+            // append default task for new project
+            if (this.isAnNewProject) {
+
+                const defTasks = [
+                    {
+                        "label": "build",
+                        "type": "shell",
+                        "command": "${command:eide.project.build}",
+                        "group": "build",
+                        "problemMatcher": "$gcc"
+                    },
+                    {
+                        "label": "flash",
+                        "type": "shell",
+                        "command": "${command:eide.project.uploadToDevice}",
+                        "group": "build",
+                        "problemMatcher": []
+                    },
+                    {
+                        "label": "rebuild",
+                        "type": "shell",
+                        "command": "${command:eide.project.rebuild}",
+                        "group": "build",
+                        "problemMatcher": "$gcc"
+                    },
+                    {
+                        "label": "clean",
+                        "type": "shell",
+                        "command": "${command:eide.project.clean}",
+                        "group": "build",
+                        "problemMatcher": []
+                    }
+                ];
+
+                if (!workspaceConfig.config.tasks) {
+                    workspaceConfig.config.tasks = {
+                        "version": "2.0.0",
+                        "tasks": defTasks
+                    }
+                }
+
+                else if (Array.isArray(workspaceConfig.config.tasks.tasks)
+                    && workspaceConfig.config.tasks.tasks.length == 0) {
+                    workspaceConfig.config.tasks.tasks = defTasks;
+                }
+            }
+
+            // add extension recommendation
             {
                 let recommendExt: string[] = [
                     "cl.eide",
@@ -2322,6 +2369,8 @@ class EIDEProject extends AbstractProject {
             this.runInstallScript(this.GetRootDir(), 'post-install.sh', `Running 'post-install' ...`)
                 .then((done) => {
                     if (!done) {
+                        const msg = `Run 'post-install' failed !, please check logs in 'eide-log' output panel.`;
+                        vscode.window.showWarningMessage(msg);
                         GlobalEvent.emit('eide.log.show');
                     }
                 });
