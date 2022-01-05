@@ -2389,14 +2389,23 @@ class EIDEProject extends AbstractProject {
         defines: []
     };
 
-    private __cpptools_lastUpdateTime: number = 0;
+    private __cpptools_updateTimeout: NodeJS.Timeout | undefined;
+
     UpdateCppConfig() {
 
-        // limit update freq, improve speed
-        const tNow = Date.now();
-        if (tNow - this.__cpptools_lastUpdateTime < 150) {
-            return; // exit
+        // if updater not in running, create it
+        if (this.__cpptools_updateTimeout == undefined) {
+            this.__cpptools_updateTimeout =
+                setTimeout(() => this.doUpdateCpptoolsConfig(), 200);
         }
+
+        // we already have a updater in running, now delay it
+        else {
+            this.__cpptools_updateTimeout.refresh();
+        }
+    }
+
+    private doUpdateCpptoolsConfig() {
 
         const builderOpts = this.getBuilderOptions();
         const toolchain = this.getToolchain();
@@ -2503,8 +2512,8 @@ class EIDEProject extends AbstractProject {
         this.emit('cppConfigChanged');
         console.log(this.cppToolsConfig);
 
-        // update time
-        this.__cpptools_lastUpdateTime = Date.now();
+        // clear timeout obj
+        this.__cpptools_updateTimeout = undefined;
     }
 
     canProvideConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<boolean> {
