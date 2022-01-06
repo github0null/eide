@@ -493,15 +493,22 @@ function exportEnvToSysPath() {
 
     const settingManager = SettingManager.GetInstance();
     const resManager = ResManager.GetInstance();
+    const builderFolder = new File(resManager.getBuilderDir());
 
+    // export some eide binaries path to system env path
+    const defEnvPath: string[] = [
+        builderFolder.path, // builder root folder
+        NodePath.normalize(`${builderFolder.path}/utils`), // utils tool folder
+    ];
+
+    // export some tools path to system env path
     const pathList: { key: string, path: string }[] = [
         { key: 'EIDE_ARM_GCC', path: `${settingManager.getGCCDir().path}${File.sep}bin` },
         { key: 'EIDE_JLINK', path: `${settingManager.getJlinkDir()}` },
         { key: 'EIDE_OPENOCD', path: `${NodePath.dirname(settingManager.getOpenOCDExePath())}` }
     ];
 
-    // push other bin folders
-    const builderFolder = new File(resManager.getBuilderDir());
+    // search and export other tools path to system env path
     builderFolder.GetList(File.EMPTY_FILTER).forEach((subDir) => {
         const binFolder = NodePath.normalize(`${subDir.path}/bin`);
         if (File.IsDir(binFolder)) {
@@ -517,7 +524,7 @@ function exportEnvToSysPath() {
         const pList = pathList
             .filter((env) => File.IsDir(env.path))
             .map((env) => env.path);
-        platform.exportToSysEnv(process.env, pList);
+        platform.exportToSysEnv(process.env, defEnvPath.concat(pList));
         isEnvSetuped = true;
     }
 
@@ -795,9 +802,8 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
 
             for (const vInfo of mInfo.refList) {
                 try {
-                    const execPath = ResManager.GetInstance().getBuilderDir() + File.sep + 'memap';
                     const lines = ChildProcess
-                        .execSync(`${execPath} -t ${vInfo.toolName} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`)
+                        .execSync(`memap -t ${vInfo.toolName} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`)
                         .toString().split(/\r\n|\n/);
 
                     // append color

@@ -160,8 +160,8 @@ export class ResManager extends events.EventEmitter {
 
     enumSerialPort(): string[] {
         try {
-            const mono = CmdLineHandler.quoteString(ResManager.GetInstance().getMonoExecutable().path, '"')
-            const data = ChildProcess.execSync(`${mono} "${this.getSerialPortExe().path}"`).toString();
+            const cmd = `${this.getMonoName()} "${this.getSerialPortExe().path}"`;
+            const data = ChildProcess.execSync(cmd, { env: process.env }).toString();
             const portList: string[] = JSON.parse(data);
             if (!Array.isArray(portList)) { throw Error("get current port list error !"); }
             return portList;
@@ -365,15 +365,15 @@ export class ResManager extends events.EventEmitter {
     }
 
     getBuilder(): File {
-        return File.fromArray([this.getBuilderDir(), 'unify_builder.exe']);
+        return File.fromArray([this.getBuilderDir(), 'bin', 'unify_builder.exe']);
     }
 
     getSerialPortExe(): File {
-        return File.fromArray([this.getBuilderDir(), 'serial_monitor.exe']);
+        return File.fromArray([this.getBuilderDir(), 'bin', 'serial_monitor.exe']);
     }
 
-    getMonoExecutable(): File {
-        return File.fromArray([this.getBuilderDir(), 'mono.exe']);
+    getMonoName(): string {
+        return 'mono';
     }
 
     /* --------------- tools -------------------- */

@@ -446,8 +446,9 @@ class KeilC51 implements IToolchian {
     }
 
     getGccCompilerPath(): string | undefined {
-        const gcc = File.fromArray([this.getToolchainDir().path, 'BIN', 'C51.exe']);
-        return gcc.path;
+        //const gcc = File.fromArray([this.getToolchainDir().path, 'BIN', 'C51.exe']);
+        //return gcc.path;
+        return undefined;
     }
 
     updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
@@ -584,8 +585,9 @@ class SDCC implements IToolchian {
     }
 
     getGccCompilerPath(): string | undefined {
-        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', 'sdcc.exe']);
-        return gcc.path;
+        //const gcc = File.fromArray([this.getToolchainDir().path, 'bin', 'sdcc.exe']);
+        //return gcc.path;
+        return undefined;
     }
 
     updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
@@ -813,8 +815,9 @@ class GnuStm8Sdcc implements IToolchian {
     }
 
     getGccCompilerPath(): string | undefined {
-        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', 'sdcc.exe']);
-        return gcc.path;
+        //const gcc = File.fromArray([this.getToolchainDir().path, 'bin', 'sdcc.exe']);
+        //return gcc.path;
+        return undefined;
     }
 
     updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
@@ -1014,8 +1017,9 @@ class AC5 implements IToolchian {
     }
 
     getGccCompilerPath(): string | undefined {
-        const armccFile = File.fromArray([this.getToolchainDir().path, 'bin', 'armcc.exe']);
-        return armccFile.path;
+        //const armccFile = File.fromArray([this.getToolchainDir().path, 'bin', 'armcc.exe']);
+        //return armccFile.path;
+        return undefined;
     }
 
     updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
@@ -1560,8 +1564,9 @@ class IARSTM8 implements IToolchian {
     }
 
     getGccCompilerPath(): string | undefined {
-        const gcc = File.fromArray([this.getToolchainDir().path, 'stm8', 'bin', 'iccstm8.exe']);
-        return gcc.path;
+        //const gcc = File.fromArray([this.getToolchainDir().path, 'stm8', 'bin', 'iccstm8.exe']);
+        //return gcc.path;
+        return undefined;
     }
 
     updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {

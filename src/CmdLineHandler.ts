@@ -33,9 +33,15 @@ export class CmdLineHandler {
     */
     static getCommandLine(callerFile: string, args: string[], isPowershell?: boolean, noQuote: boolean = false): string {
 
+        let callerHeader = isPowershell ? '& ' : '';
         const quote = isPowershell ? "'" : '"';
-        const callerHeader = isPowershell ? '& ' : '';
         const cmdPrefixSuffix = isPowershell ? '' : '"';
+
+        // if it's not a executable file path, not use '&'
+        if (!callerFile.includes('/') &&
+            !callerFile.includes('\\')) {
+            callerHeader = '';
+        }
 
         const commandLine: string = cmdPrefixSuffix + callerHeader
             + this.quoteString(callerFile, quote) + ' '

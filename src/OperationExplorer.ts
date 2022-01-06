@@ -1253,14 +1253,18 @@ export class OperationExplorer {
             // close exist terminal
             if (cIndex !== -1) { vscode.window.terminals[cIndex].dispose(); }
 
-            const cmdEnv = concatSystemEnvPath([resManager.getBuilderDir()]);
-            const opts: vscode.TerminalOptions = { name: terminalName, shellPath: cmdPath, env: cmdEnv };
+            const opts: vscode.TerminalOptions = {
+                name: terminalName,
+                shellPath: cmdPath,
+                env: process.env
+            };
+
             terminal = vscode.window.createTerminal(opts);
             terminal.show(true);
 
             /* send command */
             const commandLine = `"${resManager.getSerialPortExe().path}" ${paramList.join(' ')}`;
-            terminal.sendText(`"${resManager.getMonoExecutable().path}" ${commandLine}`);
+            terminal.sendText(`${resManager.getMonoName()} ${commandLine}`);
 
         } catch (error) {
             GlobalEvent.emit('error', error);

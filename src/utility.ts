@@ -38,7 +38,7 @@ export function runShellCommand(title: string, commandLine: string, cmdPath?: st
     try {
         if (WorkspaceManager.getInstance().hasWorkspaces()) {
             // use task
-            const shellOption: vscode.ShellExecutionOptions = { env: env };
+            const shellOption: vscode.ShellExecutionOptions = { env: env || process.env };
             if (cmdPath) { shellOption.executable = cmdPath; shellOption.shellArgs = ['/C']; }
             const task = new vscode.Task({ type: 'shell' }, vscode.TaskScope.Global, title, 'shell');
             task.execution = new vscode.ShellExecution(commandLine, shellOption);
@@ -50,7 +50,7 @@ export function runShellCommand(title: string, commandLine: string, cmdPath?: st
             // use terminal
             const index = vscode.window.terminals.findIndex((t) => { return t.name === title; });
             if (index !== -1) { vscode.window.terminals[index].dispose(); }
-            const terminal = vscode.window.createTerminal({ name: title, shellPath: cmdPath, env: env });
+            const terminal = vscode.window.createTerminal({ name: title, shellPath: cmdPath, env: env || process.env });
             terminal.show(true);
             terminal.sendText(CmdLineHandler.DeleteCmdPrefix(commandLine));
         }

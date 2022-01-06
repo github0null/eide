@@ -2391,8 +2391,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         /* launch */
         const resManager = ResManager.GetInstance();
         const cmds = [`${ResManager.GetInstance().getBuilder().path}`].concat(['-r', paramsFile.path]);
-        const exeName: string = resManager.getMonoExecutable().path;
-        const commandLine = CmdLineHandler.getCommandLine(exeName, cmds);
+        const commandLine = CmdLineHandler.getCommandLine(resManager.getMonoName(), cmds);
         runShellCommand('build-workspace', commandLine, resManager.getCMDPath());
     }
 
@@ -4547,14 +4546,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             // show gnu elf file
             else if (suffix == '.elf') {
 
-                const readelf = File.fromArray([
-                    ResManager.GetInstance().getBuilderDir(), 'readelf.exe'
-                ]);
-
-                if (!readelf.IsFile()) return;
-
                 const cont = child_process
-                    .execFileSync(readelf.path, ['-e', binFile.path])
+                    .execSync(`readelf -e "${binFile.path}"`)
                     .toString();
 
                 const vDoc = VirtualDocument.instance();
