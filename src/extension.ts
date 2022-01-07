@@ -577,8 +577,13 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
     // show now
     updateSerialportBarState();
 
-    /* set some toolpath to env */
+    // set some toolpath to env
     exportEnvToSysPath();
+
+    // register msys bash profile for windows
+    if (os.platform() == 'win32') {
+        vscode.window.registerTerminalProfileProvider('eide.msys.bash', new MsysTerminalProvider());
+    }
 
     // update onchanged
     settingManager.on('onChanged', (e) => {
@@ -653,6 +658,46 @@ function RegisterGlobalEvent() {
         vscode.commands.executeCommand('setContext', 'cl.eide.projectActived', prj_count != 0);
         vscode.commands.executeCommand('setContext', 'cl.eide.enable.active', prj_count > 1);
     });
+}
+
+// --- msys provider
+
+class MsysTerminalProvider implements vscode.TerminalProfileProvider {
+
+    provideTerminalProfile(token: vscode.CancellationToken): vscode.ProviderResult<vscode.TerminalProfile> {
+
+        // get cwd
+        let cwd: string = os.homedir();
+        const workspace = WorkspaceManager.getInstance().getFirstWorkspace();
+        if (workspace && workspace.IsDir()) {
+            cwd = workspace.path;
+        }
+
+        // welcome msg
+        const welcome = [
+            `--------------------------------------------`,
+            `          \x1b[32;22m welcome to msys bash \x1b[0m`,
+            `--------------------------------------------`,
+            ``
+        ];
+
+        // check bash folder
+        if (!process.env['EIDE_MSYS'] ||
+            !File.IsDir(process.env['EIDE_MSYS'])) {
+            return undefined;
+        }
+
+        const bashPath = `${process.env['EIDE_MSYS']}/bash.exe`;
+
+        return new vscode.TerminalProfile({
+            name: 'msys bash',
+            shellPath: bashPath,
+            cwd: cwd,
+            env: process.env,
+            strictEnv: true,
+            message: welcome.join('\r\n')
+        });
+    }
 }
 
 // --- .mapView viewer

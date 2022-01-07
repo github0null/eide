@@ -84,6 +84,14 @@
         "yaml": "^1.10.2"
     },
     "contributes": {
+        "terminal": {
+            "profiles": [
+                {
+                    "id": "eide.msys.bash",
+                    "title": "eide msys bash"
+                }
+            ]
+        },
         "customEditors": [
             {
                 "viewType": "cl.eide.map.view",
