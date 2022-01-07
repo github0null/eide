@@ -3169,67 +3169,84 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 const toolPrefix = toolchain.getToolchainPrefix ? toolchain.getToolchainPrefix() : '';
                 exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `${toolPrefix}objdump.exe`]);
                 if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
-                cmds = ['-S', objPath];
+                cmds = ['-S', '-l', objPath];
+            }
+            else if (toolchainName.startsWith('AC')) {
+                exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `fromelf.exe`]);
+                if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
+                cmds = ['-c', objPath];
             }
             else {
-                switch (toolchainName) {
-                    case 'AC5':
-                    case 'AC6':
-                        {
-                            exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `fromelf.exe`]);
-                            if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
-                            cmds = ['-c', objPath];
-                        }
-                        break;
-                    default:
-                        throw new Error(notSupprotMsg);
-                }
+                throw new Error(notSupprotMsg);
             }
 
-            /* executable */
-            const asmTxt = child_process.execFileSync(exeFile.path, cmds, { encoding: 'ascii' });
+            // do disassembly code
+            const asmLines = child_process.execFileSync(exeFile.path, cmds, { encoding: 'ascii' }).split(/\r\n|\n/);
             const asmFile = `${srcPath}.edasm`;
             const asmFileUri = vscode.Uri.parse(VirtualDocument.instance().getUriByPath(asmFile));
 
             // try jump to target line in asm
             let selection: vscode.Range | undefined;
+
             if (vscode.window.activeTextEditor &&
                 vscode.window.activeTextEditor.document.uri.toString() == uri.toString()) {
-                const activeTextEditor = vscode.window.activeTextEditor;
-                const doc = activeTextEditor.document;
-                const lines = asmTxt.split(/\r\n|\n/);
-                // search full line
-                {
-                    const tLine = doc.lineAt(activeTextEditor.selection.start.line).text.trim();
-                    if (tLine.length >= 3) { // skip short lines
-                        for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
-                            if (lines[lineIdx].includes(tLine)) {
-                                const pos = new vscode.Position(lineIdx, 0);
-                                selection = new vscode.Selection(pos, pos);
-                                break;
+
+                // for gcc toolchain
+                // jump to example: 
+                //          c:/xxx/xxx\sourceName.c:123
+                //
+                if (isGccToolchain(toolchainName)) {
+
+                    const activeTextEditor = vscode.window.activeTextEditor;
+                    const curLine = activeTextEditor.selection.start.line;
+
+                    const safeName = NodePath.basename(srcPath)
+                        .replace(/\./g, String.raw`\.`)
+                        .replace(/\(/g, String.raw`\(`).replace(/\)/g, String.raw`\)`)
+                        .replace(/\[/g, String.raw`\[`).replace(/\]/g, String.raw`\]`)
+                        .replace(/\{/g, String.raw`\{`).replace(/\}/g, String.raw`\}`)
+                        .replace(/\^/g, String.raw`\^`).replace(/\$/g, String.raw`\$`)
+                        .replace(/\*/g, String.raw`\*`)
+                        .replace(/\+/g, String.raw`\+`)
+                        .replace(/\?/g, String.raw`\?`)
+                        .replace(/\|/g, String.raw`\|`);
+
+                    const lmatcher = new RegExp(`.+\\b${safeName}:\\d+\\b`);
+                    const tMatcher = new RegExp(`.+\\b${safeName}:${curLine + 1}\\b`);
+
+                    for (let idx = 0; idx < asmLines.length; idx++) {
+                        const line = asmLines[idx];
+                        if (lmatcher.test(line)) {
+                            // found target line
+                            if (selection == undefined && tMatcher.test(line)) {
+                                const pos = new vscode.Position(idx + 1, 0);
+                                selection = new vscode.Range(pos, pos);
                             }
+                            // clear line number content
+                            asmLines[idx] = '';
                         }
                     }
                 }
-                // search word
-                if (!selection) {
-                    const rng = doc.getWordRangeAtPosition(activeTextEditor.selection.start, /[a-z_]\w*/i);
-                    if (rng) {
-                        const tWord = doc.getText(rng);
-                        for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
-                            const idx = lines[lineIdx].indexOf(tWord);
-                            if (idx != -1) {
-                                const pos = new vscode.Position(lineIdx, idx);
-                                selection = new vscode.Selection(pos, pos);
-                                break;
-                            }
+
+                // for armcc toolchain
+                // jump to example: 
+                //          ** Section #4 'i.delay' (SHT_PROGBITS) [SHF_ALLOC + SHF_EXECINSTR]
+                //
+                else if (toolchainName.startsWith('AC')) {
+                    const matcher = /^\s*\*\* Section #\d+ 'i\./;
+                    for (let idx = 0; idx < asmLines.length; idx++) {
+                        const line = asmLines[idx];
+                        if (matcher.test(line)) {
+                            const pos = new vscode.Position(idx, 0);
+                            selection = new vscode.Range(pos, pos);
+                            break; // found it, exit
                         }
                     }
                 }
             }
 
             // show
-            VirtualDocument.instance().updateDocument(asmFile, asmTxt);
+            VirtualDocument.instance().updateDocument(asmFile, asmLines.join('\n'));
             vscode.window.showTextDocument(asmFileUri, {
                 preview: true,
                 viewColumn: vscode.ViewColumn.Two,
