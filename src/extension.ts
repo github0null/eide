@@ -25,7 +25,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as os from 'os';
-import * as unzipper from 'unzipper';
+import * as node7z from 'node-7z';
 import * as NodePath from 'path';
 import * as ChildProcess from 'child_process';
 
@@ -370,10 +370,13 @@ async function tryUpdateBinaries(binFolder: File, localVer: string, notConfirm?:
 
 async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<boolean> {
 
+    // zip type
+    const binType = '7z';
+
     // binaries download site
     const downloadSites: string[] = [
-        `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/bin-${binVersion}.zip`,
-        `https://raw-github.em-ide.com/github0null/eide-resource/master/binaries/bin-${binVersion}.zip`,
+        `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/bin-${binVersion}.${binType}`,
+        `https://raw-github.em-ide.com/github0null/eide-resource/master/binaries/bin-${binVersion}.${binType}`,
     ];
 
     /* random select the order of site */
@@ -382,12 +385,12 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
     }
 
     // add github default download url
-    downloadSites.push(`https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/bin-${binVersion}.zip`);
+    downloadSites.push(`https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/bin-${binVersion}.${binType}`);
 
     let installedDone = false;
 
     try {
-        const tmpFile = File.fromArray([os.tmpdir(), `eide-binaries-${binVersion}.zip`]);
+        const tmpFile = File.fromArray([os.tmpdir(), `eide-binaries-${binVersion}.${binType}`]);
 
         /* make dir */
         binFolder.CreateDir(true);
@@ -438,33 +441,37 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
                         }
                     };
 
-                    fs.createReadStream(tmpFile.path)
+                    let prevPercent: number = 0;
 
-                        /* goto parse */
-                        .pipe(unzipper.Parse())
-
-                        /* on unzipping */
-                        .on('entry', (entry) => {
-                            if (entry.type == 'File') {
-                                const file = File.fromArray([binFolder.path, File.ToLocalPath(entry.path)]);
-                                progress.report({ message: `Unzipping ${entry.path} ...` });
-                                new File(file.dir).CreateDir(true); /* create dir */
-                                entry.pipe(fs.createWriteStream(file.path));
-                            } else {
-                                entry.autodrain();
-                            }
-                        })
-
-                        /* on unzip closed */
-                        .on('close', () => {
+                    // start unzip
+                    node7z.extractFull(tmpFile.path, binFolder.path, {
+                        $bin: ResManager.GetInstance().Get7za().path,
+                        $progress: true,
+                        recursive: true
+                    })
+                        // unzip done
+                        .on('end', () => {
                             progress.report({ message: `Install eide binaries done !` });
                             setTimeout(() => resolveIf(true), 500);
                         })
 
-                        /* on unzip error */
+                        // unzip error
                         .on('error', (err) => {
                             GlobalEvent.emit('error', err);
                             resolveIf(false);
+                        })
+
+                        // progress
+                        .on('progress', (info) => {
+                            progress.report({ increment: info.percent - prevPercent });
+                            prevPercent = info.percent;
+                        })
+
+                        // file info
+                        .on('data', (data) => {
+                            progress.report({
+                                message: `${prevPercent}%, in '${data.file}'`
+                            });
                         });
                 });
             });

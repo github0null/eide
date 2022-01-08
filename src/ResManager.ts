@@ -52,13 +52,14 @@ const eideEnvList: string[] = [
     File.sep + 'bin',
     File.sep + 'lib',
     File.sep + 'lang',
-    File.sep + 'bin' + File.sep + '7z',
     File.sep + 'bin' + File.sep + 'include',
     File.sep + 'bin' + File.sep + 'builder',
     File.sep + 'res' + File.sep + 'html',
     File.sep + 'res' + File.sep + 'icon',
     File.sep + 'res' + File.sep + 'template',
-    File.sep + 'res' + File.sep + 'data'
+    File.sep + 'res' + File.sep + 'data',
+    File.sep + 'res' + File.sep + 'tools',
+    File.sep + 'res' + File.sep + 'tools' + File.sep + '7z'
 ];
 
 const codePage = GetLocalCodePage();
@@ -325,6 +326,10 @@ export class ResManager extends events.EventEmitter {
         return <File>this.GetDir('7z');
     }
 
+    Get7za(): File {
+        return File.fromArray([this.Get7zDir().path, '7za.exe']);
+    }
+
     getCMSISHeaderPacks(): File[] {
         const dir = File.fromArray([(<File>this.GetDir('include')).path, 'cmsis']);
         return dir.GetList(undefined, File.EMPTY_FILTER).filter((f) => {
@@ -573,8 +578,6 @@ export class ResManager extends events.EventEmitter {
     }
 
     //---------------------------------------------------
-
-    //-----------------------------------------------------------------
 
     private GetDir(name: string): File | undefined {
         return this.dirMap.get(name);
