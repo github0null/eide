@@ -590,7 +590,9 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
 
     // register msys bash profile for windows
     if (os.platform() == 'win32') {
-        vscode.window.registerTerminalProfileProvider('eide.msys.bash', new MsysTerminalProvider());
+        context.subscriptions.push(
+            vscode.window.registerTerminalProfileProvider('eide.msys.bash', new MsysTerminalProvider())
+        );
     }
 
     // update onchanged
@@ -622,6 +624,11 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
         vscode.window.registerCustomEditorProvider('cl.eide.map.view', new MapViewEditorProvider(), {
             webviewOptions: { enableFindWidget: true }
         })
+    );
+
+    // register some links provider
+    context.subscriptions.push(
+        vscode.window.registerTerminalLinkProvider(new EideTerminalLinkProvider())
     );
 
     return true;
@@ -666,6 +673,67 @@ function RegisterGlobalEvent() {
         vscode.commands.executeCommand('setContext', 'cl.eide.projectActived', prj_count != 0);
         vscode.commands.executeCommand('setContext', 'cl.eide.enable.active', prj_count > 1);
     });
+}
+
+// --- terminal link provider
+
+class EideTerminalLink extends vscode.TerminalLink {
+    file?: string;
+    line?: number;
+}
+
+class EideTerminalLinkProvider implements vscode.TerminalLinkProvider<EideTerminalLink> {
+
+    private workspace: File | undefined;
+    private macthers: Map<RegExp, { file: number, line: number }> = new Map();
+
+    constructor() {
+        this.workspace = WorkspaceManager.getInstance().getFirstWorkspace();
+        this.macthers.set(/\bIN LINE (\d+) OF ([^:]+)/, { line: 1, file: 2 }); // keil c51
+    }
+
+    private toAbsPath(path: string): string {
+
+        if (this.workspace == undefined || NodePath.isAbsolute(path)) {
+            return path;
+        }
+
+        return NodePath.normalize(`${this.workspace.path}/${path}`);
+    }
+
+    async provideTerminalLinks(context: vscode.TerminalLinkContext, token: vscode.CancellationToken): Promise<EideTerminalLink[]> {
+
+        const res: EideTerminalLink[] = [];
+
+        this.macthers.forEach((mInfo, matcher) => {
+            const m = matcher.exec(context.line);
+            if (m && m.length > 1) {
+                const link = new EideTerminalLink(m.index, m[0].length);
+                link.file = this.toAbsPath(m[mInfo.file]);
+                link.line = parseInt(m[mInfo.line]) - 1;
+                res.push(link);
+            }
+        });
+
+        return res;
+    }
+
+    async handleTerminalLink(link: EideTerminalLink): Promise<void> {
+
+        if (!link.file || !link.line || link.line == -1) return;
+
+        if (!File.IsFile(link.file)) {
+            vscode.window.showWarningMessage(`File '${link.file}' is not existed !`);
+            return;
+        }
+
+        const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(link.file));
+
+        vscode.window.showTextDocument(doc, {
+            preview: true,
+            selection: doc.lineAt(link.line).range
+        });
+    }
 }
 
 // --- msys provider

@@ -979,6 +979,8 @@ class C51CodeBuilder extends CodeBuilder {
         switch (this.project.getToolchain().name) {
             case 'SDCC':
                 return ['$gcc'];
+            case 'Keil_C51':
+                return ['$keilc51'];
             default:
                 return [];
         }
