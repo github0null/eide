@@ -127,7 +127,7 @@ export class VirtualSource implements SourceProvider {
         this._event = new events.EventEmitter();
     }
 
-    public static isVirtualFile(path: string): boolean {
+    public static isVirtualPath(path: string): boolean {
         return path.startsWith(VirtualSource.rootName);
     }
 
@@ -795,7 +795,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
                     // reset exclude info
                     const excludeList = this.GetConfiguration().config.excludeList;
                     const pathMatcher = `.${File.sep}${folder.name}${File.sep}`;
-                    const pathReplacer = `.${File.sep}${DependenceManager.DEPENDENCE_DIR}${File.sep}`;
+                    const pathReplacer = `${DependenceManager.DEPENDENCE_DIR}/`;
                     for (let index = 0; index < excludeList.length; index++) {
                         const element = excludeList[index];
                         if (element.startsWith(pathMatcher)) {
@@ -842,7 +842,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         const prjConfig = this.GetConfiguration();
 
         // clear duplicated items
-        prjConfig.config.excludeList = ArrayDelRepetition(prjConfig.config.excludeList);
+        prjConfig.config.excludeList = ArrayDelRepetition(
+            prjConfig.config.excludeList.map(p => File.ToUnixPath(p))
+        );
 
         // clear invalid src folders
         prjConfig.config.srcDirs = prjConfig.config.srcDirs
@@ -1237,9 +1239,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
     isExcluded(path: string): boolean {
 
-        const excList = this.GetConfiguration().config.excludeList.map((p) => File.ToUnixPath(p));
+        const excList = this.GetConfiguration().config.excludeList;
         const rePath = File.ToUnixPath(this.ToRelativePath(path) || path);
-        const isFolder = VirtualSource.isVirtualFile(path) ? this.virtualSource.isFolder(path) : File.IsDir(path);
+        const isFolder = VirtualSource.isVirtualPath(path) ? this.virtualSource.isFolder(path) : File.IsDir(path);
 
         if (isFolder) { // is a folder
             return excList.findIndex(excPath => rePath === excPath || rePath.startsWith(`${excPath}/`)) !== -1;
@@ -1250,8 +1252,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
     protected addExclude(path: string): boolean {
         const excludeList = this.GetConfiguration().config.excludeList;
-        const rePath = this.ToRelativePath(path) || path;
-        if (!excludeList.includes(rePath)) {
+        const rePath = File.ToUnixPath(this.ToRelativePath(path) || path);
+        if (!excludeList.includes(rePath)) { // not existed, add it
             excludeList.push(rePath);
             return true;
         }
@@ -1260,9 +1262,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
     protected clearExclude(path: string): boolean {
         const excludeList = this.GetConfiguration().config.excludeList;
-        const rePath = this.ToRelativePath(path) || path;
+        const rePath = File.ToUnixPath(this.ToRelativePath(path) || path);
         const index = excludeList.indexOf(rePath);
-        if (index !== -1) {
+        if (index !== -1) { // if existed, clear it
             excludeList.splice(index, 1);
             return true;
         }
@@ -1732,6 +1734,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
             return false;
         }
         return true;
+    }
+
+    public notifySourceExplorerViewRefresh() {
+        this.emit('dataChanged', 'files');
     }
 
     protected onToolchainChanged() {

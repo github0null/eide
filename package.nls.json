@@ -60,6 +60,7 @@
     "eide.explorer.include.folder": "Include Folder",
     "eide.explorer.show.file.dir": "Show In File Explorer",
     "eide.explorer.modify.file.path": "Modify File Path",
+    "eide.explorer.modify.exclude_list": "Modify Source File Exclude List",
     
     "eide.source.show_cmsis_config_wizard": "CMSIS Configuration Wizard",
     "eide.source.show.disassembly": "Show Disassembly",

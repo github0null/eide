@@ -1942,13 +1942,24 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         // register doc event
         context.subscriptions.push(vscode.workspace.onDidSaveTextDocument((doc) => {
-            this.onCustomDepYamlSaved(doc);
-            this.onFolderSourceYamlSaved(doc);
+            this.YamlConfigProvider_notifyDocSaved(doc);
         }));
         context.subscriptions.push(vscode.workspace.onDidCloseTextDocument((doc) => {
-            this.onCustomDepYamlClosed(doc);
-            this.onFolderSourceYamlClosed(doc);
+            this.YamlConfigProvider_notifyDocClosed(doc);
         }));
+
+        // register yaml config provider
+        {
+            const providerList: ModifiableYamlConfigProvider[] = [
+                new VFolderSourcePathsModifier(),
+                new ProjectAttrModifier(),
+                new ProjectExcSourceModifier()
+            ];
+
+            for (const provider of providerList) {
+                this.registerModifiableYamlConfigProvider(provider.id, provider);
+            }
+        }
 
         this.on('request_open_project', (fsPath: string) => this.dataProvider.OpenProject(fsPath));
         this.on('request_create_project', (option: CreateOptions) => this.dataProvider.CreateProject(option));
@@ -4103,141 +4114,61 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
     }
 
-    // KV: <ymlFileName, {vFolderPath: string, project: EideProject}>
-    private prjFolderSourceChangesMap: Map<string, { vFolderPath: string, project: AbstractProject }> = new Map();
-    async modifySourcesPath(item: ProjTreeItem) {
+    ////////////////////////////////// modifiable yaml config implements ////////////////////////////////////////
 
+    private yamlCfgProviderList: Map<string, ModifiableYamlConfigProvider> = new Map();
+
+    registerModifiableYamlConfigProvider(id: string, provider: ModifiableYamlConfigProvider) {
+        this.yamlCfgProviderList.set(id, provider);
+    }
+
+    private YamlConfigProvider_notifyDocSaved(doc: vscode.TextDocument) {
+
+        const docName = NodePath.basename(doc.uri.fsPath);
+
+        this.yamlCfgProviderList.forEach((val, key) => {
+            if (docName.startsWith(`eide.${key}.`)) {
+                val.onYamlDocSaved(doc);
+            }
+        });
+    }
+
+    private YamlConfigProvider_notifyDocClosed(doc: vscode.TextDocument) {
+
+        const docName = NodePath.basename(doc.uri.fsPath);
+
+        this.yamlCfgProviderList.forEach((val, key) => {
+            if (docName.startsWith(`eide.${key}.`)) {
+                val.onYamlDocClosed(doc);
+            }
+        });
+    }
+
+    async openYamlConfig(item: ProjTreeItem, id: string) {
+
+        const provider = this.yamlCfgProviderList.get(id);
+        if (provider == undefined) {
+            throw new Error(`not found any registed config provider: '${id}'`);
+        }
+
+        // provide file
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
-        const vSourceManager = prj.getVirtualSourceManager();
-
-        // virtual file
-        if (item.type === TreeItemType.V_FILE_ITEM ||
-            item.type === TreeItemType.V_EXCFILE_ITEM) {
-
-            const vInfo = <VirtualFileInfo>item.val.obj;
-            const path = await vscode.window.showInputBox({
-                value: vInfo.vFile.path,
-                ignoreFocusOut: true,
-                prompt: `Input a file path (allow relative path)`
-            });
-
-            if (path == undefined) {
-                return;
-            }
-
-            const repath = prj.ToRelativePath(path) || path;
-            const vFileInfo = vSourceManager.getFile(vInfo.path);
-            if (vFileInfo) {
-                vFileInfo.path = repath;
-                const vDir = NodePath.dirname(vInfo.path);
-                // we use 'notifyUpdateFolder', not 'notifyUpdateFile', 
-                // because we need to update c/c++ intellisense config
-                vSourceManager.notifyUpdateFolder(vDir);
-            } else {
-                GlobalEvent.emit('msg', newMessage('Error', `Internal error: can't get obj from virtual path: '${vInfo.path}'`));
-            }
+        const defFileName = `eide.${id}.${Date.now()}.yaml`;
+        const res = await provider.provideYamlDocument(prj, item, defFileName);
+        if (res instanceof Error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(res, 'Warning'));
+            return;
         }
 
-        // virtual folder
-        else if (item.type === TreeItemType.PROJECT ||
-            item.type === TreeItemType.V_FOLDER ||
-            item.type === TreeItemType.V_FOLDER_ROOT) {
-
-            const vInfo = <VirtualFolderInfo>item.val.obj;
-            const vFolderInfo = vSourceManager.getFolder(vInfo.path);
-            if (vFolderInfo) {
-
-                const getOldFileNameByProject = (vPath: string, prj: AbstractProject) => {
-                    for (const KV of this.prjFolderSourceChangesMap) {
-                        if (KV[1].vFolderPath == vPath &&
-                            KV[1].project.getWsPath().toLowerCase() == prj.getWsPath().toLowerCase()) {
-                            return KV[0];
-                        }
-                    }
-                };
-
-                let tmpFile: File;
-
-                let oldName = getOldFileNameByProject(vInfo.path, prj);
-                if (oldName) {
-                    tmpFile = File.fromArray([os.tmpdir(), oldName]);
-                } else { // if file not exist, add to mapper
-                    tmpFile = File.fromArray([os.tmpdir(), `eide-vfolder-${Date.now()}.yaml`]);
-                    this.prjFolderSourceChangesMap.set(tmpFile.name, { vFolderPath: vInfo.path, project: prj });
-                }
-
-                const yamlLines: string[] = [
-                    `#`,
-                    `# You can modify files path by editing and saving this file (allow relative path).`,
-                    `#`,
-                    ``,
-                    yml.stringify(vFolderInfo.files, { indent: 4 })
-                ];
-
-                tmpFile.Write(yamlLines.join(os.EOL));
-                vscode.window.showTextDocument(vscode.Uri.file(tmpFile.path), { preview: false });
-
-            } else {
-                GlobalEvent.emit('msg', newMessage('Error', `Internal error: can't get obj from virtual path: '${vInfo.path}'`));
-            }
+        // show file if we need
+        if (res) {
+            vscode.window.showTextDocument(
+                vscode.Uri.file(res.path), { preview: false }
+            );
         }
     }
 
-    // callbk, if config file saved, apply the changes
-    private onFolderSourceYamlSaved(doc: vscode.TextDocument) {
-
-        const tmpFileName = NodePath.basename(doc.fileName);
-        const info = this.prjFolderSourceChangesMap.get(tmpFileName);
-
-        // skip irrelevant files
-        if (info == undefined) return;
-
-        // save to config
-        try {
-
-            const vSrcManger = info.project.getVirtualSourceManager();
-            const vFolderInfo = vSrcManger.getFolder(info.vFolderPath);
-            if (!vFolderInfo) {
-                throw new Error(`Virtual folder '${info.vFolderPath}' is not exist !`);
-            }
-
-            let fileList: VirtualFile[] = yml.parse(doc.getText());
-            if (fileList != undefined && !Array.isArray(fileList)) {
-                throw new Error(`Type error, files list must be an array, please check your yaml config file !`);
-            }
-
-            // convert to repath
-            if (fileList) {
-                fileList = fileList.map((vFile) => {
-                    return {
-                        path: info.project.ToRelativePath(vFile.path) || vFile.path
-                    };
-                });
-            }
-
-            vFolderInfo.files = fileList || [];
-            vSrcManger.notifyUpdateFolder(info.vFolderPath);
-
-        } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
-        }
-    }
-
-    // callbk, if config file closed, rm tmp file
-    private onFolderSourceYamlClosed(doc: vscode.TextDocument) {
-
-        // skip irrelevant files
-        const tmpFileName = NodePath.basename(doc.fileName);
-        if (!this.prjFolderSourceChangesMap.has(tmpFileName)) return;
-
-        // do 
-        try {
-            this.prjFolderSourceChangesMap.delete(tmpFileName); // remove from mapper
-            fs.unlinkSync(`${os.tmpdir()}/${tmpFileName}`);
-        } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
-        }
-    }
+    ///////////////////////////////////////////////////////////////////////////
 
     CopyItemValue(item: ProjTreeItem) {
         if (item.val.value instanceof File) {
@@ -4253,146 +4184,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         vscode.window.showTextDocument(vscode.Uri.parse(optFile.ToUri()), { preview: true });
     }
 
-    // callbk, if config file saved, apply the changes
-    private onCustomDepYamlSaved(doc: vscode.TextDocument) {
-
-        const tmpFileName = NodePath.basename(doc.fileName);
-        const prj = this.prjCusDepChangesMap.get(tmpFileName);
-
-        // skip irrelevant files
-        if (prj == undefined) return;
-
-        // save to config
-        try {
-
-            const cusDep = prj.GetConfiguration().CustomDep_getDependence();
-            const cfg = yml.parse(doc.getText());
-
-            // inc list
-            if (Array.isArray(cfg.IncludeFolders)) {
-                const li = cfg.IncludeFolders
-                    .filter((path: any) => typeof (path) == 'string')
-                    .map((path: string) => prj.ToAbsolutePath(path));
-                cusDep.incList = ArrayDelRepetition(li);
-            } else {
-                cusDep.incList = [];
-            }
-
-            // lib list
-            if (Array.isArray(cfg.LibraryFolders)) {
-                const li = cfg.LibraryFolders
-                    .filter((path: any) => typeof (path) == 'string')
-                    .map((path: string) => prj.ToAbsolutePath(path));
-                cusDep.libList = ArrayDelRepetition(li);
-            } else {
-                cusDep.libList = [];
-            }
-
-            // macro list
-            if (Array.isArray(cfg.Defines)) {
-                const li = cfg.Defines
-                    .filter((path: any) => typeof (path) == 'string');
-                cusDep.defineList = ArrayDelRepetition(li);
-            } else {
-                cusDep.defineList = [];
-            }
-
-            prj.GetConfiguration().CustomDep_NotifyChanged();
-
-        } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
-        }
-    }
-
-    // callbk, if config file closed, rm tmp file
-    private onCustomDepYamlClosed(doc: vscode.TextDocument) {
-
-        // skip irrelevant files
-        const tmpFileName = NodePath.basename(doc.fileName);
-        if (!this.prjCusDepChangesMap.has(tmpFileName)) return;
-
-        // do 
-        try {
-            this.prjCusDepChangesMap.delete(tmpFileName); // remove from mapper
-            fs.unlinkSync(`${os.tmpdir()}/${tmpFileName}`);
-        } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
-        }
-    }
-
-    // KV: <ymlFileName, EideProject>
-    private prjCusDepChangesMap: Map<string, AbstractProject> = new Map();
-    async ModifyCustomDependence(item: ProjTreeItem) {
-
-        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
-        const cusDep = prj.GetConfiguration().CustomDep_getDependence();
-
-        // gen deps yaml content
-        const yamlLines: string[] = [
-            `#`,
-            `# You can modify the configuration by editing and saving this file.`,
-            `#`
-        ];
-
-        // fill data
-        {
-            // push include path
-            yamlLines.push(
-                ``,
-                `# Header Include Path`,
-                `IncludeFolders:`,
-                `#   - ./Your/Include/Folder/Path`
-            );
-            cusDep.incList.forEach((path) => {
-                yamlLines.push(`    - ${prj.ToRelativePath(path) || path}`)
-            });
-
-            // push lib folder path
-            yamlLines.push(
-                ``,
-                `# Library Search Path`,
-                `LibraryFolders:`,
-                `#   - ./Your/Library/Path`
-            );
-            cusDep.libList.forEach((path) => {
-                yamlLines.push(`    - ${prj.ToRelativePath(path) || path}`)
-            });
-
-            // push macros
-            yamlLines.push(
-                ``,
-                `# Preprocessor Definitions`,
-                `Defines:`,
-                `#   - TEST=1`
-            );
-            cusDep.defineList.forEach((macro) => {
-                yamlLines.push(`    - ${macro}`)
-            });
-        }
-
-        const getTmpPathByProject = (prj: AbstractProject) => {
-            for (const KV of this.prjCusDepChangesMap) {
-                if (KV[1].getWsPath().toLowerCase() == prj.getWsPath().toLowerCase()) {
-                    return KV[0];
-                }
-            }
-        };
-
-        // write and open file
-        const yamlStr = yamlLines.join(os.EOL);
-        const oldName = getTmpPathByProject(prj);
-        let tmpFile: File;
-
-        if (oldName) {
-            tmpFile = File.fromArray([os.tmpdir(), oldName]);
-        } else {// if file not exist, add to mapper
-            tmpFile = File.fromArray([os.tmpdir(), `eide-deps-${Date.now()}.yaml`]);
-            this.prjCusDepChangesMap.set(tmpFile.name, prj);
-        }
-
-        tmpFile.Write(yamlStr);
-        vscode.window.showTextDocument(vscode.Uri.parse(tmpFile.ToUri()), { preview: false });
-    }
+    ///////////////////////////////////////////////////////////////////////////////
 
     RemoveDependenceItem(item: ProjTreeItem) {
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
@@ -4577,6 +4369,385 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 return true;
             }
 
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+        }
+    }
+}
+
+interface ModifiableYamlConfigProvider {
+
+    id: string; // uid for this provider
+
+    provideYamlDocument(project: AbstractProject, viewItem: ProjTreeItem, defFileName: string): Promise<File | Error | undefined>;
+
+    onYamlDocSaved(doc: vscode.TextDocument): Promise<void>;
+
+    onYamlDocClosed(doc: vscode.TextDocument): Promise<void>;
+}
+
+class VFolderSourcePathsModifier implements ModifiableYamlConfigProvider {
+
+    id: string = 'src-path-cfg';
+
+    // KV: <ymlFileName, {vFolderPath: string, project: EideProject}>
+    private prjFolderSourceChangesMap: Map<string, { vFolderPath: string, project: AbstractProject }> = new Map();
+
+    async provideYamlDocument(project: AbstractProject, item: ProjTreeItem, defFileName: string): Promise<File | Error | undefined> {
+
+        const vSourceManager = project.getVirtualSourceManager();
+
+        // virtual file
+        if (item.type === TreeItemType.V_FILE_ITEM ||
+            item.type === TreeItemType.V_EXCFILE_ITEM) {
+
+            const vInfo = <VirtualFileInfo>item.val.obj;
+            const path = await vscode.window.showInputBox({
+                value: vInfo.vFile.path,
+                ignoreFocusOut: true,
+                prompt: `Input a file path (allow relative path)`
+            });
+
+            if (path == undefined) {
+                return;
+            }
+
+            const repath = project.ToRelativePath(path) || path;
+            const vFileInfo = vSourceManager.getFile(vInfo.path);
+            if (vFileInfo) {
+                vFileInfo.path = repath;
+                const vDir = NodePath.dirname(vInfo.path);
+                // we use 'notifyUpdateFolder', not 'notifyUpdateFile', 
+                // because we need to update c/c++ intellisense config
+                vSourceManager.notifyUpdateFolder(vDir);
+            } else {
+                return new Error(`Internal error: can't get obj from virtual path: '${vInfo.path}'`);
+            }
+        }
+
+        // virtual folder
+        else if (item.type === TreeItemType.PROJECT ||
+            item.type === TreeItemType.V_FOLDER ||
+            item.type === TreeItemType.V_FOLDER_ROOT) {
+
+            const vInfo = <VirtualFolderInfo>item.val.obj;
+            const vFolderInfo = vSourceManager.getFolder(vInfo.path);
+            if (vFolderInfo) {
+
+                const getOldFileNameByProject = (vPath: string, prj: AbstractProject) => {
+                    for (const KV of this.prjFolderSourceChangesMap) {
+                        if (KV[1].vFolderPath == vPath &&
+                            KV[1].project.getWsPath().toLowerCase() == prj.getWsPath().toLowerCase()) {
+                            return KV[0];
+                        }
+                    }
+                };
+
+                let yamlFile: File;
+
+                let oldName = getOldFileNameByProject(vInfo.path, project);
+                if (oldName) {
+                    yamlFile = File.fromArray([os.tmpdir(), oldName]);
+                } else { // if file not exist, add to mapper
+                    yamlFile = File.fromArray([os.tmpdir(), defFileName]);
+                    this.prjFolderSourceChangesMap.set(yamlFile.name, { vFolderPath: vInfo.path, project: project });
+                }
+
+                const yamlLines: string[] = [
+                    `#`,
+                    `# You can modify files path by editing and saving this file (allow relative path).`,
+                    `#`,
+                    ``,
+                    yml.stringify(vFolderInfo.files, { indent: 4 })
+                ];
+
+                yamlFile.Write(yamlLines.join(os.EOL));
+
+                return yamlFile;
+
+            } else {
+                return new Error(`Internal error: can't get obj from virtual path: '${vInfo.path}'`);
+            }
+        }
+    }
+
+    async onYamlDocSaved(doc: vscode.TextDocument): Promise<void> {
+
+        const fileName = NodePath.basename(doc.uri.fsPath);
+        const info = this.prjFolderSourceChangesMap.get(fileName);
+        if (info == undefined) return;
+
+        // save to config
+        try {
+
+            const vSrcManger = info.project.getVirtualSourceManager();
+            const vFolderInfo = vSrcManger.getFolder(info.vFolderPath);
+            if (!vFolderInfo) {
+                throw new Error(`Virtual folder '${info.vFolderPath}' is not exist !`);
+            }
+
+            let fileList: VirtualFile[] = yml.parse(doc.getText());
+            if (fileList != undefined && !Array.isArray(fileList)) {
+                throw new Error(`Type error, files list must be an array, please check your yaml config file !`);
+            }
+
+            // convert to repath
+            if (fileList) {
+                fileList = fileList.map((vFile) => {
+                    return {
+                        path: info.project.ToRelativePath(vFile.path) || vFile.path
+                    };
+                });
+            }
+
+            vFolderInfo.files = fileList || [];
+            vSrcManger.notifyUpdateFolder(info.vFolderPath);
+
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+        }
+    }
+
+    async onYamlDocClosed(doc: vscode.TextDocument): Promise<void> {
+
+        // skip irrelevant files
+        const fileName = NodePath.basename(doc.uri.fsPath);
+        if (!this.prjFolderSourceChangesMap.has(fileName)) return;
+
+        // do 
+        try {
+            this.prjFolderSourceChangesMap.delete(fileName); // remove from mapper
+            fs.unlinkSync(`${os.tmpdir()}/${fileName}`);
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+        }
+    }
+}
+
+class ProjectAttrModifier implements ModifiableYamlConfigProvider {
+
+    id: string = 'prj-attr-cfg';
+
+    // KV: <ymlFileName, EideProject>
+    private prjCusDepChangesMap: Map<string, AbstractProject> = new Map();
+
+    async provideYamlDocument(project: AbstractProject, viewItem: ProjTreeItem, defFileName: string): Promise<File | Error | undefined> {
+
+        const prj = project;
+        const cusDep = prj.GetConfiguration().CustomDep_getDependence();
+
+        // gen deps yaml content
+        const yamlLines: string[] = [
+            `#`,
+            `# You can modify the configuration by editing and saving this file.`,
+            `#`
+        ];
+
+        // fill data
+        {
+            // push include path
+            yamlLines.push(
+                ``,
+                `# Header Include Path`,
+                `IncludeFolders:`,
+                `#   - ./Your/Include/Folder/Path`
+            );
+            cusDep.incList.forEach((path) => {
+                yamlLines.push(`    - ${prj.ToRelativePath(path) || path}`)
+            });
+
+            // push lib folder path
+            yamlLines.push(
+                ``,
+                `# Library Search Path`,
+                `LibraryFolders:`,
+                `#   - ./Your/Library/Path`
+            );
+            cusDep.libList.forEach((path) => {
+                yamlLines.push(`    - ${prj.ToRelativePath(path) || path}`)
+            });
+
+            // push macros
+            yamlLines.push(
+                ``,
+                `# Preprocessor Definitions`,
+                `Defines:`,
+                `#   - TEST=1`
+            );
+            cusDep.defineList.forEach((macro) => {
+                yamlLines.push(`    - ${macro}`)
+            });
+        }
+
+        const getTmpPathByProject = (prj: AbstractProject) => {
+            for (const KV of this.prjCusDepChangesMap) {
+                if (KV[1].getWsPath().toLowerCase() == prj.getWsPath().toLowerCase()) {
+                    return KV[0];
+                }
+            }
+        };
+
+        // write and open file
+        const yamlStr = yamlLines.join(os.EOL);
+        const oldName = getTmpPathByProject(prj);
+
+        let tmpFile: File;
+        if (oldName) {
+            tmpFile = File.fromArray([os.tmpdir(), oldName]);
+        } else {// if file not exist, add to mapper
+            tmpFile = File.fromArray([os.tmpdir(), defFileName]);
+            this.prjCusDepChangesMap.set(tmpFile.name, prj);
+        }
+
+        tmpFile.Write(yamlStr);
+
+        return tmpFile;
+    }
+
+    async onYamlDocSaved(doc: vscode.TextDocument): Promise<void> {
+
+        const tmpFileName = NodePath.basename(doc.fileName);
+        const prj = this.prjCusDepChangesMap.get(tmpFileName);
+
+        // skip irrelevant files
+        if (prj == undefined) return;
+
+        // save to config
+        try {
+
+            const cusDep = prj.GetConfiguration().CustomDep_getDependence();
+            const cfg = yml.parse(doc.getText());
+
+            // inc list
+            if (Array.isArray(cfg.IncludeFolders)) {
+                const li = cfg.IncludeFolders
+                    .filter((path: any) => typeof (path) == 'string')
+                    .map((path: string) => prj.ToAbsolutePath(path));
+                cusDep.incList = ArrayDelRepetition(li);
+            } else {
+                cusDep.incList = [];
+            }
+
+            // lib list
+            if (Array.isArray(cfg.LibraryFolders)) {
+                const li = cfg.LibraryFolders
+                    .filter((path: any) => typeof (path) == 'string')
+                    .map((path: string) => prj.ToAbsolutePath(path));
+                cusDep.libList = ArrayDelRepetition(li);
+            } else {
+                cusDep.libList = [];
+            }
+
+            // macro list
+            if (Array.isArray(cfg.Defines)) {
+                const li = cfg.Defines
+                    .filter((path: any) => typeof (path) == 'string');
+                cusDep.defineList = ArrayDelRepetition(li);
+            } else {
+                cusDep.defineList = [];
+            }
+
+            prj.GetConfiguration().CustomDep_NotifyChanged();
+
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+        }
+    }
+
+    async onYamlDocClosed(doc: vscode.TextDocument): Promise<void> {
+
+        // skip irrelevant files
+        const tmpFileName = NodePath.basename(doc.fileName);
+        if (!this.prjCusDepChangesMap.has(tmpFileName)) return;
+
+        // do 
+        try {
+            this.prjCusDepChangesMap.delete(tmpFileName); // remove from mapper
+            fs.unlinkSync(`${os.tmpdir()}/${tmpFileName}`);
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+        }
+    }
+}
+
+class ProjectExcSourceModifier implements ModifiableYamlConfigProvider {
+
+    id: string = 'src-exc-cfg';
+
+    private yamlFilesMap: Map<string, AbstractProject> = new Map();
+
+    async provideYamlDocument(project: AbstractProject, viewItem: ProjTreeItem, defFileName: string): Promise<File | Error | undefined> {
+
+        const prj = project;
+
+        // gen deps yaml content
+        const yamlLines: string[] = [
+            `#`,
+            `# You can modify the configuration by editing and saving this file.`,
+            `#`,
+            ``,
+        ];
+
+        try {
+
+            prj.GetConfiguration().config.excludeList.forEach((path) => {
+                yamlLines.push(`- ${path}`);
+            });
+
+            const getOldNameByProject = (prj: AbstractProject) => {
+                for (const KV of this.yamlFilesMap) {
+                    if (KV[1].getWsPath().toLowerCase() == prj.getWsPath().toLowerCase()) {
+                        return KV[0];
+                    }
+                }
+            };
+
+            const yamlStr = yamlLines.join(os.EOL);
+            const oldName = getOldNameByProject(prj);
+
+            let ymlFile: File;
+            if (oldName) {
+                ymlFile = File.fromArray([os.tmpdir(), oldName]);
+            } else {
+                ymlFile = File.fromArray([os.tmpdir(), defFileName]);
+                this.yamlFilesMap.set(ymlFile.name, prj);
+            }
+
+            ymlFile.Write(yamlStr);
+
+            return ymlFile;
+
+        } catch (error) {
+            return error;
+        }
+    }
+
+    async onYamlDocSaved(doc: vscode.TextDocument): Promise<void> {
+
+        const yamlFile = new File(doc.uri.fsPath);
+
+        const prj = this.yamlFilesMap.get(yamlFile.name);
+        if (!prj) return;
+
+        try {
+            const excList = yml.parse(yamlFile.Read());
+            if (!Array.isArray(excList)) { throw new Error(`Type error, exclude list must be an array !`); }
+            prj.GetConfiguration().config.excludeList = excList.map(p => File.ToUnixPath(p));
+            prj.notifySourceExplorerViewRefresh();
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+        }
+    }
+
+    async onYamlDocClosed(doc: vscode.TextDocument): Promise<void> {
+
+        const fileName = NodePath.basename(doc.uri.fsPath);
+        const prj = this.yamlFilesMap.get(fileName);
+        if (!prj) return;
+
+        try {
+            this.yamlFilesMap.delete(fileName);
+            fs.unlinkSync(`${os.tmpdir()}/${fileName}`);
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }

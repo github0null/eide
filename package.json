@@ -577,6 +577,10 @@
                 "title": "%eide.project.clear.cppcheck%"
             },
             {
+                "command": "_cl.eide.project.source.modify.exclude_list",
+                "title": "%eide.explorer.modify.exclude_list%"
+            },
+            {
                 "command": "_cl.eide.project.source.show_disassembly",
                 "title": "%eide.source.show.disassembly%"
             },
@@ -1119,6 +1123,10 @@
                 {
                     "command": "_cl.eide.project.source.file.show.dir",
                     "when": "viewItem == OUTPUT_FILE_ITEM || viewItem == FILE_ITEM || viewItem == EXCFILE_ITEM || viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
+                },
+                {
+                    "command": "_cl.eide.project.source.modify.exclude_list",
+                    "when": "viewItem == PROJECT && view == Project"
                 },
                 {
                     "command": "_cl.eide.project.source.modify.path",

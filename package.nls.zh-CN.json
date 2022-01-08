@@ -53,6 +53,7 @@
     "eide.explorer.include.folder": "取消排除",
     "eide.explorer.show.file.dir": "在文件浏览器中显示",
     "eide.explorer.modify.file.path": "修改源文件路径",
+    "eide.explorer.modify.exclude_list": "修改源文件排除列表",
     
     "eide.source.show_cmsis_config_wizard": "CMSIS Configuration Wizard",
     "eide.source.show.disassembly": "查看反汇编",
