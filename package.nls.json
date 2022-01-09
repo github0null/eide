@@ -21,6 +21,7 @@
     "eide.project.show.commands": "Show Compiler CommandLine",
     "eide.project.switch.target": "Switch Target",
     "eide.project.build": "Build",
+    "eide.project.buildAndFlash": "Build And Flash",
     "eide.project.rebuild": "Rebuild",
     "eide.project.clean": "Clean",
     "eide.project.upload": "Upload Program To Device",
@@ -125,7 +126,7 @@
     "settings.armcc.convert.axf": "Convert `.axf` to `.elf` for ARMCC compiler",
     
     "settings.riscv.gcc.install.folder": "RISC-V toolchain install folder [`example: D:\\xpack-riscv-none-embed-gcc-8.3.0-2.3`]",
-    "settings.riscv.gcc.prefix": "RISC-V toolchain prefix",
+    "settings.riscv.gcc.prefix": "RISC-V toolchain prefix, like: `riscv-none-embed-`",
 
     "settings.jlink.install.folder": "JLink install directory [`example: C:\\Program Files (x86)\\SEGGER\\JLink`]",
     "settings.jlink.device.xml": "JLinkDevices.xml File Path",

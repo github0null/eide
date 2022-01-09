@@ -95,12 +95,12 @@ export abstract class CodeBuilder {
         this._event = new events.EventEmitter();
     }
 
-    on(event: 'finished', listener: () => void): void;
+    on(event: 'finished', listener: (done?: boolean) => void): void;
     on(event: any, listener: (arg: any) => void): void {
         this._event.on(event, listener);
     }
 
-    private emit(event: 'finished'): void;
+    private emit(event: 'finished', done?: boolean): void;
     private emit(event: any, arg?: any): void {
         this._event.emit(event, arg);
     }
@@ -242,12 +242,31 @@ export abstract class CodeBuilder {
         const resManager = ResManager.GetInstance();
         const shellPath = ResManager.checkWindowsShell() ? undefined : resManager.getCMDPath();
 
-        try { // watch log, to emit done event
+        // watch log, to emit done event
+        try {
+
+            const checkBuildDone = (logFile: File): boolean => {
+                try {
+                    // [2022-xx-xx 15:07:53]	[done]
+                    const revLines = logFile.Read().split(/\r\n|\n/).reverse();
+                    const idx = revLines.findIndex(line => /^\[\d+\-\d+\-\d+ [^\]]+\]/.test(line));
+                    if (idx == -1) { return false; }
+                    return /\[done\]\s*$/i.test(revLines[idx]);
+                } catch (error) {
+                    return false;
+                }
+            };
+
             const builderLog = File.fromArray([this.project.getEideDir().path, 'log', 'unify_builder.log']);
             if (!builderLog.IsFile()) builderLog.Write('');
             if (this.logWatcher) { this.logWatcher.Close(); delete this.logWatcher; };
+
+            // start watch
             this.logWatcher = new FileWatcher(builderLog, false);
-            this.logWatcher.OnChanged = () => { this.logWatcher?.Close(); this.emit('finished'); };
+            this.logWatcher.OnChanged = () => {
+                this.logWatcher?.Close();
+                this.emit('finished', checkBuildDone(builderLog));
+            };
             this.logWatcher.Watch();
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));

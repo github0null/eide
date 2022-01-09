@@ -21,6 +21,7 @@
     "eide.project.show.commands": "查看生成的编译器命令行",
     "eide.project.switch.target": "切换目标",
     "eide.project.build": "构建",
+    "eide.project.buildAndFlash": "构建，烧录",
     "eide.project.rebuild": "重新构建",
     "eide.project.clean": "清理",
     "eide.project.upload": "烧录",
@@ -115,7 +116,7 @@
     "settings.armcc.convert.axf": "编译完成后将 `.axf` 转换为 `.elf`",
     
     "settings.riscv.gcc.install.folder": "RISC-V Toolchain 安装目录 [`example: D:\\xpack-riscv-none-embed-gcc-8.3.0-2.3`]",
-    "settings.riscv.gcc.prefix": "RISC-V Toolchain 编译器前缀",
+    "settings.riscv.gcc.prefix": "RISC-V Toolchain 编译器前缀，例如：`riscv-none-embed-`",
 
     "settings.jlink.install.folder": "JLink 安装目录 [`example: C:\\Program Files (x86)\\SEGGER\\JLink`]",
     "settings.jlink.device.xml": "JLinkDevices.xml 文件路径",

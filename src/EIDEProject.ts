@@ -2232,7 +2232,8 @@ class EIDEProject extends AbstractProject {
         await super.AfterLoad();
 
         /* update workspace settings */
-        {
+        if (this.isAnNewProject) {
+
             const workspaceConfig = this.GetWorkspaceConfig();
             const settings = workspaceConfig.config.settings;
             const toolchain = this.getToolchain();
@@ -2264,50 +2265,53 @@ class EIDEProject extends AbstractProject {
             }
 
             // append default task for new project
-            if (this.isAnNewProject) {
-
-                const defTasks = [
-                    {
-                        "label": "build",
-                        "type": "shell",
-                        "command": "${command:eide.project.build}",
-                        "group": "build",
-                        "problemMatcher": "$gcc"
-                    },
-                    {
-                        "label": "flash",
-                        "type": "shell",
-                        "command": "${command:eide.project.uploadToDevice}",
-                        "group": "build",
-                        "problemMatcher": []
-                    },
-                    {
-                        "label": "rebuild",
-                        "type": "shell",
-                        "command": "${command:eide.project.rebuild}",
-                        "group": "build",
-                        "problemMatcher": "$gcc"
-                    },
-                    {
-                        "label": "clean",
-                        "type": "shell",
-                        "command": "${command:eide.project.clean}",
-                        "group": "build",
-                        "problemMatcher": []
-                    }
-                ];
-
-                if (!workspaceConfig.config.tasks) {
-                    workspaceConfig.config.tasks = {
-                        "version": "2.0.0",
-                        "tasks": defTasks
-                    }
+            const defTasks = [
+                {
+                    "label": "build",
+                    "type": "shell",
+                    "command": "${command:eide.project.build}",
+                    "group": "build",
+                    "problemMatcher": "$gcc"
+                },
+                {
+                    "label": "flash",
+                    "type": "shell",
+                    "command": "${command:eide.project.uploadToDevice}",
+                    "group": "build",
+                    "problemMatcher": []
+                },
+                {
+                    "label": "build and flash",
+                    "type": "shell",
+                    "command": "${command:eide.project.buildAndFlash}",
+                    "group": "build"
+                },
+                {
+                    "label": "rebuild",
+                    "type": "shell",
+                    "command": "${command:eide.project.rebuild}",
+                    "group": "build",
+                    "problemMatcher": "$gcc"
+                },
+                {
+                    "label": "clean",
+                    "type": "shell",
+                    "command": "${command:eide.project.clean}",
+                    "group": "build",
+                    "problemMatcher": []
                 }
+            ];
 
-                else if (Array.isArray(workspaceConfig.config.tasks.tasks)
-                    && workspaceConfig.config.tasks.tasks.length == 0) {
-                    workspaceConfig.config.tasks.tasks = defTasks;
+            if (!workspaceConfig.config.tasks) {
+                workspaceConfig.config.tasks = {
+                    "version": "2.0.0",
+                    "tasks": defTasks
                 }
+            }
+
+            else if (Array.isArray(workspaceConfig.config.tasks.tasks)
+                && workspaceConfig.config.tasks.tasks.length == 0) {
+                workspaceConfig.config.tasks.tasks = defTasks;
             }
 
             // add extension recommendation

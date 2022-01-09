@@ -2285,7 +2285,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     private _buildLock: boolean = false;
-    BuildSolution(prjItem?: ProjTreeItem, options?: BuildOptions) {
+    BuildSolution(prjItem?: ProjTreeItem, options?: BuildOptions, flashAfterBuild?: boolean) {
 
         const prj = this.getProjectByTreeItem(prjItem);
 
@@ -2311,9 +2311,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             const toolchain = prj.getToolchain().name;
 
             // notify view update after build done !
-            codeBuilder.on('finished', () => {
+            codeBuilder.on('finished', (done) => {
                 prj.notifyUpdateSourceRefs(toolchain);
                 this.notifyUpdateOutputFolder(prj);
+                if (flashAfterBuild && done) { this.UploadToDevice(prjItem); }
             });
 
             // start build
