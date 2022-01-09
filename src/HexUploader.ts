@@ -984,7 +984,8 @@ class CustomUploader extends HexUploader<string> {
 
         let commandLine = option.commandLine
             .replace(/\$\{hexFile\}|\$\{binFile\}|\$\{programFile\}/ig, programs[0].path)
-            .replace(/\$\{port\}/ig, portList[0] || 'none');
+            .replace(/\$\{port\}/ig, portList[0] || '')
+            .replace(/\$\{portList\}/ig, portList.join(' '));
 
         programs.forEach((file, index) => {
 

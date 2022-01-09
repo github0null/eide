@@ -27,7 +27,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "An embedded development environment for 8051/STM8/Cortex-M/RISC-V",
-    "version": "2.16.4",
+    "version": "2.16.5",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -64,6 +64,7 @@
         "@types/micromatch": "^4.0.2",
         "@types/mocha": "^5.2.7",
         "@types/node": "^12.12.17",
+        "@types/node-7z": "^2.1.4",
         "@types/vscode": "^1.38.0",
         "@types/x2js": "^3.1.0",
         "ts-loader": "^6.2.1",
@@ -73,17 +74,24 @@
         "webpack-cli": "^3.3.11"
     },
     "dependencies": {
-        "@types/unzipper": "^0.10.4",
         "iconv-lite": "^0.5.0",
         "ini": "^2.0.0",
         "jsonc": "^2.0.0",
         "micromatch": "^4.0.4",
-        "unzipper": "^0.10.11",
+        "node-7z": "^3.0.0",
         "vscode-cpptools": "^5.0.0",
         "x2js": "3.4.1",
         "yaml": "^1.10.2"
     },
     "contributes": {
+        "terminal": {
+            "profiles": [
+                {
+                    "id": "eide.msys.bash",
+                    "title": "Eide Msys Bash"
+                }
+            ]
+        },
         "customEditors": [
             {
                 "viewType": "cl.eide.map.view",
@@ -424,7 +432,7 @@
                         "type": "boolean",
                         "scope": "resource",
                         "markdownDescription": "%settings.armcc.convert.axf%",
-                        "default": true
+                        "default": false
                     },
                     "EIDE.STM8.STVP.CliExePath": {
                         "type": "string",
@@ -569,6 +577,10 @@
                 "title": "%eide.project.clear.cppcheck%"
             },
             {
+                "command": "_cl.eide.project.source.modify.exclude_list",
+                "title": "%eide.explorer.modify.exclude_list%"
+            },
+            {
                 "command": "_cl.eide.project.source.show_disassembly",
                 "title": "%eide.source.show.disassembly%"
             },
@@ -651,6 +663,11 @@
             {
                 "command": "_cl.eide.project.setActive",
                 "title": "%eide.project.active%"
+            },
+            {
+                "command": "eide.project.buildAndFlash",
+                "category": "eide",
+                "title": "%eide.project.buildAndFlash%"
             },
             {
                 "command": "eide.project.build",
@@ -1113,6 +1130,10 @@
                     "when": "viewItem == OUTPUT_FILE_ITEM || viewItem == FILE_ITEM || viewItem == EXCFILE_ITEM || viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
                 },
                 {
+                    "command": "_cl.eide.project.source.modify.exclude_list",
+                    "when": "viewItem == PROJECT && view == Project"
+                },
+                {
                     "command": "_cl.eide.project.source.modify.path",
                     "when": "viewItem == PROJECT || viewItem == V_FOLDER || viewItem == V_FOLDER_ROOT || viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
                 },
@@ -1488,6 +1509,20 @@
                         "line": 2,
                         "column": 3,
                         "severity": 4,
+                        "message": 5
+                    }
+                ]
+            },
+            {
+                "name": "keilc51",
+                "fileLocation": "autoDetect",
+                "pattern": [
+                    {
+                        "regexp": "(ERROR|WARNING) (\\w+) IN LINE (\\d+) OF ([^:]+): (.+)",
+                        "severity": 1,
+                        "code": 2,
+                        "line": 3,
+                        "file": 4,
                         "message": 5
                     }
                 ]

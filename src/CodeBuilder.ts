@@ -65,7 +65,7 @@ export interface BuilderParams {
     threadNum?: number;
     dumpPath: string;
     outDir: string;
-    builderDir: string;
+    builderDir?: string;
     rootDir: string;
     ram?: number;
     rom?: number;
@@ -95,12 +95,12 @@ export abstract class CodeBuilder {
         this._event = new events.EventEmitter();
     }
 
-    on(event: 'finished', listener: () => void): void;
+    on(event: 'finished', listener: (done?: boolean) => void): void;
     on(event: any, listener: (arg: any) => void): void {
         this._event.on(event, listener);
     }
 
-    private emit(event: 'finished'): void;
+    private emit(event: 'finished', done?: boolean): void;
     private emit(event: any, arg?: any): void {
         this._event.emit(event, arg);
     }
@@ -241,14 +241,32 @@ export abstract class CodeBuilder {
         const title = options?.useDebug ? 'compiler params' : 'build';
         const resManager = ResManager.GetInstance();
         const shellPath = ResManager.checkWindowsShell() ? undefined : resManager.getCMDPath();
-        const cmdEnv = concatSystemEnvPath([resManager.getBuilderDir()]);
 
-        try { // watch log, to emit done event
+        // watch log, to emit done event
+        try {
+
+            const checkBuildDone = (logFile: File): boolean => {
+                try {
+                    // [2022-xx-xx 15:07:53]	[done]
+                    const revLines = logFile.Read().split(/\r\n|\n/).reverse();
+                    const idx = revLines.findIndex(line => /^\[\d+\-\d+\-\d+ [^\]]+\]/.test(line));
+                    if (idx == -1) { return false; }
+                    return /\[done\]\s*$/i.test(revLines[idx]);
+                } catch (error) {
+                    return false;
+                }
+            };
+
             const builderLog = File.fromArray([this.project.getEideDir().path, 'log', 'unify_builder.log']);
             if (!builderLog.IsFile()) builderLog.Write('');
             if (this.logWatcher) { this.logWatcher.Close(); delete this.logWatcher; };
+
+            // start watch
             this.logWatcher = new FileWatcher(builderLog, false);
-            this.logWatcher.OnChanged = () => { this.logWatcher?.Close(); this.emit('finished'); };
+            this.logWatcher.OnChanged = () => {
+                this.logWatcher?.Close();
+                this.emit('finished', checkBuildDone(builderLog));
+            };
             this.logWatcher.Watch();
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
@@ -260,7 +278,7 @@ export abstract class CodeBuilder {
             const task = new vscode.Task({ type: 'shell' }, vscode.TaskScope.Workspace, title, 'shell');
             const shellOption: vscode.ShellExecutionOptions = {};
             if (shellPath) { shellOption.executable = shellPath; shellOption.shellArgs = ['/C'] }
-            shellOption.env = cmdEnv;
+            shellOption.env = <any>process.env;
             task.execution = new vscode.ShellExecution(commandLine, shellOption);
             task.problemMatchers = this.getProblemMatcher();
             task.isBackground = false;
@@ -270,7 +288,8 @@ export abstract class CodeBuilder {
             // use terminal
             const index = vscode.window.terminals.findIndex((t) => { return t.name === title; });
             if (index !== -1) { vscode.window.terminals[index].dispose(); }
-            const opts: vscode.TerminalOptions = { name: title, shellPath: shellPath, env: cmdEnv };
+            const opts: vscode.TerminalOptions = { name: title, shellPath: shellPath };
+            opts.env = <any>process.env;
             const terminal = vscode.window.createTerminal(opts);
             terminal.show(true);
             terminal.sendText(CmdLineHandler.DeleteCmdPrefix(commandLine));
@@ -295,7 +314,7 @@ export abstract class CodeBuilder {
 
         // generate command line
         const cmds = [`${this.getBuilderExe().path}`].concat(this.getCommands());
-        const exeName: string = resManager.getMonoExecutable().path;
+        const exeName: string = resManager.getMonoName();
         const commandLine = CmdLineHandler.getCommandLine(exeName, cmds, isPowershell);
 
         return commandLine;
@@ -365,15 +384,14 @@ export abstract class CodeBuilder {
             rootDir: this.project.GetRootDir().path,
             dumpPath: this.project.ToRelativePath(dumpDir, false) || dumpDir,
             outDir: outDir,
-            builderDir: ResManager.GetInstance().getBuilderDir(),
             ram: memMaxSize?.ram,
             rom: memMaxSize?.rom,
             incDirs: this.getIncludeDirs().map((incPath) => { return this.project.ToRelativePath(incPath, false) || incPath; }),
             libDirs: this.getLibDirs().map((libPath) => { return this.project.ToRelativePath(libPath, false) || libPath; }),
+            defines: this.getDefineList(),
             sourceList: sourceInfo.sources.sort(),
             sourceParams: sourceInfo.params,
             sourceParamsMtime: sourceInfo.paramsModTime,
-            defines: this.getDefineList(),
             options: JSON.parse(JSON.stringify(compileOptions)),
             env: this.project.getProjectEnv()
         };
@@ -900,7 +918,7 @@ class ARMCodeBuilder extends CodeBuilder {
 
                 extraCommands.push({
                     name: 'axf to elf',
-                    command: `"\${BuilderFolder}\\mono.exe" "\${BuilderFolder}\\axf2elf.exe" -d "${tool_root_folder}" -b "${ouput_path}.bin" -i "${ouput_path}.axf" -o "${ouput_path}.elf" > "${axf2elf_log}"`
+                    command: `mono "\${BuilderFolder}\\utils\\axf2elf.exe" -d "${tool_root_folder}" -b "${ouput_path}.bin" -i "${ouput_path}.axf" -o "${ouput_path}.elf" > "${axf2elf_log}"`
                 });
             }
 
@@ -980,6 +998,8 @@ class C51CodeBuilder extends CodeBuilder {
         switch (this.project.getToolchain().name) {
             case 'SDCC':
                 return ['$gcc'];
+            case 'Keil_C51':
+                return ['$keilc51'];
             default:
                 return [];
         }

@@ -127,7 +127,7 @@ export class VirtualSource implements SourceProvider {
         this._event = new events.EventEmitter();
     }
 
-    public static isVirtualFile(path: string): boolean {
+    public static isVirtualPath(path: string): boolean {
         return path.startsWith(VirtualSource.rootName);
     }
 
@@ -795,7 +795,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
                     // reset exclude info
                     const excludeList = this.GetConfiguration().config.excludeList;
                     const pathMatcher = `.${File.sep}${folder.name}${File.sep}`;
-                    const pathReplacer = `.${File.sep}${DependenceManager.DEPENDENCE_DIR}${File.sep}`;
+                    const pathReplacer = `${DependenceManager.DEPENDENCE_DIR}/`;
                     for (let index = 0; index < excludeList.length; index++) {
                         const element = excludeList[index];
                         if (element.startsWith(pathMatcher)) {
@@ -842,7 +842,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         const prjConfig = this.GetConfiguration();
 
         // clear duplicated items
-        prjConfig.config.excludeList = ArrayDelRepetition(prjConfig.config.excludeList);
+        prjConfig.config.excludeList = ArrayDelRepetition(
+            prjConfig.config.excludeList.map(p => File.ToUnixPath(p))
+        );
 
         // clear invalid src folders
         prjConfig.config.srcDirs = prjConfig.config.srcDirs
@@ -1237,9 +1239,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
     isExcluded(path: string): boolean {
 
-        const excList = this.GetConfiguration().config.excludeList.map((p) => File.ToUnixPath(p));
+        const excList = this.GetConfiguration().config.excludeList;
         const rePath = File.ToUnixPath(this.ToRelativePath(path) || path);
-        const isFolder = VirtualSource.isVirtualFile(path) ? this.virtualSource.isFolder(path) : File.IsDir(path);
+        const isFolder = VirtualSource.isVirtualPath(path) ? this.virtualSource.isFolder(path) : File.IsDir(path);
 
         if (isFolder) { // is a folder
             return excList.findIndex(excPath => rePath === excPath || rePath.startsWith(`${excPath}/`)) !== -1;
@@ -1250,8 +1252,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
     protected addExclude(path: string): boolean {
         const excludeList = this.GetConfiguration().config.excludeList;
-        const rePath = this.ToRelativePath(path) || path;
-        if (!excludeList.includes(rePath)) {
+        const rePath = File.ToUnixPath(this.ToRelativePath(path) || path);
+        if (!excludeList.includes(rePath)) { // not existed, add it
             excludeList.push(rePath);
             return true;
         }
@@ -1260,9 +1262,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
     protected clearExclude(path: string): boolean {
         const excludeList = this.GetConfiguration().config.excludeList;
-        const rePath = this.ToRelativePath(path) || path;
+        const rePath = File.ToUnixPath(this.ToRelativePath(path) || path);
         const index = excludeList.indexOf(rePath);
-        if (index !== -1) {
+        if (index !== -1) { // if existed, clear it
             excludeList.splice(index, 1);
             return true;
         }
@@ -1732,6 +1734,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
             return false;
         }
         return true;
+    }
+
+    public notifySourceExplorerViewRefresh() {
+        this.emit('dataChanged', 'files');
     }
 
     protected onToolchainChanged() {
@@ -2226,7 +2232,8 @@ class EIDEProject extends AbstractProject {
         await super.AfterLoad();
 
         /* update workspace settings */
-        {
+        if (this.isAnNewProject) {
+
             const workspaceConfig = this.GetWorkspaceConfig();
             const settings = workspaceConfig.config.settings;
             const toolchain = this.getToolchain();
@@ -2257,7 +2264,57 @@ class EIDEProject extends AbstractProject {
                 }
             }
 
-            /* add extension recommendation */
+            // append default task for new project
+            const defTasks = [
+                {
+                    "label": "build",
+                    "type": "shell",
+                    "command": "${command:eide.project.build}",
+                    "group": "build",
+                    "problemMatcher": "$gcc"
+                },
+                {
+                    "label": "flash",
+                    "type": "shell",
+                    "command": "${command:eide.project.uploadToDevice}",
+                    "group": "build",
+                    "problemMatcher": []
+                },
+                {
+                    "label": "build and flash",
+                    "type": "shell",
+                    "command": "${command:eide.project.buildAndFlash}",
+                    "group": "build"
+                },
+                {
+                    "label": "rebuild",
+                    "type": "shell",
+                    "command": "${command:eide.project.rebuild}",
+                    "group": "build",
+                    "problemMatcher": "$gcc"
+                },
+                {
+                    "label": "clean",
+                    "type": "shell",
+                    "command": "${command:eide.project.clean}",
+                    "group": "build",
+                    "problemMatcher": []
+                }
+            ];
+
+            if (!workspaceConfig.config.tasks) {
+                workspaceConfig.config.tasks = {
+                    "version": "2.0.0",
+                    "tasks": defTasks
+                }
+            }
+
+            else if (Array.isArray(workspaceConfig.config.tasks.tasks)
+                && workspaceConfig.config.tasks.tasks.length == 0) {
+                workspaceConfig.config.tasks.tasks = defTasks;
+            }
+
+            // add extension recommendation
             {
                 let recommendExt: string[] = [
                     "cl.eide",
@@ -2322,6 +2379,8 @@ class EIDEProject extends AbstractProject {
             this.runInstallScript(this.GetRootDir(), 'post-install.sh', `Running 'post-install' ...`)
                 .then((done) => {
                     if (!done) {
+                        const msg = `Run 'post-install' failed !, please check logs in 'eide-log' output panel.`;
+                        vscode.window.showWarningMessage(msg);
                         GlobalEvent.emit('eide.log.show');
                     }
                 });
@@ -2340,14 +2399,23 @@ class EIDEProject extends AbstractProject {
         defines: []
     };
 
-    private __cpptools_lastUpdateTime: number = 0;
+    private __cpptools_updateTimeout: NodeJS.Timeout | undefined;
+
     UpdateCppConfig() {
 
-        // limit update freq, improve speed
-        const tNow = Date.now();
-        if (tNow - this.__cpptools_lastUpdateTime < 150) {
-            return; // exit
+        // if updater not in running, create it
+        if (this.__cpptools_updateTimeout == undefined) {
+            this.__cpptools_updateTimeout =
+                setTimeout(() => this.doUpdateCpptoolsConfig(), 200);
         }
+
+        // we already have a updater in running, now delay it
+        else {
+            this.__cpptools_updateTimeout.refresh();
+        }
+    }
+
+    private doUpdateCpptoolsConfig() {
 
         const builderOpts = this.getBuilderOptions();
         const toolchain = this.getToolchain();
@@ -2454,8 +2522,8 @@ class EIDEProject extends AbstractProject {
         this.emit('cppConfigChanged');
         console.log(this.cppToolsConfig);
 
-        // update time
-        this.__cpptools_lastUpdateTime = Date.now();
+        // clear timeout obj
+        this.__cpptools_updateTimeout = undefined;
     }
 
     canProvideConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<boolean> {

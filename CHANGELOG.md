@@ -4,6 +4,35 @@
 
 ***
 
+### [v2.16.5] (revision)
+
+**New Features**:
+  - Support modify the source file exclude list directly by temporary yaml config file.
+  - Support new VSCode terminal type: `Eide Msys Bash`.
+  - Support vscode `problem matcher` and `terminal links provider` for `Keil_C51` toolchain.
+
+**Bug Fixes**:
+  - The cppTools configuration is not refresh after the project loaded.
+  - Some workspace config in `*.code-workspace` file are override after project load.
+
+**Changes**:
+  - The `axf2elf` function now is `disabled` by default and must be manually `enabled`.
+
+**Optimized**:
+  - Use `-l` show disassambly source line for gcc.
+  - Optimize linker output color render:
+    - match ```Fatal error: Lxxxx:``` for armcc
+    - match ```undefined reference to `xxx'``` for gcc
+    - match ```multiple definition of `xxx'``` for gcc
+    - match ```section `xxx' will not fit in region `xxx'``` for gcc
+    - match ```region `xxx' overflowed by xxx bytes``` for gcc
+  - Support `${portList}` variable for shell flasher.
+  - Export some executable file's directories to system environment.
+  - Add default `vscode task` for new project.
+  - Reduce unnecessary pop-ups.
+
+***
+
 ### [v2.16.4] (revision)
 
 **New Features**:

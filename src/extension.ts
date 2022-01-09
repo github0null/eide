@@ -25,7 +25,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as os from 'os';
-import * as unzipper from 'unzipper';
+import * as node7z from 'node-7z';
 import * as NodePath from 'path';
 import * as ChildProcess from 'child_process';
 
@@ -108,6 +108,7 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('eide.project.uploadToDevice', (item) => projectExplorer.UploadToDevice(item)));
     subscriptions.push(vscode.commands.registerCommand('eide.reinstall.binaries', () => checkAndInstallBinaries(context, true)));
     subscriptions.push(vscode.commands.registerCommand('eide.project.flash.erase.all', (item) => projectExplorer.UploadToDevice(item, true)));
+    subscriptions.push(vscode.commands.registerCommand('eide.project.buildAndFlash', (item) => projectExplorer.BuildSolution(item, { useFastMode: true }, true)));
 
     // operations bar
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.historyRecord', () => projectExplorer.openHistoryRecords()));
@@ -129,6 +130,7 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.sourceRoot.refresh', (item) => projectExplorer.refreshSrcRoot(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.modify.files.options', (item) => projectExplorer.showFilesOptions(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.import.ext.source.struct', (item) => projectExplorer.ImportSourceFromExtProject(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.modify.exclude_list', (item) => projectExplorer.openYamlConfig(item, 'src-exc-cfg')));
 
     // filesystem files
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.filesystem_folder_add_file', (item) => projectExplorer.fs_folderAddFile(item)));
@@ -147,7 +149,7 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.excludeFolder', (item) => projectExplorer.ExcludeFolder(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.unexcludeFolder', (item) => projectExplorer.UnexcludeFolder(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.file.show.dir', (item) => projectExplorer.showFileInExplorer(item)));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.modify.path', (item) => projectExplorer.modifySourcesPath(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.modify.path', (item) => projectExplorer.openYamlConfig(item, 'src-path-cfg')));
 
     // package
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.installCMSISHeaders', (item) => projectExplorer.installCMSISHeaders(item)));
@@ -172,7 +174,7 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.showDefine', (item) => projectExplorer.showDefine(item.val.projectIndex)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.showLibDir', (item) => projectExplorer.showLibDir(item.val.projectIndex)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.modifyOtherSettings', (item) => projectExplorer.ModifyOtherSettings(item)));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.modify.deps', (item) => projectExplorer.ModifyCustomDependence(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.modify.deps', (item) => projectExplorer.openYamlConfig(item, 'prj-attr-cfg')));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.removeDependenceItem', (item) => projectExplorer.RemoveDependenceItem(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.importDependenceFromPack', (item) => projectExplorer.ImportPackageDependence(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.removeDependenceFromPack', (item) => projectExplorer.RemovePackageDependence(item)));
@@ -370,10 +372,13 @@ async function tryUpdateBinaries(binFolder: File, localVer: string, notConfirm?:
 
 async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<boolean> {
 
+    // zip type
+    const binType = '7z';
+
     // binaries download site
     const downloadSites: string[] = [
-        `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/bin-${binVersion}.zip`,
-        `https://raw-github.em-ide.com/github0null/eide-resource/master/binaries/bin-${binVersion}.zip`,
+        `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/bin-${binVersion}.${binType}`,
+        `https://raw-github.em-ide.com/github0null/eide-resource/master/binaries/bin-${binVersion}.${binType}`,
     ];
 
     /* random select the order of site */
@@ -382,12 +387,12 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
     }
 
     // add github default download url
-    downloadSites.push(`https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/bin-${binVersion}.zip`);
+    downloadSites.push(`https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/bin-${binVersion}.${binType}`);
 
     let installedDone = false;
 
     try {
-        const tmpFile = File.fromArray([os.tmpdir(), `eide-binaries-${binVersion}.zip`]);
+        const tmpFile = File.fromArray([os.tmpdir(), `eide-binaries-${binVersion}.${binType}`]);
 
         /* make dir */
         binFolder.CreateDir(true);
@@ -438,33 +443,34 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
                         }
                     };
 
-                    fs.createReadStream(tmpFile.path)
+                    let prevPercent: number = 0;
 
-                        /* goto parse */
-                        .pipe(unzipper.Parse())
-
-                        /* on unzipping */
-                        .on('entry', (entry) => {
-                            if (entry.type == 'File') {
-                                const file = File.fromArray([binFolder.path, File.ToLocalPath(entry.path)]);
-                                progress.report({ message: `Unzipping ${entry.path} ...` });
-                                new File(file.dir).CreateDir(true); /* create dir */
-                                entry.pipe(fs.createWriteStream(file.path));
-                            } else {
-                                entry.autodrain();
-                            }
-                        })
-
-                        /* on unzip closed */
-                        .on('close', () => {
+                    // start unzip
+                    node7z.extractFull(tmpFile.path, binFolder.path, {
+                        $bin: ResManager.GetInstance().Get7za().path,
+                        $progress: true,
+                        recursive: true
+                    })
+                        // unzip done
+                        .on('end', () => {
                             progress.report({ message: `Install eide binaries done !` });
                             setTimeout(() => resolveIf(true), 500);
                         })
 
-                        /* on unzip error */
+                        // unzip error
                         .on('error', (err) => {
                             GlobalEvent.emit('error', err);
                             resolveIf(false);
+                        })
+
+                        // progress
+                        .on('progress', (info) => {
+                            prevPercent = info.percent;
+                        })
+
+                        // file info
+                        .on('data', (data) => {
+                            progress.report({ message: `${prevPercent}%, in '${data.file}'` });
                         });
                 });
             });
@@ -493,15 +499,22 @@ function exportEnvToSysPath() {
 
     const settingManager = SettingManager.GetInstance();
     const resManager = ResManager.GetInstance();
+    const builderFolder = new File(resManager.getBuilderDir());
 
+    // export some eide binaries path to system env path
+    const defEnvPath: string[] = [
+        builderFolder.path, // builder root folder
+        NodePath.normalize(`${builderFolder.path}/utils`), // utils tool folder
+    ];
+
+    // export some tools path to system env path
     const pathList: { key: string, path: string }[] = [
         { key: 'EIDE_ARM_GCC', path: `${settingManager.getGCCDir().path}${File.sep}bin` },
         { key: 'EIDE_JLINK', path: `${settingManager.getJlinkDir()}` },
         { key: 'EIDE_OPENOCD', path: `${NodePath.dirname(settingManager.getOpenOCDExePath())}` }
     ];
 
-    // push other bin folders
-    const builderFolder = new File(resManager.getBuilderDir());
+    // search and export other tools path to system env path
     builderFolder.GetList(File.EMPTY_FILTER).forEach((subDir) => {
         const binFolder = NodePath.normalize(`${subDir.path}/bin`);
         if (File.IsDir(binFolder)) {
@@ -517,7 +530,7 @@ function exportEnvToSysPath() {
         const pList = pathList
             .filter((env) => File.IsDir(env.path))
             .map((env) => env.path);
-        platform.exportToSysEnv(process.env, pList);
+        platform.exportToSysEnv(process.env, defEnvPath.concat(pList));
         isEnvSetuped = true;
     }
 
@@ -570,8 +583,15 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
     // show now
     updateSerialportBarState();
 
-    /* set some toolpath to env */
+    // set some toolpath to env
     exportEnvToSysPath();
+
+    // register msys bash profile for windows
+    if (os.platform() == 'win32') {
+        context.subscriptions.push(
+            vscode.window.registerTerminalProfileProvider('eide.msys.bash', new MsysTerminalProvider())
+        );
+    }
 
     // update onchanged
     settingManager.on('onChanged', (e) => {
@@ -602,6 +622,11 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
         vscode.window.registerCustomEditorProvider('cl.eide.map.view', new MapViewEditorProvider(), {
             webviewOptions: { enableFindWidget: true }
         })
+    );
+
+    // register some links provider
+    context.subscriptions.push(
+        vscode.window.registerTerminalLinkProvider(new EideTerminalLinkProvider())
     );
 
     return true;
@@ -646,6 +671,107 @@ function RegisterGlobalEvent() {
         vscode.commands.executeCommand('setContext', 'cl.eide.projectActived', prj_count != 0);
         vscode.commands.executeCommand('setContext', 'cl.eide.enable.active', prj_count > 1);
     });
+}
+
+// --- terminal link provider
+
+class EideTerminalLink extends vscode.TerminalLink {
+    file?: string;
+    line?: number;
+}
+
+class EideTerminalLinkProvider implements vscode.TerminalLinkProvider<EideTerminalLink> {
+
+    private workspace: File | undefined;
+    private macthers: Map<RegExp, { file: number, line: number }> = new Map();
+
+    constructor() {
+        this.workspace = WorkspaceManager.getInstance().getFirstWorkspace();
+        this.macthers.set(/\bIN LINE (\d+) OF ([^:]+)/, { line: 1, file: 2 }); // keil c51
+    }
+
+    private toAbsPath(path: string): string {
+
+        if (this.workspace == undefined || NodePath.isAbsolute(path)) {
+            return path;
+        }
+
+        return NodePath.normalize(`${this.workspace.path}/${path}`);
+    }
+
+    async provideTerminalLinks(context: vscode.TerminalLinkContext, token: vscode.CancellationToken): Promise<EideTerminalLink[]> {
+
+        const res: EideTerminalLink[] = [];
+
+        this.macthers.forEach((mInfo, matcher) => {
+            const m = matcher.exec(context.line);
+            if (m && m.length > 1) {
+                const link = new EideTerminalLink(m.index, m[0].length);
+                link.file = this.toAbsPath(m[mInfo.file]);
+                link.line = parseInt(m[mInfo.line]) - 1;
+                res.push(link);
+            }
+        });
+
+        return res;
+    }
+
+    async handleTerminalLink(link: EideTerminalLink): Promise<void> {
+
+        if (!link.file || !link.line || link.line == -1) return;
+
+        if (!File.IsFile(link.file)) {
+            vscode.window.showWarningMessage(`File '${link.file}' is not existed !`);
+            return;
+        }
+
+        const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(link.file));
+
+        vscode.window.showTextDocument(doc, {
+            preview: true,
+            selection: doc.lineAt(link.line).range
+        });
+    }
+}
+
+// --- msys provider
+
+class MsysTerminalProvider implements vscode.TerminalProfileProvider {
+
+    provideTerminalProfile(token: vscode.CancellationToken): vscode.ProviderResult<vscode.TerminalProfile> {
+
+        // get cwd
+        let cwd: string = os.homedir();
+        const workspace = WorkspaceManager.getInstance().getFirstWorkspace();
+        if (workspace && workspace.IsDir()) {
+            cwd = workspace.path;
+        }
+
+        // welcome msg
+        const welcome = [
+            `--------------------------------------------`,
+            `          \x1b[32;22m welcome to msys bash \x1b[0m`,
+            `--------------------------------------------`,
+            ``
+        ];
+
+        // check bash folder
+        if (!process.env['EIDE_MSYS'] ||
+            !File.IsDir(process.env['EIDE_MSYS'])) {
+            return undefined;
+        }
+
+        const bashPath = `${process.env['EIDE_MSYS']}/bash.exe`;
+
+        return new vscode.TerminalProfile({
+            name: 'msys bash',
+            shellPath: bashPath,
+            cwd: cwd,
+            env: process.env,
+            strictEnv: true,
+            message: welcome.join('\r\n')
+        });
+    }
 }
 
 // --- .mapView viewer
@@ -795,9 +921,8 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
 
             for (const vInfo of mInfo.refList) {
                 try {
-                    const execPath = ResManager.GetInstance().getBuilderDir() + File.sep + 'memap';
                     const lines = ChildProcess
-                        .execSync(`${execPath} -t ${vInfo.toolName} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`)
+                        .execSync(`memap -t ${vInfo.toolName} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`)
                         .toString().split(/\r\n|\n/);
 
                     // append color

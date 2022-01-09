@@ -3637,7 +3637,16 @@ export class WorkspaceConfiguration extends Configuration<WorkspaceConfig> {
                     path: "."
                 }
             ],
-            settings: {}
+            settings: {},
+            extensions: {},
+            launch: {
+                "configurations": [],
+                "compounds": []
+            },
+            tasks: {
+                "version": "2.0.0",
+                "tasks": []
+            }
         };
     }
 }
