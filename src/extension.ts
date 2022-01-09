@@ -465,15 +465,12 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
 
                         // progress
                         .on('progress', (info) => {
-                            progress.report({ increment: info.percent - prevPercent });
                             prevPercent = info.percent;
                         })
 
                         // file info
                         .on('data', (data) => {
-                            progress.report({
-                                message: `${prevPercent}%, in '${data.file}'`
-                            });
+                            progress.report({ message: `${prevPercent}%, in '${data.file}'` });
                         });
                 });
             });
