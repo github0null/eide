@@ -27,7 +27,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "An embedded development environment for 8051/STM8/Cortex-M/RISC-V",
-    "version": "2.16.4",
+    "version": "2.16.5",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -432,7 +432,7 @@
                         "type": "boolean",
                         "scope": "resource",
                         "markdownDescription": "%settings.armcc.convert.axf%",
-                        "default": true
+                        "default": false
                     },
                     "EIDE.STM8.STVP.CliExePath": {
                         "type": "string",
@@ -663,6 +663,11 @@
             {
                 "command": "_cl.eide.project.setActive",
                 "title": "%eide.project.active%"
+            },
+            {
+                "command": "eide.project.buildAndFlash",
+                "category": "eide",
+                "title": "%eide.project.buildAndFlash%"
             },
             {
                 "command": "eide.project.build",
