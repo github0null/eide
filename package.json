@@ -1453,7 +1453,7 @@
                 "url": "./lang/riscv.gcc.verify.json"
             },
             {
-                "fileMatch": "**/*.options.any.gcc.json",
+                "fileMatch": "**/*.any.gcc.json",
                 "url": "./lang/any.gcc.verify.json"
             }
         ],
