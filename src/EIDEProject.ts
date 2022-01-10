@@ -1118,12 +1118,6 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         const uploadConfig_ = JSON.parse(JSON.stringify(target.uploadConfig));
         const uploadConfigMap_ = JSON.parse(JSON.stringify(target.uploadConfigMap));
 
-        // clear invalid upload config fields
-        uploadConfig_.bin = '';
-        for (let toolName in uploadConfigMap_) {
-            uploadConfigMap_[toolName].bin = '';
-        }
-
         return {
             excludeList: Array.from(target.excludeList),
             toolchain: target.toolchain,
@@ -1154,6 +1148,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         if (targets[targetName] === undefined) {
             targets[targetName] = this.copyTargetObj();
         }
+
+        const oldBuilderOptsFile = prjConfig.compileConfigModel
+            .getOptionsFile(this.getEideDir().path, prjConfig.config);
 
         // update current target name
         prjConfigData.mode = targetName;
@@ -1209,6 +1206,17 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
             }
 
             curTarget[name] = copyObject(oldTarget[name]);
+        }
+
+        // if builder options file is not existed, copy it.
+        const optsFile = prjConfig.compileConfigModel
+            .getOptionsFile(this.getEideDir().path, prjConfig.config, true);
+        if (!optsFile.IsFile()) {
+            try {
+                fs.copyFileSync(oldBuilderOptsFile.path, optsFile.path);
+            } catch (error) {
+                // nothing todo
+            }
         }
 
         this.sourceRoots.forceUpdateAllFolders();
