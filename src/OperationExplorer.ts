@@ -363,7 +363,7 @@ export class OperationExplorer {
                         },
                         {
                             label: view_str$operation$empty_anygcc_prj,
-                            detail: 'for any gcc toolchain',
+                            detail: 'for any gcc famliy toolchains',
                             type: 'ANY-GCC'
                         }
                     ];

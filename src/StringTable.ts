@@ -672,8 +672,8 @@ export const view_str$operation$empty_riscv_prj = [
 ][langIndex];
 
 export const view_str$operation$empty_anygcc_prj = [
-    'ANY GCC 项目',
-    'ANY GCC Project'
+    '通用的 GCC 项目',
+    'Universal GCC Project'
 ][langIndex];
 
 export const view_str$operation$open_serialport = [

@@ -1970,7 +1970,7 @@ export abstract class ArmBaseCompileConfigModel
         return {
             cpuType: 'Cortex-M3',
             floatingPointHardware: 'none',
-            useCustomScatterFile: true,
+            useCustomScatterFile: false,
             scatterFilePath: 'undefined',
             storageLayout: {
                 RAM: [

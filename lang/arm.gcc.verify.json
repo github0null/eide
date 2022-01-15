@@ -236,6 +236,14 @@
                     "description.zh-cn": "将警告转化为错误",
                     "type": "boolean"
                 },
+                "one-elf-section-per-function": {
+                    "markdownDescription": "One ELF Section per Function",
+                    "type": "boolean"
+                },
+                "one-elf-section-per-data": {
+                    "markdownDescription": "One ELF Section per Data",
+                    "type": "boolean"
+                },
                 "C_FLAGS": {
                     "markdownDescription": "Other C Compiler Options",
                     "description.zh-cn": "C 编译器附加选项",
@@ -291,6 +299,10 @@
                         "ELF (Executable Linkable Format)",
                         "Static Library"
                     ]
+                },
+                "remove-unused-input-sections": {
+                    "markdownDescription": "Remove Unused Input Sections",
+                    "type": "boolean"
                 },
                 "LD_FLAGS": {
                     "readable_name": "Other Linker Options",

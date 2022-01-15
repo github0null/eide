@@ -10,7 +10,7 @@
 
 > **!!! Note: Currently we only support Windows platform (Windows 7 SP1 and later) !!!**
 
-An embedded development environment for `8051/STM8/Cortex-M[0/0+/3/4/7]/RISC-V` on VsCode. 
+An embedded development environment for `8051/STM8/Cortex-M[0/0+/3/4/7]/RISC-V/Universal-Gcc` on VsCode. 
 
 Provide `8051/STM8/Cortex-M/RISC-V` project development, compilation, burning and other functions.
 
@@ -20,7 +20,7 @@ Provide `8051/STM8/Cortex-M/RISC-V` project development, compilation, burning an
 
 ## Features 🎉
 
-* Support development of 8051, STM8, Cortex-M\[0/0+/3/4/7], RISC-V, AnyGcc projects
+* Support development of 8051, STM8, Cortex-M\[0/0+/3/4/7], RISC-V, Universal-Gcc projects
 * Support to import KEIL projects (KEIL 5 and later only)
 * Support for installing standard KEIL chip support packs (only for Cortex-M projects)
 * Provides rich project templates for quick start projects

@@ -249,7 +249,9 @@ export async function requestTxt(url: string): Promise<string | Error | undefine
     });
 }
 
-export async function downloadFileWithProgress(url: string, fileLable: string, progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken): Promise<Buffer | Error | undefined> {
+export async function downloadFileWithProgress(url: string, fileLable: string,
+    progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken,
+    rejectUnauthorized: boolean = true): Promise<Buffer | Error | undefined> {
 
     return new Promise(async (resolve) => {
 
@@ -282,7 +284,8 @@ export async function downloadFileWithProgress(url: string, fileLable: string, p
         const res = await netReq.RequestBinary<any>({
             host: hostName,
             path: path,
-            headers: { 'User-Agent': 'Mozilla/5.0' }
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            rejectUnauthorized: rejectUnauthorized
         }, 'https', (increment) => {
             curIncrement += increment;
             if (curIncrement > 1) { curIncrement = 1; } // limit to 100 %
