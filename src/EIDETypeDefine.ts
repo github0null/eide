@@ -1593,19 +1593,19 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
         }
     }
 
-    getOptionsFile(eideFolderPath: string, prjConfig: ProjectConfigData<T>): File {
+    getOptionsFile(eideFolderPath: string, prjConfig: ProjectConfigData<T>, noCreate?: boolean): File {
 
         const toolchain = ToolchainManager.getInstance().getToolchain(prjConfig.type, prjConfig.toolchain);
 
         let configName: string = toolchain.configName;
         const targetName = prjConfig.mode.toLowerCase();
 
-        if (targetName !== 'release') { // ignore 'release' target
+        if (targetName !== 'release') { // 'release' target is empty name
             configName = `${targetName}.${configName}`;
         }
 
         const opFile = File.fromArray([eideFolderPath, configName]);
-        if (!opFile.IsFile()) {
+        if (!noCreate && !opFile.IsFile()) {
             opFile.Write(JSON.stringify(toolchain.getDefaultConfig(), undefined, 4));
         }
 
@@ -1970,7 +1970,7 @@ export abstract class ArmBaseCompileConfigModel
         return {
             cpuType: 'Cortex-M3',
             floatingPointHardware: 'none',
-            useCustomScatterFile: true,
+            useCustomScatterFile: false,
             scatterFilePath: 'undefined',
             storageLayout: {
                 RAM: [

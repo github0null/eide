@@ -4,6 +4,20 @@
 
 ***
 
+### [v2.16.6] (revision)
+
+**Bug Fixes**:
+  - When switch target, the `Flasher Configurations` -> `programFile` become empty.
+  - The `Project Resource` view cannot be refreshed due to a file opening failure in the `Output Files` view.
+  - When using `any-gcc` toolchain, can't open builder options for 'release' target.
+
+**Optimized**:
+  - Automatically refresh `Output Files` view` after using the cleanup function.
+  - Add some utility compiler options for gcc toolchain.
+  - Generate `tasks.json` and `settings.json` for new project.
+
+***
+
 ### [v2.16.5] (revision)
 
 **New Features**:

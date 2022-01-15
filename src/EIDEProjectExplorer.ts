@@ -490,6 +490,10 @@ class ProjectItemCache {
     // <projectPath, {root: TreeItem, itemList: TreeItem[]}>
     private itemCache: Map<string, ItemCache> = new Map();
 
+    clear() {
+        this.itemCache.clear();
+    }
+
     getTreeItem(prj: AbstractProject, itemType: TreeItemType): ProjTreeItem | undefined {
         const cache = this.itemCache.get(prj.getWsPath());
         if (cache) {
@@ -694,6 +698,10 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
     UpdateView(ele?: ProjTreeItem) {
         this.dataChangedEvent.fire(ele);
+    }
+
+    clearTreeViewCache() {
+        this.treeCache.clear();
     }
 
     isRootWorkspaceProject(prj: AbstractProject): boolean {
@@ -2123,6 +2131,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     Refresh() {
+        this.dataProvider.clearTreeViewCache();
         this.dataProvider.UpdateView();
     }
 
@@ -2429,6 +2438,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         const outDir = prj.ToAbsolutePath(prj.getOutputDir());
         runShellCommand('clean', `cmd /E:ON /C del /S /Q "${outDir}"`, ResManager.GetInstance().getCMDPath());
+
+        setTimeout(() => {
+            this.notifyUpdateOutputFolder(prj);
+        }, 1500);
     }
 
     private _uploadLock: boolean = false;
@@ -2857,7 +2870,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                         return;
                     }
 
-                    const data = await downloadFileWithProgress(<string>downloadUrl, tmpFile.name, progress, token);
+                    const data = await downloadFileWithProgress(
+                        <string>downloadUrl, tmpFile.name,
+                        progress, token, false);
 
                     if (data instanceof Buffer) {
                         fs.writeFileSync(tmpFile.path, data);
@@ -4327,6 +4342,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     private showBinaryFiles(binFile: File, isPreview?: boolean): boolean | undefined {
 
         try {
+
+            // if not found, exited
+            if (!binFile.IsExist()) return undefined;
 
             const suffix = binFile.suffix.toLowerCase();
 

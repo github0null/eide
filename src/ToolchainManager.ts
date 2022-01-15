@@ -1528,15 +1528,18 @@ class GCC implements IToolchian {
                 "language-cpp": "c++11",
                 "optimization": 'level-debug',
                 "warnings": "all-warnings",
-                "C_FLAGS": "-ffunction-sections -fdata-sections",
-                "CXX_FLAGS": "-ffunction-sections -fdata-sections"
+                "one-elf-section-per-function": true,
+                "one-elf-section-per-data": true,
+                "C_FLAGS": "",
+                "CXX_FLAGS": ""
             },
             'asm-compiler': {
-                "ASM_FLAGS": "-ffunction-sections -fdata-sections"
+                "ASM_FLAGS": ""
             },
             linker: {
                 "output-format": "elf",
-                "LD_FLAGS": "--specs=nosys.specs --specs=nano.specs -Wl,--gc-sections",
+                "remove-unused-input-sections": true,
+                "LD_FLAGS": "--specs=nosys.specs --specs=nano.specs",
                 "LIB_FLAGS": "-lm"
             }
         };
@@ -1906,15 +1909,18 @@ class RISCV_GCC implements IToolchian {
                 "language-cpp": "c++11",
                 "optimization": 'level-debug',
                 "warnings": "all-warnings",
-                "C_FLAGS": "-Wl,-Bstatic -ffunction-sections -fdata-sections",
-                "CXX_FLAGS": "-ffunction-sections -fdata-sections"
+                "one-elf-section-per-function": true,
+                "one-elf-section-per-data": true,
+                "C_FLAGS": "-Wl,-Bstatic",
+                "CXX_FLAGS": ""
             },
             'asm-compiler': {
                 "ASM_FLAGS": "-Wl,-Bstatic"
             },
             linker: {
                 "output-format": "elf",
-                "LD_FLAGS": "-Wl,--cref -Wl,--no-relax -Wl,--gc-sections --specs=nosys.specs --specs=nano.specs -nostartfiles",
+                "remove-unused-input-sections": true,
+                "LD_FLAGS": "-Wl,--cref -Wl,--no-relax --specs=nosys.specs --specs=nano.specs -nostartfiles",
                 "LIB_FLAGS": ""
             }
         };
@@ -2110,15 +2116,18 @@ class AnyGcc implements IToolchian {
             ],
             global: {},
             'c/cpp-compiler': {
-                "C_FLAGS": "-c -x c -ffunction-sections -fdata-sections",
-                "CXX_FLAGS": "-c -x c++ -ffunction-sections -fdata-sections"
+                "one-elf-section-per-function": true,
+                "one-elf-section-per-data": true,
+                "C_FLAGS": "-c -xc",
+                "CXX_FLAGS": "-c -xc++"
             },
             'asm-compiler': {
                 "ASM_FLAGS": "-c"
             },
             linker: {
                 "output-format": "elf",
-                "LD_FLAGS": "-Wl,--gc-sections -Wl,--print-memory-usage",
+                "remove-unused-input-sections": true,
+                "LD_FLAGS": "-Wl,--print-memory-usage",
                 "LIB_FLAGS": ""
             }
         };

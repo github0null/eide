@@ -507,11 +507,22 @@ function exportEnvToSysPath() {
         NodePath.normalize(`${builderFolder.path}/utils`), // utils tool folder
     ];
 
+    //
+    const exToolsRoot = NodePath.normalize(`${os.homedir()}/.eide/tools`);
+    if (!File.IsDir(exToolsRoot)) {
+        try {
+            new File(exToolsRoot).CreateDir(true);
+        } catch (error) {
+            // nothing todo
+        }
+    }
+
     // export some tools path to system env path
     const pathList: { key: string, path: string }[] = [
         { key: 'EIDE_ARM_GCC', path: `${settingManager.getGCCDir().path}${File.sep}bin` },
         { key: 'EIDE_JLINK', path: `${settingManager.getJlinkDir()}` },
-        { key: 'EIDE_OPENOCD', path: `${NodePath.dirname(settingManager.getOpenOCDExePath())}` }
+        { key: 'EIDE_OPENOCD', path: `${NodePath.dirname(settingManager.getOpenOCDExePath())}` },
+        { key: 'EIDE_TOOLS_DIR', path: exToolsRoot }
     ];
 
     // search and export other tools path to system env path

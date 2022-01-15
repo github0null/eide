@@ -139,9 +139,9 @@
                         "LARGE"
                     ],
                     "enumDescriptions": [
-                        "variables in DATA",
-                        "variables in PDATA",
-                        "variables in XDATA"
+                        "vars in DATA",
+                        "vars in PDATA",
+                        "vars in XDATA"
                     ]
                 },
                 "rom-mode": {

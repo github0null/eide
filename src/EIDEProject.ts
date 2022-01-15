@@ -1118,12 +1118,6 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         const uploadConfig_ = JSON.parse(JSON.stringify(target.uploadConfig));
         const uploadConfigMap_ = JSON.parse(JSON.stringify(target.uploadConfigMap));
 
-        // clear invalid upload config fields
-        uploadConfig_.bin = '';
-        for (let toolName in uploadConfigMap_) {
-            uploadConfigMap_[toolName].bin = '';
-        }
-
         return {
             excludeList: Array.from(target.excludeList),
             toolchain: target.toolchain,
@@ -1154,6 +1148,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         if (targets[targetName] === undefined) {
             targets[targetName] = this.copyTargetObj();
         }
+
+        const oldBuilderOptsFile = prjConfig.compileConfigModel
+            .getOptionsFile(this.getEideDir().path, prjConfig.config);
 
         // update current target name
         prjConfigData.mode = targetName;
@@ -1209,6 +1206,17 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
             }
 
             curTarget[name] = copyObject(oldTarget[name]);
+        }
+
+        // if builder options file is not existed, copy it.
+        const optsFile = prjConfig.compileConfigModel
+            .getOptionsFile(this.getEideDir().path, prjConfig.config, true);
+        if (!optsFile.IsFile()) {
+            try {
+                fs.copyFileSync(oldBuilderOptsFile.path, optsFile.path);
+            } catch (error) {
+                // nothing todo
+            }
         }
 
         this.sourceRoots.forceUpdateAllFolders();
@@ -2239,9 +2247,7 @@ class EIDEProject extends AbstractProject {
             const toolchain = this.getToolchain();
 
             if (isNullOrUndefined(settings['files.associations'])) {
-                settings['files.associations'] = {
-                    ".eideignore": "ignore"
-                };
+                settings['files.associations'] = { ".eideignore": "ignore" };
             } else if (isNullOrUndefined(settings['files.associations']['.eideignore'])) {
                 settings['files.associations']['.eideignore'] = 'ignore';
             }
@@ -2265,53 +2271,60 @@ class EIDEProject extends AbstractProject {
             }
 
             // append default task for new project
-            const defTasks = [
-                {
-                    "label": "build",
-                    "type": "shell",
-                    "command": "${command:eide.project.build}",
-                    "group": "build",
-                    "problemMatcher": "$gcc"
-                },
-                {
-                    "label": "flash",
-                    "type": "shell",
-                    "command": "${command:eide.project.uploadToDevice}",
-                    "group": "build",
-                    "problemMatcher": []
-                },
-                {
-                    "label": "build and flash",
-                    "type": "shell",
-                    "command": "${command:eide.project.buildAndFlash}",
-                    "group": "build"
-                },
-                {
-                    "label": "rebuild",
-                    "type": "shell",
-                    "command": "${command:eide.project.rebuild}",
-                    "group": "build",
-                    "problemMatcher": "$gcc"
-                },
-                {
-                    "label": "clean",
-                    "type": "shell",
-                    "command": "${command:eide.project.clean}",
-                    "group": "build",
-                    "problemMatcher": []
+            try {
+                const defTasks = [
+                    {
+                        "label": "build",
+                        "type": "shell",
+                        "command": "${command:eide.project.build}",
+                        "group": "build",
+                        "problemMatcher": "$gcc"
+                    },
+                    {
+                        "label": "flash",
+                        "type": "shell",
+                        "command": "${command:eide.project.uploadToDevice}",
+                        "group": "build",
+                        "problemMatcher": []
+                    },
+                    {
+                        "label": "build and flash",
+                        "type": "shell",
+                        "command": "${command:eide.project.buildAndFlash}",
+                        "group": "build"
+                    },
+                    {
+                        "label": "rebuild",
+                        "type": "shell",
+                        "command": "${command:eide.project.rebuild}",
+                        "group": "build",
+                        "problemMatcher": "$gcc"
+                    },
+                    {
+                        "label": "clean",
+                        "type": "shell",
+                        "command": "${command:eide.project.clean}",
+                        "group": "build",
+                        "problemMatcher": []
+                    }
+                ];
+                const tasksFile = File.fromArray([this.GetRootDir().path, AbstractProject.vsCodeDir, 'tasks.json']);
+                if (!tasksFile.IsFile()) {
+                    tasksFile.Write(JSON.stringify({
+                        "version": "2.0.0",
+                        "tasks": defTasks
+                    }, undefined, 4));
                 }
-            ];
-
-            if (!workspaceConfig.config.tasks) {
-                workspaceConfig.config.tasks = {
-                    "version": "2.0.0",
-                    "tasks": defTasks
-                }
+            } catch (error) {
+                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
             }
 
-            else if (Array.isArray(workspaceConfig.config.tasks.tasks)
-                && workspaceConfig.config.tasks.tasks.length == 0) {
-                workspaceConfig.config.tasks.tasks = defTasks;
+            // gen default 'settings.json'
+            try {
+                const settingsFile = File.fromArray([this.GetRootDir().path, AbstractProject.vsCodeDir, 'settings.json']);
+                if (!settingsFile.IsFile()) { settingsFile.Write('{}'); }
+            } catch (error) {
+                // nothing todo
             }
 
             // add extension recommendation

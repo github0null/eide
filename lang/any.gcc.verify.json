@@ -141,6 +141,14 @@
             "description.zh-cn": "C/C++ 编译器选项",
             "type": "object",
             "properties": {
+                "one-elf-section-per-function": {
+                    "markdownDescription": "One ELF Section per Function",
+                    "type": "boolean"
+                },
+                "one-elf-section-per-data": {
+                    "markdownDescription": "One ELF Section per Data",
+                    "type": "boolean"
+                },
                 "C_FLAGS": {
                     "markdownDescription": "C Compiler Params",
                     "description.zh-cn": "C 编译器参数",
@@ -196,6 +204,10 @@
                         "ELF (Executable Linkable Format)",
                         "Static Library"
                     ]
+                },
+                "remove-unused-input-sections": {
+                    "markdownDescription": "Remove Unused Input Sections",
+                    "type": "boolean"
                 },
                 "elf-suffix": {
                     "type": "string",
