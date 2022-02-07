@@ -8,7 +8,7 @@
     },
     "keywords": [
         "arm",
-        "cortex-m",
+        "cortex",
         "armcc",
         "gcc",
         "risc-v",
@@ -20,14 +20,15 @@
         "stm8",
         "sdcc",
         "eide",
+        "keil",
         "embedded",
-        "cmsis config",
-        "cmsis config wizard"
+        "cmsis",
+        "mcu"
     ],
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "An embedded development environment for 8051/STM8/Cortex-M/RISC-V",
-    "version": "2.16.6",
+    "version": "2.16.7",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -83,6 +84,9 @@
         "x2js": "3.4.1",
         "yaml": "^1.10.2"
     },
+    "extensionDependencies": [
+        "ms-vscode.cpptools"
+    ],
     "contributes": {
         "terminal": {
             "profiles": [

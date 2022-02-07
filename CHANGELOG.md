@@ -4,6 +4,13 @@
 
 ***
 
+### [v2.16.7] (revision)
+
+**Bug Fixes**:
+  - Can't register `customConfigProvider` for c/c++ plug-in `v1.18.x`
+
+***
+
 ### [v2.16.6] (revision)
 
 **Bug Fixes**:
