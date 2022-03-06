@@ -355,6 +355,15 @@
                         "Static Library"
                     ]
                 },
+                "$disableOutputTask": {
+                    "type": "boolean",
+                    "markdownDescription": "Not Output Hex/Bin File",
+                    "description.zh-cn": "不生成 Hex/Bin 文件",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
                 "misc-controls": {
                     "markdownDescription": "Other Linker Options",
                     "description.zh-cn": "链接器附加选项",

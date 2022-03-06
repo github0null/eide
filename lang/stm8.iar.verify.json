@@ -458,6 +458,15 @@
                         "Static Library"
                     ]
                 },
+                "$disableOutputTask": {
+                    "type": "boolean",
+                    "markdownDescription": "Not Output Hex/Bin File",
+                    "description.zh-cn": "不生成 Hex/Bin 文件",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
                 "auto-search-runtime-lib": {
                     "description": "auto search runtime lib",
                     "type": "boolean",
