@@ -328,11 +328,6 @@
             "description.zh-cn": "链接器选项",
             "type": "object",
             "properties": {
-                "remove-unused-sections": {
-                    "type": "boolean",
-                    "markdownDescription": "Remove unused sections",
-                    "description.zh-cn": "删除未使用的 ELF 段"
-                },
                 "output-format": {
                     "type": "string",
                     "default": "hex",
@@ -346,6 +341,20 @@
                         "ELF (Executable Linkable Format)",
                         "Static Library"
                     ]
+                },
+                "$disableOutputTask": {
+                    "type": "boolean",
+                    "markdownDescription": "Not Output Hex/Bin File",
+                    "description.zh-cn": "不生成 Hex/Bin 文件",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "remove-unused-sections": {
+                    "type": "boolean",
+                    "markdownDescription": "Remove unused sections",
+                    "description.zh-cn": "删除未使用的 ELF 段"
                 },
                 "misc-controls": {
                     "markdownDescription": "Other Linker Options",

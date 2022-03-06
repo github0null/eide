@@ -3219,8 +3219,8 @@ class PyOCDUploadModel extends UploadConfigModel<PyOCDFlashOptions> {
 
                         return result['targets'].map((target) => {
                             return {
-                                label: target['part_number'],
-                                val: target['part_number'],
+                                label: target['name'],
+                                val: target['name'],
                                 description: `${target['vendor']} (${target['source']})`
                             };
                         });

@@ -4,6 +4,18 @@
 
 ***
 
+### [v2.16.8] (revision)
+
+**Optimize**:
+  - Add `disableOutputTask` options for linker.
+  - Optimize pyOcd target name parser.
+  - Adjust default builder thread number.
+
+**Changed**:
+  - Adjust extension activation events
+
+***
+
 ### [v2.16.7] (revision)
 
 **Bug Fixes**:

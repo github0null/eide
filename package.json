@@ -28,7 +28,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "An embedded development environment for 8051/STM8/Cortex-M/RISC-V",
-    "version": "2.16.7",
+    "version": "2.16.8",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -37,8 +37,18 @@
         "Other",
         "Snippets"
     ],
+    "capabilities": {
+        "virtualWorkspaces": {
+            "supported": false,
+            "description": "We not support virtual workspaces now."
+        }
+    },
+    "qna": "https://discuss.em-ide.com/t/FAQ",
     "activationEvents": [
-        "*"
+        "workspaceContains:.eide/eide.json",
+        "workspaceContains:.eide/EIDE.json",
+        "workspaceContains:.EIDE/EIDE.json",
+        "onStartupFinished"
     ],
     "icon": "res/icon/icon.png",
     "main": "./dist/extension.js",

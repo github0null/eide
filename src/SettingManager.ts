@@ -392,7 +392,7 @@ export class SettingManager {
 
     getThreadNumber(): number {
         const num = this.getConfiguration().get<number>('Builder.ThreadNumber') || -1;
-        if (num <= 0) { return os.cpus().length; }
+        if (num <= 0) { return os.cpus().length + 2; }
         return num;
     }
 
@@ -528,7 +528,7 @@ export class SettingManager {
     getRiscvToolPrefix(): string {
         return this.getConfiguration().get<string>('RISCV.ToolPrefix') || '';
     }
-    
+
     //------------------------------- Any GCC ----------------------------------
 
     getAnyGccToolFolder(): File {
