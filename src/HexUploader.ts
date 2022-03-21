@@ -41,7 +41,7 @@ import * as fs from 'fs';
 import * as ini from 'ini';
 import { ResInstaller } from "./ResInstaller";
 import { newMessage } from "./Message";
-import { concatSystemEnvPath } from "./Platform";
+import { concatSystemEnvPath, exeSuffix } from "./Platform";
 
 let _mInstance: HexUploaderManager | undefined;
 
@@ -333,7 +333,7 @@ class JLinkUploader extends HexUploader<any> {
     }
 
     protected _launch(commandLines: string[]): void {
-        const jlinkPath = `${SettingManager.GetInstance().getJlinkDir()}${NodePath.sep}JLink.exe`;
+        const jlinkPath = `${SettingManager.GetInstance().getJlinkDir()}${NodePath.sep}JLink${exeSuffix()}`;
         const option = this.getUploadOptions<JLinkOptions>();
         const commandLine = CmdLineHandler.getCommandLine(jlinkPath, commandLines, this.isPowershell);
         runShellCommand(this.toolType, `${commandLine} ${option.otherCmds || ''}`, this.shellPath);
@@ -646,7 +646,7 @@ class STLinkUploader extends HexUploader<string[]> {
 
         const exe = new File(SettingManager.GetInstance().getSTLinkExePath());
         if (!exe.IsFile()) {
-            await ResInstaller.instance().setOrInstallTools(this.toolType, `Not found 'ST-LINK_CLI.exe' or 'STM32_Programmer_CLI.exe' !`);
+            await ResInstaller.instance().setOrInstallTools(this.toolType, `Not found 'ST-LINK_CLI${exeSuffix()}' or 'STM32_Programmer_CLI${exeSuffix()}' !`);
             return { isOk: false };
         }
 
@@ -705,7 +705,7 @@ class STVPHexUploader extends HexUploader<string[]> {
 
         const exe = new File(SettingManager.GetInstance().getStvpExePath());
         if (!exe.IsFile()) {
-            await ResInstaller.instance().setOrInstallTools(this.toolType, `Not found STVP: \'STVP_CmdLine.exe\' !`);
+            await ResInstaller.instance().setOrInstallTools(this.toolType, `Not found STVP: \'STVP_CmdLine${exeSuffix()}\' !`);
             return { isOk: false };
         }
 
@@ -891,7 +891,7 @@ class OpenOCDUploader extends HexUploader<string[]> {
 
         const exe = new File(SettingManager.GetInstance().getOpenOCDExePath());
         if (!exe.IsFile()) {
-            await ResInstaller.instance().setOrInstallTools(this.toolType, `Not found \'OpenOCD.exe\' !`);
+            await ResInstaller.instance().setOrInstallTools(this.toolType, `Not found \'OpenOCD${exeSuffix()}\' !`);
             return { isOk: false };
         }
 

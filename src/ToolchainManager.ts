@@ -28,6 +28,7 @@ import { SettingManager } from "./SettingManager";
 import { ResManager } from "./ResManager";
 import { GlobalEvent } from "./GlobalEvents";
 import { newMessage, ExceptionToMessage } from "./Message";
+import * as platform from './Platform';
 
 import * as child_process from 'child_process';
 import { CmdLineHandler } from "./CmdLineHandler";
@@ -446,7 +447,7 @@ class KeilC51 implements IToolchian {
     }
 
     getGccCompilerPath(): string | undefined {
-        //const gcc = File.fromArray([this.getToolchainDir().path, 'BIN', 'C51.exe']);
+        //const gcc = File.fromArray([this.getToolchainDir().path, 'BIN', `C51${platform.exeSuffix()}`]);
         //return gcc.path;
         return undefined;
     }
@@ -585,7 +586,7 @@ class SDCC implements IToolchian {
     }
 
     getGccCompilerPath(): string | undefined {
-        //const gcc = File.fromArray([this.getToolchainDir().path, 'bin', 'sdcc.exe']);
+        //const gcc = File.fromArray([this.getToolchainDir().path, 'bin', `sdcc${platform.exeSuffix()}`]);
         //return gcc.path;
         return undefined;
     }
@@ -815,7 +816,7 @@ class GnuStm8Sdcc implements IToolchian {
     }
 
     getGccCompilerPath(): string | undefined {
-        //const gcc = File.fromArray([this.getToolchainDir().path, 'bin', 'sdcc.exe']);
+        //const gcc = File.fromArray([this.getToolchainDir().path, 'bin', `sdcc${platform.exeSuffix()}`]);
         //return gcc.path;
         return undefined;
     }
@@ -1017,7 +1018,7 @@ class AC5 implements IToolchian {
     }
 
     getGccCompilerPath(): string | undefined {
-        //const armccFile = File.fromArray([this.getToolchainDir().path, 'bin', 'armcc.exe']);
+        //const armccFile = File.fromArray([this.getToolchainDir().path, 'bin', `armcc${platform.exeSuffix()}`]);
         //return armccFile.path;
         return undefined;
     }
@@ -1128,7 +1129,7 @@ class AC6 implements IToolchian {
     private readonly defMacroList: string[];
 
     constructor() {
-        const armClang = File.fromArray([this.getToolchainDir().path, 'bin', 'armclang.exe']);
+        const armClang = File.fromArray([this.getToolchainDir().path, 'bin', `armclang${platform.exeSuffix()}`]);
         this.defMacroList = this.getMacroList(armClang.path);
     }
 
@@ -1162,7 +1163,7 @@ class AC6 implements IToolchian {
     }
 
     getGccCompilerPath(): string | undefined {
-        const armccFile = File.fromArray([this.getToolchainDir().path, 'bin', 'armclang.exe']);
+        const armccFile = File.fromArray([this.getToolchainDir().path, 'bin', `armclang${platform.exeSuffix()}`]);
         return armccFile.path;
     }
 
@@ -1334,7 +1335,7 @@ class GCC implements IToolchian {
     private incList: string[];
 
     constructor() {
-        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
+        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + `gcc${platform.exeSuffix()}`]);
         const intrMacros = this.getMacroList(gcc.path);
         if (intrMacros === undefined) { // if not found gcc, use def macro
             this.defMacroList = ['__GNUC__=8', '__GNUC_MINOR__=3', '__GNUC_PATCHLEVEL__=1'];
@@ -1397,7 +1398,7 @@ class GCC implements IToolchian {
     }
 
     getGccCompilerPath(): string | undefined {
-        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
+        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + `gcc${platform.exeSuffix()}`]);
         return gcc.path;
     }
 
@@ -1567,7 +1568,7 @@ class IARSTM8 implements IToolchian {
     }
 
     getGccCompilerPath(): string | undefined {
-        //const gcc = File.fromArray([this.getToolchainDir().path, 'stm8', 'bin', 'iccstm8.exe']);
+        //const gcc = File.fromArray([this.getToolchainDir().path, 'stm8', 'bin', `iccstm8${platform.exeSuffix()}`]);
         //return gcc.path;
         return undefined;
     }
@@ -1726,7 +1727,7 @@ class RISCV_GCC implements IToolchian {
     private incList: string[];
 
     constructor() {
-        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
+        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + `gcc${platform.exeSuffix()}`]);
         const intrMacros = this.getMacroList(gcc.path);
         if (intrMacros === undefined) { // if not found gcc, use def macro
             this.defMacroList = ['__GNUC__=8', '__GNUC_MINOR__=3', '__GNUC_PATCHLEVEL__=1'];
@@ -1789,7 +1790,7 @@ class RISCV_GCC implements IToolchian {
     }
 
     getGccCompilerPath(): string | undefined {
-        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
+        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + `gcc${platform.exeSuffix()}`]);
         return gcc.path;
     }
 
@@ -1950,7 +1951,7 @@ class AnyGcc implements IToolchian {
     private incList: string[];
 
     constructor() {
-        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
+        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + `gcc${platform.exeSuffix()}`]);
         const intrMacros = this.getMacroList(gcc.path);
         if (intrMacros === undefined) { // if not found gcc, use def macro
             this.defMacroList = ['__GNUC__=8', '__GNUC_MINOR__=3', '__GNUC_PATCHLEVEL__=1'];
@@ -2012,7 +2013,7 @@ class AnyGcc implements IToolchian {
     }
 
     getGccCompilerPath(): string | undefined {
-        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
+        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + `gcc${platform.exeSuffix()}`]);
         return gcc.path;
     }
 

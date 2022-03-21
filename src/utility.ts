@@ -34,6 +34,8 @@ import { NetRequest, NetResponse } from '../lib/node-utility/NetRequest';
 import { File } from '../lib/node-utility/File';
 import { GitFileInfo } from './WebInterface/GithubInterface';
 
+import * as platform from './Platform';
+
 export function runShellCommand(title: string, commandLine: string, cmdPath?: string, env?: any): Error | undefined {
     try {
         if (WorkspaceManager.getInstance().hasWorkspaces()) {
@@ -124,14 +126,6 @@ export function compareVersion(v1: string, v2: string): number {
 
     return 0;
 }
-
-export const toolsUrlMap = {
-    "jlink": "https://www.segger.com/downloads/jlink/JLink_Windows_V650.exe",
-    "sdcc": "https://sourceforge.net/projects/sdcc/files/latest/download",
-    "stlink-utility": "https://www.st.com/zh/development-tools/stsw-link004.html",
-    "stvp": "https://www.st.com/zh/development-tools/stvp-stm8.html",
-    "arm-gcc": "https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads"
-};
 
 const hostMap: any = {
     'api.github.com': [

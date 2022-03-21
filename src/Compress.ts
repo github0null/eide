@@ -26,6 +26,7 @@ import { File } from "../lib/node-utility/File";
 import { ExeFile } from "../lib/node-utility/Executable";
 import * as events from 'events';
 import * as child_process from 'child_process';
+import * as platform from './Platform';
 
 export interface CompressOption {
     zipType: string;
@@ -48,9 +49,9 @@ export class Compress {
 
     constructor(_7zFolder: File) {
         this._event = new events.EventEmitter();
-        this._7za = File.fromArray([_7zFolder.path, '7za.exe']);
+        this._7za = File.fromArray([_7zFolder.path, `7za${platform.exeSuffix()}`]);
         if (!this._7za.IsFile()) {
-            throw new Error('\'7za.exe\' is not exist');
+            throw new Error(`\'7za${platform.exeSuffix()}\' is not exist`);
         }
     }
 

@@ -25,7 +25,7 @@
 import { File } from "../lib/node-utility/File";
 import { WorkspaceManager } from "./WorkspaceManager";
 import { GlobalEvent } from "./GlobalEvents";
-import { GetLocalCodePage } from "./Platform";
+import { exeSuffix, GetLocalCodePage } from "./Platform";
 import { ExceptionToMessage } from "./Message";
 
 import * as ChildProcess from 'child_process';
@@ -327,7 +327,7 @@ export class ResManager extends events.EventEmitter {
     }
 
     Get7za(): File {
-        return File.fromArray([this.Get7zDir().path, '7za.exe']);
+        return File.fromArray([this.Get7zDir().path, `7za${exeSuffix()}`]);
     }
 
     getCMSISHeaderPacks(): File[] {
@@ -366,15 +366,15 @@ export class ResManager extends events.EventEmitter {
     }
 
     getMsysBash(): File {
-        return File.fromArray([this.getBuilderDir(), 'msys', 'bin', 'bash.exe']);
+        return File.fromArray([this.getBuilderDir(), 'msys', 'bin', `bash${exeSuffix()}`]);
     }
 
     getBuilder(): File {
-        return File.fromArray([this.getBuilderDir(), 'bin', 'unify_builder.exe']);
+        return File.fromArray([this.getBuilderDir(), 'bin', `unify_builder${exeSuffix()}`]);
     }
 
     getSerialPortExe(): File {
-        return File.fromArray([this.getBuilderDir(), 'bin', 'serial_monitor.exe']);
+        return File.fromArray([this.getBuilderDir(), 'bin', `serial_monitor${exeSuffix()}`]);
     }
 
     getMonoName(): string {

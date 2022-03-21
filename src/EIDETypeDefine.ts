@@ -566,7 +566,7 @@ export class ProjectConfiguration<T extends CompileData>
             return rePath;
         }
 
-        return `.${NodePath.sep}${rePath}`;
+        return `./${File.ToUnixPath(rePath)}`;
     }
 
     private MergeDepList(depList: Dependence[], name?: string): Dependence {

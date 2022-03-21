@@ -47,7 +47,7 @@ import { WorkspaceManager } from "./WorkspaceManager";
 import { ToolchainName } from "./ToolchainManager";
 import { md5, sha256 } from "./utility";
 import { MakefileGen } from "./Makefile";
-import { concatSystemEnvPath } from "./Platform";
+import { concatSystemEnvPath, exeSuffix } from "./Platform";
 import { FileWatcher } from "../lib/node-utility/FileWatcher";
 
 export interface BuildOptions {
@@ -918,7 +918,7 @@ class ARMCodeBuilder extends CodeBuilder {
 
                 extraCommands.push({
                     name: 'axf to elf',
-                    command: `mono "\${BuilderFolder}\\utils\\axf2elf.exe" -d "${tool_root_folder}" -b "${ouput_path}.bin" -i "${ouput_path}.axf" -o "${ouput_path}.elf" > "${axf2elf_log}"`
+                    command: `mono "\${BuilderFolder}\\utils\\axf2elf${exeSuffix()}" -d "${tool_root_folder}" -b "${ouput_path}.bin" -i "${ouput_path}.axf" -o "${ouput_path}.elf" > "${axf2elf_log}"`
                 });
             }
 

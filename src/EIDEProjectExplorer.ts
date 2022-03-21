@@ -77,7 +77,7 @@ import {
     runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
     genGithubHash, md5
 } from './utility';
-import { concatSystemEnvPath, DeleteDir, kill } from './Platform';
+import { concatSystemEnvPath, DeleteDir, exeSuffix, kill } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
 import { VirtualDocument } from './VirtualDocsProvider';
 import { ResInstaller } from './ResInstaller';
@@ -3194,12 +3194,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 const toolchain = ToolchainManager.getInstance().getToolchainByName(toolchainName);
                 if (!toolchain) throw new Error(`Can't get toolchain '${toolchainName}'`);
                 const toolPrefix = toolchain.getToolchainPrefix ? toolchain.getToolchainPrefix() : '';
-                exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `${toolPrefix}objdump.exe`]);
+                exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `${toolPrefix}objdump${exeSuffix()}`]);
                 if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
                 cmds = ['-S', '-l', objPath];
             }
             else if (toolchainName.startsWith('AC')) {
-                exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `fromelf.exe`]);
+                exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `fromelf${exeSuffix()}`]);
                 if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
                 cmds = ['-c', objPath];
             }
@@ -3295,13 +3295,13 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         /* const path: any = SettingManager.GetInstance().getCppcheckerExe();
         if (!path) {
-            const done = await ResInstaller.instance().setOrInstallTools('cppcheck', `Not found 'cppcheck.exe' !`);
+            const done = await ResInstaller.instance().setOrInstallTools('cppcheck', `Not found 'cppcheck${exeSuffix()}' !`);
             if (!done) { return; }
         }
 
         const exeFile = new File(path);
         if (!exeFile.IsFile()) {
-            const done = await ResInstaller.instance().setOrInstallTools('cppcheck', `Not found 'cppcheck.exe' ! [path]: ${exeFile.path}`);
+            const done = await ResInstaller.instance().setOrInstallTools('cppcheck', `Not found 'cppcheck${exeSuffix()}' ! [path]: ${exeFile.path}`);
             if (!done) { return; }
         }
 
@@ -3326,13 +3326,13 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         const path: any = SettingManager.GetInstance().getCppcheckerExe();
         if (!path) {
-            await ResInstaller.instance().setOrInstallTools('cppcheck', `Not found 'cppcheck.exe' !`);
+            await ResInstaller.instance().setOrInstallTools('cppcheck', `Not found 'cppcheck${exeSuffix()}' !`);
             return;
         }
 
         const exeFile = new File(path);
         if (!exeFile.IsFile()) {
-            await ResInstaller.instance().setOrInstallTools('cppcheck', `Not found 'cppcheck.exe' ! [path]: ${exeFile.path}`);
+            await ResInstaller.instance().setOrInstallTools('cppcheck', `Not found 'cppcheck${exeSuffix()}' ! [path]: ${exeFile.path}`);
             return;
         }
 
@@ -3765,7 +3765,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     const imptrName = (<File>imptrType.file).noSuffixName;
                     const cmds = ['--std', './importer/index.js', imptrName, prjFile.path];
                     const result = child_process
-                        .execFileSync(`${scriptRoot.path}/qjs.exe`, cmds, { cwd: scriptRoot.path })
+                        .execFileSync(`${scriptRoot.path}/qjs${exeSuffix()}`, cmds, { cwd: scriptRoot.path })
                         .toString();
 
                     let prjList: ImporterProjectInfo[];
@@ -4352,7 +4352,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             if (suffix == '.axf') {
 
                 const fromelf = File.fromArray([
-                    SettingManager.GetInstance().getArmcc5Dir().path, 'bin', 'fromelf.exe'
+                    SettingManager.GetInstance().getArmcc5Dir().path, 'bin', `fromelf${exeSuffix()}`
                 ]);
 
                 if (!fromelf.IsFile()) return;
