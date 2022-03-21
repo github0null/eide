@@ -47,15 +47,29 @@ import * as utility from './utility';
 import * as platform from './Platform';
 
 let projectExplorer: ProjectExplorer;
+let platformArch: string = 'x86_64';
+let binariesType: string = 'win32';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export async function activate(context: vscode.ExtensionContext) {
 
-    // if not Windows platform, exit
-    if (os.platform() !== 'win32') {
-        vscode.window.showErrorMessage(`${ERROR} : This plug-in is only for 'Windows' platform !`);
+    // check platform, exit
+    const supportedOs: NodeJS.Platform[] = ['win32', 'linux'];
+    if (!supportedOs.includes(os.platform())) {
+        vscode.window.showErrorMessage(`${ERROR} : This plug-in is only for '${supportedOs.join(',')}' platform, your pc is '${os.platform()}' !`);
         return;
+    }
+
+    // check linux arch, we only support x86-64
+    const archLi = [`x86_64`];
+    if (os.platform() == 'linux') {
+        platformArch = ChildProcess.execSync(`arch`).toString();
+        binariesType = `linux-${platformArch}`;
+        if (archLi.includes(platformArch)) {
+            vscode.window.showErrorMessage(`${ERROR} : This plug-in is only support '${archLi.join(',')}' arch, your pc is '${platformArch}' !`);
+            return;
+        }
     }
 
     RegisterGlobalEvent();
@@ -265,8 +279,12 @@ async function onSelectSerialBaudrate() {
 }
 
 function checkBinFolder(binFolder: File): boolean {
-    return binFolder.IsDir() &&
-        File.fromArray([binFolder.path, File.ToLocalPath('lib/mono/4.5/mscorlib.dll')]).IsFile();
+    if (os.platform() == 'win32') {
+        return binFolder.IsDir() &&
+            File.fromArray([binFolder.path, File.ToLocalPath('lib/mono/4.5/mscorlib.dll')]).IsFile();
+    } else {
+        return binFolder.IsDir();
+    }
 }
 
 async function checkAndInstallBinaries(constex: vscode.ExtensionContext, forceInstall?: boolean): Promise<boolean> {
@@ -320,7 +338,7 @@ async function tryUpdateBinaries(binFolder: File, localVer: string, notConfirm?:
 
     const getVersionFromRepo = async (): Promise<string | Error | undefined> => {
         try {
-            const url = `https://api-github.em-ide.com/repos/github0null/eide-resource/contents/binaries/VERSION`;
+            const url = `https://api-github.em-ide.com/repos/github0null/eide-resource/contents/binaries/${binariesType}/VERSION`;
             const cont = await utility.requestTxt(url);
             if (typeof cont != 'string') return cont;
             let obj: any = undefined;
@@ -377,8 +395,8 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
 
     // binaries download site
     const downloadSites: string[] = [
-        `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/bin-${binVersion}.${binType}`,
-        `https://raw-github.em-ide.com/github0null/eide-resource/master/binaries/bin-${binVersion}.${binType}`,
+        `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/${binariesType}/bin-${binVersion}.${binType}`,
+        `https://raw-github.em-ide.com/github0null/eide-resource/master/binaries/${binariesType}/bin-${binVersion}.${binType}`,
     ];
 
     /* random select the order of site */
@@ -387,7 +405,7 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
     }
 
     // add github default download url
-    downloadSites.push(`https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/bin-${binVersion}.${binType}`);
+    downloadSites.push(`https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/${binariesType}/bin-${binVersion}.${binType}`);
 
     let installedDone = false;
 

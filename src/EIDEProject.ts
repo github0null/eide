@@ -1927,7 +1927,7 @@ class EIDEProject extends AbstractProject {
         const packDir = this.GetPackManager().GetPackDir();
         if (packDir) {
             const rePackDir = this.ToRelativePath(packDir.path);
-            prjConfig.config.packDir = rePackDir ? rePackDir : null;
+            prjConfig.config.packDir = rePackDir ? File.ToUnixPath(rePackDir) : null;
         }
         this.dependenceManager.Refresh();
         this.emit('dataChanged', 'pack');
@@ -2076,8 +2076,8 @@ class EIDEProject extends AbstractProject {
         const baseInfo = this.createBase(option);
 
         baseInfo.prjConfig.config.name = option.name;
-        baseInfo.prjConfig.config.outDir = '.' + File.sep + 'build';
-        baseInfo.prjConfig.config.srcDirs = ['.' + File.sep + 'src'];
+        baseInfo.prjConfig.config.outDir = 'build';
+        baseInfo.prjConfig.config.srcDirs = ['src'];
 
         const src = File.fromArray([baseInfo.rootFolder.path, 'src']);
         src.CreateDir(false);
