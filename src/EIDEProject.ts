@@ -54,7 +54,7 @@ import { HexUploaderType } from './HexUploader';
 import { WebPanelManager } from './WebPanelManager';
 import { DependenceManager } from './DependenceManager';
 import { isNullOrUndefined } from 'util';
-import { DeleteDir } from './Platform';
+import { createSafetyFileWatcher, DeleteDir } from './Platform';
 import { IDebugConfigGenerator } from './DebugConfigGenerator';
 import { md5, copyObject, compareVersion } from './utility';
 import { ResInstaller } from './ResInstaller';
@@ -391,7 +391,7 @@ class SourceRootList implements SourceProvider {
             const f = new File(path);
             if (f.IsDir()) {
                 const key: string = this.getRelativePath(path);
-                const watcher = new FileWatcher(f, true).Watch();
+                const watcher = createSafetyFileWatcher(f, true).Watch();
                 watcher.on('error', (err) => GlobalEvent.emit('msg', ExceptionToMessage(err, 'Hidden')));
                 watcher.OnRename = (file) => this.onFolderChanged(key, file);
                 this.srcFolderMaps.set(key, this.newSourceInfo(key, watcher));
@@ -410,7 +410,7 @@ class SourceRootList implements SourceProvider {
         const f = new File(absPath);
         if (f.IsDir()) {
             const key: string = this.getRelativePath(absPath);
-            const watcher = new FileWatcher(f, true).Watch();
+            const watcher = createSafetyFileWatcher(f, true).Watch();
             watcher.on('error', (err) => GlobalEvent.emit('msg', ExceptionToMessage(err, 'Hidden')));
             watcher.OnRename = (file) => this.onFolderChanged(key, file);
             const sourceInfo = this.newSourceInfo(key, watcher);
@@ -850,6 +850,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         prjConfig.config.srcDirs = prjConfig.config.srcDirs
             .filter(path => { return (new File(path)).IsDir(); });
 
+        // rm prefix for out dir
+        prjConfig.config.outDir = NodePath.normalize(File.ToLocalPath(prjConfig.config.outDir));
+
         // clear invalid package path
         if (prjConfig.config.packDir
             && !(new File(this.ToAbsolutePath(prjConfig.config.packDir))).IsDir()) {
@@ -987,7 +990,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     ToAbsolutePath(path_: string): string {
         const path = this.replacePathEnv(path_);
         if (File.isAbsolute(path)) { return NodePath.normalize(path); }
-        return NodePath.normalize(this.GetRootDir().path + NodePath.sep + path);
+        return NodePath.normalize(File.ToLocalPath(this.GetRootDir().path + NodePath.sep + path));
     }
 
     ToRelativePath(path: string, hasPrefix: boolean = true): string | undefined {

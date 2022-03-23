@@ -48,7 +48,7 @@ import * as platform from './Platform';
 
 let projectExplorer: ProjectExplorer;
 let platformArch: string = 'x86_64';
-let binariesType: string = 'win32';
+let platformType: string = 'win32';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -64,9 +64,9 @@ export async function activate(context: vscode.ExtensionContext) {
     // check linux arch, we only support x86-64
     const archLi = [`x86_64`];
     if (os.platform() == 'linux') {
-        platformArch = ChildProcess.execSync(`arch`).toString();
-        binariesType = `linux-${platformArch}`;
-        if (archLi.includes(platformArch)) {
+        platformArch = ChildProcess.execSync(`arch`).toString().trim();
+        platformType = `linux-${platformArch}`;
+        if (!archLi.includes(platformArch)) {
             vscode.window.showErrorMessage(`${ERROR} : This plug-in is only support '${archLi.join(',')}' arch, your pc is '${platformArch}' !`);
             return;
         }
@@ -338,7 +338,7 @@ async function tryUpdateBinaries(binFolder: File, localVer: string, notConfirm?:
 
     const getVersionFromRepo = async (): Promise<string | Error | undefined> => {
         try {
-            const url = `https://api-github.em-ide.com/repos/github0null/eide-resource/contents/binaries/${binariesType}/VERSION`;
+            const url = `https://api-github.em-ide.com/repos/github0null/eide-resource/contents/binaries/${platformType}/VERSION`;
             const cont = await utility.requestTxt(url);
             if (typeof cont != 'string') return cont;
             let obj: any = undefined;
@@ -395,8 +395,8 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
 
     // binaries download site
     const downloadSites: string[] = [
-        `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/${binariesType}/bin-${binVersion}.${binType}`,
-        `https://raw-github.em-ide.com/github0null/eide-resource/master/binaries/${binariesType}/bin-${binVersion}.${binType}`,
+        `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/${platformType}/bin-${binVersion}.${binType}`,
+        `https://raw-github.em-ide.com/github0null/eide-resource/master/binaries/${platformType}/bin-${binVersion}.${binType}`,
     ];
 
     /* random select the order of site */
@@ -405,7 +405,7 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
     }
 
     // add github default download url
-    downloadSites.push(`https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/${binariesType}/bin-${binVersion}.${binType}`);
+    downloadSites.push(`https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/${platformType}/bin-${binVersion}.${binType}`);
 
     let installedDone = false;
 
@@ -559,7 +559,7 @@ function exportEnvToSysPath() {
         const pList = pathList
             .filter((env) => File.IsDir(env.path))
             .map((env) => env.path);
-        platform.exportToSysEnv(process.env, defEnvPath.concat(pList));
+        platform.appendToSysEnv(process.env, defEnvPath.concat(pList));
         isEnvSetuped = true;
     }
 

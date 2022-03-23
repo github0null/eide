@@ -23,15 +23,44 @@
 */
 
 import * as child_process from 'child_process';
-import { File } from '../lib/node-utility/File';
 import * as NodePath from 'path';
 import * as os from 'os';
+
+import { File } from '../lib/node-utility/File';
+import { FileWatcher } from '../lib/node-utility/FileWatcher';
 
 export const UUID_NULL = 'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF';
 
 let uuid: string | undefined;
 
 let osPlatform = os.platform();
+
+let linuxOsId: string | undefined;
+
+export function getLinuxOsId(): string | undefined {
+    if (linuxOsId) return linuxOsId;
+    if (osPlatform == 'linux') {
+        try {    
+            const infList = child_process.execSync(`cat /etc/os-release`).toString().trim().split(/\r\n|\n/);
+            for (const str of infList) {
+                if (str.startsWith('ID=')) {
+                    linuxOsId = str.replace('ID=', '').trim();
+                    return linuxOsId;
+                }
+            }
+        } catch (error) {
+            // nothing todo
+        }
+    }
+}
+
+export function createSafetyFileWatcher(_file: File, _recursive: boolean = false) {
+    if (osPlatform != 'win32' && 
+        osPlatform != 'darwin') {
+        _recursive = false;
+    }
+    return new FileWatcher(_file, _recursive);
+}
 
 export function exeSuffix(): string {
     if (osPlatform == 'win32') {
@@ -53,7 +82,7 @@ export function GetUUID(): string {
             const list = buf.match(/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/);
             uuid = list ? list[0] : UUID_NULL;
         } else {
-            uuid = child_process.execSync(`cat /proc/sys/kernel/random/uuid`).toString();
+            uuid = child_process.execSync(`cat /proc/sys/kernel/random/uuid`).toString().trim();
         }
     } catch (error) {
         uuid = UUID_NULL;
@@ -113,7 +142,7 @@ export function find(fileName: string): string | undefined {
                 }
             }
         } else {
-            const nameList = child_process.execSync(`whereis -b ${fileName}`).toString()
+            const nameList = child_process.execSync(`whereis -b ${fileName}`).toString().trim()
                 .replace(`${fileName}: `, '').replace(/\r\n|\n/, ' ')
                 .split(' ').filter((path) => path.startsWith('/'));
             if (nameList.length > 0) {
@@ -125,7 +154,18 @@ export function find(fileName: string): string | undefined {
     }
 }
 
-export function exportToSysEnv(env: NodeJS.ProcessEnv, paths: string[]) {
+export function appendToSysEnv(env: NodeJS.ProcessEnv, paths: string[]) {
+
+    const pName = os.platform() == 'win32' ? 'Path' : 'PATH';
+    const sep = os.platform() == 'win32' ? ';' : ':';
+
+    if (env[pName]) {
+        const pList = [<string>env[pName]].concat(paths);
+        env[pName] = pList.join(sep);
+    }
+}
+
+export function prependToSysEnv(env: NodeJS.ProcessEnv, paths: string[]) {
 
     const pList = paths.concat();
     const pName = os.platform() == 'win32' ? 'Path' : 'PATH';
@@ -145,7 +185,7 @@ export function concatSystemEnvPath(paths: string[], isPowershell?: boolean, def
     if (os.platform() == 'win32') {
         env['Path'] = env['Path'] ? `${paths.join(';')};${env['Path']}` : paths.join(';');
     } else {
-        env['PATH'] = env['PATH'] ? `${paths.join(':')};${env['PATH']}` : paths.join(':');
+        env['PATH'] = env['PATH'] ? `${paths.join(':')}:${env['PATH']}` : paths.join(':');
     }
 
     return env;

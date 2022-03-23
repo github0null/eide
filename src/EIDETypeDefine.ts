@@ -548,7 +548,7 @@ export class ProjectConfiguration<T extends CompileData>
     private toAbsolutePath(path: string): string {
         const _path = path.trim();
         if (File.isAbsolute(_path)) { return _path; }
-        return NodePath.normalize(this.getRootDir().path + File.sep + _path);
+        return NodePath.normalize(File.ToLocalPath(this.getRootDir().path + File.sep + _path));
     }
 
     private toRelativePath(path: string): string {
@@ -1250,7 +1250,6 @@ export class ProjectConfiguration<T extends CompileData>
     protected RefreshAfterConfigUpdate() {
 
         // convert to abs path
-
         this.config.srcDirs = ArrayDelRepetition(this.config.srcDirs.map((path) => { return this.toAbsolutePath(path); }));
 
         for (const depGroup of this.config.dependenceList) {

@@ -65,22 +65,22 @@ export class ResInstaller {
         this.locker = new Map();
 
         /* register tools */
+        if (os.platform() == 'win32') {
 
-        this.registerTool('SDCC', { setting_name: 'SDCC.InstallDirectory' });
-        this.registerTool('GNU_SDCC_STM8', { setting_name: 'STM8.GNU-SDCC.InstallDirectory', resource_name: 'stm8_gnu_sdcc' });
+            this.registerTool('SDCC', { setting_name: 'SDCC.InstallDirectory' });
+            this.registerTool('GNU_SDCC_STM8', { setting_name: 'STM8.GNU-SDCC.InstallDirectory', resource_name: 'stm8_gnu_sdcc' });
 
-        this.registerTool('GCC', { setting_name: 'ARM.GCC.InstallDirectory', resource_name: 'gcc_arm' });
-        this.registerTool('RISCV_GCC', { setting_name: 'RISCV.InstallDirectory', resource_name: 'gcc_riscv' });
+            this.registerTool('GCC', { setting_name: 'ARM.GCC.InstallDirectory', resource_name: 'gcc_arm' });
+            this.registerTool('RISCV_GCC', { setting_name: 'RISCV.InstallDirectory', resource_name: 'gcc_riscv' });
 
-        this.registerTool('JLink', { setting_name: 'JLink.InstallDirectory' });
-        this.registerTool('STVP', { setting_name: 'STM8.STVP.CliExePath', require_name: `STVP_CmdLine${platform.exeSuffix()}` });
+            this.registerTool('JLink', { setting_name: 'JLink.InstallDirectory' });
+            this.registerTool('STVP', { setting_name: 'STM8.STVP.CliExePath', require_name: `STVP_CmdLine${platform.exeSuffix()}` });
+            /* this.registerTool('STLink', { setting_name: 'STLink.ExePath', require_name: `ST-LINK_CLI${platform.exeSuffix()}` }); */
+            this.registerTool('STLink', { setting_name: 'STLink.ExePath', resource_name: 'st_cube_programer', require_name: `bin/STM32_Programmer_CLI${platform.exeSuffix()}` });
+            this.registerTool('OpenOCD', { setting_name: 'OpenOCD.ExePath', require_name: `bin/openocd${platform.exeSuffix()}` });
 
-        /* this.registerTool('STLink', { setting_name: 'STLink.ExePath', require_name: `ST-LINK_CLI${platform.exeSuffix()}` }); */
-        this.registerTool('STLink', { setting_name: 'STLink.ExePath', resource_name: 'st_cube_programer', require_name: `bin/STM32_Programmer_CLI${platform.exeSuffix()}` });
-
-        this.registerTool('OpenOCD', { setting_name: 'OpenOCD.ExePath', require_name: `bin/openocd${platform.exeSuffix()}` });
-
-        this.registerTool('cppcheck', { setting_name: 'Cppcheck.ExecutablePath', require_name: `cppcheck${platform.exeSuffix()}` });
+            this.registerTool('cppcheck', { setting_name: 'Cppcheck.ExecutablePath', require_name: `cppcheck${platform.exeSuffix()}` });
+        }
     }
 
     private registerTool(name: ExternalToolName, info: ExternalToolInfo) {
