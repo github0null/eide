@@ -2400,7 +2400,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             const builder = CodeBuilder.NewBuilder(project);
             const cmdLine = builder.genBuildCommand({ useFastMode: !rebuild }, true);
             if (cmdLine) {
-                buildCfg.command = CmdLineHandler.DeleteCmdPrefix(cmdLine);
+                buildCfg.command = cmdLine || '';
                 cmdList.push(buildCfg);
             }
         });
@@ -2413,7 +2413,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const resManager = ResManager.GetInstance();
         const cmds = [`${ResManager.GetInstance().getBuilder().path}`].concat(['-r', paramsFile.path]);
         const commandLine = CmdLineHandler.getCommandLine(resManager.getMonoName(), cmds);
-        runShellCommand('build-workspace', commandLine, resManager.getCMDPath());
+        runShellCommand('build-workspace', commandLine);
     }
 
     openWorkspaceConfig() {
@@ -2437,7 +2437,11 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
 
         const outDir = prj.ToAbsolutePath(prj.getOutputDir());
-        runShellCommand('clean', `cmd /E:ON /C del /S /Q "${outDir}"`, ResManager.GetInstance().getCMDPath());
+        if (os.platform() == 'win32') {
+            runShellCommand('clean', `cmd /E:ON /C del /S /Q "${outDir}"`);
+        } else {
+            runShellCommand('clean', `rm -rf -v "${outDir}"`);
+        }
 
         setTimeout(() => {
             this.notifyUpdateOutputFolder(prj);

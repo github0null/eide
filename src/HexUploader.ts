@@ -336,7 +336,7 @@ class JLinkUploader extends HexUploader<any> {
         const jlinkPath = `${SettingManager.GetInstance().getJlinkDir()}${NodePath.sep}JLink${exeSuffix()}`;
         const option = this.getUploadOptions<JLinkOptions>();
         const commandLine = CmdLineHandler.getCommandLine(jlinkPath, commandLines, this.isPowershell);
-        runShellCommand(this.toolType, `${commandLine} ${option.otherCmds || ''}`, this.shellPath);
+        runShellCommand(this.toolType, `${commandLine} ${option.otherCmds || ''}`);
     }
 }
 
@@ -468,7 +468,7 @@ class StcgalUploader extends HexUploader<string[]> {
         }
 
         // run
-        runShellCommand(this.toolType, 'stcgal -a ' + commands.join(' '), ResManager.GetInstance().getCMDPath());
+        runShellCommand(this.toolType, 'stcgal -a ' + commands.join(' '));
     }
 }
 
@@ -677,7 +677,7 @@ class STLinkUploader extends HexUploader<string[]> {
         const options = this.getUploadOptions<STLinkOptions>();
 
         // run
-        runShellCommand(this.toolType, `${commandLine} ${options.otherCmds || ''}`, this.shellPath);
+        runShellCommand(this.toolType, `${commandLine} ${options.otherCmds || ''}`);
     }
 }
 
@@ -775,7 +775,7 @@ class STVPHexUploader extends HexUploader<string[]> {
         );
 
         // run
-        runShellCommand(this.toolType, commandLine, this.shellPath);
+        runShellCommand(this.toolType, commandLine);
     }
 }
 
@@ -862,7 +862,7 @@ class PyOCDUploader extends HexUploader<string[]> {
         }).join(' ');
 
         // run
-        runShellCommand(this.toolType, commandLine, ResManager.GetInstance().getCMDPath());
+        runShellCommand(this.toolType, commandLine);
     }
 }
 
@@ -944,7 +944,7 @@ class OpenOCDUploader extends HexUploader<string[]> {
     protected _launch(commands: string[]): void {
         const exePath = SettingManager.GetInstance().getOpenOCDExePath();
         const commandLine = `${CmdLineHandler.quoteString(exePath, '"')} ${commands.join(' ')}`;
-        runShellCommand(this.toolType, commandLine, ResManager.GetInstance().getCMDPath());
+        runShellCommand(this.toolType, commandLine);
     }
 }
 /**
@@ -1028,6 +1028,6 @@ class CustomUploader extends HexUploader<string> {
             }
         }
 
-        runShellCommand(this.toolType, commandLine, ResManager.GetInstance().getCMDPath(), env);
+        runShellCommand(this.toolType, commandLine, env);
     }
 }

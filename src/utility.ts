@@ -1,25 +1,25 @@
 /*
-	MIT License
+    MIT License
 
-	Copyright (c) 2019 github0null
+    Copyright (c) 2019 github0null
 
-	Permission is hereby granted, free of charge, to any person obtaining a copy
-	of this software and associated documentation files (the "Software"), to deal
-	in the Software without restriction, including without limitation the rights
-	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-	copies of the Software, and to permit persons to whom the Software is
-	furnished to do so, subject to the following conditions:
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
 
-	The above copyright notice and this permission notice shall be included in all
-	copies or substantial portions of the Software.
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
 
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-	SOFTWARE.
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
 */
 
 import * as vscode from 'vscode';
@@ -27,21 +27,23 @@ import * as crypto from 'crypto';
 import * as child_process from 'child_process';
 import * as fs from 'fs';
 
+import * as os from 'os';
+
 import { WorkspaceManager } from "./WorkspaceManager";
 import { CmdLineHandler } from "./CmdLineHandler";
 import { ExceptionToMessage } from "./Message";
 import { NetRequest, NetResponse } from '../lib/node-utility/NetRequest';
 import { File } from '../lib/node-utility/File';
 import { GitFileInfo } from './WebInterface/GithubInterface';
-
 import * as platform from './Platform';
 
-export function runShellCommand(title: string, commandLine: string, cmdPath?: string, env?: any): Error | undefined {
+export function runShellCommand(title: string, commandLine: string, env?: any): Error | undefined {
     try {
         if (WorkspaceManager.getInstance().hasWorkspaces()) {
             // use task
             const shellOption: vscode.ShellExecutionOptions = { env: env || process.env };
-            if (cmdPath) { shellOption.executable = cmdPath; shellOption.shellArgs = ['/C']; }
+            if (os.platform() == 'win32') { shellOption.executable = 'cmd.exe'; shellOption.shellArgs = ['/C']; }
+            else { shellOption.executable = '/bin/bash'; shellOption.shellArgs = ['-c']; }
             const task = new vscode.Task({ type: 'shell' }, vscode.TaskScope.Global, title, 'shell');
             task.execution = new vscode.ShellExecution(commandLine, shellOption);
             task.isBackground = false;
@@ -52,7 +54,9 @@ export function runShellCommand(title: string, commandLine: string, cmdPath?: st
             // use terminal
             const index = vscode.window.terminals.findIndex((t) => { return t.name === title; });
             if (index !== -1) { vscode.window.terminals[index].dispose(); }
-            const terminal = vscode.window.createTerminal({ name: title, shellPath: cmdPath, env: env || process.env });
+            const tOpts: vscode.TerminalOptions = { name: title, env: env || process.env };
+            if (os.platform() == 'win32') tOpts.shellPath = 'cmd.exe';
+            const terminal = vscode.window.createTerminal(tOpts);
             terminal.show(true);
             terminal.sendText(CmdLineHandler.DeleteCmdPrefix(commandLine));
         }

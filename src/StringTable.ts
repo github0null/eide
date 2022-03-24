@@ -682,13 +682,13 @@ export const view_str$operation$open_serialport = [
 ][langIndex];
 
 export const view_str$operation$serialport = [
-    '串口监视器',
-    'serial monitor'
+    '打开串口',
+    'open serial'
 ][langIndex];
 
 export const view_str$operation$baudrate = [
     '波特率',
-    'baudrate'
+    'baud'
 ][langIndex];
 
 export const view_str$operation$setKeil51Path = [

@@ -307,8 +307,7 @@
                     "EIDE.SerialPortMonitor.DefaultPort": {
                         "type": "string",
                         "scope": "resource",
-                        "markdownDescription": "%settings.serial.def.port%",
-                        "default": "null"
+                        "markdownDescription": "%settings.serial.def.port%"
                     },
                     "EIDE.SerialPortMonitor.ShowStatusBar": {
                         "type": "boolean",
