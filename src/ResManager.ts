@@ -361,20 +361,20 @@ export class ResManager extends events.EventEmitter {
 
     /* ------------------ builder and runtime ----------------- */
 
-    getBuilderDir(): string {
-        return (<File>this.GetDir('builder')).path;
+    getBuilderDir(): File {
+        return <File>this.GetDir('builder');
     }
 
     getMsysBash(): File {
-        return File.fromArray([this.getBuilderDir(), 'msys', 'bin', `bash${exeSuffix()}`]);
+        return File.fromArray([this.getBuilderDir().path, 'msys', 'bin', `bash${exeSuffix()}`]);
     }
 
     getBuilder(): File {
-        return File.fromArray([this.getBuilderDir(), 'bin', `unify_builder${exeSuffix()}`]);
+        return File.fromArray([this.getBuilderDir().path, 'bin', `unify_builder${exeSuffix()}`]);
     }
 
     getSerialPortExe(): File {
-        return File.fromArray([this.getBuilderDir(), 'bin', `serial_monitor${exeSuffix()}`]);
+        return File.fromArray([this.getBuilderDir().path, 'bin', `serial_monitor${exeSuffix()}`]);
     }
 
     getMonoName(): string {
