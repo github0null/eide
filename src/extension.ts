@@ -621,13 +621,14 @@ function exportEnvToSysPath() {
 async function InitComponents(context: vscode.ExtensionContext): Promise<boolean | undefined> {
 
     // init managers
-    ResManager.GetInstance(context);
+    const resManager = ResManager.GetInstance(context);
     const settingManager = SettingManager.GetInstance(context);
 
     // chmod +x for some executable files
     if (os.platform() != 'win32') {
         const exeLi: string[] = [
-            `${ResManager.GetInstance().Get7za().path}`
+            `${resManager.Get7za().path}`,
+            `${[resManager.GetBinDir().path, 'scripts', 'qjs'].join(File.sep)}`
         ];
         for (const path of exeLi) {
             try {
