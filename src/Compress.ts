@@ -142,9 +142,9 @@ export class Compress {
             paramList.push('-mx');
             paramList.push('-myx');
 
-            const outPath = ((outDir?.path + File.sep) || '.\\') + option.fileName;
+            const outPath = ((outDir?.path + File.sep) || `.${File.sep}`) + option.fileName;
             paramList.push(outPath);
-            paramList.push(dirOrFile.path + '\\*');
+            paramList.push(dirOrFile.path + `${File.sep}*`);
 
             if (option.excludeList) {
                 for (let excludeReg of option.excludeList) {

@@ -54,14 +54,15 @@ import {
     view_str$flasher$optionBytesConfig,
     view_str$flasher$external_loader,
     view_str$flasher$resetMode,
-    view_str$flasher$other_cmds
+    view_str$flasher$other_cmds,
+    view_str$flasher$extraOptions
 } from "./StringTable";
 import { ResManager } from "./ResManager";
 import { ArrayDelRepetition } from "../lib/node-utility/Utility";
 import { GlobalEvent } from "./GlobalEvents";
 import { ExceptionToMessage, newMessage } from "./Message";
 import { ToolchainName, IToolchian, ToolchainManager } from './ToolchainManager';
-import { HexUploaderType, STLinkOptions, STVPFlasherOptions, C51FlashOption, JLinkOptions, ProtocolType, PyOCDFlashOptions, OpenOCDFlashOptions, STLinkProtocolType, CustomFlashOptions } from "./HexUploader";
+import { HexUploaderType, STLinkOptions, STVPFlasherOptions, StcgalFlashOption, JLinkOptions, ProtocolType, PyOCDFlashOptions, OpenOCDFlashOptions, STLinkProtocolType, CustomFlashOptions } from "./HexUploader";
 import { AbstractProject, VirtualSource } from "./EIDEProject";
 import { SettingManager } from "./SettingManager";
 import { WorkspaceManager } from "./WorkspaceManager";
@@ -70,7 +71,7 @@ import * as utility from './utility';
 ////////////////////////////////////////////////////////
 
 // eide project config file version
-export const EIDE_CONF_VERSION = '2.16';
+export const EIDE_CONF_VERSION = '3.0';
 
 ////////////////////////////////////////////////////////
 
@@ -551,7 +552,9 @@ export class ProjectConfiguration<T extends CompileData>
         return NodePath.normalize(File.ToLocalPath(this.getRootDir().path + File.sep + _path));
     }
 
-    private toRelativePath(path: string): string {
+    private toRelativePath(_path: string): string {
+
+        const path = File.ToUnixPath(_path);
 
         if (File.isEnvPath(path)) { // env path have no repath
             return path;
@@ -563,7 +566,7 @@ export class ProjectConfiguration<T extends CompileData>
 
         const rePath = NodePath.relative(this.getRootDir().path, path);
         if (File.isAbsolute(rePath)) {
-            return rePath;
+            return File.ToUnixPath(rePath);
         }
 
         return `./${File.ToUnixPath(rePath)}`;
@@ -2526,7 +2529,7 @@ export abstract class UploadConfigModel<T> extends ConfigModel<T> {
     }
 }
 
-class StcgalUploadModel extends UploadConfigModel<C51FlashOption> {
+class StcgalUploadModel extends UploadConfigModel<StcgalFlashOption> {
 
     uploader: HexUploaderType = 'stcgal';
 
@@ -2536,6 +2539,8 @@ class StcgalUploadModel extends UploadConfigModel<C51FlashOption> {
                 return view_str$flasher$eepromPath;
             case 'options':
                 return view_str$flasher$options;
+            case 'extraOptions':
+                return view_str$flasher$extraOptions;
             default:
                 return super.GetKeyDescription(key);
         }
@@ -2585,6 +2590,8 @@ class StcgalUploadModel extends UploadConfigModel<C51FlashOption> {
                 return 'INPUT';
             case 'options':
                 return 'EVENT';
+            case 'extraOptions':
+                return 'INPUT';
             default:
                 return super.GetKeyType(key);
         }
@@ -2609,6 +2616,7 @@ class StcgalUploadModel extends UploadConfigModel<C51FlashOption> {
         return {
             bin: '',
             eepromImgPath: 'null',
+            extraOptions: '',
             options: `${AbstractProject.EIDE_DIR}/stc.flash.json`
         };
     }

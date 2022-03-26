@@ -42,11 +42,11 @@ export class WebPanelManager {
     private constructor() {
         this.resMap = new Map();
         const htmlDir = ResManager.GetInstance().GetHTMLDir();
-        this.resMap.set('bootstrap-css', htmlDir.path + File.sep + 'bootstrap\\css\\bootstrap.min.css');
-        this.resMap.set('jquery-js', htmlDir.path + File.sep + 'jquery\\jquery-2.0.1.min.js');
-        this.resMap.set('bootstrap-js', htmlDir.path + File.sep + 'bootstrap\\js\\bootstrap.min.js');
-        this.resMap.set('index-js', htmlDir.path + File.sep + 'StorageLayoutView\\index.js');
-        this.resMap.set('checkbox-css', htmlDir.path + File.sep + 'checkbox\\checkbox.min.css');
+        this.resMap.set('bootstrap-css', [htmlDir.path, 'bootstrap', 'css', 'bootstrap.min.css'].join(File.sep));
+        this.resMap.set('jquery-js', [htmlDir.path, 'jquery', 'jquery-2.0.1.min.js'].join(File.sep));
+        this.resMap.set('bootstrap-js', [htmlDir.path, 'bootstrap', 'js', 'bootstrap.min.js'].join(File.sep));
+        this.resMap.set('index-js', [htmlDir.path, 'StorageLayoutView', 'index.js'].join(File.sep));
+        this.resMap.set('checkbox-css', [htmlDir.path, 'checkbox', 'checkbox.min.css'].join(File.sep));
     }
 
     static newInstance(): WebPanelManager {

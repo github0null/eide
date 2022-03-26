@@ -343,9 +343,10 @@ class JLinkUploader extends HexUploader<any> {
 /**
  * stcgal programer
 */
-export interface C51FlashOption extends UploadOption {
+export interface StcgalFlashOption extends UploadOption {
     eepromImgPath: string;
     options: string;
+    extraOptions: string;
 }
 
 class StcgalUploader extends HexUploader<string[]> {
@@ -389,7 +390,7 @@ class StcgalUploader extends HexUploader<string[]> {
 
         let option: any = Object.create(null);
 
-        const opFile = new File(this.project.ToAbsolutePath(this.getUploadOptions<C51FlashOption>().options));
+        const opFile = new File(this.project.ToAbsolutePath(this.getUploadOptions<StcgalFlashOption>().options));
         if (opFile.IsFile()) {
             try {
                 option = JSON.parse(opFile.Read());
@@ -453,7 +454,7 @@ class StcgalUploader extends HexUploader<string[]> {
 
     protected _launch(commands: string[]): void {
 
-        const option = this.getUploadOptions<C51FlashOption>();
+        const option = this.getUploadOptions<StcgalFlashOption>();
         const programs = this.parseProgramFiles(option);
 
         if (programs.length == 0) {
@@ -468,7 +469,7 @@ class StcgalUploader extends HexUploader<string[]> {
         }
 
         // run
-        runShellCommand(this.toolType, 'stcgal -a ' + commands.join(' '));
+        runShellCommand(this.toolType, `stcgal ${option.extraOptions} ${commands.join(' ')}`);
     }
 }
 
@@ -927,9 +928,9 @@ class OpenOCDUploader extends HexUploader<string[]> {
         programs.forEach(file => {
             if (/\.bin$/i.test(file.path)) {
                 const addrStr = option.baseAddr || file.addr || '0x08000000';
-                commands.push(`-c "program \\"${file.path.replace(/\\{1,}/g, '/')}\\" ${addrStr} verify reset"`);
+                commands.push(`-c "program \\"${File.ToUnixPath(file.path)}\\" ${addrStr} verify reset"`);
             } else {
-                commands.push(`-c "program \\"${file.path.replace(/\\{1,}/g, '/')}\\" verify reset"`);
+                commands.push(`-c "program \\"${File.ToUnixPath(file.path)}\\" verify reset"`);
             }
         });
 

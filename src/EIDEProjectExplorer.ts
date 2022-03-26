@@ -1457,7 +1457,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             // init file group
             const fileFilter = AbstractProject.getFileFilters();
             targets[0].fileGroups.forEach((group) => {
-                const vPath = `${VirtualSource.rootName}/${group.name.replace(/\\/g, '/')}`;
+                const vPath = `${VirtualSource.rootName}/${File.ToUnixPath(group.name)}`;
                 const VFolder = <VirtualFolder>getVirtualFolder(vPath);
                 group.files.forEach((fileItem) => {
                     if (fileFilter.some((reg) => reg.test(fileItem.file.name))) {
@@ -1624,7 +1624,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                 // fill exclude list
                 newTarget.excludeList = [];
                 for (const group of keilTarget.fileGroups) {
-                    const vFolderPath = `${VirtualSource.rootName}/${group.name.replace(/\\/g, '/')}`;
+                    const vFolderPath = `${VirtualSource.rootName}/${File.ToUnixPath(group.name)}`;
                     if (group.disabled) { newTarget.excludeList.push(vFolderPath); } // add disabled group
                     for (const file of group.files) {
                         if (file.disabled) { // add disabled file
@@ -2746,9 +2746,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             const defExcludeList: string[] = [
                 '*.eide-template',
                 '*.log',
-                `${AbstractProject.EIDE_DIR}\\*.db3`,
-                `${AbstractProject.EIDE_DIR}\\*.dat`,
-                `${AbstractProject.vsCodeDir}\\c_cpp_properties.json`
+                `${AbstractProject.EIDE_DIR}${File.sep}*.db3`,
+                `${AbstractProject.EIDE_DIR}${File.sep}*.dat`,
             ];
 
             /* if this is a project, handle it ! */
@@ -2760,7 +2759,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 templateName = prjConfig.name;
                 tmp_suffix = 'ept';
                 const prjOutFolder = NodePath.normalize(prj.GetConfiguration().config.outDir);
-                defExcludeList.push(`${prjOutFolder}`, `${prjOutFolder}\\*`);
+                defExcludeList.push(`${prjOutFolder}`, `${prjOutFolder}${File.sep}*`);
                 resIgnoreList = prj.readIgnoreList();
                 const prjUid = prjConfig.miscInfo.uid;
                 prjConfig.miscInfo.uid = undefined; // clear uid before save prj

@@ -141,7 +141,7 @@ export abstract class CodeBuilder {
                 srcList.forEach((srcInf: any) => {
                     if (!srcInf[fieldName]) return; // skip if not exist
                     for (const expr in parttenInfo) {
-                        const searchPath = (<string>srcInf[fieldName]).replace(/\\/g, '/')
+                        const searchPath = File.ToUnixPath(<string>srcInf[fieldName])
                             .replace(/\.\.\//g, '')
                             .replace(/\.\//g, ''); // globmatch bug ? it can't parse path which have '.' or '..'
                         if (globmatch.isMatch(searchPath, expr)) {
@@ -879,24 +879,29 @@ class ARMCodeBuilder extends CodeBuilder {
 
         const ldFileList: string[] = [];
 
+        let scatterFilePath: string = config.compileConfig.scatterFilePath;
+        if (scatterFilePath == 'undefined') {
+            scatterFilePath = `${scatterFilePath}.sct`;
+        }
+
         // 'armcc' can select whether use custom linker file
         if (['AC5', 'AC6'].includes(toolchain.name)) {
             // use custom linker script files
             if (config.compileConfig.useCustomScatterFile) {
-                config.compileConfig.scatterFilePath.split(',').forEach((sctPath) => {
-                    ldFileList.push(`"${this.project.ToAbsolutePath(sctPath).replace(/\\/g, '/')}"`);
+                scatterFilePath.split(',').forEach((sctPath) => {
+                    ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
                 });
             }
             // auto generate scatter file 
             else {
-                ldFileList.push(`"${this.GenMemScatterFile(config).path.replace(/\\/g, '/')}"`);
+                ldFileList.push(`"${File.ToUnixPath(this.GenMemScatterFile(config).path)}"`);
             }
         }
 
         // other toolchain must use custom linker script file
         else {
-            config.compileConfig.scatterFilePath.split(',').forEach((sctPath) => {
-                ldFileList.push(`"${this.project.ToAbsolutePath(sctPath).replace(/\\/g, '/')}"`);
+            scatterFilePath.split(',').forEach((sctPath) => {
+                ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
             });
         }
 
@@ -915,12 +920,12 @@ class ARMCodeBuilder extends CodeBuilder {
             if (['AC5', 'AC6'].includes(config.toolchain) && settingManager.IsConvertAxf2Elf()) {
 
                 const tool_root_folder = toolchain.getToolchainDir().path;
-                const ouput_path = `\${outDir}\\${config.name}`;
-                const axf2elf_log = `\${outDir}\\axf2elf.log`;
+                const ouput_path = `\${outDir}${File.sep}${config.name}`;
+                const axf2elf_log = `\${outDir}${File.sep}axf2elf.log`;
 
                 extraCommands.push({
                     name: 'axf to elf',
-                    command: `mono "\${BuilderFolder}\\utils\\axf2elf${exeSuffix()}" -d "${tool_root_folder}" -b "${ouput_path}.bin" -i "${ouput_path}.axf" -o "${ouput_path}.elf" > "${axf2elf_log}"`
+                    command: `mono "\${BuilderFolder}${File.sep}utils${File.sep}axf2elf${exeSuffix()}" -d "${tool_root_folder}" -b "${ouput_path}.bin" -i "${ouput_path}.axf" -o "${ouput_path}.elf" > "${axf2elf_log}"`
                 });
             }
 
@@ -950,7 +955,7 @@ class RiscvCodeBuilder extends CodeBuilder {
 
         const ldFileList: string[] = [];
         config.compileConfig.linkerScriptPath.split(',').forEach((sctPath) => {
-            ldFileList.push(`"${this.project.ToAbsolutePath(sctPath).replace(/\\/g, '/')}"`);
+            ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
         });
 
         if (!options['linker']) {
@@ -983,7 +988,7 @@ class AnyGccCodeBuilder extends CodeBuilder {
         // set linker script
         if (config.compileConfig.linkerScriptPath.trim() !== '') {
             options.linker['linker-script'] = config.compileConfig.linkerScriptPath.split(',').map((sctPath) => {
-                const absPath = this.project.ToAbsolutePath(sctPath).replace(/\\/g, '/');
+                const absPath = File.ToUnixPath(this.project.ToAbsolutePath(sctPath));
                 return absPath.includes(' ') ? `"${absPath}"` : absPath;
             });
         } else { // clear old
@@ -1022,7 +1027,7 @@ class C51CodeBuilder extends CodeBuilder {
             const ldFileList: string[] = [];
 
             config.compileConfig.linkerScript.split(',').forEach((sctPath) => {
-                ldFileList.push(`"${this.project.ToAbsolutePath(sctPath).replace(/\\/g, '/')}"`);
+                ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
             });
 
             if (!options['linker']) {

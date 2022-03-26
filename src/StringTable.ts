@@ -135,10 +135,12 @@ export const view_str$flasher$options = [
     'Other Options'
 ][langIndex];
 
-export const view_str$flasher$other_cmds = [
-    '附加命令行',
-    'Additional Commandline'
+export const view_str$flasher$extraOptions = [
+    '附加选项',
+    'Extra Options'
 ][langIndex];
+
+export const view_str$flasher$other_cmds = view_str$flasher$extraOptions;
 
 //------------------ compile view string----------------
 
@@ -684,6 +686,11 @@ export const view_str$operation$open_serialport = [
 export const view_str$operation$serialport = [
     '打开串口',
     'open serial'
+][langIndex];
+
+export const view_str$operation$serialport_name = [
+    '端口',
+    'port'
 ][langIndex];
 
 export const view_str$operation$baudrate = [

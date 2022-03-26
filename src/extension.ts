@@ -35,7 +35,7 @@ import { ProjectExplorer } from './EIDEProjectExplorer';
 import { ResManager } from './ResManager';
 import { LogAnalyzer } from './LogAnalyzer';
 
-import { ERROR, WARNING, INFORMATION, view_str$operation$serialport, view_str$operation$baudrate } from './StringTable';
+import { ERROR, WARNING, INFORMATION, view_str$operation$serialport, view_str$operation$baudrate, view_str$operation$serialport_name } from './StringTable';
 import { LogDumper } from './LogDumper';
 import { StatusBarManager } from './StatusBarManager';
 import { File } from '../lib/node-utility/File';
@@ -307,7 +307,7 @@ async function onSelectCurSerialName() {
     if (portName && portName != serial_curPort) {
         serial_curPort = portName;
         if (serial_nameBar) {
-            serial_nameBar.text = `port: ${serial_curPort}`;
+            serial_nameBar.text = `${view_str$operation$serialport_name}: ${serial_curPort}`;
             serial_nameBar.tooltip = serial_curPort;
             serial_openBar_args[0] = serial_curPort;
             updateSerialportBarState();
@@ -624,9 +624,36 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
     ResManager.GetInstance(context);
     const settingManager = SettingManager.GetInstance(context);
 
+    // chmod +x for some executable files
+    if (os.platform() != 'win32') {
+        const exeLi: string[] = [
+            `${ResManager.GetInstance().Get7za().path}`
+        ];
+        for (const path of exeLi) {
+            try {
+                ChildProcess.execSync(`chmod +x "${path}"`);
+            } catch (error) {
+                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            }
+        }
+    }
+
     /* check binaries, if not found, install it ! */
     const done = await checkAndInstallBinaries(context);
     if (!done) { return false; } /* exit if failed */
+
+    // check mono runtime
+    if (os.platform() != 'win32') {
+        try {
+            ChildProcess.execSync(`mono --version`).toString();
+        } catch (error) {
+            const sel = await vscode.window.showWarningMessage(`Not found [Mono](https://www.mono-project.com/) runtime, please install it !`, `Install`);
+            if (sel) {
+                // https://www.mono-project.com/download/stable/#download-lin
+                utility.openUrl(`https://www.mono-project.com/download/stable/#download-lin`);
+            }
+        }
+    }
 
     // register telemetry hook if user enabled
     try {
@@ -669,7 +696,7 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
 
         // serial name btn
         serial_nameBar = statusBarManager.create('serialport-name');
-        serial_nameBar.text = `port: ${serial_curPort || 'none'}`;
+        serial_nameBar.text = `${view_str$operation$serialport_name}: ${serial_curPort || 'none'}`;
         serial_nameBar.tooltip = 'serial name';
         serial_nameBar.command = '_cl.eide.selectCurSerialName';
 

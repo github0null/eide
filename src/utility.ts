@@ -98,14 +98,12 @@ export function sha1(str: string): string {
     return md5.digest('hex');
 }
 
-export function openUrl(url: string): Promise<Error | undefined> {
-    return new Promise((resolve) => {
-        child_process.execFile('explorer', [url], (err, stdout, stderr) => {
-            if (err) { resolve(err); }
-            else if (stderr) { resolve(new Error(`explorer "${url}" \r\n ${stderr}`)); }
-            resolve(undefined);
-        });
-    });
+export async function openUrl(url: string): Promise<Error | undefined> {
+    try {
+        await vscode.commands.executeCommand(`vscode.open`, vscode.Uri.parse(url));
+    } catch (error) {
+        return error;
+    }
 }
 
 export function compareVersion(v1: string, v2: string): number {

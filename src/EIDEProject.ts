@@ -1373,7 +1373,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     //-------------------- other ------------------
 
     readIgnoreList(): string[] {
-        const ignoreFile = new File(this.ToAbsolutePath('.\\.eideignore'));
+        const ignoreFile = new File(this.ToAbsolutePath(`.${File.sep}.eideignore`));
         if (ignoreFile.IsFile()) {
             return ignoreFile.Read()
                 .split(/\r\n|\n/)
@@ -2146,7 +2146,7 @@ class EIDEProject extends AbstractProject {
                 }
                 else {
                     fileGroups.push(<FileGroup>{
-                        name: (<string>rePath).replace(/\\/g, '/').toUpperCase(),
+                        name: File.ToUnixPath(<string>rePath).toUpperCase(),
                         files: group.files,
                         disabled: group.disabled
                     });

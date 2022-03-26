@@ -2106,13 +2106,13 @@ class AnyGcc implements IToolchian {
                     "name": "make hex",
                     "disable": true,
                     "abortAfterFailed": false,
-                    "command": "\"${CompilerFolder}\\${CompilerPrefix}objcopy\" -O ihex \"${OutDir}\\${TargetName}.elf\" \"${OutDir}\\${TargetName}.hex\""
+                    "command": "\"${CompilerFolder}/${CompilerPrefix}objcopy\" -O ihex \"${OutDir}/${TargetName}.elf\" \"${OutDir}/${TargetName}.hex\""
                 },
                 {
                     "name": "make bin",
                     "disable": true,
                     "abortAfterFailed": false,
-                    "command": "\"${CompilerFolder}\\${CompilerPrefix}objcopy\" -O binary \"${OutDir}\\${TargetName}.elf\" \"${OutDir}\\${TargetName}.bin\""
+                    "command": "\"${CompilerFolder}/${CompilerPrefix}objcopy\" -O binary \"${OutDir}/${TargetName}.elf\" \"${OutDir}/${TargetName}.bin\""
                 }
             ],
             global: {},
