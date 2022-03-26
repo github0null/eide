@@ -4,7 +4,7 @@
 
 ***
 
-### [v0.3.0] (preview) (v3.0.0-RC1)
+### [v3.0.0] (preview edition) (v3.0.0-RC1)
 
 **New**:
   - Support linux platform (ubuntu)
