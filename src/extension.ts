@@ -1061,7 +1061,7 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
                             .execSync(`memap -t ${vInfo.toolName} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`)
                             .toString().split(/\r\n|\n/);
                     } else {
-                        const memapRoot = ResManager.GetInstance().getBuilderDir() + File.sep + 'utils';
+                        const memapRoot = ResManager.GetInstance().getBuilderDir().path + File.sep + 'utils';
                         const command = `python memap -t ${vInfo.toolName} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`;
                         lines = ChildProcess
                             .execSync(command, { cwd: memapRoot })
