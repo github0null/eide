@@ -291,27 +291,30 @@ async function onSelectSerialBaudrate() {
 }
 
 async function onSelectCurSerialName() {
+    try {
+        const portList: string[] = ResManager.GetInstance().enumSerialPort();
 
-    const portList: string[] = ResManager.GetInstance().enumSerialPort();
-
-    if (portList.length === 0) {
-        GlobalEvent.emit('msg', newMessage('Info', 'Not found any serial port !'));
-        return;
-    }
-
-    const portName = await vscode.window.showQuickPick(portList, {
-        canPickMany: false,
-        placeHolder: 'select a serial port to open'
-    });
-
-    if (portName && portName != serial_curPort) {
-        serial_curPort = portName;
-        if (serial_nameBar) {
-            serial_nameBar.text = `${view_str$operation$serialport_name}: ${serial_curPort}`;
-            serial_nameBar.tooltip = serial_curPort;
-            serial_openBar_args[0] = serial_curPort;
-            updateSerialportBarState();
+        if (portList.length === 0) {
+            GlobalEvent.emit('msg', newMessage('Info', 'Not found any serial port !'));
+            return;
         }
+
+        const portName = await vscode.window.showQuickPick(portList, {
+            canPickMany: false,
+            placeHolder: 'select a serial port to open'
+        });
+
+        if (portName && portName != serial_curPort) {
+            serial_curPort = portName;
+            if (serial_nameBar) {
+                serial_nameBar.text = `${view_str$operation$serialport_name}: ${serial_curPort}`;
+                serial_nameBar.tooltip = serial_curPort;
+                serial_openBar_args[0] = serial_curPort;
+                updateSerialportBarState();
+            }
+        }
+    } catch (error) {
+        GlobalEvent.emit('error', error);
     }
 }
 
