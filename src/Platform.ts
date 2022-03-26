@@ -40,7 +40,7 @@ let linuxOsId: string | undefined;
 export function getLinuxOsId(): string | undefined {
     if (linuxOsId) return linuxOsId;
     if (osPlatform == 'linux') {
-        try {    
+        try {
             const infList = child_process.execSync(`cat /etc/os-release`).toString().trim().split(/\r\n|\n/);
             for (const str of infList) {
                 if (str.startsWith('ID=')) {
@@ -55,7 +55,7 @@ export function getLinuxOsId(): string | undefined {
 }
 
 export function createSafetyFileWatcher(_file: File, _recursive: boolean = false) {
-    if (osPlatform != 'win32' && 
+    if (osPlatform != 'win32' &&
         osPlatform != 'darwin') {
         _recursive = false;
     }
@@ -121,8 +121,10 @@ export function DeleteDir(dir: File): string {
 export function DeleteAllChildren(dir: File): string {
     try {
         if (osPlatform == 'win32') {
+            if (['c:\\', 'c:'].includes(dir.path.toLowerCase())) return 'DeleteAllChildren failed !';
             return child_process.execSync('powershell Remove-Item \'' + dir.path + '\\*\' -Recurse -Force -ErrorAction:Continue', { encoding: 'utf8' });
         } else {
+            if (['/', '/home'].includes(dir.path)) return 'DeleteAllChildren failed !';
             return child_process.execSync(`rm -rf "${dir.path}/*"`, { encoding: 'utf8' });
         }
     } catch (error) {
@@ -142,12 +144,8 @@ export function find(fileName: string): string | undefined {
                 }
             }
         } else {
-            const nameList = child_process.execSync(`whereis -b ${fileName}`).toString().trim()
-                .replace(`${fileName}: `, '').replace(/\r\n|\n/, ' ')
-                .split(' ').filter((path) => path.startsWith('/'));
-            if (nameList.length > 0) {
-                return nameList[0];
-            }
+            const res = child_process.execSync(`which ${fileName}`).toString().trim();
+            return res.replace(/"'/g, '');
         }
     } catch (error) {
         return undefined;
@@ -178,7 +176,7 @@ export function prependToSysEnv(env: NodeJS.ProcessEnv, paths: string[]) {
     env[pName] = pList.join(sep);
 }
 
-export function concatSystemEnvPath(paths: string[], isPowershell?: boolean, defEnv?: NodeJS.ProcessEnv): { [key: string]: string } {
+export function concatSystemEnvPath(paths: string[], defEnv?: NodeJS.ProcessEnv): { [key: string]: string } {
 
     const env = JSON.parse(JSON.stringify(defEnv || process.env || {}));
 

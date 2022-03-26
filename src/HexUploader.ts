@@ -1021,7 +1021,7 @@ class CustomUploader extends HexUploader<string> {
                         .filter((p: string) => p.trim() !== '')
                         .map((p: string) => this.project.ToAbsolutePath(p));
                     if (pList.length > 0) {
-                        env = concatSystemEnvPath(pList, false, env);
+                        env = concatSystemEnvPath(pList, env);
                     }
                 } else {
                     env[key] = prjEnv[key]

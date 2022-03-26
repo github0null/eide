@@ -58,7 +58,6 @@ import * as events from 'events';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as NodePath from 'path';
-import { concatSystemEnvPath } from './Platform';
 import { ResInstaller } from './ResInstaller';
 import { AbstractProject } from './EIDEProject';
 

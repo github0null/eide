@@ -55,7 +55,7 @@ import {
     view_str$flasher$external_loader,
     view_str$flasher$resetMode,
     view_str$flasher$other_cmds,
-    view_str$flasher$extraOptions
+    view_str$flasher$stcgalOptions
 } from "./StringTable";
 import { ResManager } from "./ResManager";
 import { ArrayDelRepetition } from "../lib/node-utility/Utility";
@@ -2538,9 +2538,9 @@ class StcgalUploadModel extends UploadConfigModel<StcgalFlashOption> {
             case 'eepromImgPath':
                 return view_str$flasher$eepromPath;
             case 'options':
-                return view_str$flasher$options;
+                return view_str$flasher$stcgalOptions;
             case 'extraOptions':
-                return view_str$flasher$extraOptions;
+                return view_str$flasher$other_cmds;
             default:
                 return super.GetKeyDescription(key);
         }
@@ -2552,6 +2552,8 @@ class StcgalUploadModel extends UploadConfigModel<StcgalFlashOption> {
                 return 'BinaryFile_16x.svg';
             case 'options':
                 return 'ConfigurationEditor_16x.svg';
+            case 'extraOptions':
+                return 'terminal_16x.svg';
             default:
                 return super.getKeyIcon(key);
         }

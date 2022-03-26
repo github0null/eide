@@ -48,7 +48,7 @@ import { WorkspaceManager } from "./WorkspaceManager";
 import { ToolchainName } from "./ToolchainManager";
 import { md5, sha256 } from "./utility";
 import { MakefileGen } from "./Makefile";
-import { concatSystemEnvPath, exeSuffix } from "./Platform";
+import { exeSuffix } from "./Platform";
 import { FileWatcher } from "../lib/node-utility/FileWatcher";
 
 export interface BuildOptions {

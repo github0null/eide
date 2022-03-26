@@ -135,12 +135,15 @@ export const view_str$flasher$options = [
     'Other Options'
 ][langIndex];
 
-export const view_str$flasher$extraOptions = [
-    '附加选项',
-    'Extra Options'
+export const view_str$flasher$stcgalOptions = [
+    '其他配置',
+    'Other Config'
 ][langIndex];
 
-export const view_str$flasher$other_cmds = view_str$flasher$extraOptions;
+export const view_str$flasher$other_cmds = [
+    '附加命令行',
+    'Extra CommandLine'
+][langIndex];
 
 //------------------ compile view string----------------
 

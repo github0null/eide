@@ -1052,9 +1052,20 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
 
             for (const vInfo of mInfo.refList) {
                 try {
-                    const lines = ChildProcess
-                        .execSync(`memap -t ${vInfo.toolName} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`)
-                        .toString().split(/\r\n|\n/);
+
+                    let lines: string[];
+
+                    if (os.platform() == 'win32') {
+                        lines = ChildProcess
+                            .execSync(`memap -t ${vInfo.toolName} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`)
+                            .toString().split(/\r\n|\n/);
+                    } else {
+                        const memapRoot = ResManager.GetInstance().getBuilderDir() + File.sep + 'utils';
+                        const command = `python memap -t ${vInfo.toolName} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`;
+                        lines = ChildProcess
+                            .execSync(command, { cwd: memapRoot })
+                            .toString().split(/\r\n|\n/);
+                    }
 
                     // append color
                     for (let index = 0; index < lines.length; index++) {
