@@ -8,7 +8,7 @@
 
 ## Summary 📑
 
-> **!!! Note: Currently we only support Windows platform (Windows 7 SP1 and later) !!!**
+> Supported Platforms: **Windows (Windows 7 SP1 and later)**, **Linux (Ubuntu)**
 
 An embedded development environment for `8051/STM8/Cortex-M[0/0+/3/4/7]/RISC-V/Universal-Gcc` on VsCode. 
 

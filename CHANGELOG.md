@@ -4,6 +4,13 @@
 
 ***
 
+### [v0.3.0] (preview) (v3.0.0-RC1)
+
+**New**:
+  - Support linux platform (ubuntu)
+
+***
+
 ### [v2.16.8] (revision)
 
 **Optimize**:
