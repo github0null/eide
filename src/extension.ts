@@ -562,7 +562,7 @@ function exportEnvToSysPath() {
 
     const settingManager = SettingManager.GetInstance();
     const resManager = ResManager.GetInstance();
-    const builderFolder = new File(resManager.getBuilderDir());
+    const builderFolder = resManager.getBuilderDir();
 
     // export some eide binaries path to system env path
     const defEnvPath: string[] = [
@@ -628,7 +628,8 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
     if (os.platform() != 'win32') {
         const exeLi: string[] = [
             `${resManager.Get7za().path}`,
-            `${[resManager.GetBinDir().path, 'scripts', 'qjs'].join(File.sep)}`
+            `${[resManager.GetBinDir().path, 'scripts', 'qjs'].join(File.sep)}`,
+            `${[resManager.getBuilderDir().path, 'utils', 'hex2bin'].join(File.sep)}`
         ];
         for (const path of exeLi) {
             try {
