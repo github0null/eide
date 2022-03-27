@@ -240,7 +240,6 @@ export abstract class CodeBuilder {
         if (!commandLine) return;
 
         const title = options?.useDebug ? 'compiler params' : 'build';
-        const resManager = ResManager.GetInstance();
 
         // watch log, to emit done event
         try {
@@ -290,7 +289,7 @@ export abstract class CodeBuilder {
             const index = vscode.window.terminals.findIndex((t) => { return t.name === title; });
             if (index !== -1) { vscode.window.terminals[index].dispose(); }
             const opts: vscode.TerminalOptions = { name: title };
-            if (os.platform() == 'win32') opts.shellPath = 'cmd.exe';
+            if (os.platform() == 'win32') { opts.shellPath = 'cmd.exe'; };
             opts.env = <any>process.env;
             const terminal = vscode.window.createTerminal(opts);
             terminal.show(true);
@@ -299,6 +298,8 @@ export abstract class CodeBuilder {
     }
 
     genBuildCommand(options?: BuildOptions, disPowershell?: boolean): string | undefined {
+
+        const resManager = ResManager.GetInstance();
 
         // reinit build mode
         this.useFastCompile = options?.useFastMode;
@@ -311,13 +312,10 @@ export abstract class CodeBuilder {
         const outDir = new File(this.project.ToAbsolutePath(prjConfig.getOutDir()));
         outDir.CreateDir(true);
 
-        const isPowershell = !disPowershell && /powershell.exe$/i.test(vscode.env.shell);
-        const resManager = ResManager.GetInstance();
-
         // generate command line
         const cmds = [`${this.getBuilderExe().path}`].concat(this.getCommands());
         const exeName: string = resManager.getMonoName();
-        const commandLine = CmdLineHandler.getCommandLine(exeName, cmds, isPowershell);
+        const commandLine = CmdLineHandler.getCommandLine(exeName, cmds);
 
         return commandLine;
     }
@@ -367,7 +365,7 @@ export abstract class CodeBuilder {
 
         const binDir = toolchain.getToolchainDir().path;
         const dumpDir = this.project.getLogDir().path;
-        const outDir = NodePath.normalize(this.project.getOutputDir());
+        const outDir = File.ToUnixPath(this.project.getOutputDir());
         const paramsPath = this.project.ToAbsolutePath(outDir + File.sep + this.paramsFileName);
         const compileOptions: ICompileOptions = this.project.GetConfiguration()
             .compileConfigModel.getOptions(this.project.getEideDir().path, config);

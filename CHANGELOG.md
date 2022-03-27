@@ -4,10 +4,13 @@
 
 ***
 
-### [v3.0.0] (preview edition) (v3.0.0-RC1)
+### [v3.0.20220327] (preview edition) (v3.1.0-RC2)
 
 **New**:
   - Support linux platform (ubuntu)
+
+**Fixed**
+  - fix incompatible commandline format when use vscode task.
 
 ***
 

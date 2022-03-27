@@ -145,12 +145,10 @@ export abstract class HexUploader<InvokeParamsType> {
 
     protected project: AbstractProject;
     protected shellPath: string | undefined;
-    protected isPowershell: boolean;
 
     constructor(prj: AbstractProject) {
         this.project = prj;
         this.shellPath = ResManager.checkWindowsShell() ? undefined : ResManager.GetInstance().getCMDPath();
-        this.isPowershell = /powershell.exe$/i.test(vscode.env.shell);
     }
 
     async upload(eraseAll?: boolean) {
@@ -335,7 +333,7 @@ class JLinkUploader extends HexUploader<any> {
     protected _launch(commandLines: string[]): void {
         const jlinkPath = `${SettingManager.GetInstance().getJlinkDir()}${NodePath.sep}JLink${exeSuffix()}`;
         const option = this.getUploadOptions<JLinkOptions>();
-        const commandLine = CmdLineHandler.getCommandLine(jlinkPath, commandLines, this.isPowershell);
+        const commandLine = CmdLineHandler.getCommandLine(jlinkPath, commandLines);
         runShellCommand(this.toolType, `${commandLine} ${option.otherCmds || ''}`);
     }
 }
@@ -672,7 +670,7 @@ class STLinkUploader extends HexUploader<string[]> {
     protected _launch(commands: string[]): void {
 
         const commandLine = CmdLineHandler.getCommandLine(
-            SettingManager.GetInstance().getSTLinkExePath(), commands, this.isPowershell
+            SettingManager.GetInstance().getSTLinkExePath(), commands
         );
 
         const options = this.getUploadOptions<STLinkOptions>();
@@ -772,7 +770,7 @@ class STVPHexUploader extends HexUploader<string[]> {
     protected _launch(commands: string[]): void {
 
         const commandLine = CmdLineHandler.getCommandLine(
-            SettingManager.GetInstance().getStvpExePath(), commands, this.isPowershell, true
+            SettingManager.GetInstance().getStvpExePath(), commands, false, true
         );
 
         // run
