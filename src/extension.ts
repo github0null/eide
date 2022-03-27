@@ -340,6 +340,18 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
 
     let localVersion = eideCfg['binaray_version'];
 
+    // !! for compatibility with offline-package !!
+    // if we found eide binaries in plug-in root folder, move it 
+    const oldBinDir = File.fromArray([resManager.getAppRootFolder().path, 'bin'])
+    if (checkBinFolder(oldBinDir)) {
+        if (os.platform() == 'win32') {
+            ChildProcess.execSync(`xcopy "${oldBinDir.path}" "${binFolder.path}\\" /H /E /Y`);
+            platform.DeleteDir(oldBinDir); // del it after copy done ! 
+        } else {
+            ChildProcess.execSync(`mv -f "${oldBinDir.path}" "${binFolder.dir}/"`);
+        }
+    }
+
     /* check eide binaries */
     // if user force reinstall, delete old 'bin' dir
     if (forceInstall) {
