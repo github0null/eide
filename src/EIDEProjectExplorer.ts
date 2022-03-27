@@ -811,11 +811,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                         // push filesystem source folder
                         project.getSourceRootFolders()
                             .sort((info_1, info_2) => {
-                                const isComponent = info_1.displayName === DependenceManager.DEPENDENCE_DIR;
+                                const isComponent = File.ToUnixPath(info_1.displayName) === DependenceManager.DEPENDENCE_DIR;
                                 return isComponent ? -1 : info_1.displayName.localeCompare(info_2.displayName);
                             })
                             .forEach((rootInfo) => {
-                                const isComponent = rootInfo.displayName === DependenceManager.DEPENDENCE_DIR;
+                                const isComponent = File.ToUnixPath(rootInfo.displayName) === DependenceManager.DEPENDENCE_DIR;
                                 const folderDispName = isComponent ? view_str$project$cmsis_components : rootInfo.displayName;
                                 iList.push(new ProjTreeItem(TreeItemType.FOLDER_ROOT, {
                                     value: folderDispName,

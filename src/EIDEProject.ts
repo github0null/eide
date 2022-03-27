@@ -2384,6 +2384,8 @@ class EIDEProject extends AbstractProject {
                     name: os.platform(),
                     includePath: <any>undefined,
                     defines: <any>undefined,
+                    compilerPath: "",
+                    intelliSenseMode: "${default}",
                     configurationProvider: this.extensionId
                 };
                 cppConfig.setConfig(newCfg);

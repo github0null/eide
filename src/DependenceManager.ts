@@ -39,7 +39,7 @@ import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 
 export class DependenceManager extends ManagerInterface {
 
-    static readonly DEPENDENCE_DIR = '.eide' + File.sep + 'deps';
+    static readonly DEPENDENCE_DIR = `.eide/deps`;
     static readonly RTE_FILE_NAME = 'RTE_Components.h';
     static readonly toolchainDepName = 'toolchain';
 
