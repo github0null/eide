@@ -49,17 +49,20 @@ const prjEnvList: string[] = [
 ];
 
 const eideEnvList: string[] = [
-    File.sep + 'bin',
     File.sep + 'lib',
     File.sep + 'lang',
-    File.sep + 'bin' + File.sep + 'include',
-    File.sep + 'bin' + File.sep + 'builder',
     File.sep + 'res' + File.sep + 'html',
     File.sep + 'res' + File.sep + 'icon',
     File.sep + 'res' + File.sep + 'template',
     File.sep + 'res' + File.sep + 'data',
     File.sep + 'res' + File.sep + 'tools',
     File.sep + 'res' + File.sep + 'tools' + File.sep + '7z'
+];
+
+const eideBinDirList: string[] = [
+    'bin',
+    'bin' + File.sep + 'include',
+    'bin' + File.sep + 'builder',
 ];
 
 const codePage = GetLocalCodePage();
@@ -592,6 +595,7 @@ export class ResManager extends events.EventEmitter {
     }
 
     private LoadSysEnv() {
+
         eideEnvList.forEach((dir) => {
             if (this.context) {
                 const f = new File(this.context.extensionPath + dir);
@@ -599,6 +603,13 @@ export class ResManager extends events.EventEmitter {
             } else {
                 throw new Error('Extension Context is undefined');
             }
+        });
+
+        const eideHome = File.fromArray([os.homedir(), '.eide']);
+        eideHome.CreateDir(); // create if not existed
+        eideBinDirList.forEach((dir) => {
+            const d = File.fromArray([eideHome.path, dir]);
+            this.dirMap.set(d.name, d);
         });
     }
 }

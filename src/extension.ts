@@ -123,7 +123,7 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('eide.project.build', (item) => projectExplorer.BuildSolution(item, { useFastMode: true })));
     subscriptions.push(vscode.commands.registerCommand('eide.project.clean', (item) => projectExplorer.BuildClean(item)));
     subscriptions.push(vscode.commands.registerCommand('eide.project.uploadToDevice', (item) => projectExplorer.UploadToDevice(item)));
-    subscriptions.push(vscode.commands.registerCommand('eide.reinstall.binaries', () => checkAndInstallBinaries(context, true)));
+    subscriptions.push(vscode.commands.registerCommand('eide.reinstall.binaries', () => checkAndInstallBinaries(true)));
     subscriptions.push(vscode.commands.registerCommand('eide.project.flash.erase.all', (item) => projectExplorer.UploadToDevice(item, true)));
     subscriptions.push(vscode.commands.registerCommand('eide.project.buildAndFlash', (item) => projectExplorer.BuildSolution(item, { useFastMode: true }, true)));
 
@@ -331,13 +331,14 @@ function checkBinFolder(binFolder: File): boolean {
     }
 }
 
-async function checkAndInstallBinaries(constex: vscode.ExtensionContext, forceInstall?: boolean): Promise<boolean> {
+async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean> {
 
-    const eideCfg = ResManager.GetInstance().getAppConfig<any>();
+    const resManager = ResManager.GetInstance();
+
+    const eideCfg = resManager.getAppConfig<any>();
+    const binFolder = resManager.GetBinDir();
+
     let localVersion = eideCfg['binaray_version'];
-
-    const rootFolder = new File(constex.extensionPath);
-    const binFolder = File.fromArray([rootFolder.path, 'bin']);
 
     /* check eide binaries */
     // if user force reinstall, delete old 'bin' dir
@@ -627,10 +628,22 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
     const resManager = ResManager.GetInstance(context);
     const settingManager = SettingManager.GetInstance(context);
 
-    // chmod +x for some executable files
+    // chmod +x for 7za 
+    if (os.platform() != 'win32') {
+        try {
+            ChildProcess.execSync(`chmod +x "${resManager.Get7za().path}"`);
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+        }
+    }
+
+    /* check binaries, if not found, install it ! */
+    const done = await checkAndInstallBinaries();
+    if (!done) { return false; } /* exit if failed */
+
+    // chmod +x for other executable files
     if (os.platform() != 'win32') {
         const exeLi: string[] = [
-            `${resManager.Get7za().path}`,
             `${[resManager.GetBinDir().path, 'scripts', 'qjs'].join(File.sep)}`,
             `${[resManager.getBuilderDir().path, 'utils', 'hex2bin'].join(File.sep)}`
         ];
@@ -642,10 +655,6 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
             }
         }
     }
-
-    /* check binaries, if not found, install it ! */
-    const done = await checkAndInstallBinaries(context);
-    if (!done) { return false; } /* exit if failed */
 
     // check mono runtime
     if (os.platform() != 'win32') {

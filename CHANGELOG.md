@@ -9,8 +9,11 @@
 **New**:
   - Support linux platform (ubuntu)
 
-**Fixed**
-  - fix incompatible commandline format when use vscode task.
+**Fixed**:
+  - Fix incompatible commandline format when use vscode task.
+
+**Changed**:
+  - Move eide-binaries folder location to user's home folder.
 
 ***
 
