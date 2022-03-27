@@ -710,6 +710,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     abstract canProvideBrowseConfigurationsPerFolder(token?: vscode.CancellationToken | undefined): Thenable<boolean>;
     abstract provideFolderBrowseConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<WorkspaceBrowseConfiguration | null>;
     abstract dispose(): void;
+    abstract forceUpdateCpptoolsConfig(): void;
 
     ////////////////////////////////// Abstract Project ///////////////////////////////////
 
@@ -2416,6 +2417,10 @@ class EIDEProject extends AbstractProject {
     };
 
     private __cpptools_updateTimeout: NodeJS.Timeout | undefined;
+
+    forceUpdateCpptoolsConfig(): void {
+        this.UpdateCppConfig();
+    }
 
     UpdateCppConfig() {
 

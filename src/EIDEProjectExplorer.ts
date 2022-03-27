@@ -2013,12 +2013,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             this.cppToolsApi.registerCustomConfigurationProvider(this);
             this.cppToolsOut.appendLine(`[init] register CustomConfigurationProvider done !\r\n`);
 
-            if (this.cppToolsApi.notifyReady) {
-                this.cppToolsApi.notifyReady(this);
-            } else {
-                this.cppToolsApi.didChangeCustomConfiguration(this);
-                this.cppToolsApi.didChangeCustomBrowseConfiguration(this);
-            }
+            // update cppConfig now
+            prj.forceUpdateCpptoolsConfig();
 
             // set flag
             this.isRegisteredCpptoolsProvider = true;
