@@ -346,8 +346,9 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
     if (checkBinFolder(oldBinDir)) {
         if (os.platform() == 'win32') {
             ChildProcess.execSync(`xcopy "${oldBinDir.path}" "${binFolder.path}\\" /H /E /Y`);
-            platform.DeleteDir(oldBinDir); // del it after copy done ! 
+            platform.DeleteDir(oldBinDir); // rm it after copy done ! 
         } else {
+            platform.DeleteDir(binFolder); // rm existed folder
             ChildProcess.execSync(`mv -f "${oldBinDir.path}" "${binFolder.dir}/"`);
         }
     }
