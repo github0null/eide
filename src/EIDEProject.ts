@@ -2526,7 +2526,11 @@ class EIDEProject extends AbstractProject {
         };
 
         // compiler path
-        this.cppToolsConfig.compilerPath = this.getToolchain().getGccCompilerPath();
+        this.cppToolsConfig.compilerPath = this.getToolchain().getGccFamilyCompilerPathForCpptools();
+        if (this.cppToolsConfig.compilerPath == undefined) {
+            // Set "compilerPath" to "" to disable detection of system includes and defines.
+            this.cppToolsConfig.compilerPath = "";
+        }
 
         // update forceinclude headers
         this.cppToolsConfig.forcedInclude = [];

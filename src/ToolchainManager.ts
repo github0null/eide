@@ -76,9 +76,9 @@ export interface IToolchian {
     getToolchainPrefix?: () => string;
 
     /**
-     * get gcc c/c++ compiler path
+     * get gcc c/c++ compiler path for cpptools
      */
-    getGccCompilerPath(): string | undefined;
+    getGccFamilyCompilerPathForCpptools(): string | undefined;
 
     /**
      * get compiler internal defines (for cpptools)
@@ -446,7 +446,7 @@ class KeilC51 implements IToolchian {
         return new KeilC51();
     }
 
-    getGccCompilerPath(): string | undefined {
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
         //const gcc = File.fromArray([this.getToolchainDir().path, 'BIN', `C51${platform.exeSuffix()}`]);
         //return gcc.path;
         return undefined;
@@ -585,7 +585,7 @@ class SDCC implements IToolchian {
         return new SDCC();
     }
 
-    getGccCompilerPath(): string | undefined {
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
         //const gcc = File.fromArray([this.getToolchainDir().path, 'bin', `sdcc${platform.exeSuffix()}`]);
         //return gcc.path;
         return undefined;
@@ -815,7 +815,7 @@ class GnuStm8Sdcc implements IToolchian {
         return new SDCC();
     }
 
-    getGccCompilerPath(): string | undefined {
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
         //const gcc = File.fromArray([this.getToolchainDir().path, 'bin', `sdcc${platform.exeSuffix()}`]);
         //return gcc.path;
         return undefined;
@@ -1017,7 +1017,7 @@ class AC5 implements IToolchian {
         return new AC5();
     }
 
-    getGccCompilerPath(): string | undefined {
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
         //const armccFile = File.fromArray([this.getToolchainDir().path, 'bin', `armcc${platform.exeSuffix()}`]);
         //return armccFile.path;
         return undefined;
@@ -1162,9 +1162,9 @@ class AC6 implements IToolchian {
         return new AC6();
     }
 
-    getGccCompilerPath(): string | undefined {
-        const armccFile = File.fromArray([this.getToolchainDir().path, 'bin', `armclang${platform.exeSuffix()}`]);
-        return armccFile.path;
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
+        const armclang = File.fromArray([this.getToolchainDir().path, 'bin', `armclang${platform.exeSuffix()}`]);
+        return armclang.path;
     }
 
     updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
@@ -1397,7 +1397,7 @@ class GCC implements IToolchian {
         return new GCC();
     }
 
-    getGccCompilerPath(): string | undefined {
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
         const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + `gcc${platform.exeSuffix()}`]);
         return gcc.path;
     }
@@ -1567,7 +1567,7 @@ class IARSTM8 implements IToolchian {
         return new IARSTM8();
     }
 
-    getGccCompilerPath(): string | undefined {
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
         //const gcc = File.fromArray([this.getToolchainDir().path, 'stm8', 'bin', `iccstm8${platform.exeSuffix()}`]);
         //return gcc.path;
         return undefined;
@@ -1789,7 +1789,7 @@ class RISCV_GCC implements IToolchian {
         return new RISCV_GCC();
     }
 
-    getGccCompilerPath(): string | undefined {
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
         const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + `gcc${platform.exeSuffix()}`]);
         return gcc.path;
     }
@@ -2012,7 +2012,7 @@ class AnyGcc implements IToolchian {
         return new AnyGcc();
     }
 
-    getGccCompilerPath(): string | undefined {
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
         const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + `gcc${platform.exeSuffix()}`]);
         return gcc.path;
     }
