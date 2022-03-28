@@ -327,7 +327,8 @@ function checkBinFolder(binFolder: File): boolean {
         return binFolder.IsDir() &&
             File.fromArray([binFolder.path, File.ToLocalPath('lib/mono/4.5/mscorlib.dll')]).IsFile();
     } else {
-        return binFolder.IsDir();
+        return binFolder.IsDir() &&
+            File.fromArray([binFolder.path, File.ToLocalPath('builder/bin/unify_builder')]).IsFile();
     }
 }
 
