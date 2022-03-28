@@ -33,7 +33,7 @@ export const UUID_NULL = 'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF';
 
 let uuid: string | undefined;
 
-let osPlatform = os.platform();
+let osPlatform: NodeJS.Platform = os.platform();
 
 let linuxOsId: string | undefined;
 
@@ -52,6 +52,10 @@ export function getLinuxOsId(): string | undefined {
             // nothing todo
         }
     }
+}
+
+export function osType(): NodeJS.Platform {
+    return osPlatform;
 }
 
 export function createSafetyFileWatcher(_file: File, _recursive: boolean = false) {

@@ -729,8 +729,23 @@ class SDCC implements IToolchian {
 
     getSystemIncludeList(builderOpts: ICompileOptions): string[] {
 
-        const toolchainDir: string = this.getToolchainDir().path;
-        const incList: string[] = [File.fromArray([toolchainDir, 'include']).path];
+        /**
+         * This will install sdcc binaries into: /usr/local/bin/
+         * header files into:                    /usr/local/share/sdcc/include/
+         * non-free header files into:           /usr/local/share/sdcc/non-free/include/
+         * library files into:                   /usr/local/share/sdcc/lib/
+         * non-free library files into:          /usr/local/share/sdcc/non-free/lib/
+         * and documentation into:               /usr/local/share/sdcc/doc/
+         * 
+         * Try `sdcc --print-search-dirs` if you have problems with header
+        */
+
+        let toolSearchLoc: string = this.getToolchainDir().path;
+        if (platform.osType() != 'win32') {
+            toolSearchLoc = `${toolSearchLoc}/share/sdcc`;
+        }
+
+        const incList: string[] = [File.fromArray([toolSearchLoc, 'include']).path];
 
         let devName: string = 'mcs51';
 
@@ -740,7 +755,7 @@ class SDCC implements IToolchian {
             // get device name
             if (conf['device']) {
                 devName = conf['device'];
-                const devInc = File.fromArray([toolchainDir, 'include', devName]);
+                const devInc = File.fromArray([toolSearchLoc, 'include', devName]);
                 if (devInc.IsDir()) {
                     incList.push(devInc.path);
                 }
@@ -748,8 +763,8 @@ class SDCC implements IToolchian {
 
             // is use non-free libs
             if (conf['use-non-free']) {
-                incList.push(File.fromArray([toolchainDir, 'non-free', 'include']).path);
-                const devInc = File.fromArray([toolchainDir, 'non-free', 'include', devName]);
+                incList.push(File.fromArray([toolSearchLoc, 'non-free', 'include']).path);
+                const devInc = File.fromArray([toolSearchLoc, 'non-free', 'include', devName]);
                 if (devInc.IsDir()) {
                     incList.push(devInc.path);
                 }
@@ -948,11 +963,15 @@ class GnuStm8Sdcc implements IToolchian {
 
     getSystemIncludeList(builderOpts: ICompileOptions): string[] {
 
-        const toolchainDir: string = this.getToolchainDir().path;
-        const incList: string[] = [File.fromArray([toolchainDir, 'include']).path];
+        let toolSearchLoc: string = this.getToolchainDir().path;
+        if (platform.osType() != 'win32') {
+            toolSearchLoc = `${toolSearchLoc}/share/sdcc`;
+        }
+
+        const incList: string[] = [File.fromArray([toolSearchLoc, 'include']).path];
 
         // get device name include
-        const devInc = File.fromArray([toolchainDir, 'include', 'stm8']);
+        const devInc = File.fromArray([toolSearchLoc, 'include', 'stm8']);
         if (devInc.IsDir()) {
             incList.push(devInc.path);
         }
@@ -1070,10 +1089,17 @@ class AC5 implements IToolchian {
     }
 
     getSystemIncludeList(builderOpts: ICompileOptions): string[] {
-        const incDir = File.fromArray([this.getToolchainDir().path, 'include']);
+
+        let toolSearchLoc = this.getToolchainDir().path;
+        if (platform.osType() != 'win32') {
+            toolSearchLoc = `${toolSearchLoc}/share/armcc`
+        }
+
+        const incDir = File.fromArray([toolSearchLoc, 'include']);
         if (incDir.IsDir()) {
             return [incDir].concat(incDir.GetList(File.EMPTY_FILTER)).map((f) => { return f.path; });
         }
+
         return [incDir.path];
     }
 
@@ -1268,9 +1294,15 @@ class AC6 implements IToolchian {
     }
 
     getSystemIncludeList(builderOpts: ICompileOptions): string[] {
+
+        let toolSearchLoc = this.getToolchainDir().path;
+        if (platform.osType() != 'win32') {
+            toolSearchLoc = `${toolSearchLoc}/share/armclang`
+        }
+
         return [
-            File.fromArray([this.getToolchainDir().path, 'include']).path,
-            File.fromArray([this.getToolchainDir().path, 'include', 'libcxx']).path
+            File.fromArray([toolSearchLoc, 'include']).path,
+            File.fromArray([toolSearchLoc, 'include', 'libcxx']).path
         ];
     }
 
@@ -1640,12 +1672,12 @@ class IARSTM8 implements IToolchian {
     }
 
     getSystemIncludeList(builderOpts: ICompileOptions): string[] {
-        const toolDir = this.getToolchainDir();
+        const iarPath = this.getToolchainDir().path;
         return [
-            File.fromArray([toolDir.path, 'stm8', 'inc']).path,
-            File.fromArray([toolDir.path, 'stm8', 'inc', 'c']).path,
-            File.fromArray([toolDir.path, 'stm8', 'inc', 'ecpp']).path,
-            File.fromArray([toolDir.path, 'stm8', 'lib']).path
+            File.fromArray([iarPath, 'stm8', 'inc']).path,
+            File.fromArray([iarPath, 'stm8', 'inc', 'c']).path,
+            File.fromArray([iarPath, 'stm8', 'inc', 'ecpp']).path,
+            File.fromArray([iarPath, 'stm8', 'lib']).path
         ];
     }
 
