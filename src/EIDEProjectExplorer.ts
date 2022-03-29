@@ -2119,7 +2119,11 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     getProjectByTreeItem(prjItem?: ProjTreeItem): AbstractProject | undefined {
         return prjItem instanceof ProjTreeItem ?
             this.dataProvider.GetProjectByIndex(prjItem.val.projectIndex) :
-            this.dataProvider.getActiveProject();
+            this.getActiveProject();
+    }
+
+    getActiveProject(): AbstractProject | undefined {
+        return this.dataProvider.getActiveProject();
     }
 
     getProjectCount(): number {
@@ -4373,8 +4377,20 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             // show gnu elf file
             else if (suffix == '.elf') {
 
+                let readelf: string = 'arm-none-eabi-readelf';
+
+                const activePrj = this.getActiveProject();
+                if (activePrj) {
+                    const toolchain = activePrj.getToolchain();
+                    if (toolchain.getToolchainPrefix) {
+                        readelf = [
+                            toolchain.getToolchainDir().path, 'bin', `${toolchain.getToolchainPrefix()}readelf`
+                        ].join(File.sep);
+                    }
+                }
+
                 const cont = child_process
-                    .execSync(`readelf -e "${binFile.path}"`)
+                    .execFileSync(`${readelf}${exeSuffix()}`, ['-e', binFile.path])
                     .toString();
 
                 const vDoc = VirtualDocument.instance();
