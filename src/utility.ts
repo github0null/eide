@@ -42,9 +42,10 @@ export function runShellCommand(title: string, commandLine: string, env?: any): 
         if (WorkspaceManager.getInstance().hasWorkspaces()) {
             // use task
             const shellOption: vscode.ShellExecutionOptions = { env: env || process.env };
-            if (os.platform() == 'win32') { shellOption.executable = 'cmd.exe'; shellOption.shellArgs = ['/C']; }
+            if (platform.osType() == 'win32') { shellOption.executable = 'cmd.exe'; shellOption.shellArgs = ['/C']; }
             else { shellOption.executable = '/bin/bash'; shellOption.shellArgs = ['-c']; }
             const task = new vscode.Task({ type: 'shell' }, vscode.TaskScope.Global, title, 'shell');
+            if (platform.osType() == 'win32') commandLine = `"${commandLine}"`;
             task.execution = new vscode.ShellExecution(commandLine, shellOption);
             task.isBackground = false;
             task.problemMatchers = ['$gcc'];

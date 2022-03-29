@@ -279,6 +279,7 @@ export abstract class CodeBuilder {
             if (os.platform() == 'win32') { shellOption.executable = 'cmd.exe'; shellOption.shellArgs = ['/C']; }
             else { shellOption.executable = '/bin/bash'; shellOption.shellArgs = ['-c']; }
             shellOption.env = <any>process.env;
+            if (os.platform() == 'win32') commandLine = `"${commandLine}"`;
             task.execution = new vscode.ShellExecution(commandLine, shellOption);
             task.problemMatchers = this.getProblemMatcher();
             task.isBackground = false;
