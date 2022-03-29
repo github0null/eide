@@ -692,6 +692,9 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
     } catch (error) {
         // ignore error
     }
+    
+    // set some toolpath to env
+    exportEnvToSysPath();
 
     // init status bar
     {
@@ -740,9 +743,6 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
         // show now
         updateSerialportBarState();
     }
-
-    // set some toolpath to env
-    exportEnvToSysPath();
 
     // register msys bash profile for windows
     if (os.platform() == 'win32') {
