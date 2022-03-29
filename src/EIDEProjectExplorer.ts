@@ -4358,11 +4358,11 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     SettingManager.GetInstance().getArmcc5Dir().path, 'bin', `fromelf${exeSuffix()}`
                 ]);
 
-                if (!fromelf.IsFile()) return;
-
                 let cont: string;
 
                 try {
+                    if (!fromelf.IsFile())
+                        throw new Error(`Not found '${fromelf.path}' !`);
                     cont = child_process
                         .execFileSync(fromelf.path, ['--text', '-e', binFile.path])
                         .toString();
@@ -4389,7 +4389,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 const activePrj = this.getActiveProject();
                 if (activePrj) {
                     const toolchain = activePrj.getToolchain();
-                    if (toolchain.getToolchainPrefix) {
+                    if (!['AC5', 'AC6'].includes(toolchain.name) && toolchain.getToolchainPrefix) {
                         readelf = [
                             toolchain.getToolchainDir().path, 'bin', `${toolchain.getToolchainPrefix()}readelf`
                         ].join(File.sep);
