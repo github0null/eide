@@ -2250,14 +2250,32 @@ class EIDEProject extends AbstractProject {
             const settings = workspaceConfig.config.settings;
             const toolchain = this.getToolchain();
 
-            if (isNullOrUndefined(settings['files.associations'])) {
-                settings['files.associations'] = { ".eideignore": "ignore" };
-            } else if (isNullOrUndefined(settings['files.associations']['.eideignore'])) {
-                settings['files.associations']['.eideignore'] = 'ignore';
-            }
+            // --- settings field
 
             if (settings['files.autoGuessEncoding'] === undefined) {
                 settings['files.autoGuessEncoding'] = true;
+            }
+
+            if (toolchain.name === 'Keil_C51') {
+                if (settings['C_Cpp.errorSquiggles'] === undefined) {
+                    settings['C_Cpp.errorSquiggles'] = "Disabled";
+                }
+            }
+
+            if (!settings['files.associations']) {
+                settings['files.associations'] = { 
+                    ".eideignore": "ignore",
+                    "*.h": "c",
+                    "*.c": "c",
+                    "*.hxx": "cpp",
+                    "*.hpp": "cpp",
+                    "*.c++": "cpp",
+                    "*.cpp": "cpp",
+                    "*.cxx": "cpp",
+                    "*.cc": "cpp"
+                };
+            } else if (!settings['files.associations']['.eideignore']) {
+                settings['files.associations']['.eideignore'] = 'ignore';
             }
 
             if (settings['[yaml]'] === undefined) {
@@ -2267,12 +2285,8 @@ class EIDEProject extends AbstractProject {
                     "editor.autoIndent": "advanced"
                 };
             }
-
-            if (toolchain.name === 'Keil_C51') {
-                if (settings['C_Cpp.errorSquiggles'] === undefined) {
-                    settings['C_Cpp.errorSquiggles'] = "Disabled";
-                }
-            }
+            
+            // --- tasks field
 
             // append default task for new project
             try {
