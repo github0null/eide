@@ -4360,9 +4360,16 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
                 if (!fromelf.IsFile()) return;
 
-                const cont = child_process
-                    .execFileSync(fromelf.path, ['--text', '-e', binFile.path])
-                    .toString();
+                let cont: string;
+
+                try {
+                    cont = child_process
+                        .execFileSync(fromelf.path, ['--text', '-e', binFile.path])
+                        .toString();
+                } catch (error) {
+                    const err = <Error>error;
+                    cont = `${err.name}: ${err.message}\n${err.stack}`;
+                }
 
                 const vDoc = VirtualDocument.instance();
                 const docName = `${binFile.path}.info`;
@@ -4389,9 +4396,16 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     }
                 }
 
-                const cont = child_process
-                    .execFileSync(`${readelf}${exeSuffix()}`, ['-e', binFile.path])
-                    .toString();
+                let cont: string;
+
+                try {
+                    cont = child_process
+                        .execFileSync(`${readelf}${exeSuffix()}`, ['-e', binFile.path])
+                        .toString();
+                } catch (error) {
+                    const err = <Error>error;
+                    cont = `${err.name}: ${err.message}\n${err.stack}`;
+                }
 
                 const vDoc = VirtualDocument.instance();
                 const docName = `${binFile.path}.info`;
