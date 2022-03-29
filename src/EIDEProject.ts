@@ -2119,9 +2119,7 @@ class EIDEProject extends AbstractProject {
         } else {
             const keilFileList = ResManager.GetInstance().GetTemplateDir().GetList(suffixFilter, File.EMPTY_FILTER);
             const fIndex = keilFileList.findIndex((f) => { return f.noSuffixName === prjConfig.type; });
-            if (fIndex === -1) {
-                throw new Error('Not found \'' + prjConfig.type + '\' keil template file');
-            }
+            if (fIndex === -1) { throw new Error('Not found \'' + prjConfig.type + '\' keil template file'); }
             keilFile = keilFileList[fIndex];
         }
 
@@ -2263,7 +2261,7 @@ class EIDEProject extends AbstractProject {
             }
 
             if (!settings['files.associations']) {
-                settings['files.associations'] = { 
+                settings['files.associations'] = {
                     ".eideignore": "ignore",
                     "*.h": "c",
                     "*.c": "c",
@@ -2285,7 +2283,7 @@ class EIDEProject extends AbstractProject {
                     "editor.autoIndent": "advanced"
                 };
             }
-            
+
             // --- tasks field
 
             // append default task for new project
