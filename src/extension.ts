@@ -704,8 +704,10 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
         // get current active port
         try {
             const ports = ResManager.GetInstance().enumSerialPort();
-            if (ports.length > 0 && !ports.includes(serialDefCfg.defaultPort)) {
-                serial_curPort = ports[0];
+            if (ports.length > 0) {
+                if (ports.length == 1 || !ports.includes(serialDefCfg.defaultPort)) {
+                    serial_curPort = ports[0];
+                }
             }
         } catch (error) {
             // nothing todo
