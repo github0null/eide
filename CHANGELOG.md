@@ -14,6 +14,7 @@
 
 **Changed**:
   - Move eide-binaries folder location to user's home folder.
+  - Remove 'c_cpp_properties.json' for eide projects.
 
 ***
 
