@@ -688,17 +688,17 @@ export const view_str$operation$open_serialport = [
 
 export const view_str$operation$serialport = [
     '打开串口',
-    'open serial'
+    'Open Serial'
 ][langIndex];
 
 export const view_str$operation$serialport_name = [
     '端口',
-    'port'
+    'Port'
 ][langIndex];
 
 export const view_str$operation$baudrate = [
     '波特率',
-    'baud'
+    'Baud'
 ][langIndex];
 
 export const view_str$operation$setKeil51Path = [
