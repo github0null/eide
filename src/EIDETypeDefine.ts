@@ -3530,7 +3530,7 @@ export interface CppConfig {
     configurations: CppConfigItem[];
     version: number;
 }
-
+/* 
 export class CppConfiguration extends Configuration<CppConfig> {
 
     protected readTypeFromFile(configFile: File): ProjectType | undefined {
@@ -3604,7 +3604,7 @@ export class CppConfiguration extends Configuration<CppConfig> {
         };
     }
 }
-
+ */
 export interface WorkspaceConfig {
     folders: { name?: string, path: string }[];
     settings?: any;

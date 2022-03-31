@@ -2055,15 +2055,18 @@ class AnyGcc implements IToolchian {
 
     updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
 
-        cppToolsConfig.cStandard = 'c11';
-        cppToolsConfig.cppStandard = 'c++11';
-
-        cppToolsConfig.compilerArgs = ['-std=${c_cppStandard}'];
+        const parseLangStd = function (keyName: 'cStandard' | 'cppStandard', pList: string[]) {
+            pList.forEach((params) => {
+                const m = /-std=([^\s]+)/.exec(params);
+                if (m && m.length > 1) { cppToolsConfig[keyName] = m[1]; }
+            });
+        };
 
         // pass global args for cpptools
         if (builderOpts.global) {
             if (typeof builderOpts.global['misc-control'] == 'string') {
                 const pList = builderOpts.global['misc-control'].trim().split(/\s+/);
+                if (!cppToolsConfig.compilerArgs) cppToolsConfig.compilerArgs = [];
                 pList.forEach((p) => cppToolsConfig.compilerArgs?.push(p));
             }
         }
@@ -2074,13 +2077,18 @@ class AnyGcc implements IToolchian {
             if (typeof builderOpts["c/cpp-compiler"]['C_FLAGS'] == 'string') {
                 const pList = builderOpts['c/cpp-compiler']['C_FLAGS'].trim().split(/\s+/);
                 cppToolsConfig.cCompilerArgs = pList;
+                parseLangStd('cStandard', pList);
             }
 
             if (typeof builderOpts["c/cpp-compiler"]['CXX_FLAGS'] == 'string') {
                 const pList = builderOpts['c/cpp-compiler']['CXX_FLAGS'].trim().split(/\s+/);
                 cppToolsConfig.cppCompilerArgs = pList;
+                parseLangStd('cppStandard', pList);
             }
         }
+
+        cppToolsConfig.cStandard = cppToolsConfig.cStandard || 'c99';
+        cppToolsConfig.cppStandard = cppToolsConfig.cppStandard || 'c++98';
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {

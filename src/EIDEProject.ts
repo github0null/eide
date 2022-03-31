@@ -42,7 +42,7 @@ import { Compress } from './Compress';
 import {
     CurrentDevice, ConfigMap, FileGroup,
     ProjectConfiguration, ProjectConfigData, WorkspaceConfiguration,
-    CppConfiguration, CreateOptions,
+    CreateOptions,
     ProjectConfigEvent, ProjectFileGroup, EventData, FileItem, EIDE_CONF_VERSION, ProjectTargetInfo, VirtualFolder, VirtualFile, CompileConfigModel, ArmBaseCompileData, ArmBaseCompileConfigModel, Dependence, CppConfigItem, ICompileOptions
 } from './EIDETypeDefine';
 import { ToolchainName, IToolchian, ToolchainManager } from './ToolchainManager';
@@ -65,6 +65,7 @@ import {
 import { SettingManager } from './SettingManager';
 import { WorkspaceManager } from './WorkspaceManager';
 import { ExeCmd } from '../lib/node-utility/Executable';
+import { jsonc } from 'jsonc';
 
 export class CheckError extends Error {
 }
@@ -1054,9 +1055,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         return <WorkspaceConfiguration>this.configMap.Get<any>(AbstractProject.workspaceSuffix);
     }
 
-    GetCppConfig(): CppConfiguration {
+    /* GetCppConfig(): CppConfiguration {
         return <CppConfiguration>this.configMap.Get<any>(AbstractProject.cppConfigName);
-    }
+    } */
 
     Save() {
         this.configMap.SaveAll();
@@ -1592,7 +1593,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         this.configMap.Set(new WorkspaceConfiguration(wsFile), AbstractProject.workspaceSuffix);
         this.configMap.Set(new ProjectConfiguration(File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName])));
         File.fromArray([wsFile.dir, AbstractProject.vsCodeDir]).CreateDir(true); // create '.vscode' folder if it's not existed
-        this.configMap.Set(new CppConfiguration(File.fromArray([wsFile.dir, AbstractProject.vsCodeDir, AbstractProject.cppConfigName])));
+        //this.configMap.Set(new CppConfiguration(File.fromArray([wsFile.dir, AbstractProject.vsCodeDir, AbstractProject.cppConfigName])));
     }
 
     private prevSaveTask: NodeJS.Timeout | undefined;
@@ -2062,8 +2063,8 @@ class EIDEProject extends AbstractProject {
         const wsConfig = new WorkspaceConfiguration(wsFile);
         const prjConfig = new ProjectConfiguration(
             File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]), option.type);
-        const cppConfig = new CppConfiguration(
-            File.fromArray([wsFile.dir, AbstractProject.vsCodeDir, AbstractProject.cppConfigName]));
+        /* const cppConfig = new CppConfiguration(
+            File.fromArray([wsFile.dir, AbstractProject.vsCodeDir, AbstractProject.cppConfigName])); */
 
         // set project name
         prjConfig.config.name = option.name;
@@ -2254,6 +2255,10 @@ class EIDEProject extends AbstractProject {
                 settings['files.autoGuessEncoding'] = true;
             }
 
+            if (settings['C_Cpp.default.configurationProvider'] === undefined) {
+                settings['C_Cpp.default.configurationProvider'] = this.extensionId;
+            }
+
             if (toolchain.name === 'Keil_C51') {
                 if (settings['C_Cpp.errorSquiggles'] === undefined) {
                     settings['C_Cpp.errorSquiggles'] = "Disabled";
@@ -2386,12 +2391,29 @@ class EIDEProject extends AbstractProject {
         /* update src refs */
         this.notifyUpdateSourceRefs(undefined);
 
-        // allow intellisense provider for workspace if we have not
-        // and notify cpptools launch
+        // !! we need deleted global c_cpp_properties.json !!
         {
-            const cppConfig = this.GetCppConfig();
+            const cfgFile = File.fromArray([
+                this.GetRootDir().path, '.vscode', AbstractProject.cppConfigName
+            ]);
+
+            if (cfgFile.IsFile()) {
+                try {
+                    const cfg = jsonc.parse(cfgFile.Read());
+                    if (Array.isArray(cfg['configurations'])) {
+                        const idx = cfg['configurations'].findIndex((item) => item['name'] == os.platform());
+                        if (idx != -1 && cfg['configurations'][idx].configurationProvider == this.extensionId) {
+                            fs.unlinkSync(cfgFile.path);
+                        }
+                    }
+                } catch (error) {
+                    //
+                }
+            }
+
+            /* const cppConfig = this.GetCppConfig();
             const cppConfigItem = cppConfig.getConfig();
-            if (!cppConfigItem.configurationProvider) {
+            if (cppConfigItem.configurationProvider) {
                 const newCfg: CppConfigItem = {
                     name: os.platform(),
                     includePath: <any>undefined,
@@ -2401,7 +2423,7 @@ class EIDEProject extends AbstractProject {
                 };
                 cppConfig.setConfig(newCfg);
                 cppConfig.saveToFile();
-            }
+            } */
         }
 
         // run post-install.sh
@@ -2507,7 +2529,7 @@ class EIDEProject extends AbstractProject {
             // replace var value for global args
             if (this.cppToolsConfig.compilerArgs) {
                 this.cppToolsConfig.compilerArgs = (<string[]>this.cppToolsConfig.compilerArgs).map((param) => {
-                    return param.replace('${c_cppStandard}', this.cppToolsConfig.cppStandard || 'c++11');
+                    return param.replace('${c_cppStandard}', this.cppToolsConfig.cStandard || 'c99');
                 });
             }
         }
