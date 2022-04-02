@@ -10,7 +10,7 @@
 
 一款适用于 8051/STM8/Cortex-M/RISC-V 的单片机开发环境。
 
-在 vscode 上提供 **8051**, **STM8**, **Cortex-M**, **RISC-V** ... 项目的 开发, 编译, 烧录 等功能。
+在 vscode 上提供 **8051**, **AVR**, **STM8**, **Cortex-M**, **RISC-V** ... 项目的 开发, 编译, 烧录 等功能。
 
 ![preview](https://docs.em-ide.com/preview.png)
 
@@ -18,7 +18,7 @@
 
 ## 功能特性 🎉
 
-* 支持开发 8051，STM8，Cortex-M，RISC-V, AnyGcc 项目
+* 支持开发 8051，STM8，AVR，Cortex-M，RISC-V, AnyGcc 项目
 * 支持导入 KEIL 项目 (仅支持 KEIL 5 及以上版本)
 * 支持安装标准的 KEIL 芯片支持包 (仅用于 Cortex-M 项目)
 * 提供丰富的项目模板方便快速开始项目

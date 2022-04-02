@@ -2213,7 +2213,7 @@ class EIDEProject extends AbstractProject {
                         resolve(exitInf.code == 0);
                     });
 
-                    proc.Run(cmd, undefined, { cwd: prjRoot.path, shell: bash.path });
+                    proc.Run(cmd, undefined, { cwd: prjRoot.path, shell: bash?.path });
                 });
             });
 

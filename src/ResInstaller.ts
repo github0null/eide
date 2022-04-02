@@ -47,6 +47,7 @@ export interface ExternalToolInfo {
     setting_name: string;
     resource_name?: string;
     require_name?: string;
+    no_binaries?: boolean;
 };
 
 export class ResInstaller {
@@ -65,22 +66,61 @@ export class ResInstaller {
         this.locker = new Map();
 
         /* register tools */
-        if (os.platform() == 'win32') {
+        const no_binaries = os.platform() != 'win32'; // we not provide binaries for non-win32 platform.
 
-            this.registerTool('SDCC', { setting_name: 'SDCC.InstallDirectory' });
-            this.registerTool('GNU_SDCC_STM8', { setting_name: 'STM8.GNU-SDCC.InstallDirectory', resource_name: 'stm8_gnu_sdcc' });
+        this.registerTool('SDCC', {
+            setting_name: 'SDCC.InstallDirectory',
+            no_binaries: no_binaries
+        });
 
-            this.registerTool('GCC', { setting_name: 'ARM.GCC.InstallDirectory', resource_name: 'gcc_arm' });
-            this.registerTool('RISCV_GCC', { setting_name: 'RISCV.InstallDirectory', resource_name: 'gcc_riscv' });
+        this.registerTool('GNU_SDCC_STM8', {
+            setting_name: 'STM8.GNU-SDCC.InstallDirectory',
+            resource_name: 'stm8_gnu_sdcc',
+            no_binaries: no_binaries
+        });
 
-            this.registerTool('JLink', { setting_name: 'JLink.InstallDirectory' });
-            this.registerTool('STVP', { setting_name: 'STM8.STVP.CliExePath', require_name: `STVP_CmdLine${platform.exeSuffix()}` });
-            /* this.registerTool('STLink', { setting_name: 'STLink.ExePath', require_name: `ST-LINK_CLI${platform.exeSuffix()}` }); */
-            this.registerTool('STLink', { setting_name: 'STLink.ExePath', resource_name: 'st_cube_programer', require_name: `bin/STM32_Programmer_CLI${platform.exeSuffix()}` });
-            this.registerTool('OpenOCD', { setting_name: 'OpenOCD.ExePath', require_name: `bin/openocd${platform.exeSuffix()}` });
+        this.registerTool('GCC', {
+            setting_name: 'ARM.GCC.InstallDirectory',
+            resource_name: 'gcc_arm',
+            no_binaries: no_binaries
+        });
 
-            this.registerTool('cppcheck', { setting_name: 'Cppcheck.ExecutablePath', require_name: `cppcheck${platform.exeSuffix()}` });
-        }
+        this.registerTool('RISCV_GCC', {
+            setting_name: 'RISCV.InstallDirectory',
+            resource_name: 'gcc_riscv',
+            no_binaries: no_binaries
+        });
+
+        this.registerTool('JLink', {
+            setting_name: 'JLink.InstallDirectory',
+            no_binaries: no_binaries
+        });
+
+        this.registerTool('STVP', {
+            setting_name: 'STM8.STVP.CliExePath',
+            require_name: `STVP_CmdLine${platform.exeSuffix()}`,
+            no_binaries: no_binaries
+        });
+
+        /* this.registerTool('STLink', { setting_name: 'STLink.ExePath', require_name: `ST-LINK_CLI${platform.exeSuffix()}` }); */
+
+        this.registerTool('STLink', {
+            setting_name: 'STLink.ExePath', resource_name: 'st_cube_programer',
+            require_name: `bin/STM32_Programmer_CLI${platform.exeSuffix()}`,
+            no_binaries: no_binaries
+        });
+
+        this.registerTool('OpenOCD', {
+            setting_name: 'OpenOCD.ExePath',
+            require_name: `bin/openocd${platform.exeSuffix()}`,
+            no_binaries: no_binaries
+        });
+
+        this.registerTool('cppcheck', {
+            setting_name: 'Cppcheck.ExecutablePath',
+            require_name: `cppcheck${platform.exeSuffix()}`,
+            no_binaries: no_binaries
+        });
     }
 
     private registerTool(name: ExternalToolName, info: ExternalToolInfo) {
@@ -240,17 +280,23 @@ export class ResInstaller {
         }
 
         /* found tool, set, install or cancel it */
-        const item = await vscode.window.showWarningMessage(msg, txt_install_now, txt_jump2settings);
-        if (!item) { return false; } /* canceled, exit */
-
         const toolInfo = <ExternalToolInfo>this.getTool(name);
 
-        if (item == txt_jump2settings) { /* user select set it, jump to setting */
+        let item: string | undefined;
+        if (toolInfo.no_binaries) { // if no binaries, we only jump to settings
+            item = await vscode.window.showWarningMessage(msg, txt_jump2settings);
+        } else { // if have binaries, user need to do a select.
+            item = await vscode.window.showWarningMessage(msg, txt_install_now, txt_jump2settings);
+        }
+
+        if (!item) { return false; } // user canceled, exit
+
+        if (item == txt_jump2settings) { // user select set it, jump to setting
             SettingManager.jumpToSettings(`${SettingManager.TAG}.${toolInfo.setting_name}` || '@ext:cl.eide');
             return false;
         }
 
-        /* user select 'install now', do it ! */
+        // user select 'install now', do it !
         return this.installTool(name);
     }
 

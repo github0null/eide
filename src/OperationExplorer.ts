@@ -393,6 +393,12 @@ export class OperationExplorer {
                             type: 'C51'
                         },
                         {
+                            label: 'AVR FreeRTOS Quickstart',
+                            detail: 'avr atmega128 quickstart project (FreeRTOS) (WinAVR-GCC compiler)',
+                            templateName: 'avr_atmega128_rtos',
+                            type: 'ANY-GCC'
+                        },
+                        {
                             label: 'STM8 Quickstart',
                             detail: 'stm8s103 quickstart project',
                             templateName: 'stm8s103f3',
@@ -477,7 +483,7 @@ export class OperationExplorer {
                 name: name,
                 outDir: new File(outDir[0].fsPath),
                 templateFile: File.fromArray([
-                    ResManager.GetInstance().GetTemplateDir().path, `${templateItem.templateName}.eide-template`
+                    ResManager.GetInstance().GetTemplateDir().path, `${templateItem.templateName}.ept`
                 ]),
             });
 

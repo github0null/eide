@@ -2746,6 +2746,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             const defExcludeList: string[] = [
                 '*.eide-template',
                 '*.log',
+                '*.ept',
                 `${AbstractProject.EIDE_DIR}${File.sep}*.db3`,
                 `${AbstractProject.EIDE_DIR}${File.sep}*.dat`,
             ];

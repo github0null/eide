@@ -368,8 +368,10 @@ export class ResManager extends events.EventEmitter {
         return <File>this.GetDir('builder');
     }
 
-    getMsysBash(): File {
-        return File.fromArray([this.getBuilderDir().path, 'msys', 'bin', `bash${exeSuffix()}`]);
+    getMsysBash(): File | undefined {
+        if (os.platform() == 'win32') {
+            return File.fromArray([this.getBuilderDir().path, 'msys', 'bin', `bash${exeSuffix()}`]);
+        }
     }
 
     getBuilder(): File {

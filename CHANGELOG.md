@@ -4,6 +4,17 @@
 
 ***
 
+### [v3.1.0]
+
+**New**:
+  - Add internal `AVR` project template.
+
+**Changed**:
+  - Move eide-binaries folder location to user's home folder.
+  - Remove external-tools default config value for plug-in settings.
+
+***
+
 ### [v3.0.202203xxxx] (preview edition) (v3.1.0-RC)
 
 **New**:
