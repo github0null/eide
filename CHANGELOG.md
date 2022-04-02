@@ -7,11 +7,13 @@
 ### [v3.1.0]
 
 **New**:
+  - Support linux platform (ubuntu).
   - Add internal `AVR` project template.
 
 **Changed**:
   - Move eide-binaries folder location to user's home folder.
   - Remove external-tools default config value for plug-in settings.
+  - Remove 'c_cpp_properties.json' for eide projects.
 
 ***
 
