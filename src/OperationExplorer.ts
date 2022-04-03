@@ -1,25 +1,25 @@
 /*
-	MIT License
+    MIT License
 
-	Copyright (c) 2019 github0null
+    Copyright (c) 2019 github0null
 
-	Permission is hereby granted, free of charge, to any person obtaining a copy
-	of this software and associated documentation files (the "Software"), to deal
-	in the Software without restriction, including without limitation the rights
-	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-	copies of the Software, and to permit persons to whom the Software is
-	furnished to do so, subject to the following conditions:
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
 
-	The above copyright notice and this permission notice shall be included in all
-	copies or substantial portions of the Software.
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
 
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-	SOFTWARE.
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
 */
 
 import { GlobalEvent } from './GlobalEvents';
@@ -58,7 +58,6 @@ import * as events from 'events';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as NodePath from 'path';
-import { concatSystemEnvPath } from './Platform';
 import { ResInstaller } from './ResInstaller';
 import { AbstractProject } from './EIDEProject';
 
@@ -394,6 +393,12 @@ export class OperationExplorer {
                             type: 'C51'
                         },
                         {
+                            label: 'AVR FreeRTOS Quickstart',
+                            detail: 'avr atmega128 quickstart project (FreeRTOS) (WinAVR-GCC compiler)',
+                            templateName: 'avr_atmega128_rtos',
+                            type: 'ANY-GCC'
+                        },
+                        {
                             label: 'STM8 Quickstart',
                             detail: 'stm8s103 quickstart project',
                             templateName: 'stm8s103f3',
@@ -478,7 +483,7 @@ export class OperationExplorer {
                 name: name,
                 outDir: new File(outDir[0].fsPath),
                 templateFile: File.fromArray([
-                    ResManager.GetInstance().GetTemplateDir().path, `${templateItem.templateName}.eide-template`
+                    ResManager.GetInstance().GetTemplateDir().path, `${templateItem.templateName}.ept`
                 ]),
             });
 
@@ -1204,34 +1209,14 @@ export class OperationExplorer {
         this.locked = false;
     }
 
-    async onOpenSerialPortMonitor() {
+    async onOpenSerialPortMonitor(port?: string) {
 
         const resManager = ResManager.GetInstance();
         const option = SettingManager.GetInstance().getPortSerialMonitorOptions();
 
         try {
-            const portList: string[] = resManager.enumSerialPort();
-
-            if (portList.length === 0) {
-                GlobalEvent.emit('msg', newMessage('Info', 'Not found any serial port !'));
-                return;
-            }
-
-            let portName: string | undefined;
-            if (portList.length === 1) {
-                portName = portList[0];
-            } else {
-                if (portList.includes(option.defaultPort)) {
-                    portName = option.defaultPort;
-                } else {
-                    portName = await vscode.window.showQuickPick(portList, {
-                        canPickMany: false,
-                        placeHolder: 'select a serial port to open'
-                    });
-                }
-            }
-
-            if (portName === undefined) {
+            const portName: string | undefined = port || option.defaultPort;
+            if (!portName) {
                 return;
             }
 

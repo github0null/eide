@@ -28,6 +28,7 @@ import { SettingManager } from "./SettingManager";
 import { ResManager } from "./ResManager";
 import { GlobalEvent } from "./GlobalEvents";
 import { newMessage, ExceptionToMessage } from "./Message";
+import * as platform from './Platform';
 
 import * as child_process from 'child_process';
 import { CmdLineHandler } from "./CmdLineHandler";
@@ -75,9 +76,9 @@ export interface IToolchian {
     getToolchainPrefix?: () => string;
 
     /**
-     * get gcc c/c++ compiler path
+     * get gcc c/c++ compiler path for cpptools
      */
-    getGccCompilerPath(): string | undefined;
+    getGccFamilyCompilerPathForCpptools(): string | undefined;
 
     /**
      * get compiler internal defines (for cpptools)
@@ -445,8 +446,8 @@ class KeilC51 implements IToolchian {
         return new KeilC51();
     }
 
-    getGccCompilerPath(): string | undefined {
-        //const gcc = File.fromArray([this.getToolchainDir().path, 'BIN', 'C51.exe']);
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
+        //const gcc = File.fromArray([this.getToolchainDir().path, 'BIN', `C51${platform.exeSuffix()}`]);
         //return gcc.path;
         return undefined;
     }
@@ -584,8 +585,8 @@ class SDCC implements IToolchian {
         return new SDCC();
     }
 
-    getGccCompilerPath(): string | undefined {
-        //const gcc = File.fromArray([this.getToolchainDir().path, 'bin', 'sdcc.exe']);
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
+        //const gcc = File.fromArray([this.getToolchainDir().path, 'bin', `sdcc${platform.exeSuffix()}`]);
         //return gcc.path;
         return undefined;
     }
@@ -728,8 +729,23 @@ class SDCC implements IToolchian {
 
     getSystemIncludeList(builderOpts: ICompileOptions): string[] {
 
-        const toolchainDir: string = this.getToolchainDir().path;
-        const incList: string[] = [File.fromArray([toolchainDir, 'include']).path];
+        /**
+         * This will install sdcc binaries into: /usr/local/bin/
+         * header files into:                    /usr/local/share/sdcc/include/
+         * non-free header files into:           /usr/local/share/sdcc/non-free/include/
+         * library files into:                   /usr/local/share/sdcc/lib/
+         * non-free library files into:          /usr/local/share/sdcc/non-free/lib/
+         * and documentation into:               /usr/local/share/sdcc/doc/
+         * 
+         * Try `sdcc --print-search-dirs` if you have problems with header
+        */
+
+        let toolSearchLoc: string = this.getToolchainDir().path;
+        if (platform.osType() != 'win32') {
+            toolSearchLoc = `${toolSearchLoc}/share/sdcc`;
+        }
+
+        const incList: string[] = [File.fromArray([toolSearchLoc, 'include']).path];
 
         let devName: string = 'mcs51';
 
@@ -739,7 +755,7 @@ class SDCC implements IToolchian {
             // get device name
             if (conf['device']) {
                 devName = conf['device'];
-                const devInc = File.fromArray([toolchainDir, 'include', devName]);
+                const devInc = File.fromArray([toolSearchLoc, 'include', devName]);
                 if (devInc.IsDir()) {
                     incList.push(devInc.path);
                 }
@@ -747,8 +763,8 @@ class SDCC implements IToolchian {
 
             // is use non-free libs
             if (conf['use-non-free']) {
-                incList.push(File.fromArray([toolchainDir, 'non-free', 'include']).path);
-                const devInc = File.fromArray([toolchainDir, 'non-free', 'include', devName]);
+                incList.push(File.fromArray([toolSearchLoc, 'non-free', 'include']).path);
+                const devInc = File.fromArray([toolSearchLoc, 'non-free', 'include', devName]);
                 if (devInc.IsDir()) {
                     incList.push(devInc.path);
                 }
@@ -814,8 +830,8 @@ class GnuStm8Sdcc implements IToolchian {
         return new SDCC();
     }
 
-    getGccCompilerPath(): string | undefined {
-        //const gcc = File.fromArray([this.getToolchainDir().path, 'bin', 'sdcc.exe']);
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
+        //const gcc = File.fromArray([this.getToolchainDir().path, 'bin', `sdcc${platform.exeSuffix()}`]);
         //return gcc.path;
         return undefined;
     }
@@ -947,11 +963,15 @@ class GnuStm8Sdcc implements IToolchian {
 
     getSystemIncludeList(builderOpts: ICompileOptions): string[] {
 
-        const toolchainDir: string = this.getToolchainDir().path;
-        const incList: string[] = [File.fromArray([toolchainDir, 'include']).path];
+        let toolSearchLoc: string = this.getToolchainDir().path;
+        if (platform.osType() != 'win32') {
+            toolSearchLoc = `${toolSearchLoc}/share/sdcc`;
+        }
+
+        const incList: string[] = [File.fromArray([toolSearchLoc, 'include']).path];
 
         // get device name include
-        const devInc = File.fromArray([toolchainDir, 'include', 'stm8']);
+        const devInc = File.fromArray([toolSearchLoc, 'include', 'stm8']);
         if (devInc.IsDir()) {
             incList.push(devInc.path);
         }
@@ -1016,8 +1036,8 @@ class AC5 implements IToolchian {
         return new AC5();
     }
 
-    getGccCompilerPath(): string | undefined {
-        //const armccFile = File.fromArray([this.getToolchainDir().path, 'bin', 'armcc.exe']);
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
+        //const armccFile = File.fromArray([this.getToolchainDir().path, 'bin', `armcc${platform.exeSuffix()}`]);
         //return armccFile.path;
         return undefined;
     }
@@ -1069,10 +1089,17 @@ class AC5 implements IToolchian {
     }
 
     getSystemIncludeList(builderOpts: ICompileOptions): string[] {
-        const incDir = File.fromArray([this.getToolchainDir().path, 'include']);
+
+        let toolSearchLoc = this.getToolchainDir().path;
+        if (platform.osType() != 'win32') {
+            toolSearchLoc = `${toolSearchLoc}/share/armcc`
+        }
+
+        const incDir = File.fromArray([toolSearchLoc, 'include']);
         if (incDir.IsDir()) {
             return [incDir].concat(incDir.GetList(File.EMPTY_FILTER)).map((f) => { return f.path; });
         }
+
         return [incDir.path];
     }
 
@@ -1128,7 +1155,7 @@ class AC6 implements IToolchian {
     private readonly defMacroList: string[];
 
     constructor() {
-        const armClang = File.fromArray([this.getToolchainDir().path, 'bin', 'armclang.exe']);
+        const armClang = File.fromArray([this.getToolchainDir().path, 'bin', `armclang${platform.exeSuffix()}`]);
         this.defMacroList = this.getMacroList(armClang.path);
     }
 
@@ -1161,9 +1188,9 @@ class AC6 implements IToolchian {
         return new AC6();
     }
 
-    getGccCompilerPath(): string | undefined {
-        const armccFile = File.fromArray([this.getToolchainDir().path, 'bin', 'armclang.exe']);
-        return armccFile.path;
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
+        const armclang = File.fromArray([this.getToolchainDir().path, 'bin', `armclang${platform.exeSuffix()}`]);
+        return armclang.path;
     }
 
     updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
@@ -1267,9 +1294,15 @@ class AC6 implements IToolchian {
     }
 
     getSystemIncludeList(builderOpts: ICompileOptions): string[] {
+
+        let toolSearchLoc = this.getToolchainDir().path;
+        if (platform.osType() != 'win32') {
+            toolSearchLoc = `${toolSearchLoc}/share/armclang`
+        }
+
         return [
-            File.fromArray([this.getToolchainDir().path, 'include']).path,
-            File.fromArray([this.getToolchainDir().path, 'include', 'libcxx']).path
+            File.fromArray([toolSearchLoc, 'include']).path,
+            File.fromArray([toolSearchLoc, 'include', 'libcxx']).path
         ];
     }
 
@@ -1334,7 +1367,7 @@ class GCC implements IToolchian {
     private incList: string[];
 
     constructor() {
-        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
+        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + `gcc${platform.exeSuffix()}`]);
         const intrMacros = this.getMacroList(gcc.path);
         if (intrMacros === undefined) { // if not found gcc, use def macro
             this.defMacroList = ['__GNUC__=8', '__GNUC_MINOR__=3', '__GNUC_PATCHLEVEL__=1'];
@@ -1396,8 +1429,8 @@ class GCC implements IToolchian {
         return new GCC();
     }
 
-    getGccCompilerPath(): string | undefined {
-        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
+        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + `gcc${platform.exeSuffix()}`]);
         return gcc.path;
     }
 
@@ -1566,8 +1599,8 @@ class IARSTM8 implements IToolchian {
         return new IARSTM8();
     }
 
-    getGccCompilerPath(): string | undefined {
-        //const gcc = File.fromArray([this.getToolchainDir().path, 'stm8', 'bin', 'iccstm8.exe']);
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
+        //const gcc = File.fromArray([this.getToolchainDir().path, 'stm8', 'bin', `iccstm8${platform.exeSuffix()}`]);
         //return gcc.path;
         return undefined;
     }
@@ -1639,12 +1672,12 @@ class IARSTM8 implements IToolchian {
     }
 
     getSystemIncludeList(builderOpts: ICompileOptions): string[] {
-        const toolDir = this.getToolchainDir();
+        const iarPath = this.getToolchainDir().path;
         return [
-            File.fromArray([toolDir.path, 'stm8', 'inc']).path,
-            File.fromArray([toolDir.path, 'stm8', 'inc', 'c']).path,
-            File.fromArray([toolDir.path, 'stm8', 'inc', 'ecpp']).path,
-            File.fromArray([toolDir.path, 'stm8', 'lib']).path
+            File.fromArray([iarPath, 'stm8', 'inc']).path,
+            File.fromArray([iarPath, 'stm8', 'inc', 'c']).path,
+            File.fromArray([iarPath, 'stm8', 'inc', 'ecpp']).path,
+            File.fromArray([iarPath, 'stm8', 'lib']).path
         ];
     }
 
@@ -1726,7 +1759,7 @@ class RISCV_GCC implements IToolchian {
     private incList: string[];
 
     constructor() {
-        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
+        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + `gcc${platform.exeSuffix()}`]);
         const intrMacros = this.getMacroList(gcc.path);
         if (intrMacros === undefined) { // if not found gcc, use def macro
             this.defMacroList = ['__GNUC__=8', '__GNUC_MINOR__=3', '__GNUC_PATCHLEVEL__=1'];
@@ -1788,8 +1821,8 @@ class RISCV_GCC implements IToolchian {
         return new RISCV_GCC();
     }
 
-    getGccCompilerPath(): string | undefined {
-        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
+        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + `gcc${platform.exeSuffix()}`]);
         return gcc.path;
     }
 
@@ -1950,7 +1983,7 @@ class AnyGcc implements IToolchian {
     private incList: string[];
 
     constructor() {
-        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
+        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + `gcc${platform.exeSuffix()}`]);
         const intrMacros = this.getMacroList(gcc.path);
         if (intrMacros === undefined) { // if not found gcc, use def macro
             this.defMacroList = ['__GNUC__=8', '__GNUC_MINOR__=3', '__GNUC_PATCHLEVEL__=1'];
@@ -2011,8 +2044,8 @@ class AnyGcc implements IToolchian {
         return new AnyGcc();
     }
 
-    getGccCompilerPath(): string | undefined {
-        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + 'gcc.exe']);
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
+        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + `gcc${platform.exeSuffix()}`]);
         return gcc.path;
     }
 
@@ -2022,15 +2055,18 @@ class AnyGcc implements IToolchian {
 
     updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
 
-        cppToolsConfig.cStandard = 'c11';
-        cppToolsConfig.cppStandard = 'c++11';
-
-        cppToolsConfig.compilerArgs = ['-std=${c_cppStandard}'];
+        const parseLangStd = function (keyName: 'cStandard' | 'cppStandard', pList: string[]) {
+            pList.forEach((params) => {
+                const m = /-std=([^\s]+)/.exec(params);
+                if (m && m.length > 1) { cppToolsConfig[keyName] = m[1]; }
+            });
+        };
 
         // pass global args for cpptools
         if (builderOpts.global) {
             if (typeof builderOpts.global['misc-control'] == 'string') {
                 const pList = builderOpts.global['misc-control'].trim().split(/\s+/);
+                if (!cppToolsConfig.compilerArgs) cppToolsConfig.compilerArgs = [];
                 pList.forEach((p) => cppToolsConfig.compilerArgs?.push(p));
             }
         }
@@ -2041,13 +2077,18 @@ class AnyGcc implements IToolchian {
             if (typeof builderOpts["c/cpp-compiler"]['C_FLAGS'] == 'string') {
                 const pList = builderOpts['c/cpp-compiler']['C_FLAGS'].trim().split(/\s+/);
                 cppToolsConfig.cCompilerArgs = pList;
+                parseLangStd('cStandard', pList);
             }
 
             if (typeof builderOpts["c/cpp-compiler"]['CXX_FLAGS'] == 'string') {
                 const pList = builderOpts['c/cpp-compiler']['CXX_FLAGS'].trim().split(/\s+/);
                 cppToolsConfig.cppCompilerArgs = pList;
+                parseLangStd('cppStandard', pList);
             }
         }
+
+        cppToolsConfig.cStandard = cppToolsConfig.cStandard || 'c99';
+        cppToolsConfig.cppStandard = cppToolsConfig.cppStandard || 'c++98';
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
@@ -2105,13 +2146,13 @@ class AnyGcc implements IToolchian {
                     "name": "make hex",
                     "disable": true,
                     "abortAfterFailed": false,
-                    "command": "\"${CompilerFolder}\\${CompilerPrefix}objcopy\" -O ihex \"${OutDir}\\${TargetName}.elf\" \"${OutDir}\\${TargetName}.hex\""
+                    "command": "\"${CompilerFolder}/${CompilerPrefix}objcopy\" -O ihex \"${OutDir}/${TargetName}.elf\" \"${OutDir}/${TargetName}.hex\""
                 },
                 {
                     "name": "make bin",
                     "disable": true,
                     "abortAfterFailed": false,
-                    "command": "\"${CompilerFolder}\\${CompilerPrefix}objcopy\" -O binary \"${OutDir}\\${TargetName}.elf\" \"${OutDir}\\${TargetName}.bin\""
+                    "command": "\"${CompilerFolder}/${CompilerPrefix}objcopy\" -O binary \"${OutDir}/${TargetName}.elf\" \"${OutDir}/${TargetName}.bin\""
                 }
             ],
             global: {},

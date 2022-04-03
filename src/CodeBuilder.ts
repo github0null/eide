@@ -1,25 +1,25 @@
 /*
-	MIT License
+    MIT License
 
-	Copyright (c) 2019 github0null
+    Copyright (c) 2019 github0null
 
-	Permission is hereby granted, free of charge, to any person obtaining a copy
-	of this software and associated documentation files (the "Software"), to deal
-	in the Software without restriction, including without limitation the rights
-	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-	copies of the Software, and to permit persons to whom the Software is
-	furnished to do so, subject to the following conditions:
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
 
-	The above copyright notice and this permission notice shall be included in all
-	copies or substantial portions of the Software.
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
 
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-	SOFTWARE.
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
 */
 
 import * as fs from 'fs';
@@ -27,6 +27,7 @@ import * as vscode from 'vscode';
 import * as NodePath from 'path';
 import * as events from 'events';
 import * as globmatch from 'micromatch'
+import * as os from 'os';
 
 import { AbstractProject } from "./EIDEProject";
 import { ResManager } from "./ResManager";
@@ -47,7 +48,7 @@ import { WorkspaceManager } from "./WorkspaceManager";
 import { ToolchainName } from "./ToolchainManager";
 import { md5, sha256 } from "./utility";
 import { MakefileGen } from "./Makefile";
-import { concatSystemEnvPath } from "./Platform";
+import { exeSuffix } from "./Platform";
 import { FileWatcher } from "../lib/node-utility/FileWatcher";
 
 export interface BuildOptions {
@@ -140,7 +141,7 @@ export abstract class CodeBuilder {
                 srcList.forEach((srcInf: any) => {
                     if (!srcInf[fieldName]) return; // skip if not exist
                     for (const expr in parttenInfo) {
-                        const searchPath = (<string>srcInf[fieldName]).replace(/\\/g, '/')
+                        const searchPath = File.ToUnixPath(<string>srcInf[fieldName])
                             .replace(/\.\.\//g, '')
                             .replace(/\.\//g, ''); // globmatch bug ? it can't parse path which have '.' or '..'
                         if (globmatch.isMatch(searchPath, expr)) {
@@ -235,12 +236,10 @@ export abstract class CodeBuilder {
 
     build(options?: BuildOptions): void {
 
-        const commandLine = this.genBuildCommand(options);
+        let commandLine = this.genBuildCommand(options);
         if (!commandLine) return;
 
         const title = options?.useDebug ? 'compiler params' : 'build';
-        const resManager = ResManager.GetInstance();
-        const shellPath = ResManager.checkWindowsShell() ? undefined : resManager.getCMDPath();
 
         // watch log, to emit done event
         try {
@@ -277,8 +276,10 @@ export abstract class CodeBuilder {
             // use task
             const task = new vscode.Task({ type: 'shell' }, vscode.TaskScope.Workspace, title, 'shell');
             const shellOption: vscode.ShellExecutionOptions = {};
-            if (shellPath) { shellOption.executable = shellPath; shellOption.shellArgs = ['/C'] }
+            if (os.platform() == 'win32') { shellOption.executable = 'cmd.exe'; shellOption.shellArgs = ['/C']; }
+            else { shellOption.executable = '/bin/bash'; shellOption.shellArgs = ['-c']; }
             shellOption.env = <any>process.env;
+            if (os.platform() == 'win32') commandLine = `"${commandLine}"`;
             task.execution = new vscode.ShellExecution(commandLine, shellOption);
             task.problemMatchers = this.getProblemMatcher();
             task.isBackground = false;
@@ -288,15 +289,18 @@ export abstract class CodeBuilder {
             // use terminal
             const index = vscode.window.terminals.findIndex((t) => { return t.name === title; });
             if (index !== -1) { vscode.window.terminals[index].dispose(); }
-            const opts: vscode.TerminalOptions = { name: title, shellPath: shellPath };
+            const opts: vscode.TerminalOptions = { name: title };
+            if (os.platform() == 'win32') { opts.shellPath = 'cmd.exe'; };
             opts.env = <any>process.env;
             const terminal = vscode.window.createTerminal(opts);
             terminal.show(true);
-            terminal.sendText(CmdLineHandler.DeleteCmdPrefix(commandLine));
+            terminal.sendText(commandLine);
         }
     }
 
     genBuildCommand(options?: BuildOptions, disPowershell?: boolean): string | undefined {
+
+        const resManager = ResManager.GetInstance();
 
         // reinit build mode
         this.useFastCompile = options?.useFastMode;
@@ -309,13 +313,10 @@ export abstract class CodeBuilder {
         const outDir = new File(this.project.ToAbsolutePath(prjConfig.getOutDir()));
         outDir.CreateDir(true);
 
-        const isPowershell = !disPowershell && /powershell.exe$/i.test(vscode.env.shell);
-        const resManager = ResManager.GetInstance();
-
         // generate command line
         const cmds = [`${this.getBuilderExe().path}`].concat(this.getCommands());
         const exeName: string = resManager.getMonoName();
-        const commandLine = CmdLineHandler.getCommandLine(exeName, cmds, isPowershell);
+        const commandLine = CmdLineHandler.getCommandLine(exeName, cmds);
 
         return commandLine;
     }
@@ -365,7 +366,7 @@ export abstract class CodeBuilder {
 
         const binDir = toolchain.getToolchainDir().path;
         const dumpDir = this.project.getLogDir().path;
-        const outDir = NodePath.normalize(this.project.getOutputDir());
+        const outDir = File.ToUnixPath(this.project.getOutputDir());
         const paramsPath = this.project.ToAbsolutePath(outDir + File.sep + this.paramsFileName);
         const compileOptions: ICompileOptions = this.project.GetConfiguration()
             .compileConfigModel.getOptions(this.project.getEideDir().path, config);
@@ -382,8 +383,8 @@ export abstract class CodeBuilder {
             showRepathOnLog: settingManager.isPrintRelativePathWhenBuild(),
             threadNum: settingManager.getThreadNumber(),
             rootDir: this.project.GetRootDir().path,
-            dumpPath: this.project.ToRelativePath(dumpDir, false) || dumpDir,
-            outDir: outDir,
+            dumpPath: File.ToLocalPath(this.project.ToRelativePath(dumpDir, false) || dumpDir),
+            outDir: File.ToLocalPath(outDir),
             ram: memMaxSize?.ram,
             rom: memMaxSize?.rom,
             incDirs: this.getIncludeDirs().map((incPath) => { return this.project.ToRelativePath(incPath, false) || incPath; }),
@@ -877,24 +878,29 @@ class ARMCodeBuilder extends CodeBuilder {
 
         const ldFileList: string[] = [];
 
+        let scatterFilePath: string = config.compileConfig.scatterFilePath;
+        if (scatterFilePath == 'undefined') {
+            scatterFilePath = `${scatterFilePath}.sct`;
+        }
+
         // 'armcc' can select whether use custom linker file
         if (['AC5', 'AC6'].includes(toolchain.name)) {
             // use custom linker script files
             if (config.compileConfig.useCustomScatterFile) {
-                config.compileConfig.scatterFilePath.split(',').forEach((sctPath) => {
-                    ldFileList.push(`"${this.project.ToAbsolutePath(sctPath).replace(/\\/g, '/')}"`);
+                scatterFilePath.split(',').forEach((sctPath) => {
+                    ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
                 });
             }
             // auto generate scatter file 
             else {
-                ldFileList.push(`"${this.GenMemScatterFile(config).path.replace(/\\/g, '/')}"`);
+                ldFileList.push(`"${File.ToUnixPath(this.GenMemScatterFile(config).path)}"`);
             }
         }
 
         // other toolchain must use custom linker script file
         else {
-            config.compileConfig.scatterFilePath.split(',').forEach((sctPath) => {
-                ldFileList.push(`"${this.project.ToAbsolutePath(sctPath).replace(/\\/g, '/')}"`);
+            scatterFilePath.split(',').forEach((sctPath) => {
+                ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
             });
         }
 
@@ -913,12 +919,12 @@ class ARMCodeBuilder extends CodeBuilder {
             if (['AC5', 'AC6'].includes(config.toolchain) && settingManager.IsConvertAxf2Elf()) {
 
                 const tool_root_folder = toolchain.getToolchainDir().path;
-                const ouput_path = `\${outDir}\\${config.name}`;
-                const axf2elf_log = `\${outDir}\\axf2elf.log`;
+                const ouput_path = `\${outDir}${File.sep}${config.name}`;
+                const axf2elf_log = `\${outDir}${File.sep}axf2elf.log`;
 
                 extraCommands.push({
                     name: 'axf to elf',
-                    command: `mono "\${BuilderFolder}\\utils\\axf2elf.exe" -d "${tool_root_folder}" -b "${ouput_path}.bin" -i "${ouput_path}.axf" -o "${ouput_path}.elf" > "${axf2elf_log}"`
+                    command: `mono "\${BuilderFolder}${File.sep}utils${File.sep}axf2elf${exeSuffix()}" -d "${tool_root_folder}" -b "${ouput_path}.bin" -i "${ouput_path}.axf" -o "${ouput_path}.elf" > "${axf2elf_log}"`
                 });
             }
 
@@ -948,7 +954,7 @@ class RiscvCodeBuilder extends CodeBuilder {
 
         const ldFileList: string[] = [];
         config.compileConfig.linkerScriptPath.split(',').forEach((sctPath) => {
-            ldFileList.push(`"${this.project.ToAbsolutePath(sctPath).replace(/\\/g, '/')}"`);
+            ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
         });
 
         if (!options['linker']) {
@@ -981,7 +987,7 @@ class AnyGccCodeBuilder extends CodeBuilder {
         // set linker script
         if (config.compileConfig.linkerScriptPath.trim() !== '') {
             options.linker['linker-script'] = config.compileConfig.linkerScriptPath.split(',').map((sctPath) => {
-                const absPath = this.project.ToAbsolutePath(sctPath).replace(/\\/g, '/');
+                const absPath = File.ToUnixPath(this.project.ToAbsolutePath(sctPath));
                 return absPath.includes(' ') ? `"${absPath}"` : absPath;
             });
         } else { // clear old
@@ -1020,7 +1026,7 @@ class C51CodeBuilder extends CodeBuilder {
             const ldFileList: string[] = [];
 
             config.compileConfig.linkerScript.split(',').forEach((sctPath) => {
-                ldFileList.push(`"${this.project.ToAbsolutePath(sctPath).replace(/\\/g, '/')}"`);
+                ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
             });
 
             if (!options['linker']) {

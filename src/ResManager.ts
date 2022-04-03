@@ -1,31 +1,31 @@
 /*
-	MIT License
+    MIT License
 
-	Copyright (c) 2019 github0null
+    Copyright (c) 2019 github0null
 
-	Permission is hereby granted, free of charge, to any person obtaining a copy
-	of this software and associated documentation files (the "Software"), to deal
-	in the Software without restriction, including without limitation the rights
-	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-	copies of the Software, and to permit persons to whom the Software is
-	furnished to do so, subject to the following conditions:
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
 
-	The above copyright notice and this permission notice shall be included in all
-	copies or substantial portions of the Software.
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
 
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-	SOFTWARE.
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
 */
 
 import { File } from "../lib/node-utility/File";
 import { WorkspaceManager } from "./WorkspaceManager";
 import { GlobalEvent } from "./GlobalEvents";
-import { GetLocalCodePage } from "./Platform";
+import { exeSuffix, GetLocalCodePage } from "./Platform";
 import { ExceptionToMessage } from "./Message";
 
 import * as ChildProcess from 'child_process';
@@ -49,17 +49,20 @@ const prjEnvList: string[] = [
 ];
 
 const eideEnvList: string[] = [
-    File.sep + 'bin',
     File.sep + 'lib',
     File.sep + 'lang',
-    File.sep + 'bin' + File.sep + 'include',
-    File.sep + 'bin' + File.sep + 'builder',
     File.sep + 'res' + File.sep + 'html',
     File.sep + 'res' + File.sep + 'icon',
     File.sep + 'res' + File.sep + 'template',
     File.sep + 'res' + File.sep + 'data',
     File.sep + 'res' + File.sep + 'tools',
     File.sep + 'res' + File.sep + 'tools' + File.sep + '7z'
+];
+
+const eideBinDirList: string[] = [
+    'bin',
+    'bin' + File.sep + 'include',
+    'bin' + File.sep + 'builder',
 ];
 
 const codePage = GetLocalCodePage();
@@ -323,11 +326,11 @@ export class ResManager extends events.EventEmitter {
     }
 
     Get7zDir(): File {
-        return <File>this.GetDir('7z');
+        return File.fromArray([(<File>this.GetDir('7z')).path, os.platform()]);
     }
 
     Get7za(): File {
-        return File.fromArray([this.Get7zDir().path, '7za.exe']);
+        return File.fromArray([this.Get7zDir().path, `7za${exeSuffix()}`]);
     }
 
     getCMSISHeaderPacks(): File[] {
@@ -361,20 +364,22 @@ export class ResManager extends events.EventEmitter {
 
     /* ------------------ builder and runtime ----------------- */
 
-    getBuilderDir(): string {
-        return (<File>this.GetDir('builder')).path;
+    getBuilderDir(): File {
+        return <File>this.GetDir('builder');
     }
 
-    getMsysBash(): File {
-        return File.fromArray([this.getBuilderDir(), 'msys', 'bin', 'bash.exe']);
+    getMsysBash(): File | undefined {
+        if (os.platform() == 'win32') {
+            return File.fromArray([this.getBuilderDir().path, 'msys', 'bin', `bash${exeSuffix()}`]);
+        }
     }
 
     getBuilder(): File {
-        return File.fromArray([this.getBuilderDir(), 'bin', 'unify_builder.exe']);
+        return File.fromArray([this.getBuilderDir().path, 'bin', `unify_builder${exeSuffix()}`]);
     }
 
     getSerialPortExe(): File {
-        return File.fromArray([this.getBuilderDir(), 'bin', 'serial_monitor.exe']);
+        return File.fromArray([this.getBuilderDir().path, 'bin', `serial_monitor${exeSuffix()}`]);
     }
 
     getMonoName(): string {
@@ -592,6 +597,7 @@ export class ResManager extends events.EventEmitter {
     }
 
     private LoadSysEnv() {
+
         eideEnvList.forEach((dir) => {
             if (this.context) {
                 const f = new File(this.context.extensionPath + dir);
@@ -599,6 +605,13 @@ export class ResManager extends events.EventEmitter {
             } else {
                 throw new Error('Extension Context is undefined');
             }
+        });
+
+        const eideHome = File.fromArray([os.homedir(), '.eide']);
+        eideHome.CreateDir(); // create if not existed
+        eideBinDirList.forEach((dir) => {
+            const d = File.fromArray([eideHome.path, dir]);
+            this.dirMap.set(d.name, d);
         });
     }
 }

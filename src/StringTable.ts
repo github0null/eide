@@ -135,9 +135,14 @@ export const view_str$flasher$options = [
     'Other Options'
 ][langIndex];
 
+export const view_str$flasher$stcgalOptions = [
+    '其他配置',
+    'Other Config'
+][langIndex];
+
 export const view_str$flasher$other_cmds = [
     '附加命令行',
-    'Additional Commandline'
+    'Extra CommandLine'
 ][langIndex];
 
 //------------------ compile view string----------------
@@ -682,13 +687,18 @@ export const view_str$operation$open_serialport = [
 ][langIndex];
 
 export const view_str$operation$serialport = [
-    '串口监视器',
-    'serial monitor'
+    '打开串口',
+    'Open Serial'
+][langIndex];
+
+export const view_str$operation$serialport_name = [
+    '端口',
+    'Port'
 ][langIndex];
 
 export const view_str$operation$baudrate = [
     '波特率',
-    'baudrate'
+    'Baud'
 ][langIndex];
 
 export const view_str$operation$setKeil51Path = [

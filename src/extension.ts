@@ -35,7 +35,7 @@ import { ProjectExplorer } from './EIDEProjectExplorer';
 import { ResManager } from './ResManager';
 import { LogAnalyzer } from './LogAnalyzer';
 
-import { ERROR, WARNING, INFORMATION, view_str$operation$serialport, view_str$operation$baudrate } from './StringTable';
+import { ERROR, WARNING, INFORMATION, view_str$operation$serialport, view_str$operation$baudrate, view_str$operation$serialport_name } from './StringTable';
 import { LogDumper } from './LogDumper';
 import { StatusBarManager } from './StatusBarManager';
 import { File } from '../lib/node-utility/File';
@@ -47,15 +47,29 @@ import * as utility from './utility';
 import * as platform from './Platform';
 
 let projectExplorer: ProjectExplorer;
+let platformArch: string = 'x86_64';
+let platformType: string = 'win32';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export async function activate(context: vscode.ExtensionContext) {
 
-    // if not Windows platform, exit
-    if (os.platform() !== 'win32') {
-        vscode.window.showErrorMessage(`${ERROR} : This plug-in is only for 'Windows' platform !`);
+    // check platform, exit
+    const supportedOs: NodeJS.Platform[] = ['win32', 'linux'];
+    if (!supportedOs.includes(os.platform())) {
+        vscode.window.showErrorMessage(`${ERROR} : This plug-in is only for '${supportedOs.join(',')}' platform, your pc is '${os.platform()}' !`);
         return;
+    }
+
+    // check linux arch, we only support x86-64
+    const archLi = [`x86_64`];
+    if (os.platform() == 'linux') {
+        platformArch = ChildProcess.execSync(`arch`).toString().trim();
+        platformType = `linux-${platformArch}`;
+        if (!archLi.includes(platformArch)) {
+            vscode.window.showErrorMessage(`${ERROR} : This plug-in is only support '${archLi.join(',')}' arch, your pc is '${platformArch}' !`);
+            return;
+        }
     }
 
     RegisterGlobalEvent();
@@ -80,13 +94,16 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('eide.ReloadStm8Devs', () => reloadStm8Devices()));
     subscriptions.push(vscode.commands.registerCommand('eide.selectBaudrate', () => onSelectSerialBaudrate()));
 
+    // internal command
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.selectCurSerialName', () => onSelectCurSerialName()));
+
     // operations
     const operationExplorer = new OperationExplorer(context);
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.Open', () => operationExplorer.OnOpenProject()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.Create', () => operationExplorer.OnCreateProject()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.Import', () => operationExplorer.OnImportProject()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.SetToolchainPath', () => operationExplorer.OnSetToolchainPath()));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.OpenSerialPortMonitor', () => operationExplorer.onOpenSerialPortMonitor()));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.OpenSerialPortMonitor', (port) => operationExplorer.onOpenSerialPortMonitor(port)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.openSettings', () => SettingManager.jumpToSettings('@ext:cl.eide')));
 
     // operations user cmds
@@ -106,7 +123,7 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('eide.project.build', (item) => projectExplorer.BuildSolution(item, { useFastMode: true })));
     subscriptions.push(vscode.commands.registerCommand('eide.project.clean', (item) => projectExplorer.BuildClean(item)));
     subscriptions.push(vscode.commands.registerCommand('eide.project.uploadToDevice', (item) => projectExplorer.UploadToDevice(item)));
-    subscriptions.push(vscode.commands.registerCommand('eide.reinstall.binaries', () => checkAndInstallBinaries(context, true)));
+    subscriptions.push(vscode.commands.registerCommand('eide.reinstall.binaries', () => checkAndInstallBinaries(true)));
     subscriptions.push(vscode.commands.registerCommand('eide.project.flash.erase.all', (item) => projectExplorer.UploadToDevice(item, true)));
     subscriptions.push(vscode.commands.registerCommand('eide.project.buildAndFlash', (item) => projectExplorer.BuildSolution(item, { useFastMode: true }, true)));
 
@@ -212,7 +229,14 @@ export function deactivate() {
     GlobalEvent.emit('extension_close');
 }
 
-///////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////
+// internal vsc-commands funcs
+//////////////////////////////////////////////////
+
+let serial_curPort: string | undefined;
+let serial_nameBar: vscode.StatusBarItem | undefined;
+let serial_baudBar: vscode.StatusBarItem | undefined;
+let serial_openBar_args: string[] = [<any>null];
 
 function ShowUUID() {
     vscode.window.showInputBox({
@@ -235,9 +259,11 @@ function reloadStm8Devices() {
 function updateSerialportBarState() {
     if (SettingManager.GetInstance().isShowSerialportStatusbar()) {
         StatusBarManager.getInstance().show('serialport');
+        StatusBarManager.getInstance().show('serialport-name');
         StatusBarManager.getInstance().show('serialport-baud');
     } else {
         StatusBarManager.getInstance().hide('serialport');
+        StatusBarManager.getInstance().hide('serialport-name');
         StatusBarManager.getInstance().hide('serialport-baud');
     }
 }
@@ -264,18 +290,69 @@ async function onSelectSerialBaudrate() {
     }
 }
 
-function checkBinFolder(binFolder: File): boolean {
-    return binFolder.IsDir() &&
-        File.fromArray([binFolder.path, File.ToLocalPath('lib/mono/4.5/mscorlib.dll')]).IsFile();
+async function onSelectCurSerialName() {
+    try {
+        const portList: string[] = ResManager.GetInstance().enumSerialPort();
+
+        if (portList.length === 0) {
+            GlobalEvent.emit('msg', newMessage('Info', 'Not found any serial port !'));
+            return;
+        }
+
+        const portName = await vscode.window.showQuickPick(portList, {
+            canPickMany: false,
+            placeHolder: 'select a serial port to open'
+        });
+
+        if (portName && portName != serial_curPort) {
+            serial_curPort = portName;
+            if (serial_nameBar) {
+                serial_nameBar.text = `${view_str$operation$serialport_name}: ${serial_curPort}`;
+                serial_nameBar.tooltip = serial_curPort;
+                serial_openBar_args[0] = serial_curPort;
+                updateSerialportBarState();
+            }
+        }
+    } catch (error) {
+        GlobalEvent.emit('error', error);
+    }
 }
 
-async function checkAndInstallBinaries(constex: vscode.ExtensionContext, forceInstall?: boolean): Promise<boolean> {
+//////////////////////////////////////////////////
+// eide binaries installer
+//////////////////////////////////////////////////
 
-    const eideCfg = ResManager.GetInstance().getAppConfig<any>();
+function checkBinFolder(binFolder: File): boolean {
+    if (os.platform() == 'win32') {
+        return binFolder.IsDir() &&
+            File.fromArray([binFolder.path, File.ToLocalPath('lib/mono/4.5/mscorlib.dll')]).IsFile();
+    } else {
+        return binFolder.IsDir() &&
+            File.fromArray([binFolder.path, File.ToLocalPath('builder/bin/unify_builder')]).IsFile();
+    }
+}
+
+async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean> {
+
+    const resManager = ResManager.GetInstance();
+
+    const eideCfg = resManager.getAppConfig<any>();
+    const binFolder = resManager.GetBinDir();
+
     let localVersion = eideCfg['binaray_version'];
 
-    const rootFolder = new File(constex.extensionPath);
-    const binFolder = File.fromArray([rootFolder.path, 'bin']);
+    // !! for compatibility with offline-package !!
+    // if we found eide binaries in plug-in root folder, move it 
+    const oldBinDir = File.fromArray([resManager.getAppRootFolder().path, 'bin'])
+    if (checkBinFolder(oldBinDir)) {
+        if (os.platform() == 'win32') {
+            ChildProcess.execSync(`xcopy "${oldBinDir.path}" "${binFolder.path}\\" /H /E /Y`);
+            platform.DeleteDir(oldBinDir); // rm it after copy done ! 
+        } else {
+            platform.DeleteDir(binFolder); // rm existed folder
+            ChildProcess.execSync(`mv -f "${oldBinDir.path}" "${binFolder.dir}/"`);
+        }
+    }
 
     /* check eide binaries */
     // if user force reinstall, delete old 'bin' dir
@@ -320,7 +397,7 @@ async function tryUpdateBinaries(binFolder: File, localVer: string, notConfirm?:
 
     const getVersionFromRepo = async (): Promise<string | Error | undefined> => {
         try {
-            const url = `https://api-github.em-ide.com/repos/github0null/eide-resource/contents/binaries/VERSION`;
+            const url = `https://api-github.em-ide.com/repos/github0null/eide-resource/contents/binaries/${platformType}/VERSION`;
             const cont = await utility.requestTxt(url);
             if (typeof cont != 'string') return cont;
             let obj: any = undefined;
@@ -377,8 +454,8 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
 
     // binaries download site
     const downloadSites: string[] = [
-        `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/bin-${binVersion}.${binType}`,
-        `https://raw-github.em-ide.com/github0null/eide-resource/master/binaries/bin-${binVersion}.${binType}`,
+        `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/${platformType}/bin-${binVersion}.${binType}`,
+        `https://raw-github.em-ide.com/github0null/eide-resource/master/binaries/${platformType}/bin-${binVersion}.${binType}`,
     ];
 
     /* random select the order of site */
@@ -387,7 +464,7 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
     }
 
     // add github default download url
-    downloadSites.push(`https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/bin-${binVersion}.${binType}`);
+    downloadSites.push(`https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/${platformType}/bin-${binVersion}.${binType}`);
 
     let installedDone = false;
 
@@ -493,13 +570,17 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
     return installedDone;
 }
 
+//////////////////////////////////////////////////
+//
+//////////////////////////////////////////////////
+
 let isEnvSetuped: boolean = false;
 
 function exportEnvToSysPath() {
 
     const settingManager = SettingManager.GetInstance();
     const resManager = ResManager.GetInstance();
-    const builderFolder = new File(resManager.getBuilderDir());
+    const builderFolder = resManager.getBuilderDir();
 
     // export some eide binaries path to system env path
     const defEnvPath: string[] = [
@@ -541,7 +622,7 @@ function exportEnvToSysPath() {
         const pList = pathList
             .filter((env) => File.IsDir(env.path))
             .map((env) => env.path);
-        platform.exportToSysEnv(process.env, defEnvPath.concat(pList));
+        platform.appendToSysEnv(process.env, defEnvPath.concat(pList));
         isEnvSetuped = true;
     }
 
@@ -558,12 +639,49 @@ function exportEnvToSysPath() {
 async function InitComponents(context: vscode.ExtensionContext): Promise<boolean | undefined> {
 
     // init managers
-    ResManager.GetInstance(context);
+    const resManager = ResManager.GetInstance(context);
     const settingManager = SettingManager.GetInstance(context);
 
+    // chmod +x for 7za 
+    if (os.platform() != 'win32') {
+        try {
+            ChildProcess.execSync(`chmod +x "${resManager.Get7za().path}"`);
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+        }
+    }
+
     /* check binaries, if not found, install it ! */
-    const done = await checkAndInstallBinaries(context);
+    const done = await checkAndInstallBinaries();
     if (!done) { return false; } /* exit if failed */
+
+    // chmod +x for other executable files
+    if (os.platform() != 'win32') {
+        const exeLi: string[] = [
+            `${[resManager.GetBinDir().path, 'scripts', 'qjs'].join(File.sep)}`,
+            `${[resManager.getBuilderDir().path, 'utils', 'hex2bin'].join(File.sep)}`
+        ];
+        for (const path of exeLi) {
+            try {
+                ChildProcess.execSync(`chmod +x "${path}"`);
+            } catch (error) {
+                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            }
+        }
+    }
+
+    // check mono runtime
+    if (os.platform() != 'win32') {
+        try {
+            ChildProcess.execSync(`mono --version`).toString();
+        } catch (error) {
+            const sel = await vscode.window.showWarningMessage(`Not found [Mono](https://www.mono-project.com/) runtime, please install it !`, `Install`);
+            if (sel) {
+                // https://www.mono-project.com/download/stable/#download-lin
+                utility.openUrl(`https://www.mono-project.com/download/stable/#download-lin`);
+            }
+        }
+    }
 
     // register telemetry hook if user enabled
     try {
@@ -574,28 +692,57 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
     } catch (error) {
         // ignore error
     }
-
-    // init status bar
-    const statusBarManager = StatusBarManager.getInstance();
-
-    // serial btn
-    const spBar = statusBarManager.create('serialport');
-    spBar.text = '$(plug) ' + view_str$operation$serialport;
-    spBar.tooltip = view_str$operation$serialport;
-    spBar.command = '_cl.eide.Operation.OpenSerialPortMonitor';
-
-    // serial baudrate btn
-    const baudBar = statusBarManager.create('serialport-baud');
-    const baudrate = settingManager.getSerialBaudrate();
-    baudBar.text = `${view_str$operation$baudrate}: ${baudrate}`;
-    baudBar.tooltip = baudBar.text;
-    baudBar.command = 'eide.selectBaudrate';
-
-    // show now
-    updateSerialportBarState();
-
+    
     // set some toolpath to env
     exportEnvToSysPath();
+
+    // init status bar
+    {
+        const statusBarManager = StatusBarManager.getInstance();
+        const serialDefCfg = settingManager.getPortSerialMonitorOptions();
+
+        // init default port name
+        serial_curPort = serialDefCfg.defaultPort;
+
+        // get current active port
+        try {
+            const ports = ResManager.GetInstance().enumSerialPort();
+            if (ports.length > 0) {
+                if (ports.length == 1 || !ports.includes(serialDefCfg.defaultPort)) {
+                    serial_curPort = ports[0];
+                }
+            }
+        } catch (error) {
+            // nothing todo
+        }
+
+        // serial btn
+        const serial_openBar = statusBarManager.create('serialport');
+        serial_openBar.text = '$(plug) ' + view_str$operation$serialport;
+        serial_openBar.tooltip = view_str$operation$serialport;
+        serial_openBar_args[0] = serial_curPort;
+        serial_openBar.command = {
+            title: 'open serialport',
+            command: '_cl.eide.Operation.OpenSerialPortMonitor',
+            arguments: serial_openBar_args,
+        };
+
+        // serial name btn
+        serial_nameBar = statusBarManager.create('serialport-name');
+        serial_nameBar.text = `${view_str$operation$serialport_name}: ${serial_curPort || 'none'}`;
+        serial_nameBar.tooltip = 'serial name';
+        serial_nameBar.command = '_cl.eide.selectCurSerialName';
+
+        // serial baudrate btn
+        serial_baudBar = statusBarManager.create('serialport-baud');
+        const baudrate = settingManager.getSerialBaudrate();
+        serial_baudBar.text = `${view_str$operation$baudrate}: ${baudrate}`;
+        serial_baudBar.tooltip = serial_baudBar.text;
+        serial_baudBar.command = 'eide.selectBaudrate';
+
+        // show now
+        updateSerialportBarState();
+    }
 
     // register msys bash profile for windows
     if (os.platform() == 'win32') {
@@ -612,10 +759,10 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
         if (e.affectsConfiguration('EIDE.SerialPortMonitor.ShowStatusBar')) {
             updateSerialportBarState();
         }
-        else if (e.affectsConfiguration('EIDE.SerialPortMonitor.BaudRate')) {
+        else if (e.affectsConfiguration('EIDE.SerialPortMonitor.BaudRate') && serial_baudBar) {
             const baudrate = settingManager.getSerialBaudrate();
-            baudBar.text = `${view_str$operation$baudrate}: ${baudrate}`;
-            baudBar.tooltip = baudBar.text;
+            serial_baudBar.text = `${view_str$operation$baudrate}: ${baudrate}`;
+            serial_baudBar.tooltip = serial_baudBar.text;
             updateSerialportBarState();
         }
 
@@ -635,10 +782,12 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
         })
     );
 
-    // register some links provider
-    context.subscriptions.push(
-        vscode.window.registerTerminalLinkProvider(new EideTerminalLinkProvider())
-    );
+    // register some links provider, it only for Keil_C51 compiler
+    if (os.platform() == 'win32') {
+        context.subscriptions.push(
+            vscode.window.registerTerminalLinkProvider(new EideTerminalLinkProvider())
+        );
+    }
 
     return true;
 }
@@ -932,9 +1081,20 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
 
             for (const vInfo of mInfo.refList) {
                 try {
-                    const lines = ChildProcess
-                        .execSync(`memap -t ${vInfo.toolName} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`)
-                        .toString().split(/\r\n|\n/);
+
+                    let lines: string[];
+
+                    if (os.platform() == 'win32') {
+                        lines = ChildProcess
+                            .execSync(`memap -t ${vInfo.toolName} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`)
+                            .toString().split(/\r\n|\n/);
+                    } else {
+                        const memapRoot = ResManager.GetInstance().getBuilderDir().path + File.sep + 'utils';
+                        const command = `python memap -t ${vInfo.toolName} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`;
+                        lines = ChildProcess
+                            .execSync(command, { cwd: memapRoot })
+                            .toString().split(/\r\n|\n/);
+                    }
 
                     // append color
                     for (let index = 0; index < lines.length; index++) {

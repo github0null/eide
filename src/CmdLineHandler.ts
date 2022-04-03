@@ -29,28 +29,26 @@ export class CmdLineHandler {
     /**
      * powershell:  & '@param callerFile' 'arg1' 'arg2'
      * 
-     * cmd:         ""@param callerFile" "arg1" "arg2""
+     * win32 cmd:   "@param callerFile" "arg1" "arg2"
     */
     static getCommandLine(callerFile: string, args: string[], isPowershell?: boolean, noQuote: boolean = false): string {
 
         let callerHeader = isPowershell ? '& ' : '';
         const quote = isPowershell ? "'" : '"';
-        const cmdPrefixSuffix = isPowershell ? '' : '"';
 
-        // if it's not a executable file path, not use '&'
+        // if it's not a file path, not use '&'
         if (!callerFile.includes('/') &&
             !callerFile.includes('\\')) {
             callerHeader = '';
         }
 
-        const commandLine: string = cmdPrefixSuffix + callerHeader
+        const commandLine: string = callerHeader
             + this.quoteString(callerFile, quote) + ' '
             + args.map((arg) => {
                 return noQuote ? arg : this.quoteString(arg, quote);
-            }).join(' ')
-            + cmdPrefixSuffix;
+            }).join(' ');
 
-        return commandLine;
+        return commandLine.trim();
     }
 
     /**

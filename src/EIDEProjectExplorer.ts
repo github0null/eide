@@ -77,7 +77,7 @@ import {
     runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
     genGithubHash, md5
 } from './utility';
-import { concatSystemEnvPath, DeleteDir, kill } from './Platform';
+import { concatSystemEnvPath, DeleteDir, exeSuffix, kill } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
 import { VirtualDocument } from './VirtualDocsProvider';
 import { ResInstaller } from './ResInstaller';
@@ -811,11 +811,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                         // push filesystem source folder
                         project.getSourceRootFolders()
                             .sort((info_1, info_2) => {
-                                const isComponent = info_1.displayName === DependenceManager.DEPENDENCE_DIR;
+                                const isComponent = File.ToUnixPath(info_1.displayName) === DependenceManager.DEPENDENCE_DIR;
                                 return isComponent ? -1 : info_1.displayName.localeCompare(info_2.displayName);
                             })
                             .forEach((rootInfo) => {
-                                const isComponent = rootInfo.displayName === DependenceManager.DEPENDENCE_DIR;
+                                const isComponent = File.ToUnixPath(rootInfo.displayName) === DependenceManager.DEPENDENCE_DIR;
                                 const folderDispName = isComponent ? view_str$project$cmsis_components : rootInfo.displayName;
                                 iList.push(new ProjTreeItem(TreeItemType.FOLDER_ROOT, {
                                     value: folderDispName,
@@ -1457,7 +1457,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             // init file group
             const fileFilter = AbstractProject.getFileFilters();
             targets[0].fileGroups.forEach((group) => {
-                const vPath = `${VirtualSource.rootName}/${group.name.replace(/\\/g, '/')}`;
+                const vPath = `${VirtualSource.rootName}/${File.ToUnixPath(group.name)}`;
                 const VFolder = <VirtualFolder>getVirtualFolder(vPath);
                 group.files.forEach((fileItem) => {
                     if (fileFilter.some((reg) => reg.test(fileItem.file.name))) {
@@ -1624,7 +1624,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                 // fill exclude list
                 newTarget.excludeList = [];
                 for (const group of keilTarget.fileGroups) {
-                    const vFolderPath = `${VirtualSource.rootName}/${group.name.replace(/\\/g, '/')}`;
+                    const vFolderPath = `${VirtualSource.rootName}/${File.ToUnixPath(group.name)}`;
                     if (group.disabled) { newTarget.excludeList.push(vFolderPath); } // add disabled group
                     for (const file of group.files) {
                         if (file.disabled) { // add disabled file
@@ -2013,12 +2013,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             this.cppToolsApi.registerCustomConfigurationProvider(this);
             this.cppToolsOut.appendLine(`[init] register CustomConfigurationProvider done !\r\n`);
 
-            if (this.cppToolsApi.notifyReady) {
-                this.cppToolsApi.notifyReady(this);
-            } else {
-                this.cppToolsApi.didChangeCustomConfiguration(this);
-                this.cppToolsApi.didChangeCustomBrowseConfiguration(this);
-            }
+            // update cppConfig now
+            prj.forceUpdateCpptoolsConfig();
 
             // set flag
             this.isRegisteredCpptoolsProvider = true;
@@ -2123,7 +2119,11 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     getProjectByTreeItem(prjItem?: ProjTreeItem): AbstractProject | undefined {
         return prjItem instanceof ProjTreeItem ?
             this.dataProvider.GetProjectByIndex(prjItem.val.projectIndex) :
-            this.dataProvider.getActiveProject();
+            this.getActiveProject();
+    }
+
+    getActiveProject(): AbstractProject | undefined {
+        return this.dataProvider.getActiveProject();
     }
 
     getProjectCount(): number {
@@ -2400,7 +2400,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             const builder = CodeBuilder.NewBuilder(project);
             const cmdLine = builder.genBuildCommand({ useFastMode: !rebuild }, true);
             if (cmdLine) {
-                buildCfg.command = CmdLineHandler.DeleteCmdPrefix(cmdLine);
+                buildCfg.command = cmdLine || '';
                 cmdList.push(buildCfg);
             }
         });
@@ -2413,7 +2413,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const resManager = ResManager.GetInstance();
         const cmds = [`${ResManager.GetInstance().getBuilder().path}`].concat(['-r', paramsFile.path]);
         const commandLine = CmdLineHandler.getCommandLine(resManager.getMonoName(), cmds);
-        runShellCommand('build-workspace', commandLine, resManager.getCMDPath());
+        runShellCommand('build-workspace', commandLine);
     }
 
     openWorkspaceConfig() {
@@ -2437,7 +2437,11 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
 
         const outDir = prj.ToAbsolutePath(prj.getOutputDir());
-        runShellCommand('clean', `cmd /E:ON /C del /S /Q "${outDir}"`, ResManager.GetInstance().getCMDPath());
+        if (os.platform() == 'win32') {
+            runShellCommand('clean', `cmd /E:ON /C del /S /Q "${outDir}"`);
+        } else {
+            runShellCommand('clean', `rm -rf -v "${outDir}"`);
+        }
 
         setTimeout(() => {
             this.notifyUpdateOutputFolder(prj);
@@ -2742,9 +2746,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             const defExcludeList: string[] = [
                 '*.eide-template',
                 '*.log',
-                `${AbstractProject.EIDE_DIR}\\*.db3`,
-                `${AbstractProject.EIDE_DIR}\\*.dat`,
-                `${AbstractProject.vsCodeDir}\\c_cpp_properties.json`
+                '*.ept',
+                `${AbstractProject.EIDE_DIR}${File.sep}*.db3`,
+                `${AbstractProject.EIDE_DIR}${File.sep}*.dat`,
             ];
 
             /* if this is a project, handle it ! */
@@ -2756,7 +2760,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 templateName = prjConfig.name;
                 tmp_suffix = 'ept';
                 const prjOutFolder = NodePath.normalize(prj.GetConfiguration().config.outDir);
-                defExcludeList.push(`${prjOutFolder}`, `${prjOutFolder}\\*`);
+                defExcludeList.push(`${prjOutFolder}`, `${prjOutFolder}${File.sep}*`);
                 resIgnoreList = prj.readIgnoreList();
                 const prjUid = prjConfig.miscInfo.uid;
                 prjConfig.miscInfo.uid = undefined; // clear uid before save prj
@@ -3194,12 +3198,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 const toolchain = ToolchainManager.getInstance().getToolchainByName(toolchainName);
                 if (!toolchain) throw new Error(`Can't get toolchain '${toolchainName}'`);
                 const toolPrefix = toolchain.getToolchainPrefix ? toolchain.getToolchainPrefix() : '';
-                exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `${toolPrefix}objdump.exe`]);
+                exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `${toolPrefix}objdump${exeSuffix()}`]);
                 if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
                 cmds = ['-S', '-l', objPath];
             }
             else if (toolchainName.startsWith('AC')) {
-                exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `fromelf.exe`]);
+                exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `fromelf${exeSuffix()}`]);
                 if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
                 cmds = ['-c', objPath];
             }
@@ -3295,13 +3299,13 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         /* const path: any = SettingManager.GetInstance().getCppcheckerExe();
         if (!path) {
-            const done = await ResInstaller.instance().setOrInstallTools('cppcheck', `Not found 'cppcheck.exe' !`);
+            const done = await ResInstaller.instance().setOrInstallTools('cppcheck', `Not found 'cppcheck${exeSuffix()}' !`);
             if (!done) { return; }
         }
 
         const exeFile = new File(path);
         if (!exeFile.IsFile()) {
-            const done = await ResInstaller.instance().setOrInstallTools('cppcheck', `Not found 'cppcheck.exe' ! [path]: ${exeFile.path}`);
+            const done = await ResInstaller.instance().setOrInstallTools('cppcheck', `Not found 'cppcheck${exeSuffix()}' ! [path]: ${exeFile.path}`);
             if (!done) { return; }
         }
 
@@ -3326,13 +3330,13 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         const path: any = SettingManager.GetInstance().getCppcheckerExe();
         if (!path) {
-            await ResInstaller.instance().setOrInstallTools('cppcheck', `Not found 'cppcheck.exe' !`);
+            await ResInstaller.instance().setOrInstallTools('cppcheck', `Not found 'cppcheck${exeSuffix()}' !`);
             return;
         }
 
         const exeFile = new File(path);
         if (!exeFile.IsFile()) {
-            await ResInstaller.instance().setOrInstallTools('cppcheck', `Not found 'cppcheck.exe' ! [path]: ${exeFile.path}`);
+            await ResInstaller.instance().setOrInstallTools('cppcheck', `Not found 'cppcheck${exeSuffix()}' ! [path]: ${exeFile.path}`);
             return;
         }
 
@@ -3661,7 +3665,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     if (newName && newName !== oldFolderName) {
                         const oldFolder = new File(prj.ToAbsolutePath(prjConfig.outDir));
                         DeleteDir(oldFolder);
-                        prjConfig.outDir = `.${File.sep}${newName}`;
+                        prjConfig.outDir = newName;
                         this.updateSettingsView(prj);
                     }
                 }
@@ -3765,7 +3769,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     const imptrName = (<File>imptrType.file).noSuffixName;
                     const cmds = ['--std', './importer/index.js', imptrName, prjFile.path];
                     const result = child_process
-                        .execFileSync(`${scriptRoot.path}/qjs.exe`, cmds, { cwd: scriptRoot.path })
+                        .execFileSync(`${scriptRoot.path}/qjs${exeSuffix()}`, cmds, { cwd: scriptRoot.path })
                         .toString();
 
                     let prjList: ImporterProjectInfo[];
@@ -4352,14 +4356,21 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             if (suffix == '.axf') {
 
                 const fromelf = File.fromArray([
-                    SettingManager.GetInstance().getArmcc5Dir().path, 'bin', 'fromelf.exe'
+                    SettingManager.GetInstance().getArmcc5Dir().path, 'bin', `fromelf${exeSuffix()}`
                 ]);
 
-                if (!fromelf.IsFile()) return;
+                let cont: string;
 
-                const cont = child_process
-                    .execFileSync(fromelf.path, ['--text', '-e', binFile.path])
-                    .toString();
+                try {
+                    if (!fromelf.IsFile())
+                        throw new Error(`Not found '${fromelf.path}' !`);
+                    cont = child_process
+                        .execFileSync(fromelf.path, ['--text', '-e', binFile.path])
+                        .toString();
+                } catch (error) {
+                    const err = <Error>error;
+                    cont = `${err.name}: ${err.message}\n${err.stack}`;
+                }
 
                 const vDoc = VirtualDocument.instance();
                 const docName = `${binFile.path}.info`;
@@ -4374,9 +4385,28 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             // show gnu elf file
             else if (suffix == '.elf') {
 
-                const cont = child_process
-                    .execSync(`readelf -e "${binFile.path}"`)
-                    .toString();
+                let readelf: string = 'arm-none-eabi-readelf';
+
+                const activePrj = this.getActiveProject();
+                if (activePrj) {
+                    const toolchain = activePrj.getToolchain();
+                    if (!['AC5', 'AC6'].includes(toolchain.name) && toolchain.getToolchainPrefix) {
+                        readelf = [
+                            toolchain.getToolchainDir().path, 'bin', `${toolchain.getToolchainPrefix()}readelf`
+                        ].join(File.sep);
+                    }
+                }
+
+                let cont: string;
+
+                try {
+                    cont = child_process
+                        .execFileSync(`${readelf}${exeSuffix()}`, ['-e', binFile.path])
+                        .toString();
+                } catch (error) {
+                    const err = <Error>error;
+                    cont = `${err.name}: ${err.message}\n${err.stack}`;
+                }
 
                 const vDoc = VirtualDocument.instance();
                 const docName = `${binFile.path}.info`;

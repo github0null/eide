@@ -41,7 +41,7 @@ import * as fs from 'fs';
 import * as ini from 'ini';
 import { ResInstaller } from "./ResInstaller";
 import { newMessage } from "./Message";
-import { concatSystemEnvPath } from "./Platform";
+import { concatSystemEnvPath, exeSuffix } from "./Platform";
 
 let _mInstance: HexUploaderManager | undefined;
 
@@ -145,12 +145,10 @@ export abstract class HexUploader<InvokeParamsType> {
 
     protected project: AbstractProject;
     protected shellPath: string | undefined;
-    protected isPowershell: boolean;
 
     constructor(prj: AbstractProject) {
         this.project = prj;
         this.shellPath = ResManager.checkWindowsShell() ? undefined : ResManager.GetInstance().getCMDPath();
-        this.isPowershell = /powershell.exe$/i.test(vscode.env.shell);
     }
 
     async upload(eraseAll?: boolean) {
@@ -333,19 +331,20 @@ class JLinkUploader extends HexUploader<any> {
     }
 
     protected _launch(commandLines: string[]): void {
-        const jlinkPath = `${SettingManager.GetInstance().getJlinkDir()}${NodePath.sep}JLink.exe`;
+        const jlinkPath = `${SettingManager.GetInstance().getJlinkDir()}${NodePath.sep}JLink${exeSuffix()}`;
         const option = this.getUploadOptions<JLinkOptions>();
-        const commandLine = CmdLineHandler.getCommandLine(jlinkPath, commandLines, this.isPowershell);
-        runShellCommand(this.toolType, `${commandLine} ${option.otherCmds || ''}`, this.shellPath);
+        const commandLine = CmdLineHandler.getCommandLine(jlinkPath, commandLines);
+        runShellCommand(this.toolType, `${commandLine} ${option.otherCmds || ''}`);
     }
 }
 
 /**
  * stcgal programer
 */
-export interface C51FlashOption extends UploadOption {
+export interface StcgalFlashOption extends UploadOption {
     eepromImgPath: string;
     options: string;
+    extraOptions: string;
 }
 
 class StcgalUploader extends HexUploader<string[]> {
@@ -389,7 +388,7 @@ class StcgalUploader extends HexUploader<string[]> {
 
         let option: any = Object.create(null);
 
-        const opFile = new File(this.project.ToAbsolutePath(this.getUploadOptions<C51FlashOption>().options));
+        const opFile = new File(this.project.ToAbsolutePath(this.getUploadOptions<StcgalFlashOption>().options));
         if (opFile.IsFile()) {
             try {
                 option = JSON.parse(opFile.Read());
@@ -453,7 +452,7 @@ class StcgalUploader extends HexUploader<string[]> {
 
     protected _launch(commands: string[]): void {
 
-        const option = this.getUploadOptions<C51FlashOption>();
+        const option = this.getUploadOptions<StcgalFlashOption>();
         const programs = this.parseProgramFiles(option);
 
         if (programs.length == 0) {
@@ -468,7 +467,7 @@ class StcgalUploader extends HexUploader<string[]> {
         }
 
         // run
-        runShellCommand(this.toolType, 'stcgal -a ' + commands.join(' '), ResManager.GetInstance().getCMDPath());
+        runShellCommand(this.toolType, `stcgal ${option.extraOptions} ${commands.join(' ')}`);
     }
 }
 
@@ -646,7 +645,7 @@ class STLinkUploader extends HexUploader<string[]> {
 
         const exe = new File(SettingManager.GetInstance().getSTLinkExePath());
         if (!exe.IsFile()) {
-            await ResInstaller.instance().setOrInstallTools(this.toolType, `Not found 'ST-LINK_CLI.exe' or 'STM32_Programmer_CLI.exe' !`);
+            await ResInstaller.instance().setOrInstallTools(this.toolType, `Not found 'ST-LINK_CLI${exeSuffix()}' or 'STM32_Programmer_CLI${exeSuffix()}' !`);
             return { isOk: false };
         }
 
@@ -671,13 +670,13 @@ class STLinkUploader extends HexUploader<string[]> {
     protected _launch(commands: string[]): void {
 
         const commandLine = CmdLineHandler.getCommandLine(
-            SettingManager.GetInstance().getSTLinkExePath(), commands, this.isPowershell
+            SettingManager.GetInstance().getSTLinkExePath(), commands
         );
 
         const options = this.getUploadOptions<STLinkOptions>();
 
         // run
-        runShellCommand(this.toolType, `${commandLine} ${options.otherCmds || ''}`, this.shellPath);
+        runShellCommand(this.toolType, `${commandLine} ${options.otherCmds || ''}`);
     }
 }
 
@@ -705,7 +704,7 @@ class STVPHexUploader extends HexUploader<string[]> {
 
         const exe = new File(SettingManager.GetInstance().getStvpExePath());
         if (!exe.IsFile()) {
-            await ResInstaller.instance().setOrInstallTools(this.toolType, `Not found STVP: \'STVP_CmdLine.exe\' !`);
+            await ResInstaller.instance().setOrInstallTools(this.toolType, `Not found STVP: \'STVP_CmdLine${exeSuffix()}\' !`);
             return { isOk: false };
         }
 
@@ -771,11 +770,11 @@ class STVPHexUploader extends HexUploader<string[]> {
     protected _launch(commands: string[]): void {
 
         const commandLine = CmdLineHandler.getCommandLine(
-            SettingManager.GetInstance().getStvpExePath(), commands, this.isPowershell, true
+            SettingManager.GetInstance().getStvpExePath(), commands, false, true
         );
 
         // run
-        runShellCommand(this.toolType, commandLine, this.shellPath);
+        runShellCommand(this.toolType, commandLine);
     }
 }
 
@@ -862,7 +861,7 @@ class PyOCDUploader extends HexUploader<string[]> {
         }).join(' ');
 
         // run
-        runShellCommand(this.toolType, commandLine, ResManager.GetInstance().getCMDPath());
+        runShellCommand(this.toolType, commandLine);
     }
 }
 
@@ -891,7 +890,7 @@ class OpenOCDUploader extends HexUploader<string[]> {
 
         const exe = new File(SettingManager.GetInstance().getOpenOCDExePath());
         if (!exe.IsFile()) {
-            await ResInstaller.instance().setOrInstallTools(this.toolType, `Not found \'OpenOCD.exe\' !`);
+            await ResInstaller.instance().setOrInstallTools(this.toolType, `Not found \'OpenOCD${exeSuffix()}\' !`);
             return { isOk: false };
         }
 
@@ -927,9 +926,9 @@ class OpenOCDUploader extends HexUploader<string[]> {
         programs.forEach(file => {
             if (/\.bin$/i.test(file.path)) {
                 const addrStr = option.baseAddr || file.addr || '0x08000000';
-                commands.push(`-c "program \\"${file.path.replace(/\\{1,}/g, '/')}\\" ${addrStr} verify reset"`);
+                commands.push(`-c "program \\"${File.ToUnixPath(file.path)}\\" ${addrStr} verify reset"`);
             } else {
-                commands.push(`-c "program \\"${file.path.replace(/\\{1,}/g, '/')}\\" verify reset"`);
+                commands.push(`-c "program \\"${File.ToUnixPath(file.path)}\\" verify reset"`);
             }
         });
 
@@ -944,7 +943,7 @@ class OpenOCDUploader extends HexUploader<string[]> {
     protected _launch(commands: string[]): void {
         const exePath = SettingManager.GetInstance().getOpenOCDExePath();
         const commandLine = `${CmdLineHandler.quoteString(exePath, '"')} ${commands.join(' ')}`;
-        runShellCommand(this.toolType, commandLine, ResManager.GetInstance().getCMDPath());
+        runShellCommand(this.toolType, commandLine);
     }
 }
 /**
@@ -1020,7 +1019,7 @@ class CustomUploader extends HexUploader<string> {
                         .filter((p: string) => p.trim() !== '')
                         .map((p: string) => this.project.ToAbsolutePath(p));
                     if (pList.length > 0) {
-                        env = concatSystemEnvPath(pList, false, env);
+                        env = concatSystemEnvPath(pList, env);
                     }
                 } else {
                     env[key] = prjEnv[key]
@@ -1028,6 +1027,6 @@ class CustomUploader extends HexUploader<string> {
             }
         }
 
-        runShellCommand(this.toolType, commandLine, ResManager.GetInstance().getCMDPath(), env);
+        runShellCommand(this.toolType, commandLine, env);
     }
 }

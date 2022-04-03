@@ -54,14 +54,15 @@ import {
     view_str$flasher$optionBytesConfig,
     view_str$flasher$external_loader,
     view_str$flasher$resetMode,
-    view_str$flasher$other_cmds
+    view_str$flasher$other_cmds,
+    view_str$flasher$stcgalOptions
 } from "./StringTable";
 import { ResManager } from "./ResManager";
 import { ArrayDelRepetition } from "../lib/node-utility/Utility";
 import { GlobalEvent } from "./GlobalEvents";
 import { ExceptionToMessage, newMessage } from "./Message";
 import { ToolchainName, IToolchian, ToolchainManager } from './ToolchainManager';
-import { HexUploaderType, STLinkOptions, STVPFlasherOptions, C51FlashOption, JLinkOptions, ProtocolType, PyOCDFlashOptions, OpenOCDFlashOptions, STLinkProtocolType, CustomFlashOptions } from "./HexUploader";
+import { HexUploaderType, STLinkOptions, STVPFlasherOptions, StcgalFlashOption, JLinkOptions, ProtocolType, PyOCDFlashOptions, OpenOCDFlashOptions, STLinkProtocolType, CustomFlashOptions } from "./HexUploader";
 import { AbstractProject, VirtualSource } from "./EIDEProject";
 import { SettingManager } from "./SettingManager";
 import { WorkspaceManager } from "./WorkspaceManager";
@@ -70,7 +71,7 @@ import * as utility from './utility';
 ////////////////////////////////////////////////////////
 
 // eide project config file version
-export const EIDE_CONF_VERSION = '2.16';
+export const EIDE_CONF_VERSION = '3.0';
 
 ////////////////////////////////////////////////////////
 
@@ -548,10 +549,12 @@ export class ProjectConfiguration<T extends CompileData>
     private toAbsolutePath(path: string): string {
         const _path = path.trim();
         if (File.isAbsolute(_path)) { return _path; }
-        return NodePath.normalize(this.getRootDir().path + File.sep + _path);
+        return NodePath.normalize(File.ToLocalPath(this.getRootDir().path + File.sep + _path));
     }
 
-    private toRelativePath(path: string): string {
+    private toRelativePath(_path: string): string {
+
+        const path = File.ToUnixPath(_path);
 
         if (File.isEnvPath(path)) { // env path have no repath
             return path;
@@ -563,10 +566,10 @@ export class ProjectConfiguration<T extends CompileData>
 
         const rePath = NodePath.relative(this.getRootDir().path, path);
         if (File.isAbsolute(rePath)) {
-            return rePath;
+            return File.ToUnixPath(rePath);
         }
 
-        return `.${NodePath.sep}${rePath}`;
+        return `./${File.ToUnixPath(rePath)}`;
     }
 
     private MergeDepList(depList: Dependence[], name?: string): Dependence {
@@ -620,7 +623,7 @@ export class ProjectConfiguration<T extends CompileData>
                     srcDirs: [],
                     virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
                     excludeList: [],
-                    outDir: '.\\build',
+                    outDir: 'build',
                     deviceName: null,
                     packDir: null,
                     uploadConfig: null,
@@ -641,7 +644,7 @@ export class ProjectConfiguration<T extends CompileData>
                     srcDirs: [],
                     virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
                     excludeList: [],
-                    outDir: '.\\build',
+                    outDir: 'build',
                     deviceName: null,
                     packDir: null,
                     uploadConfig: null,
@@ -662,7 +665,7 @@ export class ProjectConfiguration<T extends CompileData>
                     srcDirs: [],
                     virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
                     excludeList: [],
-                    outDir: '.\\build',
+                    outDir: 'build',
                     deviceName: null,
                     packDir: null,
                     uploadConfig: null,
@@ -683,7 +686,7 @@ export class ProjectConfiguration<T extends CompileData>
                     srcDirs: [],
                     virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
                     excludeList: [],
-                    outDir: '.\\build',
+                    outDir: 'build',
                     deviceName: null,
                     packDir: null,
                     uploadConfig: null,
@@ -1250,7 +1253,6 @@ export class ProjectConfiguration<T extends CompileData>
     protected RefreshAfterConfigUpdate() {
 
         // convert to abs path
-
         this.config.srcDirs = ArrayDelRepetition(this.config.srcDirs.map((path) => { return this.toAbsolutePath(path); }));
 
         for (const depGroup of this.config.dependenceList) {
@@ -2527,7 +2529,7 @@ export abstract class UploadConfigModel<T> extends ConfigModel<T> {
     }
 }
 
-class StcgalUploadModel extends UploadConfigModel<C51FlashOption> {
+class StcgalUploadModel extends UploadConfigModel<StcgalFlashOption> {
 
     uploader: HexUploaderType = 'stcgal';
 
@@ -2536,7 +2538,9 @@ class StcgalUploadModel extends UploadConfigModel<C51FlashOption> {
             case 'eepromImgPath':
                 return view_str$flasher$eepromPath;
             case 'options':
-                return view_str$flasher$options;
+                return view_str$flasher$stcgalOptions;
+            case 'extraOptions':
+                return view_str$flasher$other_cmds;
             default:
                 return super.GetKeyDescription(key);
         }
@@ -2548,6 +2552,8 @@ class StcgalUploadModel extends UploadConfigModel<C51FlashOption> {
                 return 'BinaryFile_16x.svg';
             case 'options':
                 return 'ConfigurationEditor_16x.svg';
+            case 'extraOptions':
+                return 'terminal_16x.svg';
             default:
                 return super.getKeyIcon(key);
         }
@@ -2586,6 +2592,8 @@ class StcgalUploadModel extends UploadConfigModel<C51FlashOption> {
                 return 'INPUT';
             case 'options':
                 return 'EVENT';
+            case 'extraOptions':
+                return 'INPUT';
             default:
                 return super.GetKeyType(key);
         }
@@ -2610,6 +2618,7 @@ class StcgalUploadModel extends UploadConfigModel<C51FlashOption> {
         return {
             bin: '',
             eepromImgPath: 'null',
+            extraOptions: '',
             options: `${AbstractProject.EIDE_DIR}/stc.flash.json`
         };
     }
@@ -3521,7 +3530,7 @@ export interface CppConfig {
     configurations: CppConfigItem[];
     version: number;
 }
-
+/* 
 export class CppConfiguration extends Configuration<CppConfig> {
 
     protected readTypeFromFile(configFile: File): ProjectType | undefined {
@@ -3595,7 +3604,7 @@ export class CppConfiguration extends Configuration<CppConfig> {
         };
     }
 }
-
+ */
 export interface WorkspaceConfig {
     folders: { name?: string, path: string }[];
     settings?: any;
