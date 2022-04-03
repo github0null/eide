@@ -4,6 +4,14 @@
 
 ***
 
+### [v3.1.xxxx] preview version
+
+**Optimize**:
+  - Allow use project env vars in compiler params and user macro.
+  - Allow use project env vars in shell flasher command-line.
+
+***
+
 ### [v3.1.0]
 
 **New**:
