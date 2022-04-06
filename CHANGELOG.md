@@ -9,6 +9,7 @@
 **Optimize**:
   - Allow use project env vars in compiler params and user macro.
   - Allow use project env vars in shell flasher command-line.
+  - Support auto-select armasm/armclang compiler for arm/gnu asm source files.
 
 ***
 

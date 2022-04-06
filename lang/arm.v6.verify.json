@@ -318,6 +318,7 @@
                     "default": "asm",
                     "enum": [
                         "asm",
+                        "asm-auto",
                         "asm-clang"
                     ]
                 },
