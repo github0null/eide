@@ -978,15 +978,24 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         // replace user env
         const prjEnv = this.getProjectEnv();
         if (prjEnv) {
-            const nameMatcher = /^\w+$/;
             for (const key in prjEnv) {
-                if (!nameMatcher.test(key)) continue;
                 const reg = new RegExp(String.raw`\$\(${key}\)|\$\{${key}\}`, 'ig');
                 path = path.replace(reg, prjEnv[key]);
             }
         }
 
         return path;
+    }
+
+    replaceUserEnv(str: string): string {
+        const prjEnv = this.getProjectEnv();
+        if (prjEnv) {
+            for (const key in prjEnv) {
+                const reg = new RegExp(String.raw`\$\(${key}\)|\$\{${key}\}`, 'g');
+                str = str.replace(reg, prjEnv[key]);
+            }
+        }
+        return str;
     }
 
     ToAbsolutePath(path_: string): string {
@@ -1492,7 +1501,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
             for (const key in env) {
                 if (typeof env[key] == 'object' ||
                     Array.isArray(env[key]) ||
-                    key.includes(' ')) {
+                    !/^\w+$/.test(key)) {
                     delete env[key];
                 }
             }
@@ -2530,6 +2539,31 @@ class EIDEProject extends AbstractProject {
             if (this.cppToolsConfig.compilerArgs) {
                 this.cppToolsConfig.compilerArgs = (<string[]>this.cppToolsConfig.compilerArgs).map((param) => {
                     return param.replace('${c_cppStandard}', this.cppToolsConfig.cStandard || 'c99');
+                });
+            }
+        }
+
+        // replace env variables for config
+        {
+            this.cppToolsConfig.defines = this.cppToolsConfig.defines.map((arg) => {
+                return this.replaceUserEnv(arg);
+            });
+
+            if (this.cppToolsConfig.compilerArgs) {
+                this.cppToolsConfig.compilerArgs = (<string[]>this.cppToolsConfig.compilerArgs).map((arg) => {
+                    return this.replaceUserEnv(arg);
+                });
+            }
+
+            if (this.cppToolsConfig.cCompilerArgs) {
+                this.cppToolsConfig.cCompilerArgs = (<string[]>this.cppToolsConfig.cCompilerArgs).map((arg) => {
+                    return this.replaceUserEnv(arg);
+                });
+            }
+
+            if (this.cppToolsConfig.cppCompilerArgs) {
+                this.cppToolsConfig.cppCompilerArgs = (<string[]>this.cppToolsConfig.cppCompilerArgs).map((arg) => {
+                    return this.replaceUserEnv(arg);
                 });
             }
         }

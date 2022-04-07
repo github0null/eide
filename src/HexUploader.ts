@@ -334,7 +334,7 @@ class JLinkUploader extends HexUploader<any> {
         const jlinkPath = `${SettingManager.GetInstance().getJlinkDir()}${NodePath.sep}JLink${exeSuffix()}`;
         const option = this.getUploadOptions<JLinkOptions>();
         const commandLine = CmdLineHandler.getCommandLine(jlinkPath, commandLines);
-        runShellCommand(this.toolType, `${commandLine} ${option.otherCmds || ''}`);
+        runShellCommand(this.toolType, `${commandLine} ${option.otherCmds || ''}`.trimEnd());
     }
 }
 
@@ -676,7 +676,7 @@ class STLinkUploader extends HexUploader<string[]> {
         const options = this.getUploadOptions<STLinkOptions>();
 
         // run
-        runShellCommand(this.toolType, `${commandLine} ${options.otherCmds || ''}`);
+        runShellCommand(this.toolType, `${commandLine} ${options.otherCmds || ''}`.trimEnd());
     }
 }
 
@@ -998,6 +998,9 @@ class CustomUploader extends HexUploader<string> {
                     .replace(new RegExp(String.raw`\$\{binAddr\[${index}\]\}`, 'ig'), file.addr || '0x00000000')
             }
         });
+
+        // replace env
+        commandLine = this.project.replaceUserEnv(commandLine);
 
         return {
             isOk: true,

@@ -318,7 +318,13 @@
                     "default": "asm",
                     "enum": [
                         "asm",
+                        "asm-auto",
                         "asm-clang"
+                    ],
+                    "enumDescriptions": [
+                        "arm-asm (arm syntax)",
+                        "arm-auto (auto select)",
+                        "arm-clang (gnu syntax)"
                     ]
                 },
                 "misc-controls": {

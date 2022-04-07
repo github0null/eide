@@ -24,6 +24,13 @@
 			"command": "vsce publish",
 			"problemMatcher": [],
 			"group": "build"
+		},
+		{
+			"label": "publish pre-release app",
+			"type": "shell",
+			"command": "vsce publish --pre-release",
+			"problemMatcher": [],
+			"group": "build"
 		}
 	]
 }

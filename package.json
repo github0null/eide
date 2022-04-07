@@ -29,10 +29,10 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "An embedded development environment for 8051/STM8/Cortex-M/RISC-V",
-    "version": "3.1.0",
+    "version": "3.2.0",
     "preview": false,
     "engines": {
-        "vscode": "^1.60.0"
+        "vscode": "^1.63.0"
     },
     "categories": [
         "Programming Languages",
@@ -78,7 +78,7 @@
         "@types/mocha": "^5.2.7",
         "@types/node": "^12.12.17",
         "@types/node-7z": "^2.1.4",
-        "@types/vscode": "^1.38.0",
+        "@types/vscode": "^1.60.0",
         "@types/x2js": "^3.1.0",
         "ts-loader": "^6.2.1",
         "tslint": "^5.20.1",

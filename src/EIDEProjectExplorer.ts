@@ -3401,28 +3401,46 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const is8bit = prjConfig.config.type == 'C51';
         const cfgList: string[] = ['gnu'];
 
-        if (['Keil_C51', 'ANY_GCC'].includes(toolchain.name)) {
+        if (['Keil_C51'].includes(toolchain.name)) {
             GlobalEvent.emit('msg', newMessage('Warning', `We don't support cppcheck for '${toolchain.name}' !`));
             return;
         }
 
-        switch (toolchain.name) {
-            case 'GCC':
-                cfgList.push('armgcc');
-                break;
-            case 'RISCV_GCC':
-                cfgList.push('riscv');
-                break;
-            default:
-                defList = defList.concat(toolchain.getInternalDefines(builderOpts));
-                break;
+        if (os.platform() == 'win32') {
+            switch (toolchain.name) {
+                case 'GCC':
+                    cfgList.push('armgcc');
+                    break;
+                case 'RISCV_GCC':
+                    cfgList.push('riscv');
+                    break;
+                default:
+                    defList = defList.concat(toolchain.getInternalDefines(builderOpts));
+                    break;
+            }
+        } else {
+            defList = defList.concat(toolchain.getInternalDefines(builderOpts));
+        }
+
+        if (toolchain.name == 'ANY_GCC' && toolchain.getToolchainPrefix) {
+            const prefix = toolchain.getToolchainPrefix();
+            if (/avr/i.test(prefix)) { // it's avr compiler
+                cfgList.push('avr');
+            } else if (prefix == '') { // it's local compiler
+                cfgList.push('std');
+            }
         }
 
         const fixedDefList = defList.map((str) => str.replace(/"/g, '&quot;'));
 
+        let cppcheck_plat: string = 'arm32-wchar_t2';
+        if (is8bit) {
+            cppcheck_plat = os.platform() == 'win32' ? 'mcs51' : 'avr8';
+        }
+
         cppcheckConf = cppcheckConf
-            .replace('${cppcheck_build_folder}', 'build')
-            .replace('${platform}', is8bit ? 'mcs51' : 'arm32-wchar_t2')
+            .replace('${cppcheck_build_folder}', NodePath.normalize(prj.getOutputRoot()))
+            .replace('${platform}', cppcheck_plat)
             .replace('${lib_list}', cfgList.map((str) => `<library>${str}</library>`).join(os.EOL + '\t\t'))
             .replace('${include_list}', includeList.map((str) => `<dir name="${str}/"/>`).join(os.EOL + '\t\t'))
             .replace('${macro_list}', fixedDefList.map((str) => `<define name="${str}"/>`).join(os.EOL + '\t\t'))

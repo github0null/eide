@@ -4,6 +4,18 @@
 
 ***
 
+### [v3.2.0]
+
+**New**:
+  - Allow use project env vars in compiler params and user macro.
+  - Allow use project env vars in shell flasher command-line.
+
+**Optimize**:
+  - Support auto-select armasm/armclang compiler for arm/gnu asm source files.
+  - Optimize cppcheck config for linux platform.
+
+***
+
 ### [v3.1.0]
 
 **New**:
