@@ -2624,11 +2624,12 @@ class EIDEProject extends AbstractProject {
 
     canProvideConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<boolean> {
         return new Promise((resolve) => {
+            const filePath = fs.realpathSync(uri.fsPath);
             const prjRoot = fs.realpathSync(this.GetRootDir().path);
-            if (uri.fsPath.startsWith(prjRoot)) {
+            if (filePath.startsWith(prjRoot)) {
                 resolve(true);
             } else {
-                resolve(this.vSourceList.includes(uri.fsPath));
+                resolve(this.vSourceList.includes(filePath));
             }
         });
     }
@@ -2675,8 +2676,8 @@ class EIDEProject extends AbstractProject {
 
     provideFolderBrowseConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<WorkspaceBrowseConfiguration | null> {
         return new Promise((resolve) => {
-            const prjRoot = fs.realpathSync(this.GetRootDir().path);
-            if (prjRoot === uri.fsPath) {
+            const prjRoot = this.GetRootDir().path;
+            if (fs.realpathSync(prjRoot) == fs.realpathSync(uri.fsPath)) {
                 resolve({
                     browsePath: this.cppToolsConfig.browse?.path || [],
                     compilerPath: this.cppToolsConfig.compilerPath,
