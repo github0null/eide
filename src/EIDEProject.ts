@@ -2505,12 +2505,14 @@ class EIDEProject extends AbstractProject {
         const toolchain = this.getToolchain();
         const prjConfig = this.GetConfiguration();
 
-        // update includes and defines 
+        // get project includes and defines
         const depMerge = prjConfig.GetAllMergeDep();
         const defMacros: string[] = ['__VSCODE_CPPTOOL']; // it's for internal force include header
         const defLi = defMacros.concat(depMerge.defineList, toolchain.getInternalDefines(builderOpts));
-        depMerge.incList = ArrayDelRepetition(depMerge.incList.concat(this.getSourceIncludeList()));
-        this.cppToolsConfig.includePath = depMerge.incList.map((_path) => File.ToUnixPath(_path));
+        depMerge.incList = depMerge.incList.concat(this.getSourceIncludeList());
+
+        // update includes and defines 
+        this.cppToolsConfig.includePath = ArrayDelRepetition(depMerge.incList.map((_path) => File.ToUnixPath(fs.realpathSync(_path))));
         this.cppToolsConfig.defines = ArrayDelRepetition(defLi);
 
         // update intellisence info
@@ -2593,8 +2595,8 @@ class EIDEProject extends AbstractProject {
         this.vSourceList = [];
         this.getVirtualSourceManager().traverse((vFolder) => {
             vFolder.folder.files.forEach((vFile) => {
-                const fAbsPath = this.ToAbsolutePath(vFile.path);
-                this.vSourceList.push(fs.realpathSync(fAbsPath)); // resolve symbol link
+                const fAbsPath = fs.realpathSync(this.ToAbsolutePath(vFile.path)); // resolve symbol link
+                this.vSourceList.push(fAbsPath);
                 srcBrowseFolders.push(`${File.ToUnixPath(NodePath.dirname(fAbsPath))}/*`);
             });
         });
@@ -2603,7 +2605,7 @@ class EIDEProject extends AbstractProject {
             if (fGrp.disabled) { return; } // skip disabled group
             fGrp.files.forEach(fItem => {
                 if (fItem.disabled) { return; } // skip disabled file
-                srcBrowseFolders.push(`${File.ToUnixPath(fItem.file.dir)}/*`);
+                srcBrowseFolders.push(`${File.ToUnixPath(fs.realpathSync(fItem.file.dir))}/*`);
             });
         });
 
