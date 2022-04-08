@@ -7,8 +7,9 @@
 ### [v3.2.2022xxxxxx] pre-release version
 
 **Fixed**:
-  - Cannot provide C/C++ intellisense configuration for files that contain symbol links.
+  - Cannot provide C/C++ intellisense configuration for files that contain symbol links for `linux` platform.
   - The `exclude source list` in the old project template is invalid for `linux` platform.
+  - Can't parse toolchain system includes and defines for `linux` platform.
 
 ***
 
