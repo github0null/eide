@@ -2274,23 +2274,40 @@ class EIDEProject extends AbstractProject {
                 }
             }
 
+            // remove some c/c++ configs
+            [
+                'C_Cpp.default.intelliSenseMode',
+                'C_Cpp.default.cppStandard',
+                'C_Cpp.default.cStandard'
+            ].forEach((key) => {
+                if (settings[key]) {
+                    settings[key] = undefined;
+                }
+            });
+
+            const fileAssCfg: any = {
+                ".eideignore": "ignore",
+                "*.h": "c",
+                "*.c": "c",
+                "*.hxx": "cpp",
+                "*.hpp": "cpp",
+                "*.c++": "cpp",
+                "*.cpp": "cpp",
+                "*.cxx": "cpp",
+                "*.cc": "cpp"
+            };
+
             if (!settings['files.associations']) {
-                settings['files.associations'] = {
-                    ".eideignore": "ignore",
-                    "*.h": "c",
-                    "*.c": "c",
-                    "*.hxx": "cpp",
-                    "*.hpp": "cpp",
-                    "*.c++": "cpp",
-                    "*.cpp": "cpp",
-                    "*.cxx": "cpp",
-                    "*.cc": "cpp"
-                };
-            } else if (!settings['files.associations']['.eideignore']) {
-                settings['files.associations']['.eideignore'] = 'ignore';
+                settings['files.associations'] = fileAssCfg;
+            } else {
+                for (const key in fileAssCfg) {
+                    if (!settings['files.associations'][key]) {
+                        settings['files.associations'][key] = fileAssCfg[key];
+                    }
+                }
             }
 
-            if (settings['[yaml]'] === undefined) {
+            if (!settings['[yaml]']) {
                 settings['[yaml]'] = {
                     "editor.insertSpaces": true,
                     "editor.tabSize": 4,
