@@ -2453,7 +2453,9 @@ class EIDEProject extends AbstractProject {
     name: string = 'eide';
     extensionId: string = 'cl.eide';
 
+    // virtual source path list (!! must be real absolute path !!)
     private vSourceList: string[] = [];
+
     private cppToolsConfig: CppConfigItem = {
         name: os.platform(),
         includePath: [],
@@ -2575,7 +2577,7 @@ class EIDEProject extends AbstractProject {
         this.getVirtualSourceManager().traverse((vFolder) => {
             vFolder.folder.files.forEach((vFile) => {
                 const fAbsPath = this.ToAbsolutePath(vFile.path);
-                this.vSourceList.push(fAbsPath);
+                this.vSourceList.push(fs.realpathSync(fAbsPath)); // resolve symbol link
                 srcBrowseFolders.push(`${File.ToUnixPath(NodePath.dirname(fAbsPath))}/*`);
             });
         });
@@ -2622,8 +2624,8 @@ class EIDEProject extends AbstractProject {
 
     canProvideConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<boolean> {
         return new Promise((resolve) => {
-            const prjRoot = this.GetRootDir();
-            if (uri.fsPath.startsWith(prjRoot.path)) {
+            const prjRoot = fs.realpathSync(this.GetRootDir().path);
+            if (uri.fsPath.startsWith(prjRoot)) {
                 resolve(true);
             } else {
                 resolve(this.vSourceList.includes(uri.fsPath));
@@ -2673,7 +2675,8 @@ class EIDEProject extends AbstractProject {
 
     provideFolderBrowseConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<WorkspaceBrowseConfiguration | null> {
         return new Promise((resolve) => {
-            if (this.GetRootDir().path === uri.fsPath) {
+            const prjRoot = fs.realpathSync(this.GetRootDir().path);
+            if (prjRoot === uri.fsPath) {
                 resolve({
                     browsePath: this.cppToolsConfig.browse?.path || [],
                     compilerPath: this.cppToolsConfig.compilerPath,
