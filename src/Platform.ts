@@ -25,6 +25,7 @@
 import * as child_process from 'child_process';
 import * as NodePath from 'path';
 import * as os from 'os';
+import * as fs from 'fs';
 
 import { File } from '../lib/node-utility/File';
 import { FileWatcher } from '../lib/node-utility/FileWatcher';
@@ -207,7 +208,15 @@ export function kill(pid: number): boolean {
     return true;
 }
 
-/* 
+export function realpathSync(path: string): string {
+    try {
+        return fs.realpathSync(path);
+    } catch (error) {
+        return path;
+    }
+}
+
+/*
 export function getWindowsMainVersion(): number | undefined {
     try {
         const lines = child_process.execSync(`ver`,
