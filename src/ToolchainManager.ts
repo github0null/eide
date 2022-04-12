@@ -421,8 +421,6 @@ class MacroHandler {
 
 //=======================================================
 
-const osDevNull: string = os.platform() == 'win32' ? 'nul' : '/dev/null';
-
 class KeilC51 implements IToolchian {
 
     readonly version = 2;
@@ -1383,7 +1381,7 @@ class GCC implements IToolchian {
     private getIncludeList(gccPath: string): string[] {
         try {
             const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
-                + ' ' + ['-xc++', '-E', '-v', '-', `<${osDevNull} 2>&1`].join(' ');
+                + ' ' + ['-xc++', '-E', '-v', '-', `<${platform.osGetNullDev()}`, '2>&1'].join(' ');
             const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
             const iStart = lines.findIndex((line) => { return line.startsWith('#include <...>'); });
             const iEnd = lines.indexOf('End of search list.', iStart);
@@ -1402,7 +1400,7 @@ class GCC implements IToolchian {
     private getMacroList(gccPath: string): string[] | undefined {
         try {
             const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
-                + ' ' + ['-E', '-dM', '-', `<${osDevNull}`].join(' ');
+                + ' ' + ['-E', '-dM', '-', `<${platform.osGetNullDev()}`].join(' ');
 
             const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
             const results: string[] = [];
@@ -1775,7 +1773,7 @@ class RISCV_GCC implements IToolchian {
     private getIncludeList(gccPath: string): string[] {
         try {
             const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
-                + ' ' + ['-xc++', '-E', '-v', '-', `<${osDevNull} 2>&1`].join(' ');
+                + ' ' + ['-xc++', '-E', '-v', '-', `<${platform.osGetNullDev()}`, '2>&1'].join(' ');
             const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
             const iStart = lines.findIndex((line) => { return line.startsWith('#include <...>'); });
             const iEnd = lines.indexOf('End of search list.', iStart);
@@ -1794,7 +1792,7 @@ class RISCV_GCC implements IToolchian {
     private getMacroList(gccPath: string): string[] | undefined {
         try {
             const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
-                + ' ' + ['-E', '-dM', '-', `<${osDevNull}`].join(' ');
+                + ' ' + ['-E', '-dM', '-', `<${platform.osGetNullDev()}`].join(' ');
 
             const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
             const results: string[] = [];
@@ -1999,7 +1997,7 @@ class AnyGcc implements IToolchian {
     private getIncludeList(gccPath: string): string[] {
         try {
             const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
-                + ' ' + ['-xc++', '-E', '-v', '-', `<${osDevNull} 2>&1`].join(' ');
+                + ' ' + ['-xc++', '-E', '-v', '-', `<${platform.osGetNullDev()}`, '2>&1'].join(' ');
             const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
             const iStart = lines.findIndex((line) => { return line.startsWith('#include <...>'); });
             const iEnd = lines.indexOf('End of search list.', iStart);
@@ -2017,7 +2015,7 @@ class AnyGcc implements IToolchian {
     private getMacroList(gccPath: string): string[] | undefined {
         try {
             const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
-                + ' ' + ['-E', '-dM', '-', `<${osDevNull}`].join(' ');
+                + ' ' + ['-E', '-dM', '-', `<${platform.osGetNullDev()}`].join(' ');
 
             const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
             const results: string[] = [];

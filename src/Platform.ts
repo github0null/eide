@@ -38,6 +38,8 @@ let osPlatform: NodeJS.Platform = os.platform();
 
 let linuxOsId: string | undefined;
 
+const devNull: string = os.platform() == 'win32' ? 'nul' : '/dev/null';
+
 export function getLinuxOsId(): string | undefined {
     if (linuxOsId) return linuxOsId;
     if (osPlatform == 'linux') {
@@ -57,6 +59,10 @@ export function getLinuxOsId(): string | undefined {
 
 export function osType(): NodeJS.Platform {
     return osPlatform;
+}
+
+export function osGetNullDev(): string {
+    return devNull;
 }
 
 export function createSafetyFileWatcher(_file: File, _recursive: boolean = false) {

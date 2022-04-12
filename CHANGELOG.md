@@ -8,6 +8,7 @@
 
 **Optimized**:
   - Optimize openocd flash command-line.
+  - Allow show disasm for `elf` or `axf`.
 
 **Fixed**:
   - Cannot provide C/C++ intellisense configuration for files that contain symbol links for `linux` platform.
