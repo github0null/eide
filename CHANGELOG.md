@@ -6,6 +6,9 @@
 
 ### [v3.2.2022xxxxxx] pre-release version
 
+**Optimized**:
+  - Optimize openocd flash command-line.
+
 **Fixed**:
   - Cannot provide C/C++ intellisense configuration for files that contain symbol links for `linux` platform.
   - The `exclude source list` in the old project template is invalid for `linux` platform.
