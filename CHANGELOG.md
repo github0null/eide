@@ -4,11 +4,11 @@
 
 ***
 
-### [v3.2.2022xxxxxx] pre-release version
+### [v3.3.0]
 
 **Optimized**:
   - Optimize openocd flash command-line.
-  - Allow show disasm for `elf` or `axf`.
+  - Allow show disasm for `elf`/`axf`.
 
 **Fixed**:
   - Cannot provide C/C++ intellisense configuration for files that contain symbol links for `linux` platform.

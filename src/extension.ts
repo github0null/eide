@@ -57,7 +57,7 @@ export async function activate(context: vscode.ExtensionContext) {
     // check platform, exit
     const supportedOs: NodeJS.Platform[] = ['win32', 'linux'];
     if (!supportedOs.includes(os.platform())) {
-        vscode.window.showErrorMessage(`${ERROR} : This plug-in is only for '${supportedOs.join(',')}' platform, your pc is '${os.platform()}' !`);
+        vscode.window.showErrorMessage(`${ERROR} : This plug-in is only for '${supportedOs.join('/')}' platform, your pc is '${os.platform()}' !`);
         return;
     }
 
@@ -67,7 +67,7 @@ export async function activate(context: vscode.ExtensionContext) {
         platformArch = ChildProcess.execSync(`arch`).toString().trim();
         platformType = `linux-${platformArch}`;
         if (!archLi.includes(platformArch)) {
-            vscode.window.showErrorMessage(`${ERROR} : This plug-in is only support '${archLi.join(',')}' arch, your pc is '${platformArch}' !`);
+            vscode.window.showErrorMessage(`${ERROR} : This plug-in is only support '${archLi.join('/')}' arch, your pc is '${platformArch}' !`);
             return;
         }
     }
