@@ -35,6 +35,7 @@ import { CmdLineHandler } from "./CmdLineHandler";
 import * as fs from 'fs';
 import * as events from 'events';
 import * as NodePath from 'path';
+import * as os from 'os';
 
 export type ToolchainName = 'SDCC' | 'Keil_C51' | 'AC5' | 'AC6' | 'GCC' | 'IAR_STM8' | 'GNU_SDCC_STM8' | 'RISCV_GCC' | 'ANY_GCC' | 'None';
 
@@ -1162,7 +1163,7 @@ class AC6 implements IToolchian {
     private getMacroList(armClangPath: string): string[] {
         try {
             const cmdLine = CmdLineHandler.quoteString(armClangPath, '"')
-                + ' ' + ['--target=arm-arm-none-eabi', '-E', '-dM', '-', '<nul'].join(' ');
+                + ' ' + ['--target=arm-arm-none-eabi', '-E', '-dM', '-', `<${osDevNull}`].join(' ');
 
             const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
             const resList: string[] = [];
@@ -1380,7 +1381,7 @@ class GCC implements IToolchian {
     private getIncludeList(gccPath: string): string[] {
         try {
             const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
-                + ' ' + ['-xc++', '-E', '-v', '-', '<nul 2>&1'].join(' ');
+                + ' ' + ['-xc++', '-E', '-v', '-', `<${platform.osGetNullDev()}`, '2>&1'].join(' ');
             const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
             const iStart = lines.findIndex((line) => { return line.startsWith('#include <...>'); });
             const iEnd = lines.indexOf('End of search list.', iStart);
@@ -1399,7 +1400,7 @@ class GCC implements IToolchian {
     private getMacroList(gccPath: string): string[] | undefined {
         try {
             const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
-                + ' ' + ['-E', '-dM', '-', '<nul'].join(' ');
+                + ' ' + ['-E', '-dM', '-', `<${platform.osGetNullDev()}`].join(' ');
 
             const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
             const results: string[] = [];
@@ -1772,7 +1773,7 @@ class RISCV_GCC implements IToolchian {
     private getIncludeList(gccPath: string): string[] {
         try {
             const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
-                + ' ' + ['-xc++', '-E', '-v', '-', '<nul 2>&1'].join(' ');
+                + ' ' + ['-xc++', '-E', '-v', '-', `<${platform.osGetNullDev()}`, '2>&1'].join(' ');
             const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
             const iStart = lines.findIndex((line) => { return line.startsWith('#include <...>'); });
             const iEnd = lines.indexOf('End of search list.', iStart);
@@ -1791,7 +1792,7 @@ class RISCV_GCC implements IToolchian {
     private getMacroList(gccPath: string): string[] | undefined {
         try {
             const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
-                + ' ' + ['-E', '-dM', '-', '<nul'].join(' ');
+                + ' ' + ['-E', '-dM', '-', `<${platform.osGetNullDev()}`].join(' ');
 
             const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
             const results: string[] = [];
@@ -1996,7 +1997,7 @@ class AnyGcc implements IToolchian {
     private getIncludeList(gccPath: string): string[] {
         try {
             const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
-                + ' ' + ['-xc++', '-E', '-v', '-', '<nul 2>&1'].join(' ');
+                + ' ' + ['-xc++', '-E', '-v', '-', `<${platform.osGetNullDev()}`, '2>&1'].join(' ');
             const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
             const iStart = lines.findIndex((line) => { return line.startsWith('#include <...>'); });
             const iEnd = lines.indexOf('End of search list.', iStart);
@@ -2014,7 +2015,7 @@ class AnyGcc implements IToolchian {
     private getMacroList(gccPath: string): string[] | undefined {
         try {
             const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
-                + ' ' + ['-E', '-dM', '-', '<nul'].join(' ');
+                + ' ' + ['-E', '-dM', '-', `<${platform.osGetNullDev()}`].join(' ');
 
             const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
             const results: string[] = [];

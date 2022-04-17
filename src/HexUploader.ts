@@ -919,19 +919,18 @@ class OpenOCDUploader extends HexUploader<string[]> {
         commands.push(
             `-f ${interfaceFileName}.cfg`,
             `-f ${targetFileName}.cfg`,
-            `-c "init"`,
-            `-c "reset init"`
         );
 
         programs.forEach(file => {
             if (/\.bin$/i.test(file.path)) {
                 const addrStr = option.baseAddr || file.addr || '0x08000000';
-                commands.push(`-c "program \\"${File.ToUnixPath(file.path)}\\" ${addrStr} verify reset"`);
+                commands.push(`-c "program \\"${File.ToUnixPath(file.path)}\\" ${addrStr} verify"`);
             } else {
-                commands.push(`-c "program \\"${File.ToUnixPath(file.path)}\\" verify reset"`);
+                commands.push(`-c "program \\"${File.ToUnixPath(file.path)}\\" verify"`);
             }
         });
 
+        commands.push(`-c "reset run"`);
         commands.push(`-c "exit"`);
 
         return {

@@ -25,6 +25,7 @@
 import * as child_process from 'child_process';
 import * as NodePath from 'path';
 import * as os from 'os';
+import * as fs from 'fs';
 
 import { File } from '../lib/node-utility/File';
 import { FileWatcher } from '../lib/node-utility/FileWatcher';
@@ -36,6 +37,8 @@ let uuid: string | undefined;
 let osPlatform: NodeJS.Platform = os.platform();
 
 let linuxOsId: string | undefined;
+
+const devNull: string = os.platform() == 'win32' ? 'nul' : '/dev/null';
 
 export function getLinuxOsId(): string | undefined {
     if (linuxOsId) return linuxOsId;
@@ -56,6 +59,10 @@ export function getLinuxOsId(): string | undefined {
 
 export function osType(): NodeJS.Platform {
     return osPlatform;
+}
+
+export function osGetNullDev(): string {
+    return devNull;
 }
 
 export function createSafetyFileWatcher(_file: File, _recursive: boolean = false) {
@@ -207,7 +214,15 @@ export function kill(pid: number): boolean {
     return true;
 }
 
-/* 
+export function realpathSync(path: string): string {
+    try {
+        return fs.realpathSync(path);
+    } catch (error) {
+        return path;
+    }
+}
+
+/*
 export function getWindowsMainVersion(): number | undefined {
     try {
         const lines = child_process.execSync(`ver`,

@@ -2022,6 +2022,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     canProvideConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<boolean> {
+
+        this.cppToolsOut.appendLine(`[source] cpptools request provideConfigurations for '${uri.fsPath}'`);
+
         return new Promise(async (resolve) => {
             let result = false;
             await this.dataProvider.traverseProjectsAsync(async (prj) => {
@@ -2037,10 +2040,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             let result: SourceFileConfigurationItem[] = [];
             for (const uri of uris) {
                 await this.dataProvider.traverseProjectsAsync(async (prj) => {
-                    if (await prj.canProvideConfiguration(uri, token)) {
-                        result = result.concat(await prj.provideConfigurations([uri], token));
-                        return true;
-                    }
+                    result = result.concat(await prj.provideConfigurations([uri], token));
+                    return true;
                 });
             }
             resolve(result);
@@ -3159,7 +3160,79 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
     }
 
-    async showDisassembly(uri: vscode.Uri) {
+    private async showDisassemblyForElf(elfPath: string, prj: AbstractProject) {
+
+        const isGccToolchain = (name: ToolchainName) => { return /GCC/.test(name); };
+
+        try {
+
+            const toolchainName = prj.getToolchain().name;
+
+            // prepare command
+            let exeFile: File;
+            let cmds: string[];
+
+            const dasmFile = File.fromArray([prj.getOutputFolder().path, `${NodePath.basename(elfPath)}.edasm`]);
+            if (dasmFile.IsFile()) { // force del tmp file
+                try { fs.unlinkSync(dasmFile.path); } catch (error) { }
+            }
+
+            if (isGccToolchain(toolchainName)) { // gcc
+                const toolchain = ToolchainManager.getInstance().getToolchainByName(toolchainName);
+                if (!toolchain) throw new Error(`Can't get toolchain '${toolchainName}'`);
+                const toolPrefix = toolchain.getToolchainPrefix ? toolchain.getToolchainPrefix() : '';
+                exeFile = File.fromArray([prj.getToolchain().getToolchainDir().path, 'bin', `${toolPrefix}objdump${exeSuffix()}`]);
+                if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
+                cmds = ['-S', '-l', elfPath, '>', dasmFile.path];
+            }
+            else if (toolchainName.startsWith('AC')) { // armcc
+                exeFile = File.fromArray([prj.getToolchain().getToolchainDir().path, 'bin', `fromelf${exeSuffix()}`]);
+                if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
+                cmds = ['-c', elfPath, '--output', dasmFile.path];
+            } else {
+                throw new Error(`Not support toolchain: '${toolchainName}' !`);
+            }
+
+            // do disassembly code
+            const err = await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Disassemble program',
+                cancellable: false,
+            }, async (progress): Promise<Error | undefined> => {
+                try {
+                    progress.report({ message: elfPath });
+                    await new Promise((resolve) => { setTimeout(() => resolve(), 500); });
+
+                    // run
+                    const cmdLine = CmdLineHandler.getCommandLine(exeFile.path, cmds, false);
+                    child_process.execSync(cmdLine, { encoding: 'ascii' });
+
+                    progress.report({ message: 'Done !' });
+                    await new Promise((resolve) => { setTimeout(() => resolve(), 500); });
+                } catch (error) {
+                    return error;
+                }
+            });
+
+            if (err) { throw err }
+
+            // check result file
+            if (!dasmFile.IsFile()) {
+                throw new Error(`Not found disassembly result file: '${dasmFile.path}' !`);
+            }
+
+            // show
+            vscode.window.showTextDocument(vscode.Uri.file(dasmFile.path), {
+                preview: true,
+                viewColumn: vscode.ViewColumn.Two
+            });
+
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+        }
+    }
+
+    async showDisassembly(uri: vscode.Uri, prj?: AbstractProject) {
 
         const supportList = ['AC5', 'AC6'];
 
@@ -3170,51 +3243,74 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             const notSupprotMsg = `Only support '${supportList.join(',')}' and 'GCC' compiler !`;
 
             // check condition
-            const activePrj = this.dataProvider.getActiveProject();
+            const activePrj = prj || this.dataProvider.getActiveProject();
             if (!activePrj) { throw new Error('Not found active project !'); }
             const toolchainName = activePrj.getToolchain().name;
-            if (!supportList.includes(toolchainName) && !isGccToolchain(toolchainName)) {
-                throw new Error(notSupprotMsg);
+            if (!supportList.includes(toolchainName) && !isGccToolchain(toolchainName)) { throw new Error(notSupprotMsg); }
+
+            let srcPath = uri.fsPath;
+
+            // prehandle src name
+            if (/\.(?:elf|axf)\.info$/i.test(srcPath)) { // it's axf.info readonly doc
+                srcPath = NodePath.dirname(srcPath) + NodePath.sep + NodePath.basename(srcPath, '.info');
             }
 
-            // parser ref json
-            const srcPath = uri.fsPath;
-            const refFile = File.fromArray([activePrj.ToAbsolutePath(activePrj.getOutputDir()), 'ref.json']);
-            if (!refFile.IsFile()) { throw new Error(`Not found 'ref.json' at output folder, you need build project !`) }
-            const ref = JSON.parse(refFile.Read());
-            if (!ref[srcPath]) { throw new Error(`Not found any reference for this source file !`) }
+            if (/\.(?:elf|axf)$/i.test(srcPath)) { // it's an executable file, use it
+                await this.showDisassemblyForElf(srcPath, activePrj);
+                return;
+            }
 
             // get obj file
             let objPath: string | undefined;
+            const refFile = File.fromArray([activePrj.ToAbsolutePath(activePrj.getOutputDir()), 'ref.json']);
+            if (!refFile.IsFile()) { throw new Error(`Not found 'ref.json' at output folder, you need build project !`) }
+            const ref = JSON.parse(refFile.Read());
             if (typeof ref[srcPath] == 'string') { objPath = <string>ref[srcPath]; }
-            else if (Array.isArray(ref[srcPath])) { objPath = ref[srcPath][0]; }
-            if (objPath == undefined) { throw new Error(`Not found any reference for this source file !`) }
+            else { throw new Error(`Not found any reference for this source file !, [path]: '${srcPath}'`) }
 
             // prepare command
             let exeFile: File;
             let cmds: string[];
 
-            if (isGccToolchain(toolchainName)) {
+            const tmpFile = File.fromArray([os.tmpdir(), `eide-${Date.now()}.edasm`]);
+            if (tmpFile.IsFile()) { // force del tmp file
+                try { fs.unlinkSync(tmpFile.path); } catch (error) { }
+            }
+
+            if (isGccToolchain(toolchainName)) { // gcc
                 const toolchain = ToolchainManager.getInstance().getToolchainByName(toolchainName);
                 if (!toolchain) throw new Error(`Can't get toolchain '${toolchainName}'`);
                 const toolPrefix = toolchain.getToolchainPrefix ? toolchain.getToolchainPrefix() : '';
                 exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `${toolPrefix}objdump${exeSuffix()}`]);
                 if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
-                cmds = ['-S', '-l', objPath];
+                cmds = ['-S', '-l', objPath, '>', tmpFile.path];
             }
-            else if (toolchainName.startsWith('AC')) {
+            else if (toolchainName.startsWith('AC')) { // armcc
                 exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `fromelf${exeSuffix()}`]);
                 if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
-                cmds = ['-c', objPath];
+                cmds = ['-c', objPath, '--output', tmpFile.path];
             }
-            else {
+            else { // none
                 throw new Error(notSupprotMsg);
             }
 
             // do disassembly code
-            const asmLines = child_process.execFileSync(exeFile.path, cmds, { encoding: 'ascii' }).split(/\r\n|\n/);
+            const cmdLine = CmdLineHandler.getCommandLine(exeFile.path, cmds, false);
+            child_process.execSync(cmdLine, { encoding: 'ascii' });
+
+            // check result file
+            if (!tmpFile.IsFile()) {
+                throw new Error(`Not found disassembly result file: '${tmpFile.path}' !`);
+            }
+
+            // parse result
+            const asmLines = tmpFile.Read().split(/\r\n|\n/);
             const asmFile = `${srcPath}.edasm`;
             const asmFileUri = vscode.Uri.parse(VirtualDocument.instance().getUriByPath(asmFile));
+
+            if (tmpFile.IsFile()) { // del tmp file
+                try { fs.unlinkSync(tmpFile.path); } catch (error) { }
+            }
 
             // try jump to target line in asm
             let selection: vscode.Range | undefined;
