@@ -64,6 +64,7 @@ import {
 import { SettingManager } from './SettingManager';
 import { ExeCmd } from '../lib/node-utility/Executable';
 import { jsonc } from 'jsonc';
+import * as iconv from 'iconv-lite';
 
 export class CheckError extends Error {
 }
@@ -2023,7 +2024,9 @@ class EIDEProject extends AbstractProject {
         for (let i = startIndex; i < lines.length; i++) {
             const sepIndex = lines[i].indexOf(": ");
             if (sepIndex > 0) {
-                const line = lines[i].substring(sepIndex + 1).trim();
+                const line = lines[i].substring(sepIndex + 1)
+                    .replace(/\\ /g, " ")
+                    .replace(/\\:/g, ":").trim();
                 resultList.push(this.ToAbsolutePath(line));
             }
         }
@@ -2033,7 +2036,15 @@ class EIDEProject extends AbstractProject {
 
     private parseRefFile(dFile: File, toolchain: ToolchainName): string[] {
 
-        const lines: string[] = dFile.Read()
+        let cont: string | undefined;
+
+        if (platform.osType() == 'win32' && ResManager.getLocalCodePage() == '936') { // win32 gbk
+            cont = iconv.decode(fs.readFileSync(dFile.path), '936');
+        } else {
+            cont = fs.readFileSync(dFile.path, 'utf8');
+        }
+
+        const lines: string[] = cont
             .split(/\r\n|\n/)
             .filter((line) => line.trim() != '');
 
