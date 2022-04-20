@@ -4,7 +4,7 @@
 
 ***
 
-### [v3.3.0]
+### [v3.4.0]
 
 **Optimized**:
   - Optimize openocd flash command-line.
