@@ -64,7 +64,7 @@ export async function activate(context: vscode.ExtensionContext) {
     // check linux arch, we only support x86-64
     const archLi = [`x86_64`];
     if (os.platform() == 'linux') {
-        platformArch = ChildProcess.execSync(`arch`).toString().trim();
+        platformArch = ChildProcess.execSync(`uname -m`).toString().trim();
         platformType = `linux-${platformArch}`;
         if (!archLi.includes(platformArch)) {
             vscode.window.showErrorMessage(`${ERROR} : This plug-in is only support '${archLi.join('/')}' arch, your pc is '${platformArch}' !`);

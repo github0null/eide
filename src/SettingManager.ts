@@ -162,11 +162,14 @@ export class SettingManager {
         const path = this.getConfiguration().get<string>(confName);
 
         if (path) {
-            return Utility.formatPath(this.replaceEnvVariable(path));
+            const absPath = Utility.formatPath(this.replaceEnvVariable(path));
+            if (File.IsExist(absPath)) {
+                return absPath;
+            }
         }
 
-        else if (this.envPathCache.has(execName)) {
-            return <string>this.envPathCache.get(execName)
+        if (this.envPathCache.has(execName)) {
+            return <string>this.envPathCache.get(execName);
         }
 
         else {
@@ -183,10 +186,13 @@ export class SettingManager {
         const path = this.getConfiguration().get<string>(confName);
 
         if (path) {
-            return Utility.formatPath(this.replaceEnvVariable(path));
+            const absPath = Utility.formatPath(this.replaceEnvVariable(path));
+            if (File.IsExist(absPath)) {
+                return absPath;
+            }
         }
 
-        else if (this.envPathCache.has(execName)) {
+        if (this.envPathCache.has(execName)) {
             return <string>this.envPathCache.get(execName);
         }
 
@@ -309,10 +315,13 @@ export class SettingManager {
         const execName = 'JLink';
 
         if (path) {
-            return Utility.formatPath(this.replaceEnvVariable(path));
+            const absPath = Utility.formatPath(this.replaceEnvVariable(path));
+            if (File.IsExist(absPath)) {
+                return absPath;
+            }
         }
 
-        else if (this.envPathCache.has(execName)) {
+        if (this.envPathCache.has(execName)) {
             return <string>this.envPathCache.get(execName)
         }
 
@@ -366,10 +375,13 @@ export class SettingManager {
         const execName = 'iccstm8';
 
         if (path) {
-            return new File(Utility.formatPath(this.replaceEnvVariable(path)));
+            const absPath = Utility.formatPath(this.replaceEnvVariable(path));
+            if (File.IsExist(absPath)) {
+                return new File(absPath);
+            }
         }
 
-        else if (this.envPathCache.has(execName)) {
+        if (this.envPathCache.has(execName)) {
             return new File(<string>this.envPathCache.get(execName))
         }
 

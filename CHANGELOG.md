@@ -4,6 +4,17 @@
 
 ***
 
+### [v3.4.2022xxxx]
+
+**Fixed**:
+  - Source ref parser encoding bug for iar_stm8 compiler.
+
+**Optimized**:
+  - Replace `arch` command by `uname -m` for `arch-linux`.
+  - Auto search executable path in system env when default tool path is invalid.
+
+***
+
 ### [v3.4.0]
 
 **Optimized**:
