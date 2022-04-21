@@ -1125,6 +1125,11 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
 				<title>${title}</title>
                 <style type="text/css">
                     body {
+                        font-family: var(--vscode-editor-font-family);
+                        font-size: var(--vscode-editor-font-size);
+                    }
+                    pre {
+                        font-family: var(--vscode-editor-font-family);
                         font-size: var(--vscode-editor-font-size);
                     }
                     .success {
