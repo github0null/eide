@@ -46,6 +46,10 @@ import { VirtualDocument } from './VirtualDocsProvider';
 import * as utility from './utility';
 import * as platform from './Platform';
 
+const extension_deps: string[] = [
+    "ms-vscode.cpptools"
+];
+
 let projectExplorer: ProjectExplorer;
 let platformArch: string = 'x86_64';
 let platformType: string = 'win32';
@@ -72,19 +76,37 @@ export async function activate(context: vscode.ExtensionContext) {
         }
     }
 
+    // init event emiter
     RegisterGlobalEvent();
     RegisterMsgListener();
 
     GlobalEvent.emit('globalLog', newMessage('Info', 'Embedded IDE launch begin'));
 
-    /* init eide components */
+    // try active dependence plug-ins
+    for (const name of extension_deps) {
+        const extension = vscode.extensions.getExtension(name);
+        if (extension) {
+            if (!extension.isActive) {
+                try {
+                    GlobalEvent.emit('globalLog', newMessage('Info', `Active extension: '${name}'`));
+                    await extension.activate();
+                } catch (error) {
+                    GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+                }
+            }
+        } else {
+            GlobalEvent.emit('globalLog', newMessage('Warning', `The extension '${name}' is not enabled or installed !`));
+        }
+    }
+
+    // init eide components
     const done = await InitComponents(context);
     if (!done) {
         vscode.window.showErrorMessage(`${ERROR} : Install eide binaries failed !, You can download offline [vsix package](https://github.com/github0null/eide/releases) and install it !`);
         return;
     }
 
-    /* register vscode commands */
+    // register vscode commands
     const subscriptions = context.subscriptions;
 
     // global user commands
@@ -692,7 +714,7 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
     } catch (error) {
         // ignore error
     }
-    
+
     // set some toolpath to env
     exportEnvToSysPath();
 

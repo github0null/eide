@@ -14,6 +14,9 @@
   - Auto search executable path in system env when default tool path is invalid.
   - Use monospaced font in *.mapView for linux platform
 
+**Changed**:
+  - Remove `extensionDependencies` and built-in auto active extensionDependencies.
+
 ***
 
 ### [v3.4.0]
