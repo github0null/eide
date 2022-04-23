@@ -12,7 +12,8 @@
 **Optimized**:
   - Replace `arch` command by `uname -m` for `arch-linux`.
   - Auto search executable path in system env when default tool path is invalid.
-  - Use monospaced font in *.mapView for linux platform
+  - Use monospaced font in *.mapView for linux platform.
+  - Disable online tool installer for `linux` platform.
 
 **Changed**:
   - Remove `extensionDependencies` and built-in auto active extensionDependencies.

@@ -631,7 +631,8 @@ export class OperationExplorer {
         /* select install mode */
 
         const resInstaller = ResInstaller.instance();
-        if (resInstaller.hasTool(item.type)) { /* have online package */
+        const tool = resInstaller.getTool(item.type);
+        if (tool && !tool.no_binaries) { /* have online package */
 
             const pickItems: vscode.QuickPickItem[] = [
                 {

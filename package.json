@@ -30,7 +30,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "An embedded development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.4.2022042201",
+    "version": "3.4.2022042301",
     "preview": false,
     "engines": {
         "vscode": "^1.63.0"
