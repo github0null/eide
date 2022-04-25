@@ -773,67 +773,71 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         // create log folder
         this.getLogDir().CreateDir();
 
-        // rename old 'deps' folder name for old eide version
-        const depsFolder = new File(this.rootDirWatcher.file.path + File.sep + DependenceManager.DEPENDENCE_DIR);
-        if (!depsFolder.IsDir()) { // if 'deps' folder is not exist
+        // compat old project
+        if (this.isOldVersionProject) {
 
-            // these folder is for old eide version
-            const oldDepsFolders = [
-                new File(this.rootDirWatcher.file.path + File.sep + 'deps'),
-                new File(this.rootDirWatcher.file.path + File.sep + 'dependence')
-            ];
+            // rename old 'deps' folder name for old eide version
+            const depsFolder = new File(this.rootDirWatcher.file.path + File.sep + DependenceManager.DEPENDENCE_DIR);
+            if (!depsFolder.IsDir()) { // if 'deps' folder is not exist
 
-            // create new 'deps' folder
-            // fs.mkdirSync(depsFolder.path);
+                // these folder is for old eide version
+                const oldDepsFolders = [
+                    new File(this.rootDirWatcher.file.path + File.sep + 'deps'),
+                    new File(this.rootDirWatcher.file.path + File.sep + 'dependence')
+                ];
 
-            // copy dependence data from old version deps folder
-            for (const folder of oldDepsFolders) {
-                if (folder.IsDir()) {
+                // create new 'deps' folder
+                // fs.mkdirSync(depsFolder.path);
 
-                    // copy dependence data
-                    fs.renameSync(folder.path, depsFolder.path);
+                // copy dependence data from old version deps folder
+                for (const folder of oldDepsFolders) {
+                    if (folder.IsDir()) {
 
-                    // reset exclude info
-                    const excludeList = this.GetConfiguration().config.excludeList;
-                    const pathMatcher = `.${File.sep}${folder.name}${File.sep}`;
-                    const pathReplacer = `${DependenceManager.DEPENDENCE_DIR}/`;
-                    for (let index = 0; index < excludeList.length; index++) {
-                        const element = excludeList[index];
-                        if (element.startsWith(pathMatcher)) {
-                            excludeList[index] = element.replace(pathMatcher, pathReplacer);
+                        // copy dependence data
+                        fs.renameSync(folder.path, depsFolder.path);
+
+                        // reset exclude info
+                        const excludeList = this.GetConfiguration().config.excludeList;
+                        const pathMatcher = `.${File.sep}${folder.name}${File.sep}`;
+                        const pathReplacer = `${DependenceManager.DEPENDENCE_DIR}/`;
+                        for (let index = 0; index < excludeList.length; index++) {
+                            const element = excludeList[index];
+                            if (element.startsWith(pathMatcher)) {
+                                excludeList[index] = element.replace(pathMatcher, pathReplacer);
+                            }
                         }
-                    }
 
-                    break; // exit, when copy done
+                        break; // exit, when copy done
+                    }
                 }
             }
-        }
 
-        // merge old 'env.ini' files for v2.15.3^
-        const envFile: File = this.getEnvFile(true);
-        if (!envFile.IsFile()) { // if 'env.ini' file is not existed, we try to merge it
-            const oldEnv: string[] = [];
-            this.eideDir.GetList([/[^\.]+\.env\.ini$/], File.EMPTY_FILTER)
-                .forEach((file) => {
-                    const tName = NodePath.basename(file.path, '.env.ini');
-                    if (tName) {
-                        try {
-                            const cfg = ini.parse(file.Read());
-                            if (cfg['workspace']) { // merge old prj order cfg
-                                cfg['EIDE_BUILD_ORDER'] = cfg['workspace']['order'];
-                                delete cfg['workspace'];
+            // merge old 'env.ini' files for v2.15.3^
+            const envFile: File = this.getEnvFile(true);
+            if (!envFile.IsFile()) { // if 'env.ini' file is not existed, we try to merge it
+                const oldEnv: string[] = [];
+                this.eideDir.GetList([/[^\.]+\.env\.ini$/], File.EMPTY_FILTER)
+                    .forEach((file) => {
+                        const tName = NodePath.basename(file.path, '.env.ini');
+                        if (tName) {
+                            try {
+                                const cfg = ini.parse(file.Read());
+                                if (cfg['workspace']) { // merge old prj order cfg
+                                    cfg['EIDE_BUILD_ORDER'] = cfg['workspace']['order'];
+                                    delete cfg['workspace'];
+                                }
+                                const cfg_str = ini.stringify(cfg);
+                                fs.unlinkSync(file.path); // delete file before
+                                oldEnv.push(`[${tName}]`, `${cfg_str}`);
+                            } catch (error) {
+                                // nothing todo
                             }
-                            const cfg_str = ini.stringify(cfg);
-                            fs.unlinkSync(file.path); // delete file before
-                            oldEnv.push(`[${tName}]`, `${cfg_str}`);
-                        } catch (error) {
-                            // nothing todo
                         }
-                    }
-                });
-            if (oldEnv.length > 0) {
-                const cont = this.getEnvFileDefCont().concat(oldEnv);
-                envFile.Write(cont.join(os.EOL));
+                    });
+                if (oldEnv.length > 0) {
+                    const cont = this.getEnvFileDefCont().concat(oldEnv);
+                    envFile.Write(cont.join(os.EOL));
+                }
             }
         }
     }
@@ -858,6 +862,16 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         if (prjConfig.config.packDir
             && !(new File(this.ToAbsolutePath(prjConfig.config.packDir))).IsDir()) {
             prjConfig.config.packDir = null;
+        }
+
+        // use unix path for source path
+        if (this.isNewProject || this.isOldVersionProject) {
+            const dStack = [prjConfig.config.virtualFolder];
+            while (dStack.length > 0) {
+                const vFolder = <VirtualFolder>dStack.pop();
+                vFolder.files.forEach(vFile => vFile.path = File.ToUnixPath(vFile.path));
+                vFolder.folders.forEach(d => dStack.push(d));
+            }
         }
     }
 
@@ -1658,7 +1672,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
     //---
 
-    protected isAnNewProject?: boolean | undefined;
+    protected isNewProject?: boolean | undefined;
+    protected isOldVersionProject?: boolean | undefined;
 
     protected async BeforeLoad(wsFile: File): Promise<void> {
 
@@ -1674,13 +1689,14 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
             } else if (prjv_vs_eidev < 0) { // prj version < eide, update it
                 conf.version = EIDE_CONF_VERSION;
                 eideFile.Write(JSON.stringify(conf));
+                this.isOldVersionProject = true;
             }
         }
 
         // check is an new project ?
         if (conf.miscInfo == undefined ||
             conf.miscInfo.uid == undefined) {
-            this.isAnNewProject = true;
+            this.isNewProject = true;
         }
     }
 
@@ -2248,7 +2264,7 @@ class EIDEProject extends AbstractProject {
         await super.BeforeLoad(wsFile);
 
         // run pre-install.sh
-        if (this.isAnNewProject) {
+        if (this.isNewProject) {
             const name = 'pre-install.sh';
             const prjRoot = new File(wsFile.dir);
             const ok = await this.runInstallScript(prjRoot, name, `Running 'post-install' ...`);
@@ -2261,7 +2277,7 @@ class EIDEProject extends AbstractProject {
         await super.AfterLoad();
 
         /* update workspace settings */
-        if (this.isAnNewProject) {
+        if (this.isNewProject) {
 
             const workspaceConfig = this.GetWorkspaceConfig();
             const settings = workspaceConfig.config.settings;
@@ -2462,7 +2478,7 @@ class EIDEProject extends AbstractProject {
         }
 
         // run post-install.sh
-        if (this.isAnNewProject) {
+        if (this.isNewProject) {
             this.runInstallScript(this.GetRootDir(), 'post-install.sh', `Running 'post-install' ...`)
                 .then((done) => {
                     if (!done) {

@@ -17,6 +17,7 @@
 
 **Changed**:
   - Remove `extensionDependencies` and built-in auto active extensionDependencies.
+  - Force use unix path for virtual source path to compat old project.
 
 ***
 
