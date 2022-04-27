@@ -730,17 +730,12 @@ class STVPHexUploader extends HexUploader<string[]> {
             if (programs.length == 0) {
                 throw new Error(`no any program files !`);
             }
-
-            // not verify
-            commands.push('-no_verif');
-
+            
+            // program
             const binFile = this.toAbsolute(programs[0].path);
-            if (binFile.IsFile()) {
-                commands.push('-FileProg=\"' + binFile.path + '\"');
-            } else {
-                commands.push('-no_progProg');
-            }
+            commands.push('-FileProg=\"' + binFile.path + '\"');
 
+            // eeprom
             const eepromFile = this.toAbsolute(options.eepromFile);
             if (eepromFile.IsFile()) {
                 commands.push('-FileData=\"' + eepromFile.path + '\"');
@@ -748,17 +743,23 @@ class STVPHexUploader extends HexUploader<string[]> {
                 commands.push('-no_progData');
             }
 
+            // option bytes
             const opFile = this.toAbsolute(options.optionByteFile);
             if (opFile.IsFile()) {
                 commands.push('-FileOption=\"' + opFile.path + '\"');
             } else {
                 commands.push('-no_progOption');
             }
+
+            // verify prog
+            commands.push('-verif');
         }
 
         // erase all
         else {
+            commands.push('-no_progProg');
             commands.push('-erase');
+            commands.push('-no_verif');
         }
 
         return {
