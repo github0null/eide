@@ -127,7 +127,7 @@ export class ResInstaller {
         this.toolsMap.set(name.toLowerCase(), info);
     }
 
-    private getTool(name: ExternalToolName): ExternalToolInfo | undefined {
+    getTool(name: ExternalToolName): ExternalToolInfo | undefined {
         return this.toolsMap.get(name.toLowerCase());
     }
 

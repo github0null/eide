@@ -71,7 +71,7 @@ import * as utility from './utility';
 ////////////////////////////////////////////////////////
 
 // eide project config file version
-export const EIDE_CONF_VERSION = '3.0';
+export const EIDE_CONF_VERSION = '3.1';
 
 ////////////////////////////////////////////////////////
 

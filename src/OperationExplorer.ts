@@ -631,7 +631,8 @@ export class OperationExplorer {
         /* select install mode */
 
         const resInstaller = ResInstaller.instance();
-        if (resInstaller.hasTool(item.type)) { /* have online package */
+        const tool = resInstaller.getTool(item.type);
+        if (tool && !tool.no_binaries) { /* have online package */
 
             const pickItems: vscode.QuickPickItem[] = [
                 {
@@ -832,7 +833,7 @@ export class OperationExplorer {
 
                 const res = await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
-                    title: 'Searching from ' + hostName + ' ...',
+                    title: `Connect repo '${rawUrl}' ...`,
                     cancellable: true
                 }, (_, token): Thenable<NetResponse<any>> => {
                     return new Promise(async (resolve) => {
@@ -895,7 +896,7 @@ export class OperationExplorer {
                 // load index.json
                 const indexFileBuf = await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
-                    title: 'Downloading "index.json" ...',
+                    title: 'Fetching templates index ...',
                     cancellable: false
                 }, (_, __): Thenable<Buffer | Error | undefined> => {
                     return new Promise(async (resolve) => {

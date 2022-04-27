@@ -4,6 +4,24 @@
 
 ***
 
+### [v3.5.0]
+
+**Fixed**:
+  - Source ref parser encoding bug for iar_stm8 compiler.
+
+**Optimized**:
+  - Replace `arch` command by `uname -m` for `arch-linux`.
+  - Auto search executable path in system env when default tool path is invalid.
+  - Use monospaced font for `*.mapView`.
+  - Disable online tool installer for `linux` platform.
+
+**Changed**:
+  - Remove `extensionDependencies` and built-in auto active extensionDependencies.
+  - Force use unix path for virtual source path to compat old project.
+  - Adjust default `project templates repo`, now it's: 'https://github.com/github0null/eide-templates'.
+
+***
+
 ### [v3.4.0]
 
 **Optimized**:
