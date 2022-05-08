@@ -448,7 +448,12 @@ export const view_str$prompt$select_file_or_folder = [
 
 export const view_str$prompt$not_found_compiler = [
     `无法找到编译器 '{}' 的安装位置 ！`,
-    `Not found the compiler '{}' installation location !`
+    `Not found the compiler '{}' location !`
+][langIndex];
+
+export const view_str$prompt$install_tools_by_online = [
+    `已找到在线资源包，需要安装它吗？`,
+    `The online package was found. Do you want to install it ?`
 ][langIndex];
 
 export const view_str$placeHolder$selectCategory = [
