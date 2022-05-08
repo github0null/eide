@@ -730,15 +730,23 @@ class STVPHexUploader extends HexUploader<string[]> {
             if (programs.length == 0) {
                 throw new Error(`no any program files !`);
             }
-            
+
+            let fileCount: number = 0;
+
             // program
             const binFile = this.toAbsolute(programs[0].path);
-            commands.push('-FileProg=\"' + binFile.path + '\"');
+            if (binFile.IsFile()) {
+                commands.push('-FileProg=\"' + binFile.path + '\"');
+                fileCount++;
+            } else {
+                commands.push('-no_progProg');
+            }
 
             // eeprom
             const eepromFile = this.toAbsolute(options.eepromFile);
             if (eepromFile.IsFile()) {
                 commands.push('-FileData=\"' + eepromFile.path + '\"');
+                fileCount++;
             } else {
                 commands.push('-no_progData');
             }
@@ -747,12 +755,20 @@ class STVPHexUploader extends HexUploader<string[]> {
             const opFile = this.toAbsolute(options.optionByteFile);
             if (opFile.IsFile()) {
                 commands.push('-FileOption=\"' + opFile.path + '\"');
+                fileCount++;
             } else {
                 commands.push('-no_progOption');
             }
 
             // verify prog
-            commands.push('-verif');
+            if (fileCount > 0) {
+                commands.push('-verif');
+            }
+
+            // no files need be programed
+            else {
+                throw new Error('no any valid program files !');
+            }
         }
 
         // erase all
@@ -1000,6 +1016,7 @@ class CustomUploader extends HexUploader<string> {
         });
 
         // replace env
+        commandLine = this.project.replaceProjEnv(commandLine);
         commandLine = this.project.replaceUserEnv(commandLine);
 
         return {

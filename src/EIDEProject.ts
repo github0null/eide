@@ -977,34 +977,35 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
     private replacePathEnv(path: string): string {
 
+        // replace stable env
+        path = this.replaceProjEnv(path);
+
+        // replace user env
+        return this.replaceUserEnv(path, true);
+    }
+
+    // project internal env vars
+    replaceProjEnv(str: string): string {
+
         const prjConfig = this.GetConfiguration();
         const prjRootDir = this.GetRootDir();
         const outDir = NodePath.normalize(prjRootDir.path + File.sep + prjConfig.getOutDir());
 
-        // replace stable env
-        path = path
+        return str
             .replace(/\$\(OutDir\)|\$\{OutDir\}/ig, outDir)
             .replace(/\$\(ProjectName\)|\$\{ProjectName\}/ig, prjConfig.config.name)
             .replace(/\$\(ExecutableName\)|\$\{ExecutableName\}/ig, `${outDir}${File.sep}${prjConfig.config.name}`)
             .replace(/\$\(ProjectRoot\)|\$\{ProjectRoot\}/ig, prjRootDir.path);
-
-        // replace user env
-        const prjEnv = this.getProjectEnv();
-        if (prjEnv) {
-            for (const key in prjEnv) {
-                const reg = new RegExp(String.raw`\$\(${key}\)|\$\{${key}\}`, 'ig');
-                path = path.replace(reg, prjEnv[key]);
-            }
-        }
-
-        return path;
     }
 
-    replaceUserEnv(str: string): string {
+    // user defined env vars
+    replaceUserEnv(str: string, ignore_case_sensitivity: boolean = false): string {
         const prjEnv = this.getProjectEnv();
         if (prjEnv) {
             for (const key in prjEnv) {
-                const reg = new RegExp(String.raw`\$\(${key}\)|\$\{${key}\}`, 'g');
+                let flag = 'g';
+                if (ignore_case_sensitivity) flag += 'i';
+                const reg = new RegExp(String.raw`\$\(${key}\)|\$\{${key}\}`, flag);
                 str = str.replace(reg, prjEnv[key]);
             }
         }
@@ -1765,8 +1766,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         const toolchain = this.getToolchain();
         if (!toolchainManager.isToolchainPathReady(toolchain.name)) {
             const dir = toolchainManager.getToolchainExecutableFolder(toolchain.name);
-            const msg = view_str$prompt$not_found_compiler.replace('{}', toolchain.name)
-                + `, [path]: ${dir?.path}`;
+            const msg = view_str$prompt$not_found_compiler.replace('{}', toolchain.name) + `, [path]: '${dir?.path}'`;
             ResInstaller.instance().setOrInstallTools(toolchain.name, msg, toolchain.settingName);
             return false;
         }

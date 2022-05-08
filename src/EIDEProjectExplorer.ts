@@ -3432,7 +3432,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         const exeFile = new File(path);
         if (!exeFile.IsFile()) {
-            await ResInstaller.instance().setOrInstallTools('cppcheck', `Not found 'cppcheck${exeSuffix()}' ! [path]: ${exeFile.path}`);
+            await ResInstaller.instance().setOrInstallTools('cppcheck', `Not found 'cppcheck${exeSuffix()}', [path]: '${exeFile.path}'`);
             return;
         }
 

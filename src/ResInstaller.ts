@@ -28,7 +28,7 @@ import * as fs from 'fs';
 
 import { HexUploaderType } from "./HexUploader";
 import { SettingManager } from './SettingManager';
-import { txt_install_now, txt_jump2settings } from './StringTable';
+import { txt_install_now, txt_jump2settings, view_str$prompt$install_tools_by_online } from './StringTable';
 import { ToolchainName } from "./ToolchainManager";
 import * as utility from './utility';
 import { File } from '../lib/node-utility/File';
@@ -286,7 +286,8 @@ export class ResInstaller {
         if (toolInfo.no_binaries) { // if no binaries, we only jump to settings
             item = await vscode.window.showWarningMessage(msg, txt_jump2settings);
         } else { // if have binaries, user need to do a select.
-            item = await vscode.window.showWarningMessage(msg, txt_install_now, txt_jump2settings);
+            item = await vscode.window.showWarningMessage(msg + `, ${view_str$prompt$install_tools_by_online}`,
+                txt_install_now, txt_jump2settings);
         }
 
         if (!item) { return false; } // user canceled, exit

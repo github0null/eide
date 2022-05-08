@@ -4,6 +4,16 @@
 
 ***
 
+### [v3.5.1]
+
+**Optimized**:
+  - Allow use project env vars(like: `${OutDir}, ${ProjectName} ...`) in shell flasher commandline.
+  - Auto check program files for stvp flasher.
+  - Optimize external tool executable path parser.
+  - Optimize some message prompt.
+
+***
+
 ### [v3.5.0]
 
 **Fixed**:

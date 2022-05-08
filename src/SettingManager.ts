@@ -159,12 +159,13 @@ export class SettingManager {
 
     private getExePathFromConfig(confName: string, execName: string): string | undefined {
 
-        const path = this.getConfiguration().get<string>(confName);
+        let defPath: string | undefined;
 
+        const path = this.getConfiguration().get<string>(confName);
         if (path) {
-            const absPath = Utility.formatPath(this.replaceEnvVariable(path));
-            if (File.IsExist(absPath)) {
-                return absPath;
+            defPath = Utility.formatPath(this.replaceEnvVariable(path));
+            if (File.IsExist(defPath)) {
+                return defPath;
             }
         }
 
@@ -179,16 +180,19 @@ export class SettingManager {
                 return absPath;
             }
         }
+
+        return defPath;
     }
 
     private getGccFolderFromConfig(confName: string, execName: string): string | undefined {
 
-        const path = this.getConfiguration().get<string>(confName);
+        let defPath: string | undefined;
 
+        const path = this.getConfiguration().get<string>(confName);
         if (path) {
-            const absPath = Utility.formatPath(this.replaceEnvVariable(path));
-            if (File.IsExist(absPath)) {
-                return absPath;
+            defPath = Utility.formatPath(this.replaceEnvVariable(path));
+            if (File.IsExist(defPath)) {
+                return defPath;
             }
         }
 
@@ -204,6 +208,8 @@ export class SettingManager {
                 return dirName;
             }
         }
+
+        return defPath;
     }
 
     //-------------------------- Serialport --------------------------------
@@ -311,15 +317,17 @@ export class SettingManager {
 
     getJlinkDir(): string {
 
-        const path = this.getConfiguration().get<string>('JLink.InstallDirectory');
-        const execName = 'JLink';
+        let defPath: string | undefined;
 
+        const path = this.getConfiguration().get<string>('JLink.InstallDirectory');
         if (path) {
-            const absPath = Utility.formatPath(this.replaceEnvVariable(path));
-            if (File.IsExist(absPath)) {
-                return absPath;
+            defPath = Utility.formatPath(this.replaceEnvVariable(path));
+            if (File.IsExist(defPath)) {
+                return defPath;
             }
         }
+
+        const execName = 'JLink';
 
         if (this.envPathCache.has(execName)) {
             return <string>this.envPathCache.get(execName)
@@ -332,8 +340,9 @@ export class SettingManager {
                 this.envPathCache.set(execName, dirName);
                 return dirName;
             }
-            return 'null';
         }
+
+        return defPath || 'null';
     }
 
     getJlinkDevXmlFile(): File | undefined {
@@ -371,15 +380,17 @@ export class SettingManager {
 
     getIARForStm8Dir(): File {
 
-        const path = this.getConfiguration().get<string>('IAR.STM8.InstallDirectory');
-        const execName = 'iccstm8';
+        let defPath: string | undefined;
 
+        const path = this.getConfiguration().get<string>('IAR.STM8.InstallDirectory');
         if (path) {
-            const absPath = Utility.formatPath(this.replaceEnvVariable(path));
-            if (File.IsExist(absPath)) {
-                return new File(absPath);
+            defPath = Utility.formatPath(this.replaceEnvVariable(path));
+            if (File.IsExist(defPath)) {
+                return new File(defPath);
             }
         }
+
+        const execName = 'iccstm8';
 
         if (this.envPathCache.has(execName)) {
             return new File(<string>this.envPathCache.get(execName))
@@ -392,8 +403,9 @@ export class SettingManager {
                 this.envPathCache.set(execName, dirName);
                 return new File(dirName);
             }
-            return new File('null');
         }
+
+        return new File(defPath || 'null');
     }
 
     //---------------------------- ARM ----------------------------
