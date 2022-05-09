@@ -1088,6 +1088,12 @@ class AC5 implements IToolchian {
     //
     getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
 
+        return [];
+
+        //
+        // 暂时禁用，c/c++ 插件暂时无法解析某些宏定义
+        //
+
         const cpuMap: { [key: string]: string } = {
             "cortex-m0": "Cortex-M0",
             "cortex-m0+": "Cortex-M0+",
