@@ -4,14 +4,13 @@
 
 ***
 
-### [v3.5.2]
+### [v3.5.3]
 
 **Fixed**:
   - Duplicated include path items: `.eide/deps` in project.
   - Can not parse old version `JLinkDevices.xml`.
 
 **Optimized**:
-  - Auto provide internal macros for `armcc` compiler by `--list_macros` command.
   - Optimize cpptools config provider for `gcc` family compilers.
 
 ***
