@@ -777,7 +777,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         if (this.isOldVersionProject) {
 
             // rename old 'deps' folder name for old eide version
-            const depsFolder = new File(this.rootDirWatcher.file.path + File.sep + DependenceManager.DEPENDENCE_DIR);
+            const depsFolder = File.fromArray([this.rootDirWatcher.file.path, NodePath.normalize(DependenceManager.DEPENDENCE_DIR)]);
             if (!depsFolder.IsDir()) { // if 'deps' folder is not exist
 
                 // these folder is for old eide version
@@ -883,15 +883,17 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         this.packManager.Init();
         this.dependenceManager.Init();
 
-        if (prjConfig.config.type === 'ARM') { // force add `dependence` folder to project and include list
-            this.dependenceManager.getDependenceRootFolder().CreateDir(false);
-            prjConfig.addSrcDirAtFirst(this.dependenceManager.getDependenceRootFolder().path);
-            prjConfig.CustomDep_AddIncDir(this.dependenceManager.getDependenceRootFolder());
-        }
-        else { // remove these folders for other mcu project
-            platform.DeleteDir(this.dependenceManager.getDependenceRootFolder());
-            prjConfig.RemoveSrcDir(this.dependenceManager.getDependenceRootFolder().path);
-            prjConfig.CustomDep_RemoveIncDir(this.dependenceManager.getDependenceRootFolder().path);
+        // auto add deps folder to project
+        if (this.isNewProject) {
+            if (prjConfig.config.type === 'ARM') { // force add `dependence` folder to project and include list
+                this.dependenceManager.getDependenceRootFolder().CreateDir(false);
+                prjConfig.addSrcDirAtFirst(this.dependenceManager.getDependenceRootFolder().path);
+                prjConfig.CustomDep_AddIncDir(this.dependenceManager.getDependenceRootFolder());
+            } else { // remove these folders for other mcu project
+                platform.DeleteDir(this.dependenceManager.getDependenceRootFolder());
+                prjConfig.RemoveSrcDir(this.dependenceManager.getDependenceRootFolder().path);
+                prjConfig.CustomDep_RemoveIncDir(this.dependenceManager.getDependenceRootFolder().path);
+            }
         }
     }
 
@@ -2177,8 +2179,7 @@ class EIDEProject extends AbstractProject {
                 // combine HAL folder
                 if (rePath && rePath.startsWith(DependenceManager.DEPENDENCE_DIR)) {
                     halFiles = halFiles.concat(group.files);
-                }
-                else {
+                } else {
                     fileGroups.push(<FileGroup>{
                         name: File.ToUnixPath(<string>rePath).toUpperCase(),
                         files: group.files,
@@ -2539,7 +2540,8 @@ class EIDEProject extends AbstractProject {
         // get project includes and defines
         const depMerge = prjConfig.GetAllMergeDep();
         const defMacros: string[] = ['__VSCODE_CPPTOOL']; // it's for internal force include header
-        const defLi = defMacros.concat(depMerge.defineList, toolchain.getInternalDefines(builderOpts));
+        const intrDefs = toolchain.getInternalDefines(<any>prjConfig.config.compileConfig, builderOpts);
+        const defLi = defMacros.concat(depMerge.defineList, intrDefs);
         depMerge.incList = depMerge.incList.concat(this.getSourceIncludeList());
 
         // update includes and defines 
@@ -2676,11 +2678,11 @@ class EIDEProject extends AbstractProject {
         return new Promise((resolve) => {
             const filePath = platform.realpathSync(uri.fsPath);
             const prjRoot = platform.realpathSync(this.GetRootDir().path);
-            if (filePath.startsWith(prjRoot)) {
-                resolve(true);
-            } else {
-                resolve(this.vSourceList.includes(filePath));
-            }
+            resolve(
+                AbstractProject.headerFilter.test(filePath) ||
+                filePath.startsWith(prjRoot) ||
+                this.vSourceList.includes(filePath)
+            );
         });
     }
 

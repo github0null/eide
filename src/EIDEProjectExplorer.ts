@@ -3511,11 +3511,13 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     cfgList.push('riscv');
                     break;
                 default:
-                    defList = defList.concat(toolchain.getInternalDefines(builderOpts));
+                    defList = defList.concat(
+                        toolchain.getInternalDefines(<any>prjConfig.config.compileConfig, builderOpts));
                     break;
             }
         } else {
-            defList = defList.concat(toolchain.getInternalDefines(builderOpts));
+            defList = defList.concat(
+                toolchain.getInternalDefines(<any>prjConfig.config.compileConfig, builderOpts));
         }
 
         if (toolchain.name == 'ANY_GCC' && toolchain.getToolchainPrefix) {

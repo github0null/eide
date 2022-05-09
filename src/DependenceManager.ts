@@ -24,6 +24,7 @@
 
 import * as os from 'os';
 import * as fs from 'fs';
+import * as NodePath from 'path';
 
 import { File } from '../lib/node-utility/File';
 import { DeleteDir, DeleteAllChildren } from './Platform';
@@ -37,7 +38,7 @@ import { ExceptionToMessage } from './Message';
 import { AbstractProject } from './EIDEProject';
 import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 
-export class DependenceManager extends ManagerInterface {
+export class DependenceManager implements ManagerInterface {
 
     static readonly DEPENDENCE_DIR = `.eide/deps`;
     static readonly RTE_FILE_NAME = 'RTE_Components.h';
@@ -53,7 +54,6 @@ export class DependenceManager extends ManagerInterface {
     private compUpdateCache: Map<string, string[]>;
 
     constructor(_project: AbstractProject) {
-        super();
         this.project = _project;
         this.componentDefines = new Map();
         this.compUpdateCache = new Map();
@@ -62,7 +62,7 @@ export class DependenceManager extends ManagerInterface {
     Init() {
         const rootDir = this.project.GetRootDir();
         this.prjType = this.project.GetConfiguration().config.type;
-        this.depDir = File.fromArray([rootDir.path, DependenceManager.DEPENDENCE_DIR]);
+        this.depDir = File.fromArray([rootDir.path, NodePath.normalize(DependenceManager.DEPENDENCE_DIR)]);
         this.LoadComponents();
     }
 

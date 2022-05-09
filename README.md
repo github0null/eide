@@ -10,7 +10,7 @@
 
 > Supported Platforms: **Windows (Windows 7 SP1 and later)**, **Linux x86_64**
 
-An embedded development environment for `8051/AVR/STM8/Cortex-M[0/0+/3/4/7]/RISC-V/Universal-Gcc` on VsCode. 
+A mcu development environment for `8051/AVR/STM8/Cortex-M[0/0+/3/4/7]/RISC-V/Universal-Gcc` on VsCode. 
 
 Provide `8051/AVR/STM8/Cortex-M/RISC-V` project development, compilation, burning and other functions.
 

@@ -4,6 +4,18 @@
 
 ***
 
+### [v3.5.2]
+
+**Fixed**:
+  - Duplicated include path items: `.eide/deps` in project.
+  - Can not parse old version `JLinkDevices.xml`.
+
+**Optimized**:
+  - Auto provide internal macros for `armcc` compiler by `--list_macros` command.
+  - Optimize cpptools config provider for `gcc` family compilers.
+
+***
+
 ### [v3.5.1]
 
 **Optimized**:
@@ -28,7 +40,7 @@
 **Changed**:
   - Remove `extensionDependencies` and built-in auto active extensionDependencies.
   - Force use unix path for virtual source path to compat old project.
-  - Adjust default `project templates repo`, now it's: 'https://github.com/github0null/eide-templates'.
+  - Adjust default `project templates repo`, now it's: https://github.com/github0null/eide-templates
 
 ***
 
