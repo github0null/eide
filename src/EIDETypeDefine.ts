@@ -75,8 +75,8 @@ export const EIDE_CONF_VERSION = '3.1';
 
 ////////////////////////////////////////////////////////
 
-export abstract class ManagerInterface {
-    abstract Init(): void;
+export interface ManagerInterface {
+    Init(): void;
 }
 
 export interface FileItem {
@@ -445,7 +445,9 @@ export interface VirtualFolder {
     folders: VirtualFolder[];
 }
 
-export interface ProjectConfigData<T extends CompileData> {
+export interface BuilderConfigData { }
+
+export interface ProjectConfigData<T extends BuilderConfigData> {
 
     name: string;
     type: ProjectType;
@@ -488,7 +490,7 @@ interface ProjectConfigApi {
     toRelativePath: (path: string) => string;
 }
 
-export class ProjectConfiguration<T extends CompileData>
+export class ProjectConfiguration<T extends BuilderConfigData>
     extends Configuration<ProjectConfigData<T>, ProjectConfigEvent> {
 
     static readonly BUILD_IN_GROUP_NAME = 'build-in';
@@ -1537,8 +1539,6 @@ export abstract class ConfigModel<DataType> {
 //                           Compiler Models
 //////////////////////////////////////////////////////////////////////////////////
 
-interface CompileData { }
-
 export interface ICompileOptions {
     version: number;
     beforeBuildTasks?: any[];
@@ -1558,7 +1558,7 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
         this.prjConfigData = config;
     }
 
-    static getInstance<T extends CompileData>(prjConfigData: ProjectConfigData<any>): CompileConfigModel<T> {
+    static getInstance<T extends BuilderConfigData>(prjConfigData: ProjectConfigData<any>): CompileConfigModel<T> {
         switch (prjConfigData.toolchain) {
             case 'SDCC':
                 return <any>new SdccCompileConfigModel(prjConfigData);
@@ -1647,7 +1647,8 @@ export interface ARMStorageLayout {
 
 export type FloatingHardwareOption = 'no_dsp' | 'none' | 'single' | 'double';
 
-export interface ArmBaseCompileData extends CompileData {
+// deprecated
+export interface ArmBaseCompileData extends BuilderConfigData {
     cpuType: string;
     floatingPointHardware: FloatingHardwareOption;
     useCustomScatterFile: boolean;
@@ -1655,6 +1656,8 @@ export interface ArmBaseCompileData extends CompileData {
     storageLayout: ARMStorageLayout;
     options: string;
 }
+
+export type ArmBaseBuilderConfigData = ArmBaseCompileData;
 
 /**
  * @note We need export this class, becasue we need export internal functions 
@@ -2052,10 +2055,13 @@ class GccCompileConfigModel extends ArmBaseCompileConfigModel {
 
 // -------- RISC-V --------
 
-export interface RiscvCompileData extends CompileData {
+// deprecated
+export interface RiscvCompileData extends BuilderConfigData {
     linkerScriptPath: string;
     options: string;
 }
+
+export type RiscvBuilderConfigData = RiscvCompileData;
 
 class RiscvCompileConfigModel extends CompileConfigModel<RiscvCompileData> {
 
@@ -2153,10 +2159,13 @@ class RiscvCompileConfigModel extends CompileConfigModel<RiscvCompileData> {
 
 // -------- ANY-GCC ---------
 
-export interface AnyGccCompileData extends CompileData {
+// deprecated
+export interface AnyGccCompileData extends BuilderConfigData {
     linkerScriptPath: string;
     options: string;
 }
+
+export type AnyGccBuilderConfigData = AnyGccCompileData;
 
 class AnyGccCompileConfigModel extends CompileConfigModel<AnyGccCompileData> {
 
@@ -2254,10 +2263,13 @@ class AnyGccCompileConfigModel extends CompileConfigModel<AnyGccCompileData> {
 
 // -------- 8Bit ----------
 
-export interface C51BaseCompileData extends CompileData {
+// deprecated
+export interface C51BaseCompileData extends BuilderConfigData {
     options: string;
     linkerScript?: string;
 }
+
+export type C51BuilderConfigData = C51BaseCompileData;
 
 abstract class C51BaseCompileConfigModel extends CompileConfigModel<C51BaseCompileData> {
 

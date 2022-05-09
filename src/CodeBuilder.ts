@@ -548,7 +548,7 @@ interface MemoryText {
     child: MemoryText[];
 }
 
-class ARMCodeBuilder extends CodeBuilder {
+export class ARMCodeBuilder extends CodeBuilder {
 
     constructor(_project: AbstractProject) {
         super(_project);
@@ -777,9 +777,12 @@ class ARMCodeBuilder extends CodeBuilder {
         return sctFile;
     }
 
-    private getCpuString(cpu: string, hardOption: FloatingHardwareOption): string {
+    // 用于生成带有浮点类型后缀的 cpu 系列名，用作代号
+    static genCpuId(cpu: string, hardOption: FloatingHardwareOption): string {
 
         let suffix: string = '';
+
+        cpu = cpu.toLowerCase();
 
         switch (hardOption) {
             case 'no_dsp':
@@ -859,7 +862,7 @@ class ARMCodeBuilder extends CodeBuilder {
         const toolchain = this.project.getToolchain();
         const settingManager = SettingManager.GetInstance();
 
-        const cpuString = this.getCpuString(
+        const cpuString = ARMCodeBuilder.genCpuId(
             config.compileConfig.cpuType.toLowerCase(), config.compileConfig.floatingPointHardware
         );
 

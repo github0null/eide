@@ -22,12 +22,13 @@
     SOFTWARE.
 */
 
-import { ProjectType, ICompileOptions, CppConfigItem } from "./EIDETypeDefine";
+import { ProjectType, ICompileOptions, CppConfigItem, BuilderConfigData, ArmBaseBuilderConfigData } from "./EIDETypeDefine";
 import { File } from "../lib/node-utility/File";
 import { SettingManager } from "./SettingManager";
 import { ResManager } from "./ResManager";
 import { GlobalEvent } from "./GlobalEvents";
 import { newMessage, ExceptionToMessage } from "./Message";
+import { ARMCodeBuilder } from "./CodeBuilder";
 import * as platform from './Platform';
 
 import * as child_process from 'child_process';
@@ -84,7 +85,7 @@ export interface IToolchian {
     /**
      * get compiler internal defines (for cpptools)
      */
-    getInternalDefines(builderOpts: ICompileOptions): string[];
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[];
 
     /**
      * force append some custom macro
@@ -506,7 +507,7 @@ class KeilC51 implements IToolchian {
         }
     }
 
-    getInternalDefines(builderOpts: ICompileOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
         return [];
     }
 
@@ -643,7 +644,7 @@ class SDCC implements IToolchian {
         }
     }
 
-    getInternalDefines(builderOpts: ICompileOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
 
         const mList: string[] = [
             '__SDCC',
@@ -900,7 +901,7 @@ class GnuStm8Sdcc implements IToolchian {
         }
     }
 
-    getInternalDefines(builderOpts: ICompileOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
 
         const mList: string[] = [
             '__SDCC',
@@ -1081,7 +1082,79 @@ class AC5 implements IToolchian {
         ];
     }
 
-    getInternalDefines(builderOpts: ICompileOptions): string[] {
+    //
+    // armcc list macros command: 
+    //      armcc xxx --list_macros -E - <nul
+    //
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
+
+        const cpuMap: { [key: string]: string } = {
+            "cortex-m0": "Cortex-M0",
+            "cortex-m0+": "Cortex-M0+",
+            "cortex-m3": "Cortex-M3",
+            "cortex-m4-none": "Cortex-M4 --fpu=SoftVFP",
+            "cortex-m4-sp": "Cortex-M4.fp",
+            "cortex-m7-none": "Cortex-M7 --fpu=SoftVFP",
+            "cortex-m7-sp": "Cortex-M7.fp.sp",
+            "cortex-m7-dp": "Cortex-M7.fp.dp",
+            "sc000": "SC000",
+            "sc300": "SC300"
+        };
+
+        const cfg: ArmBaseBuilderConfigData = <any>builderCfg;
+        const cpuKey = ARMCodeBuilder.genCpuId(cfg.cpuType.toLowerCase(), cfg.floatingPointHardware);
+
+        try {
+
+            if (cpuMap[cpuKey]) {
+
+                const result: string[] = [];
+                const macroParser = new MacroHandler();
+                const armccDir = File.fromArray([this.getToolchainDir().path, 'bin']).path;
+                const cmdList = [`--cpu ${cpuMap[cpuKey]}`, '--apcs=interwork'];
+
+                if (builderOpts.global) {
+
+                    if (builderOpts['global']['big-endian']) {
+                        cmdList.push('--bi');
+                    } else {
+                        cmdList.push('--li');
+                    }
+
+                    if (builderOpts.global['use-microLIB']) {
+                        cmdList.push('-D__MICROLIB');
+                    }
+                }
+
+                if (builderOpts["c/cpp-compiler"]) {
+
+                    if (builderOpts["c/cpp-compiler"]['c99-mode']) {
+                        cmdList.push('--c99');
+                    }
+
+                    if (builderOpts["c/cpp-compiler"]['gnu-extensions']) {
+                        cmdList.push('--gnu');
+                    }
+                }
+
+                const cmd = `armcc ${cmdList.join(' ')} --list_macros -E - <${platform.osGetNullDev()}`;
+                child_process.execSync(cmd, { cwd: armccDir, encoding: 'utf8' })
+                    .trim().split(/\r\n|\n/)
+                    .forEach((line) => {
+                        const expr = macroParser.toExpression(line);
+                        if (expr) {
+                            result.push(expr);
+                        }
+                    });
+
+                return result;
+            }
+
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            return [];
+        }
+
         return [];
     }
 
@@ -1286,7 +1359,7 @@ class AC6 implements IToolchian {
         return SettingManager.GetInstance().getArmcc6Dir();
     }
 
-    getInternalDefines(builderOpts: ICompileOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
         return [];
     }
 
@@ -1361,64 +1434,49 @@ class GCC implements IToolchian {
 
     readonly verifyFileName: string = 'arm.gcc.verify.json';
 
-    private readonly defMacroList: string[];
-
-    //---
-
-    private incList: string[];
-
     constructor() {
-        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + `gcc${platform.exeSuffix()}`]);
-        const intrMacros = this.getMacroList(gcc.path);
-        if (intrMacros === undefined) { // if not found gcc, use def macro
-            this.defMacroList = ['__GNUC__=8', '__GNUC_MINOR__=3', '__GNUC_PATCHLEVEL__=1'];
-        } else { // if found, cpptools will parse intr macros, so we don't provide
-            this.defMacroList = [];
-        }
-        this.incList = this.getIncludeList(gcc.path);
+        // nothing todo
     }
-
-    private getIncludeList(gccPath: string): string[] {
-        try {
-            const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
-                + ' ' + ['-xc++', '-E', '-v', '-', `<${platform.osGetNullDev()}`, '2>&1'].join(' ');
-            const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
-            const iStart = lines.findIndex((line) => { return line.startsWith('#include <...>'); });
-            const iEnd = lines.indexOf('End of search list.', iStart);
-            return lines.slice(iStart + 1, iEnd)
-                .map((line) => { return new File(File.ToLocalPath(line.trim())); })
-                .filter((file) => { return file.IsDir(); })
-                .map((f) => {
-                    return f.path;
-                });
-        } catch (error) {
-            //GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
-            return [];
+    /* 
+        private getIncludeList(gccDir: string): string[] | undefined {
+            try {
+                const gccName = this.getToolPrefix() + 'gcc';
+                const cmdLine = `${gccName} ` + ['-xc++', '-E', '-v', '-', `<${platform.osGetNullDev()}`, '2>&1'].join(' ');
+                const lines = child_process.execSync(cmdLine, { cwd: gccDir }).toString().split(/\r\n|\n/);
+                const iStart = lines.findIndex((line) => { return line.startsWith('#include <...>'); });
+                const iEnd = lines.indexOf('End of search list.', iStart);
+                return lines.slice(iStart + 1, iEnd)
+                    .map((line) => { return new File(File.ToLocalPath(line.trim())); })
+                    .filter((file) => { return file.IsDir(); })
+                    .map((f) => {
+                        return f.path;
+                    });
+            } catch (error) {
+                // do nothing
+            }
         }
-    }
-
-    private getMacroList(gccPath: string): string[] | undefined {
-        try {
-            const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
-                + ' ' + ['-E', '-dM', '-', `<${platform.osGetNullDev()}`].join(' ');
-
-            const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
-            const results: string[] = [];
-            const mHandler = new MacroHandler();
-
-            lines.filter((line) => { return line.trim() !== ''; })
-                .forEach((line) => {
-                    const value = mHandler.toExpression(line);
-                    if (value) {
-                        results.push(value);
-                    }
-                });
-
-            return results;
-        } catch (error) {
-            //GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
-        }
-    }
+    
+        private getMacroList(gccDir: string): string[] | undefined {
+            try {
+                const gccName = this.getToolPrefix() + 'gcc';
+                const cmdLine = `${gccName} ` + ['-E', '-dM', '-', `<${platform.osGetNullDev()}`].join(' ');
+                const lines = child_process.execSync(cmdLine, { cwd: gccDir }).toString().split(/\r\n|\n/);
+                const results: string[] = [];
+                const mHandler = new MacroHandler();
+    
+                lines.filter((line) => { return line.trim() !== ''; })
+                    .forEach((line) => {
+                        const value = mHandler.toExpression(line);
+                        if (value) {
+                            results.push(value);
+                        }
+                    });
+    
+                return results;
+            } catch (error) {
+                // do nothing
+            }
+        } */
 
     private getToolPrefix(): string {
         return SettingManager.GetInstance().getGCCPrefix();
@@ -1518,8 +1576,8 @@ class GCC implements IToolchian {
         options['global'].toolPrefix = SettingManager.GetInstance().getGCCPrefix();
     }
 
-    getInternalDefines(builderOpts: ICompileOptions): string[] {
-        return this.defMacroList;
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
+        return [];
     }
 
     getCustomDefines(): string[] | undefined {
@@ -1531,7 +1589,7 @@ class GCC implements IToolchian {
     }
 
     getSystemIncludeList(builderOpts: ICompileOptions): string[] {
-        return Array.from(this.incList);
+        return [];
     }
 
     getForceIncludeHeaders(): string[] | undefined {
@@ -1664,7 +1722,7 @@ class IARSTM8 implements IToolchian {
         return SettingManager.GetInstance().getIARForStm8Dir();
     }
 
-    getInternalDefines(builderOpts: ICompileOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
         return [];
     }
 
@@ -1753,64 +1811,49 @@ class RISCV_GCC implements IToolchian {
 
     readonly verifyFileName: string = 'riscv.gcc.verify.json';
 
-    private readonly defMacroList: string[];
-
-    //---
-
-    private incList: string[];
-
     constructor() {
-        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + `gcc${platform.exeSuffix()}`]);
-        const intrMacros = this.getMacroList(gcc.path);
-        if (intrMacros === undefined) { // if not found gcc, use def macro
-            this.defMacroList = ['__GNUC__=8', '__GNUC_MINOR__=3', '__GNUC_PATCHLEVEL__=1'];
-        } else { // if found, cpptools will parse intr macros, so we don't provide
-            this.defMacroList = [];
-        }
-        this.incList = this.getIncludeList(gcc.path);
+        // nothing todo
     }
-
-    private getIncludeList(gccPath: string): string[] {
-        try {
-            const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
-                + ' ' + ['-xc++', '-E', '-v', '-', `<${platform.osGetNullDev()}`, '2>&1'].join(' ');
-            const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
-            const iStart = lines.findIndex((line) => { return line.startsWith('#include <...>'); });
-            const iEnd = lines.indexOf('End of search list.', iStart);
-            return lines.slice(iStart + 1, iEnd)
-                .map((line) => { return new File(File.ToLocalPath(line.trim())); })
-                .filter((file) => { return file.IsDir(); })
-                .map((f) => {
-                    return f.path;
-                });
-        } catch (error) {
-            //GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
-            return [];
+    /* 
+        private getIncludeList(gccDir: string): string[] | undefined {
+            try {
+                const gccName = this.getToolPrefix() + 'gcc';
+                const cmdLine = `${gccName} ` + ['-xc++', '-E', '-v', '-', `<${platform.osGetNullDev()}`, '2>&1'].join(' ');
+                const lines = child_process.execSync(cmdLine, { cwd: gccDir }).toString().split(/\r\n|\n/);
+                const iStart = lines.findIndex((line) => { return line.startsWith('#include <...>'); });
+                const iEnd = lines.indexOf('End of search list.', iStart);
+                return lines.slice(iStart + 1, iEnd)
+                    .map((line) => { return new File(File.ToLocalPath(line.trim())); })
+                    .filter((file) => { return file.IsDir(); })
+                    .map((f) => {
+                        return f.path;
+                    });
+            } catch (error) {
+                // nothing todo
+            }
         }
-    }
-
-    private getMacroList(gccPath: string): string[] | undefined {
-        try {
-            const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
-                + ' ' + ['-E', '-dM', '-', `<${platform.osGetNullDev()}`].join(' ');
-
-            const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
-            const results: string[] = [];
-            const mHandler = new MacroHandler();
-
-            lines.filter((line) => { return line.trim() !== ''; })
-                .forEach((line) => {
-                    const value = mHandler.toExpression(line);
-                    if (value) {
-                        results.push(value);
-                    }
-                });
-
-            return results;
-        } catch (error) {
-            //GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
-        }
-    }
+    
+        private getMacroList(gccDir: string): string[] | undefined {
+            try {
+                const gccName = this.getToolPrefix() + 'gcc';
+                const cmdLine = `${gccName} ` + ['-E', '-dM', '-', `<${platform.osGetNullDev()}`].join(' ');
+                const lines = child_process.execSync(cmdLine, { cwd: gccDir }).toString().split(/\r\n|\n/);
+                const results: string[] = [];
+                const mHandler = new MacroHandler();
+    
+                lines.filter((line) => { return line.trim() !== ''; })
+                    .forEach((line) => {
+                        const value = mHandler.toExpression(line);
+                        if (value) {
+                            results.push(value);
+                        }
+                    });
+    
+                return results;
+            } catch (error) {
+                //GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            }
+        } */
 
     private getToolPrefix(): string {
         return SettingManager.GetInstance().getRiscvToolPrefix();
@@ -1901,8 +1944,8 @@ class RISCV_GCC implements IToolchian {
         return SettingManager.GetInstance().getRiscvToolFolder();
     }
 
-    getInternalDefines(builderOpts: ICompileOptions): string[] {
-        return this.defMacroList;
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
+        return [];
     }
 
     getCustomDefines(): string[] | undefined {
@@ -1910,7 +1953,7 @@ class RISCV_GCC implements IToolchian {
     }
 
     getSystemIncludeList(builderOpts: ICompileOptions): string[] {
-        return Array.from(this.incList);
+        return [];
     }
 
     getForceIncludeHeaders(): string[] | undefined {
@@ -1977,28 +2020,15 @@ class AnyGcc implements IToolchian {
 
     readonly verifyFileName: string = 'any.gcc.verify.json';
 
-    private readonly defMacroList: string[];
-
-    //---
-
-    private incList: string[];
-
     constructor() {
-        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + `gcc${platform.exeSuffix()}`]);
-        const intrMacros = this.getMacroList(gcc.path);
-        if (intrMacros === undefined) { // if not found gcc, use def macro
-            this.defMacroList = ['__GNUC__=8', '__GNUC_MINOR__=3', '__GNUC_PATCHLEVEL__=1'];
-        } else { // if found, cpptools will parse intr macros, so we don't provide
-            this.defMacroList = [];
-        }
-        this.incList = this.getIncludeList(gcc.path);
+        // nothing todo
     }
 
-    private getIncludeList(gccPath: string): string[] {
+    /* private getIncludeList(gccDir: string): string[] | undefined {
         try {
-            const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
-                + ' ' + ['-xc++', '-E', '-v', '-', `<${platform.osGetNullDev()}`, '2>&1'].join(' ');
-            const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
+            const gccName = this.getToolPrefix() + 'gcc';
+            const cmdLine = `${gccName} ` + ['-xc++', '-E', '-v', '-', `<${platform.osGetNullDev()}`, '2>&1'].join(' ');
+            const lines = child_process.execSync(cmdLine, { cwd: gccDir }).toString().split(/\r\n|\n/);
             const iStart = lines.findIndex((line) => { return line.startsWith('#include <...>'); });
             const iEnd = lines.indexOf('End of search list.', iStart);
             return lines.slice(iStart + 1, iEnd)
@@ -2008,16 +2038,15 @@ class AnyGcc implements IToolchian {
                     return f.path;
                 });
         } catch (error) {
-            return [];
+            // nothing todo
         }
     }
 
-    private getMacroList(gccPath: string): string[] | undefined {
+    private getMacroList(gccDir: string): string[] | undefined {
         try {
-            const cmdLine = CmdLineHandler.quoteString(gccPath, '"')
-                + ' ' + ['-E', '-dM', '-', `<${platform.osGetNullDev()}`].join(' ');
-
-            const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
+            const gccName = this.getToolPrefix() + 'gcc';
+            const cmdLine = `${gccName} ` + ['-E', '-dM', '-', `<${platform.osGetNullDev()}`].join(' ');
+            const lines = child_process.execSync(cmdLine, { cwd: gccDir }).toString().split(/\r\n|\n/);
             const results: string[] = [];
             const mHandler = new MacroHandler();
 
@@ -2033,7 +2062,7 @@ class AnyGcc implements IToolchian {
         } catch (error) {
             return undefined;
         }
-    }
+    } */
 
     private getToolPrefix(): string {
         return SettingManager.GetInstance().getAnyGccToolPrefix();
@@ -2108,8 +2137,8 @@ class AnyGcc implements IToolchian {
         options['global'].toolPrefix = this.getToolPrefix();
     }
 
-    getInternalDefines(builderOpts: ICompileOptions): string[] {
-        return this.defMacroList;
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
+        return [];
     }
 
     getCustomDefines(): string[] | undefined {
@@ -2121,7 +2150,7 @@ class AnyGcc implements IToolchian {
     }
 
     getSystemIncludeList(builderOpts: ICompileOptions): string[] {
-        return Array.from(this.incList);
+        return [];
     }
 
     getForceIncludeHeaders(): string[] | undefined {

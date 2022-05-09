@@ -449,13 +449,19 @@ export class ResManager extends events.EventEmitter {
 
             if (file && file.IsFile()) {
                 const parser = new x2js({
-                    arrayAccessFormPaths: ['DataBase.Device'],
+                    arrayAccessFormPaths: ['DataBase.Device', 'Database.Device'],
                     attributePrefix: '$'
                 });
 
                 const dom = parser.xml2js<any>(file.Read());
+
+                // compat old DataBase version
+                if (dom.DataBase == undefined && dom.Database) {
+                    dom.DataBase = dom.Database;
+                }
+
                 if (dom.DataBase == undefined || dom.DataBase.Device == undefined) {
-                    throw Error(`'JLinkDevices.xml' format error, aborted ! [path]: '${file.path}'`);
+                    throw Error(`'JLinkDevices.xml' format error, not found 'DataBase' or 'DataBase.Device' xml node !, [path]: '${file.path}'`);
                 }
 
                 const jlinkDevList: any[] = dom.DataBase.Device;
