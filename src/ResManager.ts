@@ -41,6 +41,7 @@ import { SettingManager } from "./SettingManager";
 import * as utility from './utility'
 import { CmdLineHandler } from "./CmdLineHandler";
 import * as yaml from 'yaml';
+import { CodeConverter } from "./CodeConverter";
 
 let resManager: ResManager | undefined;
 
@@ -165,8 +166,8 @@ export class ResManager extends events.EventEmitter {
     enumSerialPort(): string[] {
         try {
             const cmd = `${this.getMonoName()} "${this.getSerialPortExe().path}"`;
-            const data = ChildProcess.execSync(cmd, { env: process.env }).toString();
-            const portList: string[] = JSON.parse(data);
+            const data = ChildProcess.execSync(cmd, { env: process.env });
+            const portList: string[] = JSON.parse(CodeConverter.trimUtf8BomHeader(data));
             if (!Array.isArray(portList)) { throw Error("get current port list error !"); }
             return portList;
         } catch (error) {
