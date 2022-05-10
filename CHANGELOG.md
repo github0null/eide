@@ -4,11 +4,12 @@
 
 ***
 
-### [v3.5.3]
+### [v3.5.4]
 
 **Fixed**:
   - Duplicated include path items: `.eide/deps` in project.
   - Can not parse old version `JLinkDevices.xml`.
+  - Enum serialport failed when use `65001` code-page in windows os.
 
 **Optimized**:
   - Optimize cpptools config provider for `gcc` family compilers.
