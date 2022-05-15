@@ -2053,7 +2053,7 @@ class EIDEProject extends AbstractProject {
 
             // virtual files
             if (vPath && typeof this.srcExtraCompilerConfig?.virtualPathFiles == 'object') {
-                matcher(this.srcExtraCompilerConfig?.virtualPathFiles, vPath);
+                matcher(this.srcExtraCompilerConfig?.virtualPathFiles, vPath.replace(`${VirtualSource.rootName}/`, ''));
             }
         }
 

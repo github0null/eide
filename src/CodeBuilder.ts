@@ -29,7 +29,7 @@ import * as events from 'events';
 import * as globmatch from 'micromatch'
 import * as os from 'os';
 
-import { AbstractProject } from "./EIDEProject";
+import { AbstractProject, VirtualSource } from "./EIDEProject";
 import { ResManager } from "./ResManager";
 import { File } from "../lib/node-utility/File";
 import {
@@ -129,7 +129,7 @@ export abstract class CodeBuilder {
                 const rePath = this.project.ToRelativePath(source.file.path, false);
                 const fInfo: any = { path: rePath || source.file.path }
                 if (AbstractProject.isVirtualSourceGroup(group)) {
-                    fInfo.virtualPath = `${group.name}/${source.file.name}`
+                    fInfo.virtualPath = `${group.name}/${source.file.name}`.replace(`${VirtualSource.rootName}/`, '');
                 }
                 srcList.push(fInfo);
             }
