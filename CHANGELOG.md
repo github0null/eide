@@ -4,7 +4,7 @@
 
 ***
 
-### [v3.6.0]
+### [v3.6.1]
 
 **Fixed**:
   - When there are too many nested folders, the response is slow when excluding directories.
