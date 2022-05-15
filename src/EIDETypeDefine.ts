@@ -95,6 +95,12 @@ export interface ProjectFileGroup extends FileGroup {
     isRoot: boolean;
 }
 
+//
+//  'C51': 8BIT MCU Project (like: mcs51, stm8, ...)
+//  'ARM': Cortex-M Project
+//  'RISC-V': RISCV Project
+//  'ANY-GCC': Any GCC Toolchain Project
+//
 export type ProjectType = 'C51' | 'ARM' | 'RISC-V' | 'ANY-GCC';
 
 export interface CreateOptions {

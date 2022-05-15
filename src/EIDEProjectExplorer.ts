@@ -1997,6 +1997,24 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
         });
 
+        // active cpptools
+        {
+            const cpptoolsId = "ms-vscode.cpptools";
+            const extension = vscode.extensions.getExtension(cpptoolsId);
+            if (extension) {
+                if (!extension.isActive) {
+                    try {
+                        GlobalEvent.emit('globalLog', newMessage('Info', `Active extension: '${cpptoolsId}'`));
+                        await extension.activate();
+                    } catch (error) {
+                        GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+                    }
+                }
+            } else {
+                GlobalEvent.emit('globalLog', newMessage('Warning', `The extension '${cpptoolsId}' is not enabled or installed !`));
+            }
+        }
+
         // get cpptools api if we have not get
         if (!this.cppToolsApi) {
             this.cppToolsApi = await getCppToolsApi(Version.v5);
@@ -4316,7 +4334,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     async showFilesOptions(item: ProjTreeItem) {
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
-        const optFile = prj.getFilesOptionsFile();
+        const optFile = prj.getSourceExtraArgsCfgFile();
         vscode.window.showTextDocument(vscode.Uri.parse(optFile.ToUri()), { preview: true });
     }
 

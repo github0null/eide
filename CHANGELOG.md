@@ -4,6 +4,19 @@
 
 ***
 
+### [v3.6.0]
+
+**Fixed**:
+  - When there are too many nested folders, the response is slow when excluding directories.
+
+**Changed**:
+  - Merge unify_builder's commandline args to a single params file.
+
+**Optimized**:
+  - Support pass source extra compiler args to cpptools.
+
+***
+
 ### [v3.5.4]
 
 **Fixed**:

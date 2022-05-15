@@ -65,6 +65,7 @@ import { SettingManager } from './SettingManager';
 import { ExeCmd } from '../lib/node-utility/Executable';
 import { jsonc } from 'jsonc';
 import * as iconv from 'iconv-lite';
+import * as globmatch from 'micromatch'
 
 export class CheckError extends Error {
 }
@@ -367,7 +368,9 @@ class SourceRootList implements SourceProvider {
     private project: AbstractProject;
     private _event: events.EventEmitter;
 
-    // src info
+    // src folder info
+    //      key: relative path
+    //      val: SourceRootInfo
     private srcFolderMaps: Map<string, SourceRootInfo>;
 
     on(event: 'dataChanged', listener: (event: SourceChangedEvent) => void): void;
@@ -393,7 +396,7 @@ class SourceRootList implements SourceProvider {
                 const key: string = this.getRelativePath(path);
                 const watcher = platform.createSafetyFileWatcher(f, true).Watch();
                 watcher.on('error', (err) => GlobalEvent.emit('msg', ExceptionToMessage(err, 'Hidden')));
-                watcher.OnRename = (file) => this.onFolderChanged(key, file);
+                watcher.OnRename = (file) => this.onFolderRenamed(key, file);
                 this.srcFolderMaps.set(key, this.newSourceInfo(key, watcher));
             }
         });
@@ -412,7 +415,7 @@ class SourceRootList implements SourceProvider {
             const key: string = this.getRelativePath(absPath);
             const watcher = platform.createSafetyFileWatcher(f, true).Watch();
             watcher.on('error', (err) => GlobalEvent.emit('msg', ExceptionToMessage(err, 'Hidden')));
-            watcher.OnRename = (file) => this.onFolderChanged(key, file);
+            watcher.OnRename = (file) => this.onFolderRenamed(key, file);
             const sourceInfo = this.newSourceInfo(key, watcher);
             this.srcFolderMaps.set(key, sourceInfo);
             this.updateFolder(sourceInfo);
@@ -437,18 +440,21 @@ class SourceRootList implements SourceProvider {
 
     notifyUpdateFolder(absPath: string) {
 
-        const dir = NodePath.dirname(absPath);
-        const updateList = Array.from(this.srcFolderMaps.values())
+        const targetDir = NodePath.dirname(absPath); // we need update its parent folder
+
+        const rootSrcUpdateList = Array.from(this.srcFolderMaps.values())
             .filter((info) => {
-                return dir.startsWith(info.fileWatcher.file.path);
+                return File.isSubPathOf(info.fileWatcher.file.path, targetDir);
             });
 
-        if (updateList.length > 0) {
-            for (const rootInfo of updateList) {
+        if (rootSrcUpdateList.length > 0) {
+
+            for (const rootInfo of rootSrcUpdateList) {
                 if (rootInfo.fileWatcher.file.IsDir()) {
-                    this.updateFolder(rootInfo);
+                    this.updateFolder(rootInfo, [targetDir]);
                 }
             }
+
             this.emit('dataChanged', 'folderStatusChanged');
         }
     }
@@ -456,12 +462,14 @@ class SourceRootList implements SourceProvider {
     notifyUpdateFile(absPath: string) {
 
         const dir = NodePath.dirname(absPath);
+
         const updateList = Array.from(this.srcFolderMaps.values())
             .filter((info) => {
-                return dir.startsWith(info.fileWatcher.file.path);
+                return File.isSubPathOf(info.fileWatcher.file.path, dir);
             });
 
         if (updateList.length > 0) {
+
             updateList.forEach((info) => {
                 for (const group of info.fileGroups) {
                     const index = group.files.findIndex((file) => { return file.file.path === absPath; });
@@ -470,6 +478,7 @@ class SourceRootList implements SourceProvider {
                     }
                 }
             });
+
             this.emit('dataChanged', 'fileStatusChanged');
         }
     }
@@ -544,13 +553,11 @@ class SourceRootList implements SourceProvider {
         return this.srcFolderMaps.delete(key);
     }
 
-    private onFolderChanged(folderKey: string, targetFile: File) {
+    private onFolderRenamed(folderKey: string, targetFile: File) {
         const rootInfo = this.srcFolderMaps.get(folderKey);
         if (rootInfo) {
             if (targetFile.path === rootInfo.fileWatcher.file.path) { // root folder has been renamed
-                if (this.removeByKey(folderKey)) {
-                    this.emit('dataChanged', 'dataChanged');
-                }
+                if (this.removeByKey(folderKey)) { this.emit('dataChanged', 'dataChanged'); }
             } else {
                 if (rootInfo.refreshTimeout) {
                     rootInfo.refreshTimeout.refresh();
@@ -567,30 +574,40 @@ class SourceRootList implements SourceProvider {
         }
     }
 
-    private updateFolder(rootInfo: SourceRootInfo) {
+    private updateFolder(rootFolderInfo: SourceRootInfo, targetFolderList?: string[]) {
 
-        const sourceRoot = rootInfo.fileWatcher.file;
-        const folderStack: File[] = [sourceRoot];
+        const rootFolder = rootFolderInfo.fileWatcher.file;
+        const folderStack: File[] = [];
 
         // exclude some root folder when add files to custom include paths
         const disableInclude: boolean = AbstractProject.excludeIncSearchList.includes(
-            this.project.ToRelativePath(sourceRoot.path, false) || sourceRoot.path
+            this.project.ToRelativePath(rootFolder.path, false) || rootFolder.path
         );
 
         const sourceFilter = AbstractProject.getSourceFileFilter();
         const fileFilter = AbstractProject.getFileFilters();
 
-        // clear old data
-        rootInfo.incList = [];
-        rootInfo.fileGroups = [];
-        rootInfo.needUpdate = false;
+        if (targetFolderList) { // only update target folders
+            targetFolderList = targetFolderList.map((path) => this.project.ToAbsolutePath(path));
+            targetFolderList.forEach((dir) => { // rm old record of these folders
+                rootFolderInfo.incList = rootFolderInfo.incList.filter(incPath => !File.isSubPathOf(dir, incPath));
+                rootFolderInfo.fileGroups = rootFolderInfo.fileGroups.filter(fGroup => !File.isSubPathOf(dir, fGroup.dir.path));
+                folderStack.push(new File(dir));
+            });
+        } else { // update root folder
+            rootFolderInfo.incList = [];
+            rootFolderInfo.fileGroups = [];
+            folderStack.push(rootFolder);
+        }
+
+        rootFolderInfo.needUpdate = false;
 
         try {
 
             while (folderStack.length > 0) {
 
                 const cFolder = <File>folderStack.pop();
-                const isSourceRoot = cFolder.path === sourceRoot.path;
+                const isSourceRoot = cFolder.path === rootFolder.path;
                 const fileList = cFolder.GetList(fileFilter, File.EMPTY_FILTER);
 
                 if (fileList.length > 0) {
@@ -621,12 +638,12 @@ class SourceRootList implements SourceProvider {
                             });
                         }
 
-                        rootInfo.fileGroups.push(group);
+                        rootFolderInfo.fileGroups.push(group);
                     }
 
                     // add to include folders
                     if (!disableInclude && !isFolderExcluded) {
-                        rootInfo.incList.push(cFolder.path);
+                        rootFolderInfo.incList.push(cFolder.path);
                     }
                 }
 
@@ -637,13 +654,13 @@ class SourceRootList implements SourceProvider {
             }
 
         } catch (error) {
-            rootInfo.needUpdate = true; // set need update flag
+            rootFolderInfo.needUpdate = true; // set need update flag
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
     }
 }
 
-//============================================
+///////////////////////////////////////////////
 
 export interface BaseProjectInfo {
     rootFolder: File;
@@ -651,7 +668,7 @@ export interface BaseProjectInfo {
     prjConfig: ProjectConfiguration<any>;
 }
 
-export interface FilesOptions {
+export interface SourceExtraCompilerOptionsCfg {
     version: string;
     files?: { [key: string]: string };
     virtualPathFiles?: { [key: string]: string };
@@ -690,10 +707,11 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     protected configMap: ConfigMap;
     protected packManager: PackageManager;
     protected dependenceManager: DependenceManager;
-    protected rootDirWatcher: FileWatcher | undefined;
+    protected rootDir: File | undefined;
     protected eideDir: File | undefined;
     protected toolchain: IToolchian | undefined;
     protected prevToolchain: IToolchian | undefined;
+    protected eideDirWatcher: FileWatcher | undefined;
 
     // sources
     protected sourceRoots: SourceRootList;
@@ -725,12 +743,14 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
     protected emit(event: 'dataChanged', type?: DataChangeType): boolean;
     protected emit(event: 'cppConfigChanged'): boolean;
+    protected emit(event: 'targetSwitched'): boolean;
     protected emit(event: any, argc?: any): boolean {
         return this._event.emit(event, argc);
     }
 
     on(event: 'dataChanged', listener: (type?: DataChangeType) => void): this;
     on(event: 'cppConfigChanged', listener: () => void): this;
+    on(event: 'targetSwitched', listener: () => void): this;
     on(event: any, listener: (argc?: any) => void): this {
         this._event.on(event, listener);
         return this;
@@ -765,10 +785,15 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
     private loadProjectDirectory() {
 
-        // load root folder
-        this.rootDirWatcher = new FileWatcher(new File(this.GetWorkspaceConfig().GetFile().dir), false);
-        this.rootDirWatcher.on('error', (err) => GlobalEvent.emit('error', err));
-        this.eideDir = new File(this.rootDirWatcher.file.path + File.sep + AbstractProject.EIDE_DIR);
+        // init folders
+        this.rootDir = new File(this.GetWorkspaceConfig().GetFile().dir);
+        this.eideDir = new File(this.rootDir.path + File.sep + AbstractProject.EIDE_DIR);
+
+        // init watcher for '.eide' folder
+        this.eideDirWatcher = new FileWatcher(this.eideDir, false, false);
+        this.eideDirWatcher.on('error', err => GlobalEvent.emit('error', err));
+        this.eideDirWatcher.OnChanged = f => this.onEideDirChanged('changed', f);
+        this.eideDirWatcher.OnRename = f => this.onEideDirChanged('renamed', f);
 
         // create log folder
         this.getLogDir().CreateDir();
@@ -777,13 +802,13 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         if (this.isOldVersionProject) {
 
             // rename old 'deps' folder name for old eide version
-            const depsFolder = File.fromArray([this.rootDirWatcher.file.path, NodePath.normalize(DependenceManager.DEPENDENCE_DIR)]);
+            const depsFolder = File.fromArray([this.rootDir.path, NodePath.normalize(DependenceManager.DEPENDENCE_DIR)]);
             if (!depsFolder.IsDir()) { // if 'deps' folder is not exist
 
                 // these folder is for old eide version
                 const oldDepsFolders = [
-                    new File(this.rootDirWatcher.file.path + File.sep + 'deps'),
-                    new File(this.rootDirWatcher.file.path + File.sep + 'dependence')
+                    new File(this.rootDir.path + File.sep + 'deps'),
+                    new File(this.rootDir.path + File.sep + 'dependence')
                 ];
 
                 // create new 'deps' folder
@@ -926,7 +951,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
      * get project root folder
     */
     GetRootDir(): File {
-        return (<FileWatcher>this.rootDirWatcher).file;
+        return <File>this.rootDir;
     }
 
     getSourceRootFolders(): FolderInfo[] {
@@ -1038,14 +1063,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     }
 
     Close() {
-
-        if (this.rootDirWatcher) {
-            this.rootDirWatcher.Close();
-        }
-
         this.sourceRoots.DisposeAll();
-
         this.configMap.Dispose();
+        this.eideDirWatcher?.Close();
     }
 
     async Create(option: CreateOptions) {
@@ -1124,6 +1144,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
             this._switchTarget(targetName);
             this.reloadToolchain();
             this.reloadUploader();
+            this.emit('targetSwitched');
         }
     }
 
@@ -1529,24 +1550,24 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         return this.__env_lastEnvObj;
     }
 
-    getFilesOptionsFile(): File {
+    getSourceExtraArgsCfgFile(notCreate: boolean = false): File {
 
         const target = this.getCurrentTarget().toLowerCase();
-        const templateFile = File.fromArray([
-            ResManager.GetInstance().GetAppDataDir().path, 'template.files.options.yml'
-        ]);
-
         const optFile = File.fromArray([this.getEideDir().path, `${target}.files.options.yml`]);
-        if (!optFile.IsFile()) {
+
+        if (!optFile.IsFile() && !notCreate) {
+            const templateFile = File.fromArray([
+                ResManager.GetInstance().GetAppDataDir().path, 'template.files.options.yml'
+            ]);
             optFile.Write(templateFile.Read());
         }
 
         return optFile;
     }
 
-    getFilesOptions(): FilesOptions | undefined {
+    getSourceExtraArgsCfg(): SourceExtraCompilerOptionsCfg | undefined {
 
-        const optFile = this.getFilesOptionsFile();
+        const optFile = this.getSourceExtraArgsCfgFile();
 
         try {
             return yaml.parse(optFile.Read());
@@ -1653,6 +1674,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
         ToolchainManager.getInstance().on('onChanged', (tName) => this.onToolchainModified(tName));
 
+        this.on('targetSwitched', () => this.onTargetChanged());
+
         // update config which depend other configs
         this.on('dataChanged', (type) => {
 
@@ -1706,6 +1729,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     protected async AfterLoad(): Promise<void> {
 
         const prjConfig = this.GetConfiguration();
+
+        // start watch '.eide' folder
+        this.eideDirWatcher?.Watch();
 
         // force flush toolchain dependence
         this.dependenceManager.Refresh(true);
@@ -1797,6 +1823,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     protected abstract onDeviceChanged(oledDevice?: CurrentDevice): void;
 
     protected abstract onPackageChanged(): void;
+
+    protected abstract onTargetChanged(): void;
+
+    protected abstract onEideDirChanged(evt: 'changed' | 'renamed', file: File): void;
 
     abstract NotifyBuilderConfigUpdate(fileName: string): void;
 
@@ -1964,8 +1994,72 @@ class EIDEProject extends AbstractProject {
         this.emit('dataChanged', 'pack');
     }
 
+    protected onTargetChanged(): void {
+        this.onSrcExtraOptionsChanged('changed');
+    }
+
+    protected onEideDirChanged(evt: 'changed' | 'renamed', file: File): void {
+
+        const target = this.getCurrentTarget().toLowerCase();
+        const cfgFile = File.fromArray([this.getEideDir().path, `${target}.files.options.yml`]);
+
+        if (file.path == cfgFile.path && cfgFile.IsFile()) {
+            this.onSrcExtraOptionsChanged(evt);
+        }
+    }
+
     NotifyBuilderConfigUpdate(fileName: string): void {
         this.dependenceManager.flushToolchainDep();
+    }
+
+    ////////////////////////////////
+
+    protected srcExtraCompilerConfig: SourceExtraCompilerOptionsCfg | undefined;
+
+    private onSrcExtraOptionsChanged(evt: 'changed' | 'renamed') {
+        this.srcExtraCompilerConfig = this.getSourceExtraArgsCfg();
+        this.emit('cppConfigChanged');
+    }
+
+    private getExtraCompilerOptionsBySrcFile(srcPath: string, vPath?: string): string[] | undefined {
+
+        let commandLine: string | undefined;
+
+        // parser
+        const matcher = (parttenInfo: any, filePath: string) => {
+            for (const expr in parttenInfo) {
+                const searchPath = File.ToUnixPath(filePath)
+                    .replace(/\.\.\//g, '')
+                    .replace(/\.\//g, ''); // globmatch bug ? it can't parse path which have '.' or '..'
+                if (globmatch.isMatch(searchPath, expr)) {
+                    const val = parttenInfo[expr]?.trim().replace(/(?:\r\n|\n)$/, '')
+                    if (val) {
+                        if (commandLine) {
+                            commandLine += ` ${val}`;
+                        } else {
+                            commandLine = val;
+                        }
+                    }
+                }
+            }
+        };
+
+        if (this.srcExtraCompilerConfig) {
+
+            // filesystem files
+            if (typeof this.srcExtraCompilerConfig?.files == 'object') {
+                matcher(this.srcExtraCompilerConfig?.files, srcPath);
+            }
+
+            // virtual files
+            if (vPath && typeof this.srcExtraCompilerConfig?.virtualPathFiles == 'object') {
+                matcher(this.srcExtraCompilerConfig?.virtualPathFiles, vPath);
+            }
+        }
+
+        if (commandLine) {
+            return commandLine.split(' ');
+        }
     }
 
     //////////////////////////////// source refs ///////////////////////////////////
@@ -2167,7 +2261,7 @@ class EIDEProject extends AbstractProject {
             cDevice = this.packManager.GetCurrentDevice();
         }
 
-        const fileGroups: FileGroup[] = [];
+        let fileGroups: FileGroup[] = [];
         let halFiles: FileItem[] = [];
 
         this.getFileGroups().forEach((_group) => {
@@ -2205,6 +2299,9 @@ class EIDEProject extends AbstractProject {
                 fileGroups[index].files = fileGroups[index].files.concat(halFiles);
             }
         }
+
+        // rm empty file groups for MDK
+        fileGroups = fileGroups.filter(g => g.files.length > 0);
 
         // set keil xml
         keilParser.SetKeilXml(this, fileGroups, cDevice);
@@ -2277,7 +2374,10 @@ class EIDEProject extends AbstractProject {
 
         await super.AfterLoad();
 
-        /* update workspace settings */
+        // register cfg watcher
+        this.onSrcExtraOptionsChanged('changed'); // notify cpptools update now
+
+        // update workspace settings
         if (this.isNewProject) {
 
             const workspaceConfig = this.GetWorkspaceConfig();
@@ -2294,7 +2394,7 @@ class EIDEProject extends AbstractProject {
                 settings['C_Cpp.default.configurationProvider'] = this.extensionId;
             }
 
-            if (toolchain.name === 'Keil_C51') {
+            if (this.GetConfiguration().config.type == 'C51') {
                 if (settings['C_Cpp.errorSquiggles'] === undefined) {
                     settings['C_Cpp.errorSquiggles'] = "Disabled";
                 }
@@ -2451,11 +2551,15 @@ class EIDEProject extends AbstractProject {
 
             if (cfgFile.IsFile()) {
                 try {
-                    const cfg = jsonc.parse(cfgFile.Read());
-                    if (Array.isArray(cfg['configurations'])) {
-                        const idx = cfg['configurations'].findIndex((item) => item['name'] == os.platform());
-                        if (idx != -1 && cfg['configurations'][idx].configurationProvider == this.extensionId) {
-                            fs.unlinkSync(cfgFile.path);
+                    if (this.isNewProject || this.isOldVersionProject) {
+                        fs.unlinkSync(cfgFile.path);
+                    } else {
+                        const cfg = jsonc.parse(cfgFile.Read());
+                        if (Array.isArray(cfg['configurations'])) {
+                            const idx = cfg['configurations'].findIndex((item) => item['name'] == os.platform());
+                            if (idx != -1 && cfg['configurations'][idx].configurationProvider == this.extensionId) {
+                                fs.unlinkSync(cfgFile.path);
+                            }
                         }
                     }
                 } catch (error) {
@@ -2497,7 +2601,9 @@ class EIDEProject extends AbstractProject {
     extensionId: string = 'cl.eide';
 
     // virtual source path list (!! must be real absolute path !!)
-    private vSourceList: string[] = [];
+    //      key: fsPath
+    //      val: virtual path
+    private vSourceList: Map<string, string> = new Map();
 
     private cppToolsConfig: CppConfigItem = {
         name: os.platform(),
@@ -2625,11 +2731,12 @@ class EIDEProject extends AbstractProject {
         // update source browse path
         let srcBrowseFolders: string[] = [];
 
-        this.vSourceList = [];
+        this.vSourceList.clear();
         this.getVirtualSourceManager().traverse((vFolder) => {
             vFolder.folder.files.forEach((vFile) => {
                 const fAbsPath = platform.realpathSync(this.ToAbsolutePath(vFile.path)); // resolve symbol link
-                this.vSourceList.push(fAbsPath);
+                const virtPath = `${vFolder.path}/${NodePath.basename(vFile.path)}`;
+                this.vSourceList.set(fAbsPath, virtPath);
                 srcBrowseFolders.push(`${File.ToUnixPath(NodePath.dirname(fAbsPath))}/*`);
             });
         });
@@ -2681,7 +2788,7 @@ class EIDEProject extends AbstractProject {
             resolve(
                 AbstractProject.headerFilter.test(filePath) ||
                 filePath.startsWith(prjRoot) ||
-                this.vSourceList.includes(filePath)
+                this.vSourceList.has(filePath)
             );
         });
     }
@@ -2689,9 +2796,26 @@ class EIDEProject extends AbstractProject {
     private readonly cFileMatcher = /\.(?:c|h)$/i;
 
     provideConfigurations(uris: vscode.Uri[], token?: vscode.CancellationToken | undefined): Thenable<SourceFileConfigurationItem[]> {
+
         return new Promise((resolve) => {
             resolve(uris.map((uri) => {
-                if (this.cFileMatcher.test(uri.fsPath)) { // c files
+
+                let fileArgs: string[] | undefined;
+
+                if (this.cppToolsConfig.compilerPath) { // if compiler is available, parse file options
+                    const filePath = platform.realpathSync(uri.fsPath);
+                    const vPath = this.vSourceList.get(filePath);
+                    fileArgs = this.getExtraCompilerOptionsBySrcFile(filePath, vPath);
+                }
+
+                // c files
+                if (this.cFileMatcher.test(uri.fsPath)) {
+
+                    let compilerArgs = this.cppToolsConfig.cCompilerArgs;
+                    if (fileArgs) {
+                        compilerArgs = (compilerArgs || []).concat(fileArgs);
+                    }
+
                     return {
                         uri: uri,
                         configuration: {
@@ -2700,10 +2824,19 @@ class EIDEProject extends AbstractProject {
                             defines: this.cppToolsConfig.defines,
                             forcedInclude: this.cppToolsConfig.forcedInclude,
                             compilerPath: this.cppToolsConfig.compilerPath,
-                            compilerArgs: this.cppToolsConfig.cCompilerArgs
+                            compilerArgs: compilerArgs
                         }
                     };
-                } else { // c++ files
+                }
+
+                // c++ files
+                else {
+
+                    let compilerArgs = this.cppToolsConfig.cppCompilerArgs;
+                    if (fileArgs) {
+                        compilerArgs = (compilerArgs || []).concat(fileArgs);
+                    }
+
                     return {
                         uri: uri,
                         configuration: {
@@ -2712,7 +2845,7 @@ class EIDEProject extends AbstractProject {
                             defines: this.cppToolsConfig.defines,
                             forcedInclude: this.cppToolsConfig.forcedInclude,
                             compilerPath: this.cppToolsConfig.compilerPath,
-                            compilerArgs: this.cppToolsConfig.cppCompilerArgs
+                            compilerArgs: compilerArgs
                         }
                     };
                 }
