@@ -356,10 +356,9 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
 
     const resManager = ResManager.GetInstance();
 
-    const eideCfg = resManager.getAppConfig<any>();
     const binFolder = resManager.GetBinDir();
-
-    let localVersion = eideCfg['binary_min_version'];
+    const eideCfg = resManager.getAppConfig<any>();
+    const minReqVersion = eideCfg['binary_min_version'];
 
     // !! for compatibility with offline-package !!
     // if we found eide binaries in plug-in root folder, move it 
@@ -380,40 +379,60 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
         platform.DeleteDir(binFolder);
     }
 
-    // if 'bin' dir is existed, we exit, if not, we need install eide-binaries
+    // if binaries is installed, we try check update from remote repo after x sec delay
     else if (checkBinFolder(binFolder)) {
-        // if user enabled auto-update, we try get new version from 
-        // github, and install it at background after 1 min delay
-        //if (SettingManager.GetInstance().isEnableAutoUpdateEideBinaries()) {
+
+        // 5sec delay
         setTimeout(async () => {
+
+            let localVersion: string | undefined;
+
             // get local binary version from disk
+            // check binaries Main_Ver (<Main_Ver>.xx.xx <=> <Main_Ver>.xx.xx)
             const verFile = File.fromArray([binFolder.path, 'VERSION']);
             if (verFile.IsFile()) {
                 const cont = verFile.Read().trim();
                 if (utility.isVersionString(cont)) {
                     localVersion = cont;
+                    const mainLocalVersion = parseInt(localVersion.split('.')[0]);
+                    const mainMinReqVersion = parseInt(minReqVersion.split('.')[0]);
+                    if (mainMinReqVersion > mainLocalVersion) { // local Main verson < min Main version
+                        localVersion = undefined; // local binaries is invalid, force update
+                    }
                 }
             }
+
             // try update
-            const done = await tryUpdateBinaries(binFolder, localVersion);
-            if (!done) {
-                const msg = `Update eide-binaries failed, please restart vscode !`;
-                const sel = await vscode.window.showErrorMessage(msg, 'Restart', 'Cancel');
-                if (sel == 'Restart') {
-                    vscode.commands.executeCommand('workbench.action.reloadWindow');
+            if (localVersion) {
+                const done = await tryUpdateBinaries(binFolder, localVersion);
+                if (!done) {
+                    const msg = `Update eide-binaries failed, please restart vscode !`;
+                    const sel = await vscode.window.showErrorMessage(msg, 'Restart', 'Cancel');
+                    if (sel == 'Restart') {
+                        vscode.commands.executeCommand('workbench.action.reloadWindow');
+                    }
                 }
             }
+
+            // binaries folder is existed, but can not get local binaries version, 
+            // we need to force install it
+            else {
+                checkAndInstallBinaries(true);
+            }
+
         }, 5 * 1000);
-        //}
+
         return true;
     }
 
-    return await tryUpdateBinaries(binFolder, localVersion, true);
+    // not found binaries folder, install it
+    return await tryUpdateBinaries(binFolder, undefined, true);
 }
 
-async function tryUpdateBinaries(binFolder: File, localVer: string, notConfirm?: boolean): Promise<boolean> {
+async function tryUpdateBinaries(binFolder: File, localVer?: string, notConfirm?: boolean): Promise<boolean> {
 
-    let binVersion: string = localVer;
+    const eideCfg = ResManager.GetInstance().getAppConfig<any>();
+    const minReqVersion = eideCfg['binary_min_version'];
 
     const getVersionFromRepo = async (): Promise<string | Error | undefined> => {
         try {
@@ -429,42 +448,81 @@ async function tryUpdateBinaries(binFolder: File, localVer: string, notConfirm?:
         }
     };
 
-    // get new version number from repo 
-    const newVersion = await getVersionFromRepo();
-    if (typeof newVersion == 'string') {
-        const remotVer = newVersion.trim();
-        if (utility.isVersionString(remotVer)) {
-            const localMainVer: string = localVer.split('.')[0];
-            const remotMainVer: string = remotVer.split('.')[0];
-            if (localMainVer == remotMainVer && // main version number must be equal
-                utility.compareVersion(remotVer, localVer) > 0) { // remote version > local version ?
-                binVersion = remotVer;
+    const getAvailableBinariesVersions = async (): Promise<string[] | Error | undefined> => {
+        try {
+            const url = `https://api-github.em-ide.com/repos/github0null/eide-resource/contents/binaries/${platformType}`;
+            const fList = await utility.readGithubRepoFolder(url);
+            if (fList instanceof Error) throw fList;
+            return fList.filter(f => f.name.startsWith('bin-'))
+                .map(f => f.name.replace('bin-', '').replace('.7z', ''))
+                .filter(vStr => utility.isVersionString(vStr));
+        } catch (error) {
+            return error;
+        }
+    };
+
+    let preinstallVersion: string | undefined;
+
+    // compare version if local version is available
+    if (localVer) {
+        const newVersion = await getVersionFromRepo();
+        if (typeof newVersion == 'string') {
+            const remotVer = newVersion.trim();
+            if (utility.isVersionString(remotVer)) {
+                const localMainVer: string = localVer.split('.')[0];
+                const remotMainVer: string = remotVer.split('.')[0];
+                if (localMainVer == remotMainVer && // main version number must be equal
+                    utility.compareVersion(remotVer, localVer) > 0) { // remote version > local version ?
+                    preinstallVersion = remotVer; // local binaries need update
+                }
             }
+        }
+    }
+
+    // can not match version, get version list from repo
+    // select the latest version for min version requirment
+    else {
+        const vList = await getAvailableBinariesVersions();
+        if (vList && Array.isArray(vList)) {
+            const minMainVer: string = minReqVersion.split('.')[0];
+            const validVerList = vList.filter(ver => ver.split('.')[0] == minMainVer);
+            if (validVerList.length > 0) {
+                preinstallVersion = validVerList[0];
+                for (const ver of validVerList) {
+                    if (utility.compareVersion(ver, preinstallVersion) > 0) {
+                        preinstallVersion = ver;
+                    }
+                }
+            }
+        }
+    }
+
+    // check version
+    if (localVer) { // binaries is installed, found local version
+        if (preinstallVersion == undefined) {
+            return true; // local version is latested, not need update
+        }
+    } else { // binaries is not installed
+        if (preinstallVersion == undefined) {
+            throw new Error(`Can not fetch binaries version from remote github repo, Check your network and retry !`);
         }
     }
 
     // check bin folder
-    if (checkBinFolder(binFolder)) {
+    // show notify to user and request a confirm
+    if (checkBinFolder(binFolder) && preinstallVersion) {
 
-        // not need update, exit now
-        if (binVersion == localVer) {
-            return true;
+        if (!notConfirm) {
+            const msg = `New update for eide binaries, version: '${preinstallVersion}', [ChangeLog](https://github.com/github0null/eide-resource/pulls?q=is%3Apr+is%3Aclosed), install now ?`;
+            const sel = await vscode.window.showInformationMessage(msg, 'Yes', 'Later');
+            if (sel != 'Yes') { return true; } // user canceled
         }
 
-        // if we found a new version, delete old bin Folder
-        else {
-            // show notify to user and request a confirm
-            if (!notConfirm) {
-                const msg = `New update for eide binaries, version: '${binVersion}', [ChangeLog](https://github.com/github0null/eide-resource/pulls?q=is%3Apr+is%3Aclosed), install now ?`;
-                const sel = await vscode.window.showInformationMessage(msg, 'Yes', 'Later');
-                if (sel != 'Yes') { return true; } // user canceled
-            }
-            // del old bin folder before install
-            platform.DeleteDir(binFolder);
-        }
+        // del old bin folder before install
+        platform.DeleteDir(binFolder);
     }
 
-    return await tryInstallBinaries(binFolder, binVersion);
+    return await tryInstallBinaries(binFolder, preinstallVersion);
 }
 
 async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<boolean> {

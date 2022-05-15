@@ -4,10 +4,11 @@
 
 ***
 
-### [v3.6.1]
+### [v3.6.2]
 
 **Fixed**:
   - When there are too many nested folders, the response is slow when excluding directories.
+  - Can not auto fetch eide-binaries update.
 
 **Changed**:
   - Merge unify_builder's commandline args to a single params file.
