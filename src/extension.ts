@@ -396,7 +396,7 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
                     localVersion = cont;
                     const mainLocalVersion = parseInt(localVersion.split('.')[0]);
                     const mainMinReqVersion = parseInt(minReqVersion.split('.')[0]);
-                    if (mainMinReqVersion > mainLocalVersion) { // local Main verson < min Main version
+                    if (mainMinReqVersion != mainLocalVersion) { // local Main verson != min Main version
                         localVersion = undefined; // local binaries is invalid, force update
                     }
                 }
