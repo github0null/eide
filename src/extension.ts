@@ -448,6 +448,19 @@ async function tryUpdateBinaries(binFolder: File, localVer?: string, notConfirm?
         }
     };
 
+    const getAvailableBinariesVersions = async (): Promise<string[] | Error | undefined> => {
+        try {
+            const url = `https://api-github.em-ide.com/repos/github0null/eide-resource/contents/binaries/${platformType}`;
+            const fList = await utility.readGithubRepoFolder(url);
+            if (fList instanceof Error) throw fList;
+            return fList.filter(f => f.name.startsWith('bin-'))
+                .map(f => f.name.replace('bin-', '').replace('.7z', ''))
+                .filter(vStr => utility.isVersionString(vStr));
+        } catch (error) {
+            return error;
+        }
+    };
+
     let preinstallVersion: string | undefined;
 
     // compare version if local version is available
@@ -466,22 +479,9 @@ async function tryUpdateBinaries(binFolder: File, localVer?: string, notConfirm?
         }
     }
 
-    const getAvailableBinariesVersions = async (): Promise<string[] | Error | undefined> => {
-        try {
-            const url = `https://api-github.em-ide.com/repos/github0null/eide-resource/contents/binaries/${platformType}`;
-            const fList = await utility.readGithubRepoFolder(url);
-            if (fList instanceof Error) throw fList;
-            return fList.filter(f => f.name.startsWith('bin-'))
-                .map(f => f.name.replace('bin-', '').replace('.7z', ''))
-                .filter(vStr => utility.isVersionString(vStr));
-        } catch (error) {
-            return error;
-        }
-    };
-
     // can not match version, get version list from repo
     // select the latest version for min version requirment
-    if (localVer == undefined && preinstallVersion == undefined) {
+    else {
         const vList = await getAvailableBinariesVersions();
         if (vList && Array.isArray(vList)) {
             const minMainVer: string = minReqVersion.split('.')[0];
