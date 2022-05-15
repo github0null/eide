@@ -62,6 +62,9 @@ export interface BuilderParams {
     name: string;
     target: string;
     toolchain: ToolchainName;
+    toolchainCfgFile: string;
+    toolchainLocation: string;
+    buildMode: string;
     showRepathOnLog?: boolean,
     threadNum?: number;
     dumpPath: string;
@@ -134,7 +137,7 @@ export abstract class CodeBuilder {
 
         // append user options for files
         try {
-            const options = this.project.getFilesOptions();
+            const options = this.project.getSourceExtraArgsCfg();
 
             // parser
             const matcher = (parttenInfo: any, fieldName: string) => {
@@ -145,11 +148,13 @@ export abstract class CodeBuilder {
                             .replace(/\.\.\//g, '')
                             .replace(/\.\//g, ''); // globmatch bug ? it can't parse path which have '.' or '..'
                         if (globmatch.isMatch(searchPath, expr)) {
-                            const val = parttenInfo[expr]?.trim().replace(/(?:\r\n|\n)$/, '')
-                            if (srcParams[srcInf.path]) {
-                                srcParams[srcInf.path] += ` ${val || ''}`
-                            } else {
-                                srcParams[srcInf.path] = val || '';
+                            const val = parttenInfo[expr]?.trim().replace(/(?:\r\n|\n)$/, '');
+                            if (val) {
+                                if (srcParams[srcInf.path]) {
+                                    srcParams[srcInf.path] += ` ${val}`
+                                } else {
+                                    srcParams[srcInf.path] = val;
+                                }
                             }
                         }
                     }
@@ -191,7 +196,7 @@ export abstract class CodeBuilder {
         let mTimeMs: number | undefined;
 
         try {
-            mTimeMs = fs.statSync(this.project.getFilesOptionsFile().path).mtimeMs
+            mTimeMs = fs.statSync(this.project.getSourceExtraArgsCfgFile().path).mtimeMs
         } catch (error) {
             // do nothing
         }
@@ -364,22 +369,38 @@ export abstract class CodeBuilder {
         const settingManager = SettingManager.GetInstance();
         const toolchain = this.project.getToolchain();
 
-        const binDir = toolchain.getToolchainDir().path;
         const dumpDir = this.project.getLogDir().path;
         const outDir = File.ToUnixPath(this.project.getOutputDir());
         const paramsPath = this.project.ToAbsolutePath(outDir + File.sep + this.paramsFileName);
         const compileOptions: ICompileOptions = this.project.GetConfiguration()
             .compileConfigModel.getOptions(this.project.getEideDir().path, config);
         const memMaxSize = this.getMaxSize();
-        const modeList: string[] = [];
         const oldParamsPath = `${paramsPath}.old`;
         const prevParams: BuilderParams | undefined = File.IsFile(oldParamsPath) ? JSON.parse(fs.readFileSync(oldParamsPath, 'utf8')) : undefined;
         const sourceInfo = this.genSourceInfo(prevParams);
+
+        // set build mode
+        const builderModeList: string[] = [];
+
+        if (config.toolchain === 'Keil_C51') {
+            // disable increment compile for Keil C51
+            builderModeList.push('Normal');
+        } else {
+            builderModeList.push(this.isRebuild() ? 'Normal' : 'Fast');
+            if (settingManager.isUseMultithreadMode()) { builderModeList.push('MULTHREAD'); }
+        }
+
+        if (this.useShowParamsMode) {
+            builderModeList.push('Debug');
+        }
 
         const builderOptions: BuilderParams = {
             name: config.name,
             target: this.project.getCurrentTarget(),
             toolchain: toolchain.name,
+            toolchainLocation: toolchain.getToolchainDir().path,
+            toolchainCfgFile: toolchain.modelName,
+            buildMode: builderModeList.map(str => str.toLowerCase()).join('|'),
             showRepathOnLog: settingManager.isPrintRelativePathWhenBuild(),
             threadNum: settingManager.getThreadNumber(),
             rootDir: this.project.GetRootDir().path,
@@ -448,23 +469,6 @@ export abstract class CodeBuilder {
             }
         }
 
-        // set build mode
-        if (config.toolchain === 'Keil_C51') {
-            // disable fast compile for Keil C51
-            modeList.push('Normal');
-        } else {
-            modeList.push(this.isRebuild() ? 'Normal' : 'Fast');
-        }
-
-        if (this.useShowParamsMode) {
-            modeList.push('Debug');
-        }
-
-        // disable multi-thread in Keil_C51
-        if (settingManager.isUseMultithreadMode() && config.toolchain !== 'Keil_C51') {
-            modeList.push('MULTHREAD');
-        }
-
         // write project build params
         fs.writeFileSync(paramsPath, JSON.stringify(builderOptions, undefined, 4));
 
@@ -479,10 +483,7 @@ export abstract class CodeBuilder {
         }
 
         let cmds = [
-            '-b', binDir,
-            '-M', toolchain.modelName,
             '-p', paramsPath,
-            '-m', modeList.join('-')
         ];
 
         const extraCmd = settingManager.getBuilderAdditionalCommandLine()?.trim();

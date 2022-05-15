@@ -1063,8 +1063,8 @@ class ARMParser extends KeilParser<KeilARMOption> {
             prj.getSourceIncludeList()
         ));
 
-        let devName: string;
-        let vendor: string = 'STMicroelectronics';
+        let devName: string = '';
+        let vendor: string = '';
 
         if (deviceInfo !== undefined) {
             const family = deviceInfo.packInfo.familyList[deviceInfo.familyIndex];
@@ -1073,8 +1073,6 @@ class ARMParser extends KeilParser<KeilARMOption> {
             if (family.vendor) {
                 vendor = family.vendor.replace(/:.+$/i, '');
             }
-        } else {
-            devName = 'STM32F103C8';
         }
 
         target.TargetName = prjConfig.config.name;

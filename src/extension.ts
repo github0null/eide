@@ -46,9 +46,7 @@ import { VirtualDocument } from './VirtualDocsProvider';
 import * as utility from './utility';
 import * as platform from './Platform';
 
-const extension_deps: string[] = [
-    "ms-vscode.cpptools"
-];
+const extension_deps: string[] = [];
 
 let projectExplorer: ProjectExplorer;
 let platformArch: string = 'x86_64';
@@ -361,7 +359,7 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
     const eideCfg = resManager.getAppConfig<any>();
     const binFolder = resManager.GetBinDir();
 
-    let localVersion = eideCfg['binaray_version'];
+    let localVersion = eideCfg['binary_min_version'];
 
     // !! for compatibility with offline-package !!
     // if we found eide binaries in plug-in root folder, move it 
