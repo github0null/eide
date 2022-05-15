@@ -2048,7 +2048,7 @@ class EIDEProject extends AbstractProject {
 
             // filesystem files
             if (typeof this.srcExtraCompilerConfig?.files == 'object') {
-                matcher(this.srcExtraCompilerConfig?.files, srcPath);
+                matcher(this.srcExtraCompilerConfig?.files, this.ToRelativePath(srcPath, false) || srcPath);
             }
 
             // virtual files
