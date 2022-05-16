@@ -4,6 +4,17 @@
 
 ***
 
+### [v3.6.4]
+
+**Fixed**:
+  - Can not throw exception when extension can not get an available binaries version.
+  - Can not switch to rebuild mode after user changed global builder options.
+
+**Changed**:
+  - Allow mult-thread build for `Keil_C51` project.
+
+***
+
 ### [v3.6.3]
 
 **Fixed**:

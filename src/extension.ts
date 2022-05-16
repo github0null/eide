@@ -504,7 +504,9 @@ async function tryUpdateBinaries(binFolder: File, localVer?: string, notConfirm?
         }
     } else { // binaries is not installed
         if (preinstallVersion == undefined) {
-            throw new Error(`Can not fetch binaries version from remote github repo, Check your network and retry !`);
+            const err = new Error(`Can not fetch binaries version from remote github repo (binaries minimum version required: '${minReqVersion}'), Check your network and retry !`);
+            GlobalEvent.emit('error', err);
+            return false;
         }
     }
 
