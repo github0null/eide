@@ -378,21 +378,7 @@ export abstract class CodeBuilder {
         const oldParamsPath = `${paramsPath}.old`;
         const prevParams: BuilderParams | undefined = File.IsFile(oldParamsPath) ? JSON.parse(fs.readFileSync(oldParamsPath, 'utf8')) : undefined;
         const sourceInfo = this.genSourceInfo(prevParams);
-
-        // set build mode
-        const builderModeList: string[] = [];
-
-        if (config.toolchain === 'Keil_C51') {
-            // disable increment compile for Keil C51
-            builderModeList.push('Normal');
-        } else {
-            builderModeList.push(this.isRebuild() ? 'Normal' : 'Fast');
-            if (settingManager.isUseMultithreadMode()) { builderModeList.push('MULTHREAD'); }
-        }
-
-        if (this.useShowParamsMode) {
-            builderModeList.push('Debug');
-        }
+        const builderModeList: string[] = []; // build mode
 
         const builderOptions: BuilderParams = {
             name: config.name,
@@ -400,7 +386,7 @@ export abstract class CodeBuilder {
             toolchain: toolchain.name,
             toolchainLocation: toolchain.getToolchainDir().path,
             toolchainCfgFile: toolchain.modelName,
-            buildMode: builderModeList.map(str => str.toLowerCase()).join('|'),
+            buildMode: 'fast|multhread',
             showRepathOnLog: settingManager.isPrintRelativePathWhenBuild(),
             threadNum: settingManager.getThreadNumber(),
             rootDir: this.project.GetRootDir().path,
@@ -445,28 +431,48 @@ export abstract class CodeBuilder {
         // generate hash for compiler options
         builderOptions.sha = this.genHashFromCompilerOptions(builderOptions);
 
-        // check whether need rebuild project
-        if (this.isRebuild() == false && prevParams) {
-            try {
-                // not found hash from old params file
-                if (prevParams.sha == undefined) {
-                    this.enableRebuild();
-                }
+        // set build mode
+        {
+            // check whether need rebuild project
+            if (this.isRebuild() == false && prevParams) {
+                try {
+                    // not found hash from old params file
+                    if (prevParams.sha == undefined) {
+                        this.enableRebuild();
+                    }
 
-                // check hash obj by specifies keys
-                else {
-                    const keyList = ['global', 'c/cpp-defines', 'c/cpp-compiler', 'asm-compiler'];
-                    for (const key of keyList) {
-                        if (!this.compareHashObj(key, prevParams.sha, builderOptions.sha)) {
-                            this.enableRebuild();
-                            break;
+                    // check hash obj by specifies keys
+                    else {
+                        const keyList = ['global', 'c/cpp-defines', 'c/cpp-compiler', 'asm-compiler'];
+                        for (const key of keyList) {
+                            if (!this.compareHashObj(key, prevParams.sha, builderOptions.sha)) {
+                                this.enableRebuild();
+                                break;
+                            }
                         }
                     }
+                } catch (error) {
+                    this.enableRebuild(); // make rebuild
+                    GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
                 }
-            } catch (error) {
-                this.enableRebuild(); // make rebuild
-                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
             }
+
+            if (config.toolchain === 'Keil_C51') { // disable increment compile for Keil C51
+                builderModeList.push('normal');
+            } else {
+                builderModeList.push(this.isRebuild() ? 'normal' : 'fast');
+            }
+
+            if (settingManager.isUseMultithreadMode()) {
+                builderModeList.push('multhread');
+            }
+
+            if (this.useShowParamsMode) {
+                builderModeList.push('debug');
+            }
+
+            // set build mode
+            builderOptions.buildMode = builderModeList.map(str => str.toLowerCase()).join('|');
         }
 
         // write project build params
