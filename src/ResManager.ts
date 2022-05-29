@@ -165,7 +165,7 @@ export class ResManager extends events.EventEmitter {
 
     enumSerialPort(): string[] {
         try {
-            const cmd = `${this.getMonoName()} "${this.getSerialPortExe().path}"`;
+            const cmd = this.getSerialPortExe().noSuffixName;
             const data = ChildProcess.execSync(cmd, { env: process.env });
             const portList: string[] = JSON.parse(CodeConverter.trimUtf8BomHeader(data));
             if (!Array.isArray(portList)) { throw Error("get current port list error !"); }
@@ -383,10 +383,6 @@ export class ResManager extends events.EventEmitter {
         return File.fromArray([this.getBuilderDir().path, 'bin', `serial_monitor${exeSuffix()}`]);
     }
 
-    getMonoName(): string {
-        return 'mono';
-    }
-
     /* --------------- tools -------------------- */
 
     getUtilToolsDir(): string {
@@ -444,9 +440,8 @@ export class ResManager extends events.EventEmitter {
         /* load extension device list */
         try {
 
-            const eideDefFile = SettingManager.GetInstance().getJlinkDevXmlFile();
             const jlinkDefFile = File.fromArray([SettingManager.GetInstance().getJlinkDir(), 'JLinkDevices.xml']);
-            const file = jlinkDevXmlFile || eideDefFile || jlinkDefFile;
+            const file = jlinkDevXmlFile || jlinkDefFile;
 
             if (file && file.IsFile()) {
                 const parser = new x2js({

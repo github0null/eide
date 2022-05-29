@@ -319,9 +319,10 @@ export abstract class CodeBuilder {
         outDir.CreateDir(true);
 
         // generate command line
-        const cmds = [`${this.getBuilderExe().path}`].concat(this.getCommands());
-        const exeName: string = resManager.getMonoName();
-        const commandLine = CmdLineHandler.getCommandLine(exeName, cmds);
+        const commandLine = CmdLineHandler.getCommandLine(
+            this.getBuilderExe().noSuffixName,
+            this.getCommands()
+        );
 
         return commandLine;
     }
@@ -385,12 +386,12 @@ export abstract class CodeBuilder {
             target: this.project.getCurrentTarget(),
             toolchain: toolchain.name,
             toolchainLocation: toolchain.getToolchainDir().path,
-            toolchainCfgFile: toolchain.modelName,
+            toolchainCfgFile: NodePath.normalize(`../cfg/${toolchain.modelName}`),
             buildMode: 'fast|multhread',
             showRepathOnLog: settingManager.isPrintRelativePathWhenBuild(),
             threadNum: settingManager.getThreadNumber(),
             rootDir: this.project.GetRootDir().path,
-            dumpPath: File.ToLocalPath(this.project.ToRelativePath(dumpDir, false) || dumpDir),
+            dumpPath: File.ToLocalPath(outDir),
             outDir: File.ToLocalPath(outDir),
             ram: memMaxSize?.ram,
             rom: memMaxSize?.rom,
@@ -934,7 +935,7 @@ export class ARMCodeBuilder extends CodeBuilder {
 
                 extraCommands.push({
                     name: 'axf to elf',
-                    command: `mono "\${BuilderFolder}${File.sep}utils${File.sep}axf2elf${exeSuffix()}" -d "${tool_root_folder}" -b "${ouput_path}.bin" -i "${ouput_path}.axf" -o "${ouput_path}.elf" > "${axf2elf_log}"`
+                    command: `axf2elf -d "${tool_root_folder}" -b "${ouput_path}.bin" -i "${ouput_path}.axf" -o "${ouput_path}.elf" > "${axf2elf_log}"`
                 });
             }
 

@@ -6,7 +6,7 @@
 
 ## 简述 📑
 
-> 受支持的平台: **Windows (Windows 7 SP1 and later)**, **Linux x86_64**
+> 受支持的平台: **Windows X64 (>= Windows 10)**, **Linux x64**
 
 一款适用于 8051/STM8/Cortex-M/RISC-V 的单片机开发环境。
 
