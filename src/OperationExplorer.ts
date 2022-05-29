@@ -237,20 +237,6 @@ export class OperationExplorer {
             }
         });
 
-        icoPath = resManager.GetIconByName('SerialPort_16x.svg');
-        this.provider.AddData({
-            label: view_str$operation$open_serialport,
-            command: {
-                title: view_str$operation$open_serialport,
-                command: '_cl.eide.Operation.OpenSerialPortMonitor'
-            },
-            tooltip: view_str$operation$open_serialport,
-            iconPath: {
-                light: icoPath.path,
-                dark: icoPath.path
-            }
-        });
-
         const tcList: ToolchainName[] = ['AC5', 'GCC', 'IAR_STM8', 'SDCC', 'Keil_C51', 'RISCV_GCC', 'ANY_GCC', 'GNU_SDCC_STM8'];
         const toolchainManager = ToolchainManager.getInstance();
         const checkResults = tcList.map((tcName) => { return toolchainManager.isToolchainPathReady(tcName); });
@@ -1249,8 +1235,9 @@ export class OperationExplorer {
             terminal.show(true);
 
             /* send command */
-            const commandLine = `"${resManager.getSerialPortExe().path}" ${paramList.join(' ')}`;
-            terminal.sendText(`${resManager.getMonoName()} ${commandLine}`);
+            const exeName = resManager.getSerialPortExe().noSuffixName;
+            const cmd = paramList.join(' ');
+            terminal.sendText(`${exeName} ${cmd}`);
 
         } catch (error) {
             GlobalEvent.emit('error', error);

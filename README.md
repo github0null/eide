@@ -8,7 +8,7 @@
 
 ## Summary 📑
 
-> Supported Platforms: **Windows (Windows 7 SP1 and later)**, **Linux x86_64**
+> Supported Platforms: **Windows X64 (>= Windows 10)**, **Linux x64**
 
 A mcu development environment for `8051/AVR/STM8/Cortex-M[0/0+/3/4/7]/RISC-V/Universal-Gcc` on VsCode. 
 

@@ -345,16 +345,6 @@ export class SettingManager {
         return defPath || 'null';
     }
 
-    getJlinkDevXmlFile(): File | undefined {
-        const path = this.getConfiguration().get<string>('JLink.DeviceXmlPath');
-        if (path) {
-            const file = new File(path);
-            if (file.IsFile()) {
-                return file;
-            }
-        }
-    }
-
     getStvpExePath(): string {
         return this.replaceEnvVariable(
             this.getExePathFromConfig('STM8.STVP.CliExePath', 'STVP_CmdLine') || 'null'
@@ -416,7 +406,7 @@ export class SettingManager {
 
     getThreadNumber(): number {
         const num = this.getConfiguration().get<number>('Builder.ThreadNumber') || -1;
-        if (num <= 0) { return os.cpus().length + 2; }
+        if (num <= 0) { return os.cpus().length; }
         return num;
     }
 

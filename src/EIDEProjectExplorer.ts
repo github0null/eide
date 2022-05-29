@@ -2429,9 +2429,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         paramsFile.Write(JSON.stringify(cmdList));
 
         /* launch */
-        const resManager = ResManager.GetInstance();
-        const cmds = [`${ResManager.GetInstance().getBuilder().path}`].concat(['-r', paramsFile.path]);
-        const commandLine = CmdLineHandler.getCommandLine(resManager.getMonoName(), cmds);
+        const exeName = ResManager.GetInstance().getBuilder().noSuffixName;
+        const commandLine = CmdLineHandler.getCommandLine(exeName, ['-r', paramsFile.path]);
         runShellCommand('build-workspace', commandLine);
     }
 

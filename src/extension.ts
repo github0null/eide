@@ -343,13 +343,8 @@ async function onSelectCurSerialName() {
 //////////////////////////////////////////////////
 
 function checkBinFolder(binFolder: File): boolean {
-    if (os.platform() == 'win32') {
-        return binFolder.IsDir() &&
-            File.fromArray([binFolder.path, File.ToLocalPath('lib/mono/4.5/mscorlib.dll')]).IsFile();
-    } else {
-        return binFolder.IsDir() &&
-            File.fromArray([binFolder.path, File.ToLocalPath('builder/bin/unify_builder')]).IsFile();
-    }
+    return binFolder.IsDir() &&
+        File.fromArray([binFolder.path, File.ToLocalPath(`builder/bin/unify_builder${platform.exeSuffix()}`)]).IsFile();
 }
 
 async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean> {
@@ -664,7 +659,7 @@ function exportEnvToSysPath() {
 
     // export some eide binaries path to system env path
     const defEnvPath: string[] = [
-        builderFolder.path, // builder root folder
+        NodePath.normalize(`${builderFolder.path}/bin`), // builder bin folder
         NodePath.normalize(`${builderFolder.path}/utils`), // utils tool folder
     ];
 
@@ -714,6 +709,101 @@ function exportEnvToSysPath() {
             process.env[env.key] = '';
         }
     }
+
+    // .NET 工具会收集用法数据，帮助我们改善你的体验。它由 Microsoft 收集并与社区共享。
+    // 你可通过使用喜欢的 shell 将 DOTNET_CLI_TELEMETRY_OPTOUT 环境变量设置为 "1" 或 "true" 来选择退出遥测。
+    // 阅读有关 .NET CLI 工具遥测的更多信息: https://aka.ms/dotnet-cli-telemetry
+    process.env['DOTNET_CLI_TELEMETRY_OPTOUT'] = '1'; // disable telemetry
+}
+
+async function checkAndInstallRuntime() {
+
+    //
+    // if not found dotnet, preset dotnet root folder into system env
+    // dotnet path: 'C:\Program Files\dotnet'
+    //
+    if (os.platform() == 'win32') {
+        try {
+            ChildProcess.execSync(`dotnet --info`);
+        } catch (error) {
+            platform.appendToSysEnv(process.env, ['C:\\Program Files\\dotnet']);
+        }
+    }
+
+    //
+    // check or install .NET
+    //
+    try {
+        GlobalEvent.emit('globalLog', newMessage('Info', 'Checking .NET6 Runtime ...'));
+        const dotnetInfo = ChildProcess.execSync(`dotnet --info`).toString().trim();
+        GlobalEvent.emit('globalLog', newMessage('Info', dotnetInfo));
+        if (!/Version: (?:6|7)\./.test(dotnetInfo)) { throw new Error(`Not found .NET6 Runtime`); }
+        GlobalEvent.emit('globalLog', newMessage('Info', '.NET6 Runtime Found !'));
+    } catch (error) {
+
+        GlobalEvent.emit('globalLog', newMessage('Info', 'Not found [.NET6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) !'));
+
+        const msg = `Not found [.NET6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0), please install it !`;
+        const sel = await vscode.window.showWarningMessage(msg, `Install Now`);
+        if (!sel) { return } // user canceled
+
+        // for other platform, user need install it manually
+        if (os.platform() != 'win32') {
+            // https://dotnet.microsoft.com/en-us/download/dotnet/scripts
+            utility.openUrl(`https://dotnet.microsoft.com/en-us/download/dotnet/scripts`);
+        }
+
+        // win32, we can auto install it
+        else {
+            const tmpFile = File.fromArray([os.tmpdir(), 'dotnet-runtime-6.0.5-win-x64.exe']);
+
+            try {
+                if (tmpFile.IsFile()) { fs.unlinkSync(tmpFile.path) }
+            } catch (error) {
+                // do nothing
+            }
+
+            const downloadUrl = `https://download.visualstudio.microsoft.com/download/pr/b395fa18-c53b-4f7f-bf91-6b2d3c43fedb/d83a318111da9e15f5ecebfd2d190e89/dotnet-runtime-6.0.5-win-x64.exe`;
+
+            const done = await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Downloading .NET6 installer',
+                cancellable: false
+            }, async (progress, token): Promise<boolean> => {
+
+                const res = await utility.downloadFileWithProgress(downloadUrl, tmpFile.name, progress, token);
+
+                if (res instanceof Buffer) {
+                    try {
+                        fs.writeFileSync(tmpFile.path, res);
+                        return true;
+                    } catch (error) {
+                        return false;
+                    }
+                }
+
+                if (res instanceof Error) {
+                    GlobalEvent.emit('error', res);
+                }
+
+                return false;
+            });
+
+            if (done && tmpFile.IsFile()) {
+                try {
+                    ChildProcess.execFileSync(tmpFile.path);
+                    vscode.window.showInformationMessage(`Good ! Now you need close all VsCode instances and relaunch it !`);
+                } catch (error) {
+                    GlobalEvent.emit('msg', newMessage('Error', `Install [.NET6 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) failed, you need install it manually !`));
+                }
+            } else {
+                vscode.window.showWarningMessage(`Install .NET6 failed, you need install it manually !`);
+                // https://dotnet.microsoft.com/en-us/download/dotnet/scripts
+                // https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-6.0.5-windows-x64-installer
+                utility.openUrl(`https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-6.0.5-windows-x64-installer`);
+            }
+        }
+    }
 }
 
 async function InitComponents(context: vscode.ExtensionContext): Promise<boolean | undefined> {
@@ -727,7 +817,7 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
         try {
             ChildProcess.execSync(`chmod +x "${resManager.Get7za().path}"`);
         } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Error'));
         }
     }
 
@@ -737,31 +827,41 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
 
     // chmod +x for other executable files
     if (os.platform() != 'win32') {
+
         const exeLi: string[] = [
-            `${[resManager.GetBinDir().path, 'scripts', 'qjs'].join(File.sep)}`,
-            `${[resManager.getBuilderDir().path, 'utils', 'hex2bin'].join(File.sep)}`
+            `${[resManager.GetBinDir().path, 'scripts', 'qjs'].join(File.sep)}`
         ];
+
+        // get exe file list from 'utils' folder
+        File.fromArray([resManager.getBuilderDir().path, 'utils'])
+            .GetList(undefined, File.EMPTY_FILTER)
+            .forEach((f) => {
+                if (!f.suffix) { // nosuffix file is an exe file
+                    exeLi.push(f.path);
+                }
+            });
+
+        // get exe file list from 'bin' folder
+        File.fromArray([resManager.getBuilderDir().path, 'bin'])
+            .GetList(undefined, File.EMPTY_FILTER)
+            .forEach((f) => {
+                if (!f.suffix) { // nosuffix file is an exe file
+                    exeLi.push(f.path);
+                }
+            });
+
         for (const path of exeLi) {
             try {
                 ChildProcess.execSync(`chmod +x "${path}"`);
+                GlobalEvent.emit('globalLog', newMessage('Info', `chmod +x "${path}"`));
             } catch (error) {
-                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Error'));
             }
         }
     }
 
-    // check mono runtime
-    if (os.platform() != 'win32') {
-        try {
-            ChildProcess.execSync(`mono --version`).toString();
-        } catch (error) {
-            const sel = await vscode.window.showWarningMessage(`Not found [Mono](https://www.mono-project.com/) runtime, please install it !`, `Install`);
-            if (sel) {
-                // https://www.mono-project.com/download/stable/#download-lin
-                utility.openUrl(`https://www.mono-project.com/download/stable/#download-lin`);
-            }
-        }
-    }
+    // check and install .NET6 runtime
+    await checkAndInstallRuntime();
 
     // register telemetry hook if user enabled
     try {

@@ -4,6 +4,18 @@
 
 ***
 
+### [v3.7.0]
+
+**Change**:
+  - Use [.NET6](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) runtime, not `Mono`.
+  - No longer support `X86 (32Bit)` platform.
+
+**Optimize**:
+  - Remove some discarded extension settings.
+  - Optimize multi-thread build speed.
+
+***
+
 ### [v3.6.4]
 
 **Fixed**:

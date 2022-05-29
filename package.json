@@ -32,7 +32,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.6.4",
+    "version": "3.7.0",
     "preview": false,
     "engines": {
         "vscode": "^1.63.0"
@@ -418,12 +418,6 @@
                         "scope": "machine",
                         "markdownDescription": "%settings.jlink.install.folder%",
                         "default": "${userRoot}/.eide/tools/jlink"
-                    },
-                    "EIDE.JLink.DeviceXmlPath": {
-                        "type": "string",
-                        "scope": "machine",
-                        "markdownDescription": "%settings.jlink.device.xml%",
-                        "default": ""
                     },
                     "EIDE.OpenOCD.ExePath": {
                         "type": "string",
