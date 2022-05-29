@@ -724,7 +724,7 @@ async function checkAndInstallRuntime() {
     //
     if (os.platform() == 'win32') {
         try {
-            ChildProcess.execSync(`dotnet --version`);
+            ChildProcess.execSync(`dotnet --info`);
         } catch (error) {
             platform.appendToSysEnv(process.env, ['C:\\Program Files\\dotnet']);
         }
@@ -734,13 +734,16 @@ async function checkAndInstallRuntime() {
     // check or install .NET
     //
     try {
-        const dotnetVer = ChildProcess.execSync(`dotnet --version`).toString().trim();
-        if (!/^\s*6\.\d+\.\d+/.test(dotnetVer)) {
-            throw new Error(`We need .NET6 runtime, but your dotnet version is '${dotnetVer}' !`);
-        }
+        GlobalEvent.emit('globalLog', newMessage('Info', 'Checking .NET6 Runtime ...'));
+        const dotnetInfo = ChildProcess.execSync(`dotnet --info`).toString().trim();
+        GlobalEvent.emit('globalLog', newMessage('Info', dotnetInfo));
+        if (!/Version: (?:6|7)\./.test(dotnetInfo)) { throw new Error(`Not found .NET6 Runtime`); }
+        GlobalEvent.emit('globalLog', newMessage('Info', '.NET6 Runtime Found !'));
     } catch (error) {
 
-        const msg = `Not found [.NET6 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0), please install it !`;
+        GlobalEvent.emit('globalLog', newMessage('Info', 'Not found [.NET6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) !'));
+
+        const msg = `Not found [.NET6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0), please install it !`;
         const sel = await vscode.window.showWarningMessage(msg, `Install Now`);
         if (!sel) { return } // user canceled
 
@@ -826,10 +829,19 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
     if (os.platform() != 'win32') {
 
         const exeLi: string[] = [
-            `${[resManager.GetBinDir().path, 'scripts', 'qjs'].join(File.sep)}`,
-            `${[resManager.getBuilderDir().path, 'utils', 'hex2bin'].join(File.sep)}`
+            `${[resManager.GetBinDir().path, 'scripts', 'qjs'].join(File.sep)}`
         ];
 
+        // get exe file list from 'utils' folder
+        File.fromArray([resManager.getBuilderDir().path, 'utils'])
+            .GetList(undefined, File.EMPTY_FILTER)
+            .forEach((f) => {
+                if (!f.suffix) { // nosuffix file is an exe file
+                    exeLi.push(f.path);
+                }
+            });
+
+        // get exe file list from 'bin' folder
         File.fromArray([resManager.getBuilderDir().path, 'bin'])
             .GetList(undefined, File.EMPTY_FILTER)
             .forEach((f) => {
