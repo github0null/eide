@@ -377,45 +377,42 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
     // if binaries is installed, we try check update from remote repo after x sec delay
     else if (checkBinFolder(binFolder)) {
 
-        // 5sec delay
-        setTimeout(async () => {
+        let localVersion: string | undefined;
 
-            let localVersion: string | undefined;
-
-            // get local binary version from disk
-            // check binaries Main_Ver (<Main_Ver>.xx.xx <=> <Main_Ver>.xx.xx)
-            const verFile = File.fromArray([binFolder.path, 'VERSION']);
-            if (verFile.IsFile()) {
-                const cont = verFile.Read().trim();
-                if (utility.isVersionString(cont)) {
-                    localVersion = cont;
-                    const mainLocalVersion = parseInt(localVersion.split('.')[0]);
-                    const mainMinReqVersion = parseInt(minReqVersion.split('.')[0]);
-                    if (mainMinReqVersion != mainLocalVersion) { // local Main verson != min Main version
-                        localVersion = undefined; // local binaries is invalid, force update
-                    }
+        // get local binary version from disk
+        // check binaries Main_Ver (<Main_Ver>.xx.xx <=> <Main_Ver>.xx.xx)
+        const verFile = File.fromArray([binFolder.path, 'VERSION']);
+        if (verFile.IsFile()) {
+            const cont = verFile.Read().trim();
+            if (utility.isVersionString(cont)) {
+                localVersion = cont;
+                const mainLocalVersion = parseInt(localVersion.split('.')[0]);
+                const mainMinReqVersion = parseInt(minReqVersion.split('.')[0]);
+                if (mainMinReqVersion != mainLocalVersion) { // local Main verson != min Main version
+                    localVersion = undefined; // local binaries is invalid, force update
                 }
             }
+        }
 
-            // try update
-            if (localVersion) {
-                const done = await tryUpdateBinaries(binFolder, localVersion);
+        // try fetch update after 5sec delay
+        if (localVersion) {
+            setTimeout(async (curLocalVersion: string) => {
+                const done = await tryUpdateBinaries(binFolder, curLocalVersion);
                 if (!done) {
-                    const msg = `Update eide-binaries failed, please restart vscode !`;
+                    const msg = `Update eide-binaries failed, please restart vscode to try again !`;
                     const sel = await vscode.window.showErrorMessage(msg, 'Restart', 'Cancel');
                     if (sel == 'Restart') {
                         vscode.commands.executeCommand('workbench.action.reloadWindow');
                     }
                 }
-            }
+            }, 5 * 1000, localVersion);
+        }
 
-            // binaries folder is existed, but can not get local binaries version, 
-            // we need to force install it
-            else {
-                checkAndInstallBinaries(true);
-            }
-
-        }, 5 * 1000);
+        // binaries folder is existed, but can not get local binaries version, 
+        // the binaries maybe damaged, we need to force reinstall it
+        else {
+            checkAndInstallBinaries(true);
+        }
 
         return true;
     }
@@ -642,6 +639,11 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
         platform.DeleteDir(binFolder);
     }
 
+    // chmod executable's permission
+    if (installedDone) {
+        initBinariesExecutablePermission();
+    }
+
     return installedDone;
 }
 
@@ -661,6 +663,7 @@ function exportEnvToSysPath() {
     const defEnvPath: string[] = [
         NodePath.normalize(`${builderFolder.path}/bin`), // builder bin folder
         NodePath.normalize(`${builderFolder.path}/utils`), // utils tool folder
+        NodePath.normalize(`${builderFolder.dir}/scripts`),
     ];
 
     //
@@ -735,8 +738,9 @@ async function checkAndInstallRuntime() {
     //
     try {
         GlobalEvent.emit('globalLog', newMessage('Info', 'Checking .NET6 Runtime ...'));
-        const dotnetInfo = ChildProcess.execSync(`dotnet --info`).toString().trim();
-        GlobalEvent.emit('globalLog', newMessage('Info', dotnetInfo));
+        const chkCmd = `dotnet --info`;
+        const dotnetInfo = ChildProcess.execSync(chkCmd).toString().trim();
+        GlobalEvent.emit('globalLog', newMessage('Info', `${chkCmd}:\n${dotnetInfo}`));
         if (!/Version: (?:6|7)\./.test(dotnetInfo)) { throw new Error(`Not found .NET6 Runtime`); }
         GlobalEvent.emit('globalLog', newMessage('Info', '.NET6 Runtime Found !'));
     } catch (error) {
@@ -806,24 +810,9 @@ async function checkAndInstallRuntime() {
     }
 }
 
-async function InitComponents(context: vscode.ExtensionContext): Promise<boolean | undefined> {
+function initBinariesExecutablePermission() {
 
-    // init managers
-    const resManager = ResManager.GetInstance(context);
-    const settingManager = SettingManager.GetInstance(context);
-
-    // chmod +x for 7za 
-    if (os.platform() != 'win32') {
-        try {
-            ChildProcess.execSync(`chmod +x "${resManager.Get7za().path}"`);
-        } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Error'));
-        }
-    }
-
-    /* check binaries, if not found, install it ! */
-    const done = await checkAndInstallBinaries();
-    if (!done) { return false; } /* exit if failed */
+    const resManager = ResManager.GetInstance();
 
     // chmod +x for other executable files
     if (os.platform() != 'win32') {
@@ -859,6 +848,26 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
             }
         }
     }
+}
+
+async function InitComponents(context: vscode.ExtensionContext): Promise<boolean | undefined> {
+
+    // init managers
+    const resManager = ResManager.GetInstance(context);
+    const settingManager = SettingManager.GetInstance(context);
+
+    // chmod +x for 7za 
+    if (os.platform() != 'win32') {
+        try {
+            ChildProcess.execSync(`chmod +x "${resManager.Get7za().path}"`);
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Error'));
+        }
+    }
+
+    /* check binaries, if not found, install it ! */
+    const done = await checkAndInstallBinaries();
+    if (!done) { return false; } /* exit if failed */
 
     // check and install .NET6 runtime
     await checkAndInstallRuntime();
