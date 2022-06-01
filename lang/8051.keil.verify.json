@@ -139,9 +139,9 @@
                         "LARGE"
                     ],
                     "enumDescriptions": [
-                        "vars in DATA",
-                        "vars in PDATA",
-                        "vars in XDATA"
+                        "SMALL (vars in DATA)",
+                        "COMPACT (vars in PDATA)",
+                        "LARGE (vars in XDATA)"
                     ]
                 },
                 "rom-mode": {
@@ -155,9 +155,9 @@
                         "LARGE"
                     ],
                     "enumDescriptions": [
-                        "program 2K or less",
-                        "2K functions, 64K program",
-                        "64K program"
+                        "SMALL (program 2K or less)",
+                        "COMPACT (2K functions, 64K program)",
+                        "LARGE (64K program)"
                     ]
                 }
             }
@@ -177,10 +177,6 @@
                     "enum": [
                         "SPEED",
                         "SIZE"
-                    ],
-                    "enumDescriptions": [
-                        "Focus on code speed optimization",
-                        "Focus on code size optimization"
                     ]
                 },
                 "optimization-level": {
@@ -201,16 +197,16 @@
                         "level-9"
                     ],
                     "enumDescriptions": [
-                        "Constant folding",
-                        "Dead code elimination",
-                        "Data overlaying",
-                        "Peephole optimization",
-                        "Register variables",
-                        "Common subexpression elimination",
-                        "Loop rotation",
-                        "Extended index access optimizing",
-                        "Reuse common entry code",
-                        "Common block subroutines"
+                        "Lv0: Constant folding",
+                        "Lv1: Dead code elimination",
+                        "Lv2: Data overlaying",
+                        "Lv3: Peephole optimization",
+                        "Lv4: Register variables",
+                        "Lv5: Common subexpression elimination",
+                        "Lv6: Loop rotation",
+                        "Lv7: Extended index access optimizing",
+                        "Lv8: Reuse common entry code",
+                        "Lv9: Common block subroutines"
                     ]
                 },
                 "misc-controls": {
@@ -253,8 +249,8 @@
                         "lib"
                     ],
                     "enumDescriptions": [
-                        "Object File",
-                        "Static Library"
+                        "OBJ (Object File)",
+                        "LIB (Static Library)"
                     ]
                 },
                 "use-RTX": {

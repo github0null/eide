@@ -4,6 +4,19 @@
 
 ***
 
+### [v3.7.1]
+
+**Fixed**:
+  - Can not update source refs after build done.
+
+**Optimized**:
+  - Add `Erase All` right-click menu in `Flasher Configurations` view.
+  - Auto add a default `.gitignore` file for new project.
+  - remove `runToMain: true` for cortex-debug debug config, use: `runToEntryPoint: "main"` now.
+  - Optimize drop-down field prompt for `Builder Options View`.
+
+***
+
 ### [v3.7.0]
 
 **Change**:

@@ -35,7 +35,11 @@ import { ProjectExplorer } from './EIDEProjectExplorer';
 import { ResManager } from './ResManager';
 import { LogAnalyzer } from './LogAnalyzer';
 
-import { ERROR, WARNING, INFORMATION, view_str$operation$serialport, view_str$operation$baudrate, view_str$operation$serialport_name } from './StringTable';
+import {
+    ERROR, WARNING, INFORMATION,
+    view_str$operation$serialport, view_str$operation$baudrate, view_str$operation$serialport_name,
+    txt_install_now, txt_yes
+} from './StringTable';
 import { LogDumper } from './LogDumper';
 import { StatusBarManager } from './StatusBarManager';
 import { File } from '../lib/node-utility/File';
@@ -374,7 +378,7 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
         platform.DeleteDir(binFolder);
     }
 
-    // if binaries is installed, we try check update from remote repo after x sec delay
+    // if binaries is installed, we need check binaries's version
     else if (checkBinFolder(binFolder)) {
 
         let localVersion: string | undefined;
@@ -411,7 +415,8 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
         // binaries folder is existed, but can not get local binaries version, 
         // the binaries maybe damaged, we need to force reinstall it
         else {
-            checkAndInstallBinaries(true);
+            platform.DeleteDir(binFolder); // del existed folder
+            return await tryUpdateBinaries(binFolder, undefined, true);
         }
 
         return true;
@@ -740,15 +745,20 @@ async function checkAndInstallRuntime() {
         GlobalEvent.emit('globalLog', newMessage('Info', 'Checking .NET6 Runtime ...'));
         const chkCmd = `dotnet --info`;
         const dotnetInfo = ChildProcess.execSync(chkCmd).toString().trim();
-        GlobalEvent.emit('globalLog', newMessage('Info', `${chkCmd}:\n${dotnetInfo}`));
-        if (!/Version: (?:6|7)\./.test(dotnetInfo)) { throw new Error(`Not found .NET6 Runtime`); }
-        GlobalEvent.emit('globalLog', newMessage('Info', '.NET6 Runtime Found !'));
+        GlobalEvent.emit('globalLog', newMessage('Info', `Exec '${chkCmd}' :\n${dotnetInfo}`));
+        // check dotnet version
+        if (/Microsoft\.NETCore\.App 6\./.test(dotnetInfo) ||
+            /\.NET runtimes installed:/.test(dotnetInfo)) {
+            GlobalEvent.emit('globalLog', newMessage('Info', '.NET6 Runtime Found !'));
+        } else {
+            throw new Error(`Not found .NET6 Runtime`);
+        }
     } catch (error) {
 
         GlobalEvent.emit('globalLog', newMessage('Info', 'Not found [.NET6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) !'));
 
         const msg = `Not found [.NET6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0), please install it !`;
-        const sel = await vscode.window.showWarningMessage(msg, `Install Now`);
+        const sel = await vscode.window.showWarningMessage(msg, txt_install_now);
         if (!sel) { return } // user canceled
 
         // for other platform, user need install it manually
@@ -796,7 +806,10 @@ async function checkAndInstallRuntime() {
             if (done && tmpFile.IsFile()) {
                 try {
                     ChildProcess.execFileSync(tmpFile.path);
-                    vscode.window.showInformationMessage(`Good ! Now you need close all VsCode instances and relaunch it !`);
+                    const sel = await vscode.window.showInformationMessage(`Ok ! Now you need relaunch VsCode !`, txt_yes);
+                    if (sel) {
+                        vscode.commands.executeCommand('workbench.action.reloadWindow');
+                    }
                 } catch (error) {
                     GlobalEvent.emit('msg', newMessage('Error', `Install [.NET6 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) failed, you need install it manually !`));
                 }

@@ -603,6 +603,16 @@ export const txt_install_now = [
     'Install Now'
 ][langIndex];
 
+export const txt_yes = [
+    '是',
+    'Yes'
+][langIndex];
+
+export const txt_no = [
+    '否',
+    'No'
+][langIndex];
+
 //---------------Operation---------------
 
 export const view_str$operation$done = [

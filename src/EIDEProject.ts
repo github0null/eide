@@ -2384,7 +2384,7 @@ class EIDEProject extends AbstractProject {
             const settings = workspaceConfig.config.settings;
             const toolchain = this.getToolchain();
 
-            // --- settings field
+            // --- vscode settings
 
             if (settings['files.autoGuessEncoding'] === undefined) {
                 settings['files.autoGuessEncoding'] = true;
@@ -2441,7 +2441,7 @@ class EIDEProject extends AbstractProject {
                 };
             }
 
-            // --- tasks field
+            // --- vscode tasks
 
             // append default task for new project
             try {
@@ -2535,6 +2535,28 @@ class EIDEProject extends AbstractProject {
                 }
 
                 workspaceConfig.config.extensions.recommendations = recommendExt;
+            }
+
+            // default .gitignore
+            {
+                const ignCont = [
+                    '# vscode files',
+                    '.vscode/launch.json',
+                    '.eide/log',
+                    '',
+                    '# project out',
+                    `build`,
+                    '',
+                    '# eide template',
+                    '*.ept',
+                    '*.eide-template',
+                    ''
+                ];
+
+                const ignFile = File.fromArray([this.GetRootDir().path, '.gitignore']);
+                if (!ignFile.IsFile()) {
+                    ignFile.Write(ignCont.join(os.EOL));
+                }
             }
 
             workspaceConfig.forceSave();

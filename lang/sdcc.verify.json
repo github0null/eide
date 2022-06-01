@@ -154,24 +154,24 @@
                         "pdk15"
                     ],
                     "enumDescriptions": [
-                        "Intel MCS51 family of processors. This is the default processor target. ",
-                        "Dallas DS80C390 processor. ",
-                        "Dallas DS80C400 processor. ",
-                        "Freescale/Motorola HC08 (aka 68HC08) family of processors. ",
-                        "Freescale/Motorola S08 (aka 68HCS08, HCS08, CS08) family of processors. ",
-                        "Zilog Z80 family of processors. ",
-                        "Zilog Z180 family of processors. ",
-                        "Rabbit 2000 / Rabbit 3000 family of processors. ",
-                        "Rabbit 3000A family of processors. ",
-                        "LR35902 GameBoy Z80 processor. ",
-                        "Toshiba TLCS-90 processor. ",
-                        "Zilog eZ80 processor in Z80 mode. ",
-                        "STMicroelectronics STM8 family of processors. ",
-                        "Microchip PIC 14-bit processors (p16f84 and variants. In development, not complete).",
-                        "Microchip PIC 16-bit processors (p18f452 and variants. In development, not complete).",
-                        "Padauk processors with 13 bit wide program memory.",
-                        "Padauk processors with 14 bit wide program memory.",
-                        "Padauk processors with 15 bit wide program memory."
+                        "MCS51",
+                        "DS80C390",
+                        "DS80C400",
+                        "HC08 (aka 68HC08)",
+                        "S08 (aka 68HCS08, HCS08, CS08)",
+                        "Z80",
+                        "Z180",
+                        "Rabbit 2000/3000",
+                        "Rabbit 3000A",
+                        "GameBoy Z80",
+                        "TLCS-90",
+                        "eZ80_Z80",
+                        "STM8",
+                        "PIC 14",
+                        "PIC 16",
+                        "Padauk 13",
+                        "Padauk 14",
+                        "Padauk 15"
                     ]
                 },
                 "optimize-type": {
@@ -365,10 +365,10 @@
                         "lib"
                     ],
                     "enumDescriptions": [
-                        "Intel HEX File",
-                        "Motorola S19 File",
-                        "ELF File (Only for STM8/HC08/S08)",
-                        "Static Library"
+                        "HEX",
+                        "S19",
+                        "ELF (Only for STM8/HC08/S08)",
+                        "LIB (Static Library)"
                     ]
                 },
                 "$disableOutputTask": {
