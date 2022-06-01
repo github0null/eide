@@ -202,7 +202,7 @@
                     ],
                     "enumDescriptions": [
                         "ELF (Executable Linkable Format)",
-                        "Static Library"
+                        "LIB (Static Library)"
                     ]
                 },
                 "remove-unused-input-sections": {

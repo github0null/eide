@@ -128,20 +128,20 @@
             "description.zh-cn": "全局选项",
             "type": "object",
             "properties": {
-                "data-mode": {
-                    "description": "data mode",
+                "code-mode": {
+                    "description": "code mode",
                     "type": "string",
-                    "default": "medium",
+                    "default": "small",
                     "enum": [
                         "small",
                         "medium",
                         "large"
                     ]
                 },
-                "code-mode": {
-                    "description": "code mode",
+                "data-mode": {
+                    "description": "data mode",
                     "type": "string",
-                    "default": "small",
+                    "default": "medium",
                     "enum": [
                         "small",
                         "medium",
@@ -455,7 +455,7 @@
                     ],
                     "enumDescriptions": [
                         "ELF (Executable Linkable Format)",
-                        "Static Library"
+                        "LIB (Static Library)"
                     ]
                 },
                 "$disableOutputTask": {

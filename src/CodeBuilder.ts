@@ -261,7 +261,8 @@ export abstract class CodeBuilder {
                 }
             };
 
-            const builderLog = File.fromArray([this.project.getEideDir().path, 'log', 'unify_builder.log']);
+            const outDir = this.project.ToAbsolutePath(this.project.getOutputDir());
+            const builderLog = File.fromArray([outDir, 'unify_builder.log']);
             if (!builderLog.IsFile()) builderLog.Write('');
             if (this.logWatcher) { this.logWatcher.Close(); delete this.logWatcher; };
 
@@ -370,7 +371,6 @@ export abstract class CodeBuilder {
         const settingManager = SettingManager.GetInstance();
         const toolchain = this.project.getToolchain();
 
-        const dumpDir = this.project.getLogDir().path;
         const outDir = File.ToUnixPath(this.project.getOutputDir());
         const paramsPath = this.project.ToAbsolutePath(outDir + File.sep + this.paramsFileName);
         const compileOptions: ICompileOptions = this.project.GetConfiguration()

@@ -396,7 +396,7 @@
                     ],
                     "enumDescriptions": [
                         "AXF (Arm Executable File)",
-                        "Static Library"
+                        "LIB (Static Library)"
                     ]
                 },
                 "$disableOutputTask": {

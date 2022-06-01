@@ -219,7 +219,7 @@ class CortexDebugConfigProvider extends IDebugConfigProvider {
                 servertype: 'jlink',
                 interface: 'swd',
                 executable: 'undefined',
-                runToMain: true,
+                runToEntryPoint: "main",
                 device: '<MCU-NAME>'
             },
             {
@@ -229,7 +229,7 @@ class CortexDebugConfigProvider extends IDebugConfigProvider {
                 name: `stlink`,
                 servertype: 'openocd',
                 executable: 'undefined',
-                runToMain: true,
+                runToEntryPoint: "main",
                 configFiles: [
                     "interface/stlink.cfg",
                     "target/<target-name>.cfg"
@@ -242,7 +242,7 @@ class CortexDebugConfigProvider extends IDebugConfigProvider {
                 name: `openocd`,
                 servertype: 'openocd',
                 executable: 'undefined',
-                runToMain: true,
+                runToEntryPoint: "main",
                 configFiles: [
                     "interface/<debugger-type>.cfg",
                     "target/<target-name>.cfg"
@@ -255,7 +255,7 @@ class CortexDebugConfigProvider extends IDebugConfigProvider {
                 name: `pyocd`,
                 servertype: 'pyocd',
                 executable: 'undefined',
-                runToMain: true,
+                runToEntryPoint: "main",
                 targetId: '<MCU-NAME>',
                 cmsisPack: '<CMSIS-Pack-Path>'
             }
