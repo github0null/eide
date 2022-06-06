@@ -743,12 +743,11 @@ async function checkAndInstallRuntime() {
     //
     try {
         GlobalEvent.emit('globalLog', newMessage('Info', 'Checking .NET6 Runtime ...'));
-        const chkCmd = `dotnet --info`;
+        const chkCmd = `dotnet --list-runtimes`;
         const dotnetInfo = ChildProcess.execSync(chkCmd).toString().trim();
-        GlobalEvent.emit('globalLog', newMessage('Info', `Exec '${chkCmd}' :\n${dotnetInfo}`));
+        GlobalEvent.emit('globalLog', newMessage('Info', `Exec cmd: '${chkCmd}'\n${dotnetInfo}`));
         // check dotnet version
-        if (/Microsoft\.NETCore\.App 6\./.test(dotnetInfo) ||
-            /\.NET runtimes installed:/.test(dotnetInfo)) {
+        if (/Microsoft\.NETCore\.App 6\./i.test(dotnetInfo)) {
             GlobalEvent.emit('globalLog', newMessage('Info', '.NET6 Runtime Found !'));
         } else {
             throw new Error(`Not found .NET6 Runtime`);
