@@ -68,6 +68,9 @@ export class DependenceManager implements ManagerInterface {
 
     InstallComponent(packName: string, component: Component, clearDir: boolean = true) {
 
+        // try add dep root to project before install a component
+        this.tryAddCompRootDirToProject();
+
         const config = this.project.GetConfiguration();
         const toolchain = this.project.getToolchain();
 
@@ -239,7 +242,7 @@ export class DependenceManager implements ManagerInterface {
 
     getDependenceRootFolder(): File {
         if (this.depDir === undefined) {
-            throw new Error('depDir is undefined');
+            throw new Error('eide depDir is undefined');
         }
         return this.depDir;
     }
@@ -317,6 +320,14 @@ export class DependenceManager implements ManagerInterface {
     }
 
     //--
+
+    private tryAddCompRootDirToProject() {
+        const depRoot = this.getDependenceRootFolder();
+        if (!depRoot.IsDir()) depRoot.CreateDir(false);
+        const prjConfig = this.project.GetConfiguration();
+        prjConfig.addSrcDirAtFirst(depRoot.path);
+        prjConfig.CustomDep_AddIncDir(depRoot);
+    }
 
     private getDepDir(): File {
         this.depDir?.CreateDir(false);
