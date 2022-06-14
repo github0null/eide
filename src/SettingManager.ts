@@ -252,7 +252,7 @@ export class SettingManager {
     }
 
     isShowOutputFilesInExplorer(): boolean {
-        return this.getConfiguration().get<boolean>('Option.ShowOutputFilesInExplorer') || false;
+        return true;
     }
 
     getBuilderAdditionalCommandLine(): string | undefined {
@@ -264,15 +264,15 @@ export class SettingManager {
     }
 
     isDisplaySourceRefs(): boolean {
-        return this.getConfiguration().get<boolean>('Option.ShowSourceReferences') || false;
+        return true;
     }
 
     isGenerateMakefileParams(): boolean {
-        return this.getConfiguration().get<boolean>('Builder.GenerateMakefileParameters') || false;
+        return false;
     }
 
     isPrintRelativePathWhenBuild(): boolean {
-        return this.getConfiguration().get<boolean>('Option.PrintRelativePathWhenBuild') || false;
+        return true;
     }
 
     getGithubRepositoryToken(): string | undefined {
