@@ -1294,7 +1294,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             }
         }
 
-        super.Save(undefined);
+        super.Save(undefined, 2);
 
         // recover it
         this.config.srcDirs = oldSrcDirs;

@@ -149,7 +149,8 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('eide.project.uploadToDevice', (item) => projectExplorer.UploadToDevice(item)));
     subscriptions.push(vscode.commands.registerCommand('eide.reinstall.binaries', () => checkAndInstallBinaries(true)));
     subscriptions.push(vscode.commands.registerCommand('eide.project.flash.erase.all', (item) => projectExplorer.UploadToDevice(item, true)));
-    subscriptions.push(vscode.commands.registerCommand('eide.project.buildAndFlash', (item) => projectExplorer.BuildSolution(item, { useFastMode: true }, true)));
+    subscriptions.push(vscode.commands.registerCommand('eide.project.buildAndFlash', (item) => projectExplorer.BuildSolution(item, { useFastMode: true, flashAfterBuild: true })));
+    subscriptions.push(vscode.commands.registerCommand('eide.project.genBuilderParams', (item) => projectExplorer.BuildSolution(item, { useFastMode: true, onlyGenParams: true })));
 
     // operations bar
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.historyRecord', () => projectExplorer.openHistoryRecords()));
@@ -726,42 +727,55 @@ function exportEnvToSysPath() {
 
 async function checkAndInstallRuntime() {
 
+    const dotnet_chk_cmd = `dotnet --list-runtimes`;
+
     //
     // if not found dotnet, preset dotnet root folder into system env
     // dotnet path: 'C:\Program Files\dotnet'
     //
     if (os.platform() == 'win32') {
         try {
-            ChildProcess.execSync(`dotnet --info`);
+            ChildProcess.execSync(dotnet_chk_cmd);
         } catch (error) {
-            platform.appendToSysEnv(process.env, ['C:\\Program Files\\dotnet']);
+            platform.appendToSysEnv(process.env, ['C:\\Program Files\\dotnet']);        // for win x64
+            platform.appendToSysEnv(process.env, ['C:\\Program Files (x86)\\dotnet']);  // for win x86
         }
     }
 
     //
-    // check or install .NET
+    // check/install .NET
     //
     try {
-        GlobalEvent.emit('globalLog', newMessage('Info', 'Checking .NET6 Runtime ...'));
-        const chkCmd = `dotnet --list-runtimes`;
-        const dotnetInfo = ChildProcess.execSync(chkCmd).toString().trim();
-        GlobalEvent.emit('globalLog', newMessage('Info', `Exec cmd: '${chkCmd}'\n${dotnetInfo}`));
+        GlobalEvent.emit('globalLog', newMessage('Info', 'Checking .NET6 runtime ...'));
+        const dotnetInfo = ChildProcess.execSync(dotnet_chk_cmd).toString().trim();
+        GlobalEvent.emit('globalLog', newMessage('Info', `Exec cmd: '${dotnet_chk_cmd}'\n${dotnetInfo}`));
         // check dotnet version
-        if (/Microsoft\.NETCore\.App 6\./i.test(dotnetInfo)) {
-            GlobalEvent.emit('globalLog', newMessage('Info', '.NET6 Runtime Found !'));
-        } else {
-            throw new Error(`Not found .NET6 Runtime`);
+        let dotnetVerLine: string | undefined;
+        const lines = dotnetInfo.trim().split(/\r\n|\n/);
+        for (const line_ of lines) {
+            const line = line_.trim();
+            if (line.startsWith('Microsoft.NETCore.App 6.')) {
+                dotnetVerLine = line;
+                GlobalEvent.emit('globalLog', newMessage('Info', `.NET6 runtime: '${dotnetVerLine}' found !`));
+                break;
+            }
         }
+        if (!dotnetVerLine) { throw new Error(`Not found .NET6 runtime`); }
     } catch (error) {
+
+        GlobalEvent.emit('globalLog.show'); // show error log for user
 
         GlobalEvent.emit('globalLog', newMessage('Info', 'Not found [.NET6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) !'));
 
+        /* @deprecated
         const msg = `Not found [.NET6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0), please install it !`;
         const sel = await vscode.window.showWarningMessage(msg, txt_install_now);
-        if (!sel) { return } // user canceled
+        if (!sel) { return } // user canceled */
 
         // for other platform, user need install it manually
         if (os.platform() != 'win32') {
+            const msg = `Not found [.NET6 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) on your pc, please install it !`;
+            vscode.window.showWarningMessage(msg);
             // https://dotnet.microsoft.com/en-us/download/dotnet/scripts
             utility.openUrl(`https://dotnet.microsoft.com/en-us/download/dotnet/scripts`);
         }
@@ -780,7 +794,7 @@ async function checkAndInstallRuntime() {
 
             const done = await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
-                title: 'Downloading .NET6 installer',
+                title: 'Downloading .NET6 runtime installer',
                 cancellable: false
             }, async (progress, token): Promise<boolean> => {
 
@@ -813,7 +827,7 @@ async function checkAndInstallRuntime() {
                     GlobalEvent.emit('msg', newMessage('Error', `Install [.NET6 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) failed, you need install it manually !`));
                 }
             } else {
-                vscode.window.showWarningMessage(`Install .NET6 failed, you need install it manually !`);
+                vscode.window.showWarningMessage(`Install .NET6 runtime failed, you need install it manually !`);
                 // https://dotnet.microsoft.com/en-us/download/dotnet/scripts
                 // https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-6.0.5-windows-x64-installer
                 utility.openUrl(`https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-6.0.5-windows-x64-installer`);
@@ -1018,8 +1032,8 @@ function RegisterGlobalEvent() {
 
     const outChannel = vscode.window.createOutputChannel('eide-log');
     GlobalEvent.on('globalLog', (msg) => outChannel.appendLine(LogDumper.Msg2String(msg)));
-    GlobalEvent.on('eide.log.append', (log) => outChannel.append(log));
-    GlobalEvent.on('eide.log.show', () => outChannel.show());
+    GlobalEvent.on('globalLog.append', (log) => outChannel.append(log));
+    GlobalEvent.on('globalLog.show', () => outChannel.show());
 
     GlobalEvent.on('project.opened', () => {
         prj_count++; // increment cnt
