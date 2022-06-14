@@ -58,7 +58,7 @@ export interface BuildOptions {
     useFastMode?: boolean;
 
     flashAfterBuild?: boolean;
-    
+
     onlyGenParams?: boolean;
 }
 
@@ -1022,6 +1022,8 @@ class C51CodeBuilder extends CodeBuilder {
                 return ['$gcc'];
             case 'Keil_C51':
                 return ['$keilc51'];
+            case 'IAR_STM8':
+                return ['$iarstm8'];
             default:
                 return [];
         }
