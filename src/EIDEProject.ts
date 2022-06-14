@@ -2394,10 +2394,8 @@ class EIDEProject extends AbstractProject {
                 settings['C_Cpp.default.configurationProvider'] = this.extensionId;
             }
 
-            if (this.GetConfiguration().config.type == 'C51') {
-                if (settings['C_Cpp.errorSquiggles'] === undefined) {
-                    settings['C_Cpp.errorSquiggles'] = "Disabled";
-                }
+            if (settings['C_Cpp.errorSquiggles'] === undefined) {
+                settings['C_Cpp.errorSquiggles'] = "Disabled";
             }
 
             // remove some c/c++ configs
