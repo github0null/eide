@@ -782,43 +782,59 @@ async function checkAndInstallRuntime() {
 
         // win32, we can auto install it
         else {
-            const tmpFile = File.fromArray([os.tmpdir(), 'dotnet-runtime-6.0.5-win-x64.exe']);
+            const defPkgName = 'dotnet-runtime-6.0.5-win-x64.exe';
 
-            try {
-                if (tmpFile.IsFile()) { fs.unlinkSync(tmpFile.path) }
-            } catch (error) {
-                // do nothing
+            let pkgReady: boolean;
+            let pkgFile: File;
+
+            // if found local installer pkg, use it
+            const localPkg = File.fromArray([ResManager.GetInstance().getAppRootFolder().path, defPkgName]);
+            if (localPkg.IsFile()) {
+                pkgReady = true;
+                pkgFile = localPkg;
             }
 
-            const downloadUrl = `https://download.visualstudio.microsoft.com/download/pr/b395fa18-c53b-4f7f-bf91-6b2d3c43fedb/d83a318111da9e15f5ecebfd2d190e89/dotnet-runtime-6.0.5-win-x64.exe`;
+            // if not found local installer pkg, download it
+            else {
 
-            const done = await vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: 'Downloading .NET6 runtime installer',
-                cancellable: false
-            }, async (progress, token): Promise<boolean> => {
+                pkgFile = File.fromArray([os.tmpdir(), defPkgName]);
 
-                const res = await utility.downloadFileWithProgress(downloadUrl, tmpFile.name, progress, token);
-
-                if (res instanceof Buffer) {
-                    try {
-                        fs.writeFileSync(tmpFile.path, res);
-                        return true;
-                    } catch (error) {
-                        return false;
-                    }
-                }
-
-                if (res instanceof Error) {
-                    GlobalEvent.emit('error', res);
-                }
-
-                return false;
-            });
-
-            if (done && tmpFile.IsFile()) {
                 try {
-                    ChildProcess.execFileSync(tmpFile.path);
+                    if (pkgFile.IsFile()) { fs.unlinkSync(pkgFile.path) }
+                } catch (error) {
+                    // do nothing
+                }
+
+                const downloadUrl = `https://download.visualstudio.microsoft.com/download/pr/b395fa18-c53b-4f7f-bf91-6b2d3c43fedb/d83a318111da9e15f5ecebfd2d190e89/dotnet-runtime-6.0.5-win-x64.exe`;
+
+                pkgReady = await vscode.window.withProgress({
+                    location: vscode.ProgressLocation.Notification,
+                    title: 'Downloading .NET6 runtime installer',
+                    cancellable: false
+                }, async (progress, token): Promise<boolean> => {
+
+                    const res = await utility.downloadFileWithProgress(downloadUrl, pkgFile.name, progress, token);
+
+                    if (res instanceof Buffer) {
+                        try {
+                            fs.writeFileSync(pkgFile.path, res);
+                            return true;
+                        } catch (error) {
+                            return false;
+                        }
+                    }
+
+                    if (res instanceof Error) {
+                        GlobalEvent.emit('error', res);
+                    }
+
+                    return false;
+                });
+            }
+
+            if (pkgReady && pkgFile.IsFile()) {
+                try {
+                    ChildProcess.execFileSync(pkgFile.path);
                     const sel = await vscode.window.showInformationMessage(`Ok ! Now you need relaunch VsCode !`, txt_yes);
                     if (sel) {
                         vscode.commands.executeCommand('workbench.action.reloadWindow');
