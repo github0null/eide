@@ -26,6 +26,7 @@ bin/builder/*.xml
 bin/builder/*.exe.config
 bin/tools/*
 bin_bk
+dotnet-runtime*.exe
 
 # shell script
 *.sh
