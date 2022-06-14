@@ -4,6 +4,38 @@
 
 ***
 
+### [v3.7.2]
+
+**New**:
+  - 增加右键菜单项：只生成 `builder.params`, 不触发编译
+  - 为新建项目增加默认工作区设置：`"C_Cpp.errorSquiggles": "Disabled"`
+  - 支持 iar-stm8 编译错误匹配（由于无法匹配多行，因此暂时不能匹配问题的描述）：
+    ```
+    "c:\Users\xxxx\xxxxx\xxxxxx\xxxx.c",55  Error[Pe020]:
+          identifier "xxxx" is undefined
+          xxxxxx
+    ```
+  - 对于离线 vsix 安装包，支持直接安装内置的 .NET6 运行时（仅windows）
+
+**Change**:
+  - 使用 2 空格缩进 'eide.json'，便于 `git diff`
+  - 使用 `dotnet --list-runtimes` 检查运行时
+  - 未找到 .NET6 运行时时，自动安装默认版本 `.NET6.0.5 runtime`，不再给出提示让用户确认（仅windows）
+
+**Optimize**:
+  - 将 `Build, Rebuild ...` 等命令加入到右键菜单项中
+  - 将 `Erase Chip` 命令加入到右键菜单项中，并增加快捷键：`ctrl+alt+e`
+  - 在安装 cmsis 组件时，自动检查 deps 组件根目录是否已加入项目
+  - 删除多余的设置项：
+    ```
+    EIDE.Option.ShowOutputFilesInExplorer
+    EIDE.Option.ShowSourceReferences
+    EIDE.Option.PrintRelativePathWhenBuild
+    EIDE.Builder.GenerateMakefileParameters
+    ```
+
+***
+
 ### [v3.7.1]
 
 **Fixed**:

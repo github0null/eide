@@ -32,7 +32,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.7.1",
+    "version": "3.7.2",
     "preview": false,
     "engines": {
         "vscode": "^1.63.0"
@@ -180,23 +180,11 @@
                         "markdownDescription": "%settings.enable.telemetry%",
                         "default": true
                     },
-                    "EIDE.Option.ShowOutputFilesInExplorer": {
-                        "type": "boolean",
-                        "scope": "resource",
-                        "markdownDescription": "%settings.option.show.output.files%",
-                        "default": true
-                    },
                     "EIDE.Option.MapViewParserDepth": {
                         "type": "integer",
                         "scope": "resource",
                         "markdownDescription": "%settings.option.mapView.parser.depth%",
                         "default": 5
-                    },
-                    "EIDE.Option.ShowSourceReferences": {
-                        "type": "boolean",
-                        "scope": "resource",
-                        "markdownDescription": "%settings.option.show.source.references%",
-                        "default": true
                     },
                     "EIDE.Option.DisableEditorContextMenu": {
                         "type": "boolean",
@@ -246,12 +234,6 @@
                             "use single thread mode"
                         ]
                     },
-                    "EIDE.Builder.GenerateMakefileParameters": {
-                        "type": "boolean",
-                        "scope": "resource",
-                        "markdownDescription": "%settings.builder.gen.makefile.params%",
-                        "default": false
-                    },
                     "EIDE.Builder.AdditionalCommandLine": {
                         "type": "string",
                         "scope": "resource",
@@ -262,12 +244,6 @@
                         "type": "boolean",
                         "scope": "resource",
                         "markdownDescription": "%settings.option.show.toolbar.in.editer.title%",
-                        "default": true
-                    },
-                    "EIDE.Option.PrintRelativePathWhenBuild": {
-                        "type": "boolean",
-                        "scope": "resource",
-                        "markdownDescription": "%settings.option.print.relative.path%",
                         "default": true
                     },
                     "EIDE.Option.UseTaskToBuild": {
@@ -516,6 +492,10 @@
             }
         ],
         "commands": [
+            {
+                "command": "eide.project.genBuilderParams",
+                "title": "Generate builder.params for project"
+            },
             {
                 "command": "eide.operation.install_toolchain",
                 "title": "Install toolchain for eide"
@@ -994,6 +974,11 @@
         ],
         "keybindings": [
             {
+                "command": "eide.project.flash.erase.all",
+                "key": "ctrl+alt+e",
+                "when": "cl.eide.projectActived"
+            },
+            {
                 "command": "eide.project.uploadToDevice",
                 "key": "ctrl+alt+d",
                 "when": "cl.eide.projectActived"
@@ -1186,13 +1171,29 @@
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
+                    "command": "eide.project.genBuilderParams",
+                    "when": "viewItem == SOLUTION && view == Project"
+                },
+                {
+                    "command": "eide.project.rebuild",
+                    "when": "viewItem == SOLUTION && view == Project"
+                },
+                {
                     "command": "eide.project.rebuild",
                     "group": "inline",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
                     "command": "eide.project.build",
+                    "when": "viewItem == SOLUTION && view == Project"
+                },
+                {
+                    "command": "eide.project.build",
                     "group": "inline",
+                    "when": "viewItem == SOLUTION && view == Project"
+                },
+                {
+                    "command": "eide.project.clean",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
@@ -1210,12 +1211,16 @@
                 },
                 {
                     "command": "eide.project.uploadToDevice",
+                    "when": "viewItem == SOLUTION && view == Project"
+                },
+                {
+                    "command": "eide.project.uploadToDevice",
                     "group": "inline",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
                     "command": "eide.project.flash.erase.all",
-                    "when": "view == Project && viewItem == UPLOAD_OPTION"
+                    "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
                     "command": "_cl.eide.project.close",
@@ -1537,6 +1542,20 @@
                         "line": 3,
                         "file": 4,
                         "message": 5
+                    }
+                ]
+            },
+            {
+                "name": "iarstm8",
+                "fileLocation": "autoDetect",
+                "pattern": [
+                    {
+                        "regexp": "^\\s*\"([^\"]+)\",(\\d+)\\s+(Error|Warning)\\[(Pe\\w+)\\]: ",
+                        "file": 1,
+                        "line": 2,
+                        "severity": 3,
+                        "code": 4,
+                        "message": 4
                     }
                 ]
             }

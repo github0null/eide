@@ -54,8 +54,8 @@ export class GlobalEvent {
     static on(event: 'error', listener: (error: Error) => void): void;
     static on(event: 'msg', listener: (msg: Message) => void): void;
     static on(event: 'globalLog', listener: (msg: Message) => void): void;
-    static on(event: 'eide.log.append', listener: (log: string) => void): void;
-    static on(event: 'eide.log.show', listener: () => void): void;
+    static on(event: 'globalLog.append', listener: (log: string) => void): void;
+    static on(event: 'globalLog.show', listener: () => void): void;
     static on(event: any, args?: any): void {
         GlobalEvent.GetInstance()._emitter.on(event, args);
     }
@@ -82,8 +82,8 @@ export class GlobalEvent {
     static emit(event: 'error', error: Error): boolean;
     static emit(event: 'msg', msg: Message): boolean;
     static emit(event: 'globalLog', msg: Message): boolean;
-    static emit(event: 'eide.log.append', log: string): boolean;
-    static emit(event: 'eide.log.show'): boolean;
+    static emit(event: 'globalLog.append', log: string): boolean;
+    static emit(event: 'globalLog.show'): boolean;
     static emit(event: any, args?: any): boolean {
         return GlobalEvent.GetInstance()._emitter.emit(event, args);
     }

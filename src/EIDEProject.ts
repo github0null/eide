@@ -2332,16 +2332,16 @@ class EIDEProject extends AbstractProject {
                 return new Promise((resolve) => {
 
                     proc.on('launch', () => {
-                        GlobalEvent.emit('eide.log.append', os.EOL + `>> running '${scriptName}' ...` + os.EOL);
-                        GlobalEvent.emit('eide.log.show');
+                        GlobalEvent.emit('globalLog.append', os.EOL + `>> running '${scriptName}' ...` + os.EOL);
+                        GlobalEvent.emit('globalLog.show');
                     });
 
-                    proc.on('line', (line) => GlobalEvent.emit('eide.log.append', line + os.EOL));
-                    proc.on('errLine', (line) => GlobalEvent.emit('eide.log.append', line + os.EOL));
+                    proc.on('line', (line) => GlobalEvent.emit('globalLog.append', line + os.EOL));
+                    proc.on('errLine', (line) => GlobalEvent.emit('globalLog.append', line + os.EOL));
                     proc.on('error', (err) => GlobalEvent.emit('globalLog', ExceptionToMessage(err)));
 
                     proc.on('close', (exitInf) => {
-                        GlobalEvent.emit('eide.log.append', os.EOL + `process exited, exitCode: ${exitInf.code}` + os.EOL)
+                        GlobalEvent.emit('globalLog.append', os.EOL + `process exited, exitCode: ${exitInf.code}` + os.EOL)
                         resolve(exitInf.code == 0);
                     });
 
@@ -2351,7 +2351,7 @@ class EIDEProject extends AbstractProject {
 
         } catch (error) {
             GlobalEvent.emit('globalLog', ExceptionToMessage(error));
-            GlobalEvent.emit('eide.log.show');
+            GlobalEvent.emit('globalLog.show');
         }
 
         return false;
@@ -2394,10 +2394,8 @@ class EIDEProject extends AbstractProject {
                 settings['C_Cpp.default.configurationProvider'] = this.extensionId;
             }
 
-            if (this.GetConfiguration().config.type == 'C51') {
-                if (settings['C_Cpp.errorSquiggles'] === undefined) {
-                    settings['C_Cpp.errorSquiggles'] = "Disabled";
-                }
+            if (settings['C_Cpp.errorSquiggles'] === undefined) {
+                settings['C_Cpp.errorSquiggles'] = "Disabled";
             }
 
             // remove some c/c++ configs
@@ -2611,7 +2609,7 @@ class EIDEProject extends AbstractProject {
                     if (!done) {
                         const msg = `Run 'post-install' failed !, please check logs in 'eide-log' output panel.`;
                         vscode.window.showWarningMessage(msg);
-                        GlobalEvent.emit('eide.log.show');
+                        GlobalEvent.emit('globalLog.show');
                     }
                 });
         }
