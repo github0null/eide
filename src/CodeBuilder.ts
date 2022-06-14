@@ -56,6 +56,10 @@ export interface BuildOptions {
     useDebug?: boolean;
 
     useFastMode?: boolean;
+
+    flashAfterBuild?: boolean;
+    
+    onlyGenParams?: boolean;
 }
 
 export interface BuilderParams {
@@ -306,8 +310,6 @@ export abstract class CodeBuilder {
 
     genBuildCommand(options?: BuildOptions, disPowershell?: boolean): string | undefined {
 
-        const resManager = ResManager.GetInstance();
-
         // reinit build mode
         this.useFastCompile = options?.useFastMode;
         this.useShowParamsMode = options?.useDebug;
@@ -324,6 +326,9 @@ export abstract class CodeBuilder {
             this.getBuilderExe().noSuffixName,
             this.getCommands()
         );
+
+        // if only generate params, exit
+        if (options?.onlyGenParams) return;
 
         return commandLine;
     }
