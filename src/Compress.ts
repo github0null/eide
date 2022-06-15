@@ -34,7 +34,7 @@ export interface CompressOption {
     excludeList?: string[];
 }
 
-export class Compress {
+export class SevenZipper {
 
     static readonly MaxStep = 18;
 
@@ -186,12 +186,11 @@ export class Compress {
         });
     }
 
-    sha256(zipFile: File): string | undefined {
+    sha256(file: File): string | undefined {
         try {
-            const args = ['h', '-scrcSHA256', zipFile.path];
+            const args = ['h', '-scrcSHA256', file.path];
             const resLi = child_process.execFileSync(this._7za.path, args).toString()
                 .split(/\r\n|\n/).map((s) => s.trim());
-
             const header = 'SHA256 for data:';
             for (const line of resLi) {
                 if (line.startsWith(header)) {

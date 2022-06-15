@@ -34,7 +34,7 @@ import * as utility from './utility';
 import { File } from '../lib/node-utility/File';
 import { GlobalEvent } from './GlobalEvents';
 import { ExceptionToMessage, newMessage } from './Message';
-import { Compress } from './Compress';
+import { SevenZipper } from './Compress';
 import { ResManager } from './ResManager';
 
 import * as platform from './Platform';
@@ -220,7 +220,7 @@ export class ResInstaller {
                         };
 
                         const resManager = ResManager.GetInstance();
-                        const unzipper = new Compress(resManager.Get7zDir());
+                        const unzipper = new SevenZipper(resManager.Get7zDir());
                         const outDir = File.fromArray([resManager.getUtilToolsDir(), resourceName]);
 
                         outDir.CreateDir(true);

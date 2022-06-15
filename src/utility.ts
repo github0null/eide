@@ -36,6 +36,8 @@ import { NetRequest, NetResponse } from '../lib/node-utility/NetRequest';
 import { File } from '../lib/node-utility/File';
 import { GitFileInfo } from './WebInterface/GithubInterface';
 import * as platform from './Platform';
+import { SevenZipper } from './Compress';
+import { ResManager } from './ResManager';
 
 export function runShellCommand(title: string, commandLine: string, env?: any): Error | undefined {
     try {
@@ -97,6 +99,10 @@ export function sha1(str: string): string {
     const md5 = crypto.createHash('sha1');
     md5.update(str);
     return md5.digest('hex');
+}
+
+export function newSevenZipperInstance(): SevenZipper {
+    return new SevenZipper(ResManager.GetInstance().Get7zDir());
 }
 
 export async function openUrl(url: string): Promise<Error | undefined> {

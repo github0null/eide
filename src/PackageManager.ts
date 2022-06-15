@@ -25,7 +25,7 @@
 import * as events from 'events';
 import { File } from '../lib/node-utility/File';
 import { DeleteDir } from './Platform';
-import { Compress } from './Compress';
+import { SevenZipper } from './Compress';
 import * as Xml2JS from 'x2js';
 import {
     PackInfo, CurrentDevice, SubFamily, DeviceInfo, Component,
@@ -59,7 +59,7 @@ export class PackageManager {
     private currentPackDir: File | undefined;
     private project: AbstractProject;
 
-    private compress: Compress;
+    private compress: SevenZipper;
     private xmlParser: Xml2JS;
     private _event: events.EventEmitter;
     private _recurseList: string[];
@@ -71,7 +71,7 @@ export class PackageManager {
         this.packList = [];
         this._recurseList = [];
         this._event = new events.EventEmitter();
-        this.compress = new Compress(ResManager.GetInstance().Get7zDir());
+        this.compress = new SevenZipper(ResManager.GetInstance().Get7zDir());
         this.xmlParser = new Xml2JS({
             attributePrefix: '$',
             arrayAccessFormPaths: [

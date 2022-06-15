@@ -38,7 +38,7 @@ import { File } from '../lib/node-utility/File';
 import { FileWatcher } from '../lib/node-utility/FileWatcher';
 import { KeilParser } from './KeilXmlParser';
 import { ResManager } from './ResManager';
-import { Compress } from './Compress';
+import { SevenZipper } from './Compress';
 import {
     CurrentDevice, ConfigMap, FileGroup,
     ProjectConfiguration, ProjectConfigData, WorkspaceConfiguration,
@@ -1408,7 +1408,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
             }
 
             outDir.CreateDir(true);
-            const compresser = new Compress(ResManager.GetInstance().Get7zDir());
+            const compresser = new SevenZipper(ResManager.GetInstance().Get7zDir());
             const zipMsg = compresser.UnzipSync(packZipFile, outDir);
 
             // add to include folder

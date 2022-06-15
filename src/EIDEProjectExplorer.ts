@@ -69,7 +69,7 @@ import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
 import { SettingManager } from './SettingManager';
 import { HexUploaderManager, HexUploaderType } from './HexUploader';
-import { Compress, CompressOption } from './Compress';
+import { SevenZipper, CompressOption } from './Compress';
 import { DependenceManager } from './DependenceManager';
 import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import {
@@ -1392,7 +1392,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             if (outDir.IsDir()) { continue; } /* folder existed, exit */
             outDir.CreateDir(true);
 
-            const compresser = new Compress(ResManager.GetInstance().Get7zDir());
+            const compresser = new SevenZipper(ResManager.GetInstance().Get7zDir());
             compresser.UnzipSync(packZipFile, outDir);
             folders.push(outDir);
         }
@@ -1668,7 +1668,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
     async CreateFromTemplate(option: CreateOptions) {
 
-        const compresser = new Compress(ResManager.GetInstance().Get7zDir());
+        const compresser = new SevenZipper(ResManager.GetInstance().Get7zDir());
         const templateFile = <File>option.templateFile;
 
         try {
@@ -2807,7 +2807,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 excludeList: ArrayDelRepetition(defExcludeList.concat(resIgnoreList))
             };
 
-            const compresser = new Compress(ResManager.GetInstance().Get7zDir());
+            const compresser = new SevenZipper(ResManager.GetInstance().Get7zDir());
 
             await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
