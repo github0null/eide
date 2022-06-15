@@ -1104,8 +1104,25 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         return <CppConfiguration>this.configMap.Get<any>(AbstractProject.cppConfigName);
     } */
 
-    Save() {
-        this.configMap.SaveAll();
+    private __saveDelayTimer: NodeJS.Timeout | undefined;
+    Save(immediately?: boolean, delay?: number) {
+        if (immediately) {
+            if (this.__saveDelayTimer) {
+                clearTimeout(this.__saveDelayTimer);
+                this.__saveDelayTimer = undefined;
+            }
+            this.configMap.SaveAll();
+        } else {
+            if (this.__saveDelayTimer) {
+                this.__saveDelayTimer.refresh();
+            } else {
+                this.__saveDelayTimer = setTimeout((prj: AbstractProject) => {
+                    prj.__saveDelayTimer = undefined;
+                    try { prj.configMap.SaveAll(); }
+                    catch (error) { GlobalEvent.emit('error', error); }
+                }, delay || 600, this);
+            }
+        }
     }
 
     InstallPack(packFile: File, reporter?: (progress?: number, message?: string) => void) {
@@ -1642,16 +1659,6 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         //this.configMap.Set(new CppConfiguration(File.fromArray([wsFile.dir, AbstractProject.vsCodeDir, AbstractProject.cppConfigName])));
     }
 
-    private prevSaveTask: NodeJS.Timeout | undefined;
-    protected UpdateDataChangedCount() {
-        if (this.prevSaveTask == undefined) {
-            this.prevSaveTask = setTimeout(() => {
-                try { this.GetConfiguration().Save(); } catch (error) { }
-                this.prevSaveTask = undefined;
-            }, 300);
-        }
-    }
-
     private RegisterEvent(): void {
 
         this.sourceRoots.on('dataChanged', (e) => this.onSourceRootChanged(e));
@@ -1920,8 +1927,6 @@ class EIDEProject extends AbstractProject {
                 this.emit('dataChanged');
                 break;
         }
-
-        this.UpdateDataChangedCount();
     }
 
     protected onSourceRootChanged(type: SourceChangedEvent): void {

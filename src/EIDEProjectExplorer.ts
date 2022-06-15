@@ -566,6 +566,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
     }
 
     onProjectChanged(prj: AbstractProject, type?: DataChangeType) {
+
         switch (type) {
             case 'files':
                 this.UpdateView(this.treeCache.getTreeItem(prj, TreeItemType.PROJECT));
@@ -587,6 +588,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                 this.UpdateView();
                 break;
         }
+
+        prj.Save(false, 1000); // save project file with a delay
     }
 
     //----------------
@@ -1786,15 +1789,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
     }
 
     SaveAll() {
-        this.prjList.forEach(sln => {
-            sln.Save();
-        });
+        this.prjList.forEach(sln => sln.Save());
     }
 
     CloseAll() {
-        this.prjList.forEach(sln => {
-            sln.Close();
-        });
+        this.prjList.forEach(sln => sln.Close());
         this.prjList = [];
     }
 
@@ -2312,6 +2311,18 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
     }
 
+    saveProject(prjItem?: ProjTreeItem) {
+        
+        const prj = this.getProjectByTreeItem(prjItem);
+        
+        if (prj === undefined) {
+            GlobalEvent.emit('msg', newMessage('Warning', 'No active project !'));
+            return;
+        }
+
+        prj.Save();
+    }
+
     private _buildLock: boolean = false;
     BuildSolution(prjItem?: ProjTreeItem, options?: BuildOptions) {
 
@@ -2330,7 +2341,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         this._buildLock = true;
 
         // save project before build
-        prj.Save();
+        prj.Save(true);
 
         try {
             const codeBuilder = CodeBuilder.NewBuilder(prj);
@@ -2769,7 +2780,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 `${AbstractProject.EIDE_DIR}${File.sep}*.dat`,
             ];
 
-            /* if this is a project, handle it ! */
+            // if this is a project, prehandle it
             let prj: AbstractProject | undefined;
             if (prjItem && isWorkspace == undefined) {
                 prj = this.dataProvider.GetProjectByIndex(prjItem.val.projectIndex);
@@ -2782,7 +2793,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 resIgnoreList = prj.readIgnoreList();
                 const prjUid = prjConfig.miscInfo.uid;
                 prjConfig.miscInfo.uid = undefined; // clear uid before save prj
-                prj.Save(); // save project
+                prj.Save(true); // save project
                 prjConfig.miscInfo.uid = prjUid; // restore uid
             }
 

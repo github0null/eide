@@ -4,6 +4,21 @@
 
 ***
 
+### [v3.7.2022061501] preview version
+
+**New**:
+  - 增加 Save Project 右键菜单项
+
+**Change**:
+  - armcc 问题匹配器正则表达式调整：https://github.com/github0null/eide/blob/4f91c5bc43ff699f0f2f569a573d1a49be4e8d3a/package.json#L1511
+  - 自动保存项目改为 3min 间隔
+
+**Optimize**:
+  - 未找到 .NET 运行时进行下载前，先检查上一次下载的安装包是否有效
+  - 优化项目保存逻辑
+
+***
+
 ### [v3.7.2]
 
 **New**:

@@ -32,7 +32,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.7.2",
+    "version": "3.7.2022061501",
     "preview": false,
     "engines": {
         "vscode": "^1.63.0"
@@ -492,6 +492,10 @@
             }
         ],
         "commands": [
+            {
+                "command": "eide.project.save",
+                "title": "Save Project"
+            },
             {
                 "command": "eide.project.genBuilderParams",
                 "title": "Generate builder.params for project"
@@ -1171,6 +1175,10 @@
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
+                    "command": "eide.project.save",
+                    "when": "viewItem == SOLUTION && view == Project"
+                },
+                {
                     "command": "eide.project.genBuilderParams",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
@@ -1508,7 +1516,7 @@
                 "fileLocation": "autoDetect",
                 "pattern": [
                     {
-                        "regexp": "^\"*([^\"]+)\"*, line (\\d+): (Error|Warning):\\s*(.+): (.+)$",
+                        "regexp": "^\"([^\"]+)\", line (\\d+): (Error|Warning):\\s+#(.+):\\s+(.+)$",
                         "file": 1,
                         "line": 2,
                         "severity": 3,
