@@ -482,15 +482,20 @@ export class SettingManager {
 
                     // cache armcc5 path
                     const armcc5Dir = File.fromArray([mdkArmDir.path, 'ARMCC', 'bin']);
-                    if (!armcc5Dir.IsDir()) { throw new Error('Not found folder, [path]: ' + armcc5Dir.path); }
-                    this.pathCache.set('ARMCC5', armcc5Dir.dir);
-
-                    // update status
-                    this._checkStatus['MDK'] = true;
+                    if (armcc5Dir.IsDir()) { this.pathCache.set('ARMCC5', armcc5Dir.dir); }
 
                     // cache armcc6 path
                     const armcc6Dir = File.fromArray([mdkArmDir.path, 'ARMCLANG', 'bin']);
                     if (armcc6Dir.IsDir()) { this.pathCache.set('ARMCC6', armcc6Dir.dir);; }
+
+                    // check all
+                    if (!this.pathCache.has('ARMCC5') &&
+                        !this.pathCache.has('ARMCC6')) {
+                        throw new Error('Not found folder, [path]: ' + armcc5Dir.path);
+                    }
+
+                    // update status
+                    this._checkStatus['MDK'] = true;
 
                     return; // mdk path is valid, return it
                 }
