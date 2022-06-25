@@ -4,6 +4,22 @@
 
 ***
 
+### [v3.7.2022062501] preview version
+
+**New**:
+  - 重构 `Memory Layout` 视图，更好地融入 VsCode 风格
+  - 为新项目自动添加 `.clang-format` 文件
+
+**Fix**:
+  - 修复从 cmsis package 解析芯片默认 Memory Layout 时出现错误
+
+**Change**:
+  - 新建构建配置时，armclang 默认汇编器改为 arm-auto
+  - 自动保存时间间隔改为 `30s`
+  - 在 `Virtual Folder` 中添加 源文件 时，使用 Unix 路径
+
+***
+
 ### [v3.7.2022061501] preview version
 
 **New**:
