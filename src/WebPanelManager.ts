@@ -37,16 +37,7 @@ let _instance: WebPanelManager;
 
 export class WebPanelManager {
 
-    private resMap: Map<string, string>;
-
     private constructor() {
-        this.resMap = new Map();
-        const htmlDir = ResManager.GetInstance().GetHTMLDir();
-        this.resMap.set('bootstrap-css', [htmlDir.path, 'bootstrap', 'css', 'bootstrap.min.css'].join(File.sep));
-        this.resMap.set('jquery-js', [htmlDir.path, 'jquery', 'jquery-2.0.1.min.js'].join(File.sep));
-        this.resMap.set('bootstrap-js', [htmlDir.path, 'bootstrap', 'js', 'bootstrap.min.js'].join(File.sep));
-        this.resMap.set('index-js', [htmlDir.path, 'StorageLayoutView', 'index.js'].join(File.sep));
-        this.resMap.set('checkbox-css', [htmlDir.path, 'checkbox', 'checkbox.min.css'].join(File.sep));
     }
 
     static newInstance(): WebPanelManager {
@@ -60,7 +51,7 @@ export class WebPanelManager {
 
         const resManager = ResManager.GetInstance();
 
-        const panel = vscode.window.createWebviewPanel('storageLayoutView',
+        const panel = vscode.window.createWebviewPanel('MemoryLayoutView',
             view_str$compile$storageLayout, vscode.ViewColumn.One,
             { enableScripts: true, retainContextWhenHidden: true });
 
@@ -77,7 +68,7 @@ export class WebPanelManager {
             /* it's a message */
             if (typeof _data == 'string') {
                 switch (_data) {
-                    case 'eide.ram_rom_layout.launched': /* webview launched */
+                    case 'eide.mem-layout.launched': /* webview launched */
                         {
                             panel.webview.postMessage({
                                 DEF: project.GetPackManager().getCurrentDevInfo()?.storageLayout,
@@ -94,23 +85,23 @@ export class WebPanelManager {
             else {
                 try {
                     compileModel.updateStorageLayout(_data);
-                    panel.webview.postMessage('update-done');
+                    panel.webview.postMessage('eide.mem-layout.status.done');
                 } catch (error) {
                     GlobalEvent.emit('error', error);
-                    panel.webview.postMessage('update-failed');
+                    panel.webview.postMessage('eide.mem-layout.status.fail');
                 }
             }
         });
 
-        /* display web view */
+        const htmlFolder = File.fromArray([resManager.GetHTMLDir().path, 'mem_layout_view']);
+        const htmlFile = File.fromArray([htmlFolder.path, 'index.html']);
 
-        const htmlFile = File.fromArray([resManager.GetHTMLDir().path, 'StorageLayoutView', 'index.html']);
-        panel.webview.html = htmlFile.Read().replace(/\r\n|\n/g, '')
-            .replace(/\$\{bootstrap-css\}/, panel.webview.asWebviewUri(vscode.Uri.file(<string>this.resMap.get('bootstrap-css'))).toString())
-            .replace(/\$\{jquery-js\}/, panel.webview.asWebviewUri(vscode.Uri.file(<string>this.resMap.get('jquery-js'))).toString())
-            .replace(/\$\{bootstrap-js\}/, panel.webview.asWebviewUri(vscode.Uri.file(<string>this.resMap.get('bootstrap-js'))).toString())
-            .replace(/\$\{index-js\}/, panel.webview.asWebviewUri(vscode.Uri.file(<string>this.resMap.get('index-js'))).toString())
-            .replace(/\$\{checkbox-css\}/, panel.webview.asWebviewUri(vscode.Uri.file(<string>this.resMap.get('checkbox-css'))).toString());
+        panel.webview.html = htmlFile.Read()
+            .replace(/"[\w\-\.\/]+?\.(?:css|js)"/ig, (str) => {
+                const fileName = str.substr(1, str.length - 2); // remove '"'
+                const absPath = NodePath.normalize(htmlFolder.path + NodePath.sep + fileName);
+                return `"${panel.webview.asWebviewUri(vscode.Uri.file(absPath)).toString()}"`;
+            });
 
         panel.reveal();
     }
