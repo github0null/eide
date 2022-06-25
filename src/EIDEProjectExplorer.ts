@@ -2312,9 +2312,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     saveProject(prjItem?: ProjTreeItem) {
-        
+
         const prj = this.getProjectByTreeItem(prjItem);
-        
+
         if (prj === undefined) {
             GlobalEvent.emit('msg', newMessage('Warning', 'No active project !'));
             return;
@@ -3811,6 +3811,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                         DeleteDir(oldFolder);
                         prjConfig.outDir = newName;
                         this.updateSettingsView(prj);
+                        prj.Save();
                     }
                 }
                 break;
@@ -3829,6 +3830,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     if (newName && newName !== prjConfig.name) {
                         prjConfig.name = newName; // update project name
                         this.dataProvider.UpdateView(); // udpate all view
+                        prj.Save();
                     }
                 }
                 break;

@@ -250,9 +250,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
 // this method is called when your extension is deactivated
 export function deactivate() {
-    console.log('extension close');
-    StatusBarManager.getInstance().disposeAll();
     GlobalEvent.emit('extension_close');
+    StatusBarManager.getInstance().disposeAll();
 }
 
 //////////////////////////////////////////////////

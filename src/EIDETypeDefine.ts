@@ -1475,7 +1475,7 @@ export abstract class ConfigModel<DataType> {
 
     Update(newConfig?: DataType): void {
         this.data = this.UpdateConfigData(newConfig);
-        this._event.emit('datachanged');
+        this._event.emit('dataChanged');
     }
 
     isKeyEnable(key: string): boolean {
@@ -1791,7 +1791,7 @@ export abstract class ArmBaseCompileConfigModel
     Update(newConfig?: ArmBaseCompileData) {
         this.data = this.UpdateConfigData(newConfig);
         this.sortStorage(this.data.storageLayout);
-        this._event.emit('datachanged');
+        this._event.emit('dataChanged');
     }
 
     getIRAMx(id: number): Memory | undefined {
@@ -1814,10 +1814,10 @@ export abstract class ArmBaseCompileConfigModel
 
     updateStorageLayout(newLayout: ARMStorageLayout) {
         this.data.storageLayout = this.sortStorage(newLayout);
-        this._event.emit('datachanged');
+        this._event.emit('dataChanged');
     }
 
-    sortStorage(storageLayout: ARMStorageLayout): ARMStorageLayout {
+    private sortStorage(storageLayout: ARMStorageLayout): ARMStorageLayout {
 
         storageLayout.RAM = storageLayout.RAM.sort((a, b): number => {
 
