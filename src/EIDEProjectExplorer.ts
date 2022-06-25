@@ -1911,6 +1911,7 @@ interface ImporterProjectInfo {
     incList: string[];
     defineList: string[];
     files: VirtualFolder;
+    excludeList?: string[] | { [targetName: string]: string[] };
 }
 
 export class ProjectExplorer implements CustomConfigurationProvider {
@@ -3846,9 +3847,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
     }
 
-    async ImportSourceFromExtProject(item: ProjTreeItem) {
+    async ImportSourceFromExtProject(treeItem: ProjTreeItem) {
 
-        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        const prj = this.dataProvider.GetProjectByIndex(treeItem.val.projectIndex);
 
         try {
             //
@@ -3949,7 +3950,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                                     canPickMany: false
                                 }
                             );
-                            if (item != undefined) {
+                            if (selectedItem) {
                                 const index = itemList.findIndex((item) => item.id == selectedItem.id);
                                 if (index != -1) {
                                     prjInfo = prjList[index];
@@ -3973,7 +3974,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                             const vFolder = folderStack.pop();
                             if (vFolder) {
                                 vFolder.files = vFolder.files.map((file) => {
-                                    return { path: prj.ToRelativePath(file.path) || file.path }
+                                    return { path: prj.ToRelativePath(file.path, false, true) || file.path }
                                 });
                                 vFolder.folders.forEach((folder) => {
                                     folderStack.push(folder)
@@ -3985,7 +3986,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     //
                     // start import project
                     //
-                    const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
                     const prjConf = prj.GetConfiguration();
                     prjConf.config.virtualFolder = prjInfo.files;
                     formatVirtualFolder(prjConf.config.virtualFolder);
@@ -4000,8 +4000,40 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     prj.getVirtualSourceManager().load();
                     prjConf.CustomDep_NotifyChanged();
 
+                    //
+                    // exclude source
+                    //
+                    if (prjInfo.excludeList) {
+
+                        prjInfo.excludeList = Array.isArray(prjInfo.excludeList) ?
+                            prjInfo.excludeList :
+                            prjInfo.excludeList[prjInfo.target || 'null'];
+
+                        if (Array.isArray(prjInfo.excludeList)) {
+
+                            const excRePathLi = prjInfo.excludeList
+                                .filter(path => path.trim() != '')
+                                .map(path => prj.ToRelativePath(path, false, true) || path);
+
+                            const realExcLi: string[] = [];
+
+                            prj.getVirtualSourceManager().traverse((vFolderInfo) => {
+                                vFolderInfo.folder.files.forEach(vFile => {
+                                    if (excRePathLi.includes(vFile.path)) {
+                                        const vFullPath = `${vFolderInfo.path}/${NodePath.basename(vFile.path)}`;
+                                        realExcLi.push(vFullPath);
+                                    }
+                                });
+                            });
+
+                            realExcLi.forEach(vPath => prj.excludeSourceFile(vPath));
+                        }
+                    }
+
                     // show message and exit
                     progress.report({ message: `done !` });
+
+                    prj.Save();
 
                     await new Promise((resolve) => {
                         setTimeout(() => resolve(), 1000);
@@ -4607,7 +4639,7 @@ class VFolderSourcePathsModifier implements ModifiableYamlConfigProvider {
                 return;
             }
 
-            const repath = project.ToRelativePath(path) || path;
+            const repath = project.ToRelativePath(path, false, true) || path;
             const vFileInfo = vSourceManager.getFile(vInfo.path);
             if (vFileInfo) {
                 vFileInfo.path = repath;
@@ -4690,7 +4722,7 @@ class VFolderSourcePathsModifier implements ModifiableYamlConfigProvider {
             if (fileList) {
                 fileList = fileList.map((vFile) => {
                     return {
-                        path: info.project.ToRelativePath(vFile.path) || vFile.path
+                        path: info.project.ToRelativePath(vFile.path, false, true) || vFile.path
                     };
                 });
             }

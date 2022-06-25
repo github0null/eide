@@ -273,10 +273,7 @@ export class VirtualSource implements SourceProvider {
         // file is not existed, add it
         const vFilePath = `${folder_path}/${NodePath.basename(file_path)}`;
         if (this.getFile(vFilePath) === undefined) {
-            const vFile = {
-                path: this.project.ToRelativePath(file_path) || file_path,
-                disabled: this.project.isExcluded(vFilePath) || undefined
-            };
+            const vFile: VirtualFile = { path: this.project.ToRelativePath(file_path, false, true) || file_path };
             folder.files.push(vFile);
             this.emit('dataChanged', 'folderChanged');
             return vFile;
@@ -294,7 +291,7 @@ export class VirtualSource implements SourceProvider {
             const vFilePath = `${folder_path}/${NodePath.basename(abspath)}`;
             // file is not existed, add it
             if (this.getFile(vFilePath) === undefined) {
-                const vFile: VirtualFile = { path: this.project.ToRelativePath(abspath) || abspath };
+                const vFile: VirtualFile = { path: this.project.ToRelativePath(abspath, false, true) || abspath };
                 folder.files.push(vFile);
                 doneList.push(vFile);
             }
@@ -1045,8 +1042,11 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         return NodePath.normalize(File.ToLocalPath(this.GetRootDir().path + NodePath.sep + path));
     }
 
-    ToRelativePath(path: string, hasPrefix: boolean = true): string | undefined {
-        return this.GetRootDir().ToRelativePath(path.trim(), hasPrefix);
+    ToRelativePath(path: string, hasPrefix: boolean = true, useUnixFmt?: boolean): string | undefined {
+        const rePath = this.GetRootDir().ToRelativePath(path.trim(), hasPrefix);
+        if (rePath) {
+            return useUnixFmt ? File.ToUnixPath(rePath) : rePath;
+        }
     }
 
     async Load(wsFile: File) {
