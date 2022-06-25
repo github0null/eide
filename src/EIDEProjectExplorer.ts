@@ -3974,7 +3974,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                             const vFolder = folderStack.pop();
                             if (vFolder) {
                                 vFolder.files = vFolder.files.map((file) => {
-                                    return { path: prj.ToRelativePath(file.path, false, true) || file.path }
+                                    return { path: prj.ToRelativePath(file.path) || file.path }
                                 });
                                 vFolder.folders.forEach((folder) => {
                                     folderStack.push(folder)
@@ -4013,7 +4013,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
                             const excRePathLi = prjInfo.excludeList
                                 .filter(path => path.trim() != '')
-                                .map(path => prj.ToRelativePath(path, false, true) || path);
+                                .map(path => prj.ToRelativePath(path) || path);
 
                             const realExcLi: string[] = [];
 
@@ -4639,7 +4639,7 @@ class VFolderSourcePathsModifier implements ModifiableYamlConfigProvider {
                 return;
             }
 
-            const repath = project.ToRelativePath(path, false, true) || path;
+            const repath = project.ToRelativePath(path) || path;
             const vFileInfo = vSourceManager.getFile(vInfo.path);
             if (vFileInfo) {
                 vFileInfo.path = repath;
@@ -4722,7 +4722,7 @@ class VFolderSourcePathsModifier implements ModifiableYamlConfigProvider {
             if (fileList) {
                 fileList = fileList.map((vFile) => {
                     return {
-                        path: info.project.ToRelativePath(vFile.path, false, true) || vFile.path
+                        path: info.project.ToRelativePath(vFile.path) || vFile.path
                     };
                 });
             }
