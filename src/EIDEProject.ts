@@ -2562,6 +2562,15 @@ class EIDEProject extends AbstractProject {
                 }
             }
 
+            // default .clang-format
+            {
+                const fSrc = File.fromArray([ResManager.GetInstance().GetAppDataDir().path, '.clang-format']);
+                const fDst = File.fromArray([this.GetRootDir().path, '.clang-format']);
+                if (!fDst.IsFile() && fSrc.IsFile()) {
+                    fs.copyFileSync(fSrc.path, fDst.path);
+                }
+            }
+
             workspaceConfig.forceSave();
         }
 
