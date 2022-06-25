@@ -496,9 +496,14 @@ export class PackageManager {
     private parseMemory(memObj: any[], ramList: ARMRamItem[], romList: ARMRomItem[]) {
 
         for (let mem of memObj) {
+
+            let mAc = mem.$access || '';
+            let mId = mem.$id || mem.$name || '';
+            let mNa = mem.$name || '';
+
             // RAM
-            if (/rw[x]?/.test(mem.$access) || /RAM/.test(mem.$id || 'null')
-                || /RAM/.test(mem.$name || 'null')) {
+            if (/rw[x]?/.test(mAc) || /RAM/.test(mId) || /RAM/.test(mNa)) {
+
                 let _mem: ARMRamItem = {
                     tag: 'RAM',
                     id: -1,
@@ -510,13 +515,39 @@ export class PackageManager {
                     noInit: false
                 };
 
-                if (mem.$id === 'IRAM1' || mem.$id === 'IRAM2') {
-                    _mem.tag = 'IRAM';
-                    _mem.id = mem.$id === 'IRAM1' ? 1 : 2;
+                switch (mId) {
+                    case 'IRAM1':
+                        _mem.tag = 'IRAM';
+                        _mem.id = 1;
+                        ramList.push(_mem);
+                        break;
+                    case 'IRAM2':
+                        _mem.tag = 'IRAM';
+                        _mem.id = 2;
+                        ramList.push(_mem);
+                        break;
+                    case 'RAM1':
+                        _mem.tag = 'RAM';
+                        _mem.id = 1;
+                        ramList.push(_mem);
+                        break;
+                    case 'RAM2':
+                        _mem.tag = 'RAM';
+                        _mem.id = 2;
+                        ramList.push(_mem);
+                        break;
+                    case 'RAM3':
+                        _mem.tag = 'RAM';
+                        _mem.id = 3;
+                        ramList.push(_mem);
+                        break;
+                    default:
+                        break;
                 }
+            }
 
-                ramList.push(_mem);
-            } else {
+            // ROM
+            else {
 
                 let _mem: ARMRomItem = {
                     tag: 'ROM',
@@ -529,12 +560,35 @@ export class PackageManager {
                     isStartup: mem.$startup === '1' || mem.$startup === 'true'
                 };
 
-                if (mem.$id === 'IROM1' || mem.$id === 'IROM2') {
-                    _mem.tag = 'IROM';
-                    _mem.id = mem.$id === 'IROM1' ? 1 : 2;
+                switch (mId) {
+                    case 'IROM1':
+                        _mem.tag = 'IROM';
+                        _mem.id = 1;
+                        romList.push(_mem);
+                        break;
+                    case 'IROM2':
+                        _mem.tag = 'IROM';
+                        _mem.id = 2;
+                        romList.push(_mem);
+                        break;
+                    case 'ROM1':
+                        _mem.tag = 'ROM';
+                        _mem.id = 1;
+                        romList.push(_mem);
+                        break;
+                    case 'ROM2':
+                        _mem.tag = 'ROM';
+                        _mem.id = 2;
+                        romList.push(_mem);
+                        break;
+                    case 'ROM3':
+                        _mem.tag = 'ROM';
+                        _mem.id = 3;
+                        romList.push(_mem);
+                        break;
+                    default:
+                        break;
                 }
-
-                romList.push(_mem);
             }
         }
     }
