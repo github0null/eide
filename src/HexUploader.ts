@@ -728,7 +728,7 @@ class STVPHexUploader extends HexUploader<string[]> {
         if (!eraseAll) {
 
             if (programs.length == 0) {
-                throw new Error(`no any program files !`);
+                throw new Error(`No valid program files !`);
             }
 
             let fileCount: number = 0;
@@ -738,8 +738,6 @@ class STVPHexUploader extends HexUploader<string[]> {
             if (binFile.IsFile()) {
                 commands.push('-FileProg=\"' + binFile.path + '\"');
                 fileCount++;
-            } else {
-                commands.push('-no_progProg');
             }
 
             // eeprom
@@ -747,8 +745,6 @@ class STVPHexUploader extends HexUploader<string[]> {
             if (eepromFile.IsFile()) {
                 commands.push('-FileData=\"' + eepromFile.path + '\"');
                 fileCount++;
-            } else {
-                commands.push('-no_progData');
             }
 
             // option bytes
@@ -756,8 +752,6 @@ class STVPHexUploader extends HexUploader<string[]> {
             if (opFile.IsFile()) {
                 commands.push('-FileOption=\"' + opFile.path + '\"');
                 fileCount++;
-            } else {
-                commands.push('-no_progOption');
             }
 
             // verify prog
@@ -767,15 +761,15 @@ class STVPHexUploader extends HexUploader<string[]> {
 
             // no files need be programed
             else {
-                throw new Error('no any valid program files !');
+                throw new Error('No valid program files !');
             }
         }
 
         // erase all
         else {
             commands.push('-no_progProg');
-            commands.push('-erase');
             commands.push('-no_verif');
+            commands.push('-erase');
         }
 
         return {
