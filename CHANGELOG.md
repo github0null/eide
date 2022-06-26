@@ -17,7 +17,6 @@
 **Change**:
   - 新建构建配置时，armclang 默认汇编器改为 arm-auto
   - 自动保存时间间隔改为 `30s`
-  - 在 `Virtual Folder` 中添加 源文件 时，使用 Unix 路径
 
 ***
 
