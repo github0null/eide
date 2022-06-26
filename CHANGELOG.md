@@ -12,6 +12,7 @@
 
 **Fix**:
   - 修复从 cmsis package 解析芯片默认 Memory Layout 时出现错误
+  - 修复 STVP 命令行中的多余参数导致的烧录失败
 
 **Change**:
   - 新建构建配置时，armclang 默认汇编器改为 arm-auto
