@@ -754,7 +754,7 @@ async function checkAndInstallRuntime() {
         const lines = dotnetInfo.trim().split(/\r\n|\n/);
         for (const line_ of lines) {
             const line = line_.trim();
-            if (line.startsWith('Microsoft.NETCore.App 6.')) {
+            if (line.toLowerCase().startsWith('Microsoft.NETCore.App 6.'.toLowerCase())) {
                 dotnetVerLine = line;
                 GlobalEvent.emit('globalLog', newMessage('Info', `.NET6 runtime: '${dotnetVerLine}' found !`));
                 break;
