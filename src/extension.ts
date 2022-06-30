@@ -362,14 +362,14 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
 
     // !! for compatibility with offline-package !!
     // if we found eide binaries in plug-in root folder, move it 
-    const oldBinDir = File.fromArray([resManager.getAppRootFolder().path, 'bin'])
-    if (checkBinFolder(oldBinDir)) {
+    const builtInBinFolder = File.fromArray([resManager.getAppRootFolder().path, 'bin'])
+    if (checkBinFolder(builtInBinFolder)) {
         if (os.platform() == 'win32') {
-            ChildProcess.execSync(`xcopy "${oldBinDir.path}" "${binFolder.path}\\" /H /E /Y`);
-            platform.DeleteDir(oldBinDir); // rm it after copy done ! 
+            ChildProcess.execSync(`xcopy "${builtInBinFolder.path}" "${binFolder.path}\\" /H /E /Y`);
+            platform.DeleteDir(builtInBinFolder); // rm it after copy done ! 
         } else {
             platform.DeleteDir(binFolder); // rm existed folder
-            ChildProcess.execSync(`mv -f "${oldBinDir.path}" "${binFolder.dir}/"`);
+            ChildProcess.execSync(`mv -f "${builtInBinFolder.path}" "${binFolder.dir}/"`);
         }
     }
 
