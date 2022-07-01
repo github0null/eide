@@ -673,24 +673,44 @@ function exportEnvToSysPath() {
     ];
 
     //
-    const exToolsRoot = NodePath.normalize(`${os.homedir()}/.eide/tools`);
-    if (!File.IsDir(exToolsRoot)) {
+    const eideToolsFolder = new File(NodePath.normalize(`${os.homedir()}/.eide/tools`));
+    if (!eideToolsFolder.IsDir()) {
         try {
-            new File(exToolsRoot).CreateDir(true);
+            new File(eideToolsFolder.path).CreateDir(true);
         } catch (error) {
             // nothing todo
         }
     }
 
-    // export some tools path to system env path
-    const pathList: { key: string, path: string }[] = [
-        { key: 'EIDE_ARM_GCC', path: `${settingManager.getGCCDir().path}${File.sep}bin` },
-        { key: 'EIDE_JLINK', path: `${settingManager.getJlinkDir()}` },
-        { key: 'EIDE_OPENOCD', path: `${NodePath.dirname(settingManager.getOpenOCDExePath())}` },
-        { key: 'EIDE_TOOLS_DIR', path: exToolsRoot }
-    ];
+    // export def tools path to system env path from extension setting
+    const pathList: { key: string, path: string }[] = [];
 
-    // search and export other tools path to system env path
+    // try to export some user setted tools path to env
+    [
+        { key: 'EIDE_TOOL_GCC_ARM', path: `${settingManager.getGCCDir().path}${File.sep}bin` },
+        { key: 'EIDE_TOOL_JLINK', path: `${settingManager.getJlinkDir()}` },
+        { key: 'EIDE_TOOL_OPENOCD', path: `${NodePath.dirname(settingManager.getOpenOCDExePath())}` }
+    ].forEach(o => {
+        if (File.IsDir(o.path)) {
+            pathList.push(o);
+        }
+    });
+
+    // search tools folder and export path to system env
+    eideToolsFolder.GetList(File.EMPTY_FILTER).forEach((subDir) => {
+        if (!/^\w+$/.test(subDir.name)) return; // filter dir name
+        const binFolder = NodePath.normalize(`${subDir.path}/bin`);
+        if (File.IsDir(binFolder)) {
+            const keyName = `EIDE_TOOL_${subDir.name.toUpperCase()}`;
+            if (pathList.findIndex(o => o.key == keyName) != -1) return; // skip repeat key name
+            pathList.push({
+                key: keyName,
+                path: binFolder
+            });
+        }
+    });
+
+    // search built-in tools and export path to system env
     builderFolder.GetList(File.EMPTY_FILTER).forEach((subDir) => {
         const binFolder = NodePath.normalize(`${subDir.path}/bin`);
         if (File.IsDir(binFolder)) {
