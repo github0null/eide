@@ -1001,16 +1001,18 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
 
     // register msys bash profile for windows
     if (os.platform() == 'win32') {
-        context.subscriptions.push(
-            vscode.window.registerTerminalProfileProvider('eide.msys.bash', new MsysTerminalProvider())
-        );
+        context.subscriptions.push(vscode.window.registerTerminalProfileProvider(EideTerminalProvider.MSYS_BASH_ID,
+            new EideTerminalProvider(EideTerminalProvider.MSYS_BASH_ID)));
     }
+
+    context.subscriptions.push(
+        vscode.window.registerTerminalProfileProvider(EideTerminalProvider.SYSTEM_SHELL_ID,
+            new EideTerminalProvider(EideTerminalProvider.SYSTEM_SHELL_ID)));
 
     // update onchanged
     settingManager.on('onChanged', (e) => {
 
         /* serialport */
-
         if (e.affectsConfiguration('EIDE.SerialPortMonitor.ShowStatusBar')) {
             updateSerialportBarState();
         }
@@ -1022,7 +1024,6 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
         }
 
         /* set some toolpath to env when path is changed */
-
         if (e.affectsConfiguration('EIDE.ARM.GCC.InstallDirectory') ||
             e.affectsConfiguration('EIDE.JLink.InstallDirectory') ||
             e.affectsConfiguration('EIDE.OpenOCD.ExePath')) {
@@ -1149,18 +1150,86 @@ class EideTerminalLinkProvider implements vscode.TerminalLinkProvider<EideTermin
     }
 }
 
-// --- msys provider
+// --- terminal provider
 
-class MsysTerminalProvider implements vscode.TerminalProfileProvider {
+class EideTerminalProvider implements vscode.TerminalProfileProvider {
+
+    public static readonly MSYS_BASH_ID = 'eide.msys.bash';
+    public static readonly SYSTEM_SHELL_ID = 'eide.system.shell';
+
+    private type: string;
+
+    constructor(id: string) {
+        this.type = id;
+    }
 
     provideTerminalProfile(token: vscode.CancellationToken): vscode.ProviderResult<vscode.TerminalProfile> {
 
-        // get cwd
-        let cwd: string = os.homedir();
+        switch (this.type) {
+            case EideTerminalProvider.MSYS_BASH_ID:
+                return this.provideMsysTerminal();
+            case EideTerminalProvider.SYSTEM_SHELL_ID:
+                return this.provideSystemTerminal();
+            default:
+                return undefined;
+        }
+    }
+
+    private cwd(): string {
+
+        let cwd = process.env['VSCODE_CWD'] || os.homedir();
+
         const workspace = WorkspaceManager.getInstance().getFirstWorkspace();
         if (workspace && workspace.IsDir()) {
             cwd = workspace.path;
         }
+
+        return cwd;
+    }
+
+    private provideSystemTerminal(): vscode.ProviderResult<vscode.TerminalProfile> {
+
+        let shellName: string;
+        let shellPath: string;
+
+        if (platform.osType() == 'win32') {
+            let f = ResManager.GetInstance().getPowerShell();
+            if (f) {
+                shellName = 'powershell';
+                shellPath = f.path;
+            } else {
+                let cmd = ResManager.GetInstance().getCMDPath();
+                if (cmd) {
+                    shellName = 'cmd';
+                    shellPath = cmd;
+                } else {
+                    GlobalEvent.emit('msg', newMessage('Error', `We can not found 'cmd.exe' in your pc !`));
+                    return undefined;
+                }
+            }
+        } else {
+            shellName = 'shell';
+            shellPath = '/bin/bash';
+        }
+
+        const welcome = [
+            `--------------------------------------------`,
+            `          \x1b[32;22m ${shellName} (eide env) \x1b[0m`,
+            `--------------------------------------------`,
+            ``
+        ];
+
+        return new vscode.TerminalProfile({
+            name: shellName,
+            shellPath: shellPath,
+            cwd: this.cwd(),
+            env: process.env,
+            strictEnv: true,
+            message: welcome.join('\r\n')
+        });
+    }
+
+    private provideMsysTerminal(): vscode.ProviderResult<vscode.TerminalProfile> {
 
         // welcome msg
         const welcome = [
@@ -1176,12 +1245,10 @@ class MsysTerminalProvider implements vscode.TerminalProfileProvider {
             return undefined;
         }
 
-        const bashPath = `${process.env['EIDE_MSYS']}/bash.exe`;
-
         return new vscode.TerminalProfile({
             name: 'msys bash',
-            shellPath: bashPath,
-            cwd: cwd,
+            shellPath: `${process.env['EIDE_MSYS']}/bash.exe`,
+            cwd: this.cwd(),
             env: process.env,
             strictEnv: true,
             message: welcome.join('\r\n')
