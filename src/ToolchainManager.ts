@@ -575,7 +575,8 @@ class SDCC implements IToolchian {
 
     private readonly asmMapper: any = {
         "mcs51": "8051",
-        "ds400": "ds390",
+        "ds390": "390",
+        "ds400": "390",
         "hc08": "6808",
         "s08": "6808",
         "r2k": "rab",

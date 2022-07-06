@@ -3808,8 +3808,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     });
 
                     if (newName && newName !== oldFolderName) {
-                        const oldFolder = new File(prj.ToAbsolutePath(prjConfig.outDir));
-                        DeleteDir(oldFolder);
                         prjConfig.outDir = newName;
                         this.updateSettingsView(prj);
                         prj.Save();
