@@ -1102,7 +1102,7 @@ class EideTerminalLinkProvider implements vscode.TerminalLinkProvider<EideTermin
     private macthers: Map<RegExp, { file: number, line: number }> = new Map();
 
     constructor() {
-        this.workspace = WorkspaceManager.getInstance().getFirstWorkspace();
+        this.workspace = WorkspaceManager.getInstance().getWorkspaceRoot();
         this.macthers.set(/\bIN LINE (\d+) OF ([^:]+)/, { line: 1, file: 2 }); // keil c51
     }
 
@@ -1177,9 +1177,9 @@ class EideTerminalProvider implements vscode.TerminalProfileProvider {
 
     private cwd(): string {
 
-        let cwd = process.env['VSCODE_CWD'] || os.homedir();
+        let cwd = os.homedir();
 
-        const workspace = WorkspaceManager.getInstance().getFirstWorkspace();
+        const workspace = WorkspaceManager.getInstance().getWorkspaceRoot();
         if (workspace && workspace.IsDir()) {
             cwd = workspace.path;
         }

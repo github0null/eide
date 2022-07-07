@@ -53,13 +53,6 @@ export class WorkspaceManager {
         return vscode.workspace.workspaceFolders !== undefined && vscode.workspace.workspaceFolders.length > 0;
     }
 
-    getFirstWorkspace(): File | undefined {
-        const wsList = this.getWorkspaceList();
-        if (wsList.length > 0) {
-            return wsList[0];
-        }
-    }
-
     getWorkspaceRoot(): File | undefined {
         if (vscode.workspace.workspaceFile) {
             return new File(PathInfo.dirname(vscode.workspace.workspaceFile.fsPath));

@@ -33,6 +33,7 @@ import { GlobalEvent } from './GlobalEvents';
 import { ExceptionToMessage } from './Message';
 import * as Utility from './utility';
 import { find } from './Platform';
+import { WorkspaceManager } from './WorkspaceManager';
 
 export enum CheckStatus {
     All_Verified,
@@ -134,16 +135,26 @@ export class SettingManager {
         this.getConfiguration().update(key, val, vscode.ConfigurationTarget.Global);
     }
 
-    replaceEnvVariable(str: string): string {
+    private toFullPathForSettings(path_: string): string {
+
+        const wsRoot = WorkspaceManager.getInstance().getWorkspaceRoot();
+
+        if (wsRoot && !this.eideEnv.has('${workspaceFolder}')) {
+            this.eideEnv.set('${workspaceFolder}', wsRoot.path);
+        }
 
         this.eideEnv.forEach((value, key) => {
             const regExpr = key.replace('$', '\\$')
                 .replace('{', '\\{')
                 .replace('}', '\\}');
-            str = str.replace(new RegExp(regExpr, 'gi'), value);
+            path_ = path_.replace(new RegExp(regExpr, 'gi'), value);
         });
 
-        return str;
+        if (!NodePath.isAbsolute(path_) && wsRoot) {
+            path_ = wsRoot.path + File.sep + path_;
+        }
+
+        return path_;
     }
 
     /**
@@ -163,7 +174,7 @@ export class SettingManager {
 
         const path = this.getConfiguration().get<string>(confName);
         if (path) {
-            defPath = Utility.formatPath(this.replaceEnvVariable(path));
+            defPath = Utility.formatPath(this.toFullPathForSettings(path));
             if (File.IsExist(defPath)) {
                 return defPath;
             }
@@ -190,7 +201,7 @@ export class SettingManager {
 
         const path = this.getConfiguration().get<string>(confName);
         if (path) {
-            defPath = Utility.formatPath(this.replaceEnvVariable(path));
+            defPath = Utility.formatPath(this.toFullPathForSettings(path));
             if (File.IsExist(defPath)) {
                 return defPath;
             }
@@ -321,7 +332,7 @@ export class SettingManager {
 
         const path = this.getConfiguration().get<string>('JLink.InstallDirectory');
         if (path) {
-            defPath = Utility.formatPath(this.replaceEnvVariable(path));
+            defPath = Utility.formatPath(this.toFullPathForSettings(path));
             if (File.IsExist(defPath)) {
                 return defPath;
             }
@@ -346,7 +357,7 @@ export class SettingManager {
     }
 
     getStvpExePath(): string {
-        return this.replaceEnvVariable(
+        return this.toFullPathForSettings(
             this.getExePathFromConfig('STM8.STVP.CliExePath', 'STVP_CmdLine') || 'null'
         );
     }
@@ -357,11 +368,11 @@ export class SettingManager {
             this.getExePathFromConfig('STLink.ExePath', 'STM32_Programmer_CLI') ||
             this.getExePathFromConfig('STLink.ExePath', 'ST-LINK_CLI');
 
-        return this.replaceEnvVariable(flasher || 'null');
+        return this.toFullPathForSettings(flasher || 'null');
     }
 
     getOpenOCDExePath(): string {
-        return this.replaceEnvVariable(
+        return this.toFullPathForSettings(
             this.getExePathFromConfig('OpenOCD.ExePath', 'openocd') || 'null'
         );
     }
@@ -374,7 +385,7 @@ export class SettingManager {
 
         const path = this.getConfiguration().get<string>('IAR.STM8.InstallDirectory');
         if (path) {
-            defPath = Utility.formatPath(this.replaceEnvVariable(path));
+            defPath = Utility.formatPath(this.toFullPathForSettings(path));
             if (File.IsExist(defPath)) {
                 return new File(defPath);
             }
