@@ -3002,15 +3002,13 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     const rePath = prj.ToRelativePath(folderPath, false);
 
                     // if can't calculate repath, skip
-                    if (rePath === undefined) {
+                    if (rePath === undefined || rePath.trim() === '') {
                         GlobalEvent.emit('msg', newMessage('Warning', `Can't calculate relative path for '${folderPath}' !`));
                         continue;
                     }
 
-                    if (rePath === '.' || rePath.trim() === '' ||   // is current root folder
-                        rePath === '..' || rePath.startsWith(`..${File.sep}`)) // is parent folder
-                    {
-                        GlobalEvent.emit('msg', newMessage('Warning', view_str$prompt$src_folder_must_be_a_child_of_root));
+                    if (rePath === '.' || rePath.split('/').every(p => p == '..')) { // ignore these folders
+                        GlobalEvent.emit('msg', newMessage('Warning', `source folder can not be '${rePath}' !`));
                         continue;
                     }
 
