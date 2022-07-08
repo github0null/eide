@@ -4,17 +4,19 @@
 
 ***
 
-### [v3.7.2022070701] preview version
+### [v3.7.2022070801] preview version
 
 **New**:
   - 新增终端类型：`Eide Terminal`, 插件已将 内置工具，编译器等二进制程序路径 导出至该终端的环境变量
 
 **Change**:
   - 更改输出目录时，不删除旧的
+  - 支持为 Any-gcc 选择 linker 类型，可选项：`gcc, ld`，用于支持较老版本的 gcc
 
 **Optimize**:
   - 支持在插件设置的 路径设置项 中使用相对路径（相对路径基于当前工作区）
   - 移除添加源文件夹时，不能添加根目录之外的文件夹的限制
+  - 优化 builder options Web view 页面相关控件宽度
 
 ***
 
