@@ -315,7 +315,7 @@
                     "markdownDescription": "Assember Type",
                     "description.zh-cn": "汇编器类型",
                     "type": "string",
-                    "default": "asm",
+                    "default": "asm-auto",
                     "enum": [
                         "asm",
                         "asm-auto",
@@ -357,8 +357,8 @@
                         "lib"
                     ],
                     "enumDescriptions": [
-                        "AXF (Arm Executable File)",
-                        "LIB (Static Library)"
+                        "AXF",
+                        "LIB"
                     ]
                 },
                 "$disableOutputTask": {

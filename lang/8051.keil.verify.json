@@ -249,8 +249,8 @@
                         "lib"
                     ],
                     "enumDescriptions": [
-                        "OBJ (Object File)",
-                        "LIB (Static Library)"
+                        "OBJ",
+                        "LIB"
                     ]
                 },
                 "use-RTX": {

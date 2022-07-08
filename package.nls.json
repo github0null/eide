@@ -28,7 +28,7 @@
     "eide.project.flash.erase.all": "Erase Chip",
     "eide.project.gen.makefile": "Generate Makefile Template",
     "eide.project.modify.files.options": "Append separate compiler params for source files",
-    "eide.project.import.ext.project.src.struct": "Import source file resources from other IDE's project",
+    "eide.project.import.ext.project.src.struct": "Import tree structure from other projects",
 
     "eide.prj.menus.main.cppcheck": "Static Check",
     "eide.prj.menus.sub.cppcheck.run": "Check Project by Cppcheck",
