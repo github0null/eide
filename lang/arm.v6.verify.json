@@ -315,7 +315,7 @@
                     "markdownDescription": "Assember Type",
                     "description.zh-cn": "汇编器类型",
                     "type": "string",
-                    "default": "asm-auto",
+                    "default": "asm",
                     "enum": [
                         "asm",
                         "asm-auto",

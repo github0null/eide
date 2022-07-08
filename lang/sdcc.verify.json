@@ -189,7 +189,7 @@
                     "type": "boolean",
                     "markdownDescription": "Module Split Optimization (supported by eide)",
                     "description.zh-cn": "模块拆分优化 (supported by eide)",
-                    "default": true,
+                    "default": false,
                     "enum": [
                         true,
                         false
