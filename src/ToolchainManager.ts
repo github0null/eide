@@ -798,6 +798,7 @@ class SDCC implements IToolchian {
             afterBuildTasks: [],
             global: {
                 "device": "mcs51",
+                "$one-module-per-function": true,
                 "optimize-type": "speed",
                 "use-non-free": false
             },
@@ -2133,8 +2134,13 @@ class AnyGcc implements IToolchian {
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
 
         // convert output lib commmand
-        if (options['linker'] && options['linker']['output-format'] === 'lib') {
-            options['linker']['$use'] = 'linker-lib';
+        if (options['linker']) {
+            if (options['linker']['linker-type'] == "ld") {
+                options['linker']['$use'] = 'linker-ld';
+            }
+            if (options['linker']['output-format'] == 'lib') {
+                options['linker']['$use'] = 'linker-lib';
+            }
         }
 
         // if region 'global' is not exist, create it
@@ -2207,7 +2213,7 @@ class AnyGcc implements IToolchian {
             linker: {
                 "output-format": "elf",
                 "remove-unused-input-sections": true,
-                "LD_FLAGS": "-Wl,--print-memory-usage",
+                "LD_FLAGS": "",
                 "LIB_FLAGS": ""
             }
         };

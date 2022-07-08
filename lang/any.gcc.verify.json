@@ -191,6 +191,16 @@
             "description.zh-cn": "链接器选项",
             "type": "object",
             "properties": {
+                "linker-type": {
+                    "type": "string",
+                    "default": "gcc",
+                    "description": "Linker Type",
+                    "description.zh-cn": "链接器类型",
+                    "enum": [
+                        "gcc",
+                        "ld"
+                    ]
+                },
                 "output-format": {
                     "type": "string",
                     "default": "elf",
@@ -201,8 +211,8 @@
                         "lib"
                     ],
                     "enumDescriptions": [
-                        "ELF (Executable Linkable Format)",
-                        "LIB (Static Library)"
+                        "ELF",
+                        "LIB"
                     ]
                 },
                 "remove-unused-input-sections": {
@@ -221,8 +231,8 @@
                 "LD_FLAGS": {
                     "readable_name": "Linker Flags",
                     "readable_name.zh-cn": "链接器参数",
-                    "markdownDescription": "Use \"-Wl[,option]...\" pass options to the linker",
-                    "description.zh-cn": "使用 \"-Wl[,option]...\" 传递链接器选项",
+                    "markdownDescription": "Use '-Wl[,option]...' pass options to the linker",
+                    "description.zh-cn": "使用 '-Wl[,option]...' 传递链接器选项",
                     "$ref": "#/definitions/FLAGS",
                     "default": ""
                 },
