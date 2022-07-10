@@ -611,6 +611,7 @@ class SourceRootList implements SourceProvider {
 
                 const cFolder = <File>folderStack.pop();
                 const isSourceRoot = cFolder.path === rootFolder.path;
+                if (cFolder.name.startsWith('.') && !isSourceRoot) continue; // skip '.xxx' folders, not root folder
                 const fileList = cFolder.GetList(fileFilter, File.EMPTY_FILTER);
 
                 if (fileList.length > 0) {
