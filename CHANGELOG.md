@@ -4,18 +4,41 @@
 
 ***
 
-### [v3.7.2022070801] preview version
+### [v3.7.2022071001] preview version
 
 **New**:
   - 新增终端类型：`Eide Terminal`, 插件已将 内置工具，编译器等二进制程序路径 导出至该终端的环境变量
+  - 增加两个设置项，用于决定是否自动搜索和添加 `include path` 及 `.obj .a` 至项目（对于新建项目，默认值为 false）：
+    ```
+    EIDE.SourceTree.AutoSearchIncludePath
+    EIDE.SourceTree.AutoSearchObjFile
+    ```
+  - 增加以下新的 `builder task` 变量:
+    ```
+    ${ConfigName}:        项目 Configuration 名称，例如：'Debug', 'Release'
+    ${CompilerId}:        编译器 id, 例如：'gcc', 'sdcc', 'ac5'
+    ${CompilerName}       编译器短名称，例如：'GNU Tools for Arm Embedded Processors 8-2019-q3-update'
+    ${CompilerFullName}   编译器完整名，例如：'arm-none-eabi-gcc.exe (GNU Tools for Arm Embedded Processors 8-2019-q3-update) 8.3.1 20190703 ...'
+    ${CompilerVersion}    编译器版本号，例如：'8.3.1'
+
+    ${re:ProjectRoot}     项目根目录相对路径，该值固定为：'.'
+    ${re:BuilderFolder}   构建工具目录相对路径
+    ${re:OutDir}          输出目录相对路径，如：'build/Debug'
+    ${re:ToolchainRoot}   编译器根目录相对路径
+    ${re:CompilerFolder}  编译器可执行文件目录相对路径
+    ```
+  - 支持在安装 jlink 等烧录软件时，自动安装驱动
+  - 新增内置命令行工具 `verchk`, 用于比较版本字符串，可在 `builder task 中使用`
 
 **Change**:
+  - 自动搜索源文件时，排除以 `.` 开头的文件夹
+  - 移除添加源文件夹时，不能添加根目录之外的文件夹的限制
   - 更改输出目录时，不删除旧的
   - 支持为 Any-gcc 选择 linker 类型，可选项：`gcc, ld`，用于支持较老版本的 gcc
+  - 新建空项目时，不再自动生成默认 `main.c` 文件
 
 **Optimize**:
   - 支持在插件设置的 路径设置项 中使用相对路径（相对路径基于当前工作区）
-  - 移除添加源文件夹时，不能添加根目录之外的文件夹的限制
   - 优化 builder options Web view 页面相关控件宽度
 
 ***
