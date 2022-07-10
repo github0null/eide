@@ -370,6 +370,9 @@ class SourceRootList implements SourceProvider {
     //      val: SourceRootInfo
     private srcFolderMaps: Map<string, SourceRootInfo>;
 
+    private isAutoSearchIncPath: boolean;
+    private isAutoSearchObjFile: boolean;
+
     on(event: 'dataChanged', listener: (event: SourceChangedEvent) => void): void;
     on(event: any, listener: (arg: any) => void): void {
         this._event.on(event, listener);
@@ -379,6 +382,8 @@ class SourceRootList implements SourceProvider {
         this.project = _project;
         this._event = new events.EventEmitter();
         this.srcFolderMaps = new Map();
+        this.isAutoSearchIncPath = SettingManager.GetInstance().isAutoSearchIncludePath();
+        this.isAutoSearchObjFile = SettingManager.GetInstance().isAutoSearchObjFile();
     }
 
     load(notEmitEvt?: boolean) {
@@ -581,7 +586,8 @@ class SourceRootList implements SourceProvider {
             this.project.ToRelativePath(rootFolder.path, false) || rootFolder.path
         );
 
-        const sourceFilter = AbstractProject.getSourceFileFilter();
+        const sourceFilter = this.isAutoSearchObjFile ?
+            AbstractProject.getSourceFileFilter() : AbstractProject.getSourceFileFilterWithoutObj();
         const fileFilter = AbstractProject.getFileFilters();
 
         if (targetFolderList) { // only update target folders
@@ -639,7 +645,7 @@ class SourceRootList implements SourceProvider {
                     }
 
                     // add to include folders
-                    if (!disableInclude && !isFolderExcluded) {
+                    if (this.isAutoSearchIncPath && !disableInclude && !isFolderExcluded) {
                         rootFolderInfo.incList.push(cFolder.path);
                     }
                 }
@@ -759,6 +765,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
     static getSourceFileFilter(): RegExp[] {
         return [this.cppfileFilter, this.libFileFilter, this.asmfileFilter];
+    }
+
+    static getSourceFileFilterWithoutObj(): RegExp[] {
+        return [this.cppfileFilter, this.asmfileFilter];
     }
 
     static equal(p1: AbstractProject, p2: AbstractProject) {
@@ -2392,7 +2402,15 @@ class EIDEProject extends AbstractProject {
 
             const workspaceConfig = this.GetWorkspaceConfig();
             const settings = workspaceConfig.config.settings;
-            const toolchain = this.getToolchain();
+
+            // --- eide settings
+
+            if (settings['EIDE.SourceTree.AutoSearchIncludePath'] === undefined) {
+                settings['EIDE.SourceTree.AutoSearchIncludePath'] = false;
+            }
+            if (settings['EIDE.SourceTree.AutoSearchObjFile'] === undefined) {
+                settings['EIDE.SourceTree.AutoSearchObjFile'] = false;
+            }
 
             // --- vscode settings
 

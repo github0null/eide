@@ -166,6 +166,16 @@ export class SettingManager {
         await vscode.commands.executeCommand('workbench.action.openSettings', name);
     }
 
+    // --- source tree
+
+    isAutoSearchIncludePath(): boolean {
+        return this.getConfiguration().get<boolean>('SourceTree.AutoSearchIncludePath') || false;
+    }
+
+    isAutoSearchObjFile(): boolean {
+        return this.getConfiguration().get<boolean>('SourceTree.AutoSearchObjFile') || false;
+    }
+
     //------------------------- env and path --------------------------
 
     private getExePathFromConfig(confName: string, execName: string): string | undefined {
