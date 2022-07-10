@@ -39,9 +39,9 @@ import * as platform from './Platform';
 import { SevenZipper } from './Compress';
 import { ResManager } from './ResManager';
 
-export function runShellCommand(title: string, commandLine: string, env?: any): Error | undefined {
+export function runShellCommand(title: string, commandLine: string, env?: any, useTerminal?: boolean): Error | undefined {
     try {
-        if (WorkspaceManager.getInstance().hasWorkspaces()) {
+        if (!useTerminal && WorkspaceManager.getInstance().hasWorkspaces()) {
             // use task
             const shellOption: vscode.ShellExecutionOptions = { env: env || process.env };
             if (platform.osType() == 'win32') { shellOption.executable = 'cmd.exe'; shellOption.shellArgs = ['/C']; }

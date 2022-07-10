@@ -25,6 +25,7 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
 import * as fs from 'fs';
+import * as child_process from 'child_process';
 
 import { HexUploaderType } from "./HexUploader";
 import { SettingManager } from './SettingManager';
@@ -48,6 +49,7 @@ export interface ExternalToolInfo {
     resource_name?: string;
     require_name?: string;
     no_binaries?: boolean;
+    getDrvInstaller?: () => string | undefined;
 };
 
 export class ResInstaller {
@@ -93,13 +95,25 @@ export class ResInstaller {
 
         this.registerTool('JLink', {
             setting_name: 'JLink.InstallDirectory',
-            no_binaries: no_binaries
+            no_binaries: no_binaries,
+            getDrvInstaller: () => {
+                if (platform.osType() == 'win32') {
+                    const arch = /(?:32|86)$/.test(os.arch()) ? 'x86' : 'x64';
+                    return ['USBDriver', arch, `dpinst_${arch}${platform.exeSuffix()}`].join(File.sep);
+                }
+            }
         });
 
         this.registerTool('STVP', {
             setting_name: 'STM8.STVP.CliExePath',
             require_name: `STVP_CmdLine${platform.exeSuffix()}`,
-            no_binaries: no_binaries
+            no_binaries: no_binaries,
+            getDrvInstaller: () => {
+                if (platform.osType() == 'win32') {
+                    const arch = /(?:32|86)$/.test(os.arch()) ? 'x86' : 'x64';
+                    return ['STTubDriver', `dpinst_${arch}${platform.exeSuffix()}`].join(File.sep);
+                }
+            }
         });
 
         /* this.registerTool('STLink', { setting_name: 'STLink.ExePath', require_name: `ST-LINK_CLI${platform.exeSuffix()}` }); */
@@ -107,7 +121,13 @@ export class ResInstaller {
         this.registerTool('STLink', {
             setting_name: 'STLink.ExePath', resource_name: 'st_cube_programer',
             require_name: `bin/STM32_Programmer_CLI${platform.exeSuffix()}`,
-            no_binaries: no_binaries
+            no_binaries: no_binaries,
+            getDrvInstaller: () => {
+                if (platform.osType() == 'win32') {
+                    const arch = /(?:32|86)$/.test(os.arch()) ? 'x86' : 'amd64';
+                    return ['Drivers', 'stsw-link009_v3', `dpinst_${arch}${platform.exeSuffix()}`].join(File.sep);
+                }
+            }
         });
 
         this.registerTool('OpenOCD', {
@@ -240,6 +260,15 @@ export class ResInstaller {
                         let setting_val = ['${userRoot}', '.eide', 'tools', resourceName].join(File.sep);
                         setting_val = toolInfo.require_name ? `${setting_val}/${toolInfo.require_name}` : setting_val;
                         SettingManager.GetInstance().setConfigValue(toolInfo.setting_name, File.ToLocalPath(setting_val));
+
+                        // install drivers if we need
+                        if (toolInfo.getDrvInstaller) {
+                            let drvExePath = toolInfo.getDrvInstaller();
+                            if (drvExePath) {
+                                drvExePath = outDir.path + File.sep + drvExePath;
+                                utility.runShellCommand(`install driver`, `"${drvExePath}"`);
+                            }
+                        }
 
                         /* notify */
                         progress.report({ message: `'${resourceName}' installed done !` });
