@@ -4560,14 +4560,14 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             else if (suffix == '.elf') {
 
                 let readelf: string = 'arm-none-eabi-readelf';
+                let elfsize: string = 'arm-none-eabi-size';
 
                 const activePrj = this.getActiveProject();
                 if (activePrj) {
                     const toolchain = activePrj.getToolchain();
                     if (!['AC5', 'AC6'].includes(toolchain.name) && toolchain.getToolchainPrefix) {
-                        readelf = [
-                            toolchain.getToolchainDir().path, 'bin', `${toolchain.getToolchainPrefix()}readelf`
-                        ].join(File.sep);
+                        readelf = [toolchain.getToolchainDir().path, 'bin', `${toolchain.getToolchainPrefix()}readelf`].join(File.sep);
+                        elfsize = [toolchain.getToolchainDir().path, 'bin', `${toolchain.getToolchainPrefix()}size`].join(File.sep);
                     }
                 }
 
@@ -4580,6 +4580,19 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 } catch (error) {
                     const err = <Error>error;
                     cont = `${err.name}: ${err.message}\n${err.stack}`;
+                }
+
+                // show elf size
+                try {
+                    let tLines = child_process
+                        .execFileSync(`${elfsize}${exeSuffix()}`, ['-A', binFile.path])
+                        .toString().split(/\r\n|\n/g);
+                    tLines = tLines.filter(s => s.trim() != '').map(s => `  ${s}`);
+                    tLines.push(os.EOL);
+                    tLines = [os.EOL + 'ELF Size:'].concat(tLines);
+                    cont += tLines.join(os.EOL);
+                } catch (error) {
+                    // do nothing
                 }
 
                 const vDoc = VirtualDocument.instance();
