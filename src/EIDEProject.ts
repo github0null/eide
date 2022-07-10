@@ -2227,24 +2227,11 @@ class EIDEProject extends AbstractProject {
     }
 
     protected create(option: CreateOptions): File {
-
         const baseInfo = this.createBase(option);
-
         baseInfo.prjConfig.config.name = option.name;
         baseInfo.prjConfig.config.outDir = 'build';
-        baseInfo.prjConfig.config.srcDirs = ['src'];
-
-        const src = File.fromArray([baseInfo.rootFolder.path, 'src']);
-        src.CreateDir(false);
-
-        // create 'main.c' file if not exist
-        const mainFile = File.fromArray([src.path, 'main.c']);
-        if (!mainFile.IsFile()) {
-            mainFile.Write('');
-        }
-
+        baseInfo.prjConfig.config.srcDirs = [];
         baseInfo.prjConfig.Save();
-
         return baseInfo.workspaceFile;
     }
 
