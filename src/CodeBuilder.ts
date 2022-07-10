@@ -152,7 +152,7 @@ export abstract class CodeBuilder {
                             .replace(/\.\.\//g, '')
                             .replace(/\.\//g, ''); // globmatch bug ? it can't parse path which have '.' or '..'
                         if (globmatch.isMatch(searchPath, expr)) {
-                            const val = parttenInfo[expr]?.trim().replace(/(?:\r\n|\n)$/, '');
+                            const val = parttenInfo[expr]?.replace(/\r\n|\n/g, ' ').replace(/\\r|\\n|\\t/g, ' ').trim();
                             if (val) {
                                 if (srcParams[srcInf.path]) {
                                     srcParams[srcInf.path] += ` ${val}`
