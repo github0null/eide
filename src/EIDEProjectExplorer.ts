@@ -4968,8 +4968,15 @@ class ProjectExcSourceModifier implements ModifiableYamlConfigProvider {
         try {
             const excList = yml.parse(yamlFile.Read());
             if (!Array.isArray(excList)) { throw new Error(`Type error, exclude list must be an array !`); }
-            prj.GetConfiguration().config.excludeList = excList.map(p => File.ToUnixPath(p));
+            const newExcLi = excList.map(p => File.ToUnixPath(p));
+            const oldExcLi = prj.GetConfiguration().config.excludeList;
+            prj.GetConfiguration().config.excludeList = newExcLi;
             prj.notifySourceExplorerViewRefresh();
+            // update filesystem source link
+            const diffNew2Old = newExcLi.filter(p => !oldExcLi.includes(p));
+            const diffOld2New = oldExcLi.filter(p => !newExcLi.includes(p));
+            const needUpdateLi = ArrayDelRepetition(diffNew2Old.concat(diffOld2New)).filter(p => !p.startsWith(VirtualSource.rootName));
+            needUpdateLi.forEach(dir => prj.getNormalSourceManager().notifyUpdateFolder(prj.ToAbsolutePath(dir)));
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
         }

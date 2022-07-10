@@ -442,7 +442,19 @@ class SourceRootList implements SourceProvider {
 
     notifyUpdateFolder(absPath: string) {
 
-        const targetDir = NodePath.dirname(absPath); // we need update its parent folder
+        // it's a root folder ?
+
+        for (const rInfo of this.srcFolderMaps.values()) {
+            if (rInfo.fileWatcher.file.path == absPath) {
+                this.updateFolder(rInfo);
+                this.emit('dataChanged', 'folderStatusChanged');
+                return;
+            }
+        }
+
+        // it's a sub folder ?
+
+        const targetDir = NodePath.dirname(absPath);
 
         const rootSrcUpdateList = Array.from(this.srcFolderMaps.values())
             .filter((info) => {
@@ -638,6 +650,8 @@ class SourceRootList implements SourceProvider {
                         for (const _file of srcFiles) {
                             group.files.push({
                                 file: _file,
+                                // we do not need use 'isFolderExcluded' condition, because we
+                                // will exclude thi group before exclude this file
                                 disabled: this.project.isExcluded(_file.path) || undefined
                             });
                         }
@@ -1330,16 +1344,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     //--
 
     isExcluded(path: string): boolean {
-
         const excList = this.GetConfiguration().config.excludeList;
         const rePath = File.ToUnixPath(this.ToRelativePath(path) || path);
-        const isFolder = VirtualSource.isVirtualPath(path) ? this.virtualSource.isFolder(path) : File.IsDir(path);
-
-        if (isFolder) { // is a folder
-            return excList.findIndex(excPath => rePath === excPath || rePath.startsWith(`${excPath}/`)) !== -1;
-        } else { // is a file
-            return excList.findIndex(excPath => rePath === excPath) !== -1;
-        }
+        return excList.findIndex(excluded => rePath === excluded || rePath.startsWith(`${excluded}/`)) !== -1;
     }
 
     protected addExclude(path: string): boolean {
