@@ -24,6 +24,7 @@
 
 import * as events from 'events';
 import * as os from 'os';
+import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as NodePath from 'path';
 import { jsonc } from 'jsonc';
@@ -71,7 +72,7 @@ import * as utility from './utility';
 ////////////////////////////////////////////////////////
 
 // eide project config file version
-export const EIDE_CONF_VERSION = '3.1';
+export const EIDE_CONF_VERSION = '3.2';
 
 ////////////////////////////////////////////////////////
 
@@ -1605,19 +1606,22 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
 
         const toolchain = ToolchainManager.getInstance().getToolchain(prjConfig.type, prjConfig.toolchain);
 
-        let configName: string = toolchain.configName;
+        const configName = toolchain.configName;
         const targetName = prjConfig.mode.toLowerCase();
+        const cfgFile = File.fromArray([eideFolderPath, `${targetName}.${configName}`]);
 
-        if (targetName !== 'release') { // 'release' target is empty name
-            configName = `${targetName}.${configName}`;
+        // compat old project, add prefix for 'release' target
+        if (targetName == 'release' && !cfgFile.IsFile() &&        // it's release target but not found 'release.xxx.json' cfg
+            File.IsFile(eideFolderPath + File.sep + configName)) { // and found 'xxx.json' cfg
+            fs.copyFileSync(eideFolderPath + File.sep + configName, cfgFile.path);
+            return cfgFile;
         }
 
-        const opFile = File.fromArray([eideFolderPath, configName]);
-        if (!noCreate && !opFile.IsFile()) {
-            opFile.Write(JSON.stringify(toolchain.getDefaultConfig(), undefined, 4));
+        if (!noCreate && !cfgFile.IsFile()) {
+            cfgFile.Write(JSON.stringify(toolchain.getDefaultConfig(), undefined, 4));
         }
 
-        return opFile;
+        return cfgFile;
     }
 
     copyCommonCompileConfigFrom(model: CompileConfigModel<T>) {
