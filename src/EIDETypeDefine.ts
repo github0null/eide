@@ -1613,7 +1613,7 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
         // compat old project, add prefix for 'release' target
         if (targetName == 'release' && !cfgFile.IsFile() &&        // it's release target but not found 'release.xxx.json' cfg
             File.IsFile(eideFolderPath + File.sep + configName)) { // and found 'xxx.json' cfg
-            fs.copyFileSync(eideFolderPath + File.sep + configName, cfgFile.path);
+            fs.renameSync(eideFolderPath + File.sep + configName, cfgFile.path);
             return cfgFile;
         }
 
