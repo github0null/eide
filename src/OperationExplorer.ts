@@ -551,19 +551,19 @@ export class OperationExplorer {
                 detail: view_str$operation$setKeil51Path
             },
             {
-                label: 'MDK',
+                label: 'Keil MDK',
                 type: 'AC5',
                 description: this.getStatusTxt(settingManager.isMDKIniReady()),
                 detail: view_str$operation$setMDKPath
             },
             {
-                label: 'ARMCC V5',
+                label: 'ARMCC V5 (standalone toolchain)',
                 type: 'AC5',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC5')),
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V5 Toolchain')
             },
             {
-                label: 'ARMCC V6',
+                label: 'ARMCC V6 (standalone toolchain)',
                 type: 'AC6',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC6')),
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V6 Toolchain')
@@ -586,12 +586,12 @@ export class OperationExplorer {
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('SDCC')),
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'SDCC')
             },
-            {
+            /* {
                 label: 'SDCC With GNU Patch For STM8 (Only for stm8)',
                 type: 'GNU_SDCC_STM8',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('GNU_SDCC_STM8')),
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'GNU_SDCC_STM8')
-            },
+            }, */
             {
                 label: 'RISC-V GCC Toolchain (RISC-V GCC)',
                 type: 'RISCV_GCC',
@@ -623,10 +623,12 @@ export class OperationExplorer {
             const pickItems: vscode.QuickPickItem[] = [
                 {
                     label: 'Online',
+                    description: 'Download from website and install',
                     detail: view_str$prompt$tool_install_mode_online
                 },
                 {
                     label: 'Offline',
+                    description: 'Use existed installation directory',
                     detail: view_str$prompt$tool_install_mode_local
                 }
             ];
@@ -650,7 +652,7 @@ export class OperationExplorer {
 
         let dialogOption: vscode.OpenDialogOptions;
 
-        if (item.type == 'Keil_C51' || item.label == 'MDK') {
+        if (item.type == 'Keil_C51' || item.label.includes('MDK')) {
             dialogOption = {
                 openLabel: view_str$prompt$select_file,
                 filters: {
@@ -680,7 +682,7 @@ export class OperationExplorer {
             settingManager.SetC51INIPath(path[0].fsPath);
         }
 
-        else if (item.label == 'MDK') {
+        else if (item.label.includes('MDK')) {
             settingManager.SetMdkINIPath(path[0].fsPath);
         }
 

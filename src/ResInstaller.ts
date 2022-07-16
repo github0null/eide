@@ -266,7 +266,7 @@ export class ResInstaller {
                             let drvExePath = toolInfo.getDrvInstaller();
                             if (drvExePath) {
                                 drvExePath = outDir.path + File.sep + drvExePath;
-                                utility.runShellCommand(`install driver`, `"${drvExePath}"`);
+                                utility.runShellCommand(`install driver`, `"${drvExePath}"`, undefined, true);
                             }
                         }
 
