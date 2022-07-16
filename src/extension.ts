@@ -1175,13 +1175,16 @@ class EideTerminalProvider implements vscode.TerminalProfileProvider {
         }
     }
 
-    private cwd(): string {
+    private cwd(allowUseLocActiveFolder?: boolean): string {
 
         let cwd = os.homedir();
 
         const workspace = WorkspaceManager.getInstance().getWorkspaceRoot();
         if (workspace && workspace.IsDir()) {
             cwd = workspace.path;
+        } else if (allowUseLocActiveFolder) {
+            const wsLi = WorkspaceManager.getInstance().getWorkspaceList();
+            if (wsLi.length > 0) cwd = wsLi[0].path;
         }
 
         return cwd;
@@ -1222,7 +1225,7 @@ class EideTerminalProvider implements vscode.TerminalProfileProvider {
         return new vscode.TerminalProfile({
             name: shellName,
             shellPath: shellPath,
-            cwd: this.cwd(),
+            cwd: this.cwd(true),
             env: process.env,
             strictEnv: true,
             message: welcome.join('\r\n')
@@ -1248,7 +1251,7 @@ class EideTerminalProvider implements vscode.TerminalProfileProvider {
         return new vscode.TerminalProfile({
             name: 'msys bash',
             shellPath: `${process.env['EIDE_MSYS']}/bash.exe`,
-            cwd: this.cwd(),
+            cwd: this.cwd(true),
             env: process.env,
             strictEnv: true,
             message: welcome.join('\r\n')
