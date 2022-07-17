@@ -485,53 +485,108 @@ export class OperationExplorer {
 
     async OnImportProject(): Promise<void> {
 
-        const prjFileUri = await vscode.window.showOpenDialog({
-            openLabel: 'Import',
-            canSelectFolders: false,
-            canSelectFiles: true,
-            canSelectMany: false,
-            filters: {
-                'MDK': ['uvprojx'],
-                'KEIL C51': ['uvproj']
+        const ideType = await vscode.window.showQuickPick<vscode.QuickPickItem>([
+            {
+                label: 'MDK',
+                description: 'any Arm, 8051 projects',
+                detail: `Import Keil MDK Project (Only Keil v5+)`
+            },
+            {
+                label: 'Eclipse',
+                description: 'any embedded project',
+                detail: `Import Eclipse Project`
             }
-        });
+        ], { placeHolder: `Project Type` });
 
-        if (prjFileUri === undefined || prjFileUri.length === 0) {
+        if (!ideType)
             return;
-        }
 
-        const selection = await vscode.window.showInformationMessage(
-            view_str$operation$import_sel_out_folder,
-            'Yes', 'No'
-        );
+        //
+        // for MDK project
+        //
 
-        const importOption: ImportOptions = {
-            projectFile: new File(prjFileUri[0].fsPath),
-            outDir: new File(NodePath.dirname(prjFileUri[0].fsPath)),
-            createNewFolder: false
-        };
+        if (ideType.label == "MDK") {
 
-        // coexist with Keil project ?, if not, redirect output folder
-        if (selection === 'No') {
-
-            const folderUri = await vscode.window.showOpenDialog({
-                openLabel: 'Select',
-                defaultUri: vscode.Uri.parse(importOption.outDir.ToUri()),
-                canSelectFolders: true,
-                canSelectFiles: false,
-                canSelectMany: false
+            const prjFileUri = await vscode.window.showOpenDialog({
+                openLabel: 'Import',
+                canSelectFolders: false,
+                canSelectFiles: true,
+                canSelectMany: false,
+                filters: {
+                    'KEIL MDK': ['uvprojx'],
+                    'KEIL C51': ['uvproj']
+                }
             });
 
-            if (folderUri === undefined || folderUri.length === 0) {
+            if (prjFileUri === undefined || prjFileUri.length === 0) {
                 return;
             }
 
-            importOption.outDir = new File(folderUri[0].fsPath);
-            importOption.createNewFolder = true; // we need create a new folder
+            const selection = await vscode.window.showInformationMessage(
+                view_str$operation$import_sel_out_folder,
+                'Yes', 'No'
+            );
+
+            const orgPrjRoot = new File(NodePath.dirname(prjFileUri[0].fsPath));
+
+            const importOption: ImportOptions = {
+                type: 'mdk',
+                projectFile: new File(prjFileUri[0].fsPath),
+                outDir: orgPrjRoot,
+                createNewFolder: false
+            };
+
+            // coexist with Keil project ?, if not, redirect output folder
+            if (selection === 'No') {
+
+                const folderUri = await vscode.window.showOpenDialog({
+                    openLabel: 'Select',
+                    defaultUri: vscode.Uri.parse(orgPrjRoot.ToUri()),
+                    canSelectFolders: true,
+                    canSelectFiles: false,
+                    canSelectMany: false
+                });
+
+                if (folderUri === undefined || folderUri.length === 0) {
+                    return;
+                }
+
+                importOption.outDir = new File(folderUri[0].fsPath);
+                importOption.createNewFolder = true; // we need create a new folder
+            }
+
+            // emit event
+            this.emit('request_import_project', importOption);
         }
 
-        // emit event
-        this.emit('request_import_project', importOption);
+        //
+        // for Eclipse
+        //
+
+        else if (ideType.label == "Eclipse") {
+
+            const prjFileUri = await vscode.window.showOpenDialog({
+                openLabel: 'Import',
+                canSelectFolders: false,
+                canSelectFiles: true,
+                canSelectMany: false,
+                filters: {
+                    'Eclipse': ['cproject']
+                }
+            });
+
+            if (!prjFileUri || prjFileUri.length == 0)
+                return;
+
+            const importOpts: ImportOptions = {
+                type: 'eclipse',
+                projectFile: new File(prjFileUri[0].fsPath),
+                createNewFolder: false
+            };
+
+            // emit event
+            this.emit('request_import_project', importOpts);
+        }
     }
 
     private getStatusTxt(status: boolean): string {

@@ -704,6 +704,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     static readonly cppConfigName = 'c_cpp_properties.json';
     static readonly prjConfigName = 'eide.json';
 
+    static readonly importerWarningBaseName = 'importer.warning.txt';
+
     // avaliable source files
     static readonly headerFilter: RegExp = /\.(?:h|hxx|hpp|inc)$/i;
     static readonly cppfileFilter: RegExp = /\.(?:c|cpp|c\+\+|cc|cxx)$/i;
@@ -2633,6 +2635,19 @@ class EIDEProject extends AbstractProject {
                 cppConfig.saveToFile();
             } */
         }
+
+        // show warnings if we have
+        setTimeout(async (rootFolder: File) => {
+            try {
+                for (const f of rootFolder.GetList([/importer\.warning\.txt$/], File.EMPTY_FILTER)) {
+                    const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(f.ToUri()));
+                    vscode.window.showTextDocument(doc, { preview: false, selection: doc.lineAt(0).range });
+                    break;
+                }
+            } catch (error) {
+                GlobalEvent.emit('error', error);
+            }
+        }, 1000, this.GetRootDir());
 
         // run post-install.sh
         if (this.isNewProject) {

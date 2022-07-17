@@ -111,8 +111,11 @@ export interface CreateOptions {
     type: ProjectType;
 }
 
+export type ImportProjectIDEType = 'mdk' | 'eclipse';
+
 export interface ImportOptions {
-    outDir: File;
+    type: ImportProjectIDEType;
+    outDir?: File;
     projectFile: File;
     createNewFolder?: boolean;
 }

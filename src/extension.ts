@@ -28,6 +28,7 @@ import * as os from 'os';
 import * as node7z from 'node-7z';
 import * as NodePath from 'path';
 import * as ChildProcess from 'child_process';
+import * as yaml from 'yaml';
 
 import { GlobalEvent } from './GlobalEvents';
 import { OperationExplorer } from './OperationExplorer';
@@ -55,6 +56,9 @@ const extension_deps: string[] = [];
 let projectExplorer: ProjectExplorer;
 let platformArch: string = 'x86_64';
 let platformType: string = 'win32';
+
+// set yaml global style
+yaml.scalarOptions.str.fold.lineWidth = 1000;
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -1261,7 +1265,6 @@ class EideTerminalProvider implements vscode.TerminalProfileProvider {
 
 // --- .mapView viewer
 
-import * as yaml from 'yaml'
 import { FileWatcher } from '../lib/node-utility/FileWatcher';
 
 interface MapViewRef {
