@@ -1685,8 +1685,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             if (getAllKeys(ePrjInfo.envs).length > 0) {
                 warnLines.push(
                     `##### Eclipse Project Environment Variables #####`,
+                    ``,
                     yaml.stringify({ 'Envs': ePrjInfo.envs }),
-                    os.EOL
+                    ``
                 );
             }
 
