@@ -19,7 +19,7 @@
 ## 功能特性 🎉
 
 * 支持开发 8051，STM8，AVR，Cortex-M，RISC-V, AnyGcc 项目
-* 支持导入 KEIL 项目 (仅支持 KEIL 5 及以上版本)
+* 支持导入 KEIL5/Eclipse 项目
 * 支持安装标准的 KEIL 芯片支持包 (仅用于 Cortex-M 项目)
 * 提供丰富的项目模板方便快速开始项目
 * 一键编译、快速编译，支持多种主流的编译工具 (armcc, gcc-arm-none-eabi, keil_c51, sdcc ...)

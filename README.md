@@ -21,7 +21,7 @@ Provide `8051/AVR/STM8/Cortex-M/RISC-V` project development, compilation, burnin
 ## Features 🎉
 
 * Support development of 8051, AVR, STM8, Cortex-M\[0/0+/3/4/7], RISC-V, Universal-Gcc projects
-* Support to import KEIL projects (KEIL 5 and later only)
+* Support to import KEIL5/Eclipse projects
 * Support for installing standard KEIL chip support packs (only for Cortex-M projects)
 * Provides rich project templates for quick start projects
 * One-click compilation, fast compilation, support a variety of mainstream compilation tools (support: armcc, gcc-arm-none-eabi, keil_c51, sdcc ...)
