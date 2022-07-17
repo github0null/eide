@@ -76,17 +76,23 @@ export function formatFilePath(path: string): string {
         }
     }
 
-    return path
+    path = path
         .replace('${.}', '.')
         .replace('${..}', '..')
+        .replace('${ProjName}/', '')
+        .replace('${ProjName}', '.')
         .replace('PROJECT_LOC/', '')
         .replace('${PROJECT_LOC}/', '')
         .replace(/^"+/, '')
-        .replace('${workspace_loc:/${ProjName}/', '')
-        .replace('${workspace_loc:/${ProjName}', '.')
+        .replace('${workspace_loc:/', '')
         .replace(/"+$/, '')
         .replace(/\}$/, '')
         .replace(/\/+$/, '');
+
+    if (path.startsWith('/'))
+        path = '.' + path;
+
+    return path;
 }
 
 export async function parseEclipseProject(cprojectPath: string): Promise<EclipseProjectInfo> {
@@ -365,7 +371,12 @@ function parseToolOption(optionObj: any): { type: string, val: string[] } | unde
 
     else if (VALUE_TYPE == 'includePath') {
         const li: string[] = [];
-        toArray(optionObj.listOptionValue).forEach(item => li.push(formatFilePath(item.$['value'])));
+        toArray(optionObj.listOptionValue).forEach(item => {
+            let p = formatFilePath(item.$['value']);
+            if (p == '..') p = '.';
+            if (p.startsWith('../')) p = p.substr(3); // for eclipse, include path is base 'Debug' folder
+            li.push(p);
+        });
         return makeResult(li);
     }
 
