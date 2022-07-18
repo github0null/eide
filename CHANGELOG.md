@@ -4,10 +4,17 @@
 
 ***
 
-### [v3.7.2022071301] preview version
+### [v3.7.2022071801] preview version
 
 **New**:
   - 新增 Eclipse 项目导入功能
+  - 新增 'Setup Utility Tools' 功能 (位于 Operation 栏)，可用于自动安装 eide 默认提供的相关工具
+
+***
+
+### [v3.7.2022071301] preview version
+
+**New**:
   - 新增终端类型：`Eide Terminal`, 插件已将 内置工具，编译器等二进制程序路径 导出至该终端的环境变量
   - 增加两个设置项，用于决定是否自动搜索和添加 `include path` 及 `.obj .a` 至项目（对于新建项目，默认值为 false）：
     ```
