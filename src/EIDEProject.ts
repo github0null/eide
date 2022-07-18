@@ -1064,7 +1064,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     }
 
     ToAbsolutePath(path_: string): string {
-        const path = this.replacePathEnv(path_);
+        const path = this.replacePathEnv(path_.trim());
         if (File.isAbsolute(path)) { return NodePath.normalize(path); }
         return NodePath.normalize(File.ToLocalPath(this.GetRootDir().path + NodePath.sep + path));
     }

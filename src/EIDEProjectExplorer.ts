@@ -1537,7 +1537,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                     if (/linker script/i.test(arg)) {
                         const mRes = /[^=]+=(.+)$/.exec(arg);
                         if (mRes && mRes.length > 1) {
-                            const p = eclipseParser.formatFilePath(mRes[1]);
+                            const p = eclipseParser.formatFilePath(mRes[1].trim());
                             if (/\.ld[s]?$/i.test(p)) {
                                 compilerOpt.scatterFilePath = p;
                             }
@@ -1557,7 +1557,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                     if (/linker script/i.test(arg)) {
                         const mRes = /[^=]+=(.+)$/.exec(arg);
                         if (mRes && mRes.length > 1) {
-                            const p = eclipseParser.formatFilePath(mRes[1]);
+                            const p = eclipseParser.formatFilePath(mRes[1].trim());
                             if (/\.ld[s]?$/i.test(p)) {
                                 compilerOpt.linkerScriptPath = p;
                             }
@@ -1577,7 +1577,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                     if (/linker script/i.test(arg)) {
                         const mRes = /[^=]+=(.+)$/.exec(arg);
                         if (mRes && mRes.length > 1) {
-                            const p = eclipseParser.formatFilePath(mRes[1]);
+                            const p = eclipseParser.formatFilePath(mRes[1].trim());
                             if (/\.ld[s]?$/i.test(p)) {
                                 compilerOpt.linkerScriptPath = p;
                             }
