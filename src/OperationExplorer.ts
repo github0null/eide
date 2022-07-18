@@ -796,9 +796,9 @@ export class OperationExplorer {
             return;
 
         if (sel.isInstalled) {
-            const msg = `This package (${sel.label}) has been installed, do you need to reinstall it ?`;
-            const res = await vscode.window.showInformationMessage(msg, 'Yes', 'Cancel');
-            if (res != 'Yes') return;
+            const msg = `This package (${sel.label}) has been installed, do you want to reinstall it ?`;
+            const ans = await vscode.window.showInformationMessage(msg, 'Yes', 'Cancel');
+            if (ans != 'Yes') return;
         }
 
         await resInstaller.installTool(sel.id);
