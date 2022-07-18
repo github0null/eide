@@ -127,7 +127,10 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
         let eN = getChild(toArray(ccfg['storageModule']), m => m.$['moduleId'] == "org.eclipse.cdt.core.settings");
         if (eN && eN.macros) {
             toArray(eN.macros[0].stringMacro).forEach(m => {
-                PROJ_INFO.envs[m.$['name']] = m.$['value'];
+                const key = m.$['name'];
+                if (key) {
+                    PROJ_INFO.envs[key] = m.$['value'];
+                }
             });
         }
 
@@ -136,7 +139,7 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
         if (!cTarget || !cTarget['configuration']) continue;
 
         // check cdt version
-        const cdtVer = cTarget.$['version'].trim();
+        const cdtVer = (cTarget.$['version'] || 'null').trim();
         if (!/^([4-9]|[1-9]\d+)\./.test(cdtVer))
             throw new Error(`eclipse project cdt version must >= 4.x.x, but your project is '${cdtVer}' !`);
 
@@ -156,7 +159,7 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
             let builderArgs = tInfo.globalArgs;
             let incompatibleArgs: EclipseBuilderArgs = newEclipseBuilderArgs();
 
-            const folderPath = resourceInfo.$['resourcePath'].trim();
+            const folderPath = (resourceInfo.$['resourcePath'] || '').trim();
             const isRootResource = folderPath == '';
             if (folderPath != '') {
                 tInfo.incompatibleArgs[folderPath] = incompatibleArgs;
@@ -182,8 +185,10 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
 
             for (const toolOpts of toArray(toolchainInfo['tool'])) {
 
+                const toolOptName: string = toolOpts.$['name'] || '';
+
                 // for c/c++
-                if (toolOpts.$['name'].includes('Compiler')) {
+                if (toolOptName.includes('Compiler')) {
                     toArray(toolOpts.option).forEach(op => {
                         const opVal = parseToolOption(op);
                         if (opVal) {
@@ -203,7 +208,7 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
                 }
 
                 // for asm
-                else if (toolOpts.$['name'].includes('Assembler')) {
+                else if (toolOptName.includes('Assembler')) {
                     toArray(toolOpts.option).forEach(op => {
                         const opVal = parseToolOption(op);
                         if (opVal) {
@@ -223,7 +228,7 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
                 }
 
                 // for linker
-                else if (toolOpts.$['name'].includes('Linker')) {
+                else if (toolOptName.includes('Linker')) {
                     toArray(toolOpts.option).forEach(op => {
                         const opVal = parseToolOption(op);
                         if (opVal) {
@@ -246,9 +251,11 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
 
         if (cTarget.sourceEntries) {
             toArray(cTarget.sourceEntries[0].entry).forEach(e => {
-                (<string>e.$['excluding']).split('|').forEach(p => {
-                    tInfo.excList.push(formatFilePath(p));
-                });
+                (<string>e.$['excluding'] || '')
+                    .split('|').filter(s => s.trim() != '')
+                    .forEach(p => {
+                        tInfo.excList.push(formatFilePath(p));
+                    });
             });
         }
     }
