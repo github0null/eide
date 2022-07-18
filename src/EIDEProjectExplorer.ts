@@ -1592,50 +1592,64 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                 const toolchainDefConf = toolchain.getDefaultConfig();
                 const toolchainCfgFile = File.fromArray([eideFolder.path, `${eTarget.name.toLowerCase()}.${toolchain.configName}`]);
 
-                let flags: string[];
-
                 // glob
-                toolchainDefConf.global['misc-control'] = eTarget.globalArgs.globalArgs;
+                toolchainDefConf.global['misc-control'] = eTarget.globalArgs.globalArgs.filter(a => a.trim() != '');
 
                 // asm
-                flags = [];
-                eTarget.globalArgs.sMacros.forEach(m => flags.push(`-D${m}`));
-                eTarget.globalArgs.assemblerArgs.forEach(arg => flags.push(arg));
-                if (flags.length > 0) {
+                {
+                    let flags: string[] = [];
                     const asmCfg = toolchainDefConf["asm-compiler"];
+
+                    if (asmCfg['ASM_FLAGS']) flags.push(asmCfg['ASM_FLAGS']);
+                    eTarget.globalArgs.sMacros.forEach(m => flags.push(`-D${m}`));
+                    eTarget.globalArgs.assemblerArgs.forEach(arg => flags.push(arg));
+
+                    flags = flags.filter(p => p.trim() != '');
                     if (asmCfg['ASM_FLAGS'] != undefined) {
-                        asmCfg['ASM_FLAGS'] = asmCfg['ASM_FLAGS'] + ' ' + flags.join(' ');
+                        asmCfg['ASM_FLAGS'] = flags.join(' ');
                     } else {
                         asmCfg['misc-control'] = flags.join(' ');
                     }
                 }
 
                 // c
-                flags = [];
-                eTarget.globalArgs.cCompilerArgs.forEach(arg => flags.push(arg));
-                if (flags.length > 0) {
+                {
+                    let flags: string[] = [];
+                    let cxxFlags: string[] = [];
                     const ccCfg = toolchainDefConf["c/cpp-compiler"];
+
+                    if (ccCfg['C_FLAGS']) flags.push(ccCfg['C_FLAGS']);
+                    if (ccCfg['CXX_FLAGS']) cxxFlags.push(ccCfg['CXX_FLAGS']);
+
+                    eTarget.globalArgs.cCompilerArgs.forEach(arg => {
+                        flags.push(arg);
+                        cxxFlags.push(arg);
+                    });
+
+                    flags = flags.filter(p => p.trim() != '');
+                    cxxFlags = cxxFlags.filter(p => p.trim() != '');
                     if (ccCfg['C_FLAGS'] != undefined) {
-                        ccCfg['C_FLAGS'] = ccCfg['C_FLAGS'] + ' ' + flags.join(' ');
-                        ccCfg['CXX_FLAGS'] = (ccCfg['CXX_FLAGS'] || '') + ' ' + flags.join(' ');
+                        ccCfg['C_FLAGS'] = flags.join(' ');
+                        ccCfg['CXX_FLAGS'] = cxxFlags.join(' ');
                     } else {
                         ccCfg['misc-control'] = flags.join(' ');
                     }
                 }
 
                 // linker
-                flags = [];
-                eTarget.globalArgs.linkerArgs.forEach(arg => flags.push(arg));
-                if (flags.length > 0) {
+                {
                     if (!toolchainDefConf.linker) toolchainDefConf.linker = {};
                     const ldCfg = toolchainDefConf.linker;
+
+                    const flags: string[] = eTarget.globalArgs.linkerArgs.filter(a => a.trim() != '');
                     if (ldCfg['LD_FLAGS'] != undefined) {
-                        ldCfg['LD_FLAGS'] = ldCfg['LD_FLAGS'] + ' ' + flags.join(' ');
+                        ldCfg['LD_FLAGS'] = flags.join(' ');
+                        const libFlags = eTarget.globalArgs.linkerLibArgs.filter(a => a.trim() != '');
+                        if (ldCfg['LIB_FLAGS'] != undefined) {
+                            ldCfg['LIB_FLAGS'] = libFlags.join(' ');
+                        }
                     } else {
                         ldCfg['misc-control'] = flags.join(' ');
-                    }
-                    if (ldCfg['LIB_FLAGS'] != undefined && eTarget.globalArgs.linkerLibArgs.length > 0) {
-                        ldCfg['LIB_FLAGS'] = ldCfg['LIB_FLAGS'] + ' ' + eTarget.globalArgs.linkerLibArgs.join(' ');
                     }
                 }
 
