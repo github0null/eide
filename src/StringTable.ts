@@ -762,8 +762,13 @@ export const select_a_template_file = [
 ][langIndex];
 
 export const view_str$operation$setToolchainPath = [
-    '设置工具链路径',
-    'Set Toolchain Path'
+    '设置工具链',
+    'Configure Toolchain'
+][langIndex];
+
+export const view_str$operation$setupUtilTools = [
+    '安装实用工具',
+    'Setup Utility Tools'
 ][langIndex];
 
 export const view_str$operation$openSettings = [

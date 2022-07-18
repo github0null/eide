@@ -254,11 +254,11 @@ export class ToolchainManager {
             case 'GCC':
                 return 'GNU Arm Embedded Toolchain';
             case 'IAR_STM8':
-                return 'IAR C Compiler for STM8';
+                return 'IAR C Compiler For STM8';
             case 'GNU_SDCC_STM8':
                 return 'SDCC With GNU Patch For STM8';
             case 'RISCV_GCC':
-                return 'GCC for RISC-V';
+                return 'GCC For RISC-V';
             case 'ANY_GCC':
                 return 'Any GNU Toolchain';
             default:

@@ -26,6 +26,7 @@ import * as vscode from 'vscode';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as child_process from 'child_process';
+import * as NodePath from 'path';
 
 import { HexUploaderType } from "./HexUploader";
 import { SettingManager } from './SettingManager';
@@ -46,10 +47,15 @@ export type ExternalToolName = ToolchainName | HexUploaderType | 'cppcheck';
 
 export interface ExternalToolInfo {
     setting_name: string;
-    resource_name?: string;
+    resource_name: string;
+    readable_name: string;
     require_name?: string;
     no_binaries?: boolean;
     getDrvInstaller?: () => string | undefined;
+};
+
+export interface UtilToolInfo extends ExternalToolInfo {
+    id: ExternalToolName;
 };
 
 export class ResInstaller {
@@ -67,33 +73,40 @@ export class ResInstaller {
         this.toolsMap = new Map();
         this.locker = new Map();
 
-        /* register tools */
+        // register tools
+
         const no_binaries = os.platform() != 'win32'; // we not provide binaries for non-win32 platform.
 
         this.registerTool('SDCC', {
+            resource_name: 'sdcc',
+            readable_name: 'Small Device C Compiler (SDCC) (latest version)',
             setting_name: 'SDCC.InstallDirectory',
             no_binaries: no_binaries
         });
 
-        this.registerTool('GNU_SDCC_STM8', {
+        /* this.registerTool('GNU_SDCC_STM8', {
             setting_name: 'STM8.GNU-SDCC.InstallDirectory',
             resource_name: 'stm8_gnu_sdcc',
             no_binaries: no_binaries
-        });
+        }); */
 
         this.registerTool('GCC', {
-            setting_name: 'ARM.GCC.InstallDirectory',
             resource_name: 'gcc_arm',
+            readable_name: 'GNU Arm Embedded Toolchain V8.3.1',
+            setting_name: 'ARM.GCC.InstallDirectory',
             no_binaries: no_binaries
         });
 
         this.registerTool('RISCV_GCC', {
-            setting_name: 'RISCV.InstallDirectory',
             resource_name: 'gcc_riscv',
+            readable_name: 'RISC-V GCC Toolchain',
+            setting_name: 'RISCV.InstallDirectory',
             no_binaries: no_binaries
         });
 
         this.registerTool('JLink', {
+            resource_name: 'jlink',
+            readable_name: 'JLink V6.90',
             setting_name: 'JLink.InstallDirectory',
             no_binaries: no_binaries,
             getDrvInstaller: () => {
@@ -105,6 +118,8 @@ export class ResInstaller {
         });
 
         this.registerTool('STVP', {
+            resource_name: 'stvp',
+            readable_name: 'STVP Flasher For STM8',
             setting_name: 'STM8.STVP.CliExePath',
             require_name: `STVP_CmdLine${platform.exeSuffix()}`,
             no_binaries: no_binaries,
@@ -119,7 +134,9 @@ export class ResInstaller {
         /* this.registerTool('STLink', { setting_name: 'STLink.ExePath', require_name: `ST-LINK_CLI${platform.exeSuffix()}` }); */
 
         this.registerTool('STLink', {
-            setting_name: 'STLink.ExePath', resource_name: 'st_cube_programer',
+            resource_name: 'st_cube_programer',
+            readable_name: 'STM32 Cube Programmer CLI',
+            setting_name: 'STLink.ExePath',
             require_name: `bin/STM32_Programmer_CLI${platform.exeSuffix()}`,
             no_binaries: no_binaries,
             getDrvInstaller: () => {
@@ -131,12 +148,16 @@ export class ResInstaller {
         });
 
         this.registerTool('OpenOCD', {
+            resource_name: 'openocd',
+            readable_name: 'OpenOCD Programmer V0.10.0',
             setting_name: 'OpenOCD.ExePath',
             require_name: `bin/openocd${platform.exeSuffix()}`,
             no_binaries: no_binaries
         });
 
         this.registerTool('cppcheck', {
+            resource_name: 'cppcheck',
+            readable_name: 'Cppcheck (Code Inspection)',
             setting_name: 'Cppcheck.ExecutablePath',
             require_name: `cppcheck${platform.exeSuffix()}`,
             no_binaries: no_binaries
@@ -153,6 +174,37 @@ export class ResInstaller {
 
     hasTool(name: ExternalToolName): boolean {
         return this.toolsMap.has(name.toLowerCase());
+    }
+
+    isToolInstalled(name: ExternalToolName): boolean | undefined {
+        const tool = this.toolsMap.get(name.toLowerCase());
+        if (tool) {
+            const instDir = File.fromArray([ResManager.GetInstance().getUtilToolsDir(), tool.resource_name]);
+            if (instDir.IsDir()) {
+                if (tool.require_name) {
+                    const p = NodePath.normalize(instDir.path + File.sep + tool.require_name);
+                    return File.IsExist(p);
+                } else {
+                    return true;
+                }
+            }
+        }
+    }
+
+    listAllTools(): UtilToolInfo[] {
+        const res: UtilToolInfo[] = [];
+        for (const kv of this.toolsMap) {
+            const tool = kv[1];
+            res.push({
+                id: <ExternalToolName>kv[0],
+                resource_name: tool.resource_name,
+                readable_name: tool.readable_name,
+                setting_name: tool.setting_name,
+                require_name: tool.require_name,
+                no_binaries: tool.no_binaries
+            });
+        }
+        return res;
     }
 
     private lock(name: ExternalToolName): boolean {
@@ -183,7 +235,7 @@ export class ResInstaller {
 
         /* download it ! */
         let installedDone: boolean = false;
-        const resourceName: string = toolInfo.resource_name || name.toLowerCase();
+        const resourceName: string = toolInfo.resource_name;
         const resourceFile = File.fromArray([os.tmpdir(), `${resourceName}.7z`]);
 
         try {
@@ -274,7 +326,7 @@ export class ResInstaller {
                         progress.report({ message: `'${resourceName}' installed done !` });
 
                         /* return it with delay */
-                        setTimeout(() => resolveIf(true), 1000);
+                        setTimeout(() => resolveIf(true), 1500);
                     });
                 });
             }

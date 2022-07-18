@@ -42,7 +42,7 @@ import {
     view_str$operation$create_from_internal_temp_detail, view_str$operation$create_from_local_disk_detail,
     view_str$operation$create_from_remote_repo_detail, view_str$operation$openSettings,
     view_str$prompt$select_file, view_str$prompt$select_folder, view_str$prompt$select_file_or_folder, view_str$prompt$select_tool_install_mode,
-    view_str$prompt$tool_install_mode_online, view_str$prompt$tool_install_mode_local, view_str$operation$empty_anygcc_prj
+    view_str$prompt$tool_install_mode_online, view_str$prompt$tool_install_mode_local, view_str$operation$empty_anygcc_prj, view_str$operation$setupUtilTools
 } from './StringTable';
 import { CreateOptions, ImportOptions, ProjectType } from './EIDETypeDefine';
 import { File } from '../lib/node-utility/File';
@@ -58,7 +58,7 @@ import * as events from 'events';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as NodePath from 'path';
-import { ResInstaller } from './ResInstaller';
+import { ResInstaller, ExternalToolName } from './ResInstaller';
 import { AbstractProject } from './EIDEProject';
 
 interface TemplatePickItem extends vscode.QuickPickItem, TemplateInfo {
@@ -237,6 +237,8 @@ export class OperationExplorer {
             }
         });
 
+        //---
+
         const tcList: ToolchainName[] = ['AC5', 'GCC', 'IAR_STM8', 'SDCC', 'Keil_C51', 'RISCV_GCC', 'ANY_GCC', 'GNU_SDCC_STM8'];
         const toolchainManager = ToolchainManager.getInstance();
         const checkResults = tcList.map((tcName) => { return toolchainManager.isToolchainPathReady(tcName); });
@@ -255,9 +257,28 @@ export class OperationExplorer {
                 dark: icoPath.path
             }
         });
-
-        /* setup env if toolchain is ready */
+        // setup env if toolchain is ready
         vscode.commands.executeCommand('setContext', 'cl.eide.toolchain_ready', status != CheckStatus.All_Failed);
+
+        //---
+        const hasTools = ResInstaller.instance().listAllTools().some(t => !t.no_binaries);
+        if (hasTools) {
+            icoPath = resManager.GetIconByName('PatchPackage_16x.svg');
+            this.provider.AddData({
+                label: view_str$operation$setupUtilTools,
+                command: {
+                    title: 'Setup Utility Tools',
+                    command: '_cl.eide.Operation.SetupUtilTools'
+                },
+                tooltip: view_str$operation$setupUtilTools,
+                iconPath: {
+                    light: icoPath.path,
+                    dark: icoPath.path
+                }
+            });
+        }
+
+        //---
 
         icoPath = resManager.GetIconByName('Settings_16x.svg');
         this.provider.AddData({
@@ -749,6 +770,38 @@ export class OperationExplorer {
                 );
             }
         }
+    }
+
+    async setupUtilTools() {
+
+        const resInstaller = ResInstaller.instance();
+
+        const selections: UtilToolPickItem[] = resInstaller.listAllTools().map(t => {
+            const installed = resInstaller.isToolInstalled(t.id) || false;
+            return {
+                id: t.id,
+                label: t.resource_name,
+                isInstalled: installed,
+                description: this.getStatusTxt(installed),
+                detail: t.readable_name
+            };
+        });
+
+        const sel = await vscode.window.showQuickPick(selections, {
+            canPickMany: false,
+            placeHolder: 'Select one to install it'
+        });
+
+        if (sel == undefined)
+            return;
+
+        if (sel.isInstalled) {
+            const msg = `This package (${sel.label}) has been installed, do you need to reinstall it ?`;
+            const res = await vscode.window.showInformationMessage(msg, 'Yes', 'Cancel');
+            if (res != 'Yes') return;
+        }
+
+        await resInstaller.installTool(sel.id);
     }
 
     async selectTemplate(templateGroup: TemplateGroup): Promise<TemplatePickItem | undefined> {
@@ -1300,4 +1353,9 @@ export class OperationExplorer {
             GlobalEvent.emit('error', error);
         }
     }
+}
+
+interface UtilToolPickItem extends vscode.QuickPickItem {
+    id: ExternalToolName;
+    isInstalled?: boolean;
 }
