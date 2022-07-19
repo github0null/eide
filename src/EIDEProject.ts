@@ -2000,7 +2000,6 @@ class EIDEProject extends AbstractProject {
 
                 // update compile options
                 cConfig.SetKeyValue('cpuType', newDevInfo.core || 'Cortex-M3');
-                cConfig.updateStorageLayout(newDevInfo.storageLayout);
 
                 // update device, set macro
                 prjConfig.config.deviceName = newDevInfo.name;
