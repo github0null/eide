@@ -16,6 +16,9 @@
   - 移除内置的 `Output Panel` Grammar 文件，推荐使用扩展：`IBM.output-colorizer`
   - 在芯片支持包中切换芯片后，不再覆盖 `memory layout` 配置
 
+**Optimize**
+  - 加载项目时，去除 `Project Attribute` 中的空值项
+
 ***
 
 ### [v3.7.2022071801] preview version
