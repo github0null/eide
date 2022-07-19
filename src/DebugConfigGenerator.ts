@@ -220,7 +220,7 @@ class CortexDebugConfigProvider extends IDebugConfigProvider {
                 interface: 'swd',
                 executable: 'undefined',
                 runToEntryPoint: "main",
-                device: '<MCU-NAME>'
+                device: '<mcu-name>'
             },
             {
                 cwd: '${workspaceRoot}',
@@ -256,8 +256,7 @@ class CortexDebugConfigProvider extends IDebugConfigProvider {
                 servertype: 'pyocd',
                 executable: 'undefined',
                 runToEntryPoint: "main",
-                targetId: '<MCU-NAME>',
-                cmsisPack: '<CMSIS-Pack-Path>'
+                targetId: '<mcu-name>'
             }
         ];
     }
@@ -306,7 +305,7 @@ class STM8DebugConfigProvider extends IDebugConfigProvider {
                 name: 'st7',
                 serverType: 'st7',
                 interface: 'stlink3',
-                cpu: '<MCU-NAME>',
+                cpu: '<mcu-name>',
                 executable: 'null'
             },
             {
