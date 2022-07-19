@@ -113,7 +113,7 @@
     "settings.serial.parity": "SerialPort Parity bit",
     "settings.serial.stop.bits": "SerialPort Stop Bits",
 
-    "settings.keilc51.ini": "Keil C51 `TOOLS.INI` file path [`example: C:\\Keil_v5\\C51\\TOOLS.INI`]",
+    "settings.keilc51.ini": "Keil C51 `UV4.exe` or `TOOLS.INI` file path [`example: C:\\Keil_v5\\UV4\\UV4.exe`]",
     "settings.iar.stm8.install.folder": "IAR for STM8 install directory [`example: D:\\IAR`]",
     "settings.sdcc.install.folder": "SDCC install folder [`example: C:\\Program Files (x86)\\SDCC`]",
 
@@ -122,7 +122,7 @@
     "settings.arm.gcc.install.folder": "GCC for ARM toolchain install directory [`example: D:\\arm-gcc\\8 2019-q3-update`]",
     "settings.arm.gcc.prefix": "ARM GCC toolchain prefix [`example: arm-none-eabi-`]",
 
-    "settings.armcc.ini": "Keil ARM MDK `TOOLS.INI` file path [`example: C:\\Keil_v5\\TOOLS.INI`]",
+    "settings.armcc.ini": "Keil MDK-ARM `UV4.exe` or `TOOLS.INI` file path [`example: C:\\Keil_v5\\UV4\\UV4.exe`]",
     "settings.armcc.convert.axf": "Convert `.axf` to `.elf` for ARMCC compiler",
     
     "settings.riscv.gcc.install.folder": "RISC-V toolchain install folder [`example: D:\\xpack-riscv-none-embed-gcc-8.3.0-2.3`]",

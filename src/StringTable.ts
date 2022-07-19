@@ -727,13 +727,13 @@ export const view_str$operation$baudrate = [
 ][langIndex];
 
 export const view_str$operation$setKeil51Path = [
-    '设置 Keil_C51 的 TOOLS.INI 路径',
-    'Set Keil_C51\'s \'TOOLS.INI\' path'
+    `设置 Keil_C51 'UV4.exe' 或者 'TOOLS.INI' 路径`,
+    `Set Keil_C51 'UV4.exe' or 'TOOLS.INI' path`
 ][langIndex];
 
 export const view_str$operation$setMDKPath = [
-    '设置 MDK 的 TOOLS.INI 路径',
-    'Set MDK\'s \'TOOLS.INI\' path'
+    `设置 MDK 'UV4.exe' 或者 'TOOLS.INI' 路径`,
+    `Set MDK 'UV4.exe' or 'TOOLS.INI' path`
 ][langIndex];
 
 export const view_str$operation$setToolchainInstallDir = [

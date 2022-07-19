@@ -33,7 +33,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.7.2022071901",
+    "version": "3.7.2022071902",
     "preview": false,
     "engines": {
         "vscode": "^1.63.0"
@@ -406,7 +406,7 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "%settings.armcc.ini%",
-                        "default": "C:\\Keil_v5\\TOOLS.INI"
+                        "default": "C:\\Keil_v5\\UV4\\UV4.exe"
                     },
                     "EIDE.JLink.InstallDirectory": {
                         "type": "string",
@@ -448,7 +448,7 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "%settings.keilc51.ini%",
-                        "default": "C:\\Keil_v5\\C51\\TOOLS.INI"
+                        "default": "C:\\Keil_v5\\UV4\\UV4.exe"
                     },
                     "EIDE.SDCC.InstallDirectory": {
                         "type": "string",

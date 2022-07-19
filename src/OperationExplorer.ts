@@ -732,7 +732,7 @@ export class OperationExplorer {
             dialogOption = {
                 openLabel: view_str$prompt$select_file,
                 filters: {
-                    "TOOLS.INI file": ['INI']
+                    "UV4.exe or TOOLS.INI": ['exe', 'INI']
                 },
                 canSelectFiles: true,
                 canSelectFolders: false,
@@ -755,11 +755,11 @@ export class OperationExplorer {
         const tcManager = ToolchainManager.getInstance();
 
         if (item.type == 'Keil_C51') {
-            settingManager.SetC51INIPath(path[0].fsPath);
+            settingManager.SetC51IniOrUv4Path(path[0].fsPath);
         }
 
         else if (item.label.includes('MDK')) {
-            settingManager.SetMdkINIPath(path[0].fsPath);
+            settingManager.SetMdkIniOrUv4Path(path[0].fsPath);
         }
 
         else {

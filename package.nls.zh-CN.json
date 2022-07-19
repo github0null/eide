@@ -103,7 +103,7 @@
     "settings.serial.parity": "串口奇偶校验位",
     "settings.serial.stop.bits": "串口停止位",
 
-    "settings.keilc51.ini": "Keil_C51 `TOOLS.INI` 文件路径 [`example: C:\\Keil_v5\\C51\\TOOLS.INI`]",
+    "settings.keilc51.ini": "Keil C51 `UV4.exe` 或 `TOOLS.INI` 文件路径 [`example: C:\\Keil_v5\\UV4\\UV4.exe`]",
     "settings.iar.stm8.install.folder": "IAR for STM8 安装目录 [`example: D:\\IAR`]",
     "settings.sdcc.install.folder": "SDCC 安装目录 [`example: C:\\Program Files (x86)\\SDCC`]",
 
@@ -112,7 +112,7 @@
     "settings.arm.gcc.install.folder": "GNU Arm Embedded Toolchain 安装目录 [`example: D:\\arm-gcc\\8 2019-q3-update`]",
     "settings.arm.gcc.prefix": "GNU Arm Embedded Toolchain 编译器前缀 [`example: arm-none-eabi-`]",
 
-    "settings.armcc.ini": "Keil ARM MDK `TOOLS.INI` 文件路径 [`example: C:\\Keil_v5\\TOOLS.INI`]",
+    "settings.armcc.ini": "Keil MDK-ARM `UV4.exe` 或 `TOOLS.INI` 文件路径 [`example: C:\\Keil_v5\\UV4\\UV4.exe`]",
     "settings.armcc.convert.axf": "编译完成后将 `.axf` 转换为 `.elf`",
     
     "settings.riscv.gcc.install.folder": "RISC-V Toolchain 安装目录 [`example: D:\\xpack-riscv-none-embed-gcc-8.3.0-2.3`]",

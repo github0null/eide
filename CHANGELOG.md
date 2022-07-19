@@ -4,7 +4,7 @@
 
 ***
 
-### [v3.7.2022071901] preview version
+### [v3.7.2022071902] preview version
 
 **New**:
   - 支持为 'Custom Flasher' 设置全片擦除命令
@@ -15,6 +15,7 @@
   - 调整烧录器配置默认值
   - 移除内置的 `Output Panel` Grammar 文件，推荐使用扩展：`IBM.output-colorizer`
   - 在芯片支持包中切换芯片后，不再覆盖 `memory layout` 配置
+  - 支持直接设置 Keil `UV4.exe` 路径来定位编译器路径
 
 **Optimize**
   - 加载项目时，去除 `Project Attribute` 中的空值项
@@ -25,7 +26,7 @@
 
 **New**:
   - 新增 Eclipse 项目导入功能
-  - 新增 'Setup Utility Tools' 功能 (位于 Operation 栏)，可用于自动安装 eide 默认提供的相关工具
+  - 新增 `Setup Utility Tools` 功能 (位于 Operation 栏)，可用于自动安装 eide 默认提供的相关工具
 
 ***
 

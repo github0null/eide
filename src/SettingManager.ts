@@ -32,7 +32,7 @@ import { File } from '../lib/node-utility/File';
 import { GlobalEvent } from './GlobalEvents';
 import { ExceptionToMessage } from './Message';
 import * as Utility from './utility';
-import { find } from './Platform';
+import { find, exeSuffix } from './Platform';
 import { WorkspaceManager } from './WorkspaceManager';
 
 export enum CheckStatus {
@@ -90,19 +90,29 @@ export class SettingManager {
         this.eideEnv.set('${eideRoot}', context.extensionPath);
         this.eideEnv.set('${userRoot}', os.homedir());
 
-        this.refreshMDKStatus();
-        this.refreshC51Status();
+        try {
+            this.refreshMDKStatus();
+            this.refreshC51Status();
+        } catch (error) {
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Hidden'));
+        }
 
         vscode.workspace.onDidChangeConfiguration((e) => {
 
             if (e.affectsConfiguration(SettingManager.TAG)) {
 
-                if (e.affectsConfiguration('EIDE.ARM.INI.Path')) {
-                    this.refreshMDKStatus();
-                }
+                try {
 
-                if (e.affectsConfiguration('EIDE.C51.INI.Path')) {
-                    this.refreshC51Status();
+                    if (e.affectsConfiguration('EIDE.ARM.INI.Path')) {
+                        this.refreshMDKStatus();
+                    }
+
+                    if (e.affectsConfiguration('EIDE.C51.INI.Path')) {
+                        this.refreshC51Status();
+                    }
+
+                } catch (error) {
+                    GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Hidden'));
                 }
 
                 this._event.emit('onChanged', e);
@@ -466,11 +476,11 @@ export class SettingManager {
         );
     }
 
-    SetMdkINIPath(path: string) {
+    SetMdkIniOrUv4Path(path: string) {
         this.setConfigValue('ARM.INI.Path', path);
     }
 
-    private GetMdkINIFile(): File {
+    private GetMdkINIOrUv4File(): File {
         const iniPath = this.getConfiguration().get<string>('ARM.INI.Path') || '';
         return new File(Utility.formatPath(iniPath));
     }
@@ -485,12 +495,32 @@ export class SettingManager {
     private refreshMDKStatus(): void {
 
         /* parse from ini file */
-        const iniFile = this.GetMdkINIFile();
+        const iniFile = this.GetMdkINIOrUv4File();
+
         if (iniFile.IsFile()) {
-            try {
+
+            // is uv4.exe
+            if (iniFile.suffix.toLowerCase() == '.exe') {
+
+                const armccDir = File.fromArray([NodePath.dirname(iniFile.dir), 'ARM', 'ARMCC']);
+                const armclangDir = File.fromArray([NodePath.dirname(iniFile.dir), 'ARM', 'ARMCLANG']);
+
+                let cnt = 0;
+
+                if (armccDir.IsDir()) { this.pathCache.set('ARMCC5', armccDir.path); cnt++; };
+                if (armclangDir.IsDir()) { this.pathCache.set('ARMCC6', armclangDir.path); cnt++; }
+
+                if (cnt > 0) {
+                    this._checkStatus['MDK'] = true;
+                    return;
+                }
+            }
+
+            // is ini
+            else {
+
                 const iniData = ini.parse(iniFile.Read());
 
-                // check ini file fields
                 if (iniData["ARM"] && iniData["ARM"]["PATH"]) {
 
                     // mdk ARM dir
@@ -501,35 +531,27 @@ export class SettingManager {
                         this.pathCache.set('MDK', mdkArmDir.path);
                     }
 
+                    let cnt = 0;
+
                     // cache armcc5 path
                     const armcc5Dir = File.fromArray([mdkArmDir.path, 'ARMCC', 'bin']);
-                    if (armcc5Dir.IsDir()) { this.pathCache.set('ARMCC5', armcc5Dir.dir); }
+                    if (armcc5Dir.IsDir()) { this.pathCache.set('ARMCC5', armcc5Dir.dir); cnt++; }
 
                     // cache armcc6 path
                     const armcc6Dir = File.fromArray([mdkArmDir.path, 'ARMCLANG', 'bin']);
-                    if (armcc6Dir.IsDir()) { this.pathCache.set('ARMCC6', armcc6Dir.dir);; }
+                    if (armcc6Dir.IsDir()) { this.pathCache.set('ARMCC6', armcc6Dir.dir); cnt++; }
 
                     // check all
-                    if (!this.pathCache.has('ARMCC5') &&
-                        !this.pathCache.has('ARMCC6')) {
-                        throw new Error('Not found folder, [path]: ' + armcc5Dir.path);
+                    if (cnt > 0) {
+                        this._checkStatus['MDK'] = true;
+                        return; // mdk path is ok, return
                     }
-
-                    // update status
-                    this._checkStatus['MDK'] = true;
-
-                    return; // mdk path is valid, return it
                 }
-
                 // invalid ini file
                 else {
                     this.pathCache.delete('ARMCC5');
                     this.pathCache.delete('ARMCC6');
-                    throw new Error('Invalid ARM INI file, [path] : ' + iniFile.path);
                 }
-
-            } catch (error) {
-                GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Hidden'));
             }
         }
 
@@ -582,7 +604,7 @@ export class SettingManager {
 
     //------------------------------- C51 ----------------------------------
 
-    SetC51INIPath(path: string) {
+    SetC51IniOrUv4Path(path: string) {
         this.setConfigValue('C51.INI.Path', path);
     }
 
@@ -597,30 +619,35 @@ export class SettingManager {
 
     private refreshC51Status(): void {
 
-        /* parse from ini file */
         const iniFile = this.GetC51INIFile();
+
         if (iniFile.IsFile()) {
-            try {
-                const iniData = ini.parse(iniFile.Read());
 
-                // check ini file fields
-                if (iniData["C51"] && iniData["C51"]["PATH"]) {
-                    const binDir = new File(formatPath((<string>iniData["C51"]["PATH"]).replace(/"/g, '')));
-                    // update and check
-                    this.pathCache.set('C51', binDir.path);
-                    const cDir = File.fromArray([binDir.path, 'BIN']);
-                    if (!cDir.IsDir()) { throw new Error('Not found folder, [path]: ' + cDir.path); }
+            // is uv4.exe
+            if (iniFile.suffix.toLowerCase() == '.exe') {
+                const c51BinDir = File.fromArray([NodePath.dirname(iniFile.dir), 'C51', 'BIN']);
+                if (c51BinDir.IsDir()) {
+                    this.pathCache.set('C51', c51BinDir.dir);
                     this._checkStatus['C51'] = true;
-                    return; // keil c51 path is valid, return it
+                    return;
                 }
+            }
 
+            // is ini file
+            else {
+                const iniData = ini.parse(iniFile.Read());
+                if (iniData["C51"] && iniData["C51"]["PATH"]) {
+                    const c51BinDir = File.fromArray([formatPath((<string>iniData["C51"]["PATH"]).replace(/"/g, '')), 'BIN']);
+                    if (c51BinDir.IsDir()) {
+                        this.pathCache.set('C51', c51BinDir.dir);
+                        this._checkStatus['C51'] = true;
+                        return;
+                    }
+                }
                 // invalid ini file
                 else {
                     this.pathCache.delete('C51');
-                    throw new Error('Invalid C51 INI file, [path] : ' + iniFile.path);
                 }
-            } catch (error) {
-                GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Hidden'));
             }
         }
 
