@@ -547,11 +547,6 @@ export class SettingManager {
                         return; // mdk path is ok, return
                     }
                 }
-                // invalid ini file
-                else {
-                    this.pathCache.delete('ARMCC5');
-                    this.pathCache.delete('ARMCC6');
-                }
             }
         }
 
@@ -567,6 +562,9 @@ export class SettingManager {
             }
         }
 
+        // not found any path
+        this.pathCache.delete('ARMCC5');
+        this.pathCache.delete('ARMCC6');
         this._checkStatus['MDK'] = false;
     }
 
@@ -644,10 +642,6 @@ export class SettingManager {
                         return;
                     }
                 }
-                // invalid ini file
-                else {
-                    this.pathCache.delete('C51');
-                }
             }
         }
 
@@ -663,6 +657,8 @@ export class SettingManager {
             }
         }
 
+        // not found any path
+        this.pathCache.delete('C51');
         this._checkStatus['C51'] = false;
     }
 }
