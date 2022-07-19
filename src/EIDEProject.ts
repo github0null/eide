@@ -895,21 +895,26 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
         const prjConfig = this.GetConfiguration();
 
-        // clear duplicated items
+        // clear duplicated excl items
         prjConfig.config.excludeList = ArrayDelRepetition(
             prjConfig.config.excludeList.map(p => File.ToUnixPath(p))
         );
 
+        // clear empty items for user prj attrs
+        const prjAttr = prjConfig.CustomDep_getDependence();
+        prjAttr.defineList = prjAttr.defineList.filter(m => m.trim() != '');
+        prjAttr.incList = prjAttr.incList.filter(m => m.trim() != '');
+        prjAttr.libList = prjAttr.libList.filter(m => m.trim() != '');
+
         // clear invalid src folders
-        prjConfig.config.srcDirs = prjConfig.config.srcDirs
-            .filter(path => { return (new File(path)).IsDir(); });
+        prjConfig.config.srcDirs = prjConfig.config.srcDirs.filter(path => File.IsDir(path));
 
         // rm prefix for out dir
         prjConfig.config.outDir = NodePath.normalize(File.ToLocalPath(prjConfig.config.outDir));
 
         // clear invalid package path
-        if (prjConfig.config.packDir
-            && !(new File(this.ToAbsolutePath(prjConfig.config.packDir))).IsDir()) {
+        if (prjConfig.config.packDir &&
+            !File.IsDir(this.ToAbsolutePath(prjConfig.config.packDir))) {
             prjConfig.config.packDir = null;
         }
 
