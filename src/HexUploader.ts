@@ -961,6 +961,7 @@ class OpenOCDUploader extends HexUploader<string[]> {
 */
 export interface CustomFlashOptions extends UploadOption {
     commandLine: string;
+    eraseChipCommand: string;
 }
 
 class CustomUploader extends HexUploader<string> {
@@ -968,11 +969,6 @@ class CustomUploader extends HexUploader<string> {
     toolType: HexUploaderType = 'Custom';
 
     protected async _prepare(eraseAll?: boolean): Promise<UploaderPreData<string>> {
-
-        if (eraseAll) {
-            GlobalEvent.emit('msg', newMessage('Warning', `not support 'Erase Chip' for '${this.toolType}' flasher`));
-            return { isOk: false };
-        }
 
         const option = this.getUploadOptions<CustomFlashOptions>();
         const programs = this.parseProgramFiles(option);
@@ -983,9 +979,13 @@ class CustomUploader extends HexUploader<string> {
             };
         }
 
+        if (eraseAll) {
+            option.commandLine = option.eraseChipCommand;
+        }
+
         if (option.commandLine === undefined) {
             return {
-                isOk: new Error('command line can not be empty !')
+                isOk: new Error('flash command can not be empty !')
             };
         }
 
