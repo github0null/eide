@@ -33,7 +33,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.7.2022071801",
+    "version": "3.7.2022071901",
     "preview": false,
     "engines": {
         "vscode": "^1.63.0"
@@ -1399,12 +1399,6 @@
         ],
         "languages": [
             {
-                "id": "eide-output",
-                "mimetypes": [
-                    "text/x-code-output"
-                ]
-            },
-            {
                 "id": "a51",
                 "aliases": [
                     "A51",
@@ -1503,11 +1497,6 @@
             }
         ],
         "grammars": [
-            {
-                "language": "eide-output",
-                "scopeName": "eide.output",
-                "path": "./lang/eide-output.tmLanguage.json"
-            },
             {
                 "language": "a51",
                 "scopeName": "source.asm.a51",
