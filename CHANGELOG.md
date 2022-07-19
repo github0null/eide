@@ -10,7 +10,7 @@
   - 支持为 'Custom Flasher' 设置全片擦除命令
 
 **Change**:
-  - 调整 TreeView 中的 `Terminal` 图标
+  - 调整 TreeView 中的一些图标
   - 生成 Cortex-Debug 调试配置时，只生成必要字段
   - 调整烧录器配置默认值
   - 移除内置的 `Output Panel` Grammar 文件，推荐使用扩展：`IBM.output-colorizer`
