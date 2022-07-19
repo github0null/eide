@@ -405,7 +405,7 @@ export class ProjTreeItem extends vscode.TreeItem {
                 name = 'Component_16x.svg';
                 break;
             case TreeItemType.PACK_GROUP:
-                name = 'PackageItem_16x.svg';
+                name = 'Cube_16x.svg';
                 break;
             case TreeItemType.DEPENDENCE_SUB_GROUP:
             case TreeItemType.GROUP:
@@ -420,8 +420,8 @@ export class ProjTreeItem extends vscode.TreeItem {
             case TreeItemType.COMPILE_CONFIGURATION:
                 name = 'Builder_16x.svg';
                 break;
-            case TreeItemType.PACK:
-                name = 'Package_16x.svg';
+            case TreeItemType.PACK: // only for cpu pakage, not cmsis package
+                name = 'CPU_16x.svg';
                 break;
             case TreeItemType.UPLOAD_OPTION:
                 name = 'TransferDownload_16x.svg';
