@@ -48,8 +48,8 @@ import {
     view_str$flasher$optionBytesPath,
     view_str$flasher$launchApp,
     view_str$flasher$targetName,
-    view_str$flasher$commandLine,
-    view_str$compile$cpuVendor,
+    view_str$flasher$flashCommandLine,
+    view_str$flasher$eraseChipCommandLine,
     view_str$flasher$openocd_target_cfg,
     view_str$flasher$openocd_interface_cfg,
     view_str$flasher$optionBytesConfig,
@@ -1331,7 +1331,7 @@ export type KeyIcon =
     'Memory_16x.svg' |
     'ConfigurationEditor_16x.svg' |
     'CPU_16x.svg' |
-    'terminal_16x.svg';
+    'ImmediateWindow_16x.svg';
 
 export abstract class ConfigModel<DataType> {
 
@@ -2578,7 +2578,7 @@ class StcgalUploadModel extends UploadConfigModel<StcgalFlashOption> {
             case 'options':
                 return 'ConfigurationEditor_16x.svg';
             case 'extraOptions':
-                return 'terminal_16x.svg';
+                return 'ImmediateWindow_16x.svg';
             default:
                 return super.getKeyIcon(key);
         }
@@ -2684,7 +2684,7 @@ class JLinkUploadModel extends UploadConfigModel<JLinkOptions> {
             case 'proType':
                 return 'ConnectUnplugged_16x.svg';
             case 'otherCmds':
-                return 'terminal_16x.svg';
+                return 'ImmediateWindow_16x.svg';
             default:
                 return super.getKeyIcon(key);
         }
@@ -2780,10 +2780,10 @@ class JLinkUploadModel extends UploadConfigModel<JLinkOptions> {
     GetDefault(): JLinkOptions {
         return {
             bin: '',
-            baseAddr: '0x08000000',
+            baseAddr: '',
             cpuInfo: {
-                vendor: 'ST',
-                cpuName: 'STM32F103C8'
+                vendor: 'null',
+                cpuName: 'null'
             },
             proType: ProtocolType.SWD,
             speed: 8000,
@@ -2853,7 +2853,7 @@ class STLinkUploadModel extends UploadConfigModel<STLinkOptions> {
             case 'optionBytes':
                 return 'ConfigurationEditor_16x.svg';
             case 'otherCmds':
-                return 'terminal_16x.svg';
+                return 'ImmediateWindow_16x.svg';
             default:
                 return super.getKeyIcon(key);
         }
@@ -3103,7 +3103,7 @@ class StvpUploadModel extends UploadConfigModel<STVPFlasherOptions> {
 
     GetDefault(): STVPFlasherOptions {
         return {
-            deviceName: 'STM8S105x4',
+            deviceName: 'null',
             bin: '',
             eepromFile: 'null',
             optionByteFile: 'null'
@@ -3459,7 +3459,9 @@ class CustomUploadModel extends UploadConfigModel<CustomFlashOptions> {
     GetKeyDescription(key: string): string {
         switch (key) {
             case 'commandLine':
-                return view_str$flasher$commandLine;
+                return view_str$flasher$flashCommandLine;
+            case 'eraseChipCommand':
+                return view_str$flasher$eraseChipCommandLine;
             default:
                 return super.GetKeyDescription(key);
         }
@@ -3479,7 +3481,9 @@ class CustomUploadModel extends UploadConfigModel<CustomFlashOptions> {
     getKeyIcon(key: string): KeyIcon | undefined {
         switch (key) {
             case 'commandLine':
-                return 'terminal_16x.svg';
+                return 'ImmediateWindow_16x.svg';
+            case 'eraseChipCommand':
+                return 'ImmediateWindow_16x.svg';
             default:
                 return super.getKeyIcon(key);
         }
@@ -3488,6 +3492,7 @@ class CustomUploadModel extends UploadConfigModel<CustomFlashOptions> {
     protected GetKeyType(key: string): FieldType {
         switch (key) {
             case 'commandLine':
+            case 'eraseChipCommand':
                 return 'INPUT';
             default:
                 return super.GetKeyType(key);
@@ -3522,7 +3527,8 @@ class CustomUploadModel extends UploadConfigModel<CustomFlashOptions> {
     GetDefault(): CustomFlashOptions {
         return {
             bin: '',
-            commandLine: 'null'
+            commandLine: '',
+            eraseChipCommand: '',
         };
     }
 }
@@ -3555,81 +3561,7 @@ export interface CppConfig {
     configurations: CppConfigItem[];
     version: number;
 }
-/* 
-export class CppConfiguration extends Configuration<CppConfig> {
 
-    protected readTypeFromFile(configFile: File): ProjectType | undefined {
-        return undefined;
-    }
-
-    protected Parse(jsonStr: string): CppConfig {
-        try {
-            return <CppConfig>jsonc.parse(jsonStr);
-        } catch (error) {
-            GlobalEvent.emit('msg', newMessage('Warning', 'parse cpp configuration error !'));
-            return this.GetDefault();
-        }
-    }
-
-    protected ToJson(replacer?: (this: any, key: string, value: any) => any, space?: string | number): string {
-        return jsonc.stringify(this.config, replacer, space);
-    }
-
-    getConfig(): CppConfigItem {
-
-        const index = this.config.configurations.findIndex((config) => { return config.name === os.platform(); });
-        if (index !== -1) {
-            return this.config.configurations[index];
-        }
-
-        const item: CppConfigItem = {
-            name: os.platform(),
-            includePath: [],
-            defines: [],
-            intelliSenseMode: '${default}'
-        };
-
-        if (this.config.configurations) {
-            this.config.configurations.push(item);
-        } else {
-            this.config.configurations = [item];
-        }
-
-        return item;
-    }
-
-    setConfig(config: CppConfigItem) {
-        const index = this.config.configurations.findIndex((_conf) => { return _conf.name === config.name; });
-        if (index !== -1) {
-            this.config.configurations[index] = config;
-        }
-    }
-
-    Save() {
-        // nothing todo
-    }
-
-    saveToFile() {
-        const config = this.getConfig();
-        this.Update(this.watcher.file.Read());
-        this.setConfig(config);
-        super.Save(undefined, 4);
-    }
-
-    GetDefault(): CppConfig {
-        const item: CppConfigItem = {
-            name: os.platform(),
-            includePath: [],
-            defines: [],
-            intelliSenseMode: '${default}'
-        };
-        return {
-            configurations: [item],
-            version: 4
-        };
-    }
-}
- */
 export interface WorkspaceConfig {
     folders: { name?: string, path: string }[];
     settings?: any;
@@ -3672,15 +3604,7 @@ export class WorkspaceConfiguration extends Configuration<WorkspaceConfig> {
                 }
             ],
             settings: {},
-            extensions: {},
-            launch: {
-                "configurations": [],
-                "compounds": []
-            },
-            tasks: {
-                "version": "2.0.0",
-                "tasks": []
-            }
+            extensions: {}
         };
     }
 }

@@ -55,9 +55,14 @@ export const view_str$settings$prjEnv = [
 
 //------------------ upload view string ----------------
 
-export const view_str$flasher$commandLine = [
-    '命令行',
-    'Command Line'
+export const view_str$flasher$flashCommandLine = [
+    '烧录命令',
+    'Flash Command'
+][langIndex];
+
+export const view_str$flasher$eraseChipCommandLine = [
+    '擦除芯片命令',
+    'Erase Chip Command'
 ][langIndex];
 
 export const view_str$flasher$targetName = [

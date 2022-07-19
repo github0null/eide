@@ -1335,7 +1335,8 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
                 toolName = 'GCC_ARM';
                 break;
             default:
-                webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: We not support this toolchain type: '${conf.tool}' !`);
+                webviewPanel.webview.html = this.genHtmlCont(title,
+                    `<span class="error">Error</span>: We don't support this toolchain type: '${conf.tool}' yet !`);
                 return;
         }
 

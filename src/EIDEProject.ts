@@ -2531,7 +2531,8 @@ class EIDEProject extends AbstractProject {
                     "xiaoyongdong.srecord",
                     "hars.cppsnippets",
                     "zixuanwang.linkerscript",
-                    "redhat.vscode-yaml"
+                    "redhat.vscode-yaml",
+                    "IBM.output-colorizer"
                 ];
 
                 const prjInfo = this.GetConfiguration().config;
@@ -2539,7 +2540,6 @@ class EIDEProject extends AbstractProject {
                 if (prjInfo.type == 'ARM') {
                     recommendExt.push(
                         "dan-c-underwood.arm",
-                        "zixuanwang.linkerscript",
                         "marus25.cortex-debug",
                     );
                 }
@@ -2563,12 +2563,14 @@ class EIDEProject extends AbstractProject {
             // default .gitignore
             {
                 const ignCont = [
-                    '# vscode files',
+                    '# dot dirs',
                     '.vscode/launch.json',
                     '.eide/log',
+                    '.git',
+                    '.settings',
                     '',
                     '# project out',
-                    `build`,
+                    'build', 'bin', 'obj', 'out',
                     '',
                     '# eide template',
                     '*.ept',
