@@ -92,7 +92,7 @@ export class ResInstaller {
 
         this.registerTool('GCC', {
             resource_name: 'gcc_arm',
-            readable_name: 'GNU Arm Embedded Toolchain V8.3.1',
+            readable_name: 'GNU Arm Embedded Toolchain (stable)',
             setting_name: 'ARM.GCC.InstallDirectory',
             no_binaries: no_binaries
         });
@@ -106,7 +106,7 @@ export class ResInstaller {
 
         this.registerTool('JLink', {
             resource_name: 'jlink',
-            readable_name: 'JLink V6.90',
+            readable_name: 'JLink (v6.90)',
             setting_name: 'JLink.InstallDirectory',
             no_binaries: no_binaries,
             getDrvInstaller: () => {
@@ -149,7 +149,7 @@ export class ResInstaller {
 
         this.registerTool('OpenOCD', {
             resource_name: 'openocd',
-            readable_name: 'OpenOCD Programmer V0.10.0',
+            readable_name: 'OpenOCD Programmer (v0.10.0 stable)',
             setting_name: 'OpenOCD.ExePath',
             require_name: `bin/openocd${platform.exeSuffix()}`,
             no_binaries: no_binaries
