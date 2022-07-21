@@ -4,7 +4,7 @@
 
 ***
 
-### [v3.7.2022071902] preview version
+### [v3.7.2022072103] preview version
 
 **New**:
   - 支持为 'Custom Flasher' 设置全片擦除命令
@@ -16,6 +16,8 @@
   - 移除内置的 `Output Panel` Grammar 文件，推荐使用扩展：`IBM.output-colorizer`
   - 在芯片支持包中切换芯片后，不再覆盖 `memory layout` 配置
   - 支持直接设置 Keil `UV4.exe` 路径来定位编译器路径
+  - 自动搜索源文件夹时，跳过以 '.' 开头的文件夹
+  - 项目自动保存时间间隔改为 100 s
 
 **Optimize**
   - 加载项目时，去除 `Project Attribute` 中的空值项
