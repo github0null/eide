@@ -716,10 +716,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     static readonly excludeIncSearchList: string[] = [DependenceManager.DEPENDENCE_DIR];
 
     // this folder will be excluded when search source path
-    static readonly excludeDirFilter: RegExp = /^\.(?:git|vs|vscode|eide)$/i;
+    static readonly excludeDirFilter: RegExp = /^\./;
 
     // to show output files
-    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|hex|bin|s19|sct|ld|lds|map|map\.view)$/i;
+    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|hex|ihx|bin|s19|sct|ld[s]?|map|map\.view)$/i;
 
     //-------
 
