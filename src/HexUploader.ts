@@ -200,7 +200,8 @@ export abstract class HexUploader<InvokeParamsType> {
         return result;
     }
 
-    protected toAbsolute(_path: string): File {
+    protected toAbsolute(_path: string): File | undefined {
+        if (_path.trim() == '') return undefined;
         return new File(this.project.ToAbsolutePath(_path));
     }
 
@@ -462,7 +463,7 @@ class StcgalUploader extends HexUploader<string[]> {
         commands.push('"' + programs[0].path + '"');
 
         const eepromFile = this.toAbsolute(option.eepromImgPath);
-        if (eepromFile.IsFile()) {
+        if (eepromFile && eepromFile.IsFile()) {
             commands.push('"' + eepromFile.path + '"');
         }
 
@@ -745,21 +746,21 @@ class STVPHexUploader extends HexUploader<string[]> {
 
         // program
         const binFile = this.toAbsolute(programs[0].path);
-        if (binFile.IsFile()) {
+        if (binFile && binFile.IsFile()) {
             commands.push('-FileProg=\"' + binFile.path + '\"');
             fileCount++;
         }
 
         // eeprom
         const eepromFile = this.toAbsolute(options.eepromFile);
-        if (eepromFile.IsFile()) {
+        if (eepromFile && eepromFile.IsFile()) {
             commands.push('-FileData=\"' + eepromFile.path + '\"');
             fileCount++;
         }
 
         // option bytes
         const opFile = this.toAbsolute(options.optionByteFile);
-        if (opFile.IsFile()) {
+        if (opFile && opFile.IsFile()) {
             commands.push('-FileOption=\"' + opFile.path + '\"');
             fileCount++;
         }

@@ -1415,7 +1415,7 @@ export abstract class ConfigModel<DataType> {
                             break;
                         case 'INPUT_INTEGER':
                             if (val) {
-                                const num = parseInt(val);
+                                const num = parseInt(val.trim());
                                 if (num !== NaN) {
                                     this.SetKeyValue(key, num);
                                 }
@@ -3073,10 +3073,10 @@ class StvpUploadModel extends UploadConfigModel<STVPFlasherOptions> {
         switch (key) {
             case 'eepromFile':
             case 'optionByteFile':
-                if (/(?:\.hex|\.s19)$/i.test(input) || /^null$/.test(input)) {
+                if (/(?:\.hex|\.s19)$/i.test(input) || /^null$/.test(input) || input.trim() == '') {
                     return undefined;
                 } else {
-                    return 'the value must be a hex/s19 file path or \'null\'';
+                    return `the value must be a 'hex/s19 file path' or 'empty' or 'null'`;
                 }
             default:
                 return super.VerifyString(key, input);
