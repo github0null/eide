@@ -41,7 +41,7 @@ import * as fs from 'fs';
 import * as ini from 'ini';
 import { ResInstaller } from "./ResInstaller";
 import { newMessage } from "./Message";
-import { concatSystemEnvPath, exeSuffix } from "./Platform";
+import { concatSystemEnvPath, exeSuffix, prependToSysEnv } from "./Platform";
 
 let _mInstance: HexUploaderManager | undefined;
 
@@ -696,6 +696,8 @@ class STVPHexUploader extends HexUploader<string[]> {
 
     toolType: HexUploaderType = 'STVP';
 
+    private isEraseMode?: boolean;
+
     constructor(prj: AbstractProject) {
         super(prj);
     }
@@ -706,6 +708,16 @@ class STVPHexUploader extends HexUploader<string[]> {
         if (!exe.IsFile()) {
             await ResInstaller.instance().setOrInstallTools(this.toolType, `Not found STVP: \'STVP_CmdLine${exeSuffix()}\' !`);
             return { isOk: false };
+        }
+
+        // set flag
+        this.isEraseMode = eraseAll;
+
+        if (eraseAll) {
+            return {
+                isOk: true,
+                params: []
+            };
         }
 
         const options = this.getUploadOptions<STVPFlasherOptions>();
@@ -725,51 +737,38 @@ class STVPHexUploader extends HexUploader<string[]> {
         commands.push('-no_log');
 
         // program
-        if (!eraseAll) {
-
-            if (programs.length == 0) {
-                throw new Error(`No valid program files !`);
-            }
-
-            let fileCount: number = 0;
-
-            // program
-            const binFile = this.toAbsolute(programs[0].path);
-            if (binFile.IsFile()) {
-                commands.push('-FileProg=\"' + binFile.path + '\"');
-                fileCount++;
-            }
-
-            // eeprom
-            const eepromFile = this.toAbsolute(options.eepromFile);
-            if (eepromFile.IsFile()) {
-                commands.push('-FileData=\"' + eepromFile.path + '\"');
-                fileCount++;
-            }
-
-            // option bytes
-            const opFile = this.toAbsolute(options.optionByteFile);
-            if (opFile.IsFile()) {
-                commands.push('-FileOption=\"' + opFile.path + '\"');
-                fileCount++;
-            }
-
-            // verify prog
-            if (fileCount > 0) {
-                commands.push('-verif');
-            }
-
-            // no files need be programed
-            else {
-                throw new Error('No valid program files !');
-            }
+        if (programs.length == 0) {
+            throw new Error(`No valid program files !`);
         }
 
-        // erase all
-        else {
-            commands.push('-no_progProg');
-            commands.push('-no_verif');
-            commands.push('-erase');
+        let fileCount: number = 0;
+
+        // program
+        const binFile = this.toAbsolute(programs[0].path);
+        if (binFile.IsFile()) {
+            commands.push('-FileProg=\"' + binFile.path + '\"');
+            fileCount++;
+        }
+
+        // eeprom
+        const eepromFile = this.toAbsolute(options.eepromFile);
+        if (eepromFile.IsFile()) {
+            commands.push('-FileData=\"' + eepromFile.path + '\"');
+            fileCount++;
+        }
+
+        // option bytes
+        const opFile = this.toAbsolute(options.optionByteFile);
+        if (opFile.IsFile()) {
+            commands.push('-FileOption=\"' + opFile.path + '\"');
+            fileCount++;
+        }
+
+        // verify prog
+        if (fileCount > 0) {
+            commands.push('-verif');
+        } else { // no files need be programed
+            throw new Error('No valid program files !');
         }
 
         return {
@@ -780,12 +779,29 @@ class STVPHexUploader extends HexUploader<string[]> {
 
     protected _launch(commands: string[]): void {
 
-        const commandLine = CmdLineHandler.getCommandLine(
-            SettingManager.GetInstance().getStvpExePath(), commands, false, true
-        );
+        const eraseAll: boolean | undefined = this.isEraseMode;
 
-        // run
-        runShellCommand(this.toolType, commandLine);
+        this.isEraseMode = undefined; // clear flag
+
+        // normal flash mode
+        if (!eraseAll) {
+            const commandLine = CmdLineHandler.getCommandLine(
+                SettingManager.GetInstance().getStvpExePath(), commands, false, true);
+            runShellCommand(this.toolType, commandLine);
+        }
+
+        // erase all mode
+        else {
+            const options = this.getUploadOptions<STVPFlasherOptions>();
+            const datDir = ResManager.GetInstance().GetAppDataDir();
+            const stvpDir = NodePath.dirname(SettingManager.GetInstance().getStvpExePath());
+            const cli = `bash "./stm8_erase.sh"`;
+            const envs = process.env;
+            envs['EIDE_STM8_CPU'] = options.deviceName;
+            envs['EIDE_DAT_ROOT'] = datDir.path;
+            prependToSysEnv(envs, [stvpDir]);
+            runShellCommand(this.toolType, cli, envs, undefined, datDir.path);
+        }
     }
 }
 
