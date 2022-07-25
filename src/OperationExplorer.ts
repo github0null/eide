@@ -780,10 +780,10 @@ export class OperationExplorer {
             const installed = resInstaller.isToolInstalled(t.id) || false;
             return {
                 id: t.id,
-                label: t.resource_name,
+                label: t.readable_name,
                 isInstalled: installed,
                 description: this.getStatusTxt(installed),
-                detail: t.readable_name
+                detail: `ID: ${t.resource_name}, Setting: EIDE.${t.setting_name}`
             };
         });
 
