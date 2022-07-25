@@ -800,7 +800,7 @@ class STVPHexUploader extends HexUploader<string[]> {
             const envs = process.env;
             envs['EIDE_STM8_CPU'] = options.deviceName;
             envs['EIDE_DAT_ROOT'] = datDir.path;
-            prependToSysEnv(envs, [stvpDir]);
+            prependToSysEnv(envs, [stvpDir, ResManager.GetInstance().getStvpToolsDir().path]);
             runShellCommand(this.toolType, cli, envs, undefined, datDir.path);
         }
     }
