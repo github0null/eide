@@ -1349,6 +1349,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         if (!notReload) this.reloadToolchain();
     }
 
+    getUploaderType(): HexUploaderType {
+        return this.GetConfiguration().config.uploader;
+    }
+
     setUploader(uploader: HexUploaderType, notReload?: boolean) {
         const prjConfig = this.GetConfiguration();
         prjConfig.setHexUploader(uploader);
