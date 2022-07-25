@@ -577,17 +577,28 @@ export class ResManager extends events.EventEmitter {
     }
 
     loadStm8DevList(): boolean | undefined {
+
+        // try load from database
+        try {
+            const stvp_utils = this.getStvpToolsDir().path + File.sep + `stvp_utils${exeSuffix()}`;
+            const t = ChildProcess.execFileSync(stvp_utils, ['list', '--mcu']).toString();
+            const arr = JSON.parse(t);
+            if (!Array.isArray(arr)) throw new Error(`stm8 dev list is not an array !`);
+            this.stm8DevList = arr;
+            return true;
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+        }
+
+        // load default dev list
         try {
             const dataFile = new File(this.GetAppDataDir().path + File.sep + 'stm8.dev');
-            if (dataFile.IsFile()) {
-                const list = dataFile.Read().split(/\r?\n/);
-                this.stm8DevList = list.map((dev) => { return dev.trim(); });
-                return true; // done, exit
-            } else {
-                throw new Error('can\'t load stm8 device list !');
-            }
+            if (!dataFile.IsFile()) throw new Error('can\'t load default stm8 device list !');
+            const list = dataFile.Read().split(/\r\n|\n/);
+            this.stm8DevList = list.map((dev) => { return dev.trim(); });
+            return true; // done, exit
         } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
     }
 
