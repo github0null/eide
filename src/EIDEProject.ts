@@ -1045,10 +1045,17 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
         const prjConfig = this.GetConfiguration();
         const prjRootDir = this.GetRootDir();
-        const outDir = NodePath.normalize(prjRootDir.path + File.sep + prjConfig.getOutDir());
+        const outDirBase = prjConfig.getOutDir();
+        const outDir = NodePath.normalize(prjRootDir.path + File.sep + outDirBase);
+
+        // vscode vars
+        str = str
+            .replace(/\$\{workspaceFolder\}/g, prjRootDir.path)
+            .replace(/\$\{workspaceFolderBasename\}/g, prjRootDir.name);
 
         return str
             .replace(/\$\(OutDir\)|\$\{OutDir\}/ig, outDir)
+            .replace(/\$\(OutDirBase\)|\$\{OutDirBase\}/ig, outDirBase)
             .replace(/\$\(ProjectName\)|\$\{ProjectName\}/ig, prjConfig.config.name)
             .replace(/\$\(ExecutableName\)|\$\{ExecutableName\}/ig, `${outDir}${File.sep}${prjConfig.config.name}`)
             .replace(/\$\(ProjectRoot\)|\$\{ProjectRoot\}/ig, prjRootDir.path);
