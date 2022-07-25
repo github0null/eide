@@ -4,6 +4,22 @@
 
 ***
 
+### [v3.7.2022072501] preview version
+
+**Fix**:
+  - 修复 STVP 无法擦除芯片的问题
+
+**Optimize**:
+  - 根据 stvp 烧录配置的芯片名，从 stvp database 中获取 `ram, flash` 大小，用于在编译时显示 `ram/flash` 占比
+  - 增加如下可在文件路径中使用的变量：
+    ```
+    ${workspaceFolder}
+    ${workspaceFolderBasename}
+    ${OutDirBase}
+    ```
+
+***
+
 ### [v3.7.2022072103] preview version
 
 **New**:
