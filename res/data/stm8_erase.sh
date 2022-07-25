@@ -6,6 +6,9 @@
 F_UNROP="${TMP}\\stm8_unrop.hex"
 F_ROP="${TMP}\\stm8_rop.hex"
 
+rm -f "${F_UNROP}" > /dev/null 2>&1
+rm -f "${F_ROP}" > /dev/null 2>&1
+
 stvp_utils.exe query --dump-def-optbytes ${EIDE_STM8_CPU} > ${F_UNROP}
 stvp_utils.exe query --dump-def-optbytes --rop-enable ${EIDE_STM8_CPU} > ${F_ROP}
 
@@ -16,8 +19,7 @@ if [ "$?" != "0" ]; then
     exit 1
 fi
 
-echo ""
-echo -e "\033[34mStart erase ... \033[0m"
+echo -e "\033[34mStart erasing ... \033[0m"
 echo ""
 
 # -no_warn_protect ?
