@@ -25,7 +25,7 @@
 import { File } from "../lib/node-utility/File";
 import { WorkspaceManager } from "./WorkspaceManager";
 import { GlobalEvent } from "./GlobalEvents";
-import { exeSuffix, GetLocalCodePage } from "./Platform";
+import { exeSuffix, GetLocalCodePage, osType } from "./Platform";
 import { ExceptionToMessage } from "./Message";
 
 import * as ChildProcess from 'child_process';
@@ -49,16 +49,19 @@ const prjEnvList: string[] = [
     File.sep + AbstractProject.EIDE_DIR + File.sep + 'log'
 ];
 
-const eideEnvList: string[] = [
-    File.sep + 'lib',
-    File.sep + 'lang',
-    File.sep + 'res' + File.sep + 'html',
-    File.sep + 'res' + File.sep + 'icon',
-    File.sep + 'res' + File.sep + 'template',
-    File.sep + 'res' + File.sep + 'data',
-    File.sep + 'res' + File.sep + 'tools',
-    File.sep + 'res' + File.sep + 'tools' + File.sep + '7z'
-];
+const OS_ID: NodeJS.Platform = osType() != 'win32' ? 'linux' : 'win32';
+
+const eideBuiltinDirs: { [key: string]: string } = {
+    'lib': 'lib',
+    'lang': 'lang',
+    'html': 'res' + File.sep + 'html',
+    'icon': 'res' + File.sep + 'icon',
+    'template': 'res' + File.sep + 'template',
+    'data': 'res' + File.sep + 'data',
+    'tools': 'res' + File.sep + 'tools' + File.sep + OS_ID,
+    '7z': 'res' + File.sep + 'tools' + File.sep + OS_ID + File.sep + '7z',
+    'stvp_tools': 'res' + File.sep + 'tools' + File.sep + OS_ID + File.sep + 'stvp_tools'
+};
 
 const eideBinDirList: string[] = [
     'bin',
@@ -327,7 +330,7 @@ export class ResManager extends events.EventEmitter {
     }
 
     Get7zDir(): File {
-        return File.fromArray([(<File>this.GetDir('7z')).path, os.platform()]);
+        return <File>this.GetDir('7z');
     }
 
     Get7za(): File {
@@ -339,6 +342,10 @@ export class ResManager extends events.EventEmitter {
         return dir.GetList(undefined, File.EMPTY_FILTER).filter((f) => {
             return f.suffix === '.zip' || f.suffix === '.7z';
         });
+    }
+
+    getStvpToolsDir(): File {
+        return <File>this.GetDir('stvp_tools');
     }
 
     /* ------- get internal headers ------ */
@@ -600,14 +607,10 @@ export class ResManager extends events.EventEmitter {
 
     private LoadSysEnv() {
 
-        eideEnvList.forEach((dir) => {
-            if (this.context) {
-                const f = new File(this.context.extensionPath + dir);
-                this.dirMap.set(f.name, f);
-            } else {
-                throw new Error('Extension Context is undefined');
-            }
-        });
+        for (const dirName in eideBuiltinDirs) {
+            if (!this.context) throw new Error('Extension Context is undefined');
+            this.dirMap.set(dirName, File.fromArray([this.context.extensionPath, eideBuiltinDirs[dirName]]));
+        }
 
         const eideHome = File.fromArray([os.homedir(), '.eide']);
         eideHome.CreateDir(); // create if not existed
