@@ -68,6 +68,7 @@ import { AbstractProject, VirtualSource } from "./EIDEProject";
 import { SettingManager } from "./SettingManager";
 import { WorkspaceManager } from "./WorkspaceManager";
 import * as utility from './utility';
+import * as ArmCpuUtils from './ArmCpuUtils';
 
 ////////////////////////////////////////////////////////
 
@@ -1658,7 +1659,7 @@ export interface ARMStorageLayout {
     ROM: ARMRomItem[];
 }
 
-export type FloatingHardwareOption = 'no_dsp' | 'none' | 'single' | 'double';
+export type FloatingHardwareOption = 'none' | 'single' | 'double';
 
 // deprecated
 export interface ArmBaseCompileData extends BuilderConfigData {
@@ -1773,7 +1774,7 @@ export abstract class ArmBaseCompileConfigModel
                 case 'options':
                     return true;
                 case 'floatingPointHardware':
-                    return ['cortex-m33', 'cortex-m4', 'cortex-m7'].includes(this.data.cpuType.toLowerCase());
+                    return ArmCpuUtils.hasFpu(this.data.cpuType);
                 case 'storageLayout':
                     return !this.data.useCustomScatterFile;
                 case 'scatterFilePath':
@@ -1788,7 +1789,7 @@ export abstract class ArmBaseCompileConfigModel
                 case 'options':
                     return true;
                 case 'floatingPointHardware':
-                    return ['cortex-m33', 'cortex-m4', 'cortex-m7'].includes(this.data.cpuType.toLowerCase());
+                    return ArmCpuUtils.hasFpu(this.data.cpuType);
                 default:
                     return false;
             }
@@ -1884,13 +1885,10 @@ export abstract class ArmBaseCompileConfigModel
     protected verifyHardwareOption(optionName: string): boolean {
         switch (optionName) {
             case 'single':
-                return ['cortex-m33', 'cortex-m4', 'cortex-m7'].includes(this.data.cpuType.toLowerCase());
+            case 'none': // if mcu have fpu, we need a 'none' option
+                return ArmCpuUtils.hasFpu(this.data.cpuType);
             case 'double':
-                return ['cortex-m7'].includes(this.data.cpuType.toLowerCase());
-            case 'none':
-                return ['cortex-m33', 'cortex-m4', 'cortex-m7'].includes(this.data.cpuType.toLowerCase());
-            case 'no_dsp':
-                return ['cortex-m33'].includes(this.data.cpuType.toLowerCase());
+                return ArmCpuUtils.hasFpu(this.data.cpuType, true);
             default:
                 return false;
         }
@@ -2049,7 +2047,10 @@ class Armcc6CompileConfigModel extends ArmBaseCompileConfigModel {
         'Cortex-M4',
         'Cortex-M7',
         'SC000',
-        'SC300'
+        'SC300',
+        'Armv8m.Base',
+        'Armv8m.Main',
+        'Armv8m.Main.Dsp'
     ];
 }
 

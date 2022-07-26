@@ -52,6 +52,7 @@ import { MakefileGen } from "./Makefile";
 import { exeSuffix } from "./Platform";
 import { FileWatcher } from "../lib/node-utility/FileWatcher";
 import { STVPFlasherOptions } from './HexUploader';
+import * as ArmCpuUtils from './ArmCpuUtils';
 
 export interface BuildOptions {
 
@@ -800,22 +801,20 @@ export class ARMCodeBuilder extends CodeBuilder {
         cpu = cpu.toLowerCase();
 
         switch (hardOption) {
-            case 'no_dsp':
-                // nothing
-                break;
             case 'single':
-                if (cpu.endsWith('m33') || cpu.endsWith('m4') || cpu.endsWith('m7')) {
+                if (ArmCpuUtils.hasFpu(cpu)) {
                     suffix = '-sp';
                 }
                 break;
             case 'double':
-                if (cpu.endsWith('m4') || cpu.endsWith('m7')) {
+                if (ArmCpuUtils.hasFpu(cpu, true)) {
                     suffix = '-dp';
                 }
                 break;
             default: // none
-                if (cpu.endsWith('m33') || cpu.endsWith('m4') || cpu.endsWith('m7')) {
-                    suffix = '-none';
+                if (ArmCpuUtils.hasFpu(cpu) &&
+                    ArmCpuUtils.isCortexCpu(cpu)) {
+                    suffix = '-none'; // this suffix only for cortex mcu, historical reasons
                 }
                 break;
         }
