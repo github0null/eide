@@ -4,7 +4,10 @@
 
 ***
 
-### [v3.7.2022072501] preview version
+### [v3.7.2022072601] preview version
+
+**New**:
+  - 为 armclang 新增 'armv8m' cpu 类型
 
 **Fix**:
   - 修复 STVP 无法擦除芯片的问题
