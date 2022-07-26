@@ -1049,7 +1049,7 @@ class C51CodeBuilder extends CodeBuilder {
         if (this.project.getUploaderType() == 'STVP') {
             try {
                 const model = <STVPFlasherOptions>this.project.GetConfiguration().uploadConfigModel.data;
-                const stvp_utils = ResManager.GetInstance().getStvpToolsDir().path + File.sep + `stvp_utils${exeSuffix()}`;
+                const stvp_utils = ResManager.GetInstance().getStvpUtilExe().path;
                 const t = child_process.execFileSync(stvp_utils, ['query', '--list-area', model.deviceName]).toString();
                 const a = JSON.parse(t);
                 if (!Array.isArray(a)) return undefined;
