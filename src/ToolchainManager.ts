@@ -798,7 +798,7 @@ class SDCC implements IToolchian {
             afterBuildTasks: [],
             global: {
                 "device": "mcs51",
-                "$one-module-per-function": true,
+                "$one-module-per-function": false,
                 "optimize-type": "speed",
                 "use-non-free": false
             },
