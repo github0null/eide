@@ -812,10 +812,6 @@ export class ARMCodeBuilder extends CodeBuilder {
                 }
                 break;
             default: // none
-                if (ArmCpuUtils.hasFpu(cpu) &&
-                    ArmCpuUtils.isCortexCpu(cpu)) {
-                    suffix = '-none'; // this suffix only for cortex mcu, historical reasons
-                }
                 break;
         }
 

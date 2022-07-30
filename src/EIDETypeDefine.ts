@@ -1679,6 +1679,8 @@ export type ArmBaseBuilderConfigData = ArmBaseCompileData;
 export abstract class ArmBaseCompileConfigModel
     extends CompileConfigModel<ArmBaseCompileData> {
 
+    protected readonly DIV_TAG: string = '<div>:';
+
     protected cpuTypeList = [
         'Cortex-M0',
         'Cortex-M0+',
@@ -1900,10 +1902,30 @@ export abstract class ArmBaseCompileConfigModel
 
         switch (key) {
             case 'cpuType':
-                this.cpuTypeList.forEach((type) => {
-                    res.push({
-                        label: type
-                    });
+                this.cpuTypeList.forEach((name) => {
+                    if (name.startsWith(this.DIV_TAG)) {
+                        res.push({
+                            label: name.replace(this.DIV_TAG, ''),
+                            kind: vscode.QuickPickItemKind.Separator
+                        });
+                    } else {
+                        if (ArmCpuUtils.isArmArchName(name)) { // for arch
+                            let descp = '';
+                            let family = ArmCpuUtils.getArchFamily(name);
+                            if (family) descp += family + ', ';
+                            let cpus = ArmCpuUtils.getArchExampleCpus(name);
+                            if (cpus) descp += 'like: ' + cpus.join(',') + '...';
+                            res.push({
+                                label: name,
+                                description: descp
+                            });
+                        } else { // for cpu
+                            res.push({
+                                label: name,
+                                description: `${ArmCpuUtils.getArmCpuArch(name) || ''}`
+                            });
+                        }
+                    }
                 });
                 break;
             case 'floatingPointHardware':
@@ -2026,11 +2048,24 @@ export abstract class ArmBaseCompileConfigModel
 class Armcc5CompileConfigModel extends ArmBaseCompileConfigModel {
 
     protected cpuTypeList = [
+        'ARM7EJ-S',
+        'ARM7TDMI',
+        'ARM720T',
+        'ARM7TDMI-S',
+        'ARM9TDMI',
+        'ARM920T',
+        'ARM922T',
+        'ARM9E-S',
+        'ARM926EJ-S',
+        'ARM946E-S',
+        'ARM966E-S',
         'Cortex-M0',
         'Cortex-M0+',
         'Cortex-M3',
         'Cortex-M4',
         'Cortex-M7',
+        //'Cortex-R4',
+        //'Cortex-R4F',
         'SC000',
         'SC300'
     ];
@@ -2039,31 +2074,55 @@ class Armcc5CompileConfigModel extends ArmBaseCompileConfigModel {
 class Armcc6CompileConfigModel extends ArmBaseCompileConfigModel {
 
     protected cpuTypeList = [
+        this.DIV_TAG + 'Processors', // div
         'Cortex-M0',
         'Cortex-M0+',
         'Cortex-M23',
         'Cortex-M3',
         'Cortex-M33',
+        'Cortex-M33.Dsp',
+        'Cortex-M35P',
+        'Cortex-M35P.Dsp',
         'Cortex-M4',
         'Cortex-M7',
+        //'Cortex-R4',
+        //'Cortex-R4F',
         'SC000',
         'SC300',
-        'Armv8m.Base',
-        'Armv8m.Main',
-        'Armv8m.Main.Dsp'
+        this.DIV_TAG + 'Architectures', // div
+        'Armv8-m.Base',
+        'Armv8-m.Main',
+        'Armv8-m.Main.Dsp'
     ];
 }
 
 class GccCompileConfigModel extends ArmBaseCompileConfigModel {
 
     protected cpuTypeList = [
+        this.DIV_TAG + 'Processors', // div
         'Cortex-M0',
+        'Cortex-M0.small-multiply',
         'Cortex-M0+',
+        'Cortex-M0+.small-multiply',
         'Cortex-M23',
         'Cortex-M3',
         'Cortex-M33',
+        'Cortex-M35P',
         'Cortex-M4',
-        'Cortex-M7'
+        'Cortex-M7',
+        'Cortex-R4',
+        'Cortex-R5',
+        'Cortex-R7',
+        this.DIV_TAG + 'Architectures', // div
+        'Armv4',
+        'Armv4t',
+        'Armv5TE',
+        "Armv6-M",
+        "Armv7-M",
+        "Armv7E-M",
+        "Armv7-R",
+        "Armv8-M.Base",
+        "Armv8-M.Main",
     ];
 }
 
