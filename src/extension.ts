@@ -425,6 +425,11 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
             return await tryUpdateBinaries(binFolder, undefined, true);
         }
 
+        // export current binaries version
+        if (localVersion) {
+            process.env['EIDE_BINARIES_VER'] = localVersion;
+        }
+
         return true;
     }
 
