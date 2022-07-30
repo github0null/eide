@@ -25,7 +25,7 @@
 import { File } from "../lib/node-utility/File";
 import { WorkspaceManager } from "./WorkspaceManager";
 import { GlobalEvent } from "./GlobalEvents";
-import { exeSuffix, GetLocalCodePage } from "./Platform";
+import { exeSuffix, GetLocalCodePage, osType } from "./Platform";
 import { ExceptionToMessage } from "./Message";
 
 import * as ChildProcess from 'child_process';
@@ -49,22 +49,28 @@ const prjEnvList: string[] = [
     File.sep + AbstractProject.EIDE_DIR + File.sep + 'log'
 ];
 
-const eideEnvList: string[] = [
-    File.sep + 'lib',
-    File.sep + 'lang',
-    File.sep + 'res' + File.sep + 'html',
-    File.sep + 'res' + File.sep + 'icon',
-    File.sep + 'res' + File.sep + 'template',
-    File.sep + 'res' + File.sep + 'data',
-    File.sep + 'res' + File.sep + 'tools',
-    File.sep + 'res' + File.sep + 'tools' + File.sep + '7z'
-];
+const OS_ID: NodeJS.Platform = osType() != 'win32' ? 'linux' : 'win32';
 
-const eideBinDirList: string[] = [
-    'bin',
-    'bin' + File.sep + 'include',
-    'bin' + File.sep + 'builder',
-];
+// plug-in built-in folders
+const eideBuiltinDirs: { [key: string]: string } = {
+    'lib': 'lib',
+    'lang': 'lang',
+    'html': 'res' + File.sep + 'html',
+    'icon': 'res' + File.sep + 'icon',
+    'template': 'res' + File.sep + 'template',
+    'data': 'res' + File.sep + 'data',
+    'tools': 'res' + File.sep + 'tools' + File.sep + OS_ID,
+    '7z': 'res' + File.sep + 'tools' + File.sep + OS_ID + File.sep + '7z',
+};
+
+// eide-binaries built-in folders
+const eideBinariesDirs: { [key: string]: string } = {
+    'bin': 'bin',
+    'include': 'bin' + File.sep + 'include',
+    'builder': 'bin' + File.sep + 'builder',
+    'utils': 'bin' + File.sep + 'utils',
+    'stvp_tools': 'bin' + File.sep + 'utils' + File.sep + 'stvp_tools'
+};
 
 const codePage = GetLocalCodePage();
 const cacheName = 'eide.cache';
@@ -114,7 +120,7 @@ export class ResManager extends events.EventEmitter {
             throw Error('context is undefined');
         }
 
-        this.LoadSysEnv();
+        this.LoadResourceFolders();
 
         this.InitIcons();
         this.LoadAppConfig();
@@ -159,7 +165,7 @@ export class ResManager extends events.EventEmitter {
     InitWorkspace() {
         const ws = WorkspaceManager.getInstance().getWorkspaceRoot();
         if (ws) {
-            this.LoadPrjEnv(ws);
+            this.LoadProjFolders(ws);
         }
     }
 
@@ -327,7 +333,7 @@ export class ResManager extends events.EventEmitter {
     }
 
     Get7zDir(): File {
-        return File.fromArray([(<File>this.GetDir('7z')).path, os.platform()]);
+        return <File>this.GetDir('7z');
     }
 
     Get7za(): File {
@@ -339,6 +345,14 @@ export class ResManager extends events.EventEmitter {
         return dir.GetList(undefined, File.EMPTY_FILTER).filter((f) => {
             return f.suffix === '.zip' || f.suffix === '.7z';
         });
+    }
+
+    getStvpToolsDir(): File {
+        return <File>this.GetDir('stvp_tools');
+    }
+
+    getStvpUtilExe(): File {
+        return File.fromArray([this.getStvpToolsDir().path, `stvp_utils${exeSuffix()}`]);
     }
 
     /* ------- get internal headers ------ */
@@ -570,17 +584,27 @@ export class ResManager extends events.EventEmitter {
     }
 
     loadStm8DevList(): boolean | undefined {
+
+        // try load from database
+        try {
+            const t = ChildProcess.execFileSync(this.getStvpUtilExe().path, ['list', '--mcu']).toString();
+            const arr = JSON.parse(t);
+            if (!Array.isArray(arr)) throw new Error(`stm8 dev list is not an array !`);
+            this.stm8DevList = arr;
+            return true;
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+        }
+
+        // load default dev list
         try {
             const dataFile = new File(this.GetAppDataDir().path + File.sep + 'stm8.dev');
-            if (dataFile.IsFile()) {
-                const list = dataFile.Read().split(/\r?\n/);
-                this.stm8DevList = list.map((dev) => { return dev.trim(); });
-                return true; // done, exit
-            } else {
-                throw new Error('can\'t load stm8 device list !');
-            }
+            if (!dataFile.IsFile()) throw new Error('can\'t load default stm8 device list !');
+            const list = dataFile.Read().split(/\r\n|\n/);
+            this.stm8DevList = list.map((dev) => { return dev.trim(); });
+            return true; // done, exit
         } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
     }
 
@@ -590,7 +614,7 @@ export class ResManager extends events.EventEmitter {
         return this.dirMap.get(name);
     }
 
-    private LoadPrjEnv(ws: File) {
+    private LoadProjFolders(ws: File) {
         prjEnvList.forEach((dirPath) => {
             const dir = new File(ws.path + dirPath);
             dir.CreateDir(true);
@@ -598,22 +622,19 @@ export class ResManager extends events.EventEmitter {
         });
     }
 
-    private LoadSysEnv() {
+    private LoadResourceFolders() {
 
-        eideEnvList.forEach((dir) => {
-            if (this.context) {
-                const f = new File(this.context.extensionPath + dir);
-                this.dirMap.set(f.name, f);
-            } else {
-                throw new Error('Extension Context is undefined');
-            }
-        });
+        for (const key in eideBuiltinDirs) {
+            if (!this.context) throw new Error('Extension Context is undefined');
+            const dir = File.fromArray([this.context.extensionPath, eideBuiltinDirs[key]]);
+            this.dirMap.set(key, dir);
+        }
 
         const eideHome = File.fromArray([os.homedir(), '.eide']);
         eideHome.CreateDir(); // create if not existed
-        eideBinDirList.forEach((dir) => {
-            const d = File.fromArray([eideHome.path, dir]);
-            this.dirMap.set(d.name, d);
-        });
+        for (const key in eideBinariesDirs) {
+            const dir = File.fromArray([eideHome.path, eideBinariesDirs[key]]);
+            this.dirMap.set(key, dir);
+        }
     }
 }

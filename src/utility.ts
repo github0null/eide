@@ -36,12 +36,14 @@ import { NetRequest, NetResponse } from '../lib/node-utility/NetRequest';
 import { File } from '../lib/node-utility/File';
 import { GitFileInfo } from './WebInterface/GithubInterface';
 import * as platform from './Platform';
+import { SevenZipper } from './Compress';
+import { ResManager } from './ResManager';
 
-export function runShellCommand(title: string, commandLine: string, env?: any): Error | undefined {
+export function runShellCommand(title: string, commandLine: string, env?: any, useTerminal?: boolean, cwd?: string): Error | undefined {
     try {
-        if (WorkspaceManager.getInstance().hasWorkspaces()) {
+        if (!useTerminal && WorkspaceManager.getInstance().hasWorkspaces()) {
             // use task
-            const shellOption: vscode.ShellExecutionOptions = { env: env || process.env };
+            const shellOption: vscode.ShellExecutionOptions = { env: env || process.env, cwd: cwd };
             if (platform.osType() == 'win32') { shellOption.executable = 'cmd.exe'; shellOption.shellArgs = ['/C']; }
             else { shellOption.executable = '/bin/bash'; shellOption.shellArgs = ['-c']; }
             const task = new vscode.Task({ type: 'shell' }, vscode.TaskScope.Global, title, 'shell');
@@ -55,7 +57,7 @@ export function runShellCommand(title: string, commandLine: string, env?: any): 
             // use terminal
             const index = vscode.window.terminals.findIndex((t) => { return t.name === title; });
             if (index !== -1) { vscode.window.terminals[index].dispose(); }
-            const tOpts: vscode.TerminalOptions = { name: title, env: env || process.env };
+            const tOpts: vscode.TerminalOptions = { name: title, env: env || process.env, cwd: cwd };
             if (os.platform() == 'win32') tOpts.shellPath = 'cmd.exe';
             const terminal = vscode.window.createTerminal(tOpts);
             terminal.show(true);
@@ -97,6 +99,10 @@ export function sha1(str: string): string {
     const md5 = crypto.createHash('sha1');
     md5.update(str);
     return md5.digest('hex');
+}
+
+export function newSevenZipperInstance(): SevenZipper {
+    return new SevenZipper(ResManager.GetInstance().Get7zDir());
 }
 
 export async function openUrl(url: string): Promise<Error | undefined> {

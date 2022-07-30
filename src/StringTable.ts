@@ -55,9 +55,14 @@ export const view_str$settings$prjEnv = [
 
 //------------------ upload view string ----------------
 
-export const view_str$flasher$commandLine = [
-    '命令行',
-    'Command Line'
+export const view_str$flasher$flashCommandLine = [
+    '烧录命令',
+    'Flash Command'
+][langIndex];
+
+export const view_str$flasher$eraseChipCommandLine = [
+    '擦除芯片命令',
+    'Erase Chip Command'
 ][langIndex];
 
 export const view_str$flasher$targetName = [
@@ -402,7 +407,7 @@ export const view_str$env_desc$compiler_folder = [
 //---------------Other---------------
 
 export const view_str$prompt$src_folder_must_be_a_child_of_root = [
-    `要被添加的源文件夹必须是项目根目录的子文件夹 ！`,
+    `要被添加的源文件夹必须是项目根目录的子文件夹 !`,
     `The source folder to be added must be a child of project root folder !`
 ][langIndex];
 
@@ -412,8 +417,13 @@ export const view_str$prompt$prj_location = [
 ][langIndex];
 
 export const view_str$prompt$unresolved_deps = [
-    `存在未解决的依赖项，请手动添加它们 ！`,
-    `These are the unresolved dependencies, please add them manually !`
+    `存在未解决的依赖项，请手动添加它们 !, 完成添加后，请删除该文件，避免再次弹出提示。`,
+    `These are the unresolved dependencies, please add them manually ! After done, please delete this file, otherwise this file will be show again !`
+][langIndex];
+
+export const view_str$prompt$eclipse_imp_warning = [
+    `在 eclipse 和 eide 之间有一些不兼容的参数，您需要检查并手动添加到 eide 项目 !\n\n当你解决了这些不兼容的参数，你需要删除这个提示文件，否则这个文件还会再次显示 !`,
+    `There are some incompatible arguments between 'eclipse' and 'eide', you need check and add them to eide project manually !\n\nWhen you have solved these incompatible problems, you need delete this note file, otherwise this file will be show again !`
 ][langIndex];
 
 export const view_str$prompt$tool_install_mode_online = [
@@ -717,13 +727,13 @@ export const view_str$operation$baudrate = [
 ][langIndex];
 
 export const view_str$operation$setKeil51Path = [
-    '设置 Keil_C51 的 TOOLS.INI 路径',
-    'Set Keil_C51\'s \'TOOLS.INI\' path'
+    `设置 Keil_C51 'UV4.exe' 或者 'TOOLS.INI' 路径`,
+    `Set Keil_C51 'UV4.exe' or 'TOOLS.INI' path`
 ][langIndex];
 
 export const view_str$operation$setMDKPath = [
-    '设置 MDK 的 TOOLS.INI 路径',
-    'Set MDK\'s \'TOOLS.INI\' path'
+    `设置 MDK 'UV4.exe' 或者 'TOOLS.INI' 路径`,
+    `Set MDK 'UV4.exe' or 'TOOLS.INI' path`
 ][langIndex];
 
 export const view_str$operation$setToolchainInstallDir = [
@@ -757,8 +767,13 @@ export const select_a_template_file = [
 ][langIndex];
 
 export const view_str$operation$setToolchainPath = [
-    '设置工具链路径',
-    'Set Toolchain Path'
+    '设置工具链',
+    'Configure Toolchain'
+][langIndex];
+
+export const view_str$operation$setupUtilTools = [
+    '安装实用工具',
+    'Setup Utility Tools'
 ][langIndex];
 
 export const view_str$operation$openSettings = [
@@ -802,8 +817,8 @@ export const view_str$operation$name_can_not_have_invalid_char = [
 ][langIndex];
 
 export const import_project_hit = [
-    '导入一个 KEIL 项目, 并完成 EIDE 项目的创建',
-    'Import a KEIL project and complete the creation of the EIDE project'
+    '导入其他 IDE 的项目, 并完成 EIDE 项目的创建',
+    'Import project from other IDE and complete the creation of EIDE project'
 ][langIndex];
 
 export const create_project = [

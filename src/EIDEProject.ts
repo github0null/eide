@@ -38,7 +38,7 @@ import { File } from '../lib/node-utility/File';
 import { FileWatcher } from '../lib/node-utility/FileWatcher';
 import { KeilParser } from './KeilXmlParser';
 import { ResManager } from './ResManager';
-import { Compress } from './Compress';
+import { SevenZipper } from './Compress';
 import {
     CurrentDevice, ConfigMap, FileGroup,
     ProjectConfiguration, ProjectConfigData, WorkspaceConfiguration,
@@ -273,10 +273,7 @@ export class VirtualSource implements SourceProvider {
         // file is not existed, add it
         const vFilePath = `${folder_path}/${NodePath.basename(file_path)}`;
         if (this.getFile(vFilePath) === undefined) {
-            const vFile = {
-                path: this.project.ToRelativePath(file_path) || file_path,
-                disabled: this.project.isExcluded(vFilePath) || undefined
-            };
+            const vFile: VirtualFile = { path: this.project.ToRelativePath(file_path) || file_path };
             folder.files.push(vFile);
             this.emit('dataChanged', 'folderChanged');
             return vFile;
@@ -373,6 +370,9 @@ class SourceRootList implements SourceProvider {
     //      val: SourceRootInfo
     private srcFolderMaps: Map<string, SourceRootInfo>;
 
+    private isAutoSearchIncPath: boolean;
+    private isAutoSearchObjFile: boolean;
+
     on(event: 'dataChanged', listener: (event: SourceChangedEvent) => void): void;
     on(event: any, listener: (arg: any) => void): void {
         this._event.on(event, listener);
@@ -382,6 +382,8 @@ class SourceRootList implements SourceProvider {
         this.project = _project;
         this._event = new events.EventEmitter();
         this.srcFolderMaps = new Map();
+        this.isAutoSearchIncPath = SettingManager.GetInstance().isAutoSearchIncludePath();
+        this.isAutoSearchObjFile = SettingManager.GetInstance().isAutoSearchObjFile();
     }
 
     load(notEmitEvt?: boolean) {
@@ -440,7 +442,19 @@ class SourceRootList implements SourceProvider {
 
     notifyUpdateFolder(absPath: string) {
 
-        const targetDir = NodePath.dirname(absPath); // we need update its parent folder
+        // it's a root folder ?
+
+        for (const rInfo of this.srcFolderMaps.values()) {
+            if (rInfo.fileWatcher.file.path == absPath) {
+                this.updateFolder(rInfo);
+                this.emit('dataChanged', 'folderStatusChanged');
+                return;
+            }
+        }
+
+        // it's a sub folder ?
+
+        const targetDir = NodePath.dirname(absPath);
 
         const rootSrcUpdateList = Array.from(this.srcFolderMaps.values())
             .filter((info) => {
@@ -584,7 +598,8 @@ class SourceRootList implements SourceProvider {
             this.project.ToRelativePath(rootFolder.path, false) || rootFolder.path
         );
 
-        const sourceFilter = AbstractProject.getSourceFileFilter();
+        const sourceFilter = this.isAutoSearchObjFile ?
+            AbstractProject.getSourceFileFilter() : AbstractProject.getSourceFileFilterWithoutObj();
         const fileFilter = AbstractProject.getFileFilters();
 
         if (targetFolderList) { // only update target folders
@@ -608,6 +623,7 @@ class SourceRootList implements SourceProvider {
 
                 const cFolder = <File>folderStack.pop();
                 const isSourceRoot = cFolder.path === rootFolder.path;
+                if (cFolder.name.startsWith('.') && !isSourceRoot) continue; // skip '.xxx' folders, not root folder
                 const fileList = cFolder.GetList(fileFilter, File.EMPTY_FILTER);
 
                 if (fileList.length > 0) {
@@ -634,6 +650,8 @@ class SourceRootList implements SourceProvider {
                         for (const _file of srcFiles) {
                             group.files.push({
                                 file: _file,
+                                // we do not need use 'isFolderExcluded' condition, because we
+                                // will exclude thi group before exclude this file
                                 disabled: this.project.isExcluded(_file.path) || undefined
                             });
                         }
@@ -642,7 +660,7 @@ class SourceRootList implements SourceProvider {
                     }
 
                     // add to include folders
-                    if (!disableInclude && !isFolderExcluded) {
+                    if (this.isAutoSearchIncPath && !disableInclude && !isFolderExcluded) {
                         rootFolderInfo.incList.push(cFolder.path);
                     }
                 }
@@ -686,6 +704,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     static readonly cppConfigName = 'c_cpp_properties.json';
     static readonly prjConfigName = 'eide.json';
 
+    static readonly importerWarningBaseName = 'importer.warning.txt';
+
     // avaliable source files
     static readonly headerFilter: RegExp = /\.(?:h|hxx|hpp|inc)$/i;
     static readonly cppfileFilter: RegExp = /\.(?:c|cpp|c\+\+|cc|cxx)$/i;
@@ -696,10 +716,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     static readonly excludeIncSearchList: string[] = [DependenceManager.DEPENDENCE_DIR];
 
     // this folder will be excluded when search source path
-    static readonly excludeDirFilter: RegExp = /^\.(?:git|vs|vscode|eide)$/i;
+    static readonly excludeDirFilter: RegExp = /^\./;
 
     // to show output files
-    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|hex|bin|s19|sct|ld|lds|map|map\.view)$/i;
+    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|hex|ihx|bin|s19|sct|ld[s]?|map|map\.view)$/i;
 
     //-------
 
@@ -762,6 +782,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
     static getSourceFileFilter(): RegExp[] {
         return [this.cppfileFilter, this.libFileFilter, this.asmfileFilter];
+    }
+
+    static getSourceFileFilterWithoutObj(): RegExp[] {
+        return [this.cppfileFilter, this.asmfileFilter];
     }
 
     static equal(p1: AbstractProject, p2: AbstractProject) {
@@ -871,21 +895,26 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
         const prjConfig = this.GetConfiguration();
 
-        // clear duplicated items
+        // clear duplicated excl items
         prjConfig.config.excludeList = ArrayDelRepetition(
             prjConfig.config.excludeList.map(p => File.ToUnixPath(p))
         );
 
+        // clear empty items for user prj attrs
+        const prjAttr = prjConfig.CustomDep_getDependence();
+        prjAttr.defineList = prjAttr.defineList.filter(m => m.trim() != '');
+        prjAttr.incList = prjAttr.incList.filter(m => m.trim() != '');
+        prjAttr.libList = prjAttr.libList.filter(m => m.trim() != '');
+
         // clear invalid src folders
-        prjConfig.config.srcDirs = prjConfig.config.srcDirs
-            .filter(path => { return (new File(path)).IsDir(); });
+        prjConfig.config.srcDirs = prjConfig.config.srcDirs.filter(path => File.IsDir(path));
 
         // rm prefix for out dir
         prjConfig.config.outDir = NodePath.normalize(File.ToLocalPath(prjConfig.config.outDir));
 
         // clear invalid package path
-        if (prjConfig.config.packDir
-            && !(new File(this.ToAbsolutePath(prjConfig.config.packDir))).IsDir()) {
+        if (prjConfig.config.packDir &&
+            !File.IsDir(this.ToAbsolutePath(prjConfig.config.packDir))) {
             prjConfig.config.packDir = null;
         }
 
@@ -1016,10 +1045,17 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
         const prjConfig = this.GetConfiguration();
         const prjRootDir = this.GetRootDir();
-        const outDir = NodePath.normalize(prjRootDir.path + File.sep + prjConfig.getOutDir());
+        const outDirBase = prjConfig.getOutDir();
+        const outDir = NodePath.normalize(prjRootDir.path + File.sep + outDirBase);
+
+        // vscode vars
+        str = str
+            .replace(/\$\{workspaceFolder\}/g, prjRootDir.path)
+            .replace(/\$\{workspaceFolderBasename\}/g, prjRootDir.name);
 
         return str
             .replace(/\$\(OutDir\)|\$\{OutDir\}/ig, outDir)
+            .replace(/\$\(OutDirBase\)|\$\{OutDirBase\}/ig, outDirBase)
             .replace(/\$\(ProjectName\)|\$\{ProjectName\}/ig, prjConfig.config.name)
             .replace(/\$\(ExecutableName\)|\$\{ExecutableName\}/ig, `${outDir}${File.sep}${prjConfig.config.name}`)
             .replace(/\$\(ProjectRoot\)|\$\{ProjectRoot\}/ig, prjRootDir.path);
@@ -1040,11 +1076,19 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     }
 
     ToAbsolutePath(path_: string): string {
-        const path = this.replacePathEnv(path_);
+        const path = this.replacePathEnv(path_.trim());
         if (File.isAbsolute(path)) { return NodePath.normalize(path); }
         return NodePath.normalize(File.ToLocalPath(this.GetRootDir().path + NodePath.sep + path));
     }
 
+    /**
+     * Convert absolute path to `Unix style` relative path.
+     * 
+     * Relative path root folder: `<Project_Root_Folder>`
+     * 
+     * @param path absolute path
+     * @param hasPrefix Whether add a './' prefix before relative path, default is 'true'
+     */
     ToRelativePath(path: string, hasPrefix: boolean = true): string | undefined {
         return this.GetRootDir().ToRelativePath(path.trim(), hasPrefix);
     }
@@ -1104,8 +1148,25 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         return <CppConfiguration>this.configMap.Get<any>(AbstractProject.cppConfigName);
     } */
 
-    Save() {
-        this.configMap.SaveAll();
+    private __saveDelayTimer: NodeJS.Timeout | undefined;
+    Save(immediately?: boolean, delay?: number) {
+        if (immediately) {
+            if (this.__saveDelayTimer) {
+                clearTimeout(this.__saveDelayTimer);
+                this.__saveDelayTimer = undefined;
+            }
+            this.configMap.SaveAll();
+        } else {
+            if (this.__saveDelayTimer) {
+                this.__saveDelayTimer.refresh();
+            } else {
+                this.__saveDelayTimer = setTimeout((prj: AbstractProject) => {
+                    prj.__saveDelayTimer = undefined;
+                    try { prj.configMap.SaveAll(); }
+                    catch (error) { GlobalEvent.emit('error', error); }
+                }, delay || 600, this);
+            }
+        }
     }
 
     InstallPack(packFile: File, reporter?: (progress?: number, message?: string) => void) {
@@ -1288,6 +1349,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         if (!notReload) this.reloadToolchain();
     }
 
+    getUploaderType(): HexUploaderType {
+        return this.GetConfiguration().config.uploader;
+    }
+
     setUploader(uploader: HexUploaderType, notReload?: boolean) {
         const prjConfig = this.GetConfiguration();
         prjConfig.setHexUploader(uploader);
@@ -1297,16 +1362,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     //--
 
     isExcluded(path: string): boolean {
-
         const excList = this.GetConfiguration().config.excludeList;
         const rePath = File.ToUnixPath(this.ToRelativePath(path) || path);
-        const isFolder = VirtualSource.isVirtualPath(path) ? this.virtualSource.isFolder(path) : File.IsDir(path);
-
-        if (isFolder) { // is a folder
-            return excList.findIndex(excPath => rePath === excPath || rePath.startsWith(`${excPath}/`)) !== -1;
-        } else { // is a file
-            return excList.findIndex(excPath => rePath === excPath) !== -1;
-        }
+        return excList.findIndex(excluded => rePath === excluded || rePath.startsWith(`${excluded}/`)) !== -1;
     }
 
     protected addExclude(path: string): boolean {
@@ -1408,7 +1466,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
             }
 
             outDir.CreateDir(true);
-            const compresser = new Compress(ResManager.GetInstance().Get7zDir());
+            const compresser = new SevenZipper(ResManager.GetInstance().Get7zDir());
             const zipMsg = compresser.UnzipSync(packZipFile, outDir);
 
             // add to include folder
@@ -1640,16 +1698,6 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         this.configMap.Set(new ProjectConfiguration(File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName])));
         File.fromArray([wsFile.dir, AbstractProject.vsCodeDir]).CreateDir(true); // create '.vscode' folder if it's not existed
         //this.configMap.Set(new CppConfiguration(File.fromArray([wsFile.dir, AbstractProject.vsCodeDir, AbstractProject.cppConfigName])));
-    }
-
-    private prevSaveTask: NodeJS.Timeout | undefined;
-    protected UpdateDataChangedCount() {
-        if (this.prevSaveTask == undefined) {
-            this.prevSaveTask = setTimeout(() => {
-                try { this.GetConfiguration().Save(); } catch (error) { }
-                this.prevSaveTask = undefined;
-            }, 300);
-        }
     }
 
     private RegisterEvent(): void {
@@ -1920,8 +1968,6 @@ class EIDEProject extends AbstractProject {
                 this.emit('dataChanged');
                 break;
         }
-
-        this.UpdateDataChangedCount();
     }
 
     protected onSourceRootChanged(type: SourceChangedEvent): void {
@@ -1970,7 +2016,6 @@ class EIDEProject extends AbstractProject {
 
                 // update compile options
                 cConfig.SetKeyValue('cpuType', newDevInfo.core || 'Cortex-M3');
-                cConfig.updateStorageLayout(newDevInfo.storageLayout);
 
                 // update device, set macro
                 prjConfig.config.deviceName = newDevInfo.name;
@@ -2207,24 +2252,11 @@ class EIDEProject extends AbstractProject {
     }
 
     protected create(option: CreateOptions): File {
-
         const baseInfo = this.createBase(option);
-
         baseInfo.prjConfig.config.name = option.name;
         baseInfo.prjConfig.config.outDir = 'build';
-        baseInfo.prjConfig.config.srcDirs = ['src'];
-
-        const src = File.fromArray([baseInfo.rootFolder.path, 'src']);
-        src.CreateDir(false);
-
-        // create 'main.c' file if not exist
-        const mainFile = File.fromArray([src.path, 'main.c']);
-        if (!mainFile.IsFile()) {
-            mainFile.Write('');
-        }
-
+        baseInfo.prjConfig.config.srcDirs = [];
         baseInfo.prjConfig.Save();
-
         return baseInfo.workspaceFile;
     }
 
@@ -2382,7 +2414,15 @@ class EIDEProject extends AbstractProject {
 
             const workspaceConfig = this.GetWorkspaceConfig();
             const settings = workspaceConfig.config.settings;
-            const toolchain = this.getToolchain();
+
+            // --- eide settings
+
+            if (settings['EIDE.SourceTree.AutoSearchIncludePath'] === undefined) {
+                settings['EIDE.SourceTree.AutoSearchIncludePath'] = false;
+            }
+            if (settings['EIDE.SourceTree.AutoSearchObjFile'] === undefined) {
+                settings['EIDE.SourceTree.AutoSearchObjFile'] = false;
+            }
 
             // --- vscode settings
 
@@ -2506,7 +2546,8 @@ class EIDEProject extends AbstractProject {
                     "xiaoyongdong.srecord",
                     "hars.cppsnippets",
                     "zixuanwang.linkerscript",
-                    "redhat.vscode-yaml"
+                    "redhat.vscode-yaml",
+                    "IBM.output-colorizer"
                 ];
 
                 const prjInfo = this.GetConfiguration().config;
@@ -2514,7 +2555,6 @@ class EIDEProject extends AbstractProject {
                 if (prjInfo.type == 'ARM') {
                     recommendExt.push(
                         "dan-c-underwood.arm",
-                        "zixuanwang.linkerscript",
                         "marus25.cortex-debug",
                     );
                 }
@@ -2538,12 +2578,14 @@ class EIDEProject extends AbstractProject {
             // default .gitignore
             {
                 const ignCont = [
-                    '# vscode files',
+                    '# dot dirs',
                     '.vscode/launch.json',
                     '.eide/log',
+                    '.git',
+                    '.settings',
                     '',
                     '# project out',
-                    `build`,
+                    'build', 'bin', 'obj', 'out',
                     '',
                     '# eide template',
                     '*.ept',
@@ -2554,6 +2596,15 @@ class EIDEProject extends AbstractProject {
                 const ignFile = File.fromArray([this.GetRootDir().path, '.gitignore']);
                 if (!ignFile.IsFile()) {
                     ignFile.Write(ignCont.join(os.EOL));
+                }
+            }
+
+            // default .clang-format
+            {
+                const fSrc = File.fromArray([ResManager.GetInstance().GetAppDataDir().path, '.clang-format']);
+                const fDst = File.fromArray([this.GetRootDir().path, '.clang-format']);
+                if (!fDst.IsFile() && fSrc.IsFile()) {
+                    fs.copyFileSync(fSrc.path, fDst.path);
                 }
             }
 
@@ -2601,6 +2652,19 @@ class EIDEProject extends AbstractProject {
                 cppConfig.saveToFile();
             } */
         }
+
+        // show warnings if we have
+        setTimeout(async (rootFolder: File) => {
+            try {
+                for (const f of rootFolder.GetList([/importer\.warning\.txt$/], File.EMPTY_FILTER)) {
+                    const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(f.ToUri()));
+                    vscode.window.showTextDocument(doc, { preview: false, selection: doc.lineAt(0).range });
+                    break;
+                }
+            } catch (error) {
+                GlobalEvent.emit('error', error);
+            }
+        }, 1000, this.GetRootDir());
 
         // run post-install.sh
         if (this.isNewProject) {

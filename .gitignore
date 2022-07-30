@@ -29,7 +29,7 @@ bin_bk
 dotnet-runtime*.exe
 
 # shell script
-*.sh
+./*.sh
 
 # test
 test

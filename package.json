@@ -27,12 +27,13 @@
         "sdcc",
         "keil",
         "eide",
-        "cmsis"
+        "cmsis",
+        "eclipse"
     ],
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.7.2",
+    "version": "3.8.0",
     "preview": false,
     "engines": {
         "vscode": "^1.63.0"
@@ -83,6 +84,7 @@
         "@types/node-7z": "^2.1.4",
         "@types/vscode": "^1.60.0",
         "@types/x2js": "^3.1.0",
+        "@types/xml2js": "^0.4.11",
         "ts-loader": "^6.2.1",
         "tslint": "^5.20.1",
         "typescript": "^3.7.3",
@@ -97,6 +99,7 @@
         "node-7z": "^3.0.0",
         "vscode-cpptools": "^5.0.0",
         "x2js": "3.4.1",
+        "xml2js": "^0.4.23",
         "yaml": "^1.10.2"
     },
     "contributes": {
@@ -105,6 +108,10 @@
                 {
                     "id": "eide.msys.bash",
                     "title": "Eide Msys Bash"
+                },
+                {
+                    "id": "eide.system.shell",
+                    "title": "Eide Terminal"
                 }
             ]
         },
@@ -168,6 +175,18 @@
             {
                 "title": "Embedded IDE",
                 "properties": {
+                    "EIDE.SourceTree.AutoSearchIncludePath": {
+                        "type": "boolean",
+                        "scope": "resource",
+                        "markdownDescription": "Auto search include path in source folder and add them to project.",
+                        "default": true
+                    },
+                    "EIDE.SourceTree.AutoSearchObjFile": {
+                        "type": "boolean",
+                        "scope": "resource",
+                        "markdownDescription": "Auto search 'obj/lib' file in source folder and add them to project.",
+                        "default": true
+                    },
                     "EIDE.Cpptools.ForceInclude": {
                         "type": "array",
                         "scope": "resource",
@@ -387,7 +406,7 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "%settings.armcc.ini%",
-                        "default": "C:\\Keil_v5\\TOOLS.INI"
+                        "default": "C:\\Keil_v5\\UV4\\UV4.exe"
                     },
                     "EIDE.JLink.InstallDirectory": {
                         "type": "string",
@@ -429,7 +448,7 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "%settings.keilc51.ini%",
-                        "default": "C:\\Keil_v5\\C51\\TOOLS.INI"
+                        "default": "C:\\Keil_v5\\UV4\\UV4.exe"
                     },
                     "EIDE.SDCC.InstallDirectory": {
                         "type": "string",
@@ -492,6 +511,10 @@
             }
         ],
         "commands": [
+            {
+                "command": "eide.project.save",
+                "title": "Save Project"
+            },
             {
                 "command": "eide.project.genBuilderParams",
                 "title": "Generate builder.params for project"
@@ -1171,6 +1194,10 @@
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
+                    "command": "eide.project.save",
+                    "when": "viewItem == SOLUTION && view == Project"
+                },
+                {
                     "command": "eide.project.genBuilderParams",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
@@ -1372,12 +1399,6 @@
         ],
         "languages": [
             {
-                "id": "eide-output",
-                "mimetypes": [
-                    "text/x-code-output"
-                ]
-            },
-            {
                 "id": "a51",
                 "aliases": [
                     "A51",
@@ -1477,11 +1498,6 @@
         ],
         "grammars": [
             {
-                "language": "eide-output",
-                "scopeName": "eide.output",
-                "path": "./lang/eide-output.tmLanguage.json"
-            },
-            {
                 "language": "a51",
                 "scopeName": "source.asm.a51",
                 "path": "./lang/a51.tmLanguage.json"
@@ -1508,7 +1524,7 @@
                 "fileLocation": "autoDetect",
                 "pattern": [
                     {
-                        "regexp": "^\"*([^\"]+)\"*, line (\\d+): (Error|Warning):\\s*(.+): (.+)$",
+                        "regexp": "^\"([^\"]+)\", line (\\d+): (Error|Warning):\\s+#(.+):\\s+(.+)$",
                         "file": 1,
                         "line": 2,
                         "severity": 3,

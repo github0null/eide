@@ -296,8 +296,8 @@
                         "lib"
                     ],
                     "enumDescriptions": [
-                        "ELF (Executable Linkable Format)",
-                        "LIB (Static Library)"
+                        "ELF",
+                        "LIB"
                     ]
                 },
                 "$disableOutputTask": {
@@ -316,8 +316,8 @@
                 "LD_FLAGS": {
                     "readable_name": "Other Linker Options",
                     "readable_name.zh-cn": "链接器附加选项",
-                    "markdownDescription": "Use \"-Wl[,option]...\" pass options to the linker",
-                    "description.zh-cn": "使用 \"-Wl[,option]...\" 传递链接器选项",
+                    "markdownDescription": "Use '-Wl[,option]...' pass options to the linker",
+                    "description.zh-cn": "使用 '-Wl[,option]...' 传递链接器选项",
                     "$ref": "#/definitions/FLAGS",
                     "default": ""
                 },

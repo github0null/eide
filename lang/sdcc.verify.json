@@ -157,21 +157,21 @@
                         "MCS51",
                         "DS80C390",
                         "DS80C400",
-                        "HC08 (aka 68HC08)",
-                        "S08 (aka 68HCS08, HCS08, CS08)",
+                        "HC08",
+                        "S08",
                         "Z80",
                         "Z180",
-                        "Rabbit 2000/3000",
-                        "Rabbit 3000A",
-                        "GameBoy Z80",
+                        "Rabbit-2K/3K",
+                        "Rabbit-3KA",
+                        "GameBoy-Z80",
                         "TLCS-90",
                         "eZ80_Z80",
                         "STM8",
-                        "PIC 14",
-                        "PIC 16",
-                        "Padauk 13",
-                        "Padauk 14",
-                        "Padauk 15"
+                        "PIC-14",
+                        "PIC-16",
+                        "Padauk-13",
+                        "Padauk-14",
+                        "Padauk-15"
                     ]
                 },
                 "optimize-type": {
@@ -183,6 +183,16 @@
                         "speed",
                         "balanced",
                         "size"
+                    ]
+                },
+                "$one-module-per-function": {
+                    "type": "boolean",
+                    "markdownDescription": "Module Split Optimization (supported by eide)",
+                    "description.zh-cn": "模块拆分优化 (supported by eide)",
+                    "default": false,
+                    "enum": [
+                        true,
+                        false
                     ]
                 },
                 "plain-char-is-signed": {
@@ -368,7 +378,7 @@
                         "HEX",
                         "S19",
                         "ELF (Only for STM8/HC08/S08)",
-                        "LIB (Static Library)"
+                        "LIB"
                     ]
                 },
                 "$disableOutputTask": {

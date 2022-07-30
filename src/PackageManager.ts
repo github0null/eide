@@ -25,7 +25,7 @@
 import * as events from 'events';
 import { File } from '../lib/node-utility/File';
 import { DeleteDir } from './Platform';
-import { Compress } from './Compress';
+import { SevenZipper } from './Compress';
 import * as Xml2JS from 'x2js';
 import {
     PackInfo, CurrentDevice, SubFamily, DeviceInfo, Component,
@@ -59,7 +59,7 @@ export class PackageManager {
     private currentPackDir: File | undefined;
     private project: AbstractProject;
 
-    private compress: Compress;
+    private compress: SevenZipper;
     private xmlParser: Xml2JS;
     private _event: events.EventEmitter;
     private _recurseList: string[];
@@ -71,7 +71,7 @@ export class PackageManager {
         this.packList = [];
         this._recurseList = [];
         this._event = new events.EventEmitter();
-        this.compress = new Compress(ResManager.GetInstance().Get7zDir());
+        this.compress = new SevenZipper(ResManager.GetInstance().Get7zDir());
         this.xmlParser = new Xml2JS({
             attributePrefix: '$',
             arrayAccessFormPaths: [
@@ -496,9 +496,14 @@ export class PackageManager {
     private parseMemory(memObj: any[], ramList: ARMRamItem[], romList: ARMRomItem[]) {
 
         for (let mem of memObj) {
+
+            let mAc = mem.$access || '';
+            let mId = mem.$id || mem.$name || '';
+            let mNa = mem.$name || '';
+
             // RAM
-            if (/rw[x]?/.test(mem.$access) || /RAM/.test(mem.$id || 'null')
-                || /RAM/.test(mem.$name || 'null')) {
+            if (/rw[x]?/.test(mAc) || /RAM/.test(mId) || /RAM/.test(mNa)) {
+
                 let _mem: ARMRamItem = {
                     tag: 'RAM',
                     id: -1,
@@ -510,13 +515,39 @@ export class PackageManager {
                     noInit: false
                 };
 
-                if (mem.$id === 'IRAM1' || mem.$id === 'IRAM2') {
-                    _mem.tag = 'IRAM';
-                    _mem.id = mem.$id === 'IRAM1' ? 1 : 2;
+                switch (mId) {
+                    case 'IRAM1':
+                        _mem.tag = 'IRAM';
+                        _mem.id = 1;
+                        ramList.push(_mem);
+                        break;
+                    case 'IRAM2':
+                        _mem.tag = 'IRAM';
+                        _mem.id = 2;
+                        ramList.push(_mem);
+                        break;
+                    case 'RAM1':
+                        _mem.tag = 'RAM';
+                        _mem.id = 1;
+                        ramList.push(_mem);
+                        break;
+                    case 'RAM2':
+                        _mem.tag = 'RAM';
+                        _mem.id = 2;
+                        ramList.push(_mem);
+                        break;
+                    case 'RAM3':
+                        _mem.tag = 'RAM';
+                        _mem.id = 3;
+                        ramList.push(_mem);
+                        break;
+                    default:
+                        break;
                 }
+            }
 
-                ramList.push(_mem);
-            } else {
+            // ROM
+            else {
 
                 let _mem: ARMRomItem = {
                     tag: 'ROM',
@@ -529,12 +560,35 @@ export class PackageManager {
                     isStartup: mem.$startup === '1' || mem.$startup === 'true'
                 };
 
-                if (mem.$id === 'IROM1' || mem.$id === 'IROM2') {
-                    _mem.tag = 'IROM';
-                    _mem.id = mem.$id === 'IROM1' ? 1 : 2;
+                switch (mId) {
+                    case 'IROM1':
+                        _mem.tag = 'IROM';
+                        _mem.id = 1;
+                        romList.push(_mem);
+                        break;
+                    case 'IROM2':
+                        _mem.tag = 'IROM';
+                        _mem.id = 2;
+                        romList.push(_mem);
+                        break;
+                    case 'ROM1':
+                        _mem.tag = 'ROM';
+                        _mem.id = 1;
+                        romList.push(_mem);
+                        break;
+                    case 'ROM2':
+                        _mem.tag = 'ROM';
+                        _mem.id = 2;
+                        romList.push(_mem);
+                        break;
+                    case 'ROM3':
+                        _mem.tag = 'ROM';
+                        _mem.id = 3;
+                        romList.push(_mem);
+                        break;
+                    default:
+                        break;
                 }
-
-                romList.push(_mem);
             }
         }
     }

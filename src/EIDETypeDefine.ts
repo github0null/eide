@@ -24,6 +24,7 @@
 
 import * as events from 'events';
 import * as os from 'os';
+import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as NodePath from 'path';
 import { jsonc } from 'jsonc';
@@ -47,8 +48,8 @@ import {
     view_str$flasher$optionBytesPath,
     view_str$flasher$launchApp,
     view_str$flasher$targetName,
-    view_str$flasher$commandLine,
-    view_str$compile$cpuVendor,
+    view_str$flasher$flashCommandLine,
+    view_str$flasher$eraseChipCommandLine,
     view_str$flasher$openocd_target_cfg,
     view_str$flasher$openocd_interface_cfg,
     view_str$flasher$optionBytesConfig,
@@ -67,11 +68,12 @@ import { AbstractProject, VirtualSource } from "./EIDEProject";
 import { SettingManager } from "./SettingManager";
 import { WorkspaceManager } from "./WorkspaceManager";
 import * as utility from './utility';
+import * as ArmCpuUtils from './ArmCpuUtils';
 
 ////////////////////////////////////////////////////////
 
 // eide project config file version
-export const EIDE_CONF_VERSION = '3.1';
+export const EIDE_CONF_VERSION = '3.2';
 
 ////////////////////////////////////////////////////////
 
@@ -110,8 +112,11 @@ export interface CreateOptions {
     type: ProjectType;
 }
 
+export type ImportProjectIDEType = 'mdk' | 'eclipse';
+
 export interface ImportOptions {
-    outDir: File;
+    type: ImportProjectIDEType;
+    outDir?: File;
     projectFile: File;
     createNewFolder?: boolean;
 }
@@ -1327,7 +1332,7 @@ export type KeyIcon =
     'Memory_16x.svg' |
     'ConfigurationEditor_16x.svg' |
     'CPU_16x.svg' |
-    'terminal_16x.svg';
+    'ImmediateWindow_16x.svg';
 
 export abstract class ConfigModel<DataType> {
 
@@ -1411,7 +1416,7 @@ export abstract class ConfigModel<DataType> {
                             break;
                         case 'INPUT_INTEGER':
                             if (val) {
-                                const num = parseInt(val);
+                                const num = parseInt(val.trim());
                                 if (num !== NaN) {
                                     this.SetKeyValue(key, num);
                                 }
@@ -1475,7 +1480,7 @@ export abstract class ConfigModel<DataType> {
 
     Update(newConfig?: DataType): void {
         this.data = this.UpdateConfigData(newConfig);
-        this._event.emit('datachanged');
+        this._event.emit('dataChanged');
     }
 
     isKeyEnable(key: string): boolean {
@@ -1605,19 +1610,22 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
 
         const toolchain = ToolchainManager.getInstance().getToolchain(prjConfig.type, prjConfig.toolchain);
 
-        let configName: string = toolchain.configName;
+        const configName = toolchain.configName;
         const targetName = prjConfig.mode.toLowerCase();
+        const cfgFile = File.fromArray([eideFolderPath, `${targetName}.${configName}`]);
 
-        if (targetName !== 'release') { // 'release' target is empty name
-            configName = `${targetName}.${configName}`;
+        // compat old project, add prefix for 'release' target
+        if (targetName == 'release' && !cfgFile.IsFile() &&        // it's release target but not found 'release.xxx.json' cfg
+            File.IsFile(eideFolderPath + File.sep + configName)) { // and found 'xxx.json' cfg
+            fs.renameSync(eideFolderPath + File.sep + configName, cfgFile.path);
+            return cfgFile;
         }
 
-        const opFile = File.fromArray([eideFolderPath, configName]);
-        if (!noCreate && !opFile.IsFile()) {
-            opFile.Write(JSON.stringify(toolchain.getDefaultConfig(), undefined, 4));
+        if (!noCreate && !cfgFile.IsFile()) {
+            cfgFile.Write(JSON.stringify(toolchain.getDefaultConfig(), undefined, 4));
         }
 
-        return opFile;
+        return cfgFile;
     }
 
     copyCommonCompileConfigFrom(model: CompileConfigModel<T>) {
@@ -1651,7 +1659,7 @@ export interface ARMStorageLayout {
     ROM: ARMRomItem[];
 }
 
-export type FloatingHardwareOption = 'no_dsp' | 'none' | 'single' | 'double';
+export type FloatingHardwareOption = 'none' | 'single' | 'double';
 
 // deprecated
 export interface ArmBaseCompileData extends BuilderConfigData {
@@ -1670,6 +1678,8 @@ export type ArmBaseBuilderConfigData = ArmBaseCompileData;
  * */
 export abstract class ArmBaseCompileConfigModel
     extends CompileConfigModel<ArmBaseCompileData> {
+
+    protected readonly DIV_TAG: string = '<div>:';
 
     protected cpuTypeList = [
         'Cortex-M0',
@@ -1766,7 +1776,7 @@ export abstract class ArmBaseCompileConfigModel
                 case 'options':
                     return true;
                 case 'floatingPointHardware':
-                    return ['cortex-m33', 'cortex-m4', 'cortex-m7'].includes(this.data.cpuType.toLowerCase());
+                    return ArmCpuUtils.hasFpu(this.data.cpuType);
                 case 'storageLayout':
                     return !this.data.useCustomScatterFile;
                 case 'scatterFilePath':
@@ -1781,7 +1791,7 @@ export abstract class ArmBaseCompileConfigModel
                 case 'options':
                     return true;
                 case 'floatingPointHardware':
-                    return ['cortex-m33', 'cortex-m4', 'cortex-m7'].includes(this.data.cpuType.toLowerCase());
+                    return ArmCpuUtils.hasFpu(this.data.cpuType);
                 default:
                     return false;
             }
@@ -1791,7 +1801,7 @@ export abstract class ArmBaseCompileConfigModel
     Update(newConfig?: ArmBaseCompileData) {
         this.data = this.UpdateConfigData(newConfig);
         this.sortStorage(this.data.storageLayout);
-        this._event.emit('datachanged');
+        this._event.emit('dataChanged');
     }
 
     getIRAMx(id: number): Memory | undefined {
@@ -1814,10 +1824,10 @@ export abstract class ArmBaseCompileConfigModel
 
     updateStorageLayout(newLayout: ARMStorageLayout) {
         this.data.storageLayout = this.sortStorage(newLayout);
-        this._event.emit('datachanged');
+        this._event.emit('dataChanged');
     }
 
-    sortStorage(storageLayout: ARMStorageLayout): ARMStorageLayout {
+    private sortStorage(storageLayout: ARMStorageLayout): ARMStorageLayout {
 
         storageLayout.RAM = storageLayout.RAM.sort((a, b): number => {
 
@@ -1877,13 +1887,10 @@ export abstract class ArmBaseCompileConfigModel
     protected verifyHardwareOption(optionName: string): boolean {
         switch (optionName) {
             case 'single':
-                return ['cortex-m33', 'cortex-m4', 'cortex-m7'].includes(this.data.cpuType.toLowerCase());
+            case 'none': // if mcu have fpu, we need a 'none' option
+                return ArmCpuUtils.hasFpu(this.data.cpuType);
             case 'double':
-                return ['cortex-m7'].includes(this.data.cpuType.toLowerCase());
-            case 'none':
-                return ['cortex-m33', 'cortex-m4', 'cortex-m7'].includes(this.data.cpuType.toLowerCase());
-            case 'no_dsp':
-                return ['cortex-m33'].includes(this.data.cpuType.toLowerCase());
+                return ArmCpuUtils.hasFpu(this.data.cpuType, true);
             default:
                 return false;
         }
@@ -1895,10 +1902,30 @@ export abstract class ArmBaseCompileConfigModel
 
         switch (key) {
             case 'cpuType':
-                this.cpuTypeList.forEach((type) => {
-                    res.push({
-                        label: type
-                    });
+                this.cpuTypeList.forEach((name) => {
+                    if (name.startsWith(this.DIV_TAG)) {
+                        res.push({
+                            label: name.replace(this.DIV_TAG, ''),
+                            kind: vscode.QuickPickItemKind.Separator
+                        });
+                    } else {
+                        if (ArmCpuUtils.isArmArchName(name)) { // for arch
+                            let descp = '';
+                            let family = ArmCpuUtils.getArchFamily(name);
+                            if (family) descp += family + ', ';
+                            let cpus = ArmCpuUtils.getArchExampleCpus(name);
+                            if (cpus) descp += 'like: ' + cpus.join(',') + '...';
+                            res.push({
+                                label: name,
+                                description: descp
+                            });
+                        } else { // for cpu
+                            res.push({
+                                label: name,
+                                description: `${ArmCpuUtils.getArmCpuArch(name) || ''}`
+                            });
+                        }
+                    }
                 });
                 break;
             case 'floatingPointHardware':
@@ -2021,11 +2048,24 @@ export abstract class ArmBaseCompileConfigModel
 class Armcc5CompileConfigModel extends ArmBaseCompileConfigModel {
 
     protected cpuTypeList = [
+        'ARM7EJ-S',
+        'ARM7TDMI',
+        'ARM720T',
+        'ARM7TDMI-S',
+        'ARM9TDMI',
+        'ARM920T',
+        'ARM922T',
+        'ARM9E-S',
+        'ARM926EJ-S',
+        'ARM946E-S',
+        'ARM966E-S',
         'Cortex-M0',
         'Cortex-M0+',
         'Cortex-M3',
         'Cortex-M4',
         'Cortex-M7',
+        //'Cortex-R4',
+        //'Cortex-R4F',
         'SC000',
         'SC300'
     ];
@@ -2034,28 +2074,55 @@ class Armcc5CompileConfigModel extends ArmBaseCompileConfigModel {
 class Armcc6CompileConfigModel extends ArmBaseCompileConfigModel {
 
     protected cpuTypeList = [
+        this.DIV_TAG + 'Processors', // div
         'Cortex-M0',
         'Cortex-M0+',
         'Cortex-M23',
         'Cortex-M3',
         'Cortex-M33',
+        'Cortex-M33.Dsp',
+        'Cortex-M35P',
+        'Cortex-M35P.Dsp',
         'Cortex-M4',
         'Cortex-M7',
+        //'Cortex-R4',
+        //'Cortex-R4F',
         'SC000',
-        'SC300'
+        'SC300',
+        this.DIV_TAG + 'Architectures', // div
+        'Armv8-m.Base',
+        'Armv8-m.Main',
+        'Armv8-m.Main.Dsp'
     ];
 }
 
 class GccCompileConfigModel extends ArmBaseCompileConfigModel {
 
     protected cpuTypeList = [
+        this.DIV_TAG + 'Processors', // div
         'Cortex-M0',
+        'Cortex-M0.small-multiply',
         'Cortex-M0+',
+        'Cortex-M0+.small-multiply',
         'Cortex-M23',
         'Cortex-M3',
         'Cortex-M33',
+        'Cortex-M35P',
         'Cortex-M4',
-        'Cortex-M7'
+        'Cortex-M7',
+        'Cortex-R4',
+        'Cortex-R5',
+        'Cortex-R7',
+        this.DIV_TAG + 'Architectures', // div
+        'Armv4',
+        'Armv4t',
+        'Armv5TE',
+        "Armv6-M",
+        "Armv7-M",
+        "Armv7E-M",
+        "Armv7-R",
+        "Armv8-M.Base",
+        "Armv8-M.Main",
     ];
 }
 
@@ -2571,7 +2638,7 @@ class StcgalUploadModel extends UploadConfigModel<StcgalFlashOption> {
             case 'options':
                 return 'ConfigurationEditor_16x.svg';
             case 'extraOptions':
-                return 'terminal_16x.svg';
+                return 'ImmediateWindow_16x.svg';
             default:
                 return super.getKeyIcon(key);
         }
@@ -2677,7 +2744,7 @@ class JLinkUploadModel extends UploadConfigModel<JLinkOptions> {
             case 'proType':
                 return 'ConnectUnplugged_16x.svg';
             case 'otherCmds':
-                return 'terminal_16x.svg';
+                return 'ImmediateWindow_16x.svg';
             default:
                 return super.getKeyIcon(key);
         }
@@ -2773,10 +2840,10 @@ class JLinkUploadModel extends UploadConfigModel<JLinkOptions> {
     GetDefault(): JLinkOptions {
         return {
             bin: '',
-            baseAddr: '0x08000000',
+            baseAddr: '',
             cpuInfo: {
-                vendor: 'ST',
-                cpuName: 'STM32F103C8'
+                vendor: 'null',
+                cpuName: 'null'
             },
             proType: ProtocolType.SWD,
             speed: 8000,
@@ -2846,7 +2913,7 @@ class STLinkUploadModel extends UploadConfigModel<STLinkOptions> {
             case 'optionBytes':
                 return 'ConfigurationEditor_16x.svg';
             case 'otherCmds':
-                return 'terminal_16x.svg';
+                return 'ImmediateWindow_16x.svg';
             default:
                 return super.getKeyIcon(key);
         }
@@ -3066,10 +3133,10 @@ class StvpUploadModel extends UploadConfigModel<STVPFlasherOptions> {
         switch (key) {
             case 'eepromFile':
             case 'optionByteFile':
-                if (/(?:\.hex|\.s19)$/i.test(input) || /^null$/.test(input)) {
+                if (/(?:\.hex|\.s19)$/i.test(input) || /^null$/.test(input) || input.trim() == '') {
                     return undefined;
                 } else {
-                    return 'the value must be a hex/s19 file path or \'null\'';
+                    return `the value must be a 'hex/s19 file path' or 'empty' or 'null'`;
                 }
             default:
                 return super.VerifyString(key, input);
@@ -3096,7 +3163,7 @@ class StvpUploadModel extends UploadConfigModel<STVPFlasherOptions> {
 
     GetDefault(): STVPFlasherOptions {
         return {
-            deviceName: 'STM8S105x4',
+            deviceName: 'null',
             bin: '',
             eepromFile: 'null',
             optionByteFile: 'null'
@@ -3452,7 +3519,9 @@ class CustomUploadModel extends UploadConfigModel<CustomFlashOptions> {
     GetKeyDescription(key: string): string {
         switch (key) {
             case 'commandLine':
-                return view_str$flasher$commandLine;
+                return view_str$flasher$flashCommandLine;
+            case 'eraseChipCommand':
+                return view_str$flasher$eraseChipCommandLine;
             default:
                 return super.GetKeyDescription(key);
         }
@@ -3472,7 +3541,9 @@ class CustomUploadModel extends UploadConfigModel<CustomFlashOptions> {
     getKeyIcon(key: string): KeyIcon | undefined {
         switch (key) {
             case 'commandLine':
-                return 'terminal_16x.svg';
+                return 'ImmediateWindow_16x.svg';
+            case 'eraseChipCommand':
+                return 'ImmediateWindow_16x.svg';
             default:
                 return super.getKeyIcon(key);
         }
@@ -3481,6 +3552,7 @@ class CustomUploadModel extends UploadConfigModel<CustomFlashOptions> {
     protected GetKeyType(key: string): FieldType {
         switch (key) {
             case 'commandLine':
+            case 'eraseChipCommand':
                 return 'INPUT';
             default:
                 return super.GetKeyType(key);
@@ -3515,7 +3587,8 @@ class CustomUploadModel extends UploadConfigModel<CustomFlashOptions> {
     GetDefault(): CustomFlashOptions {
         return {
             bin: '',
-            commandLine: 'null'
+            commandLine: '',
+            eraseChipCommand: '',
         };
     }
 }
@@ -3548,81 +3621,7 @@ export interface CppConfig {
     configurations: CppConfigItem[];
     version: number;
 }
-/* 
-export class CppConfiguration extends Configuration<CppConfig> {
 
-    protected readTypeFromFile(configFile: File): ProjectType | undefined {
-        return undefined;
-    }
-
-    protected Parse(jsonStr: string): CppConfig {
-        try {
-            return <CppConfig>jsonc.parse(jsonStr);
-        } catch (error) {
-            GlobalEvent.emit('msg', newMessage('Warning', 'parse cpp configuration error !'));
-            return this.GetDefault();
-        }
-    }
-
-    protected ToJson(replacer?: (this: any, key: string, value: any) => any, space?: string | number): string {
-        return jsonc.stringify(this.config, replacer, space);
-    }
-
-    getConfig(): CppConfigItem {
-
-        const index = this.config.configurations.findIndex((config) => { return config.name === os.platform(); });
-        if (index !== -1) {
-            return this.config.configurations[index];
-        }
-
-        const item: CppConfigItem = {
-            name: os.platform(),
-            includePath: [],
-            defines: [],
-            intelliSenseMode: '${default}'
-        };
-
-        if (this.config.configurations) {
-            this.config.configurations.push(item);
-        } else {
-            this.config.configurations = [item];
-        }
-
-        return item;
-    }
-
-    setConfig(config: CppConfigItem) {
-        const index = this.config.configurations.findIndex((_conf) => { return _conf.name === config.name; });
-        if (index !== -1) {
-            this.config.configurations[index] = config;
-        }
-    }
-
-    Save() {
-        // nothing todo
-    }
-
-    saveToFile() {
-        const config = this.getConfig();
-        this.Update(this.watcher.file.Read());
-        this.setConfig(config);
-        super.Save(undefined, 4);
-    }
-
-    GetDefault(): CppConfig {
-        const item: CppConfigItem = {
-            name: os.platform(),
-            includePath: [],
-            defines: [],
-            intelliSenseMode: '${default}'
-        };
-        return {
-            configurations: [item],
-            version: 4
-        };
-    }
-}
- */
 export interface WorkspaceConfig {
     folders: { name?: string, path: string }[];
     settings?: any;
@@ -3665,15 +3664,7 @@ export class WorkspaceConfiguration extends Configuration<WorkspaceConfig> {
                 }
             ],
             settings: {},
-            extensions: {},
-            launch: {
-                "configurations": [],
-                "compounds": []
-            },
-            tasks: {
-                "version": "2.0.0",
-                "tasks": []
-            }
+            extensions: {}
         };
     }
 }

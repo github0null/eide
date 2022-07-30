@@ -117,8 +117,18 @@ export function GetLocalCodePage(): string | undefined {
     }
 }
 
+function checkFolderBeforeDelete(dir: File): boolean {
+    if (osPlatform == 'win32') {
+        return !['c:\\', 'c:'].includes(dir.path.toLowerCase());
+    } else {
+        return !['/', '/home'].includes(dir.path);
+    }
+}
+
 export function DeleteDir(dir: File): string {
     try {
+        if (!checkFolderBeforeDelete(dir))
+            return 'can not delete system root folder !';
         if (osPlatform == 'win32') {
             return child_process.execSync(`rmdir /S /Q "${dir.path}"`, { encoding: 'ascii' });
         } else {
@@ -131,11 +141,11 @@ export function DeleteDir(dir: File): string {
 
 export function DeleteAllChildren(dir: File): string {
     try {
+        if (!checkFolderBeforeDelete(dir))
+            return 'can not delete system root folder !';
         if (osPlatform == 'win32') {
-            if (['c:\\', 'c:'].includes(dir.path.toLowerCase())) return 'DeleteAllChildren failed !';
             return child_process.execSync('powershell Remove-Item \'' + dir.path + '\\*\' -Recurse -Force -ErrorAction:Continue', { encoding: 'utf8' });
         } else {
-            if (['/', '/home'].includes(dir.path)) return 'DeleteAllChildren failed !';
             return child_process.execSync(`rm -rf "${dir.path}/*"`, { encoding: 'utf8' });
         }
     } catch (error) {

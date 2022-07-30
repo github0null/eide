@@ -28,6 +28,7 @@ import * as os from 'os';
 import * as node7z from 'node-7z';
 import * as NodePath from 'path';
 import * as ChildProcess from 'child_process';
+import * as yaml from 'yaml';
 
 import { GlobalEvent } from './GlobalEvents';
 import { OperationExplorer } from './OperationExplorer';
@@ -55,6 +56,9 @@ const extension_deps: string[] = [];
 let projectExplorer: ProjectExplorer;
 let platformArch: string = 'x86_64';
 let platformType: string = 'win32';
+
+// set yaml global style
+yaml.scalarOptions.str.fold.lineWidth = 1000;
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -127,6 +131,7 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.Create', () => operationExplorer.OnCreateProject()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.Import', () => operationExplorer.OnImportProject()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.SetToolchainPath', () => operationExplorer.OnSetToolchainPath()));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.SetupUtilTools', () => operationExplorer.setupUtilTools()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.OpenSerialPortMonitor', (port) => operationExplorer.onOpenSerialPortMonitor(port)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.openSettings', () => SettingManager.jumpToSettings('@ext:cl.eide')));
 
@@ -143,6 +148,7 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.workspace.make.template', (item) => projectExplorer.ExportToTemplate(undefined, true)));
 
     // project user cmds
+    subscriptions.push(vscode.commands.registerCommand('eide.project.save', (item) => projectExplorer.saveProject(item)));
     subscriptions.push(vscode.commands.registerCommand('eide.project.rebuild', (item) => projectExplorer.BuildSolution(item)));
     subscriptions.push(vscode.commands.registerCommand('eide.project.build', (item) => projectExplorer.BuildSolution(item, { useFastMode: true })));
     subscriptions.push(vscode.commands.registerCommand('eide.project.clean', (item) => projectExplorer.BuildClean(item)));
@@ -240,7 +246,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.workspace.registerTextDocumentContentProvider(VirtualDocument.scheme, VirtualDocument.instance());
 
     /* auto save project */
-    setInterval(() => projectExplorer.SaveAll(), 5 * 60 * 1000);
+    setInterval(() => projectExplorer.SaveAll(), 100 * 1000);
 
     // launch done
     GlobalEvent.emit('extension_launch_done');
@@ -249,9 +255,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
 // this method is called when your extension is deactivated
 export function deactivate() {
-    console.log('extension close');
-    StatusBarManager.getInstance().disposeAll();
     GlobalEvent.emit('extension_close');
+    StatusBarManager.getInstance().disposeAll();
 }
 
 //////////////////////////////////////////////////
@@ -362,14 +367,14 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
 
     // !! for compatibility with offline-package !!
     // if we found eide binaries in plug-in root folder, move it 
-    const oldBinDir = File.fromArray([resManager.getAppRootFolder().path, 'bin'])
-    if (checkBinFolder(oldBinDir)) {
+    const builtInBinFolder = File.fromArray([resManager.getAppRootFolder().path, 'bin'])
+    if (checkBinFolder(builtInBinFolder)) {
         if (os.platform() == 'win32') {
-            ChildProcess.execSync(`xcopy "${oldBinDir.path}" "${binFolder.path}\\" /H /E /Y`);
-            platform.DeleteDir(oldBinDir); // rm it after copy done ! 
+            ChildProcess.execSync(`xcopy "${builtInBinFolder.path}" "${binFolder.path}\\" /H /E /Y`);
+            platform.DeleteDir(builtInBinFolder); // rm it after copy done ! 
         } else {
             platform.DeleteDir(binFolder); // rm existed folder
-            ChildProcess.execSync(`mv -f "${oldBinDir.path}" "${binFolder.dir}/"`);
+            ChildProcess.execSync(`mv -f "${builtInBinFolder.path}" "${binFolder.dir}/"`);
         }
     }
 
@@ -418,6 +423,11 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
         else {
             platform.DeleteDir(binFolder); // del existed folder
             return await tryUpdateBinaries(binFolder, undefined, true);
+        }
+
+        // export current binaries version
+        if (localVersion) {
+            process.env['EIDE_BINARIES_VER'] = localVersion;
         }
 
         return true;
@@ -673,24 +683,44 @@ function exportEnvToSysPath() {
     ];
 
     //
-    const exToolsRoot = NodePath.normalize(`${os.homedir()}/.eide/tools`);
-    if (!File.IsDir(exToolsRoot)) {
+    const eideToolsFolder = new File(NodePath.normalize(`${os.homedir()}/.eide/tools`));
+    if (!eideToolsFolder.IsDir()) {
         try {
-            new File(exToolsRoot).CreateDir(true);
+            new File(eideToolsFolder.path).CreateDir(true);
         } catch (error) {
             // nothing todo
         }
     }
 
-    // export some tools path to system env path
-    const pathList: { key: string, path: string }[] = [
-        { key: 'EIDE_ARM_GCC', path: `${settingManager.getGCCDir().path}${File.sep}bin` },
-        { key: 'EIDE_JLINK', path: `${settingManager.getJlinkDir()}` },
-        { key: 'EIDE_OPENOCD', path: `${NodePath.dirname(settingManager.getOpenOCDExePath())}` },
-        { key: 'EIDE_TOOLS_DIR', path: exToolsRoot }
-    ];
+    // export def tools path to system env path from extension setting
+    const pathList: { key: string, path: string }[] = [];
 
-    // search and export other tools path to system env path
+    // try to export some user setted tools path to env
+    [
+        { key: 'EIDE_TOOL_GCC_ARM', path: `${settingManager.getGCCDir().path}${File.sep}bin` },
+        { key: 'EIDE_TOOL_JLINK', path: `${settingManager.getJlinkDir()}` },
+        { key: 'EIDE_TOOL_OPENOCD', path: `${NodePath.dirname(settingManager.getOpenOCDExePath())}` }
+    ].forEach(o => {
+        if (File.IsDir(o.path)) {
+            pathList.push(o);
+        }
+    });
+
+    // search tools folder and export path to system env
+    eideToolsFolder.GetList(File.EMPTY_FILTER).forEach((subDir) => {
+        if (!/^\w+$/.test(subDir.name)) return; // filter dir name
+        const binFolder = NodePath.normalize(`${subDir.path}/bin`);
+        if (File.IsDir(binFolder)) {
+            const keyName = `EIDE_TOOL_${subDir.name.toUpperCase()}`;
+            if (pathList.findIndex(o => o.key == keyName) != -1) return; // skip repeat key name
+            pathList.push({
+                key: keyName,
+                path: binFolder
+            });
+        }
+    });
+
+    // search built-in tools and export path to system env
     builderFolder.GetList(File.EMPTY_FILTER).forEach((subDir) => {
         const binFolder = NodePath.normalize(`${subDir.path}/bin`);
         if (File.IsDir(binFolder)) {
@@ -754,7 +784,7 @@ async function checkAndInstallRuntime() {
         const lines = dotnetInfo.trim().split(/\r\n|\n/);
         for (const line_ of lines) {
             const line = line_.trim();
-            if (line.startsWith('Microsoft.NETCore.App 6.')) {
+            if (line.toLowerCase().startsWith('Microsoft.NETCore.App 6.'.toLowerCase())) {
                 dotnetVerLine = line;
                 GlobalEvent.emit('globalLog', newMessage('Info', `.NET6 runtime: '${dotnetVerLine}' found !`));
                 break;
@@ -784,7 +814,7 @@ async function checkAndInstallRuntime() {
         else {
             const defPkgName = 'dotnet-runtime-6.0.5-win-x64.exe';
 
-            let pkgReady: boolean;
+            let pkgReady: boolean = false;
             let pkgFile: File;
 
             // if found local installer pkg, use it
@@ -798,38 +828,42 @@ async function checkAndInstallRuntime() {
             else {
 
                 pkgFile = File.fromArray([os.tmpdir(), defPkgName]);
-
-                try {
-                    if (pkgFile.IsFile()) { fs.unlinkSync(pkgFile.path) }
-                } catch (error) {
-                    // do nothing
+                if (pkgFile.IsFile()) { // if we have a cached old file, check it
+                    const sevenZip = utility.newSevenZipperInstance();
+                    const pkgSha256 = sevenZip.sha256(pkgFile);
+                    const reqSha256 = 'A085714B879DC1CB85538109640E22A2CBFF2B91195DF540A5F98AEA09AF2C1E'.toLowerCase();
+                    if (pkgSha256 == reqSha256) { pkgReady = true; } // sha256 verified, use cached old file
+                    else { try { fs.unlinkSync(pkgFile.path); } catch{ } } // sha256 verify failed, del old file
                 }
 
-                const downloadUrl = `https://download.visualstudio.microsoft.com/download/pr/b395fa18-c53b-4f7f-bf91-6b2d3c43fedb/d83a318111da9e15f5ecebfd2d190e89/dotnet-runtime-6.0.5-win-x64.exe`;
+                if (!pkgReady) { // if no cached pkg, download it
 
-                pkgReady = await vscode.window.withProgress({
-                    location: vscode.ProgressLocation.Notification,
-                    title: 'Downloading .NET6 runtime installer',
-                    cancellable: false
-                }, async (progress, token): Promise<boolean> => {
+                    const downloadUrl = `https://download.visualstudio.microsoft.com/download/pr/b395fa18-c53b-4f7f-bf91-6b2d3c43fedb/d83a318111da9e15f5ecebfd2d190e89/dotnet-runtime-6.0.5-win-x64.exe`;
 
-                    const res = await utility.downloadFileWithProgress(downloadUrl, pkgFile.name, progress, token);
+                    pkgReady = await vscode.window.withProgress({
+                        location: vscode.ProgressLocation.Notification,
+                        title: 'Downloading .NET6 runtime installer',
+                        cancellable: false
+                    }, async (progress, token): Promise<boolean> => {
 
-                    if (res instanceof Buffer) {
-                        try {
-                            fs.writeFileSync(pkgFile.path, res);
-                            return true;
-                        } catch (error) {
-                            return false;
+                        const res = await utility.downloadFileWithProgress(downloadUrl, pkgFile.name, progress, token);
+
+                        if (res instanceof Buffer) {
+                            try {
+                                fs.writeFileSync(pkgFile.path, res);
+                                return true;
+                            } catch (error) {
+                                return false;
+                            }
                         }
-                    }
 
-                    if (res instanceof Error) {
-                        GlobalEvent.emit('error', res);
-                    }
+                        if (res instanceof Error) {
+                            GlobalEvent.emit('error', res);
+                        }
 
-                    return false;
-                });
+                        return false;
+                    });
+                }
             }
 
             if (pkgReady && pkgFile.IsFile()) {
@@ -977,16 +1011,18 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
 
     // register msys bash profile for windows
     if (os.platform() == 'win32') {
-        context.subscriptions.push(
-            vscode.window.registerTerminalProfileProvider('eide.msys.bash', new MsysTerminalProvider())
-        );
+        context.subscriptions.push(vscode.window.registerTerminalProfileProvider(EideTerminalProvider.MSYS_BASH_ID,
+            new EideTerminalProvider(EideTerminalProvider.MSYS_BASH_ID)));
     }
+
+    context.subscriptions.push(
+        vscode.window.registerTerminalProfileProvider(EideTerminalProvider.SYSTEM_SHELL_ID,
+            new EideTerminalProvider(EideTerminalProvider.SYSTEM_SHELL_ID)));
 
     // update onchanged
     settingManager.on('onChanged', (e) => {
 
         /* serialport */
-
         if (e.affectsConfiguration('EIDE.SerialPortMonitor.ShowStatusBar')) {
             updateSerialportBarState();
         }
@@ -998,7 +1034,6 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
         }
 
         /* set some toolpath to env when path is changed */
-
         if (e.affectsConfiguration('EIDE.ARM.GCC.InstallDirectory') ||
             e.affectsConfiguration('EIDE.JLink.InstallDirectory') ||
             e.affectsConfiguration('EIDE.OpenOCD.ExePath')) {
@@ -1077,7 +1112,7 @@ class EideTerminalLinkProvider implements vscode.TerminalLinkProvider<EideTermin
     private macthers: Map<RegExp, { file: number, line: number }> = new Map();
 
     constructor() {
-        this.workspace = WorkspaceManager.getInstance().getFirstWorkspace();
+        this.workspace = WorkspaceManager.getInstance().getWorkspaceRoot();
         this.macthers.set(/\bIN LINE (\d+) OF ([^:]+)/, { line: 1, file: 2 }); // keil c51
     }
 
@@ -1125,18 +1160,89 @@ class EideTerminalLinkProvider implements vscode.TerminalLinkProvider<EideTermin
     }
 }
 
-// --- msys provider
+// --- terminal provider
 
-class MsysTerminalProvider implements vscode.TerminalProfileProvider {
+class EideTerminalProvider implements vscode.TerminalProfileProvider {
+
+    public static readonly MSYS_BASH_ID = 'eide.msys.bash';
+    public static readonly SYSTEM_SHELL_ID = 'eide.system.shell';
+
+    private type: string;
+
+    constructor(id: string) {
+        this.type = id;
+    }
 
     provideTerminalProfile(token: vscode.CancellationToken): vscode.ProviderResult<vscode.TerminalProfile> {
 
-        // get cwd
-        let cwd: string = os.homedir();
-        const workspace = WorkspaceManager.getInstance().getFirstWorkspace();
+        switch (this.type) {
+            case EideTerminalProvider.MSYS_BASH_ID:
+                return this.provideMsysTerminal();
+            case EideTerminalProvider.SYSTEM_SHELL_ID:
+                return this.provideSystemTerminal();
+            default:
+                return undefined;
+        }
+    }
+
+    private cwd(allowUseLocActiveFolder?: boolean): string {
+
+        let cwd = os.homedir();
+
+        const workspace = WorkspaceManager.getInstance().getWorkspaceRoot();
         if (workspace && workspace.IsDir()) {
             cwd = workspace.path;
+        } else if (allowUseLocActiveFolder) {
+            const wsLi = WorkspaceManager.getInstance().getWorkspaceList();
+            if (wsLi.length > 0) cwd = wsLi[0].path;
         }
+
+        return cwd;
+    }
+
+    private provideSystemTerminal(): vscode.ProviderResult<vscode.TerminalProfile> {
+
+        let shellName: string;
+        let shellPath: string;
+
+        if (platform.osType() == 'win32') {
+            let f = ResManager.GetInstance().getPowerShell();
+            if (f) {
+                shellName = 'powershell';
+                shellPath = f.path;
+            } else {
+                let cmd = ResManager.GetInstance().getCMDPath();
+                if (cmd) {
+                    shellName = 'cmd';
+                    shellPath = cmd;
+                } else {
+                    GlobalEvent.emit('msg', newMessage('Error', `We can not found 'cmd.exe' in your pc !`));
+                    return undefined;
+                }
+            }
+        } else {
+            shellName = 'shell';
+            shellPath = '/bin/bash';
+        }
+
+        const welcome = [
+            `--------------------------------------------`,
+            `          \x1b[32;22m ${shellName} (eide env) \x1b[0m`,
+            `--------------------------------------------`,
+            ``
+        ];
+
+        return new vscode.TerminalProfile({
+            name: shellName,
+            shellPath: shellPath,
+            cwd: this.cwd(true),
+            env: process.env,
+            strictEnv: true,
+            message: welcome.join('\r\n')
+        });
+    }
+
+    private provideMsysTerminal(): vscode.ProviderResult<vscode.TerminalProfile> {
 
         // welcome msg
         const welcome = [
@@ -1152,12 +1258,10 @@ class MsysTerminalProvider implements vscode.TerminalProfileProvider {
             return undefined;
         }
 
-        const bashPath = `${process.env['EIDE_MSYS']}/bash.exe`;
-
         return new vscode.TerminalProfile({
             name: 'msys bash',
-            shellPath: bashPath,
-            cwd: cwd,
+            shellPath: `${process.env['EIDE_MSYS']}/bash.exe`,
+            cwd: this.cwd(true),
             env: process.env,
             strictEnv: true,
             message: welcome.join('\r\n')
@@ -1167,7 +1271,6 @@ class MsysTerminalProvider implements vscode.TerminalProfileProvider {
 
 // --- .mapView viewer
 
-import * as yaml from 'yaml'
 import { FileWatcher } from '../lib/node-utility/FileWatcher';
 
 interface MapViewRef {
@@ -1237,7 +1340,8 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
                 toolName = 'GCC_ARM';
                 break;
             default:
-                webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: We not support this toolchain type: '${conf.tool}' !`);
+                webviewPanel.webview.html = this.genHtmlCont(title,
+                    `<span class="error">Error</span>: We don't support this toolchain type: '${conf.tool}' yet !`);
                 return;
         }
 

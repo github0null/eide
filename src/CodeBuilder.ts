@@ -28,6 +28,7 @@ import * as NodePath from 'path';
 import * as events from 'events';
 import * as globmatch from 'micromatch'
 import * as os from 'os';
+import * as child_process from 'child_process';
 
 import { AbstractProject, VirtualSource } from "./EIDEProject";
 import { ResManager } from "./ResManager";
@@ -50,6 +51,8 @@ import { md5, sha256 } from "./utility";
 import { MakefileGen } from "./Makefile";
 import { exeSuffix } from "./Platform";
 import { FileWatcher } from "../lib/node-utility/FileWatcher";
+import { STVPFlasherOptions } from './HexUploader';
+import * as ArmCpuUtils from './ArmCpuUtils';
 
 export interface BuildOptions {
 
@@ -152,7 +155,7 @@ export abstract class CodeBuilder {
                             .replace(/\.\.\//g, '')
                             .replace(/\.\//g, ''); // globmatch bug ? it can't parse path which have '.' or '..'
                         if (globmatch.isMatch(searchPath, expr)) {
-                            const val = parttenInfo[expr]?.trim().replace(/(?:\r\n|\n)$/, '');
+                            const val = parttenInfo[expr]?.replace(/\r\n|\n/g, ' ').replace(/\\r|\\n|\\t/g, ' ').trim();
                             if (val) {
                                 if (srcParams[srcInf.path]) {
                                     srcParams[srcInf.path] += ` ${val}`
@@ -380,7 +383,7 @@ export abstract class CodeBuilder {
         const paramsPath = this.project.ToAbsolutePath(outDir + File.sep + this.paramsFileName);
         const compileOptions: ICompileOptions = this.project.GetConfiguration()
             .compileConfigModel.getOptions(this.project.getEideDir().path, config);
-        const memMaxSize = this.getMaxSize();
+        const memMaxSize = this.getMcuMemorySize();
         const oldParamsPath = `${paramsPath}.old`;
         const prevParams: BuilderParams | undefined = File.IsFile(oldParamsPath) ? JSON.parse(fs.readFileSync(oldParamsPath, 'utf8')) : undefined;
         const sourceInfo = this.genSourceInfo(prevParams);
@@ -510,7 +513,7 @@ export abstract class CodeBuilder {
         return ResManager.GetInstance().getBuilder();
     }
 
-    protected abstract getMaxSize(): MemorySize | undefined;
+    protected abstract getMcuMemorySize(): MemorySize | undefined;
 
     protected abstract preHandleOptions(options: ICompileOptions): void;
 
@@ -798,30 +801,24 @@ export class ARMCodeBuilder extends CodeBuilder {
         cpu = cpu.toLowerCase();
 
         switch (hardOption) {
-            case 'no_dsp':
-                // nothing
-                break;
             case 'single':
-                if (cpu.endsWith('m33') || cpu.endsWith('m4') || cpu.endsWith('m7')) {
+                if (ArmCpuUtils.hasFpu(cpu)) {
                     suffix = '-sp';
                 }
                 break;
             case 'double':
-                if (cpu.endsWith('m4') || cpu.endsWith('m7')) {
+                if (ArmCpuUtils.hasFpu(cpu, true)) {
                     suffix = '-dp';
                 }
                 break;
             default: // none
-                if (cpu.endsWith('m33') || cpu.endsWith('m4') || cpu.endsWith('m7')) {
-                    suffix = '-none';
-                }
                 break;
         }
 
         return cpu + suffix;
     }
 
-    protected getMaxSize(): MemorySize | undefined {
+    protected getMcuMemorySize(): MemorySize | undefined {
 
         const prjConfig = this.project.GetConfiguration<ArmBaseCompileData>();
 
@@ -960,7 +957,7 @@ class RiscvCodeBuilder extends CodeBuilder {
         return ['$gcc'];
     }
 
-    protected getMaxSize(): MemorySize | undefined {
+    protected getMcuMemorySize(): MemorySize | undefined {
         return undefined;
     }
 
@@ -988,7 +985,7 @@ class AnyGccCodeBuilder extends CodeBuilder {
         return ['$gcc'];
     }
 
-    protected getMaxSize(): MemorySize | undefined {
+    protected getMcuMemorySize(): MemorySize | undefined {
         return undefined;
     }
 
@@ -1014,6 +1011,19 @@ class AnyGccCodeBuilder extends CodeBuilder {
     }
 }
 
+interface AreaSectorInfo {
+    StartAddr: number;
+    Size: number;
+}
+
+interface Stm8DeviceAreaInfo {
+    AreaName: string;
+    MemType: string;
+    SectorList: AreaSectorInfo[];
+    ProtectList: string[];
+    IsErasableArea: boolean;
+}
+
 class C51CodeBuilder extends CodeBuilder {
 
     protected getProblemMatcher(): string[] {
@@ -1029,7 +1039,28 @@ class C51CodeBuilder extends CodeBuilder {
         }
     }
 
-    protected getMaxSize(): MemorySize | undefined {
+    protected getMcuMemorySize(): MemorySize | undefined {
+
+        if (this.project.getUploaderType() == 'STVP') {
+            try {
+                const model = <STVPFlasherOptions>this.project.GetConfiguration().uploadConfigModel.data;
+                const stvp_utils = ResManager.GetInstance().getStvpUtilExe().path;
+                const t = child_process.execFileSync(stvp_utils, ['query', '--list-area', model.deviceName]).toString();
+                const a = JSON.parse(t);
+                if (!Array.isArray(a)) return undefined;
+                const areaLi: Stm8DeviceAreaInfo[] = <Stm8DeviceAreaInfo[]>a;
+                const memSize: MemorySize = { ram: 0, rom: 0 };
+                areaLi.forEach(area => {
+                    if (area.AreaName == "RamExec") {
+                        area.SectorList.forEach(s => (<number>memSize.ram) += s.Size);
+                    } else if (area.AreaName == "PROGRAM MEMORY") {
+                        area.SectorList.forEach(s => (<number>memSize.rom) += s.Size);
+                    }
+                });
+                return memSize;
+            } catch (error) { GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden')); }
+        }
+
         return undefined;
     }
 

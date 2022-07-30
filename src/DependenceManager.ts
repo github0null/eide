@@ -344,16 +344,6 @@ export class DependenceManager implements ManagerInterface {
 
         const prjConfig = this.project.GetConfiguration();
 
-        /* !!! discarded !!!
-        // clear invalid dependences
-        prjConfig.config.dependenceList.forEach(depGroup => {
-            depGroup.depList.forEach(dep => {
-                dep.incList = dep.incList.filter((path) => { return (new File(path).IsDir()); });
-                dep.libList = dep.libList.filter((path) => { return (new File(path).IsDir()); });
-                dep.sourceDirList = dep.sourceDirList.filter((path) => { return (new File(path).IsDir()); });
-            });
-        }); */
-
         const packInfo = this.project.GetPackManager().GetPack();
         const isAutoGenerate = this.isAutoGenRTEHeader();
 

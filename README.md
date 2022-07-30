@@ -20,17 +20,18 @@ Provide `8051/AVR/STM8/Cortex-M/RISC-V` project development, compilation, burnin
 
 ## Features 🎉
 
-* Support development of 8051, AVR, STM8, Cortex-M\[0/0+/3/4/7], RISC-V, Universal-Gcc projects
-* Support to import KEIL projects (KEIL 5 and later only)
-* Support for installing standard KEIL chip support packs (only for Cortex-M projects)
-* Provides rich project templates for quick start projects
-* One-click compilation, fast compilation, support a variety of mainstream compilation tools (support: armcc, gcc-arm-none-eabi, keil_c51, sdcc ...)
-* One key to burn chip, support a variety of mainstream burn device (support: jlink, stlink, openocd, pyocd ...)
-* Built-in serial port monitor, one click to open the serial port
-* Supports static checking of projects using Cppcheck
-* Automatically generates default debug configurations for debugger plug-in `cortex-debug/STM8-Debug`
-* Support for writing JS scripts to import arbitrary IDE project source file resources
-* Built in a variety of utilities, 'CMSIS Config Wizard UI', 'disassembly view', 'program resource view'...
+* Support development of 8051, AVR, STM8, Cortex-M, RISC-V, Universal-Gcc projects.
+* Support to import KEIL5/Eclipse projects, support to import 'IAR-STM8, IAR-ARM, Segger Embedded Studio' project source file resource tree.
+* Support for installing standard KEIL chip support packs (only for Cortex-M projects).
+* Provides rich project templates for quick start projects.
+* One-click compilation, fast compilation, support a variety of mainstream compilation tools (support: armcc, gcc-arm-none-eabi, riscv-gcc, xxx-gcc, keil_c51, sdcc ...).
+* One key to burn chip, support a variety of mainstream burn device (support: jlink, stlink, openocd, pyocd ...).
+* Built-in serial port monitor, one click to open the serial port.
+* Supports static checking of projects using Cppcheck.
+* Automatically generates default debug configurations for debugger plug-in `cortex-debug/STM8-Debug`.
+* Support for writing JS scripts to import arbitrary IDE project source file resources.
+* Built-in a variety of utilities, 'CMSIS Config Wizard UI', 'disassembly view', 'program resource view'...
+* Built-in implement `C/C++ IntelliSense Provider` for `ms-vscode.cpptools`, **Not Need to** configurate `c_cpp_properties.json` file.
 
 ***
 

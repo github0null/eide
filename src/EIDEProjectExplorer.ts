@@ -28,13 +28,14 @@ import * as fs from 'fs';
 import * as NodePath from 'path';
 import * as child_process from 'child_process';
 import * as os from 'os';
+import * as yaml from 'yaml';
 
 import { File } from '../lib/node-utility/File';
 import { ResManager } from './ResManager';
 import { GlobalEvent } from './GlobalEvents';
 import { AbstractProject, CheckError, DataChangeType, VirtualSource } from './EIDEProject';
 import { ToolchainName, ToolchainManager } from './ToolchainManager';
-import { CreateOptions, PackInfo, ComponentFileItem, DeviceInfo, getComponentKeyDescription, VirtualFolder, VirtualFile, ImportOptions, ProjectTargetInfo, ArmBaseCompileData, ProjectConfigData } from './EIDETypeDefine';
+import { CreateOptions, PackInfo, ComponentFileItem, DeviceInfo, getComponentKeyDescription, VirtualFolder, VirtualFile, ImportOptions, ProjectTargetInfo, ArmBaseCompileData, ProjectConfigData, ProjectType, ArmBaseCompileConfigModel, RiscvCompileData, AnyGccCompileData } from './EIDETypeDefine';
 import { WorkspaceManager } from './WorkspaceManager';
 import {
     can_not_close_project, project_is_opened, project_load_failed,
@@ -63,13 +64,14 @@ import {
     view_str$project$folder_type_virtual_desc,
     view_str$project$folder_type_fs_desc,
     view_str$msg$err_ewt_hash,
-    view_str$msg$err_ept_hash
+    view_str$msg$err_ept_hash,
+    view_str$prompt$eclipse_imp_warning
 } from './StringTable';
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
 import { SettingManager } from './SettingManager';
 import { HexUploaderManager, HexUploaderType } from './HexUploader';
-import { Compress, CompressOption } from './Compress';
+import { SevenZipper, CompressOption } from './Compress';
 import { DependenceManager } from './DependenceManager';
 import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import {
@@ -90,6 +92,8 @@ import {
     CppToolsApi, Version, CustomConfigurationProvider, getCppToolsApi,
     SourceFileConfigurationItem, WorkspaceBrowseConfiguration
 } from 'vscode-cpptools';
+import * as eclipseParser from './EclipseProjectParser';
+import { isArray } from 'util';
 
 enum TreeItemType {
     SOLUTION,
@@ -401,7 +405,7 @@ export class ProjTreeItem extends vscode.TreeItem {
                 name = 'Component_16x.svg';
                 break;
             case TreeItemType.PACK_GROUP:
-                name = 'PackageItem_16x.svg';
+                name = 'Cube_16x.svg';
                 break;
             case TreeItemType.DEPENDENCE_SUB_GROUP:
             case TreeItemType.GROUP:
@@ -416,8 +420,8 @@ export class ProjTreeItem extends vscode.TreeItem {
             case TreeItemType.COMPILE_CONFIGURATION:
                 name = 'Builder_16x.svg';
                 break;
-            case TreeItemType.PACK:
-                name = 'Package_16x.svg';
+            case TreeItemType.PACK: // only for cpu pakage, not cmsis package
+                name = 'CPU_16x.svg';
                 break;
             case TreeItemType.UPLOAD_OPTION:
                 name = 'TransferDownload_16x.svg';
@@ -566,6 +570,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
     }
 
     onProjectChanged(prj: AbstractProject, type?: DataChangeType) {
+
         switch (type) {
             case 'files':
                 this.UpdateView(this.treeCache.getTreeItem(prj, TreeItemType.PROJECT));
@@ -587,6 +592,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                 this.UpdateView();
                 break;
         }
+
+        prj.Save(false, 1000); // save project file with a delay
     }
 
     //----------------
@@ -1392,7 +1399,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             if (outDir.IsDir()) { continue; } /* folder existed, exit */
             outDir.CreateDir(true);
 
-            const compresser = new Compress(ResManager.GetInstance().Get7zDir());
+            const compresser = new SevenZipper(ResManager.GetInstance().Get7zDir());
             compresser.UnzipSync(packZipFile, outDir);
             folders.push(outDir);
         }
@@ -1400,275 +1407,601 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         return folders;
     }
 
-    async ImportProject(option: ImportOptions) {
+    ImportProject(option: ImportOptions) {
 
-        try {
-
-            const keilPrjFile = option.projectFile;
-            const keilParser = KeilParser.NewInstance(option.projectFile);
-            const targets = keilParser.ParseData();
-
-            if (targets.length == 0) {
-                throw Error(`Not found any target in '${keilPrjFile.path}' !`);
-            }
-
-            const baseInfo = AbstractProject.NewProject().createBase({
-                name: option.outDir.name,
-                type: targets[0].type,
-                outDir: option.outDir
-            }, false);
-
-            const projectInfo = baseInfo.prjConfig.config;
-
-            // init project info
-            projectInfo.virtualFolder = {
-                name: VirtualSource.rootName,
-                files: [],
-                folders: []
-            };
-
-            const getVirtualFolder = (path: string, noCreate?: boolean): VirtualFolder | undefined => {
-
-                if (!path.startsWith(`${VirtualSource.rootName}/`)) {
-                    throw Error(`'${path}' is not a virtual path`);
-                }
-
-                const pathList = path.split('/');
-                pathList.splice(0, 1); // remvoe root
-
-                // init start search folder
-                let curFolder: VirtualFolder = projectInfo.virtualFolder;
-
-                for (const name of pathList) {
-                    const index = curFolder.folders.findIndex((folder) => { return folder.name === name; });
-                    if (index === -1) {
-                        if (noCreate) { return undefined; }
-                        const newFolder = { name: name, files: [], folders: [] };
-                        curFolder.folders.push(newFolder);
-                        curFolder = newFolder;
-                    } else {
-                        curFolder = curFolder.folders[index];
-                    }
-                }
-
-                return curFolder;
-            };
-
-            // init file group
-            const fileFilter = AbstractProject.getFileFilters();
-            targets[0].fileGroups.forEach((group) => {
-                const vPath = `${VirtualSource.rootName}/${File.ToUnixPath(group.name)}`;
-                const VFolder = <VirtualFolder>getVirtualFolder(vPath);
-                group.files.forEach((fileItem) => {
-                    if (fileFilter.some((reg) => reg.test(fileItem.file.name))) {
-                        VFolder.files.push({
-                            path: baseInfo.rootFolder.ToRelativePath(fileItem.file.path) || fileItem.file.path
-                        });
-                    }
-                });
-            });
-
-            /* import RTE dependence */
-            const rte_deps = targets[0].rte_deps;
-            const unresolved_deps: KeilRteDependence[] = [];
-            if (rte_deps) {
-
-                /* import cmsis headers */
-                const incs: string[] = this.importCmsisHeaders(baseInfo.rootFolder).map((f) => f.path);
-
-                /* try resolve all deps */
-                const mdkRoot = SettingManager.GetInstance().GetMdkArmDir();
-                if (mdkRoot) { // MDK ARM dir, like: 'D:\keil\ARM'
-                    const fileTypes: string[] = ['source', 'header'];
-                    rte_deps.forEach((dep) => {
-                        /* check dep whether is valid */
-                        if (fileTypes.includes(dep.category || '') && dep.class && dep.packPath) {
-                            const srcFileLi: File[] = [];
-                            const vFolder = getVirtualFolder(`${VirtualSource.rootName}/::${dep.class}`, true);
-
-                            /* add all candidate files */
-                            if (dep.instance) { srcFileLi.push(new File(dep.instance[0])) }
-                            srcFileLi.push(File.fromArray([mdkRoot.path, 'PACK', dep.packPath, dep.path]));
-
-                            /* resolve dependences */
-                            for (const srcFile of srcFileLi) {
-
-                                /* check condition */
-                                if (!srcFile.IsFile()) { continue; }
-                                if (dep.category == 'source' && !vFolder) { continue; }
-
-                                let srcRePath: string | undefined = baseInfo.rootFolder.ToRelativePath(srcFile.path, false);
-
-                                /* if it's not in workspace, copy it */
-                                if (srcRePath == undefined) {
-                                    srcRePath = ['.cmsis', dep.packPath, dep.path].join(File.sep);
-                                    const realFolder = File.fromArray([baseInfo.rootFolder.path, NodePath.dirname(srcRePath)]);
-                                    realFolder.CreateDir(true);
-                                    realFolder.CopyFile(srcFile);
-                                }
-
-                                /* if it's a source, add to project */
-                                if (dep.category == 'source' && vFolder) {
-                                    vFolder.files.push({ path: srcRePath });
-                                }
-
-                                /* if it's a header, add to include path */
-                                else if (dep.category == 'header') {
-                                    incs.push(`${baseInfo.rootFolder.path}${File.sep}${NodePath.dirname(srcRePath)}`);
-                                }
-
-                                return; /* resolved !, exit */
-                            }
-                        }
-                        /* resolve failed !, store dep */
-                        unresolved_deps.push(dep);
-                    });
-                }
-
-                /* add include paths for targets */
-                const mdk_rte_folder = File.fromArray([`${keilPrjFile.dir}`, 'RTE']);
-                targets.forEach((target) => {
-                    target.incList = target.incList.concat(incs);
-                    target.incList.push(`${mdk_rte_folder.path}${File.sep}_${target.name}`); /* add RTE_Components header */
-                });
-
-                /* log unresolved deps */
-                if (unresolved_deps.length > 0) {
-
-                    const title = `!!! ${WARNING} !!!`;
-
-                    const lines: string[] = [
-                        `${title}`,
-                        view_str$prompt$unresolved_deps,
-                        view_str$prompt$prj_location.replace('{}', baseInfo.workspaceFile.path),
-                        '---'
-                    ];
-
-                    unresolved_deps.forEach((dep) => {
-
-                        let locate = dep.packPath;
-                        if (dep.instance) {
-                            locate = baseInfo.rootFolder
-                                .ToRelativePath(dep.instance[0], false) || dep.instance[0]
-                        }
-
-                        const nLine: string[] = [
-                            `FileName: '${dep.path}'`,
-                            `\tClass:     '${dep.class}'`,
-                            `\tCategory:  '${dep.category}'`,
-                            `\tLocation:  '${locate}'`,
-                        ];
-
-                        lines.push(nLine.join(os.EOL));
-                    });
-
-                    const cont = lines.join(`${os.EOL}${os.EOL}`);
-                    const file = File.fromArray([baseInfo.rootFolder.path, `${title}.txt`]);
-                    file.Write(cont); // write content to file
-                    const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(file.ToUri()));
-                    vscode.window.showTextDocument(doc, { preview: false });
-                }
-            }
-
-            // init all targets
-            for (const keilTarget of targets) {
-
-                const newTarget: ProjectTargetInfo = <any>{};
-                const defIncList: string[] = [];
-
-                // copy from cur proj info
-                newTarget.compileConfig = copyObject(projectInfo.compileConfig);
-                newTarget.uploader = projectInfo.uploader;
-                newTarget.uploadConfig = copyObject(projectInfo.uploadConfig);
-                newTarget.uploadConfigMap = copyObject(projectInfo.uploadConfigMap);
-
-                // set specific configs
-                if (keilTarget.type === 'C51') { // C51 project
-                    const cmpConfig = (<KeilC51Option>keilTarget.compileOption);
-                    // set toolchain
-                    newTarget.toolchain = 'Keil_C51';
-                    // set def include folders
-                    const toolchain = ToolchainManager.getInstance().getToolchainByName('Keil_C51');
-                    if (cmpConfig.includeFolder && toolchain) {
-                        const absPath = [toolchain.getToolchainDir().path, 'INC', cmpConfig.includeFolder].join(File.sep);
-                        defIncList.push(baseInfo.rootFolder.ToRelativePath(absPath) || absPath);
-                    }
-                }
-                // ARM project
-                else {
-                    const keilCompileConf = <KeilARMOption>keilTarget.compileOption;
-                    const prjCompileOption = (<ArmBaseCompileData>newTarget.compileConfig);
-                    // set toolchain
-                    newTarget.toolchain = keilCompileConf.toolchain;
-                    // set cpu type
-                    prjCompileOption.cpuType = keilCompileConf.cpuType;
-                    // set cpu float point
-                    prjCompileOption.floatingPointHardware = keilCompileConf.floatingPointHardware || 'none';
-                    // set whether use custom scatter file
-                    prjCompileOption.useCustomScatterFile = keilCompileConf.useCustomScatterFile;
-                    // set lds path
-                    if (keilCompileConf.scatterFilePath) {
-                        prjCompileOption.scatterFilePath = baseInfo.rootFolder.
-                            ToRelativePath(keilCompileConf.scatterFilePath) || keilCompileConf.scatterFilePath;
-                    }
-                    // set storage layout
-                    prjCompileOption.storageLayout = keilCompileConf.storageLayout;
-                }
-
-                // init custom dependence after specific configs done
-                newTarget.custom_dep = <any>{ name: 'default', sourceDirList: [], libList: [] };
-                const incList = keilTarget.incList.map((path) => { return baseInfo.rootFolder.ToRelativePath(path) || path; });
-                newTarget.custom_dep.incList = defIncList.concat(incList);
-                newTarget.custom_dep.defineList = keilTarget.defineList;
-
-                // fill exclude list
-                newTarget.excludeList = [];
-                for (const group of keilTarget.fileGroups) {
-                    const vFolderPath = `${VirtualSource.rootName}/${File.ToUnixPath(group.name)}`;
-                    if (group.disabled) { newTarget.excludeList.push(vFolderPath); } // add disabled group
-                    for (const file of group.files) {
-                        if (file.disabled) { // add disabled file
-                            newTarget.excludeList.push(`${vFolderPath}/${file.file.name}`);
-                        }
-                    }
-                }
-
-                projectInfo.targets[keilTarget.name] = newTarget;
-            }
-
-            // init current target
-            const curTarget: any = projectInfo.targets[targets[0].name];
-            projectInfo.mode = targets[0].name; // current target name
-            for (const name in curTarget) {
-                if (name === 'custom_dep') {
-                    projectInfo.dependenceList = [{
-                        groupName: 'custom', depList: [curTarget[name]]
-                    }];
-                    continue;
-                }
-                (<any>projectInfo)[name] = curTarget[name];
-            }
-
-            // save all config
-            baseInfo.prjConfig.Save();
-
-            // switch project
-            const selection = await vscode.window.showInformationMessage(
-                view_str$operation$import_done, continue_text, cancel_text);
-            if (selection === continue_text) {
-                WorkspaceManager.getInstance().openWorkspace(baseInfo.workspaceFile);
-            }
-
-        } catch (error) {
+        let catchErr = (error: any) => {
             const msg = `${view_str$operation$import_failed}: ${(<Error>error).message}`;
             GlobalEvent.emit('msg', newMessage('Warning', msg));
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+        }
+
+        switch (option.type) {
+            case 'mdk':
+                this.ImportKeilProject(option).catch(err => catchErr(err));
+                break;
+            case 'eclipse':
+                this.ImportEclipseProject(option).catch(err => catchErr(err));
+                break;
+            default:
+                break;
+        }
+    }
+
+    private async ImportEclipseProject(option: ImportOptions) {
+
+        const ePrjInfo = await eclipseParser.parseEclipseProject(option.projectFile.path);
+        const ePrjRoot = new File(option.projectFile.dir);
+
+        let nPrjType: ProjectType = 'ANY-GCC';
+
+        switch (ePrjInfo.type) {
+            case 'arm':
+                nPrjType = 'ARM';
+                break;
+            case 'riscv':
+                nPrjType = 'RISC-V';
+                break;
+            case 'sdcc':
+                nPrjType = 'C51';
+            default:
+                break;
+        }
+
+        const basePrj = AbstractProject.NewProject().createBase({
+            name: ePrjInfo.name,
+            type: nPrjType,
+            outDir: ePrjRoot
+        }, false);
+
+        const nPrjConfig = basePrj.prjConfig.config;
+        const eideFolder = File.fromArray([ePrjRoot.path, AbstractProject.EIDE_DIR]);
+
+        nPrjConfig.virtualFolder = ePrjInfo.virtualSource;
+        nPrjConfig.outDir = 'build';
+        nPrjConfig.srcDirs = File.NotMatchFilter(ePrjRoot.GetList(File.EMPTY_FILTER), File.EMPTY_FILTER,
+            [/^\./, /^(build|dist|out|bin|obj|exe|debug|release|log[s]?|ipch|docs|doc|img|image[s]?)$/i])
+            .map(d => ePrjRoot.ToRelativePath(d.path, false) || d.path);
+
+        // init all target
+        for (const eTarget of ePrjInfo.targets) {
+
+            const nEideTarget: ProjectTargetInfo = <any>{
+                excludeList: eTarget.excList,
+                toolchain: nPrjConfig.toolchain,
+                compileConfig: copyObject(nPrjConfig.compileConfig),
+                uploader: nPrjConfig.uploader,
+                uploadConfig: copyObject(nPrjConfig.uploadConfig),
+                uploadConfigMap: copyObject(nPrjConfig.uploadConfigMap)
+            };
+
+            nEideTarget.custom_dep = {
+                name: 'default',
+                incList: [],
+                defineList: [],
+                sourceDirList: [],
+                libList: []
+            };
+
+            nEideTarget.custom_dep.defineList = eTarget.globalArgs.cMacros;
+            nEideTarget.custom_dep.incList = eTarget.globalArgs.cIncDirs;
+
+            var getRootIncompatibleArgs = (t: eclipseParser.EclipseProjectTarget): string[] => {
+
+                const res: string[] = [];
+
+                if (!t.incompatibleArgs['/']) return res;
+                const bArgs: any = t.incompatibleArgs['/'];
+                for (const key in bArgs) {
+                    if (!isArray(bArgs[key])) continue;
+                    for (const arg of bArgs[key]) {
+                        res.push(arg);
+                    }
+                }
+
+                return res;
+            };
+
+            // for arm gcc toolchain
+            if (nEideTarget.toolchain == 'GCC') {
+
+                var guessArmCpuType = (t: eclipseParser.EclipseProjectTarget): string | undefined => {
+
+                    // @note: this list is trimed, not full
+                    const armCpuTypeList = [
+                        'Cortex-M0',
+                        'Cortex-M23',
+                        'Cortex-M33',
+                        'Cortex-M3',
+                        'Cortex-M4',
+                        'Cortex-M7'
+                    ];
+
+                    for (const arg of getRootIncompatibleArgs(t)) {
+                        const mRes = /(cortex-m[\w\+]+)/.exec(arg);
+                        if (mRes && mRes.length > 1) {
+                            const name = mRes[1].toLowerCase();
+                            const idx = armCpuTypeList.map(c => c.toLowerCase())
+                                .findIndex(c => name == c || name.startsWith(c));
+                            if (idx != -1) return armCpuTypeList[idx];
+                        }
+                    }
+                };
+
+                const compilerOpt = <ArmBaseCompileData>nEideTarget.compileConfig;
+                compilerOpt.cpuType = guessArmCpuType(eTarget) || 'Cortex-M3';
+                compilerOpt.floatingPointHardware = /-M[4-9]\d+/.test(compilerOpt.cpuType) ? 'single' : 'none';
+                compilerOpt.useCustomScatterFile = true;
+                compilerOpt.scatterFilePath = '';
+
+                getRootIncompatibleArgs(eTarget).forEach(arg => {
+                    if (/linker script/i.test(arg)) {
+                        const mRes = /[^=]+=(.+)$/.exec(arg);
+                        if (mRes && mRes.length > 1) {
+                            const p = eclipseParser.formatFilePath(mRes[1].trim());
+                            if (/\.ld[s]?$/i.test(p)) {
+                                compilerOpt.scatterFilePath = p;
+                            }
+                        }
+                    }
+                });
+            }
+
+            // for riscv gcc toolchain
+            else if (nEideTarget.toolchain == 'RISCV_GCC') {
+
+                const compilerOpt = <RiscvCompileData>nEideTarget.compileConfig;
+
+                compilerOpt.linkerScriptPath = '';
+
+                getRootIncompatibleArgs(eTarget).forEach(arg => {
+                    if (/linker script/i.test(arg)) {
+                        const mRes = /[^=]+=(.+)$/.exec(arg);
+                        if (mRes && mRes.length > 1) {
+                            const p = eclipseParser.formatFilePath(mRes[1].trim());
+                            if (/\.ld[s]?$/i.test(p)) {
+                                compilerOpt.linkerScriptPath = p;
+                            }
+                        }
+                    }
+                });
+            }
+
+            // for any gcc toolchain
+            else if (nEideTarget.toolchain == 'ANY_GCC') {
+
+                const compilerOpt = <AnyGccCompileData>nEideTarget.compileConfig;
+
+                compilerOpt.linkerScriptPath = '';
+
+                getRootIncompatibleArgs(eTarget).forEach(arg => {
+                    if (/linker script/i.test(arg)) {
+                        const mRes = /[^=]+=(.+)$/.exec(arg);
+                        if (mRes && mRes.length > 1) {
+                            const p = eclipseParser.formatFilePath(mRes[1].trim());
+                            if (/\.ld[s]?$/i.test(p)) {
+                                compilerOpt.linkerScriptPath = p;
+                            }
+                        }
+                    }
+                });
+            }
+
+            // init compiler args for target
+            {
+                const toolchain = ToolchainManager.getInstance().getToolchain(nPrjConfig.type, nPrjConfig.toolchain);
+                const toolchainDefConf = toolchain.getDefaultConfig();
+                const toolchainCfgFile = File.fromArray([eideFolder.path, `${eTarget.name.toLowerCase()}.${toolchain.configName}`]);
+
+                // glob
+                toolchainDefConf.global['misc-control'] = eTarget.globalArgs.globalArgs.filter(a => a.trim() != '');
+
+                // asm
+                {
+                    let flags: string[] = [];
+                    const asmCfg = toolchainDefConf["asm-compiler"];
+
+                    if (asmCfg['ASM_FLAGS']) flags.push(asmCfg['ASM_FLAGS']);
+                    eTarget.globalArgs.sMacros.forEach(m => flags.push(`-D${m}`));
+                    eTarget.globalArgs.assemblerArgs.forEach(arg => flags.push(arg));
+
+                    flags = flags.filter(p => p.trim() != '');
+                    if (asmCfg['ASM_FLAGS'] != undefined) {
+                        asmCfg['ASM_FLAGS'] = flags.join(' ');
+                    } else {
+                        asmCfg['misc-control'] = flags.join(' ');
+                    }
+                }
+
+                // c
+                {
+                    let flags: string[] = [];
+                    let cxxFlags: string[] = [];
+                    const ccCfg = toolchainDefConf["c/cpp-compiler"];
+
+                    if (ccCfg['C_FLAGS']) flags.push(ccCfg['C_FLAGS']);
+                    if (ccCfg['CXX_FLAGS']) cxxFlags.push(ccCfg['CXX_FLAGS']);
+
+                    eTarget.globalArgs.cCompilerArgs.forEach(arg => {
+                        flags.push(arg);
+                        cxxFlags.push(arg);
+                    });
+
+                    flags = flags.filter(p => p.trim() != '');
+                    cxxFlags = cxxFlags.filter(p => p.trim() != '');
+                    if (ccCfg['C_FLAGS'] != undefined) {
+                        ccCfg['C_FLAGS'] = flags.join(' ');
+                        ccCfg['CXX_FLAGS'] = cxxFlags.join(' ');
+                    } else {
+                        ccCfg['misc-control'] = flags.join(' ');
+                    }
+                }
+
+                // linker
+                {
+                    if (!toolchainDefConf.linker) toolchainDefConf.linker = {};
+                    const ldCfg = toolchainDefConf.linker;
+
+                    const flags: string[] = eTarget.globalArgs.linkerArgs.filter(a => a.trim() != '');
+                    if (ldCfg['LD_FLAGS'] != undefined) {
+                        ldCfg['LD_FLAGS'] = flags.join(' ');
+                        const libFlags = eTarget.globalArgs.linkerLibArgs.filter(a => a.trim() != '');
+                        if (ldCfg['LIB_FLAGS'] != undefined) {
+                            ldCfg['LIB_FLAGS'] = libFlags.join(' ');
+                        }
+                    } else {
+                        ldCfg['misc-control'] = flags.join(' ');
+                    }
+                }
+
+                toolchainCfgFile.Write(JSON.stringify(toolchainDefConf, undefined, 4));
+            }
+
+            nPrjConfig.targets[eTarget.name] = nEideTarget;
+        }
+
+        // init current target
+        const curTarget: any = nPrjConfig.targets[ePrjInfo.targets[0].name];
+        nPrjConfig.mode = ePrjInfo.targets[0].name; // set current target name
+        for (const name in curTarget) {
+            if (name === 'custom_dep') {
+                nPrjConfig.dependenceList = [{
+                    groupName: 'custom', depList: [curTarget[name]]
+                }];
+                continue;
+            }
+            (<any>nPrjConfig)[name] = curTarget[name];
+        }
+
+        // save all config
+        basePrj.prjConfig.Save();
+
+        // show warning
+
+        var getAllKeys = (obj: any): string[] => {
+            if (typeof obj != 'object') return [];
+            const keys: string[] = [];
+            for (const key in obj) keys.push(key);
+            return keys;
+        };
+
+        if (getAllKeys(ePrjInfo.envs).length > 0 ||
+            ePrjInfo.targets.some(t => getAllKeys(t.incompatibleArgs).length > 0)) {
+
+            let warnLines = [
+                `!!! ${WARNING} !!!`,
+                '',
+                view_str$prompt$eclipse_imp_warning,
+                '',
+                '---',
+                ''
+            ];
+
+            if (getAllKeys(ePrjInfo.envs).length > 0) {
+                warnLines.push(
+                    `##### Eclipse Project Environment Variables #####`,
+                    ``,
+                    yaml.stringify({ 'Envs': ePrjInfo.envs }),
+                    ``
+                );
+            }
+
+            warnLines.push(
+                `##### Configurations For All Targets #####`,
+                ``
+            );
+
+            ePrjInfo.targets.forEach(target => {
+                warnLines.push(
+                    `//`,
+                    `///// Target: '${target.name}' /////`,
+                    `//`,
+                    '',
+                    yaml.stringify({ 'Incompatible Args': target.incompatibleArgs }),
+                    ''
+                );
+            });
+
+            const f = File.fromArray([ePrjRoot.path, `eclipse.${AbstractProject.importerWarningBaseName}`]);
+            f.Write(warnLines.join(os.EOL));
+            const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(f.ToUri()));
+
+            vscode.window.showTextDocument(doc, {
+                preview: false,
+                selection: doc.lineAt(0).range,
+            });
+        }
+
+        // switch project
+        const selection = await vscode.window.showInformationMessage(
+            view_str$operation$import_done, continue_text, cancel_text);
+        if (selection === continue_text) {
+            WorkspaceManager.getInstance().openWorkspace(basePrj.workspaceFile);
+        }
+    }
+
+    private async ImportKeilProject(option: ImportOptions) {
+
+        const keilPrjFile = option.projectFile;
+        const keilParser = KeilParser.NewInstance(option.projectFile);
+        const targets = keilParser.ParseData();
+
+        if (targets.length == 0) {
+            throw Error(`Not found any target in '${keilPrjFile.path}' !`);
+        }
+
+        const nPrjOutDir = <File>option.outDir;
+
+        const baseInfo = AbstractProject.NewProject().createBase({
+            name: nPrjOutDir.name,
+            type: targets[0].type,
+            outDir: nPrjOutDir
+        }, false);
+
+        const projectInfo = baseInfo.prjConfig.config;
+
+        // init project info
+        projectInfo.virtualFolder = {
+            name: VirtualSource.rootName,
+            files: [],
+            folders: []
+        };
+
+        const getVirtualFolder = (path: string, noCreate?: boolean): VirtualFolder | undefined => {
+
+            if (!path.startsWith(`${VirtualSource.rootName}/`)) {
+                throw Error(`'${path}' is not a virtual path`);
+            }
+
+            const pathList = path.split('/');
+            pathList.splice(0, 1); // remvoe root
+
+            // init start search folder
+            let curFolder: VirtualFolder = projectInfo.virtualFolder;
+
+            for (const name of pathList) {
+                const index = curFolder.folders.findIndex((folder) => { return folder.name === name; });
+                if (index === -1) {
+                    if (noCreate) { return undefined; }
+                    const newFolder = { name: name, files: [], folders: [] };
+                    curFolder.folders.push(newFolder);
+                    curFolder = newFolder;
+                } else {
+                    curFolder = curFolder.folders[index];
+                }
+            }
+
+            return curFolder;
+        };
+
+        // init file group
+        const fileFilter = AbstractProject.getFileFilters();
+        targets[0].fileGroups.forEach((group) => {
+            const vPath = `${VirtualSource.rootName}/${File.ToUnixPath(group.name)}`;
+            const VFolder = <VirtualFolder>getVirtualFolder(vPath);
+            group.files.forEach((fileItem) => {
+                if (fileFilter.some((reg) => reg.test(fileItem.file.name))) {
+                    VFolder.files.push({
+                        path: baseInfo.rootFolder.ToRelativePath(fileItem.file.path) || fileItem.file.path
+                    });
+                }
+            });
+        });
+
+        /* import RTE dependence */
+        const rte_deps = targets[0].rte_deps;
+        const unresolved_deps: KeilRteDependence[] = [];
+        if (rte_deps) {
+
+            /* import cmsis headers */
+            const incs: string[] = this.importCmsisHeaders(baseInfo.rootFolder).map((f) => f.path);
+
+            /* try resolve all deps */
+            const mdkRoot = SettingManager.GetInstance().GetMdkArmDir();
+            if (mdkRoot) { // MDK ARM dir, like: 'D:\keil\ARM'
+                const fileTypes: string[] = ['source', 'header'];
+                rte_deps.forEach((dep) => {
+                    /* check dep whether is valid */
+                    if (fileTypes.includes(dep.category || '') && dep.class && dep.packPath) {
+                        const srcFileLi: File[] = [];
+                        const vFolder = getVirtualFolder(`${VirtualSource.rootName}/::${dep.class}`, true);
+
+                        /* add all candidate files */
+                        if (dep.instance) { srcFileLi.push(new File(dep.instance[0])) }
+                        srcFileLi.push(File.fromArray([mdkRoot.path, 'PACK', dep.packPath, dep.path]));
+
+                        /* resolve dependences */
+                        for (const srcFile of srcFileLi) {
+
+                            /* check condition */
+                            if (!srcFile.IsFile()) { continue; }
+                            if (dep.category == 'source' && !vFolder) { continue; }
+
+                            let srcRePath: string | undefined = baseInfo.rootFolder.ToRelativePath(srcFile.path, false);
+
+                            /* if it's not in workspace, copy it */
+                            if (srcRePath == undefined) {
+                                srcRePath = ['.cmsis', dep.packPath, dep.path].join(File.sep);
+                                const realFolder = File.fromArray([baseInfo.rootFolder.path, NodePath.dirname(srcRePath)]);
+                                realFolder.CreateDir(true);
+                                realFolder.CopyFile(srcFile);
+                            }
+
+                            /* if it's a source, add to project */
+                            if (dep.category == 'source' && vFolder) {
+                                vFolder.files.push({ path: srcRePath });
+                            }
+
+                            /* if it's a header, add to include path */
+                            else if (dep.category == 'header') {
+                                incs.push(`${baseInfo.rootFolder.path}${File.sep}${NodePath.dirname(srcRePath)}`);
+                            }
+
+                            return; /* resolved !, exit */
+                        }
+                    }
+                    /* resolve failed !, store dep */
+                    unresolved_deps.push(dep);
+                });
+            }
+
+            /* add include paths for targets */
+            const mdk_rte_folder = File.fromArray([`${keilPrjFile.dir}`, 'RTE']);
+            targets.forEach((target) => {
+                target.incList = target.incList.concat(incs);
+                target.incList.push(`${mdk_rte_folder.path}${File.sep}_${target.name}`); /* add RTE_Components header */
+            });
+
+            /* log unresolved deps */
+            if (unresolved_deps.length > 0) {
+
+                const title = `!!! ${WARNING} !!!`;
+
+                const lines: string[] = [
+                    `${title}`,
+                    view_str$prompt$unresolved_deps,
+                    view_str$prompt$prj_location.replace('{}', baseInfo.workspaceFile.path),
+                    '---'
+                ];
+
+                unresolved_deps.forEach((dep) => {
+
+                    let locate = dep.packPath;
+                    if (dep.instance) {
+                        locate = baseInfo.rootFolder
+                            .ToRelativePath(dep.instance[0], false) || dep.instance[0]
+                    }
+
+                    const nLine: string[] = [
+                        `FileName: '${dep.path}'`,
+                        `\tClass:     '${dep.class}'`,
+                        `\tCategory:  '${dep.category}'`,
+                        `\tLocation:  '${locate}'`,
+                    ];
+
+                    lines.push(nLine.join(os.EOL));
+                });
+
+                const cont = lines.join(`${os.EOL}${os.EOL}`);
+                const file = File.fromArray([baseInfo.rootFolder.path, `keil.${AbstractProject.importerWarningBaseName}`]);
+                file.Write(cont); // write content to file
+                const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(file.ToUri()));
+                vscode.window.showTextDocument(doc, { preview: false });
+            }
+        }
+
+        // init all targets
+        for (const keilTarget of targets) {
+
+            const newTarget: ProjectTargetInfo = <any>{};
+            const defIncList: string[] = [];
+
+            // copy from cur proj info
+            newTarget.compileConfig = copyObject(projectInfo.compileConfig);
+            newTarget.uploader = projectInfo.uploader;
+            newTarget.uploadConfig = copyObject(projectInfo.uploadConfig);
+            newTarget.uploadConfigMap = copyObject(projectInfo.uploadConfigMap);
+
+            // set specific configs
+            if (keilTarget.type === 'C51') { // C51 project
+                const cmpConfig = (<KeilC51Option>keilTarget.compileOption);
+                // set toolchain
+                newTarget.toolchain = 'Keil_C51';
+                // set def include folders
+                const toolchain = ToolchainManager.getInstance().getToolchainByName('Keil_C51');
+                if (cmpConfig.includeFolder && toolchain) {
+                    const absPath = [toolchain.getToolchainDir().path, 'INC', cmpConfig.includeFolder].join(File.sep);
+                    defIncList.push(baseInfo.rootFolder.ToRelativePath(absPath) || absPath);
+                }
+            }
+            // ARM project
+            else {
+                const keilCompileConf = <KeilARMOption>keilTarget.compileOption;
+                const prjCompileOption = (<ArmBaseCompileData>newTarget.compileConfig);
+                // set toolchain
+                newTarget.toolchain = keilCompileConf.toolchain;
+                // set cpu type
+                prjCompileOption.cpuType = keilCompileConf.cpuType;
+                // set cpu float point
+                prjCompileOption.floatingPointHardware = keilCompileConf.floatingPointHardware || 'none';
+                // set whether use custom scatter file
+                prjCompileOption.useCustomScatterFile = keilCompileConf.useCustomScatterFile;
+                // set lds path
+                if (keilCompileConf.scatterFilePath) {
+                    prjCompileOption.scatterFilePath = baseInfo.rootFolder.
+                        ToRelativePath(keilCompileConf.scatterFilePath) || keilCompileConf.scatterFilePath;
+                }
+                // set storage layout
+                prjCompileOption.storageLayout = keilCompileConf.storageLayout;
+            }
+
+            // init custom dependence after specific configs done
+            newTarget.custom_dep = <any>{ name: 'default', sourceDirList: [], libList: [] };
+            const incList = keilTarget.incList.map((path) => { return baseInfo.rootFolder.ToRelativePath(path) || path; });
+            newTarget.custom_dep.incList = defIncList.concat(incList);
+            newTarget.custom_dep.defineList = keilTarget.defineList;
+
+            // fill exclude list
+            newTarget.excludeList = [];
+            for (const group of keilTarget.fileGroups) {
+                const vFolderPath = `${VirtualSource.rootName}/${File.ToUnixPath(group.name)}`;
+                if (group.disabled) { newTarget.excludeList.push(vFolderPath); } // add disabled group
+                for (const file of group.files) {
+                    if (file.disabled) { // add disabled file
+                        newTarget.excludeList.push(`${vFolderPath}/${file.file.name}`);
+                    }
+                }
+            }
+
+            projectInfo.targets[keilTarget.name] = newTarget;
+        }
+
+        // init current target
+        const curTarget: any = projectInfo.targets[targets[0].name];
+        projectInfo.mode = targets[0].name; // current target name
+        for (const name in curTarget) {
+            if (name === 'custom_dep') {
+                projectInfo.dependenceList = [{
+                    groupName: 'custom', depList: [curTarget[name]]
+                }];
+                continue;
+            }
+            (<any>projectInfo)[name] = curTarget[name];
+        }
+
+        // save all config
+        baseInfo.prjConfig.Save();
+
+        // switch project
+        const selection = await vscode.window.showInformationMessage(
+            view_str$operation$import_done, continue_text, cancel_text);
+        if (selection === continue_text) {
+            WorkspaceManager.getInstance().openWorkspace(baseInfo.workspaceFile);
         }
     }
 
     async CreateFromTemplate(option: CreateOptions) {
 
-        const compresser = new Compress(ResManager.GetInstance().Get7zDir());
+        const compresser = new SevenZipper(ResManager.GetInstance().Get7zDir());
         const templateFile = <File>option.templateFile;
 
         try {
@@ -1786,15 +2119,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
     }
 
     SaveAll() {
-        this.prjList.forEach(sln => {
-            sln.Save();
-        });
+        this.prjList.forEach(sln => sln.Save());
     }
 
     CloseAll() {
-        this.prjList.forEach(sln => {
-            sln.Close();
-        });
+        this.prjList.forEach(sln => sln.Close());
         this.prjList = [];
     }
 
@@ -1912,6 +2241,7 @@ interface ImporterProjectInfo {
     incList: string[];
     defineList: string[];
     files: VirtualFolder;
+    excludeList?: string[] | { [targetName: string]: string[] };
 }
 
 export class ProjectExplorer implements CustomConfigurationProvider {
@@ -2312,6 +2642,18 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
     }
 
+    saveProject(prjItem?: ProjTreeItem) {
+
+        const prj = this.getProjectByTreeItem(prjItem);
+
+        if (prj === undefined) {
+            GlobalEvent.emit('msg', newMessage('Warning', 'No active project !'));
+            return;
+        }
+
+        prj.Save();
+    }
+
     private _buildLock: boolean = false;
     BuildSolution(prjItem?: ProjTreeItem, options?: BuildOptions) {
 
@@ -2330,7 +2672,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         this._buildLock = true;
 
         // save project before build
-        prj.Save();
+        prj.Save(true);
 
         try {
             const codeBuilder = CodeBuilder.NewBuilder(prj);
@@ -2769,7 +3111,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 `${AbstractProject.EIDE_DIR}${File.sep}*.dat`,
             ];
 
-            /* if this is a project, handle it ! */
+            // if this is a project, prehandle it
             let prj: AbstractProject | undefined;
             if (prjItem && isWorkspace == undefined) {
                 prj = this.dataProvider.GetProjectByIndex(prjItem.val.projectIndex);
@@ -2782,7 +3124,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 resIgnoreList = prj.readIgnoreList();
                 const prjUid = prjConfig.miscInfo.uid;
                 prjConfig.miscInfo.uid = undefined; // clear uid before save prj
-                prj.Save(); // save project
+                prj.Save(true); // save project
                 prjConfig.miscInfo.uid = prjUid; // restore uid
             }
 
@@ -2807,7 +3149,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 excludeList: ArrayDelRepetition(defExcludeList.concat(resIgnoreList))
             };
 
-            const compresser = new Compress(ResManager.GetInstance().Get7zDir());
+            const compresser = new SevenZipper(ResManager.GetInstance().Get7zDir());
 
             await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
@@ -2990,15 +3332,13 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     const rePath = prj.ToRelativePath(folderPath, false);
 
                     // if can't calculate repath, skip
-                    if (rePath === undefined) {
+                    if (rePath === undefined || rePath.trim() === '') {
                         GlobalEvent.emit('msg', newMessage('Warning', `Can't calculate relative path for '${folderPath}' !`));
                         continue;
                     }
 
-                    if (rePath === '.' || rePath.trim() === '' ||   // is current root folder
-                        rePath === '..' || rePath.startsWith(`..${File.sep}`)) // is parent folder
-                    {
-                        GlobalEvent.emit('msg', newMessage('Warning', view_str$prompt$src_folder_must_be_a_child_of_root));
+                    if (rePath === '.' || rePath.split('/').every(p => p == '..')) { // ignore these folders
+                        GlobalEvent.emit('msg', newMessage('Warning', `source folder can not be '${rePath}' !`));
                         continue;
                     }
 
@@ -3796,10 +4136,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     });
 
                     if (newName && newName !== oldFolderName) {
-                        const oldFolder = new File(prj.ToAbsolutePath(prjConfig.outDir));
-                        DeleteDir(oldFolder);
                         prjConfig.outDir = newName;
                         this.updateSettingsView(prj);
+                        prj.Save();
                     }
                 }
                 break;
@@ -3818,6 +4157,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     if (newName && newName !== prjConfig.name) {
                         prjConfig.name = newName; // update project name
                         this.dataProvider.UpdateView(); // udpate all view
+                        prj.Save();
                     }
                 }
                 break;
@@ -3833,9 +4173,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
     }
 
-    async ImportSourceFromExtProject(item: ProjTreeItem) {
+    async ImportSourceFromExtProject(treeItem: ProjTreeItem) {
 
-        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        const prj = this.dataProvider.GetProjectByIndex(treeItem.val.projectIndex);
 
         try {
             //
@@ -3936,7 +4276,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                                     canPickMany: false
                                 }
                             );
-                            if (item != undefined) {
+                            if (selectedItem) {
                                 const index = itemList.findIndex((item) => item.id == selectedItem.id);
                                 if (index != -1) {
                                     prjInfo = prjList[index];
@@ -3972,7 +4312,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     //
                     // start import project
                     //
-                    const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
                     const prjConf = prj.GetConfiguration();
                     prjConf.config.virtualFolder = prjInfo.files;
                     formatVirtualFolder(prjConf.config.virtualFolder);
@@ -3987,8 +4326,40 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     prj.getVirtualSourceManager().load();
                     prjConf.CustomDep_NotifyChanged();
 
+                    //
+                    // exclude source
+                    //
+                    if (prjInfo.excludeList) {
+
+                        prjInfo.excludeList = Array.isArray(prjInfo.excludeList) ?
+                            prjInfo.excludeList :
+                            prjInfo.excludeList[prjInfo.target || 'null'];
+
+                        if (Array.isArray(prjInfo.excludeList)) {
+
+                            const excRePathLi = prjInfo.excludeList
+                                .filter(path => path.trim() != '')
+                                .map(path => prj.ToRelativePath(path) || path);
+
+                            const realExcLi: string[] = [];
+
+                            prj.getVirtualSourceManager().traverse((vFolderInfo) => {
+                                vFolderInfo.folder.files.forEach(vFile => {
+                                    if (excRePathLi.includes(vFile.path)) {
+                                        const vFullPath = `${vFolderInfo.path}/${NodePath.basename(vFile.path)}`;
+                                        realExcLi.push(vFullPath);
+                                    }
+                                });
+                            });
+
+                            realExcLi.forEach(vPath => prj.excludeSourceFile(vPath));
+                        }
+                    }
+
                     // show message and exit
                     progress.report({ message: `done !` });
+
+                    prj.Save();
 
                     await new Promise((resolve) => {
                         setTimeout(() => resolve(), 1000);
@@ -4519,14 +4890,14 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             else if (suffix == '.elf') {
 
                 let readelf: string = 'arm-none-eabi-readelf';
+                let elfsize: string = 'arm-none-eabi-size';
 
                 const activePrj = this.getActiveProject();
                 if (activePrj) {
                     const toolchain = activePrj.getToolchain();
                     if (!['AC5', 'AC6'].includes(toolchain.name) && toolchain.getToolchainPrefix) {
-                        readelf = [
-                            toolchain.getToolchainDir().path, 'bin', `${toolchain.getToolchainPrefix()}readelf`
-                        ].join(File.sep);
+                        readelf = [toolchain.getToolchainDir().path, 'bin', `${toolchain.getToolchainPrefix()}readelf`].join(File.sep);
+                        elfsize = [toolchain.getToolchainDir().path, 'bin', `${toolchain.getToolchainPrefix()}size`].join(File.sep);
                     }
                 }
 
@@ -4539,6 +4910,19 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 } catch (error) {
                     const err = <Error>error;
                     cont = `${err.name}: ${err.message}\n${err.stack}`;
+                }
+
+                // show elf size
+                try {
+                    let tLines = child_process
+                        .execFileSync(`${elfsize}${exeSuffix()}`, ['-A', binFile.path])
+                        .toString().split(/\r\n|\n/g);
+                    tLines = tLines.filter(s => s.trim() != '').map(s => `  ${s}`);
+                    tLines.push(os.EOL);
+                    tLines = [os.EOL + 'ELF Size:'].concat(tLines);
+                    cont += tLines.join(os.EOL);
+                } catch (error) {
+                    // do nothing
                 }
 
                 const vDoc = VirtualDocument.instance();
@@ -4914,8 +5298,15 @@ class ProjectExcSourceModifier implements ModifiableYamlConfigProvider {
         try {
             const excList = yml.parse(yamlFile.Read());
             if (!Array.isArray(excList)) { throw new Error(`Type error, exclude list must be an array !`); }
-            prj.GetConfiguration().config.excludeList = excList.map(p => File.ToUnixPath(p));
+            const newExcLi = excList.map(p => File.ToUnixPath(p));
+            const oldExcLi = prj.GetConfiguration().config.excludeList;
+            prj.GetConfiguration().config.excludeList = newExcLi;
             prj.notifySourceExplorerViewRefresh();
+            // update filesystem source link
+            const diffNew2Old = newExcLi.filter(p => !oldExcLi.includes(p));
+            const diffOld2New = oldExcLi.filter(p => !newExcLi.includes(p));
+            const needUpdateLi = ArrayDelRepetition(diffNew2Old.concat(diffOld2New)).filter(p => !p.startsWith(VirtualSource.rootName));
+            needUpdateLi.forEach(dir => prj.getNormalSourceManager().notifyUpdateFolder(prj.ToAbsolutePath(dir)));
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
         }

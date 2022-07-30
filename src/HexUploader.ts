@@ -41,7 +41,7 @@ import * as fs from 'fs';
 import * as ini from 'ini';
 import { ResInstaller } from "./ResInstaller";
 import { newMessage } from "./Message";
-import { concatSystemEnvPath, exeSuffix } from "./Platform";
+import { concatSystemEnvPath, exeSuffix, prependToSysEnv } from "./Platform";
 
 let _mInstance: HexUploaderManager | undefined;
 
@@ -200,7 +200,8 @@ export abstract class HexUploader<InvokeParamsType> {
         return result;
     }
 
-    protected toAbsolute(_path: string): File {
+    protected toAbsolute(_path: string): File | undefined {
+        if (_path.trim() == '') return undefined;
         return new File(this.project.ToAbsolutePath(_path));
     }
 
@@ -462,7 +463,7 @@ class StcgalUploader extends HexUploader<string[]> {
         commands.push('"' + programs[0].path + '"');
 
         const eepromFile = this.toAbsolute(option.eepromImgPath);
-        if (eepromFile.IsFile()) {
+        if (eepromFile && eepromFile.IsFile()) {
             commands.push('"' + eepromFile.path + '"');
         }
 
@@ -696,6 +697,8 @@ class STVPHexUploader extends HexUploader<string[]> {
 
     toolType: HexUploaderType = 'STVP';
 
+    private isEraseMode?: boolean;
+
     constructor(prj: AbstractProject) {
         super(prj);
     }
@@ -706,6 +709,16 @@ class STVPHexUploader extends HexUploader<string[]> {
         if (!exe.IsFile()) {
             await ResInstaller.instance().setOrInstallTools(this.toolType, `Not found STVP: \'STVP_CmdLine${exeSuffix()}\' !`);
             return { isOk: false };
+        }
+
+        // set flag
+        this.isEraseMode = eraseAll;
+
+        if (eraseAll) {
+            return {
+                isOk: true,
+                params: []
+            };
         }
 
         const options = this.getUploadOptions<STVPFlasherOptions>();
@@ -725,57 +738,38 @@ class STVPHexUploader extends HexUploader<string[]> {
         commands.push('-no_log');
 
         // program
-        if (!eraseAll) {
-
-            if (programs.length == 0) {
-                throw new Error(`no any program files !`);
-            }
-
-            let fileCount: number = 0;
-
-            // program
-            const binFile = this.toAbsolute(programs[0].path);
-            if (binFile.IsFile()) {
-                commands.push('-FileProg=\"' + binFile.path + '\"');
-                fileCount++;
-            } else {
-                commands.push('-no_progProg');
-            }
-
-            // eeprom
-            const eepromFile = this.toAbsolute(options.eepromFile);
-            if (eepromFile.IsFile()) {
-                commands.push('-FileData=\"' + eepromFile.path + '\"');
-                fileCount++;
-            } else {
-                commands.push('-no_progData');
-            }
-
-            // option bytes
-            const opFile = this.toAbsolute(options.optionByteFile);
-            if (opFile.IsFile()) {
-                commands.push('-FileOption=\"' + opFile.path + '\"');
-                fileCount++;
-            } else {
-                commands.push('-no_progOption');
-            }
-
-            // verify prog
-            if (fileCount > 0) {
-                commands.push('-verif');
-            }
-
-            // no files need be programed
-            else {
-                throw new Error('no any valid program files !');
-            }
+        if (programs.length == 0) {
+            throw new Error(`No valid program files !`);
         }
 
-        // erase all
-        else {
-            commands.push('-no_progProg');
-            commands.push('-erase');
-            commands.push('-no_verif');
+        let fileCount: number = 0;
+
+        // program
+        const binFile = this.toAbsolute(programs[0].path);
+        if (binFile && binFile.IsFile()) {
+            commands.push('-FileProg=\"' + binFile.path + '\"');
+            fileCount++;
+        }
+
+        // eeprom
+        const eepromFile = this.toAbsolute(options.eepromFile);
+        if (eepromFile && eepromFile.IsFile()) {
+            commands.push('-FileData=\"' + eepromFile.path + '\"');
+            fileCount++;
+        }
+
+        // option bytes
+        const opFile = this.toAbsolute(options.optionByteFile);
+        if (opFile && opFile.IsFile()) {
+            commands.push('-FileOption=\"' + opFile.path + '\"');
+            fileCount++;
+        }
+
+        // verify prog
+        if (fileCount > 0) {
+            commands.push('-verif');
+        } else { // no files need be programed
+            throw new Error('No valid program files !');
         }
 
         return {
@@ -786,12 +780,29 @@ class STVPHexUploader extends HexUploader<string[]> {
 
     protected _launch(commands: string[]): void {
 
-        const commandLine = CmdLineHandler.getCommandLine(
-            SettingManager.GetInstance().getStvpExePath(), commands, false, true
-        );
+        const eraseAll: boolean | undefined = this.isEraseMode;
 
-        // run
-        runShellCommand(this.toolType, commandLine);
+        this.isEraseMode = undefined; // clear flag
+
+        // normal flash mode
+        if (!eraseAll) {
+            const commandLine = CmdLineHandler.getCommandLine(
+                SettingManager.GetInstance().getStvpExePath(), commands, false, true);
+            runShellCommand(this.toolType, commandLine);
+        }
+
+        // erase all mode
+        else {
+            const options = this.getUploadOptions<STVPFlasherOptions>();
+            const datDir = ResManager.GetInstance().GetAppDataDir();
+            const stvpDir = NodePath.dirname(SettingManager.GetInstance().getStvpExePath());
+            const cli = `bash "./stm8_erase.sh"`;
+            const envs = process.env;
+            envs['EIDE_STM8_CPU'] = options.deviceName;
+            envs['EIDE_DAT_ROOT'] = datDir.path;
+            prependToSysEnv(envs, [stvpDir, ResManager.GetInstance().getStvpToolsDir().path]);
+            runShellCommand(this.toolType, cli, envs, undefined, datDir.path);
+        }
     }
 }
 
@@ -967,6 +978,7 @@ class OpenOCDUploader extends HexUploader<string[]> {
 */
 export interface CustomFlashOptions extends UploadOption {
     commandLine: string;
+    eraseChipCommand: string;
 }
 
 class CustomUploader extends HexUploader<string> {
@@ -974,11 +986,6 @@ class CustomUploader extends HexUploader<string> {
     toolType: HexUploaderType = 'Custom';
 
     protected async _prepare(eraseAll?: boolean): Promise<UploaderPreData<string>> {
-
-        if (eraseAll) {
-            GlobalEvent.emit('msg', newMessage('Warning', `not support 'Erase Chip' for '${this.toolType}' flasher`));
-            return { isOk: false };
-        }
 
         const option = this.getUploadOptions<CustomFlashOptions>();
         const programs = this.parseProgramFiles(option);
@@ -989,9 +996,13 @@ class CustomUploader extends HexUploader<string> {
             };
         }
 
+        if (eraseAll) {
+            option.commandLine = option.eraseChipCommand;
+        }
+
         if (option.commandLine === undefined) {
             return {
-                isOk: new Error('command line can not be empty !')
+                isOk: new Error('flash command can not be empty !')
             };
         }
 

@@ -254,11 +254,11 @@ export class ToolchainManager {
             case 'GCC':
                 return 'GNU Arm Embedded Toolchain';
             case 'IAR_STM8':
-                return 'IAR C Compiler for STM8';
+                return 'IAR C Compiler For STM8';
             case 'GNU_SDCC_STM8':
                 return 'SDCC With GNU Patch For STM8';
             case 'RISCV_GCC':
-                return 'GCC for RISC-V';
+                return 'GCC For RISC-V';
             case 'ANY_GCC':
                 return 'Any GNU Toolchain';
             default:
@@ -575,7 +575,8 @@ class SDCC implements IToolchian {
 
     private readonly asmMapper: any = {
         "mcs51": "8051",
-        "ds400": "ds390",
+        "ds390": "390",
+        "ds400": "390",
         "hc08": "6808",
         "s08": "6808",
         "r2k": "rab",
@@ -797,6 +798,7 @@ class SDCC implements IToolchian {
             afterBuildTasks: [],
             global: {
                 "device": "mcs51",
+                "$one-module-per-function": false,
                 "optimize-type": "speed",
                 "use-non-free": false
             },
@@ -1415,7 +1417,9 @@ class AC6 implements IToolchian {
                 "language-cpp": "c++11",
                 "link-time-optimization": true
             },
-            'asm-compiler': {},
+            'asm-compiler': {
+                "$use": "asm-auto"
+            },
             linker: {
                 "output-format": 'elf',
                 'misc-controls': '--diag_suppress=L6329'
@@ -2130,8 +2134,13 @@ class AnyGcc implements IToolchian {
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
 
         // convert output lib commmand
-        if (options['linker'] && options['linker']['output-format'] === 'lib') {
-            options['linker']['$use'] = 'linker-lib';
+        if (options['linker']) {
+            if (options['linker']['linker-type'] == "ld") {
+                options['linker']['$use'] = 'linker-ld';
+            }
+            if (options['linker']['output-format'] == 'lib') {
+                options['linker']['$use'] = 'linker-lib';
+            }
         }
 
         // if region 'global' is not exist, create it
@@ -2204,7 +2213,7 @@ class AnyGcc implements IToolchian {
             linker: {
                 "output-format": "elf",
                 "remove-unused-input-sections": true,
-                "LD_FLAGS": "-Wl,--print-memory-usage",
+                "LD_FLAGS": "",
                 "LIB_FLAGS": ""
             }
         };

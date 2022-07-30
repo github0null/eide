@@ -338,8 +338,8 @@
                         "lib"
                     ],
                     "enumDescriptions": [
-                        "ELF (Executable Linkable Format)",
-                        "LIB (Static Library)"
+                        "ELF",
+                        "LIB"
                     ]
                 },
                 "$disableOutputTask": {

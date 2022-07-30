@@ -42,7 +42,7 @@ import {
     view_str$operation$create_from_internal_temp_detail, view_str$operation$create_from_local_disk_detail,
     view_str$operation$create_from_remote_repo_detail, view_str$operation$openSettings,
     view_str$prompt$select_file, view_str$prompt$select_folder, view_str$prompt$select_file_or_folder, view_str$prompt$select_tool_install_mode,
-    view_str$prompt$tool_install_mode_online, view_str$prompt$tool_install_mode_local, view_str$operation$empty_anygcc_prj
+    view_str$prompt$tool_install_mode_online, view_str$prompt$tool_install_mode_local, view_str$operation$empty_anygcc_prj, view_str$operation$setupUtilTools
 } from './StringTable';
 import { CreateOptions, ImportOptions, ProjectType } from './EIDETypeDefine';
 import { File } from '../lib/node-utility/File';
@@ -58,7 +58,7 @@ import * as events from 'events';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as NodePath from 'path';
-import { ResInstaller } from './ResInstaller';
+import { ResInstaller, ExternalToolName } from './ResInstaller';
 import { AbstractProject } from './EIDEProject';
 
 interface TemplatePickItem extends vscode.QuickPickItem, TemplateInfo {
@@ -237,6 +237,8 @@ export class OperationExplorer {
             }
         });
 
+        //---
+
         const tcList: ToolchainName[] = ['AC5', 'GCC', 'IAR_STM8', 'SDCC', 'Keil_C51', 'RISCV_GCC', 'ANY_GCC', 'GNU_SDCC_STM8'];
         const toolchainManager = ToolchainManager.getInstance();
         const checkResults = tcList.map((tcName) => { return toolchainManager.isToolchainPathReady(tcName); });
@@ -255,9 +257,28 @@ export class OperationExplorer {
                 dark: icoPath.path
             }
         });
-
-        /* setup env if toolchain is ready */
+        // setup env if toolchain is ready
         vscode.commands.executeCommand('setContext', 'cl.eide.toolchain_ready', status != CheckStatus.All_Failed);
+
+        //---
+        const hasTools = ResInstaller.instance().listAllTools().some(t => !t.no_binaries);
+        if (hasTools) {
+            icoPath = resManager.GetIconByName('PatchPackage_16x.svg');
+            this.provider.AddData({
+                label: view_str$operation$setupUtilTools,
+                command: {
+                    title: 'Setup Utility Tools',
+                    command: '_cl.eide.Operation.SetupUtilTools'
+                },
+                tooltip: view_str$operation$setupUtilTools,
+                iconPath: {
+                    light: icoPath.path,
+                    dark: icoPath.path
+                }
+            });
+        }
+
+        //---
 
         icoPath = resManager.GetIconByName('Settings_16x.svg');
         this.provider.AddData({
@@ -485,53 +506,108 @@ export class OperationExplorer {
 
     async OnImportProject(): Promise<void> {
 
-        const prjFileUri = await vscode.window.showOpenDialog({
-            openLabel: 'Import',
-            canSelectFolders: false,
-            canSelectFiles: true,
-            canSelectMany: false,
-            filters: {
-                'MDK': ['uvprojx'],
-                'KEIL C51': ['uvproj']
+        const ideType = await vscode.window.showQuickPick<vscode.QuickPickItem>([
+            {
+                label: 'MDK',
+                description: 'any Arm, 8051 projects',
+                detail: `Import Keil MDK Project (Only Keil v5+)`
+            },
+            {
+                label: 'Eclipse',
+                description: 'any embedded project',
+                detail: `Import Eclipse Project`
             }
-        });
+        ], { placeHolder: `Project Type` });
 
-        if (prjFileUri === undefined || prjFileUri.length === 0) {
+        if (!ideType)
             return;
-        }
 
-        const selection = await vscode.window.showInformationMessage(
-            view_str$operation$import_sel_out_folder,
-            'Yes', 'No'
-        );
+        //
+        // for MDK project
+        //
 
-        const importOption: ImportOptions = {
-            projectFile: new File(prjFileUri[0].fsPath),
-            outDir: new File(NodePath.dirname(prjFileUri[0].fsPath)),
-            createNewFolder: false
-        };
+        if (ideType.label == "MDK") {
 
-        // coexist with Keil project ?, if not, redirect output folder
-        if (selection === 'No') {
-
-            const folderUri = await vscode.window.showOpenDialog({
-                openLabel: 'Select',
-                defaultUri: vscode.Uri.parse(importOption.outDir.ToUri()),
-                canSelectFolders: true,
-                canSelectFiles: false,
-                canSelectMany: false
+            const prjFileUri = await vscode.window.showOpenDialog({
+                openLabel: 'Import',
+                canSelectFolders: false,
+                canSelectFiles: true,
+                canSelectMany: false,
+                filters: {
+                    'KEIL MDK': ['uvprojx'],
+                    'KEIL C51': ['uvproj']
+                }
             });
 
-            if (folderUri === undefined || folderUri.length === 0) {
+            if (prjFileUri === undefined || prjFileUri.length === 0) {
                 return;
             }
 
-            importOption.outDir = new File(folderUri[0].fsPath);
-            importOption.createNewFolder = true; // we need create a new folder
+            const selection = await vscode.window.showInformationMessage(
+                view_str$operation$import_sel_out_folder,
+                'Yes', 'No'
+            );
+
+            const orgPrjRoot = new File(NodePath.dirname(prjFileUri[0].fsPath));
+
+            const importOption: ImportOptions = {
+                type: 'mdk',
+                projectFile: new File(prjFileUri[0].fsPath),
+                outDir: orgPrjRoot,
+                createNewFolder: false
+            };
+
+            // coexist with Keil project ?, if not, redirect output folder
+            if (selection === 'No') {
+
+                const folderUri = await vscode.window.showOpenDialog({
+                    openLabel: 'Select',
+                    defaultUri: vscode.Uri.parse(orgPrjRoot.ToUri()),
+                    canSelectFolders: true,
+                    canSelectFiles: false,
+                    canSelectMany: false
+                });
+
+                if (folderUri === undefined || folderUri.length === 0) {
+                    return;
+                }
+
+                importOption.outDir = new File(folderUri[0].fsPath);
+                importOption.createNewFolder = true; // we need create a new folder
+            }
+
+            // emit event
+            this.emit('request_import_project', importOption);
         }
 
-        // emit event
-        this.emit('request_import_project', importOption);
+        //
+        // for Eclipse
+        //
+
+        else if (ideType.label == "Eclipse") {
+
+            const prjFileUri = await vscode.window.showOpenDialog({
+                openLabel: 'Import',
+                canSelectFolders: false,
+                canSelectFiles: true,
+                canSelectMany: false,
+                filters: {
+                    'Eclipse': ['cproject']
+                }
+            });
+
+            if (!prjFileUri || prjFileUri.length == 0)
+                return;
+
+            const importOpts: ImportOptions = {
+                type: 'eclipse',
+                projectFile: new File(prjFileUri[0].fsPath),
+                createNewFolder: false
+            };
+
+            // emit event
+            this.emit('request_import_project', importOpts);
+        }
     }
 
     private getStatusTxt(status: boolean): string {
@@ -551,19 +627,19 @@ export class OperationExplorer {
                 detail: view_str$operation$setKeil51Path
             },
             {
-                label: 'MDK',
+                label: 'Keil MDK',
                 type: 'AC5',
                 description: this.getStatusTxt(settingManager.isMDKIniReady()),
                 detail: view_str$operation$setMDKPath
             },
             {
-                label: 'ARMCC V5',
+                label: 'ARMCC V5 (standalone toolchain)',
                 type: 'AC5',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC5')),
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V5 Toolchain')
             },
             {
-                label: 'ARMCC V6',
+                label: 'ARMCC V6 (standalone toolchain)',
                 type: 'AC6',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC6')),
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V6 Toolchain')
@@ -586,12 +662,12 @@ export class OperationExplorer {
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('SDCC')),
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'SDCC')
             },
-            {
+            /* {
                 label: 'SDCC With GNU Patch For STM8 (Only for stm8)',
                 type: 'GNU_SDCC_STM8',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('GNU_SDCC_STM8')),
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'GNU_SDCC_STM8')
-            },
+            }, */
             {
                 label: 'RISC-V GCC Toolchain (RISC-V GCC)',
                 type: 'RISCV_GCC',
@@ -623,10 +699,12 @@ export class OperationExplorer {
             const pickItems: vscode.QuickPickItem[] = [
                 {
                     label: 'Online',
+                    description: 'Download from website and install',
                     detail: view_str$prompt$tool_install_mode_online
                 },
                 {
                     label: 'Offline',
+                    description: 'Use existed installation directory',
                     detail: view_str$prompt$tool_install_mode_local
                 }
             ];
@@ -650,11 +728,11 @@ export class OperationExplorer {
 
         let dialogOption: vscode.OpenDialogOptions;
 
-        if (item.type == 'Keil_C51' || item.label == 'MDK') {
+        if (item.type == 'Keil_C51' || item.label.includes('MDK')) {
             dialogOption = {
                 openLabel: view_str$prompt$select_file,
                 filters: {
-                    "TOOLS.INI file": ['INI']
+                    "UV4.exe or TOOLS.INI": ['exe', 'INI']
                 },
                 canSelectFiles: true,
                 canSelectFolders: false,
@@ -677,11 +755,11 @@ export class OperationExplorer {
         const tcManager = ToolchainManager.getInstance();
 
         if (item.type == 'Keil_C51') {
-            settingManager.SetC51INIPath(path[0].fsPath);
+            settingManager.SetC51IniOrUv4Path(path[0].fsPath);
         }
 
-        else if (item.label == 'MDK') {
-            settingManager.SetMdkINIPath(path[0].fsPath);
+        else if (item.label.includes('MDK')) {
+            settingManager.SetMdkIniOrUv4Path(path[0].fsPath);
         }
 
         else {
@@ -692,6 +770,38 @@ export class OperationExplorer {
                 );
             }
         }
+    }
+
+    async setupUtilTools() {
+
+        const resInstaller = ResInstaller.instance();
+
+        const selections: UtilToolPickItem[] = resInstaller.listAllTools().map(t => {
+            const installed = resInstaller.isToolInstalled(t.id) || false;
+            return {
+                id: t.id,
+                label: t.readable_name,
+                isInstalled: installed,
+                description: this.getStatusTxt(installed),
+                detail: `ID: ${t.resource_name}, Setting: EIDE.${t.setting_name}`
+            };
+        });
+
+        const sel = await vscode.window.showQuickPick(selections, {
+            canPickMany: false,
+            placeHolder: 'Select one to install it'
+        });
+
+        if (sel == undefined)
+            return;
+
+        if (sel.isInstalled) {
+            const msg = `This package (${sel.label}) has been installed, do you want to reinstall it ?`;
+            const ans = await vscode.window.showInformationMessage(msg, 'Yes', 'Cancel');
+            if (ans != 'Yes') return;
+        }
+
+        await resInstaller.installTool(sel.id);
     }
 
     async selectTemplate(templateGroup: TemplateGroup): Promise<TemplatePickItem | undefined> {
@@ -1243,4 +1353,9 @@ export class OperationExplorer {
             GlobalEvent.emit('error', error);
         }
     }
+}
+
+interface UtilToolPickItem extends vscode.QuickPickItem {
+    id: ExternalToolName;
+    isInstalled?: boolean;
 }
