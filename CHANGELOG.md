@@ -4,6 +4,82 @@
 
 ***
 
+### [v3.8.0]
+
+**New**:
+  - 新增 Eclipse 项目导入功能
+  - 新增 `Setup Utility Tools` 功能 (位于 Operation 栏)，可用于自动安装 eide 默认提供的相关工具
+  - 为 Arm 项目提供更多的 cpu 选项
+  - 支持为 'Custom Flasher' 设置全片擦除命令
+  - 新增终端类型：`Eide Terminal`, 插件已将 内置工具，编译器等二进制程序路径 导出至该终端的环境变量
+  - 增加两个设置项，用于决定是否自动搜索和添加 `include path` 及 `.obj .a` 至项目（对于新建项目，默认值为 false）：
+    ```
+    EIDE.SourceTree.AutoSearchIncludePath
+    EIDE.SourceTree.AutoSearchObjFile
+    ```
+  - 增加以下新的 `builder task` 变量:
+    ```
+    ${ConfigName}:        项目 Configuration 名称，例如：'Debug', 'Release'
+    ${CompilerId}:        编译器 id, 例如：'gcc', 'sdcc', 'ac5'
+    ${CompilerName}       编译器短名称，例如：'GNU Tools for Arm Embedded Processors 8-2019-q3-update'
+    ${CompilerFullName}   编译器完整名，例如：'arm-none-eabi-gcc.exe (GNU Tools for Arm Embedded Processors 8-2019-q3-update) 8.3.1 20190703 ...'
+    ${CompilerVersion}    编译器版本号，例如：'8.3.1'
+
+    ${re:ProjectRoot}     项目根目录相对路径，该值固定为：'.'
+    ${re:BuilderFolder}   构建工具目录相对路径
+    ${re:OutDir}          输出目录相对路径，如：'build/Debug'
+    ${re:ToolchainRoot}   编译器根目录相对路径
+    ${re:CompilerFolder}  编译器可执行文件目录相对路径
+    ```
+  - 支持在安装 jlink 等烧录软件时，自动安装驱动
+  - 新增内置命令行工具 `verchk`, 用于比较版本字符串，可在 `builder task 中使用`
+  - 增加 SDCC 模块拆分优化（将源文件尽可能按一个函数一个文件进行拆分，使 SDCC 能够优化程序大小），可在 `构建配置->全局` 中打开，默认关闭
+  - 增加 `compile_commands.json` 输出
+  - 重构 `Memory Layout` 视图，更好地融入 VsCode 风格
+  - 为新项目自动添加 `.clang-format` 文件
+  - 增加 Save Project 右键菜单项
+
+**Fix**:
+  - 修复 STVP 无法擦除芯片的问题
+  - 错误的路径转换 '.' -> './'，导致编译器无法识别包含路径
+  - 通过修改 exc-cfg.yaml 文件无法排除根目录（需要重启才能正常），以及排除文件夹后，文件图标状态未刷新的问题
+  - 修复从 cmsis package 解析芯片默认 Memory Layout 时出现错误
+  - 修复 STVP 命令行中的多余参数导致的烧录失败
+
+**Change**:
+  - 调整 TreeView 中的一些图标
+  - 生成 Cortex-Debug 调试配置时，只生成必要字段
+  - 调整烧录器配置默认值
+  - 移除内置的 `Output Panel` Grammar 文件，推荐使用扩展：`IBM.output-colorizer`
+  - 在芯片支持包中切换芯片后，不再覆盖 `memory layout` 配置
+  - 支持直接设置 Keil `UV4.exe` 路径来定位编译器路径
+  - 自动搜索源文件夹时，跳过以 '.' 开头的文件夹
+  - 项目自动保存时间间隔改为 100 s
+  - 自动搜索源文件时，排除以 `.` 开头的文件夹
+  - 移除添加源文件夹时，不能添加根目录之外的文件夹的限制
+  - 更改输出目录时，不删除旧的
+  - 支持为 Any-gcc 选择 linker 类型，可选项：`gcc, ld`，用于支持较老版本的 gcc
+  - 新建空项目时，不再自动生成默认 `main.c` 文件
+  - 项目中所有的配置文件名都加上 `target name` 前缀（在旧的版本中，仅 `release` target 无前缀）
+  - 新建构建配置时，armclang 默认汇编器改为 arm-auto
+  - armcc 问题匹配器正则表达式调整：https://github.com/github0null/eide/blob/4f91c5bc43ff699f0f2f569a573d1a49be4e8d3a/package.json#L1511
+
+**Optimize**:
+  - 根据 stvp 烧录配置的芯片名，从 stvp database 中获取 `ram, flash` 大小，用于在编译时显示 `ram/flash` 占比
+  - 增加如下可在文件路径中使用的变量：
+    ```
+    ${workspaceFolder}
+    ${workspaceFolderBasename}
+    ${OutDirBase}
+    ```
+  - 加载项目时，去除 `Project Attribute` 中的空值项
+  - 支持在插件设置的 路径设置项 中使用相对路径（相对路径基于当前工作区）
+  - 优化 builder options Web view 页面相关控件宽度
+  - 未找到 .NET 运行时进行下载前，先检查上一次下载的安装包是否有效
+  - 优化项目保存逻辑
+
+***
+
 ### [v3.7.2022072601] preview version
 
 **New**:
