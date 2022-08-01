@@ -767,8 +767,10 @@ async function checkAndInstallRuntime() {
         try {
             ChildProcess.execSync(dotnet_chk_cmd);
         } catch (error) {
-            platform.appendToSysEnv(process.env, ['C:\\Program Files\\dotnet']);        // for win x64
-            platform.appendToSysEnv(process.env, ['C:\\Program Files (x86)\\dotnet']);  // for win x86
+            if (platform.osType() == 'win32') {
+                platform.appendToSysEnv(process.env, ['C:\\Program Files\\dotnet']);        // for win x64
+                platform.appendToSysEnv(process.env, ['C:\\Program Files (x86)\\dotnet']);  // for win x86
+            }
         }
     }
 
@@ -777,8 +779,9 @@ async function checkAndInstallRuntime() {
     //
     try {
         GlobalEvent.emit('globalLog', newMessage('Info', 'Checking .NET6 runtime ...'));
+        GlobalEvent.emit('globalLog', newMessage('Info', `Exec cmd: '${dotnet_chk_cmd}'`));
         const dotnetInfo = ChildProcess.execSync(dotnet_chk_cmd).toString().trim();
-        GlobalEvent.emit('globalLog', newMessage('Info', `Exec cmd: '${dotnet_chk_cmd}'\n${dotnetInfo}`));
+        GlobalEvent.emit('globalLog.append', dotnetInfo);
         // check dotnet version
         let dotnetVerLine: string | undefined;
         const lines = dotnetInfo.trim().split(/\r\n|\n/);
@@ -790,11 +793,14 @@ async function checkAndInstallRuntime() {
                 break;
             }
         }
-        if (!dotnetVerLine) { throw new Error(`Not found .NET6 runtime`); }
+        if (!dotnetVerLine) {
+            throw new Error(`Can not match .NET6 runtime`);
+        }
     } catch (error) {
 
-        GlobalEvent.emit('globalLog.show'); // show error log for user
+        GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
 
+        GlobalEvent.emit('globalLog.show'); // show error log for user
         GlobalEvent.emit('globalLog', newMessage('Info', 'Not found [.NET6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) !'));
 
         /* @deprecated
