@@ -2397,7 +2397,7 @@ class EIDEProject extends AbstractProject {
         if (this.isNewProject) {
             const name = 'pre-install.sh';
             const prjRoot = new File(wsFile.dir);
-            const ok = await this.runInstallScript(prjRoot, name, `Running 'post-install' ...`);
+            const ok = await this.runInstallScript(prjRoot, name, `Running 'pre-install' task ...`);
             if (!ok) { throw new Error(`Run '${name}' failed !, please check logs in 'eide-log' output panel.`); }
         }
     }
@@ -2668,7 +2668,7 @@ class EIDEProject extends AbstractProject {
 
         // run post-install.sh
         if (this.isNewProject) {
-            this.runInstallScript(this.GetRootDir(), 'post-install.sh', `Running 'post-install' ...`)
+            this.runInstallScript(this.GetRootDir(), 'post-install.sh', `Running 'post-install' task ...`)
                 .then((done) => {
                     if (!done) {
                         const msg = `Run 'post-install' failed !, please check logs in 'eide-log' output panel.`;
