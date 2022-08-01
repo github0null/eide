@@ -4,6 +4,13 @@
 
 ***
 
+### [v3.8.1] revision
+
+**New**:
+  - 支持通过 [external_tools_index](https://github.com/github0null/eide_default_external_tools_index) 安装更多的外部工具，并在插件激活后自动将这些工具的路径附加到VSCode当前的环境变量中
+
+***
+
 ### [v3.8.0]
 
 **New**:

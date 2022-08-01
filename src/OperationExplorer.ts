@@ -776,15 +776,41 @@ export class OperationExplorer {
 
         const resInstaller = ResInstaller.instance();
 
-        const selections: UtilToolPickItem[] = resInstaller.listAllTools().map(t => {
+        const selections: UtilToolPickItem[] = [
+            {
+                id: 'null',
+                label: 'built-in',
+                kind: vscode.QuickPickItemKind.Separator
+            }
+        ];
+
+        let hasDiv: boolean = false;
+        resInstaller.listAllTools().forEach(t => {
             const installed = resInstaller.isToolInstalled(t.id) || false;
-            return {
+            if (!hasDiv && t.is_third_party) {
+                hasDiv = true;
+                selections.push({
+                    id: 'null',
+                    label: 'external',
+                    kind: vscode.QuickPickItemKind.Separator
+                });
+            }
+            let detail: string | undefined = t.detail;
+            if (!detail) {
+                detail = `ID: ${t.resource_name}`;
+                if (t.setting_name) { // built-in
+                    detail += `, Setting: EIDE.${t.setting_name}`;
+                } else if (t.url) {
+                    detail += `, From: ${t.url}`;
+                }
+            }
+            selections.push({
                 id: t.id,
                 label: t.readable_name,
                 isInstalled: installed,
                 description: this.getStatusTxt(installed),
-                detail: `ID: ${t.resource_name}, Setting: EIDE.${t.setting_name}`
-            };
+                detail: detail
+            });
         });
 
         const sel = await vscode.window.showQuickPick(selections, {
@@ -796,7 +822,7 @@ export class OperationExplorer {
             return;
 
         if (sel.isInstalled) {
-            const msg = `This package (${sel.label}) has been installed, do you want to reinstall it ?`;
+            const msg = `This package '${sel.label}' has been installed, do you want to reinstall it ?`;
             const ans = await vscode.window.showInformationMessage(msg, 'Yes', 'Cancel');
             if (ans != 'Yes') return;
         }
