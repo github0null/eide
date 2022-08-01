@@ -320,6 +320,13 @@ export class SettingManager {
             .trim().replace(/^https:\/\//i, '');
     }
 
+    getExternalToolsIndexUrl(): string | undefined {
+        const url = this.getConfiguration().get<string>('ExternalTools.IndexUrl');
+        if (url) {
+            return url.trim();
+        }
+    }
+
     isUseGithubProxy(): boolean {
         return this.getConfiguration().get<boolean>('Repository.UseProxy') || false;
     }

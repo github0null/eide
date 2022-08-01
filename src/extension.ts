@@ -35,6 +35,7 @@ import { OperationExplorer } from './OperationExplorer';
 import { ProjectExplorer } from './EIDEProjectExplorer';
 import { ResManager } from './ResManager';
 import { LogAnalyzer } from './LogAnalyzer';
+import { ResInstaller } from './ResInstaller';
 
 import {
     ERROR, WARNING, INFORMATION,
@@ -245,12 +246,17 @@ export async function activate(context: vscode.ExtensionContext) {
     // others
     vscode.workspace.registerTextDocumentContentProvider(VirtualDocument.scheme, VirtualDocument.instance());
 
-    /* auto save project */
+    // auto save project
     setInterval(() => projectExplorer.SaveAll(), 100 * 1000);
 
     // launch done
     GlobalEvent.emit('extension_launch_done');
     GlobalEvent.emit('globalLog', newMessage('Info', 'Embedded IDE launch done'));
+
+    // refresh external tools now
+    ResInstaller.instance().refreshExternalToolsIndex().catch(err => {
+        GlobalEvent.emit('globalLog', ExceptionToMessage(err, 'Warning'));
+    });
 }
 
 // this method is called when your extension is deactivated
@@ -709,13 +715,36 @@ function exportEnvToSysPath() {
     // search tools folder and export path to system env
     eideToolsFolder.GetList(File.EMPTY_FILTER).forEach((subDir) => {
         if (!/^\w+$/.test(subDir.name)) return; // filter dir name
-        const binFolder = NodePath.normalize(`${subDir.path}/bin`);
-        if (File.IsDir(binFolder)) {
+        let binFolderPath: string | undefined;
+        // try get path from 'BIN_PATH' file
+        const BIN_PATH_FILE = File.fromArray([subDir.path, 'BIN_PATH']);
+        if (BIN_PATH_FILE.IsFile()) {
+            try {
+                const binDir = BIN_PATH_FILE.Read().trim();
+                if (binDir != '') {
+                    const binFolder = NodePath.normalize(`${subDir.path}/${binDir}`);
+                    if (File.IsDir(binFolder)) {
+                        binFolderPath = binFolder;
+                    }
+                }
+            } catch (error) {
+                GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+            }
+        }
+        // try use ./bin
+        if (!binFolderPath) {
+            const binFolder = NodePath.normalize(`${subDir.path}/bin`);
+            if (File.IsDir(binFolder)) {
+                binFolderPath = binFolder;
+            }
+        }
+        // export bin folder if we found
+        if (binFolderPath) {
             const keyName = `EIDE_TOOL_${subDir.name.toUpperCase()}`;
             if (pathList.findIndex(o => o.key == keyName) != -1) return; // skip repeat key name
             pathList.push({
                 key: keyName,
-                path: binFolder
+                path: binFolderPath
             });
         }
     });

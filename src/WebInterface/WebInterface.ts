@@ -22,35 +22,69 @@
 	SOFTWARE.
 */
 
+//////////////////////////////////////////////
+// template interface
+///////////////////////////////////////////////
+
 export interface CategoryInfo {
-    display_name: string;
-    description: string;
+	display_name: string;
+	description: string;
 }
 
 export interface TemplateInfo {
 
-    file_name: string;
+	file_name: string;
 
-    display_name: string;
+	display_name: string;
 
-    category: string[];
+	category: string[];
 
-    version: string;
+	version: string;
 
-    author: string | undefined;
+	author: string | undefined;
 
-    download_url: string | undefined;
+	download_url: string | undefined;
 
-    size: number | undefined;
+	size: number | undefined;
 
-    disabled: boolean | undefined;
+	disabled: boolean | undefined;
 
-    upload_time: string | undefined;
+	upload_time: string | undefined;
 
-    update_time: string | undefined;
+	update_time: string | undefined;
 }
 
 export interface TemplateIndexDef {
-    category_map: { [name: string]: CategoryInfo };
-    template_list: TemplateInfo[];
+	category_map: { [name: string]: CategoryInfo };
+	template_list: TemplateInfo[];
+}
+
+/////////////////////////////////////////////
+// util tools interface
+/////////////////////////////////////////////
+
+export interface ExternalUtilToolIndexDef {
+
+	id: string; // tool id
+
+	name: string; // readable name
+
+	resources: {
+		// resource nodejs platform, like: win32, linux ...
+		[platform: string]: {
+
+			url: string; // zip, 7z direct download link (https), like: 'https://test.com/gcc.zip'
+
+			zip_type: string; // '7z' or 'zip'
+
+			bin_dir?: string; // bin dir relative path
+
+			detail?: string; // description
+
+			win_drv_path?: { // win32 driver exe path
+				// arch: 'x86' or 'x64'
+				[arch: string]: string;
+			};
+		}
+	};
 }

@@ -38,20 +38,30 @@ import { GlobalEvent } from './GlobalEvents';
 import { ExceptionToMessage, newMessage } from './Message';
 import { SevenZipper } from './Compress';
 import { ResManager } from './ResManager';
-
 import * as platform from './Platform';
+import { ExternalUtilToolIndexDef } from './WebInterface/WebInterface';
 
 let _instance: ResInstaller | undefined;
 
-export type ExternalToolName = ToolchainName | HexUploaderType | 'cppcheck';
+export type ExternalToolName = ToolchainName | HexUploaderType | 'cppcheck' | string;
 
 export interface ExternalToolInfo {
-    setting_name: string;
+
     resource_name: string;
     readable_name: string;
+    detail?: string;
+    is_third_party?: boolean;
+    getDrvInstaller?: () => string | undefined;
+
+    // for built-in tools
+    setting_name?: string;
     require_name?: string;
     no_binaries?: boolean;
-    getDrvInstaller?: () => string | undefined;
+
+    // for external tools
+    url?: string;
+    bin_dir?: string;
+    zip_type?: string;
 };
 
 export interface UtilToolInfo extends ExternalToolInfo {
@@ -60,8 +70,9 @@ export interface UtilToolInfo extends ExternalToolInfo {
 
 export class ResInstaller {
 
-    private toolsMap: Map<string, ExternalToolInfo>;
-    private locker: Map<string, boolean>;
+    private locker: Map<string, boolean> = new Map();
+    private toolsMap: Map<string, ExternalToolInfo> = new Map();
+    private builtin_tool_list: string[] = [];
 
     private downloadSites: string[] = [
         'https://raw-github.github0null.io/github0null/eide-resource/master/packages',
@@ -69,11 +80,6 @@ export class ResInstaller {
     ];
 
     private constructor() {
-
-        this.toolsMap = new Map();
-        this.locker = new Map();
-
-        // register tools
 
         const no_binaries = os.platform() != 'win32'; // we not provide binaries for non-win32 platform.
 
@@ -162,6 +168,10 @@ export class ResInstaller {
             require_name: `cppcheck${platform.exeSuffix()}`,
             no_binaries: no_binaries
         });
+
+        for (const key of this.toolsMap.keys()) {
+            this.builtin_tool_list.push(key.toLowerCase());
+        }
     }
 
     private registerTool(name: ExternalToolName, info: ExternalToolInfo) {
@@ -192,7 +202,9 @@ export class ResInstaller {
     }
 
     listAllTools(): UtilToolInfo[] {
-        const res: UtilToolInfo[] = [];
+
+        let res: UtilToolInfo[] = [];
+
         for (const kv of this.toolsMap) {
             const tool = kv[1];
             res.push({
@@ -201,9 +213,19 @@ export class ResInstaller {
                 readable_name: tool.readable_name,
                 setting_name: tool.setting_name,
                 require_name: tool.require_name,
-                no_binaries: tool.no_binaries
+                no_binaries: tool.no_binaries,
+                is_third_party: tool.is_third_party,
+                url: tool.url,
+                detail: tool.detail
             });
         }
+
+        res = res.sort((a, b) => {
+            if (!a.is_third_party && b.is_third_party) return -1;
+            if (a.is_third_party && !b.is_third_party) return 1;
+            return a.resource_name.localeCompare(b.resource_name);
+        });
+
         return res;
     }
 
@@ -216,6 +238,61 @@ export class ResInstaller {
 
     private unlock(name: ExternalToolName) {
         this.locker.delete(name.toLowerCase());
+    }
+
+    async refreshExternalToolsIndex() {
+
+        const defIdxUrl = 'https://raw.githubusercontent.com/github0null/eide_default_external_tools_index/master/index.json';
+        const idxUrl = utility.redirectHost(
+            SettingManager.GetInstance().getExternalToolsIndexUrl() || defIdxUrl);
+
+        const cont = await utility.requestTxt(idxUrl);
+
+        if (cont instanceof Error) {
+            GlobalEvent.emit('globalLog', ExceptionToMessage(cont, 'Warning'));
+            return;
+        }
+
+        // invalid content
+        if (!cont) return;
+
+        let idxArray: ExternalUtilToolIndexDef[];
+
+        try {
+            idxArray = <ExternalUtilToolIndexDef[]>JSON.parse(cont);
+            if (!Array.isArray(idxArray)) throw new Error(`Index file must be a json array obj !`);
+        } catch (error) {
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+            return;
+        }
+
+        // clear old tools
+        const del_keys: string[] = [];
+        this.toolsMap.forEach((val, key) => { if (val.is_third_party) del_keys.push(key); });
+        del_keys.forEach(k => this.toolsMap.delete(k));
+
+        const node_plat = os.platform();
+        for (const tool of idxArray) {
+            if (this.builtin_tool_list.includes(tool.id)) continue; // skip built-in tools
+            if (!tool.resources[node_plat]) continue; // skip invalid platform
+            this.registerTool(tool.id, {
+                is_third_party: true,
+                resource_name: tool.id,
+                readable_name: tool.name,
+                url: tool.resources[node_plat].url,
+                zip_type: tool.resources[node_plat].zip_type,
+                bin_dir: tool.resources[node_plat].bin_dir,
+                detail: tool.resources[node_plat].detail,
+                getDrvInstaller: () => {
+                    if (node_plat != 'win32') return undefined;
+                    const arch: string = /(?:32|86)$/.test(os.arch()) ? 'x86' : 'x64';
+                    const drvPathMap = tool.resources[node_plat].win_drv_path;
+                    if (drvPathMap) {
+                        return drvPathMap[arch];
+                    }
+                }
+            });
+        }
     }
 
     /**
@@ -236,7 +313,14 @@ export class ResInstaller {
         /* download it ! */
         let installedDone: boolean = false;
         const resourceName: string = toolInfo.resource_name;
-        const resourceFile = File.fromArray([os.tmpdir(), `${resourceName}.7z`]);
+
+        let resourceFile: File;
+
+        if (toolInfo.is_third_party) {
+            resourceFile = File.fromArray([os.tmpdir(), `${resourceName}.${toolInfo.zip_type}`]);
+        } else {
+            resourceFile = File.fromArray([os.tmpdir(), `${resourceName}.7z`])
+        }
 
         try {
 
@@ -248,16 +332,25 @@ export class ResInstaller {
 
                 let res: Buffer | undefined | Error = undefined;
 
-                /* random select the order of site */
-                if (Math.random() > 0.5) {
-                    this.downloadSites.reverse();
-                }
+                // for built-in tools
+                if (!toolInfo.is_third_party) {
 
-                for (const site of this.downloadSites) {
-                    const downloadUrl = utility.redirectHost(`${site}/${resourceFile.name}`);
+                    /* random select the order of site */
+                    if (Math.random() > 0.5) {
+                        this.downloadSites.reverse();
+                    }
+
+                    for (const site of this.downloadSites) {
+                        const downloadUrl = utility.redirectHost(`${site}/${resourceFile.name}`);
+                        res = await utility.downloadFileWithProgress(downloadUrl, resourceFile.name, progress, token);
+                        if (res instanceof Buffer) { break; } /* if done, exit loop */
+                        progress.report({ message: 'Switch to next download site !' });
+                    }
+                }
+                // for external tools
+                else {
+                    const downloadUrl = utility.redirectHost(toolInfo.url || 'null');
                     res = await utility.downloadFileWithProgress(downloadUrl, resourceFile.name, progress, token);
-                    if (res instanceof Buffer) { break; } /* if done, exit loop */
-                    progress.report({ message: 'Switch to next download site !' });
                 }
 
                 if (res instanceof Error) { /* download failed */
@@ -308,10 +401,18 @@ export class ResInstaller {
 
                         progress.report({ message: `Unzipped done !, installing ...` });
 
-                        /* update eide settings */
-                        let setting_val = ['${userRoot}', '.eide', 'tools', resourceName].join(File.sep);
-                        setting_val = toolInfo.require_name ? `${setting_val}/${toolInfo.require_name}` : setting_val;
-                        SettingManager.GetInstance().setConfigValue(toolInfo.setting_name, File.ToLocalPath(setting_val));
+                        // set bin dir
+                        if (toolInfo.bin_dir) {
+                            const BIN_PATH_FILE = File.fromArray([outDir.path, 'BIN_PATH']);
+                            BIN_PATH_FILE.Write(`${toolInfo.bin_dir}`);
+                        }
+
+                        // update eide settings
+                        if (toolInfo.setting_name) {
+                            let setting_val = ['${userRoot}', '.eide', 'tools', resourceName].join(File.sep);
+                            setting_val = toolInfo.require_name ? `${setting_val}/${toolInfo.require_name}` : setting_val;
+                            SettingManager.GetInstance().setConfigValue(toolInfo.setting_name, File.ToLocalPath(setting_val));
+                        }
 
                         // install drivers if we need
                         if (toolInfo.getDrvInstaller) {
@@ -336,8 +437,15 @@ export class ResInstaller {
         }
 
         /* unlock */
-
         this.unlock(name);
+
+        if (installedDone) {
+            const msg = `You need to restart eide to refresh System Environment Variables !`;
+            const sel = await vscode.window.showInformationMessage(msg, 'OK', 'Later');
+            if (sel == 'OK') {
+                await vscode.commands.executeCommand('workbench.action.reloadWindow');
+            }
+        }
 
         return installedDone;
     }

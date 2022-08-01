@@ -33,7 +33,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.8.0",
+    "version": "3.8.1",
     "preview": false,
     "engines": {
         "vscode": "^1.63.0"
@@ -175,6 +175,11 @@
             {
                 "title": "Embedded IDE",
                 "properties": {
+                    "EIDE.ExternalTools.IndexUrl": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "external tools index.json url, ref: https://github.com/github0null/eide_default_external_tools_index"
+                    },
                     "EIDE.SourceTree.AutoSearchIncludePath": {
                         "type": "boolean",
                         "scope": "resource",
