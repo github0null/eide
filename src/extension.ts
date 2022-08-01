@@ -810,7 +810,7 @@ async function checkAndInstallRuntime() {
         GlobalEvent.emit('globalLog', newMessage('Info', 'Checking .NET6 runtime ...'));
         GlobalEvent.emit('globalLog', newMessage('Info', `Exec cmd: '${dotnet_chk_cmd}'`));
         const dotnetInfo = ChildProcess.execSync(dotnet_chk_cmd).toString().trim();
-        GlobalEvent.emit('globalLog.append', dotnetInfo);
+        GlobalEvent.emit('globalLog.append', dotnetInfo + os.EOL);
         // check dotnet version
         let dotnetVerLine: string | undefined;
         const lines = dotnetInfo.trim().split(/\r\n|\n/);
