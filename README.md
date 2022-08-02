@@ -12,7 +12,7 @@
 
 A mcu development environment for `8051/AVR/STM8/Cortex-M[0/0+/3/4/7]/RISC-V/Universal-Gcc` on VsCode. 
 
-Provide `8051/AVR/STM8/Cortex-M/RISC-V` project development, compilation, burning and other functions.
+Provide `8051/AVR/STM8/Cortex-M/RISC-V` project development, compilation, flash program and other functions.
 
 ![preview](https://docs.em-ide.com/preview.png)
 
@@ -25,7 +25,7 @@ Provide `8051/AVR/STM8/Cortex-M/RISC-V` project development, compilation, burnin
 * Support for installing standard KEIL chip support packs (only for Cortex-M projects).
 * Provides rich project templates for quick start projects.
 * One-click compilation, fast compilation, support a variety of mainstream compilation tools (support: armcc, gcc-arm-none-eabi, riscv-gcc, xxx-gcc, keil_c51, sdcc ...).
-* One key to burn chip, support a variety of mainstream burn device (support: jlink, stlink, openocd, pyocd ...).
+* One key to flash program chip, support a variety of mainstream device (support: jlink, stlink, openocd, pyocd ...).
 * Built-in serial port monitor, one click to open the serial port.
 * Supports static checking of projects using Cppcheck.
 * Automatically generates default debug configurations for debugger plug-in `cortex-debug/STM8-Debug`.
@@ -90,8 +90,6 @@ Provide `8051/AVR/STM8/Cortex-M/RISC-V` project development, compilation, burnin
 ## Document 📖
 
 [https://docs.em-ide.com](https://docs.em-ide.com)
-
-> The English document is being translated
 
 ***
 
