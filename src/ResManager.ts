@@ -45,10 +45,6 @@ import { CodeConverter } from "./CodeConverter";
 
 let resManager: ResManager | undefined;
 
-const prjEnvList: string[] = [
-    File.sep + AbstractProject.EIDE_DIR + File.sep + 'log'
-];
-
 const OS_ID: NodeJS.Platform = osType() != 'win32' ? 'linux' : 'win32';
 
 // plug-in built-in folders
@@ -74,7 +70,6 @@ const eideBinariesDirs: { [key: string]: string } = {
 
 const codePage = GetLocalCodePage();
 const cacheName = 'eide.cache';
-const appName = 'cl.eide';
 
 export interface FileCacheInfo {
     name: string;
@@ -103,6 +98,7 @@ export class ResManager extends events.EventEmitter {
     private stm8DevList: string[];
 
     private appConfig: any;
+    private appId: string;
 
     private constructor(context?: vscode.ExtensionContext) {
         super();
@@ -112,13 +108,15 @@ export class ResManager extends events.EventEmitter {
         this.devList = [];
         this.stm8DevList = [];
         this.appConfig = Object.create(null);
-        this.extension = <vscode.Extension<any>>vscode.extensions.getExtension<any>(appName);
 
         if (context) {
             this.context = context;
         } else {
             throw Error('context is undefined');
         }
+
+        this.extension = context.extension;
+        this.appId = this.extension.id;
 
         this.LoadResourceFolders();
 
@@ -138,9 +136,7 @@ export class ResManager extends events.EventEmitter {
     }
 
     static GetInstance(context?: vscode.ExtensionContext): ResManager {
-        if (resManager) {
-            return resManager;
-        }
+        if (resManager) return resManager;
         resManager = new ResManager(context);
         return resManager;
     }
@@ -149,24 +145,17 @@ export class ResManager extends events.EventEmitter {
         return codePage;
     }
 
-    static getAppFullName(): string {
-        return appName;
+    public getAppFullName(): string {
+        return this.appId;
     }
 
-    static getAppName(): string {
-        return appName.split('.')[1];
+    public getAppName(): string {
+        return this.appId.split('.')[1];
     }
 
     static checkWindowsShell(): boolean {
         return /powershell.exe$/i.test(vscode.env.shell)
             || /cmd.exe$/i.test(vscode.env.shell);
-    }
-
-    InitWorkspace() {
-        const ws = WorkspaceManager.getInstance().getWorkspaceRoot();
-        if (ws) {
-            this.LoadProjFolders(ws);
-        }
     }
 
     enumSerialPort(): string[] {
@@ -325,11 +314,7 @@ export class ResManager extends events.EventEmitter {
     }
 
     GetLogDir(): File {
-        const logDir = this.GetDir('log');
-        if (logDir === undefined) {
-            return this.GetTmpDir();
-        }
-        return logDir;
+        return this.getEideHomeFolder();
     }
 
     Get7zDir(): File {
@@ -612,14 +597,6 @@ export class ResManager extends events.EventEmitter {
 
     private GetDir(name: string): File | undefined {
         return this.dirMap.get(name);
-    }
-
-    private LoadProjFolders(ws: File) {
-        prjEnvList.forEach((dirPath) => {
-            const dir = new File(ws.path + dirPath);
-            dir.CreateDir(true);
-            this.dirMap.set(dir.name, dir);
-        });
     }
 
     private LoadResourceFolders() {

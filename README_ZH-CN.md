@@ -22,27 +22,13 @@
 * 支持导入 KEIL5/Eclipse 项目，支持导入 `IAR-STM8, IAR-ARM, Segger Embedded Studio` 项目源文件资源树。
 * 支持安装标准的 KEIL 芯片支持包 (仅用于 Cortex-M 项目)。
 * 提供丰富的项目模板方便快速开始项目。
-* 一键编译、快速编译，支持多种主流的编译工具 (armcc, gcc-arm-none-eabi, riscv-gcc, xxx-gcc, keil_c51, sdcc ...)。
+* 一键编译，支持多种主流的编译工具 (armcc, gcc-arm-none-eabi, riscv-gcc, xxx-gcc, keil_c51, sdcc ...)。
 * 一键烧录到芯片，支持多种主流的烧录器 (jlink, stlink, openocd, pyocd ...)。
 * 内置的串口监视器，一键打开串口。
 * 支持使用 Cppcheck 对项目进行静态检查。
 * 自动生成默认调试配置，为调试器插件 Cortex-debug / STM8-debug 生成默认配置。
 * 内置多种实用工具，`CMSIS Config Wizard UI`, `反汇编查看`，`程序资源视图` ...
-* 内置 C/C++ 插件的 `C/C++ IntelliSense Provider`，**无需**配置 `c_cpp_properties.json` 即可获得源码跳转，补全提示功能。
-
-***
-
-## 支持的编译器 🔨
- 
- ![8051](https://img.shields.io/badge/-8051_:-grey.svg) ![status](https://img.shields.io/badge/Keil_C51-✔-brightgreen.svg) ![status](https://img.shields.io/badge/SDCC-✔-brightgreen.svg)
- 
- ![STM8](https://img.shields.io/badge/-STM8_:-grey.svg) ![status](https://img.shields.io/badge/IAR_STM8-✔-brightgreen.svg) ![status](https://img.shields.io/badge/SDCC-✔-brightgreen.svg)
- 
- ![ARM](https://img.shields.io/badge/-ARM_:-grey.svg) ![status](https://img.shields.io/badge/ARMCC-✔-brightgreen.svg) ![status](https://img.shields.io/badge/ARMCLang-✔-brightgreen.svg) ![status](https://img.shields.io/badge/ARM_GCC-✔-brightgreen.svg)
-
- ![RISC-V](https://img.shields.io/badge/-RISCV_:-grey.svg) ![status](https://img.shields.io/badge/RISCV_GCC-✔-brightgreen.svg)
-
- ![AnyGCC](https://img.shields.io/badge/-ANYGCC_:-grey.svg) ![status](https://img.shields.io/badge/GCC_Famliy_Compiler-✔-brightgreen.svg)
+* 内置 C/C++ 插件的 `C/C++ IntelliSense Provider`，**无需配置** `c_cpp_properties.json` 即可获得源码跳转，补全提示功能。
 
 ***
 
@@ -72,6 +58,6 @@
 
 反馈途径: 
 
-- [论坛: https://discuss.em-ide.com](https://discuss.em-ide.com/)
-
 - [Github Issue](https://github.com/github0null/eide/issues)
+
+- [论坛: https://discuss.em-ide.com](https://discuss.em-ide.com/)

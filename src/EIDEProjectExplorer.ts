@@ -645,27 +645,20 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             }
         }
 
-        GlobalEvent.once('response_init_component', () => {
-
-            /* init active project */
-            if (validList.length > 0) {
-                this.activePrjPath = validList[0].path;
-            }
-
-            /* if prj count > 1, this is a workspace project
-             * active workspace control btns
-             */
-            if (validList.length > 1) {
-                vscode.commands.executeCommand('setContext', 'cl.eide.isWorkspaceProject', true);
-            }
-
-            for (const wsFile of validList) {
-                this._OpenProject(wsFile.path);
-            }
-        });
-
+        /* init active project */
         if (validList.length > 0) {
-            GlobalEvent.emit('request_init_component');
+            this.activePrjPath = validList[0].path;
+        }
+
+        /* if prj count > 1, this is a workspace project
+         * active workspace control btns
+         */
+        if (validList.length > 1) {
+            vscode.commands.executeCommand('setContext', 'cl.eide.isWorkspaceProject', true);
+        }
+
+        for (const wsFile of validList) {
+            this._OpenProject(wsFile.path);
         }
     }
 
