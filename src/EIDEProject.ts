@@ -699,7 +699,6 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     static readonly workspaceSuffix = '.code-workspace';
     static readonly vsCodeDir = '.vscode';
     static readonly EIDE_DIR = '.eide';
-    static readonly LOG_DIR = 'log';
 
     static readonly cppConfigName = 'c_cpp_properties.json';
     static readonly prjConfigName = 'eide.json';
@@ -818,9 +817,6 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         this.eideDirWatcher.on('error', err => GlobalEvent.emit('error', err));
         this.eideDirWatcher.OnChanged = f => this.onEideDirChanged('changed', f);
         this.eideDirWatcher.OnRename = f => this.onEideDirChanged('renamed', f);
-
-        // create log folder
-        this.getLogDir().CreateDir();
 
         // compat old project
         if (this.isOldVersionProject) {
@@ -1021,10 +1017,6 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
     getEideDir(): File {
         return <File>this.eideDir;
-    }
-
-    getLogDir(): File {
-        return File.fromArray([(<File>this.eideDir).path, AbstractProject.LOG_DIR]);
     }
 
     GetConfigMap(): ConfigMap {

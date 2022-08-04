@@ -40,13 +40,13 @@ export class LogDumper {
 
     private constructor() {
 
-        const dir = ResManager.GetInstance().GetLogDir();
-        dir.CreateDir(true);
+        const logDir = ResManager.GetInstance().GetLogDir();
 
-        const logPath = dir.path + File.sep + ResManager.getAppFullName() + '.log';
-        this.logFile = new File(logPath);
+        logDir.CreateDir(false);
 
-        const outStream = fs.createWriteStream(logPath, { flags: 'a' });
+        this.logFile = File.fromArray([logDir.path, ResManager.GetInstance().getAppFullName() + '.log']);
+
+        const outStream = fs.createWriteStream(this.logFile.path, { flags: 'a' });
         this._console = new console.Console(outStream, outStream);
 
         const time = Time.GetInstance().GetTimeInfo();

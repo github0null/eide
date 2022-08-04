@@ -162,6 +162,11 @@ export function redirectHost(url: string) {
     return url;
 }
 
+export function setProxyHeader(headers: { [key: string]: string }): { [key: string]: string } {
+    // TODO
+    return headers;
+}
+
 export function formatPath(path: string): string {
     return File.ToLocalPath(path.trim().replace(/(?:\\|\/)+$/, ''));
 }
@@ -192,7 +197,7 @@ export async function downloadFile(url: string): Promise<Buffer | Error | undefi
         const res = await netReq.RequestBinary<any>({
             host: hostName,
             path: path,
-            headers: { 'User-Agent': 'Mozilla/5.0' }
+            headers: setProxyHeader({ 'User-Agent': 'Mozilla/5.0' })
         }, 'https');
 
         let result: Buffer | Error | undefined;
@@ -237,7 +242,7 @@ export async function requestTxt(url: string): Promise<string | Error | undefine
         const res = await netReq.RequestTxt<any>({
             host: hostName,
             path: path,
-            headers: { 'User-Agent': 'Mozilla/5.0' }
+            headers: setProxyHeader({ 'User-Agent': 'Mozilla/5.0' })
         }, 'https');
 
         let result: string | Error | undefined;
@@ -287,7 +292,7 @@ export async function downloadFileWithProgress(url: string, fileLable: string,
         const res = await netReq.RequestBinary<any>({
             host: hostName,
             path: path,
-            headers: { 'User-Agent': 'Mozilla/5.0' },
+            headers: setProxyHeader({ 'User-Agent': 'Mozilla/5.0' }),
             rejectUnauthorized: rejectUnauthorized
         }, 'https', (increment) => {
             curIncrement += increment;
@@ -320,7 +325,7 @@ export async function getDownloadUrlFromGitea(repo: string, folder: string, file
             host: `git.github0null.io`,
             path: `/api/v1/repos/root/${repo}/contents/${folder}`,
             timeout: 3000,
-            headers: { 'User-Agent': 'Mozilla/5.0' },
+            headers: setProxyHeader({ 'User-Agent': 'Mozilla/5.0' }),
             rejectUnauthorized: false, // ignore cert failed
         }, 'https');
 
@@ -366,7 +371,7 @@ export async function readGithubRepoFolder(remoteUrl_: string, token?: vscode.Ca
         host: hostName,
         path: path,
         timeout: 3000,
-        headers: { 'User-Agent': 'Mozilla/5.0' }
+        headers: setProxyHeader({ 'User-Agent': 'Mozilla/5.0' })
     }, 'https');
 
     if (!res.success) {

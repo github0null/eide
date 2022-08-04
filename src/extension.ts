@@ -810,7 +810,7 @@ async function checkAndInstallRuntime() {
         GlobalEvent.emit('globalLog', newMessage('Info', 'Checking .NET6 runtime ...'));
         GlobalEvent.emit('globalLog', newMessage('Info', `Exec cmd: '${dotnet_chk_cmd}'`));
         const dotnetInfo = ChildProcess.execSync(dotnet_chk_cmd).toString().trim();
-        GlobalEvent.emit('globalLog.append', dotnetInfo);
+        GlobalEvent.emit('globalLog.append', dotnetInfo + os.EOL);
         // check dotnet version
         let dotnetVerLine: string | undefined;
         const lines = dotnetInfo.trim().split(/\r\n|\n/);
@@ -967,6 +967,8 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
     const resManager = ResManager.GetInstance(context);
     const settingManager = SettingManager.GetInstance(context);
 
+    LogDumper.getInstance();
+
     // chmod +x for 7za 
     if (os.platform() != 'win32') {
         try {
@@ -1102,12 +1104,6 @@ function RegisterMsgListener() {
 let prj_count: number = 0;
 
 function RegisterGlobalEvent() {
-
-    GlobalEvent.on('request_init_component', () => {
-        ResManager.GetInstance().InitWorkspace();
-        LogDumper.getInstance();
-        GlobalEvent.emit('response_init_component');
-    });
 
     LogAnalyzer.on('Log', (msg) => {
         // no workspace, log to output pannel

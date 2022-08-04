@@ -43,8 +43,6 @@ export class GlobalEvent {
     }
 
     //event
-    static on(event: 'request_init_component', listener: () => void): void;
-    static on(event: 'response_init_component', listener: () => void): void;
     static on(event: 'extension_close', listener: () => void): void;
     static on(event: 'extension_launch_done', listener: () => void): void;
     static on(event: 'project.opened', listener: (prj: any) => void): void;
@@ -60,7 +58,6 @@ export class GlobalEvent {
         GlobalEvent.GetInstance()._emitter.on(event, args);
     }
 
-    static once(event: 'response_init_component', listener: () => void): void;
     static once(event: any, args?: any): void {
         GlobalEvent.GetInstance()._emitter.once(event, args);
     }
@@ -71,8 +68,6 @@ export class GlobalEvent {
     }
 
     //event
-    static emit(event: 'request_init_component'): boolean;
-    static emit(event: 'response_init_component'): boolean;
     static emit(event: 'extension_close'): boolean;
     static emit(event: 'extension_launch_done'): boolean;
     static emit(event: 'project.opened', prj: any): boolean;
