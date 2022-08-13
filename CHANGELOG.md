@@ -4,6 +4,15 @@
 
 ***
 
+### [v3.8.3] revision
+
+**Change**:
+  - 调整 armgcc 构建配置中的 `linkerScriptPath` 值修改方式，由 文件选择器 更改为 字符串输入框
+  - 调整某些文件的显示图标
+  - 更新内置模板
+
+***
+
 ### [v3.8.2] revision
 
 **New**:
@@ -22,7 +31,7 @@
   - 为 Arm 项目提供更多的 cpu 选项
   - 支持为 'Custom Flasher' 设置全片擦除命令
   - 新增终端类型：`Eide Terminal`, 插件已将 内置工具，编译器等二进制程序路径 导出至该终端的环境变量
-  - 增加两个设置项，用于决定是否自动搜索和添加 `include path` 及 `.obj .a` 至项目（对于新建项目，默认值为 false）：
+  - 增加两个设置项，用于决定是否自动搜索和添加 `IncludePath` 及 `.obj .a` 至项目（默认值为 false）
     ```
     EIDE.SourceTree.AutoSearchIncludePath
     EIDE.SourceTree.AutoSearchObjFile
