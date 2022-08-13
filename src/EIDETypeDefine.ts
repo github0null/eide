@@ -2124,6 +2124,35 @@ class GccCompileConfigModel extends ArmBaseCompileConfigModel {
         "Armv8-M.Base",
         "Armv8-M.Main",
     ];
+
+    protected GetKeyType(key: string): FieldType {
+        switch (key) {
+            case 'cpuType':
+            case 'floatingPointHardware':
+                return 'SELECTION';
+            case 'scatterFilePath':
+                return 'INPUT';
+            case 'options':
+                return 'EVENT';
+            default:
+                return 'Disable';
+        }
+    }
+
+    static getDefaultConfig(): ArmBaseCompileData {
+        return {
+            cpuType: 'Cortex-M3',
+            floatingPointHardware: 'none',
+            scatterFilePath: 'undefined.lds',
+            useCustomScatterFile: false,
+            storageLayout: { RAM: [], ROM: [] },
+            options: 'null'
+        };
+    }
+
+    GetDefault(): ArmBaseCompileData {
+        return GccCompileConfigModel.getDefaultConfig();
+    }
 }
 
 // -------- RISC-V --------
@@ -2170,7 +2199,7 @@ class RiscvCompileConfigModel extends CompileConfigModel<RiscvCompileData> {
     protected GetKeyType(key: string): FieldType {
         switch (key) {
             case 'linkerScriptPath':
-                return 'OPEN_FILE';
+                return 'INPUT';
             case 'options':
                 return 'EVENT';
             default:
@@ -2220,7 +2249,7 @@ class RiscvCompileConfigModel extends CompileConfigModel<RiscvCompileData> {
 
     static getDefaultConfig(): RiscvCompileData {
         return {
-            linkerScriptPath: 'undefined',
+            linkerScriptPath: 'undefined.lds',
             options: 'null'
         };
     }
@@ -2324,7 +2353,7 @@ class AnyGccCompileConfigModel extends CompileConfigModel<AnyGccCompileData> {
 
     static getDefaultConfig(): AnyGccCompileData {
         return {
-            linkerScriptPath: 'undefined',
+            linkerScriptPath: 'undefined.lds',
             options: 'null'
         };
     }
