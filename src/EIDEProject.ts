@@ -386,6 +386,10 @@ class SourceRootList implements SourceProvider {
         this.isAutoSearchObjFile = SettingManager.GetInstance().isAutoSearchObjFile();
     }
 
+    isAutoSearchObjectFile(): boolean {
+        return this.isAutoSearchObjFile;
+    }
+
     load(notEmitEvt?: boolean) {
 
         this.DisposeAll();
@@ -1470,6 +1474,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
     //-------------------- other ------------------
 
+    isAutoSearchObjectFile(): boolean {
+        return this.sourceRoots.isAutoSearchObjectFile();
+    }
+
     readIgnoreList(): string[] {
         const ignoreFile = new File(this.ToAbsolutePath(`.${File.sep}.eideignore`));
         if (ignoreFile.IsFile()) {
@@ -2230,8 +2238,6 @@ class EIDEProject extends AbstractProject {
         const wsConfig = new WorkspaceConfiguration(wsFile);
         const prjConfig = new ProjectConfiguration(
             File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]), option.type);
-        /* const cppConfig = new CppConfiguration(
-            File.fromArray([wsFile.dir, AbstractProject.vsCodeDir, AbstractProject.cppConfigName])); */
 
         // set project name
         prjConfig.config.name = option.name;
@@ -2409,12 +2415,6 @@ class EIDEProject extends AbstractProject {
 
             // --- eide settings
 
-            if (settings['EIDE.SourceTree.AutoSearchIncludePath'] === undefined) {
-                settings['EIDE.SourceTree.AutoSearchIncludePath'] = false;
-            }
-            if (settings['EIDE.SourceTree.AutoSearchObjFile'] === undefined) {
-                settings['EIDE.SourceTree.AutoSearchObjFile'] = false;
-            }
 
             // --- vscode settings
 
@@ -2801,6 +2801,23 @@ class EIDEProject extends AbstractProject {
                 this.cppToolsConfig.cppCompilerArgs = (<string[]>this.cppToolsConfig.cppCompilerArgs).map((arg) => {
                     return this.replaceUserEnv(arg);
                 });
+            }
+        }
+
+        // filter unhandled env variables
+        {
+            const varMatcher = /\$\{.+\}/;
+
+            if (this.cppToolsConfig.compilerArgs) {
+                this.cppToolsConfig.compilerArgs = this.cppToolsConfig.compilerArgs.filter(a => !varMatcher.test(a));
+            }
+
+            if (this.cppToolsConfig.cCompilerArgs) {
+                this.cppToolsConfig.cCompilerArgs = this.cppToolsConfig.cCompilerArgs.filter(a => !varMatcher.test(a));
+            }
+
+            if (this.cppToolsConfig.cppCompilerArgs) {
+                this.cppToolsConfig.cppCompilerArgs = this.cppToolsConfig.cppCompilerArgs.filter(a => !varMatcher.test(a));
             }
         }
 

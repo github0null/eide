@@ -36,7 +36,7 @@ Provide `8051/AVR/STM8/Cortex-M/RISC-V` project development, compilation, progra
 
 ## Example
 
-- Create An Project By Internal Template
+- Create A Project By Internal Template
 
 ![](https://docs.em-ide.com/img/show/new_prj.gif)
 

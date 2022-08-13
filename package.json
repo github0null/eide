@@ -33,7 +33,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.8.2",
+    "version": "3.8.3",
     "preview": false,
     "engines": {
         "vscode": "^1.63.0"
@@ -184,13 +184,13 @@
                         "type": "boolean",
                         "scope": "resource",
                         "markdownDescription": "Auto search include path in source folder and add them to project.",
-                        "default": true
+                        "default": false
                     },
                     "EIDE.SourceTree.AutoSearchObjFile": {
                         "type": "boolean",
                         "scope": "resource",
                         "markdownDescription": "Auto search 'obj/lib' file in source folder and add them to project.",
-                        "default": true
+                        "default": false
                     },
                     "EIDE.Cpptools.ForceInclude": {
                         "type": "array",
@@ -1285,11 +1285,6 @@
                 },
                 {
                     "command": "_cl.eide.project.addSrcDir",
-                    "when": "viewItem == PROJECT && view == Project"
-                },
-                {
-                    "command": "_cl.eide.project.modify.files.options",
-                    "group": "inline",
                     "when": "viewItem == PROJECT && view == Project"
                 },
                 {

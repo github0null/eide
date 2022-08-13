@@ -1033,13 +1033,20 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                     }));
                                 } else { // is file
                                     const type = isExcluded ? TreeItemType.EXCFILE_ITEM : TreeItemType.FILE_ITEM;
-                                    iFileList.push(new ProjTreeItem(type, {
+                                    const treeItem = new ProjTreeItem(type, {
                                         value: f,
                                         collapsibleState: project.getSourceRefs(f).length > 0 ?
                                             vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
                                         projectIndex: element.val.projectIndex,
                                         tooltip: isExcluded ? view_str$project$excludeFile : f.path,
-                                    }));
+                                    });
+                                    // use normal file icon for 'obj' file
+                                    if (!project.isAutoSearchObjectFile()) {
+                                        if (AbstractProject.libFileFilter.test(f.name)) {
+                                            treeItem.iconPath = vscode.ThemeIcon.File;
+                                        }
+                                    }
+                                    iFileList.push(treeItem);
                                 }
                             });
 
