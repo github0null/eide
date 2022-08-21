@@ -125,6 +125,7 @@ export class DependenceManager implements ManagerInterface {
         this.addComponentCache(packName, component.groupName, Array.from(conditionList));
 
         const incList = component.incDirList.map((item): string => { return item.path; });
+
         // add dependence dir
         incList.push(componentDir.path);
 
