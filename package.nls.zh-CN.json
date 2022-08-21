@@ -52,6 +52,8 @@
     "eide.explorer.rename.folder": "重命名",
     "eide.explorer.exclude.folder": "从项目中排除",
     "eide.explorer.include.folder": "取消排除",
+    "eide.explorer.exclude.folder.childSrcs": "排除所有源文件",
+    "eide.explorer.include.folder.childSrcs": "包含所有源文件",
     "eide.explorer.show.file.dir": "在文件浏览器中显示",
     "eide.explorer.modify.file.path": "修改源文件路径",
     "eide.explorer.modify.exclude_list": "修改源文件排除列表",

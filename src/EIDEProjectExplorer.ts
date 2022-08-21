@@ -4587,7 +4587,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
     }
 
-    ExcludeFolder(item: ProjTreeItem) {
+    ExcludeFolder(item: ProjTreeItem, onlyChildren?: boolean) {
 
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
 
@@ -4595,33 +4595,76 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             // filesystem folder
             case TreeItemType.FOLDER:
             case TreeItemType.FOLDER_ROOT:
-                prj.excludeFolder(item.val.obj.path);
+                if (onlyChildren) {
+                    const dir = <File>item.val.obj;
+                    dir.GetList(undefined, File.EMPTY_FILTER).forEach(f => {
+                        prj.excludeSourceFile(f.path);
+                    });
+                } else {
+                    prj.excludeFolder((<File>item.val.obj).path);
+                }
                 break;
             // virtual folder
             case TreeItemType.V_FOLDER:
             case TreeItemType.V_FOLDER_ROOT:
-                prj.excludeFolder((<VirtualFolderInfo>item.val.obj).path);
+                if (onlyChildren) {
+                    const dir = <VirtualFolderInfo>item.val.obj;
+                    dir.vFolder.files.forEach(f => {
+                        prj.excludeSourceFile(`${dir.path}/${NodePath.basename(f.path)}`);
+                    });
+                } else {
+                    prj.excludeFolder((<VirtualFolderInfo>item.val.obj).path);
+                }
                 break;
             default:
                 break;
         }
     }
 
-    UnexcludeFolder(item: ProjTreeItem) {
+    UnexcludeFolder(item: ProjTreeItem, onlyChildren?: boolean) {
 
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
 
-        switch (item.type) {
-            // filesystem folder
-            case TreeItemType.EXCFOLDER:
-                prj.unexcludeFolder(item.val.obj.path);
-                break;
-            // virtual folder
-            case TreeItemType.V_EXCFOLDER:
-                prj.unexcludeFolder((<VirtualFolderInfo>item.val.obj).path);
-                break;
-            default:
-                break;
+        if (onlyChildren) { // viewItem == FOLDER || viewItem == V_FOLDER || viewItem == FOLDER_ROOT || viewItem == V_FOLDER_ROOT
+            switch (item.type) {
+                // filesystem folder
+                case TreeItemType.FOLDER:
+                case TreeItemType.FOLDER_ROOT:
+                    {
+                        const dir = <File>item.val.obj;
+                        dir.GetList(undefined, File.EMPTY_FILTER).forEach(f => {
+                            prj.unexcludeSourceFile(f.path);
+                        });
+                    }
+                    break;
+                // virtual folder
+                case TreeItemType.V_FOLDER:
+                case TreeItemType.V_FOLDER_ROOT:
+                    {
+                        const dir = <VirtualFolderInfo>item.val.obj;
+                        dir.vFolder.files.forEach(f => {
+                            prj.unexcludeSourceFile(`${dir.path}/${NodePath.basename(f.path)}`);
+                        });
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        else { // viewItem == EXCFOLDER || viewItem == V_EXCFOLDER
+            switch (item.type) {
+                // filesystem folder
+                case TreeItemType.EXCFOLDER:
+                    prj.unexcludeFolder((<File>item.val.obj).path);
+                    break;
+                // virtual folder
+                case TreeItemType.V_EXCFOLDER:
+                    prj.unexcludeFolder((<VirtualFolderInfo>item.val.obj).path);
+                    break;
+                default:
+                    break;
+            }
         }
     }
 

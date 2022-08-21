@@ -59,6 +59,8 @@
     "eide.explorer.rename.folder": "Rename",
     "eide.explorer.exclude.folder": "Exclude Folder",
     "eide.explorer.include.folder": "Include Folder",
+    "eide.explorer.exclude.folder.childSrcs": "Exclude Child Source Files",
+    "eide.explorer.include.folder.childSrcs": "Include Child Source Files",
     "eide.explorer.show.file.dir": "Show In File Explorer",
     "eide.explorer.modify.file.path": "Modify File Path",
     "eide.explorer.modify.exclude_list": "Modify Source File Exclude List",
