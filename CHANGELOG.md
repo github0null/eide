@@ -4,6 +4,21 @@
 
 ***
 
+### [v3.8.4] revision
+
+**New**:
+  - Add `Exclude/Include Child Sources` context menu for source folder
+  - Brand new documentation, product landing page, here: https://em-ide.com
+
+**Change**:
+  - Adjust `eide.json` structure
+  - Generate a `.eide.usr.ctx.json` file to save user context data (can be ignored in `.gitignore`)
+
+**Optimize**:
+  - Format project name when import project from other IDE
+
+***
+
 ### [v3.8.3] revision
 
 **Change**:

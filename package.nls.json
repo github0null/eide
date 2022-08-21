@@ -149,7 +149,7 @@
     "string.eide.start_project": "Start Your Project",
     "string.eide.start_project.detail": "Now, We can create a project !\n[New Project](command:eide.operation.new_project)\nor import a project !\n[Import Project](command:eide.operation.import_project)",
     "string.eide.open_docs": "Learn More",
-    "string.eide.open_docs.detail": "Click the link will open the manual that may help you learn more about usage.\n[Embedded IDE Document](https://docs.em-ide.com/)",
+    "string.eide.open_docs.detail": "Click the link will open the home page that may help you learn more about usage.\n[Embedded IDE](https://em-ide.com/)",
 
     "string.eide.project.welcome": "There are no project in this workspace ! \n[New Project](command:eide.operation.new_project)\n[Import Project](command:eide.operation.import_project)"
 }
