@@ -805,10 +805,22 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
             return view_str$operation$name_can_not_be_blank;
         }
 
+        if (/\s+/.test(value)) {
+            return `can't contain whitespace in your project name !`;
+        }
+
         if (/&|<|>|\(|\)|@|\^|\|/.test(value)) {
             return view_str$operation$name_can_not_have_invalid_char;
         }
     }
+
+    static formatProjectName(name: string): string {
+        return name
+            .replace(/\s+/g, '-')
+            .replace(/&|<|>|\(|\)|@|\^|\|/g, '_');
+    }
+
+    //---
 
     private loadProjectDirectory() {
 
@@ -2222,6 +2234,8 @@ class EIDEProject extends AbstractProject {
     //////////////////////////////// create project ///////////////////////////////////
 
     public createBase(option: CreateOptions, createNewPrjFolder: boolean = true): BaseProjectInfo {
+
+        option.name = AbstractProject.formatProjectName(option.name);
 
         const rootDir: File = createNewPrjFolder ?
             File.fromArray([option.outDir.path, option.name]) : option.outDir;
