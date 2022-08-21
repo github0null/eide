@@ -556,16 +556,15 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         this.dataChangedEvent = new vscode.EventEmitter<ProjTreeItem>();
         this.context.subscriptions.push(this.dataChangedEvent);
         this.onDidChangeTreeData = this.dataChangedEvent.event;
-
-        this.recFile = File.fromArray([ResManager.GetInstance().GetAppDataDir().path, ProjectDataProvider.recName]);
-        this.loadRecord();
+        this.recFile = File.fromArray([ResManager.GetInstance().getEideHomeFolder().path, ProjectDataProvider.recName]);
 
         GlobalEvent.on('extension_close', () => {
-            this.saveRecord();
             this.SaveAll();
             this.CloseAll();
+            this.saveRecord();
         });
 
+        this.loadRecord();
         this.LoadWorkspaceProject();
     }
 
@@ -2119,7 +2118,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
     }
 
     SaveAll() {
-        this.prjList.forEach(sln => sln.Save());
+        this.prjList.forEach(sln => sln.Save(true));
     }
 
     CloseAll() {

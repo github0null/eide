@@ -2651,6 +2651,11 @@ class EIDEProject extends AbstractProject {
                     }
                 });
         }
+
+        // for old project, save now
+        if (this.isOldVersionProject) {
+            this.Save();
+        }
     }
 
     ////////////////////////////////// cpptools intellisence provider ///////////////////////////////////
