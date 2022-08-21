@@ -2552,11 +2552,12 @@ class EIDEProject extends AbstractProject {
             // default .gitignore
             {
                 const ignCont = [
-                    '# dot dirs',
+                    '# dot files',
                     '.vscode/launch.json',
                     '.eide/log',
                     '.git',
                     '.settings',
+                    ProjectConfiguration.USR_CTX_FILE_NAME,
                     '',
                     '# project out',
                     'build', 'bin', 'obj', 'out',

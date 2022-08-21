@@ -489,7 +489,7 @@ export interface ProjectConfigData<T extends BuilderConfigData> {
     version: string;
 }
 
-export interface ProjectUserConfigData {
+export interface ProjectUserContextData {
 
     target?: string;
 }
@@ -514,6 +514,8 @@ export class ProjectConfiguration<T extends BuilderConfigData>
     static readonly BUILD_IN_GROUP_NAME = 'build-in';
     static readonly CUSTOM_GROUP_NAME = 'custom';
     static readonly MERGE_DEP_NAME = 'merge';
+
+    static readonly USR_CTX_FILE_NAME = '.eide.usr.ctx.json';
 
     private rootDir: File | undefined;
     private api: ProjectConfigApi;
@@ -1305,13 +1307,13 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         custom_dep.defineList = Array.from(target.custom_dep.defineList);
     }
 
-    getProjectUsrConfigFile(): File {
-        return File.fromArray([this.getRootDir().path, '.eide.usr.cfg.json']);
+    getProjectUsrCtxFile(): File {
+        return File.fromArray([this.getRootDir().path, ProjectConfiguration.USR_CTX_FILE_NAME]);
     }
 
-    getProjectUsrConfig(): ProjectUserConfigData {
+    getProjectUsrCtx(): ProjectUserContextData {
 
-        const f = this.getProjectUsrConfigFile();
+        const f = this.getProjectUsrCtxFile();
 
         if (f.IsFile()) {
             try {
@@ -1325,9 +1327,9 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         return {}; // empty obj
     };
 
-    setProjectUsrConfig(data: ProjectUserConfigData) {
+    setProjectUsrCtx(data: ProjectUserContextData) {
         try {
-            this.getProjectUsrConfigFile().Write(JSON.stringify(data, undefined, 4));
+            this.getProjectUsrCtxFile().Write(JSON.stringify(data, undefined, 4));
         } catch (error) {
             GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
         }
@@ -1341,8 +1343,8 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         // load target
         //
 
-        const usrCfg = this.getProjectUsrConfig();
-        this.recoverTarget(usrCfg.target);
+        const usrCtx = this.getProjectUsrCtx();
+        this.recoverTarget(usrCtx.target);
 
         //
         // format path
@@ -1390,9 +1392,9 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
             this.config.targets[this.config.mode] = this.cloneCurrentTarget();
 
-            const usrCfg = this.getProjectUsrConfig();
-            usrCfg.target = this.config.mode;
-            this.setProjectUsrConfig(usrCfg);
+            const usrCtx = this.getProjectUsrCtx();
+            usrCtx.target = this.config.mode;
+            this.setProjectUsrCtx(usrCtx);
 
             //
             // convert abspath to relative path before save to file
