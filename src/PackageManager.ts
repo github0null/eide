@@ -136,14 +136,16 @@ export class PackageManager {
 
         /* if we have installed a pack, load and override old pack root */
         const prjConfig = this.project.GetConfiguration<ArmBaseCompileData>().config;
-        const packDir = prjConfig.packDir;
-        if (packDir) {
-            const packManager = this.project.GetPackManager();
-            this.packRootDir = new File(this.project.ToAbsolutePath(packDir));
-            packManager.LoadPackage(this.packRootDir);
-            const devName = prjConfig.deviceName;
-            if (devName) {
-                packManager.SetDeviceInfo(devName, prjConfig.compileConfig.cpuType);
+        if (prjConfig.packDir) {
+            const packDir = new File(this.project.ToAbsolutePath(prjConfig.packDir));
+            if (packDir.IsDir()) {
+                this.packRootDir = packDir;
+                const packManager = this.project.GetPackManager();
+                packManager.LoadPackage(this.packRootDir);
+                const devName = prjConfig.deviceName;
+                if (devName) {
+                    packManager.SetDeviceInfo(devName, prjConfig.compileConfig.cpuType);
+                }
             }
         }
     }

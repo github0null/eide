@@ -73,7 +73,7 @@ import * as ArmCpuUtils from './ArmCpuUtils';
 ////////////////////////////////////////////////////////
 
 // eide project config file version
-export const EIDE_CONF_VERSION = '3.2';
+export const EIDE_CONF_VERSION = '3.3';
 
 ////////////////////////////////////////////////////////
 
@@ -265,14 +265,14 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
         this.watcher.on('error', (err) => GlobalEvent.emit('error', err));
         this.watcher.OnChanged = () => this.Update(this.watcher.file.Read());
         this.config = this.GetDefault(this.readTypeFromFile(configFile) || type);
-        this.Init(configFile);
+        this.load(configFile);
     }
 
-    protected Init(f: File) {
+    protected load(f: File) {
         if (f.IsFile()) {
             this.Update(f.Read());
         } else {
-            f.Write(this.ToJson());
+            this.Save();
         }
     }
 
@@ -352,12 +352,12 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
         // set config
         this.config = _configFromFile;
 
-        this.RefreshAfterConfigUpdate();
+        this.loadAfterConfigUpdated();
 
         this._event.emit('dataChanged');
     }
 
-    protected RefreshAfterConfigUpdate() {
+    protected loadAfterConfigUpdated() {
         // do nothing
     }
 
@@ -462,15 +462,18 @@ export interface ProjectConfigData<T extends BuilderConfigData> {
 
     name: string;
     type: ProjectType;
-    mode: string; // target name
 
-    // cur target info
+    // cur target info (virtual node)
+    mode: string; // target name
     excludeList: string[];
     toolchain: ToolchainName;
     compileConfig: T;
     uploader: HexUploaderType;
     uploadConfig: any | null;
     uploadConfigMap: { [uploader: string]: any };
+
+    // dependences (virtual node: 'custom', 'built-in')
+    dependenceList: DependenceGroup[];
 
     // all targets
     targets: { [target: string]: ProjectTargetInfo };
@@ -479,12 +482,16 @@ export interface ProjectConfigData<T extends BuilderConfigData> {
     srcDirs: string[];
     virtualFolder: VirtualFolder;
 
-    dependenceList: DependenceGroup[];
     outDir: string;
     deviceName: string | null;
     packDir: string | null;
     miscInfo: ProjectMiscInfo;
     version: string;
+}
+
+export interface ProjectUserConfigData {
+
+    target?: string;
 }
 
 export type ProjectConfigEventType =
@@ -508,15 +515,30 @@ export class ProjectConfiguration<T extends BuilderConfigData>
     static readonly CUSTOM_GROUP_NAME = 'custom';
     static readonly MERGE_DEP_NAME = 'merge';
 
-    compileConfigModel: CompileConfigModel<any>;
-    uploadConfigModel: UploadConfigModel<any>;
-
     private rootDir: File | undefined;
     private api: ProjectConfigApi;
+
+    compileConfigModel: CompileConfigModel<any> = <any>null;
+    uploadConfigModel: UploadConfigModel<any> = <any>null;
+
+    protected load(f: File) {
+
+        // init project root folder before constructor
+        this.rootDir = new File(NodePath.dirname(this.GetFile().dir));
+
+        // load superclass
+        super.load(f);
+    }
 
     constructor(f: File, type?: ProjectType) {
 
         super(f, type);
+
+        this.api = {
+            getRootDir: () => this.getRootDir(),
+            toAbsolutePath: (path) => this.toAbsolutePath(path),
+            toRelativePath: (path) => this.toRelativePath(path)
+        };
 
         // compate old version
         if (Array.isArray(this.config.virtualFolder)) {
@@ -527,11 +549,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             };
         }
 
-        this.api = {
-            getRootDir: () => this.getRootDir(),
-            toAbsolutePath: (path) => this.toAbsolutePath(path),
-            toRelativePath: (path) => this.toRelativePath(path)
-        };
+        // init project
 
         this.compileConfigModel = CompileConfigModel.getInstance(this.config);
         this.uploadConfigModel = UploadConfigModel.getInstance(this.config.uploader, this.api);
@@ -548,41 +566,19 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         this.compileConfigModel.on('dataChanged', () => this.uploadConfigModel.emit('NotifyUpdate', this));
     }
 
-    protected Init(f: File) {
-        // init project root folder before constructor
-        this.rootDir = new File(NodePath.dirname(this.GetFile().dir));
-        // init superclass
-        super.Init(f);
-    }
-
     private getRootDir(): File {
         return <File>this.rootDir;
     }
 
-    private toAbsolutePath(path: string): string {
-        const _path = path.trim();
-        if (File.isAbsolute(_path)) { return _path; }
-        return NodePath.normalize(File.ToLocalPath(this.getRootDir().path + File.sep + _path));
+    private toAbsolutePath(path_: string): string {
+        const path = path_.trim();
+        if (File.isAbsolute(path)) { return NodePath.normalize(path); }
+        return NodePath.normalize(File.ToLocalPath(this.getRootDir().path + File.sep + path));
     }
 
     private toRelativePath(_path: string): string {
-
-        const path = File.ToUnixPath(_path);
-
-        if (File.isEnvPath(path)) { // env path have no repath
-            return path;
-        }
-
-        if (!File.isAbsolute(path)) {
-            return path;
-        }
-
-        const rePath = NodePath.relative(this.getRootDir().path, path);
-        if (File.isAbsolute(rePath)) {
-            return File.ToUnixPath(rePath);
-        }
-
-        return `./${File.ToUnixPath(rePath)}`;
+        const path = _path.trim();
+        return this.getRootDir().ToRelativePath(path, true) || path;
     }
 
     private MergeDepList(depList: Dependence[], name?: string): Dependence {
@@ -630,7 +626,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
                     type: type,
                     mode: 'Debug',
                     toolchain: 'SDCC',
-                    uploader: 'stcgal',
+                    uploader: 'Custom',
                     dependenceList: [],
                     compileConfig: SdccCompileConfigModel.getDefaultConfig(),
                     srcDirs: [],
@@ -1261,11 +1257,97 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         }
     }
 
+    cloneCurrentTarget(): ProjectTargetInfo {
+
+        const target = this.config;
+
+        const custom_dep = <Dependence>utility.deepCloneObject(this.CustomDep_getDependence());
+        custom_dep.incList = custom_dep.incList.map((path) => { return this.toRelativePath(path) || path; });
+        custom_dep.libList = custom_dep.libList.map((path) => { return this.toRelativePath(path) || path; });
+        custom_dep.sourceDirList = custom_dep.sourceDirList.map((path) => { return this.toRelativePath(path) || path; });
+
+        return {
+            excludeList: Array.from(target.excludeList),
+            toolchain: target.toolchain,
+            compileConfig: utility.deepCloneObject(target.compileConfig),
+            uploader: target.uploader,
+            uploadConfig: utility.deepCloneObject(target.uploadConfig),
+            uploadConfigMap: utility.deepCloneObject(target.uploadConfigMap),
+            custom_dep: custom_dep
+        };
+    }
+
+    private recoverTarget(targetName?: string) {
+
+        targetName = targetName || utility.getFirstKey(this.config.targets);
+
+        if (!targetName) return;
+
+        const target = this.config.targets[targetName];
+
+        if (!target)
+            throw new Error(`not found target: '${targetName}' in 'eide.json' !`);
+
+        this.config.mode = targetName;
+        this.config.excludeList = Array.from(target.excludeList);
+
+        this.config.toolchain = target.toolchain;
+        this.config.compileConfig = utility.deepCloneObject(target.compileConfig);
+
+        this.config.uploader = target.uploader;
+        this.config.uploadConfig = utility.deepCloneObject(target.uploadConfig);
+        this.config.uploadConfigMap = utility.deepCloneObject(target.uploadConfigMap);
+
+        const custom_dep = this.CustomDep_getDependence();
+        custom_dep.incList = Array.from(target.custom_dep.incList);
+        custom_dep.libList = Array.from(target.custom_dep.libList);
+        custom_dep.sourceDirList = Array.from(target.custom_dep.sourceDirList);
+        custom_dep.defineList = Array.from(target.custom_dep.defineList);
+    }
+
+    getProjectUsrConfigFile(): File {
+        return File.fromArray([this.getRootDir().path, '.eide.usr.cfg.json']);
+    }
+
+    getProjectUsrConfig(): ProjectUserConfigData {
+
+        const f = this.getProjectUsrConfigFile();
+
+        if (f.IsFile()) {
+            try {
+                return JSON.parse(f.Read());
+            } catch (error) {
+                GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+                return {}; // empty obj
+            }
+        }
+
+        return {}; // empty obj
+    };
+
+    setProjectUsrConfig(data: ProjectUserConfigData) {
+        try {
+            this.getProjectUsrConfigFile().Write(JSON.stringify(data, undefined, 4));
+        } catch (error) {
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+        }
+    }
+
     //---
 
-    protected RefreshAfterConfigUpdate() {
+    protected loadAfterConfigUpdated() {
 
-        // convert to abs path
+        //
+        // load target
+        //
+
+        const usrCfg = this.getProjectUsrConfig();
+        this.recoverTarget(usrCfg.target);
+
+        //
+        // format path
+        //
+
         this.config.srcDirs = ArrayDelRepetition(this.config.srcDirs.map((path) => { return this.toAbsolutePath(path); }));
 
         for (const depGroup of this.config.dependenceList) {
@@ -1277,29 +1359,64 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         }
     }
 
+    protected ToJson(
+        replacer?: (this: any, key: string, value: any) => any,
+        space?: string | number): string {
+
+        const excKeys = [
+            'mode',
+            'excludeList',
+            'toolchain',
+            'compileConfig',
+            'uploader',
+            'uploadConfig',
+            'uploadConfigMap'
+        ];
+
+        return utility.ToJsonStringExclude(this.config, excKeys, space);
+    }
+
     Save() {
 
         // restore old obj
         const oldSrcDirs = JSON.parse(JSON.stringify(this.config.srcDirs));
         const oldDepList = JSON.parse(JSON.stringify(this.config.dependenceList));
 
-        /* convert to relative path */
+        // save
+        {
+            //
+            // store target 
+            //
 
-        this.config.srcDirs = this.config.srcDirs.map((path) => { return this.toRelativePath(path); });
+            this.config.targets[this.config.mode] = this.cloneCurrentTarget();
 
-        this.config.dependenceList = this.config.dependenceList.filter((g) => {
-            return g.groupName !== ProjectConfiguration.BUILD_IN_GROUP_NAME; /* ignore build-in dep */
-        });
+            const usrCfg = this.getProjectUsrConfig();
+            usrCfg.target = this.config.mode;
+            this.setProjectUsrConfig(usrCfg);
 
-        for (const depGroup of this.config.dependenceList) {
-            for (const dep of depGroup.depList) {
-                dep.incList = dep.incList.map((path) => { return this.toRelativePath(path); });
-                dep.libList = dep.libList.map((path) => { return this.toRelativePath(path); });
-                dep.sourceDirList = dep.sourceDirList.map((path) => { return this.toRelativePath(path); });
+            //
+            // convert abspath to relative path before save to file
+            //
+
+            this.config.srcDirs = this.config.srcDirs.map((path) => { return this.toRelativePath(path); });
+
+            // ignore some 'dynamic' dependence
+            this.config.dependenceList = this.config.dependenceList.filter((g) => {
+                return g.groupName !== ProjectConfiguration.BUILD_IN_GROUP_NAME
+                    && g.groupName !== ProjectConfiguration.CUSTOM_GROUP_NAME;
+            });
+
+            for (const depGroup of this.config.dependenceList) {
+                for (const dep of depGroup.depList) {
+                    dep.incList = dep.incList.map((path) => { return this.toRelativePath(path); });
+                    dep.libList = dep.libList.map((path) => { return this.toRelativePath(path); });
+                    dep.sourceDirList = dep.sourceDirList.map((path) => { return this.toRelativePath(path); });
+                }
             }
-        }
 
-        super.Save(undefined, 2);
+            // do save
+            super.Save(undefined, 2);
+        }
 
         // recover it
         this.config.srcDirs = oldSrcDirs;
