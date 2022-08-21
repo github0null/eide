@@ -471,3 +471,43 @@ export class FileCache {
         this.cacheFile.Write(JSON.stringify(this.cache));
     }
 }
+
+export function ToJsonStringExclude(obj: any, excludeList?: string[], indent?: string | number): string {
+
+    const my_replacer = (key: string, val: any): any => {
+
+        if (!val) return val;
+
+        if (key == '' && excludeList && excludeList.length > 0) {
+
+            let newVal = JSON.parse(JSON.stringify(val));
+
+            for (const rKey of excludeList) {
+                newVal[rKey] = undefined;
+            }
+
+            return newVal;
+        }
+
+        return val;
+    };
+
+    return JSON.stringify(obj, my_replacer, indent);
+}
+
+export function getFirstKey(obj: any): string | undefined {
+    if (typeof obj === 'object') {
+        for (const key in obj) {
+            return key;
+        }
+    }
+}
+
+export function deepCloneObject(obj: any): any {
+
+    if (typeof obj != 'object') {
+        return obj;
+    }
+
+    return JSON.parse(JSON.stringify(obj));
+}

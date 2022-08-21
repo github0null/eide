@@ -34,6 +34,22 @@ Provide `8051/AVR/STM8/Cortex-M/RISC-V` project development, compilation, progra
 
 ***
 
+## Quick Start 🏃‍♀️
+
+1. Install any of the above compilers
+
+2. Open the **Operations** bar of the extension to set the compiler installation path
+
+3. Click on the `New` or `Import` function in the Operations bar to start your project
+
+***
+
+## Getting Start 📖
+
+[https://em-ide.com](https://em-ide.com)
+
+***
+
 ## Example
 
 - Create A Project By Internal Template
@@ -55,22 +71,6 @@ Provide `8051/AVR/STM8/Cortex-M/RISC-V` project development, compilation, progra
 - Program Resource View
 
 ![](https://docs.em-ide.com/img/show/show_prj_res.gif)
-
-***
-
-## Quick Start 🏃‍♀️
-
-1. Install any of the above compilers
-
-2. Open the **Operations** bar of the extension to set the compiler installation path
-
-3. Click on the `New` or `Import` function in the Operations bar to start your project
-
-***
-
-## Document 📖
-
-[https://docs.em-ide.com](https://docs.em-ide.com)
 
 ***
 

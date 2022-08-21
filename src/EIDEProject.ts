@@ -805,10 +805,22 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
             return view_str$operation$name_can_not_be_blank;
         }
 
+        if (/\s+/.test(value)) {
+            return `can't contain whitespace in your project name !`;
+        }
+
         if (/&|<|>|\(|\)|@|\^|\|/.test(value)) {
             return view_str$operation$name_can_not_have_invalid_char;
         }
     }
+
+    static formatProjectName(name: string): string {
+        return name
+            .replace(/\s+/g, '-')
+            .replace(/&|<|>|\(|\)|@|\^|\|/g, '_');
+    }
+
+    //---
 
     private loadProjectDirectory() {
 
@@ -911,12 +923,6 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
         // rm prefix for out dir
         prjConfig.config.outDir = NodePath.normalize(File.ToLocalPath(prjConfig.config.outDir));
-
-        // clear invalid package path
-        if (prjConfig.config.packDir &&
-            !File.IsDir(this.ToAbsolutePath(prjConfig.config.packDir))) {
-            prjConfig.config.packDir = null;
-        }
 
         // use unix path for source path
         if (this.isNewProject || this.isOldVersionProject) {
@@ -1212,35 +1218,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         }
     }
 
-    private copyTargetObj(): ProjectTargetInfo {
-
-        const prjConfig = this.GetConfiguration();
-        const target = prjConfig.config;
-
-        // convert to relative path
-        const custom_dep = <Dependence>JSON.parse(JSON.stringify(prjConfig.CustomDep_getDependence()));
-        custom_dep.incList = custom_dep.incList.map((path) => { return this.ToRelativePath(path) || path; });
-        custom_dep.libList = custom_dep.libList.map((path) => { return this.ToRelativePath(path) || path; });
-        custom_dep.sourceDirList = custom_dep.sourceDirList.map((path) => { return this.ToRelativePath(path) || path; });
-
-        const uploadConfig_ = JSON.parse(JSON.stringify(target.uploadConfig));
-        const uploadConfigMap_ = JSON.parse(JSON.stringify(target.uploadConfigMap));
-
-        return {
-            excludeList: Array.from(target.excludeList),
-            toolchain: target.toolchain,
-            compileConfig: JSON.parse(JSON.stringify(target.compileConfig)),
-            uploader: target.uploader,
-            uploadConfig: uploadConfig_,
-            uploadConfigMap: uploadConfigMap_,
-            custom_dep: custom_dep
-        };
-    }
-
     private saveTarget(target: string) {
         const prjConfig = this.GetConfiguration<any>();
         const prjConfigData = prjConfig.config;
-        prjConfigData.targets[target] = this.copyTargetObj();
+        prjConfigData.targets[target] = prjConfig.cloneCurrentTarget();
     }
 
     private _switchTarget(targetName: string) {
@@ -1254,7 +1235,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
         // if target is not existed, create it
         if (targets[targetName] === undefined) {
-            targets[targetName] = this.copyTargetObj();
+            targets[targetName] = prjConfig.cloneCurrentTarget();
         }
 
         const oldBuilderOptsFile = prjConfig.compileConfigModel
@@ -2031,9 +2012,8 @@ class EIDEProject extends AbstractProject {
     protected onPackageChanged(): void {
         const prjConfig = this.GetConfiguration();
         const packDir = this.GetPackManager().GetPackDir();
-        if (packDir) {
-            const rePackDir = this.ToRelativePath(packDir.path);
-            prjConfig.config.packDir = rePackDir ? File.ToUnixPath(rePackDir) : null;
+        if (packDir) { // update project config
+            prjConfig.config.packDir = this.ToRelativePath(packDir.path) || null;
         }
         this.dependenceManager.Refresh();
         this.emit('dataChanged', 'pack');
@@ -2222,6 +2202,8 @@ class EIDEProject extends AbstractProject {
     //////////////////////////////// create project ///////////////////////////////////
 
     public createBase(option: CreateOptions, createNewPrjFolder: boolean = true): BaseProjectInfo {
+
+        option.name = AbstractProject.formatProjectName(option.name);
 
         const rootDir: File = createNewPrjFolder ?
             File.fromArray([option.outDir.path, option.name]) : option.outDir;
@@ -2570,14 +2552,14 @@ class EIDEProject extends AbstractProject {
             // default .gitignore
             {
                 const ignCont = [
-                    '# dot dirs',
-                    '.vscode/launch.json',
-                    '.eide/log',
-                    '.git',
-                    '.settings',
+                    '# dot files',
+                    '/.vscode/launch.json',
+                    '/.settings',
+                    '/.eide/log',
+                    '/' + ProjectConfiguration.USR_CTX_FILE_NAME,
                     '',
                     '# project out',
-                    'build', 'bin', 'obj', 'out',
+                    '/build', '/bin', '/obj', '/out',
                     '',
                     '# eide template',
                     '*.ept',
@@ -2668,6 +2650,11 @@ class EIDEProject extends AbstractProject {
                         GlobalEvent.emit('globalLog.show');
                     }
                 });
+        }
+
+        // for old project, save now
+        if (this.isOldVersionProject) {
+            this.Save();
         }
     }
 

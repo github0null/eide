@@ -42,9 +42,9 @@
 
 ***
 
-## 使用文档 📖
+## 入门 📖
 
-[文档地址: https://docs.em-ide.com](https://docs.em-ide.com)
+[https://em-ide.com](https://em-ide.com)
 
 ***
 

@@ -52,6 +52,8 @@
     "eide.explorer.rename.folder": "重命名",
     "eide.explorer.exclude.folder": "从项目中排除",
     "eide.explorer.include.folder": "取消排除",
+    "eide.explorer.exclude.folder.childSrcs": "排除所有源文件",
+    "eide.explorer.include.folder.childSrcs": "包含所有源文件",
     "eide.explorer.show.file.dir": "在文件浏览器中显示",
     "eide.explorer.modify.file.path": "修改源文件路径",
     "eide.explorer.modify.exclude_list": "修改源文件排除列表",
@@ -140,7 +142,7 @@
     "string.eide.start_project": "开始你的项目",
     "string.eide.start_project.detail": "现在，我们可以创建一个项目 ！\n[New Project](command:eide.operation.new_project)\n或者导入一个 MDK 项目 ！\n[Import Keil Project](command:eide.operation.import_project)",
     "string.eide.open_docs": "了解更多",
-    "string.eide.open_docs.detail": "点击链接可以打开文档，也许能帮您了解到更多的用法。\n[Embedded IDE Document](https://docs.em-ide.com/)",
+    "string.eide.open_docs.detail": "点击链接可以打开主页，也许能帮您了解到更多的用法。\n[Embedded IDE](https://em-ide.com/)",
 
     "string.eide.project.welcome": "该工作区中没有任何项目！\n[新建项目](command:eide.operation.new_project)\n[导入Keil项目](command:eide.operation.import_project)"
 }

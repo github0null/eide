@@ -33,7 +33,7 @@
     "homepage": "https://github.com/github0null/eide/blob/master/README.md",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.8.3",
+    "version": "3.8.4",
     "preview": false,
     "engines": {
         "vscode": "^1.63.0"
@@ -165,7 +165,7 @@
                             "altText": "eide docs"
                         },
                         "completionEvents": [
-                            "onLink:https://docs.em-ide.com/"
+                            "onLink:https://em-ide.com/"
                         ]
                     }
                 ]
@@ -932,6 +932,14 @@
                 }
             },
             {
+                "command": "_cl.eide.project.excludeFolder.childSrcs",
+                "title": "%eide.explorer.exclude.folder.childSrcs%"
+            },
+            {
+                "command": "_cl.eide.project.unexcludeFolder.childSrcs",
+                "title": "%eide.explorer.include.folder.childSrcs%"
+            },
+            {
                 "command": "_cl.eide.project.removeDependenceItem",
                 "title": "%eide.item.remove%",
                 "icon": {
@@ -1277,6 +1285,14 @@
                     "command": "_cl.eide.project.unexcludeFolder",
                     "group": "inline",
                     "when": "viewItem == EXCFOLDER || viewItem == V_EXCFOLDER && view == Project"
+                },
+                {
+                    "command": "_cl.eide.project.excludeFolder.childSrcs",
+                    "when": "viewItem == FOLDER || viewItem == V_FOLDER || viewItem == FOLDER_ROOT || viewItem == V_FOLDER_ROOT && view == Project"
+                },
+                {
+                    "command": "_cl.eide.project.unexcludeFolder.childSrcs",
+                    "when": "viewItem == FOLDER || viewItem == V_FOLDER || viewItem == FOLDER_ROOT || viewItem == V_FOLDER_ROOT && view == Project"
                 },
                 {
                     "command": "_cl.eide.project.addSrcDir",

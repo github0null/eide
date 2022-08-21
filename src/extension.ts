@@ -197,6 +197,8 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.unexcludeSource', (item) => projectExplorer.UnexcludeSourceFile(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.excludeFolder', (item) => projectExplorer.ExcludeFolder(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.unexcludeFolder', (item) => projectExplorer.UnexcludeFolder(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.excludeFolder.childSrcs', (item) => projectExplorer.ExcludeFolder(item, true)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.unexcludeFolder.childSrcs', (item) => projectExplorer.UnexcludeFolder(item, true)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.file.show.dir', (item) => projectExplorer.showFileInExplorer(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.modify.path', (item) => projectExplorer.openYamlConfig(item, 'src-path-cfg')));
 
