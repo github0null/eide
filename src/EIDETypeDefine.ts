@@ -340,19 +340,11 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
             }
         }
 
-        // set default value for error value property
-        for (const key in (<any>this.config)) {
-            if (!isNullOrUndefined((<any>this.config)[key])) {
-                if (typeof _configFromFile[key] !== typeof (<any>this.config)[key]) {
-                    _configFromFile[key] = (<any>this.config)[key];
-                }
-            }
-        }
-
         // set config
         this.config = _configFromFile;
 
-        this.loadAfterConfigUpdated();
+        //
+        this.afterSetConfigData();
 
         this._event.emit('dataChanged');
     }
@@ -361,8 +353,8 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
         this.watcher.file.Write(this.ToJson());
     }
 
-    protected loadAfterConfigUpdated() {
-        // do nothing
+    protected afterSetConfigData() {
+        // TODO
     }
 
     protected Parse(jsonStr: string): ConfigType {
@@ -1337,7 +1329,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
     //---
 
-    protected loadAfterConfigUpdated() {
+    protected afterSetConfigData() {
 
         //
         // load target
