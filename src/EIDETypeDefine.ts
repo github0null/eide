@@ -1363,36 +1363,29 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
         const eidePrjObj = <ProjectConfigData<T>>utility.deepCloneObject(this.config);
 
-        // handle data
-        {
-            //
-            // store target 
-            //
+        //
+        // store target 
+        //
 
-            eidePrjObj.targets[eidePrjObj.mode] = this.cloneCurrentTarget();
+        eidePrjObj.targets[eidePrjObj.mode] = this.cloneCurrentTarget();
 
-            const usrCtx = this.getProjectUsrCtx();
-            usrCtx.target = eidePrjObj.mode;
-            this.setProjectUsrCtx(usrCtx);
+        //
+        // convert abspath to relative path before save to file
+        //
 
-            //
-            // convert abspath to relative path before save to file
-            //
+        eidePrjObj.srcDirs = eidePrjObj.srcDirs.map((path) => { return this.toRelativePath(path); });
 
-            eidePrjObj.srcDirs = eidePrjObj.srcDirs.map((path) => { return this.toRelativePath(path); });
+        // ignore some 'dynamic' dependence
+        eidePrjObj.dependenceList = eidePrjObj.dependenceList.filter((g) => {
+            return g.groupName !== ProjectConfiguration.BUILD_IN_GROUP_NAME
+                && g.groupName !== ProjectConfiguration.CUSTOM_GROUP_NAME;
+        });
 
-            // ignore some 'dynamic' dependence
-            eidePrjObj.dependenceList = eidePrjObj.dependenceList.filter((g) => {
-                return g.groupName !== ProjectConfiguration.BUILD_IN_GROUP_NAME
-                    && g.groupName !== ProjectConfiguration.CUSTOM_GROUP_NAME;
-            });
-
-            for (const depGroup of eidePrjObj.dependenceList) {
-                for (const dep of depGroup.depList) {
-                    dep.incList = dep.incList.map((path) => { return this.toRelativePath(path); });
-                    dep.libList = dep.libList.map((path) => { return this.toRelativePath(path); });
-                    dep.sourceDirList = dep.sourceDirList.map((path) => { return this.toRelativePath(path); });
-                }
+        for (const depGroup of eidePrjObj.dependenceList) {
+            for (const dep of depGroup.depList) {
+                dep.incList = dep.incList.map((path) => { return this.toRelativePath(path); });
+                dep.libList = dep.libList.map((path) => { return this.toRelativePath(path); });
+                dep.sourceDirList = dep.sourceDirList.map((path) => { return this.toRelativePath(path); });
             }
         }
 
@@ -1407,6 +1400,18 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         ];
 
         return utility.ToJsonStringExclude(eidePrjObj, excKeys, 2);
+    }
+
+    Save(force?: boolean) {
+
+        const usrCtx = this.getProjectUsrCtx();
+
+        // save current target
+        usrCtx.target = this.config.mode;
+
+        this.setProjectUsrCtx(usrCtx);
+
+        super.Save();
     }
 }
 
