@@ -357,20 +357,20 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
         this._event.emit('dataChanged');
     }
 
-    protected loadAfterConfigUpdated() {
-        // do nothing
+    Save(force?: boolean): void {
+        this.watcher.file.Write(this.ToJson());
     }
 
-    Save(replacer?: (this: any, key: string, value: any) => any, space?: string | number): void {
-        this.watcher.file.Write(this.ToJson(replacer, space));
+    protected loadAfterConfigUpdated() {
+        // do nothing
     }
 
     protected Parse(jsonStr: string): ConfigType {
         return <ConfigType>JSON.parse(jsonStr);
     }
 
-    protected ToJson(replacer?: (this: any, key: string, value: any) => any, space?: string | number): string {
-        return JSON.stringify(this.config, replacer, space);
+    protected ToJson(): string {
+        return JSON.stringify(this.config, undefined, 4);
     }
 
     protected abstract readTypeFromFile(configFile: File): ProjectType | undefined;
@@ -1367,9 +1367,42 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         }
     }
 
-    protected ToJson(
-        replacer?: (this: any, key: string, value: any) => any,
-        space?: string | number): string {
+    protected ToJson(): string {
+
+        const eidePrjObj = <ProjectConfigData<T>>utility.deepCloneObject(this.config);
+
+        // handle data
+        {
+            //
+            // store target 
+            //
+
+            eidePrjObj.targets[eidePrjObj.mode] = this.cloneCurrentTarget();
+
+            const usrCtx = this.getProjectUsrCtx();
+            usrCtx.target = eidePrjObj.mode;
+            this.setProjectUsrCtx(usrCtx);
+
+            //
+            // convert abspath to relative path before save to file
+            //
+
+            eidePrjObj.srcDirs = eidePrjObj.srcDirs.map((path) => { return this.toRelativePath(path); });
+
+            // ignore some 'dynamic' dependence
+            eidePrjObj.dependenceList = eidePrjObj.dependenceList.filter((g) => {
+                return g.groupName !== ProjectConfiguration.BUILD_IN_GROUP_NAME
+                    && g.groupName !== ProjectConfiguration.CUSTOM_GROUP_NAME;
+            });
+
+            for (const depGroup of eidePrjObj.dependenceList) {
+                for (const dep of depGroup.depList) {
+                    dep.incList = dep.incList.map((path) => { return this.toRelativePath(path); });
+                    dep.libList = dep.libList.map((path) => { return this.toRelativePath(path); });
+                    dep.sourceDirList = dep.sourceDirList.map((path) => { return this.toRelativePath(path); });
+                }
+            }
+        }
 
         const excKeys = [
             'mode',
@@ -1381,54 +1414,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             'uploadConfigMap'
         ];
 
-        return utility.ToJsonStringExclude(this.config, excKeys, space);
-    }
-
-    Save() {
-
-        // restore old obj
-        const oldSrcDirs = JSON.parse(JSON.stringify(this.config.srcDirs));
-        const oldDepList = JSON.parse(JSON.stringify(this.config.dependenceList));
-
-        // save
-        {
-            //
-            // store target 
-            //
-
-            this.config.targets[this.config.mode] = this.cloneCurrentTarget();
-
-            const usrCtx = this.getProjectUsrCtx();
-            usrCtx.target = this.config.mode;
-            this.setProjectUsrCtx(usrCtx);
-
-            //
-            // convert abspath to relative path before save to file
-            //
-
-            this.config.srcDirs = this.config.srcDirs.map((path) => { return this.toRelativePath(path); });
-
-            // ignore some 'dynamic' dependence
-            this.config.dependenceList = this.config.dependenceList.filter((g) => {
-                return g.groupName !== ProjectConfiguration.BUILD_IN_GROUP_NAME
-                    && g.groupName !== ProjectConfiguration.CUSTOM_GROUP_NAME;
-            });
-
-            for (const depGroup of this.config.dependenceList) {
-                for (const dep of depGroup.depList) {
-                    dep.incList = dep.incList.map((path) => { return this.toRelativePath(path); });
-                    dep.libList = dep.libList.map((path) => { return this.toRelativePath(path); });
-                    dep.sourceDirList = dep.sourceDirList.map((path) => { return this.toRelativePath(path); });
-                }
-            }
-
-            // do save
-            super.Save(undefined, 2);
-        }
-
-        // recover it
-        this.config.srcDirs = oldSrcDirs;
-        this.config.dependenceList = oldDepList;
+        return utility.ToJsonStringExclude(eidePrjObj, excKeys, 2);
     }
 }
 
@@ -3798,16 +3784,16 @@ export class WorkspaceConfiguration extends Configuration<WorkspaceConfig> {
         }
     }
 
-    protected ToJson(replacer?: (this: any, key: string, value: any) => any, space?: string | number): string {
-        return jsonc.stringify(this.config, replacer, space);
+    protected ToJson(): string {
+        return jsonc.stringify(this.config, undefined, 4);
     }
 
-    Save() {
-        // do nothing
-    }
-
-    forceSave() {
-        super.Save(undefined, 4);
+    // workspace only can be force save, because user will modify this file, 
+    // so we can not override it
+    Save(force?: boolean) {
+        if (force) {
+            super.Save();
+        }
     }
 
     GetDefault(): WorkspaceConfig {

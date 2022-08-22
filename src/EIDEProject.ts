@@ -2580,7 +2580,7 @@ class EIDEProject extends AbstractProject {
                 }
             }
 
-            workspaceConfig.forceSave();
+            workspaceConfig.Save(true);
         }
 
         /* update src refs */
