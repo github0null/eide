@@ -1459,7 +1459,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         nPrjConfig.outDir = 'build';
         nPrjConfig.srcDirs = File.NotMatchFilter(ePrjRoot.GetList(File.EMPTY_FILTER), File.EMPTY_FILTER,
             [/^\./, /^(build|dist|out|bin|obj|exe|debug|release|log[s]?|ipch|docs|doc|img|image[s]?)$/i])
-            .map(d => ePrjRoot.ToRelativePath(d.path, false) || d.path);
+            .map(d => ePrjRoot.ToRelativePath(d.path) || d.path);
 
         // init all target
         for (const eTarget of ePrjInfo.targets) {
@@ -1835,7 +1835,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                             if (!srcFile.IsFile()) { continue; }
                             if (dep.category == 'source' && !vFolder) { continue; }
 
-                            let srcRePath: string | undefined = baseInfo.rootFolder.ToRelativePath(srcFile.path, false);
+                            let srcRePath: string | undefined = baseInfo.rootFolder.ToRelativePath(srcFile.path);
 
                             /* if it's not in workspace, copy it */
                             if (srcRePath == undefined) {
@@ -1887,7 +1887,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                     let locate = dep.packPath;
                     if (dep.instance) {
                         locate = baseInfo.rootFolder
-                            .ToRelativePath(dep.instance[0], false) || dep.instance[0]
+                            .ToRelativePath(dep.instance[0]) || dep.instance[0]
                     }
 
                     const nLine: string[] = [
@@ -3328,7 +3328,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 for (const folderUri of folderList) {
 
                     const folderPath = folderUri.fsPath;
-                    const rePath = prj.ToRelativePath(folderPath, false);
+                    const rePath = prj.ToRelativePath(folderPath);
 
                     // if can't calculate repath, skip
                     if (rePath === undefined || rePath.trim() === '') {
@@ -3841,7 +3841,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     if (source.disabled) continue;
                     // skip non-source and asm file
                     if (!srcFilter.test(source.file.path)) continue;
-                    const rePath = confRootDir.ToRelativePath(source.file.path, false);
+                    const rePath = confRootDir.ToRelativePath(source.file.path);
                     srcList.push(rePath || source.file.path);
                 }
             }
@@ -4388,7 +4388,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (uris && uris.length > 0) {
             const dupLi = prj
                 .addIncludePaths(uris.map(uri => { return uri.fsPath; }))
-                .map(path => prj.ToRelativePath(path, false) || path);
+                .map(path => prj.ToRelativePath(path) || path);
             if (dupLi.length > 0) {
                 const msg = `${dupLi.length} redundant include paths (ignored): ${JSON.stringify(dupLi)}`;
                 GlobalEvent.emit('msg', newMessage('Warning', msg));
@@ -4445,14 +4445,14 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         prj.GetConfiguration().getAllDepGroup().forEach((group) => {
             for (const dep of group.depList) {
                 for (const incPath of dep.incList) {
-                    includesMap.set(prj.ToRelativePath(incPath, false) || incPath, group.groupName);
+                    includesMap.set(prj.ToRelativePath(incPath) || incPath, group.groupName);
                 }
             }
         });
 
         // add source include paths
         prj.getSourceIncludeList().forEach((incPath) => {
-            includesMap.set(prj.ToRelativePath(incPath, false) || incPath, 'source');
+            includesMap.set(prj.ToRelativePath(incPath) || incPath, 'source');
         });
 
         for (const keyVal of includesMap) {
@@ -4489,7 +4489,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         prj.GetConfiguration().getAllDepGroup().forEach((group) => {
             for (const dep of group.depList) {
                 for (const libPath of dep.libList) {
-                    libMaps.set(prj.ToRelativePath(libPath, false) || libPath, group.groupName);
+                    libMaps.set(prj.ToRelativePath(libPath) || libPath, group.groupName);
                 }
             }
         });

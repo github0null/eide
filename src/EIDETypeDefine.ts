@@ -1341,7 +1341,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         let defCfg = <any>this.GetDefault(this.config.type);
         let curCfg = <any>this.config;
         for (const key in defCfg) {
-            if (curCfg[key] == undefined && 
+            if (curCfg[key] == undefined &&
                 this.excludeKeysInFile.includes(key) == false) {
                 curCfg[key] = defCfg[key];
             }
@@ -1409,7 +1409,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             }
         }
 
-        return utility.ToJsonStringExclude(eidePrjObj, excludeKeysInFile, 2);
+        return utility.ToJsonStringExclude(eidePrjObj, this.excludeKeysInFile, 2);
     }
 
     Save(force?: boolean) {
@@ -3602,7 +3602,7 @@ class OpenOCDUploadModel extends UploadConfigModel<OpenOCDFlashOptions> {
                 const cfgFolder = File.fromArray([wsFolder.path, path]);
                 if (cfgFolder.IsDir()) {
                     cfgFolder.GetList([/\.cfg$/i], File.EMPTY_FILTER).forEach((file) => {
-                        const rePath = (wsFolder.ToRelativePath(file.path, false) || file.name);
+                        const rePath = (wsFolder.ToRelativePath(file.path) || file.name);
                         resultList.push({
                             name: File.ToUnixPath(rePath).replace('.cfg', ''),
                             isInWorkspace: true
@@ -3617,7 +3617,7 @@ class OpenOCDUploadModel extends UploadConfigModel<OpenOCDFlashOptions> {
             const cfgFolder = new File(NodePath.normalize(`${NodePath.dirname(openocdExe.dir)}/${path}/${configClass}`));
             if (cfgFolder.IsDir()) {
                 cfgFolder.GetAll([/\.cfg$/i], File.EMPTY_FILTER).forEach((file) => {
-                    const rePath = (cfgFolder.ToRelativePath(file.path, false) || file.name);
+                    const rePath = (cfgFolder.ToRelativePath(file.path) || file.name);
                     resultList.push({
                         name: File.ToUnixPath(rePath).replace('.cfg', '')
                     });

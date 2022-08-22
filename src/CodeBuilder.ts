@@ -133,7 +133,7 @@ export abstract class CodeBuilder {
             for (const source of group.files) {
                 if (source.disabled) continue; // skip disabled file
                 if (!filter.some((reg) => reg.test(source.file.path))) continue; // skip non-source
-                const rePath = this.project.ToRelativePath(source.file.path, false);
+                const rePath = this.project.ToRelativePath(source.file.path);
                 const fInfo: any = { path: rePath || source.file.path }
                 if (AbstractProject.isVirtualSourceGroup(group)) {
                     fInfo.virtualPath = `${group.name}/${source.file.name}`.replace(`${VirtualSource.rootName}/`, '');
@@ -403,8 +403,8 @@ export abstract class CodeBuilder {
             outDir: File.ToLocalPath(outDir),
             ram: memMaxSize?.ram,
             rom: memMaxSize?.rom,
-            incDirs: this.getIncludeDirs().map((incPath) => { return this.project.ToRelativePath(incPath, false) || incPath; }),
-            libDirs: this.getLibDirs().map((libPath) => { return this.project.ToRelativePath(libPath, false) || libPath; }),
+            incDirs: this.getIncludeDirs().map((incPath) => { return this.project.ToRelativePath(incPath) || incPath; }),
+            libDirs: this.getLibDirs().map((libPath) => { return this.project.ToRelativePath(libPath) || libPath; }),
             defines: this.getDefineList(),
             sourceList: sourceInfo.sources.sort(),
             sourceParams: sourceInfo.params,

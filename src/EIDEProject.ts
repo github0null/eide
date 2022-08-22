@@ -553,7 +553,7 @@ class SourceRootList implements SourceProvider {
     }
 
     private getRelativePath(abspath: string): string {
-        return this.project.ToRelativePath(abspath, false) || abspath;
+        return this.project.ToRelativePath(abspath) || abspath;
     }
 
     private newSourceInfo(displayName: string, watcher: FileWatcher): SourceRootInfo {
@@ -599,7 +599,7 @@ class SourceRootList implements SourceProvider {
 
         // exclude some root folder when add files to custom include paths
         const disableInclude: boolean = AbstractProject.excludeIncSearchList.includes(
-            this.project.ToRelativePath(rootFolder.path, false) || rootFolder.path
+            this.project.ToRelativePath(rootFolder.path) || rootFolder.path
         );
 
         const sourceFilter = this.isAutoSearchObjFile ?
@@ -1089,9 +1089,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
      * Relative path root folder: `<Project_Root_Folder>`
      * 
      * @param path absolute path
-     * @param hasPrefix Whether add a './' prefix before relative path, default is 'true'
+     * 
      */
-    ToRelativePath(path: string, hasPrefix: boolean = true): string | undefined {
+    ToRelativePath(path: string): string | undefined {
         return this.GetRootDir().ToRelativePath(path.trim());
     }
 
@@ -2073,7 +2073,7 @@ class EIDEProject extends AbstractProject {
 
             // filesystem files
             if (typeof this.srcExtraCompilerConfig?.files == 'object') {
-                matcher(this.srcExtraCompilerConfig?.files, this.ToRelativePath(srcPath, false) || srcPath);
+                matcher(this.srcExtraCompilerConfig?.files, this.ToRelativePath(srcPath) || srcPath);
             }
 
             // virtual files
@@ -2279,7 +2279,7 @@ class EIDEProject extends AbstractProject {
             // is filesystem source
             if (!AbstractProject.isVirtualSourceGroup(_group)) {
                 const group = <ProjectFileGroup>_group;
-                const rePath = this.ToRelativePath(group.dir.path, false);
+                const rePath = this.ToRelativePath(group.dir.path);
                 // combine HAL folder
                 if (rePath && rePath.startsWith(DependenceManager.DEPENDENCE_DIR)) {
                     halFiles = halFiles.concat(group.files);
