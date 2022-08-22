@@ -534,15 +534,6 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             toRelativePath: (path) => this.toRelativePath(path)
         };
 
-        // compate old version
-        if (Array.isArray(this.config.virtualFolder)) {
-            this.config.virtualFolder = {
-                name: VirtualSource.rootName,
-                files: [],
-                folders: this.config.virtualFolder
-            };
-        }
-
         // init project
 
         this.compileConfigModel = CompileConfigModel.getInstance(this.config);
@@ -1329,13 +1320,40 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
     //---
 
+    private excludeKeysInFile: string[] = [
+        'mode',
+        'excludeList',
+        'toolchain',
+        'compileConfig',
+        'uploader',
+        'uploadConfig',
+        'uploadConfigMap'
+    ];
+
     protected afterSetConfigData() {
 
         //
         // load target
         //
 
-        // compatible with old project
+        // compatible missing field for old project
+        const defCfg = this.GetDefault(this.config.type);
+        for (const key in defCfg) {
+            if (this.config[key] == undefined && 
+                this.excludeKeysInFile.includes(key) == false) {
+                this.config[key] = defCfg[key];
+            }
+        }
+
+        // compatible virtualFolder field for old project
+        if (Array.isArray(this.config.virtualFolder)) {
+            this.config.virtualFolder = {
+                name: VirtualSource.rootName,
+                files: [],
+                folders: this.config.virtualFolder
+            };
+        }
+
         //  old project(ver < 3.3) have 'mode' field
         //  new project(ver >= 3.3) not have 'mode' field
         if (this.config.mode == undefined) {
@@ -1389,17 +1407,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             }
         }
 
-        const excKeys = [
-            'mode',
-            'excludeList',
-            'toolchain',
-            'compileConfig',
-            'uploader',
-            'uploadConfig',
-            'uploadConfigMap'
-        ];
-
-        return utility.ToJsonStringExclude(eidePrjObj, excKeys, 2);
+        return utility.ToJsonStringExclude(eidePrjObj, excludeKeysInFile, 2);
     }
 
     Save(force?: boolean) {
