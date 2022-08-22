@@ -24,6 +24,7 @@ vsc-extension-quickstart.md
 *.js
 *.cpuprofile
 *.vscodeignore
+/.github
 
 # internal template projects
 res/template/projects
