@@ -2203,8 +2203,6 @@ class EIDEProject extends AbstractProject {
 
     public createBase(option: CreateOptions, createNewPrjFolder: boolean = true): BaseProjectInfo {
 
-        option.name = AbstractProject.formatProjectName(option.name);
-
         const rootDir: File = createNewPrjFolder ?
             File.fromArray([option.outDir.path, option.name]) : option.outDir;
         rootDir.CreateDir(true);
@@ -2222,7 +2220,7 @@ class EIDEProject extends AbstractProject {
             File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]), option.type);
 
         // set project name
-        prjConfig.config.name = option.name;
+        prjConfig.config.name = AbstractProject.formatProjectName(option.name);
 
         return {
             rootFolder: rootDir,
@@ -2233,7 +2231,7 @@ class EIDEProject extends AbstractProject {
 
     protected create(option: CreateOptions): File {
         const baseInfo = this.createBase(option);
-        baseInfo.prjConfig.config.name = option.name;
+        baseInfo.prjConfig.config.name = AbstractProject.formatProjectName(option.name);
         baseInfo.prjConfig.config.outDir = 'build';
         baseInfo.prjConfig.config.srcDirs = [];
         baseInfo.prjConfig.Save();

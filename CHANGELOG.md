@@ -4,7 +4,7 @@
 
 ***
 
-### [v3.8.5] revision
+### [v3.8.6] revision (v3.8.4/v3.8.5)
 
 **New**:
   - Add `Exclude/Include Child Sources` context menu for source folder
