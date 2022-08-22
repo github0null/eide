@@ -272,7 +272,7 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
         if (f.IsFile()) {
             this.Update(f.Read());
         } else {
-            this.Save();
+            this.Save(true);
         }
     }
 
