@@ -1266,7 +1266,8 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
         targetName = targetName || utility.getFirstKey(this.config.targets);
 
-        if (!targetName) return;
+        if (!targetName)
+            return; // not found any target can be recovered
 
         const target = this.config.targets[targetName];
 
