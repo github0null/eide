@@ -1449,6 +1449,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
         const basePrj = AbstractProject.NewProject().createBase({
             name: ePrjInfo.name,
+            projectName: ePrjInfo.name,
             type: nPrjType,
             outDir: ePrjRoot
         }, false);
@@ -1753,6 +1754,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
         const baseInfo = AbstractProject.NewProject().createBase({
             name: nPrjOutDir.name,
+            projectName: keilPrjFile.noSuffixName,
             type: targets[0].type,
             outDir: nPrjOutDir
         }, false);

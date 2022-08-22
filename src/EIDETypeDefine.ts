@@ -80,8 +80,9 @@ export interface ProjectFileGroup extends FileGroup {
 export type ProjectType = 'C51' | 'ARM' | 'RISC-V' | 'ANY-GCC';
 
 export interface CreateOptions {
-    name: string; // folder name
-    outDir: File;
+    name: string; // project folder name
+    projectName?: string;
+    outDir: File; // project location
     templateFile?: File;
     type: ProjectType;
 }
