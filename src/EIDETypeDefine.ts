@@ -1337,11 +1337,12 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         //
 
         // compatible missing field for old project
-        const defCfg = this.GetDefault(this.config.type);
+        let defCfg = <any>this.GetDefault(this.config.type);
+        let curCfg = <any>this.config;
         for (const key in defCfg) {
-            if (this.config[key] == undefined && 
+            if (curCfg[key] == undefined && 
                 this.excludeKeysInFile.includes(key) == false) {
-                this.config[key] = defCfg[key];
+                curCfg[key] = defCfg[key];
             }
         }
 
