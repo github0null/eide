@@ -33,11 +33,12 @@ import * as child_process from 'child_process';
 import { AbstractProject, VirtualSource } from "./EIDEProject";
 import { ResManager } from "./ResManager";
 import { File } from "../lib/node-utility/File";
+import { ProjectConfigData, ProjectConfiguration } from "./EIDETypeDefine";
 import {
-    ProjectConfigData, ArmBaseCompileData,
+    ArmBaseCompileData,
     Memory, ARMStorageLayout, ICompileOptions,
-    FloatingHardwareOption, ProjectConfiguration, C51BaseCompileData, RiscvCompileData, AnyGccCompileData
-} from "./EIDETypeDefine";
+    FloatingHardwareOption, C51BaseCompileData, RiscvCompileData, AnyGccCompileData
+} from './EIDEProjectModules';
 import { SettingManager } from "./SettingManager";
 import { GlobalEvent } from "./GlobalEvents";
 import { ExceptionToMessage, newMessage } from "./Message";

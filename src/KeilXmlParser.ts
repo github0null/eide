@@ -25,8 +25,7 @@
 import * as xml2js from 'x2js';
 import { File } from '../lib/node-utility/File';
 import {
-    ProjectType, CurrentDevice, FileGroup, C51BaseCompileData, ProjectConfiguration,
-    ArmBaseCompileData, ARMStorageLayout, ArmBaseCompileConfigModel, ICompileOptions
+    ProjectType, FileGroup, ProjectConfiguration
 } from './EIDETypeDefine';
 import { ToolchainName, ToolchainManager } from './ToolchainManager';
 import { AbstractProject } from './EIDEProject';
@@ -36,6 +35,7 @@ import { ResManager } from './ResManager';
 import * as NodePath from 'path';
 import { DependenceManager } from './DependenceManager';
 import { ArrayDelRepetition } from '../lib/node-utility/Utility';
+import { ICompileOptions, CurrentDevice, C51BaseCompileData, ArmBaseCompileData, ARMStorageLayout, ArmBaseCompileConfigModel } from './EIDEProjectModules';
 
 export interface KeilRteDependence {
     class?: string;
