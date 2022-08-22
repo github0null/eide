@@ -4,7 +4,7 @@
 
 ***
 
-### [v3.8.7] revision (v3.8.4 patch)
+### [v3.8.8] revision (patch for v3.8.4)
 
 **New**:
   - Add `Exclude/Include Child Sources` context menu for source folder
@@ -16,6 +16,7 @@
 
 **Optimize**:
   - Format project name when import project from other IDE
+  - Optimize source code structure
 
 ***
 

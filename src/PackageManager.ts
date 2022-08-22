@@ -31,7 +31,7 @@ import {
     PackInfo, CurrentDevice, SubFamily, DeviceInfo, Component,
     ConditionGroup, DeviceFamily, ConditionMap,
     ARMRamItem, ARMRomItem, Condition, ArmBaseCompileData, ComponentFileItem
-} from './EIDETypeDefine';
+} from './EIDEProjectModules';
 import { IToolchian } from './ToolchainManager';
 import { GlobalEvent } from './GlobalEvents';
 import * as fs from 'fs';

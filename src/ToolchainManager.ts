@@ -22,7 +22,7 @@
     SOFTWARE.
 */
 
-import { ProjectType, ICompileOptions, CppConfigItem, BuilderConfigData, ArmBaseBuilderConfigData } from "./EIDETypeDefine";
+import { ProjectType, CppConfigItem, BuilderConfigData } from "./EIDETypeDefine";
 import { File } from "../lib/node-utility/File";
 import { SettingManager } from "./SettingManager";
 import { ResManager } from "./ResManager";
@@ -37,6 +37,7 @@ import * as fs from 'fs';
 import * as events from 'events';
 import * as NodePath from 'path';
 import * as os from 'os';
+import { ICompileOptions, ArmBaseBuilderConfigData } from "./EIDEProjectModules";
 
 export type ToolchainName = 'SDCC' | 'Keil_C51' | 'AC5' | 'AC6' | 'GCC' | 'IAR_STM8' | 'GNU_SDCC_STM8' | 'RISCV_GCC' | 'ANY_GCC' | 'None';
 

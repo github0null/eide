@@ -24,7 +24,7 @@
 
 import { AbstractProject } from "./EIDEProject";
 import { File } from "../lib/node-utility/File";
-import { ArmBaseCompileData, C51BaseCompileData } from "./EIDETypeDefine";
+import { ArmBaseCompileData } from "./EIDEProjectModules";
 import { ResManager } from "./ResManager";
 import { GlobalEvent } from "./GlobalEvents";
 import { newMessage } from "./Message";

@@ -26,7 +26,7 @@ import * as vscode from "vscode";
 import { File } from "../lib/node-utility/File";
 import { ResManager } from "./ResManager";
 import { AbstractProject } from "./EIDEProject";
-import { ArmBaseCompileConfigModel } from "./EIDETypeDefine";
+import { ArmBaseCompileConfigModel } from "./EIDEProjectModules";
 import { GlobalEvent } from "./GlobalEvents";
 import { view_str$compile$options, view_str$compile$storageLayout, view_str$env_desc$builer_folder, view_str$env_desc$compiler_folder, view_str$env_desc$compiler_prefix, view_str$env_desc$output_dir, view_str$env_desc$project_name, view_str$env_desc$project_root, view_str$env_desc$toolchain_root, view_str$operation$done, view_str$project$cmsis_config_wizard } from "./StringTable";
 import * as NodePath from 'path';

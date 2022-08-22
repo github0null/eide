@@ -40,10 +40,10 @@ import { KeilParser } from './KeilXmlParser';
 import { ResManager } from './ResManager';
 import { SevenZipper } from './Compress';
 import {
-    CurrentDevice, ConfigMap, FileGroup,
+    ConfigMap, FileGroup,
     ProjectConfiguration, ProjectConfigData, WorkspaceConfiguration,
     CreateOptions,
-    ProjectConfigEvent, ProjectFileGroup, EventData, FileItem, EIDE_CONF_VERSION, ProjectTargetInfo, VirtualFolder, VirtualFile, CompileConfigModel, ArmBaseCompileData, ArmBaseCompileConfigModel, Dependence, CppConfigItem, ICompileOptions
+    ProjectConfigEvent, ProjectFileGroup, FileItem, EIDE_CONF_VERSION, ProjectTargetInfo, VirtualFolder, VirtualFile, CppConfigItem
 } from './EIDETypeDefine';
 import { ToolchainName, IToolchian, ToolchainManager } from './ToolchainManager';
 import { GlobalEvent } from './GlobalEvents';
@@ -66,6 +66,7 @@ import { ExeCmd } from '../lib/node-utility/Executable';
 import { jsonc } from 'jsonc';
 import * as iconv from 'iconv-lite';
 import * as globmatch from 'micromatch'
+import { ICompileOptions, EventData, CurrentDevice, ArmBaseCompileConfigModel } from './EIDEProjectModules';
 
 export class CheckError extends Error {
 }
@@ -553,7 +554,7 @@ class SourceRootList implements SourceProvider {
     }
 
     private getRelativePath(abspath: string): string {
-        return this.project.ToRelativePath(abspath, false) || abspath;
+        return this.project.ToRelativePath(abspath) || abspath;
     }
 
     private newSourceInfo(displayName: string, watcher: FileWatcher): SourceRootInfo {
@@ -599,7 +600,7 @@ class SourceRootList implements SourceProvider {
 
         // exclude some root folder when add files to custom include paths
         const disableInclude: boolean = AbstractProject.excludeIncSearchList.includes(
-            this.project.ToRelativePath(rootFolder.path, false) || rootFolder.path
+            this.project.ToRelativePath(rootFolder.path) || rootFolder.path
         );
 
         const sourceFilter = this.isAutoSearchObjFile ?
@@ -1089,9 +1090,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
      * Relative path root folder: `<Project_Root_Folder>`
      * 
      * @param path absolute path
-     * @param hasPrefix Whether add a './' prefix before relative path, default is 'true'
+     * 
      */
-    ToRelativePath(path: string, hasPrefix: boolean = true): string | undefined {
+    ToRelativePath(path: string): string | undefined {
         return this.GetRootDir().ToRelativePath(path.trim());
     }
 
@@ -2073,7 +2074,7 @@ class EIDEProject extends AbstractProject {
 
             // filesystem files
             if (typeof this.srcExtraCompilerConfig?.files == 'object') {
-                matcher(this.srcExtraCompilerConfig?.files, this.ToRelativePath(srcPath, false) || srcPath);
+                matcher(this.srcExtraCompilerConfig?.files, this.ToRelativePath(srcPath) || srcPath);
             }
 
             // virtual files
@@ -2220,7 +2221,7 @@ class EIDEProject extends AbstractProject {
             File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]), option.type);
 
         // set project name
-        prjConfig.config.name = AbstractProject.formatProjectName(option.name);
+        prjConfig.config.name = option.projectName || AbstractProject.formatProjectName(option.name);
 
         return {
             rootFolder: rootDir,
@@ -2231,7 +2232,7 @@ class EIDEProject extends AbstractProject {
 
     protected create(option: CreateOptions): File {
         const baseInfo = this.createBase(option);
-        baseInfo.prjConfig.config.name = AbstractProject.formatProjectName(option.name);
+        baseInfo.prjConfig.config.name = option.projectName || AbstractProject.formatProjectName(option.name);
         baseInfo.prjConfig.config.outDir = 'build';
         baseInfo.prjConfig.config.srcDirs = [];
         baseInfo.prjConfig.Save();
@@ -2279,7 +2280,7 @@ class EIDEProject extends AbstractProject {
             // is filesystem source
             if (!AbstractProject.isVirtualSourceGroup(_group)) {
                 const group = <ProjectFileGroup>_group;
-                const rePath = this.ToRelativePath(group.dir.path, false);
+                const rePath = this.ToRelativePath(group.dir.path);
                 // combine HAL folder
                 if (rePath && rePath.startsWith(DependenceManager.DEPENDENCE_DIR)) {
                     halFiles = halFiles.concat(group.files);
