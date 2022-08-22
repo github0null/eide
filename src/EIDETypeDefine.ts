@@ -580,7 +580,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
     private toRelativePath(_path: string): string {
         const path = _path.trim();
-        return this.getRootDir().ToRelativePath(path, true) || path;
+        return this.getRootDir().ToRelativePath(path) || path;
     }
 
     private MergeDepList(depList: Dependence[], name?: string): Dependence {
@@ -1343,8 +1343,14 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         // load target
         //
 
-        const usrCtx = this.getProjectUsrCtx();
-        this.recoverTarget(usrCtx.target);
+        // compatible with old project
+        //  old project(ver < 3.3) have 'mode' field
+        //  new project(ver >= 3.3) not have 'mode' field
+        if (this.config.mode == undefined) {
+            // recover current target from 'targets' map
+            const usrCtx = this.getProjectUsrCtx();
+            this.recoverTarget(usrCtx.target);
+        }
 
         //
         // format path

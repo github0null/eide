@@ -1092,7 +1092,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
      * @param hasPrefix Whether add a './' prefix before relative path, default is 'true'
      */
     ToRelativePath(path: string, hasPrefix: boolean = true): string | undefined {
-        return this.GetRootDir().ToRelativePath(path.trim(), hasPrefix);
+        return this.GetRootDir().ToRelativePath(path.trim());
     }
 
     async Load(wsFile: File) {
