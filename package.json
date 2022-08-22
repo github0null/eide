@@ -5,7 +5,7 @@
     "author": {
         "name": "cl",
         "url": "https://github0null.io",
-        "email": "2584456014@qq.com"
+        "email": "me@github0null.io"
     },
     "keywords": [
         "mcu",
@@ -30,10 +30,10 @@
         "cmsis",
         "eclipse"
     ],
-    "homepage": "https://github.com/github0null/eide/blob/master/README.md",
+    "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.8.7",
+    "version": "3.8.8",
     "preview": false,
     "engines": {
         "vscode": "^1.63.0"
