@@ -623,9 +623,9 @@ export class OperationExplorer {
             {
                 label: 'Keil C51',
                 type: 'Keil_C51',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('Keil_C51')),
+                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('Keil_C51'))
+                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('Keil_C51')?.path}`,
                 detail: view_str$operation$setKeil51Path
-                    + ` (Loc: ${toolchainManager.getToolchainExecutableFolder('Keil_C51')})`
             },
             {
                 label: 'Keil MDK',
@@ -636,37 +636,37 @@ export class OperationExplorer {
             {
                 label: 'ARMCC V5 (standalone toolchain)',
                 type: 'AC5',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC5')),
+                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC5'))
+                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('AC5')?.path}`,
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V5 Toolchain')
-                    + ` (Loc: ${toolchainManager.getToolchainExecutableFolder('AC5')})`
             },
             {
                 label: 'ARMCC V6 (standalone toolchain)',
                 type: 'AC6',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC6')),
+                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC6'))
+                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('AC6')?.path}`,
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V6 Toolchain')
-                    + ` (Loc: ${toolchainManager.getToolchainExecutableFolder('AC6')})`
             },
             {
                 label: 'GNU Arm Embedded Toolchain',
                 type: 'GCC',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('GCC')),
+                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('GCC'))
+                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('GCC')?.path}`,
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'GNU Arm Embedded Toolchain')
-                    + ` (Loc: ${toolchainManager.getToolchainExecutableFolder('GCC')})`
             },
             {
                 label: 'IAR For STM8 (iccstm8)',
                 type: 'IAR_STM8',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('IAR_STM8')),
+                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('IAR_STM8'))
+                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('IAR_STM8')?.path}`,
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'IAR For STM8')
-                    + ` (Loc: ${toolchainManager.getToolchainExecutableFolder('IAR_STM8')})`
             },
             {
                 label: 'Small Device C Compiler (SDCC)',
                 type: 'SDCC',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('SDCC')),
+                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('SDCC'))
+                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('SDCC')?.path}`,
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'SDCC')
-                    + ` (Loc: ${toolchainManager.getToolchainExecutableFolder('SDCC')})`
             },
             /* {
                 label: 'SDCC With GNU Patch For STM8 (Only for stm8)',
@@ -677,16 +677,16 @@ export class OperationExplorer {
             {
                 label: 'RISC-V GCC Toolchain (RISC-V GCC)',
                 type: 'RISCV_GCC',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('RISCV_GCC')),
+                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('RISCV_GCC'))
+                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('RISCV_GCC')?.path}`,
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'RISC-V GCC Toolchain')
-                    + ` (Loc: ${toolchainManager.getToolchainExecutableFolder('RISCV_GCC')})`
             },
             {
                 label: 'ANY GCC Toolchain',
                 type: 'ANY_GCC',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('ANY_GCC')),
+                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('ANY_GCC'))
+                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('ANY_GCC')?.path}`,
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ANY GCC Toolchain')
-                    + ` (Loc: ${toolchainManager.getToolchainExecutableFolder('ANY_GCC')})`
             }
         ];
 
