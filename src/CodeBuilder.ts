@@ -901,9 +901,11 @@ export class ARMCodeBuilder extends CodeBuilder {
         if (['AC5', 'AC6'].includes(toolchain.name)) {
             // use custom linker script files
             if (config.compileConfig.useCustomScatterFile) {
-                scatterFilePath.split(',').forEach((sctPath) => {
-                    ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
-                });
+                scatterFilePath.split(',')
+                    .filter(s => s.trim() != '')
+                    .forEach((sctPath) => {
+                        ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
+                    });
             }
             // auto generate scatter file 
             else {
@@ -913,9 +915,11 @@ export class ARMCodeBuilder extends CodeBuilder {
 
         // other toolchain must use custom linker script file
         else {
-            scatterFilePath.split(',').forEach((sctPath) => {
-                ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
-            });
+            scatterFilePath.split(',')
+                .filter(s => s.trim() != '')
+                .forEach((sctPath) => {
+                    ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
+                });
         }
 
         // set linker script
@@ -967,9 +971,11 @@ class RiscvCodeBuilder extends CodeBuilder {
         const config = this.project.GetConfiguration<RiscvCompileData>().config;
 
         const ldFileList: string[] = [];
-        config.compileConfig.linkerScriptPath.split(',').forEach((sctPath) => {
-            ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
-        });
+        config.compileConfig.linkerScriptPath.split(',')
+            .filter(s => s.trim() != '')
+            .forEach((sctPath) => {
+                ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
+            });
 
         if (!options['linker']) {
             options.linker = Object.create(null);
@@ -999,16 +1005,12 @@ class AnyGccCodeBuilder extends CodeBuilder {
         }
 
         // set linker script
-        if (config.compileConfig.linkerScriptPath.trim() !== '') {
-            options.linker['linker-script'] = config.compileConfig.linkerScriptPath.split(',').map((sctPath) => {
+        options.linker['linker-script'] = config.compileConfig.linkerScriptPath.split(',')
+            .filter(s => s.trim() != '')
+            .map((sctPath) => {
                 const absPath = File.ToUnixPath(this.project.ToAbsolutePath(sctPath));
                 return absPath.includes(' ') ? `"${absPath}"` : absPath;
             });
-        } else { // clear old
-            if (options.linker['linker-script']) {
-                delete options.linker['linker-script'];
-            }
-        }
     }
 }
 

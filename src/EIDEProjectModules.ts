@@ -793,7 +793,7 @@ export abstract class ArmBaseCompileConfigModel
     protected GetKeyType(key: string): FieldType {
         switch (key) {
             case 'scatterFilePath':
-                return 'OPEN_FILE';
+                return 'INPUT';
             case 'cpuType':
             case 'floatingPointHardware':
             case 'useCustomScatterFile':
