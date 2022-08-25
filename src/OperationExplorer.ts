@@ -625,6 +625,7 @@ export class OperationExplorer {
                 type: 'Keil_C51',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('Keil_C51')),
                 detail: view_str$operation$setKeil51Path
+                    + ` (Loc: ${toolchainManager.getToolchainExecutableFolder('Keil_C51')})`
             },
             {
                 label: 'Keil MDK',
@@ -637,30 +638,35 @@ export class OperationExplorer {
                 type: 'AC5',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC5')),
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V5 Toolchain')
+                    + ` (Loc: ${toolchainManager.getToolchainExecutableFolder('AC5')})`
             },
             {
                 label: 'ARMCC V6 (standalone toolchain)',
                 type: 'AC6',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC6')),
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V6 Toolchain')
+                    + ` (Loc: ${toolchainManager.getToolchainExecutableFolder('AC6')})`
             },
             {
                 label: 'GNU Arm Embedded Toolchain',
                 type: 'GCC',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('GCC')),
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'GNU Arm Embedded Toolchain')
+                    + ` (Loc: ${toolchainManager.getToolchainExecutableFolder('GCC')})`
             },
             {
                 label: 'IAR For STM8 (iccstm8)',
                 type: 'IAR_STM8',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('IAR_STM8')),
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'IAR For STM8')
+                    + ` (Loc: ${toolchainManager.getToolchainExecutableFolder('IAR_STM8')})`
             },
             {
                 label: 'Small Device C Compiler (SDCC)',
                 type: 'SDCC',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('SDCC')),
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'SDCC')
+                    + ` (Loc: ${toolchainManager.getToolchainExecutableFolder('SDCC')})`
             },
             /* {
                 label: 'SDCC With GNU Patch For STM8 (Only for stm8)',
@@ -673,12 +679,14 @@ export class OperationExplorer {
                 type: 'RISCV_GCC',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('RISCV_GCC')),
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'RISC-V GCC Toolchain')
+                    + ` (Loc: ${toolchainManager.getToolchainExecutableFolder('RISCV_GCC')})`
             },
             {
                 label: 'ANY GCC Toolchain',
                 type: 'ANY_GCC',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('ANY_GCC')),
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ANY GCC Toolchain')
+                    + ` (Loc: ${toolchainManager.getToolchainExecutableFolder('ANY_GCC')})`
             }
         ];
 
@@ -703,7 +711,7 @@ export class OperationExplorer {
                     detail: view_str$prompt$tool_install_mode_online
                 },
                 {
-                    label: 'Offline',
+                    label: 'Local',
                     description: 'Use existed installation directory',
                     detail: view_str$prompt$tool_install_mode_local
                 }
