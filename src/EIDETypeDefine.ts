@@ -127,9 +127,9 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
 
     private _eventMergeFlag: boolean;
     private _eventCache: EventItem[];
+    protected _event: events.EventEmitter;
 
     protected watcher: FileWatcher;
-    protected _event: events.EventEmitter;
 
     constructor(configFile: File, type?: ProjectType) {
         this._event = new events.EventEmitter();
@@ -286,9 +286,9 @@ export class ConfigMap {
 
 export interface Dependence {
     name: string;
-    incList: string[];
-    libList: string[];
-    sourceDirList: string[];
+    incList: string[]; // relative path
+    libList: string[]; // relative path
+    sourceDirList: string[]; // relative path
     defineList: string[];
 }
 
@@ -381,14 +381,13 @@ export class ProjectConfiguration<T extends BuilderConfigData>
     static readonly BUILD_IN_GROUP_NAME = 'build-in';
     static readonly CUSTOM_GROUP_NAME = 'custom';
     static readonly MERGE_DEP_NAME = 'merge';
-
     static readonly USR_CTX_FILE_NAME = '.eide.usr.ctx.json';
-
-    private rootDir: File | undefined;
-    private api: ProjectConfigApi;
 
     compileConfigModel: CompileConfigModel<any> = <any>null;
     uploadConfigModel: UploadConfigModel<any> = <any>null;
+
+    private rootDir: File | undefined;
+    private api: ProjectConfigApi;
 
     protected load(f: File) {
 
@@ -896,7 +895,9 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         }
     }
 
-    //======================== custom ================================
+    /////////////////////////////////////////////////////////
+    // custom dependence
+    /////////////////////////////////////////////////////////
 
     CustomDep_GetEnabledKeys(): string[] {
         return [
@@ -953,12 +954,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         this.emit('dataChanged', { type: 'dependence' });
     }
 
-    CustomDep_RemoveInvalidIncDirs() {
-        const dep = this.CustomDep_getDependence();
-        dep.incList = dep.incList.filter((_path) => { return new File(_path).IsDir(); });
-        dep.libList = dep.libList.filter((_path) => { return new File(_path).IsDir(); });
-        dep.sourceDirList = dep.sourceDirList.filter((_path) => { return new File(_path).IsDir(); });
-    }
+    // --- includePath
 
     CustomDep_AddIncDir(dir: File) {
         const dep = this.CustomDep_getDependence();
@@ -993,21 +989,21 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         return dupList;
     }
 
-    CustomDep_RemoveIncDir(_path: string) {
+    CustomDep_RemoveIncDir(path: string) {
         const dep = this.CustomDep_getDependence();
-        let index = dep.incList.findIndex((path) => { return path === _path; });
+        let index = dep.incList.findIndex((p) => { return p === path; });
         if (index !== -1) {
             dep.incList.splice(index, 1);
             this.emit('dataChanged', { type: 'dependence' });
         }
     }
 
-    CustomDep_RemoveIncDirs(_dirList: string[]) {
+    CustomDep_RemoveIncDirs(pathList: string[]) {
         const dep = this.CustomDep_getDependence();
         const oldLen = dep.incList.length;
 
         dep.incList = dep.incList.filter((incPath) => {
-            return !_dirList.includes(incPath);
+            return !pathList.includes(incPath);
         });
 
         if (oldLen !== dep.incList.length) {
@@ -1015,7 +1011,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         }
     }
 
-    //--------------------------------------------
+    // --- defines (macros)
 
     CustomDep_AddDefine(define: string) {
         const dep = this.CustomDep_getDependence();
@@ -1063,15 +1059,16 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         }
     }
 
-    //---------------------------lib----------------------
+    // --- libraries dir
 
-    CustomDep_AddAllFromLibList(_libList: string[]) {
+    CustomDep_AddAllFromLibList(pathList: string[]) {
 
         let needNotify: boolean = false;
         const dep = this.CustomDep_getDependence();
-        _libList.forEach((lib) => {
-            if (!dep.libList.includes(lib)) {
-                dep.libList.push(lib);
+
+        pathList.forEach((path) => {
+            if (!dep.libList.includes(path)) {
+                dep.libList.push(path);
                 needNotify = true;
             }
         });
@@ -1081,18 +1078,18 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         }
     }
 
-    CustomDep_RemoveLib(_lib: string) {
+    CustomDep_RemoveLib(path: string) {
         const dep = this.CustomDep_getDependence();
-        let index = dep.libList.findIndex((lib) => { return _lib === lib; });
+        let index = dep.libList.findIndex((p) => { return path === p; });
         if (index !== -1) {
             dep.libList.splice(index, 1);
             this.emit('dataChanged', { type: 'dependence' });
         }
     }
 
-    //--------------------------source----------------------
+    // --- src dirs
 
-    CustomDep_AddAllFromSourceList(_sourceList: string[]) {
+    /* CustomDep_AddAllFromSourceList(_sourceList: string[]) {
 
         let needNotify: boolean = false;
         const dep = this.CustomDep_getDependence();
@@ -1115,7 +1112,9 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             dep.sourceDirList.splice(index, 1);
             this.emit('dataChanged', { type: 'dependence' });
         }
-    }
+    } */
+
+    // --- store
 
     cloneCurrentTarget(): ProjectTargetInfo {
 
