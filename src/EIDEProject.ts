@@ -844,7 +844,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     private loadProjectDirectory() {
 
         // init watcher for '.eide' folder
-        this.eideDirWatcher = new FileWatcher(this.GetRootDir(), false, false);
+        this.eideDirWatcher = new FileWatcher(this.getEideDir(), false, false);
         this.eideDirWatcher.on('error', err => GlobalEvent.emit('error', err));
         this.eideDirWatcher.OnChanged = f => this.onEideDirChanged('changed', f);
         this.eideDirWatcher.OnRename = f => this.onEideDirChanged('renamed', f);
@@ -2050,15 +2050,18 @@ class EIDEProject extends AbstractProject {
 
         const target = this.getCurrentTarget().toLowerCase();
 
-        // source extra compiler args changed
-        const cfgFile = File.fromArray([this.getEideDir().path, `${target}.files.options.yml`]);
-        if (file.path == cfgFile.path && cfgFile.IsFile()) {
-            this.onSrcExtraOptionsChanged(evt);
-        }
+        if (evt == 'changed') {
 
-        // project env changed
-        if (file.name == this.getEnvFile(true).name) {
-            this.UpdateCppConfig(); // trigger cpptools config update
+            // source extra compiler args changed
+            const cfgFile = File.fromArray([this.getEideDir().path, `${target}.files.options.yml`]);
+            if (file.path == cfgFile.path && cfgFile.IsFile()) {
+                this.onSrcExtraOptionsChanged(evt);
+            }
+
+            // project env changed
+            if (file.name == this.getEnvFile(true).name) {
+                this.UpdateCppConfig(); // trigger cpptools config update
+            }
         }
     }
 
