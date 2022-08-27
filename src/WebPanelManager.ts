@@ -240,7 +240,9 @@ export class WebPanelManager {
             throw error
         }
 
-        if (cmsisConfig == undefined) { return; }
+        if (cmsisConfig == undefined ||
+            cmsisConfig.group.length == 0)
+            return; // no data
 
         const resManager = ResManager.GetInstance();
         const htmlFolder = File.fromArray([resManager.GetHTMLDir().path, 'cmsis_wizard_view']);

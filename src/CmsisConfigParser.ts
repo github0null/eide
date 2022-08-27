@@ -106,27 +106,33 @@ export interface CmsisConfiguration {
 const macroMatcher = /^\s*#define\s+(?<key>\w+)\s*(?<value>.+)?/;
 export function parse(lines: string[]): CmsisConfiguration | undefined {
 
-    let startIdx = -1, endIdx = -1;
-
     // rm whitespace for line
     lines = lines.map((line) => line.trimEnd());
 
-    // The Configuration Wizard section must begin within the first 100 lines of code and must start with the following comment line:
-    //  '// <<< Use Configuration Wizard in Context Menu >>>'
-    // The Configuration Wizard section can end with the following optional comment:
-    //  '// <<< end of configuration section >>>'
-    lines.forEach((line_, idx) => {
-
-        const line = line_.toLowerCase();
-
-        if (startIdx == -1 && line.indexOf('<<< use configuration wizard in context menu >>>') != -1) {
-            startIdx = idx;
+    let startIdx = -1, endIdx = -1;
+    {
+        // The Configuration Wizard section must begin within the first 100 lines of code and must start with the following comment line:
+        //  '// <<< Use Configuration Wizard in Context Menu >>>'
+        for (let idx = 0; idx < 200; idx++) {
+            const line = lines[idx].toLowerCase();
+            if (line.indexOf('<<< use configuration wizard in context menu >>>') != -1) {
+                startIdx = idx;
+                break;
+            }
         }
 
-        else if (line.indexOf('<<< end of configuration section >>>') != -1) {
-            endIdx = idx;
+        // The Configuration Wizard section can end with the following optional comment:
+        //  '// <<< end of configuration section >>>'
+        if (startIdx != -1) {
+            for (let idx = startIdx + 1; idx < lines.length; idx++) {
+                const line = lines[idx].toLowerCase();
+                if (line.indexOf('<<< end of configuration section >>>') != -1) {
+                    endIdx = idx;
+                    break;
+                }
+            }
         }
-    });
+    }
 
     // check index
     if ((startIdx == -1 || endIdx == -1) || (startIdx >= endIdx)) {
