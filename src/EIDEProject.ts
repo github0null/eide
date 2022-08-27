@@ -2049,10 +2049,16 @@ class EIDEProject extends AbstractProject {
     protected onEideDirChanged(evt: 'changed' | 'renamed', file: File): void {
 
         const target = this.getCurrentTarget().toLowerCase();
-        const cfgFile = File.fromArray([this.getEideDir().path, `${target}.files.options.yml`]);
 
+        // source extra compiler args changed
+        const cfgFile = File.fromArray([this.getEideDir().path, `${target}.files.options.yml`]);
         if (file.path == cfgFile.path && cfgFile.IsFile()) {
             this.onSrcExtraOptionsChanged(evt);
+        }
+
+        // project env changed
+        if (file.name == this.getEnvFile(true).name) {
+            this.UpdateCppConfig(); // trigger cpptools config update
         }
     }
 
@@ -2712,7 +2718,7 @@ class EIDEProject extends AbstractProject {
                     } catch (error) {
                         GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
                     }
-                }, 200);
+                }, 450);
         }
 
         // we already have a updater in running, now delay it
