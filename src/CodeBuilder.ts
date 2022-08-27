@@ -1076,9 +1076,11 @@ class C51CodeBuilder extends CodeBuilder {
 
             const ldFileList: string[] = [];
 
-            config.compileConfig.linkerScript.split(',').forEach((sctPath) => {
-                ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
-            });
+            config.compileConfig.linkerScript.split(',')
+                .filter(s => s.trim() != '')
+                .forEach((sctPath) => {
+                    ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
+                });
 
             if (!options['linker']) {
                 options.linker = Object.create(null);
