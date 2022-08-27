@@ -944,7 +944,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                     obj: new ModifiableDepInfo('None', key),
                                     childKey: key,
                                     child: depValues
-                                        .map((val) => { return project.ToRelativePath(val) || val; })
+                                        .map((val) => { return project.toRelativePath(val); })
                                         .sort((val_1, val_2) => { return val_1.length - val_2.length; }),
                                     projectIndex: element.val.projectIndex
                                 }));
@@ -1182,7 +1182,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
                                     iList.push(new ProjTreeItem(TreeItemType.ITEM, {
                                         key: 'SvdPath',
-                                        value: device.svdPath ? (project.ToRelativePath(device.svdPath) || device.svdPath) : 'null',
+                                        value: device.svdPath ? project.toRelativePath(device.svdPath) : 'null',
                                         projectIndex: element.val.projectIndex
                                     }));
 
@@ -1229,10 +1229,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                     for (const key in component) {
 
                                         if (Array.isArray(component[key])) {
-                                            const list: string[] = (<ComponentFileItem[]>component[key]).map<string>((item) => {
-                                                return project.ToRelativePath(item.path) || item.path;
-                                            });
-
+                                            const list: string[] = (<ComponentFileItem[]>component[key])
+                                                .map(item => project.toRelativePath(item.path));
                                             iList.push(new ProjTreeItem(TreeItemType.GROUP, {
                                                 value: getComponentKeyDescription(key),
                                                 child: list,
@@ -2851,7 +2849,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             const xmlFile = prj.ExportToKeilProject();
 
             if (xmlFile) {
-                GlobalEvent.emit('msg', newMessage('Info', export_keil_xml_ok + prj.ToRelativePath(xmlFile.path)));
+                GlobalEvent.emit('msg', newMessage('Info', export_keil_xml_ok + prj.toRelativePath(xmlFile.path)));
             } else {
                 GlobalEvent.emit('msg', newMessage('Warning', export_keil_xml_failed));
             }
@@ -4302,7 +4300,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                             const vFolder = folderStack.pop();
                             if (vFolder) {
                                 vFolder.files = vFolder.files.map((file) => {
-                                    return { path: prj.ToRelativePath(file.path) || file.path }
+                                    return { path: prj.toRelativePath(file.path) }
                                 });
                                 vFolder.folders.forEach((folder) => {
                                     folderStack.push(folder)
@@ -4341,7 +4339,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
                             const excRePathLi = prjInfo.excludeList
                                 .filter(path => path.trim() != '')
-                                .map(path => prj.ToRelativePath(path) || path);
+                                .map(path => prj.toRelativePath(path));
 
                             const realExcLi: string[] = [];
 
@@ -4448,14 +4446,14 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         prj.GetConfiguration().getAllDepGroup().forEach((group) => {
             for (const dep of group.depList) {
                 for (const incPath of dep.incList) {
-                    includesMap.set(prj.ToRelativePath(incPath) || File.ToUnixPath(incPath), group.groupName);
+                    includesMap.set(prj.toRelativePath(incPath), group.groupName);
                 }
             }
         });
 
         // add source include paths
         prj.getSourceIncludeList().forEach((incPath) => {
-            includesMap.set(prj.ToRelativePath(incPath) || File.ToUnixPath(incPath), 'source');
+            includesMap.set(prj.toRelativePath(incPath), 'source');
         });
 
         for (const keyVal of includesMap) {
@@ -4503,7 +4501,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         prj.GetConfiguration().getAllDepGroup().forEach((group) => {
             for (const dep of group.depList) {
                 for (const libPath of dep.libList) {
-                    libMaps.set(prj.ToRelativePath(libPath) || File.ToUnixPath(libPath), group.groupName);
+                    libMaps.set(prj.toRelativePath(libPath), group.groupName);
                 }
             }
         });
@@ -5045,7 +5043,7 @@ class VFolderSourcePathsModifier implements ModifiableYamlConfigProvider {
                 return;
             }
 
-            const repath = project.ToRelativePath(path) || path;
+            const repath = project.toRelativePath(path);
             const vFileInfo = vSourceManager.getFile(vInfo.path);
             if (vFileInfo) {
                 vFileInfo.path = repath;
@@ -5128,7 +5126,7 @@ class VFolderSourcePathsModifier implements ModifiableYamlConfigProvider {
             if (fileList) {
                 fileList = fileList.map((vFile) => {
                     return {
-                        path: info.project.ToRelativePath(vFile.path) || vFile.path
+                        path: info.project.toRelativePath(vFile.path)
                     };
                 });
             }
@@ -5186,7 +5184,7 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
                 `#   - ./Your/Include/Folder/Path`
             );
             cusDep.incList.forEach((path) => {
-                yamlLines.push(`    - ${prj.ToRelativePath(path) || path}`)
+                yamlLines.push(`    - ${prj.toRelativePath(path)}`)
             });
 
             // push lib folder path
@@ -5197,7 +5195,7 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
                 `#   - ./Your/Library/Path`
             );
             cusDep.libList.forEach((path) => {
-                yamlLines.push(`    - ${prj.ToRelativePath(path) || path}`)
+                yamlLines.push(`    - ${prj.toRelativePath(path)}`)
             });
 
             // push macros

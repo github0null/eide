@@ -274,7 +274,7 @@ export class VirtualSource implements SourceProvider {
         // file is not existed, add it
         const vFilePath = `${folder_path}/${NodePath.basename(file_path)}`;
         if (this.getFile(vFilePath) === undefined) {
-            const vFile: VirtualFile = { path: this.project.ToRelativePath(file_path) || file_path };
+            const vFile: VirtualFile = { path: this.project.toRelativePath(file_path) };
             folder.files.push(vFile);
             this.emit('dataChanged', 'folderChanged');
             return vFile;
@@ -292,7 +292,7 @@ export class VirtualSource implements SourceProvider {
             const vFilePath = `${folder_path}/${NodePath.basename(abspath)}`;
             // file is not existed, add it
             if (this.getFile(vFilePath) === undefined) {
-                const vFile: VirtualFile = { path: this.project.ToRelativePath(abspath) || abspath };
+                const vFile: VirtualFile = { path: this.project.toRelativePath(abspath) };
                 folder.files.push(vFile);
                 doneList.push(vFile);
             }
@@ -554,7 +554,7 @@ class SourceRootList implements SourceProvider {
     }
 
     private getRelativePath(abspath: string): string {
-        return this.project.ToRelativePath(abspath) || abspath;
+        return this.project.toRelativePath(abspath);
     }
 
     private newSourceInfo(displayName: string, watcher: FileWatcher): SourceRootInfo {
@@ -600,7 +600,7 @@ class SourceRootList implements SourceProvider {
 
         // exclude some root folder when add files to custom include paths
         const disableInclude: boolean = AbstractProject.excludeIncSearchList.includes(
-            this.project.ToRelativePath(rootFolder.path) || rootFolder.path
+            this.project.toRelativePath(rootFolder.path)
         );
 
         const sourceFilter = this.isAutoSearchObjFile ?
@@ -1355,13 +1355,13 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     isExcluded(path: string): boolean {
         const excList = this.GetConfiguration().config.excludeList;
-        const rePath = File.ToUnixPath(this.ToRelativePath(path) || path);
+        const rePath = this.toRelativePath(path);
         return excList.findIndex(excluded => rePath === excluded || rePath.startsWith(`${excluded}/`)) !== -1;
     }
 
     protected addExclude(path: string): boolean {
         const excludeList = this.GetConfiguration().config.excludeList;
-        const rePath = File.ToUnixPath(this.ToRelativePath(path) || path);
+        const rePath = this.toRelativePath(path);
         if (!excludeList.includes(rePath)) { // not existed, add it
             excludeList.push(rePath);
             return true;
@@ -1371,7 +1371,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     protected clearExclude(path: string): boolean {
         const excludeList = this.GetConfiguration().config.excludeList;
-        const rePath = File.ToUnixPath(this.ToRelativePath(path) || path);
+        const rePath = this.toRelativePath(path);
         const index = excludeList.indexOf(rePath);
         if (index !== -1) { // if existed, clear it
             excludeList.splice(index, 1);
@@ -2036,7 +2036,7 @@ class EIDEProject extends AbstractProject {
         const prjConfig = this.GetConfiguration();
         const packDir = this.GetPackManager().GetPackDir();
         if (packDir) { // update project config
-            prjConfig.config.packDir = this.ToRelativePath(packDir.path) || null;
+            prjConfig.config.packDir = this.ToRelativePath(packDir.path) || null; // cannot at outside of project root
         }
         this.dependenceManager.Refresh();
         this.emit('dataChanged', 'pack');
@@ -2096,7 +2096,7 @@ class EIDEProject extends AbstractProject {
 
             // filesystem files
             if (typeof this.srcExtraCompilerConfig?.files == 'object') {
-                matcher(this.srcExtraCompilerConfig?.files, this.ToRelativePath(srcPath) || srcPath);
+                matcher(this.srcExtraCompilerConfig?.files, this.toRelativePath(srcPath));
             }
 
             // virtual files
