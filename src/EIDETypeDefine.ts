@@ -426,7 +426,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
     private toRelativePath(path_: string): string {
         const path = path_.trim();
-        return this.getRootDir().ToRelativePath(path) || path;
+        return this.getRootDir().ToRelativePath(path) || File.ToUnixPath(path);
     }
 
     private MergeDepList(depList: Dependence[], name?: string): Dependence {
@@ -1110,9 +1110,9 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         const target = this.config;
 
         const custom_dep = <Dependence>utility.deepCloneObject(this.CustomDep_getDependence());
-        custom_dep.incList = custom_dep.incList.map((path) => { return this.toRelativePath(path) || path; });
-        custom_dep.libList = custom_dep.libList.map((path) => { return this.toRelativePath(path) || path; });
-        custom_dep.sourceDirList = custom_dep.sourceDirList.map((path) => { return this.toRelativePath(path) || path; });
+        custom_dep.incList = custom_dep.incList.map((path) => this.toRelativePath(path));
+        custom_dep.libList = custom_dep.libList.map((path) => this.toRelativePath(path));
+        custom_dep.sourceDirList = custom_dep.sourceDirList.map((path) => this.toRelativePath(path));
 
         return {
             excludeList: Array.from(target.excludeList),
@@ -1260,7 +1260,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         // convert abspath to relative path before save to file
         //
 
-        eidePrjObj.srcDirs = eidePrjObj.srcDirs.map((path) => { return this.toRelativePath(path); });
+        eidePrjObj.srcDirs = eidePrjObj.srcDirs.map((path) => this.toRelativePath(path));
 
         // ignore some 'dynamic' dependence
         eidePrjObj.dependenceList = eidePrjObj.dependenceList.filter((g) => {
@@ -1270,9 +1270,9 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
         for (const depGroup of eidePrjObj.dependenceList) {
             for (const dep of depGroup.depList) {
-                dep.incList = dep.incList.map((path) => { return this.toRelativePath(path); });
-                dep.libList = dep.libList.map((path) => { return this.toRelativePath(path); });
-                dep.sourceDirList = dep.sourceDirList.map((path) => { return this.toRelativePath(path); });
+                dep.incList = dep.incList.map((path) => this.toRelativePath(path));
+                dep.libList = dep.libList.map((path) => this.toRelativePath(path));
+                dep.sourceDirList = dep.sourceDirList.map((path) => this.toRelativePath(path));
             }
         }
 
