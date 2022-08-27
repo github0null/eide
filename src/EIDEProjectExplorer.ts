@@ -35,7 +35,7 @@ import { ResManager } from './ResManager';
 import { GlobalEvent } from './GlobalEvents';
 import { AbstractProject, CheckError, DataChangeType, VirtualSource } from './EIDEProject';
 import { ToolchainName, ToolchainManager } from './ToolchainManager';
-import { CreateOptions, VirtualFolder, VirtualFile, ImportOptions, ProjectTargetInfo, ProjectConfigData, ProjectType } from './EIDETypeDefine';
+import { CreateOptions, VirtualFolder, VirtualFile, ImportOptions, ProjectTargetInfo, ProjectConfigData, ProjectType, ProjectConfiguration } from './EIDETypeDefine';
 import { PackInfo, ComponentFileItem, DeviceInfo, getComponentKeyDescription, ArmBaseCompileData, ArmBaseCompileConfigModel, RiscvCompileData, AnyGccCompileData } from "./EIDEProjectModules";
 import { WorkspaceManager } from './WorkspaceManager';
 import {
@@ -4459,19 +4459,22 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         for (const keyVal of includesMap) {
 
             const incPath = keyVal[0];
-            const incGrp = keyVal[1];
+            const grpName = keyVal[1];
+
+            let descpLi: string[] = [];
+
+            if (grpName != ProjectConfiguration.CUSTOM_GROUP_NAME) {
+                descpLi.push(grpName);
+            }
 
             if (File.isEnvPath(incPath)) {
-                pickItems.push({
-                    label: incPath,
-                    description: `grp: ${incGrp}, loc: ${prj.resolveEnvVar(incPath)}`
-                });
-            } else {
-                pickItems.push({
-                    label: incPath,
-                    description: `${incGrp}`
-                });
+                descpLi.push(`loc: ${prj.resolveEnvVar(incPath)}`);
             }
+
+            pickItems.push({
+                label: incPath,
+                description: descpLi.join(', ')
+            });
         }
 
         // sort result
@@ -4509,19 +4512,22 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         for (const keyVal of libMaps) {
 
             const libPath = keyVal[0];
-            const libGrp = keyVal[1];
+            const grpName = keyVal[1];
+
+            let descpLi: string[] = [];
+
+            if (grpName != ProjectConfiguration.CUSTOM_GROUP_NAME) {
+                descpLi.push(grpName);
+            }
 
             if (File.isEnvPath(libPath)) {
-                pickItems.push({
-                    label: libPath,
-                    description: `grp: ${libGrp}, loc: ${prj.resolveEnvVar(libPath)}`
-                });
-            } else {
-                pickItems.push({
-                    label: libPath,
-                    description: `${libGrp}`
-                });
+                descpLi.push(`loc: ${prj.resolveEnvVar(libPath)}`);
             }
+
+            pickItems.push({
+                label: libPath,
+                description: descpLi.join(', ')
+            });
         }
 
         // sort result
