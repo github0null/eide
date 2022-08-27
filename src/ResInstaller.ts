@@ -52,6 +52,7 @@ export interface ExternalToolInfo {
     detail?: string;
     is_third_party?: boolean;
     getDrvInstaller?: () => string | undefined;
+    postInstallCmd?: () => string | undefined;
 
     // for built-in tools
     setting_name?: string;
@@ -290,7 +291,8 @@ export class ResInstaller {
                     if (drvPathMap) {
                         return drvPathMap[arch];
                     }
-                }
+                },
+                postInstallCmd: () => tool.resources[node_plat].post_install_cmd
             });
         }
     }
@@ -407,11 +409,27 @@ export class ResInstaller {
                             BIN_PATH_FILE.Write(`${toolInfo.bin_dir}`);
                         }
 
+                        // run post install cmd
+                        if (toolInfo.postInstallCmd) {
+                            let command = toolInfo.postInstallCmd();
+                            if (command) {
+                                let errLog = '';
+                                try {
+                                    progress.report({ message: `Executing post install command: '${command}' ...` });
+                                    errLog = child_process.execSync(command, { cwd: outDir.path }).toString().trim();
+                                } catch (error) {
+                                    GlobalEvent.emit('msg', newMessage('Warning', `Install failed, msg: ${errLog}`));
+                                    resolveIf(false);
+                                    return;
+                                }
+                            }
+                        }
+
                         // update eide settings
                         if (toolInfo.setting_name) {
                             let setting_val = ['${userRoot}', '.eide', 'tools', resourceName].join(File.sep);
                             setting_val = toolInfo.require_name ? `${setting_val}/${toolInfo.require_name}` : setting_val;
-                            SettingManager.GetInstance().setConfigValue(toolInfo.setting_name, File.ToLocalPath(setting_val));
+                            SettingManager.GetInstance().setConfigValue(toolInfo.setting_name, File.ToUnixPath(setting_val));
                         }
 
                         // install drivers if we need
