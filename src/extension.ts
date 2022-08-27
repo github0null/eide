@@ -701,7 +701,7 @@ function exportEnvToSysPath() {
     }
 
     // export def tools path to system env path from extension setting
-    const pathList: { key: string, path: string }[] = [];
+    const pathList: { key: string, path: string, extraPath?: string[] }[] = [];
 
     // try to export some user setted tools path to env
     [
@@ -716,37 +716,48 @@ function exportEnvToSysPath() {
 
     // search tools folder and export path to system env
     eideToolsFolder.GetList(File.EMPTY_FILTER).forEach((subDir) => {
+
         if (!/^\w+$/.test(subDir.name)) return; // filter dir name
-        let binFolderPath: string | undefined;
+
+        let binFolderPaths: string[] = [];
+
         // try get path from 'BIN_PATH' file
         const BIN_PATH_FILE = File.fromArray([subDir.path, 'BIN_PATH']);
         if (BIN_PATH_FILE.IsFile()) {
+
+            let binDirs: string[] = [];
             try {
-                const binDir = BIN_PATH_FILE.Read().trim();
-                if (binDir != '') {
-                    const binFolder = NodePath.normalize(`${subDir.path}/${binDir}`);
-                    if (File.IsDir(binFolder)) {
-                        binFolderPath = binFolder;
-                    }
-                }
+                binDirs = BIN_PATH_FILE.Read().split(/\r\n|\n/)
+                    .map(s => s.trim())
+                    .filter(s => s != '');
             } catch (error) {
                 GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
             }
+
+            binDirs.forEach(dir => {
+                const binFolder = NodePath.normalize(`${subDir.path}/${dir}`);
+                if (File.IsDir(binFolder)) {
+                    binFolderPaths.push(binFolder);
+                }
+            });
         }
+
         // try use ./bin
-        if (!binFolderPath) {
+        if (binFolderPaths.length == 0) {
             const binFolder = NodePath.normalize(`${subDir.path}/bin`);
             if (File.IsDir(binFolder)) {
-                binFolderPath = binFolder;
+                binFolderPaths.push(binFolder);
             }
         }
+
         // export bin folder if we found
-        if (binFolderPath) {
+        if (binFolderPaths.length > 0) {
             const keyName = `EIDE_TOOL_${subDir.name.toUpperCase()}`;
             if (pathList.findIndex(o => o.key == keyName) != -1) return; // skip repeat key name
             pathList.push({
                 key: keyName,
-                path: binFolderPath
+                path: binFolderPaths[0],
+                extraPath: binFolderPaths.length > 1 ? binFolderPaths.slice(1) : undefined
             });
         }
     });
@@ -764,10 +775,19 @@ function exportEnvToSysPath() {
 
     /* append to System Path if we not */
     if (isEnvSetuped == false) {
-        const pList = pathList
+
+        // append all tools env paths
+        pathList
             .filter((env) => File.IsDir(env.path))
-            .map((env) => env.path);
-        platform.appendToSysEnv(process.env, defEnvPath.concat(pList));
+            .forEach(envInfo => {
+                defEnvPath.push(envInfo.path);
+                if (envInfo.extraPath) {
+                    envInfo.extraPath.forEach(p => defEnvPath.push(p));
+                }
+            });
+
+        // apply to system env path
+        platform.prependToSysEnv(process.env, defEnvPath);
         isEnvSetuped = true;
     }
 
