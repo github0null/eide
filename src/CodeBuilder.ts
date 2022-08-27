@@ -218,14 +218,14 @@ export abstract class CodeBuilder {
 
     getIncludeDirs(): string[] {
 
-        const incList = this.project.GetConfiguration().GetAllMergeDep([
-            `${ProjectConfiguration.BUILD_IN_GROUP_NAME}.${DependenceManager.toolchainDepName}`
-        ]).incList;
+        const incList = this.project.GetConfiguration()
+            .GetAllMergeDep([`${ProjectConfiguration.BUILD_IN_GROUP_NAME}.${DependenceManager.toolchainDepName}`])
+            .incList;
 
         return ArrayDelRepetition(incList.concat(
             this.project.getToolchain().getDefaultIncludeList(),
             this.project.getSourceIncludeList()
-        ));
+        )).map(p => this.project.ToAbsolutePath(p));
     }
 
     getDefineList(): string[] {
@@ -234,9 +234,8 @@ export abstract class CodeBuilder {
 
     getLibDirs(): string[] {
         return this.project.GetConfiguration()
-            .GetAllMergeDep([
-                `${ProjectConfiguration.BUILD_IN_GROUP_NAME}.${DependenceManager.toolchainDepName}`
-            ]).libList;
+            .GetAllMergeDep([`${ProjectConfiguration.BUILD_IN_GROUP_NAME}.${DependenceManager.toolchainDepName}`])
+            .libList.map(p => this.project.ToAbsolutePath(p));
     }
 
     protected enableRebuild(_enable: boolean = true) {
@@ -404,8 +403,8 @@ export abstract class CodeBuilder {
             outDir: File.ToLocalPath(outDir),
             ram: memMaxSize?.ram,
             rom: memMaxSize?.rom,
-            incDirs: this.getIncludeDirs().map((incPath) => { return this.project.ToRelativePath(incPath) || incPath; }),
-            libDirs: this.getLibDirs().map((libPath) => { return this.project.ToRelativePath(libPath) || libPath; }),
+            incDirs: this.getIncludeDirs().map(p => this.project.ToRelativePath(p) || p),
+            libDirs: this.getLibDirs().map(p => this.project.ToRelativePath(p) || p),
             defines: this.getDefineList(),
             sourceList: sourceInfo.sources.sort(),
             sourceParams: sourceInfo.params,

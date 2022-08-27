@@ -498,11 +498,10 @@ class C51Parser extends KeilParser<KeilC51Option> {
         target.TargetOption.TargetCommonOption.ListingPath = `.\\${outFolder}\\Keil\\`;
         target.TargetOption.TargetCommonOption.OutputName = target.TargetName;
 
-        target.TargetOption.Target51.C51.VariousControls.IncludePath = mergedDep.incList.map<string>(inc => {
-
-            return prj.ToRelativePath(inc) || inc;
-
-        }).filter(v => { return v !== undefined; }).join(File.delimiter);
+        target.TargetOption.Target51.C51.VariousControls.IncludePath = mergedDep.incList
+            .map(s => prj.resolveEnvVar(s))
+            .map(inc => File.ToLocalPath(prj.ToRelativePath(inc) || inc))
+            .join(File.delimiter);
 
         target.TargetOption.Target51.C51.VariousControls.Define = mergedDep.defineList.join(",");
 
@@ -1084,11 +1083,10 @@ class ARMParser extends KeilParser<KeilARMOption> {
         target.TargetOption.TargetCommonOption.ListingPath = `.\\${outFolder}\\Keil\\`;
         target.TargetOption.TargetCommonOption.OutputName = target.TargetName;
 
-        target.TargetOption.TargetArmAds.Cads.VariousControls.IncludePath = mergedDep.incList.map<string>(inc => {
-
-            return prj.ToRelativePath(inc) || inc;
-
-        }).filter(v => { return v !== undefined; }).join(File.delimiter);
+        target.TargetOption.TargetArmAds.Cads.VariousControls.IncludePath = mergedDep.incList
+            .map(s => prj.resolveEnvVar(s))
+            .map(inc => File.ToLocalPath(prj.ToRelativePath(inc) || inc))
+            .join(File.delimiter);
 
         target.TargetOption.TargetArmAds.Cads.VariousControls.Define = mergedDep.defineList.join(","); // C/CPP
         target.TargetOption.TargetArmAds.Aads.VariousControls.Define = mergedDep.defineList.join(","); // ASM

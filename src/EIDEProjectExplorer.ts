@@ -1958,7 +1958,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
             // init custom dependence after specific configs done
             newTarget.custom_dep = <any>{ name: 'default', sourceDirList: [], libList: [] };
-            const incList = keilTarget.incList.map((path) => { return baseInfo.rootFolder.ToRelativePath(path) || path; });
+            const incList = keilTarget.incList.map((path) => baseInfo.rootFolder.ToRelativePath(path) || path);
             newTarget.custom_dep.incList = defIncList.concat(incList);
             newTarget.custom_dep.defineList = keilTarget.defineList;
 
@@ -3827,7 +3827,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const defMacros: string[] = ['__VSCODE_CPPTOOL']; /* it's for internal force include header */
         let defList: string[] = defMacros.concat(depMerge.defineList);
         depMerge.incList = ArrayDelRepetition(depMerge.incList.concat(prj.getSourceIncludeList()));
-        const includeList: string[] = depMerge.incList.map((_path) => { return File.ToUnixPath(confRootDir.ToRelativePath(_path) || _path); });
+        const includeList: string[] = depMerge.incList.map(p => prj.resolveEnvVar(p)).map(p => File.ToUnixPath(confRootDir.ToRelativePath(p) || p));
         const intrHeader: string[] | undefined = toolchain.getForceIncludeHeaders();
 
         const getSourceList = (project: AbstractProject): string[] => {
@@ -4448,21 +4448,32 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         prj.GetConfiguration().getAllDepGroup().forEach((group) => {
             for (const dep of group.depList) {
                 for (const incPath of dep.incList) {
-                    includesMap.set(prj.ToRelativePath(incPath) || incPath, group.groupName);
+                    includesMap.set(prj.ToRelativePath(incPath) || File.ToUnixPath(incPath), group.groupName);
                 }
             }
         });
 
         // add source include paths
         prj.getSourceIncludeList().forEach((incPath) => {
-            includesMap.set(prj.ToRelativePath(incPath) || incPath, 'source');
+            includesMap.set(prj.ToRelativePath(incPath) || File.ToUnixPath(incPath), 'source');
         });
 
         for (const keyVal of includesMap) {
-            pickItems.push({
-                label: keyVal[0],
-                description: keyVal[1]
-            });
+
+            const incPath = keyVal[0];
+            const incGrp = keyVal[1];
+
+            if (File.isEnvPath(incPath)) {
+                pickItems.push({
+                    label: incPath,
+                    description: `grp: ${incGrp}, loc: ${prj.resolveEnvVar(incPath)}`
+                });
+            } else {
+                pickItems.push({
+                    label: incPath,
+                    description: `${incGrp}`
+                });
+            }
         }
 
         // sort result
@@ -4492,16 +4503,27 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         prj.GetConfiguration().getAllDepGroup().forEach((group) => {
             for (const dep of group.depList) {
                 for (const libPath of dep.libList) {
-                    libMaps.set(prj.ToRelativePath(libPath) || libPath, group.groupName);
+                    libMaps.set(prj.ToRelativePath(libPath) || File.ToUnixPath(libPath), group.groupName);
                 }
             }
         });
 
         for (const keyVal of libMaps) {
-            pickItems.push({
-                label: keyVal[0],
-                description: keyVal[1]
-            });
+
+            const libPath = keyVal[0];
+            const libGrp = keyVal[1];
+
+            if (File.isEnvPath(libPath)) {
+                pickItems.push({
+                    label: libPath,
+                    description: `grp: ${libGrp}, loc: ${prj.resolveEnvVar(libPath)}`
+                });
+            } else {
+                pickItems.push({
+                    label: libPath,
+                    description: `${libGrp}`
+                });
+            }
         }
 
         // sort result
@@ -5233,7 +5255,7 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
             if (Array.isArray(cfg.IncludeFolders)) {
                 const li = cfg.IncludeFolders
                     .filter((path: any) => typeof (path) == 'string')
-                    .map((path: string) => prj.ToAbsolutePath(path));
+                    .map((path: string) => prj.ToAbsolutePath(path, false));
                 cusDep.incList = ArrayDelRepetition(li);
             } else {
                 cusDep.incList = [];
@@ -5243,7 +5265,7 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
             if (Array.isArray(cfg.LibraryFolders)) {
                 const li = cfg.LibraryFolders
                     .filter((path: any) => typeof (path) == 'string')
-                    .map((path: string) => prj.ToAbsolutePath(path));
+                    .map((path: string) => prj.ToAbsolutePath(path, false));
                 cusDep.libList = ArrayDelRepetition(li);
             } else {
                 cusDep.libList = [];
@@ -5251,8 +5273,7 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
 
             // macro list
             if (Array.isArray(cfg.Defines)) {
-                const li = cfg.Defines
-                    .filter((path: any) => typeof (path) == 'string');
+                const li = cfg.Defines.filter((path: any) => typeof (path) == 'string');
                 cusDep.defineList = ArrayDelRepetition(li);
             } else {
                 cusDep.defineList = [];

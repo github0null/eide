@@ -119,6 +119,13 @@ class EventItem {
     }
 }
 
+export interface ProjectBaseApi {
+    getRootDir: () => File;
+    toAbsolutePath: (path: string) => string;
+    toRelativePath: (path: string) => string;
+    resolveEnvVar: (path: string) => string;
+}
+
 export abstract class Configuration<ConfigType = any, EventType = any> {
 
     readonly FILE_NAME: string;
@@ -129,26 +136,32 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
     private _eventCache: EventItem[];
     protected _event: events.EventEmitter;
 
+    protected eideJsonFile: File;
     protected watcher: FileWatcher;
+    protected project: ProjectBaseApi;
 
-    constructor(configFile: File, type?: ProjectType) {
+    constructor(configFile: File, prjApi: ProjectBaseApi, type?: ProjectType) {
         this._event = new events.EventEmitter();
         this._eventMergeFlag = false;
         this._eventCache = [];
+        this.eideJsonFile = configFile;
         this.FILE_NAME = configFile.name;
         this.watcher = new FileWatcher(configFile, false);
         this.watcher.on('error', (err) => GlobalEvent.emit('error', err));
-        this.watcher.OnChanged = () => this.Update(this.watcher.file.Read());
+        this.watcher.OnChanged = () => this.InitConfig(this.watcher.file.Read());
         this.config = this.GetDefault(this.readTypeFromFile(configFile) || type);
-        this.load(configFile);
+        this.project = prjApi;
     }
 
-    protected load(f: File) {
-        if (f.IsFile()) {
-            this.Update(f.Read());
+    public load(): Configuration<ConfigType, EventType> {
+
+        if (this.eideJsonFile.IsFile()) {
+            this.InitConfig(this.eideJsonFile.Read());
         } else {
             this.Save(true);
         }
+
+        return this;
     }
 
     Dispose(): void {
@@ -156,7 +169,7 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
     }
 
     GetFile(): File {
-        return this.watcher.file;
+        return this.eideJsonFile;
     }
 
     Watch() {
@@ -204,7 +217,7 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
         this._eventMergeFlag = false;
     }
 
-    Update(json: string | object): void {
+    protected InitConfig(json: string | object): void {
 
         const _configFromFile: any = (typeof json === 'string') ? this.Parse(json) : json;
 
@@ -225,7 +238,7 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
     }
 
     Save(force?: boolean): void {
-        this.watcher.file.Write(this.ToJson());
+        this.eideJsonFile.Write(this.ToJson());
     }
 
     protected afterInitConfigData() {
@@ -286,9 +299,9 @@ export class ConfigMap {
 
 export interface Dependence {
     name: string;
-    incList: string[]; // relative path
-    libList: string[]; // relative path
-    sourceDirList: string[]; // relative path
+    incList: string[];          // absolute path with env variables
+    libList: string[];          // absolute path with env variables
+    sourceDirList: string[];    // absolute path with env variables
     defineList: string[];
 }
 
@@ -369,12 +382,6 @@ export interface ProjectConfigEvent {
     data?: any;
 }
 
-export interface ProjectConfigApi {
-    getRootDir: () => File;
-    toAbsolutePath: (path: string) => string;
-    toRelativePath: (path: string) => string;
-}
-
 export class ProjectConfiguration<T extends BuilderConfigData>
     extends Configuration<ProjectConfigData<T>, ProjectConfigEvent> {
 
@@ -386,32 +393,12 @@ export class ProjectConfiguration<T extends BuilderConfigData>
     compileConfigModel: CompileConfigModel<any> = <any>null;
     uploadConfigModel: UploadConfigModel<any> = <any>null;
 
-    private rootDir: File | undefined;
-    private api: ProjectConfigApi;
+    public load(): ProjectConfiguration<any> {
 
-    protected load(f: File) {
-
-        // init project root folder before constructor
-        this.rootDir = new File(NodePath.dirname(this.GetFile().dir));
-
-        // load superclass
-        super.load(f);
-    }
-
-    constructor(f: File, type?: ProjectType) {
-
-        super(f, type);
-
-        this.api = {
-            getRootDir: () => this.getRootDir(),
-            toAbsolutePath: (path) => this.toAbsolutePath(path),
-            toRelativePath: (path) => this.toRelativePath(path)
-        };
-
-        // init project
+        super.load();
 
         this.compileConfigModel = CompileConfigModel.getInstance(this.config);
-        this.uploadConfigModel = UploadConfigModel.getInstance(this.config.uploader, this.api);
+        this.uploadConfigModel = UploadConfigModel.getInstance(this.config.uploader, this.project);
 
         this.compileConfigModel.Update(this.config.compileConfig);
         this.config.compileConfig = this.compileConfigModel.data;
@@ -423,10 +410,12 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
         // update upload model
         this.compileConfigModel.on('dataChanged', () => this.uploadConfigModel.emit('NotifyUpdate', this));
+
+        return this;
     }
 
     private getRootDir(): File {
-        return <File>this.rootDir;
+        return this.project.getRootDir();
     }
 
     private toAbsolutePath(path_: string): string {
@@ -435,8 +424,8 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         return NodePath.normalize(File.ToLocalPath(this.getRootDir().path + File.sep + path));
     }
 
-    private toRelativePath(_path: string): string {
-        const path = _path.trim();
+    private toRelativePath(path_: string): string {
+        const path = path_.trim();
         return this.getRootDir().ToRelativePath(path) || path;
     }
 
@@ -582,7 +571,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         }
 
         // update new config
-        this.uploadConfigModel = UploadConfigModel.getInstance(uploader, this.api);
+        this.uploadConfigModel = UploadConfigModel.getInstance(uploader, this.project);
         this.config.uploader = uploader;
         this.uploadConfigModel.data = utility.copyObject(oldCfg) || this.uploadConfigModel.data;
         this.config.uploadConfig = this.uploadConfigModel.data; // bind obj

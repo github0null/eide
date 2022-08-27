@@ -43,7 +43,7 @@ import {
     ConfigMap, FileGroup,
     ProjectConfiguration, ProjectConfigData, WorkspaceConfiguration,
     CreateOptions,
-    ProjectConfigEvent, ProjectFileGroup, FileItem, EIDE_CONF_VERSION, ProjectTargetInfo, VirtualFolder, VirtualFile, CppConfigItem
+    ProjectConfigEvent, ProjectFileGroup, FileItem, EIDE_CONF_VERSION, ProjectTargetInfo, VirtualFolder, VirtualFile, CppConfigItem, ProjectBaseApi
 } from './EIDETypeDefine';
 import { ToolchainName, IToolchian, ToolchainManager } from './ToolchainManager';
 import { GlobalEvent } from './GlobalEvents';
@@ -699,7 +699,7 @@ export interface SourceExtraCompilerOptionsCfg {
 
 export type DataChangeType = 'pack' | 'dependence' | 'compiler' | 'uploader' | 'files';
 
-export abstract class AbstractProject implements CustomConfigurationProvider {
+export abstract class AbstractProject implements CustomConfigurationProvider, ProjectBaseApi {
 
     static readonly workspaceSuffix = '.code-workspace';
     static readonly vsCodeDir = '.vscode';
@@ -753,6 +753,24 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     abstract provideFolderBrowseConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<WorkspaceBrowseConfiguration | null>;
     abstract dispose(): void;
     abstract forceUpdateCpptoolsConfig(): void;
+
+    ////////////////////////////////// Base Api ///////////////////////////////////////////
+
+    public getRootDir(): File {
+        return this.GetRootDir();
+    }
+
+    public toAbsolutePath(p: string): string {
+        return this.ToAbsolutePath(p);
+    }
+
+    public toRelativePath(p: string): string {
+        return this.ToRelativePath(p) || File.ToUnixPath(p);
+    }
+
+    public resolveEnvVar(p: string): string {
+        return this.replacePathEnv(p);
+    }
 
     ////////////////////////////////// Abstract Project ///////////////////////////////////
 
@@ -825,12 +843,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
 
     private loadProjectDirectory() {
 
-        // init folders
-        this.rootDir = new File(this.GetWorkspaceConfig().GetFile().dir);
-        this.eideDir = new File(this.rootDir.path + File.sep + AbstractProject.EIDE_DIR);
-
         // init watcher for '.eide' folder
-        this.eideDirWatcher = new FileWatcher(this.eideDir, false, false);
+        this.eideDirWatcher = new FileWatcher(this.GetRootDir(), false, false);
         this.eideDirWatcher.on('error', err => GlobalEvent.emit('error', err));
         this.eideDirWatcher.OnChanged = f => this.onEideDirChanged('changed', f);
         this.eideDirWatcher.OnRename = f => this.onEideDirChanged('renamed', f);
@@ -839,13 +853,13 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         if (this.isOldVersionProject) {
 
             // rename old 'deps' folder name for old eide version
-            const depsFolder = File.fromArray([this.rootDir.path, NodePath.normalize(DependenceManager.DEPENDENCE_DIR)]);
+            const depsFolder = File.fromArray([this.GetRootDir().path, NodePath.normalize(DependenceManager.DEPENDENCE_DIR)]);
             if (!depsFolder.IsDir()) { // if 'deps' folder is not exist
 
                 // these folder is for old eide version
                 const oldDepsFolders = [
-                    new File(this.rootDir.path + File.sep + 'deps'),
-                    new File(this.rootDir.path + File.sep + 'dependence')
+                    new File(this.GetRootDir().path + File.sep + 'deps'),
+                    new File(this.GetRootDir().path + File.sep + 'dependence')
                 ];
 
                 // create new 'deps' folder
@@ -878,7 +892,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
             const envFile: File = this.getEnvFile(true);
             if (!envFile.IsFile()) { // if 'env.ini' file is not existed, we try to merge it
                 const oldEnv: string[] = [];
-                this.eideDir.GetList([/[^\.]+\.env\.ini$/], File.EMPTY_FILTER)
+                this.getEideDir().GetList([/[^\.]+\.env\.ini$/], File.EMPTY_FILTER)
                     .forEach((file) => {
                         const tName = NodePath.basename(file.path, '.env.ini');
                         if (tName) {
@@ -1078,8 +1092,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
         return str;
     }
 
-    ToAbsolutePath(path_: string): string {
-        const path = this.replacePathEnv(path_.trim());
+    ToAbsolutePath(path_: string, resolveEnv: boolean = true): string {
+        const path = resolveEnv ? this.replacePathEnv(path_.trim()) : path_.trim();
         if (File.isAbsolute(path)) { return NodePath.normalize(path); }
         return NodePath.normalize(File.ToLocalPath(this.GetRootDir().path + NodePath.sep + path));
     }
@@ -1261,9 +1275,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
                 const oldDep = oldTarget[name];
                 for (const key in curDep) { (<any>curDep)[key] = copyObject(oldDep[key]); }
                 // convert to abs path
-                curDep.incList = curDep.incList.map((path) => { return this.ToAbsolutePath(path); });
-                curDep.libList = curDep.libList.map((path) => { return this.ToAbsolutePath(path); });
-                curDep.sourceDirList = curDep.sourceDirList.map((path) => { return this.ToAbsolutePath(path); });
+                curDep.incList = curDep.incList.map(path => this.ToAbsolutePath(path, false));
+                curDep.libList = curDep.libList.map(path => this.ToAbsolutePath(path, false));
+                curDep.sourceDirList = curDep.sourceDirList.map(path => this.ToAbsolutePath(path, false));
                 continue;
             }
 
@@ -1515,9 +1529,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     private __env_raw_lastEnvObj: { [name: string]: any } | undefined;
     getProjectRawEnv(): { [name: string]: any } | undefined {
         try {
-            // limit read interval (150 ms), improve speed
+            // limit read interval (350 ms), improve speed
             if (this.__env_raw_lastEnvObj != undefined &&
-                Date.now() - this.__env_raw_lastGetTime < 150) {
+                Date.now() - this.__env_raw_lastGetTime < 350) {
                 return this.__env_raw_lastEnvObj;
             }
 
@@ -1545,9 +1559,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     private __env_lastEnvObj: { [name: string]: any } | undefined;
     getProjectEnv(): { [name: string]: any } | undefined {
 
-        // limit read interval (200 ms), improve speed
+        // limit read interval (350 ms), improve speed
         if (this.__env_lastEnvObj != undefined &&
-            Date.now() - this.__env_lastUpdateTime < 200) {
+            Date.now() - this.__env_lastUpdateTime < 350) {
             return this.__env_lastEnvObj;
         }
 
@@ -1676,10 +1690,18 @@ export abstract class AbstractProject implements CustomConfigurationProvider {
     }
 
     protected LoadConfigurations(wsFile: File) {
-        this.configMap.Set(new WorkspaceConfiguration(wsFile), AbstractProject.workspaceSuffix);
-        this.configMap.Set(new ProjectConfiguration(File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName])));
-        File.fromArray([wsFile.dir, AbstractProject.vsCodeDir]).CreateDir(true); // create '.vscode' folder if it's not existed
-        //this.configMap.Set(new CppConfiguration(File.fromArray([wsFile.dir, AbstractProject.vsCodeDir, AbstractProject.cppConfigName])));
+
+        // init folders
+        this.rootDir = new File(wsFile.dir);
+        this.eideDir = new File(this.rootDir.path + File.sep + AbstractProject.EIDE_DIR);
+
+        // init cfgs
+        this.configMap.Set(new WorkspaceConfiguration(wsFile, this).load(), AbstractProject.workspaceSuffix);
+        const eideJsonFile = File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
+        this.configMap.Set(new ProjectConfiguration(eideJsonFile, this).load());
+
+        // create '.vscode' folder if it's not existed
+        File.fromArray([wsFile.dir, AbstractProject.vsCodeDir]).CreateDir(true);
     }
 
     private RegisterEvent(): void {
@@ -2216,9 +2238,9 @@ class EIDEProject extends AbstractProject {
         File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR]).CreateDir(true);
         File.fromArray([wsFile.dir, AbstractProject.vsCodeDir]).CreateDir(true);
 
-        const wsConfig = new WorkspaceConfiguration(wsFile);
-        const prjConfig = new ProjectConfiguration(
-            File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]), option.type);
+        const wsConfig = new WorkspaceConfiguration(wsFile, this).load();
+        const eideFile = File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
+        const prjConfig = new ProjectConfiguration(eideFile, this, option.type).load();
 
         // set project name
         prjConfig.config.name = option.projectName || AbstractProject.formatProjectName(option.name);
@@ -2710,7 +2732,7 @@ class EIDEProject extends AbstractProject {
         const defMacros: string[] = ['__VSCODE_CPPTOOL']; // it's for internal force include header
         const intrDefs = toolchain.getInternalDefines(<any>prjConfig.config.compileConfig, builderOpts);
         const defLi = defMacros.concat(depMerge.defineList, intrDefs);
-        depMerge.incList = depMerge.incList.concat(this.getSourceIncludeList());
+        depMerge.incList = depMerge.incList.concat(this.getSourceIncludeList()).map(p => this.ToAbsolutePath(p));
 
         // update includes and defines 
         this.cppToolsConfig.includePath = ArrayDelRepetition(depMerge.incList.map((_path) => File.ToUnixPath(platform.realpathSync(_path))));

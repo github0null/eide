@@ -44,7 +44,7 @@ import { SettingManager } from "./SettingManager";
 import { WorkspaceManager } from "./WorkspaceManager";
 import * as utility from './utility';
 import * as ArmCpuUtils from './ArmCpuUtils';
-import { ProjectConfiguration, ProjectConfigData, BuilderConfigData, ProjectConfigApi } from './EIDETypeDefine';
+import { ProjectConfiguration, ProjectConfigData, BuilderConfigData, ProjectBaseApi } from './EIDETypeDefine';
 
 export interface Memory {
     startAddr: string;
@@ -1387,14 +1387,14 @@ export abstract class UploadConfigModel<T> extends ConfigModel<T> {
 
     abstract readonly uploader: HexUploaderType;
 
-    protected api: ProjectConfigApi;
+    protected api: ProjectBaseApi;
 
-    constructor(api_: ProjectConfigApi) {
+    constructor(api_: ProjectBaseApi) {
         super();
         this.api = api_;
     }
 
-    static getInstance(uploaderType: HexUploaderType, api: ProjectConfigApi): UploadConfigModel<any> {
+    static getInstance(uploaderType: HexUploaderType, api: ProjectBaseApi): UploadConfigModel<any> {
         switch (uploaderType) {
             case 'JLink':
                 return new JLinkUploadModel(api);
@@ -1736,7 +1736,7 @@ class STLinkUploadModel extends UploadConfigModel<STLinkOptions> {
         { label: 'Core Reset', val: 'Crst' }
     ];
 
-    constructor(api: ProjectConfigApi) {
+    constructor(api: ProjectBaseApi) {
         super(api);
         this.on('NotifyUpdate', (prjConfig) => {
             // update start address
@@ -2043,7 +2043,7 @@ class PyOCDUploadModel extends UploadConfigModel<PyOCDFlashOptions> {
 
     uploader: HexUploaderType = 'pyOCD';
 
-    constructor(api: ProjectConfigApi) {
+    constructor(api: ProjectBaseApi) {
         super(api);
         this.on('NotifyUpdate', (prjConfig) => {
             // update option bytes file name
