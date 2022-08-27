@@ -4,6 +4,19 @@
 
 ***
 
+### [v3.8.2022082701] preview version
+
+**New**
+  - Allow execute post install command when install external tools.
+
+**Optimize**
+  - Optimize prompt message for `Configure Toolchain` function.
+  - Allow empty `linkerScript` file path for `armcc/gcc`. (empty path will cause builder ignore pass linkerScript args to linker)
+  - Allow use env variables in `includePath`, `libPath`.
+  - Optimize cmsis header wizard parser. (allow string prefix/suffix for number value)
+
+***
+
 ### [v3.8.8] revision (patch for v3.8.4)
 
 **New**:
