@@ -4,7 +4,7 @@
 
 ***
 
-### [v3.8.2022082701] preview version
+### [v3.8.2022082801] preview version
 
 **New**
   - Allow execute post install command when install external tools.
