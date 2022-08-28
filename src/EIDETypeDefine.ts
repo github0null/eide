@@ -398,7 +398,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
         super(eideJsonFile, type);
 
-        this.rootDir = new File(this.eideJsonFile.dir);
+        this.rootDir = new File(NodePath.dirname(this.eideJsonFile.dir));
 
         this.project = {
             getRootDir: () => this.rootDir,
