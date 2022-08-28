@@ -5094,6 +5094,12 @@ class VFolderSourcePathsModifier implements ModifiableYamlConfigProvider {
                     `#`,
                     `# You can modify files path by editing and saving this file (allow relative path).`,
                     `#`,
+                    `# format:`,
+                    '#     - path: ./src_1.c',
+                    '#     - path: ../xxx/xxx/src_2.c',
+                    '#     - path: xxx/${VAR}/src_3.c',
+                    '#     - path: D:/path/xxx/src_n.c',
+                    `#`,
                     ``,
                     yml.stringify(vFolderInfo.files, { indent: 4 })
                 ];
@@ -5321,6 +5327,12 @@ class ProjectExcSourceModifier implements ModifiableYamlConfigProvider {
             `#`,
             `# You can modify the configuration by editing and saving this file.`,
             `#`,
+            '# format:',
+            '#      - ./xxx/xxx_src_1.c',
+            '#      - ../xx/a/b/x/xxx_src_2.c',
+            '#      - <virtual_root>/virtual_folder_1/xxx_src_1.c',
+            '#      - <virtual_root>/virtual_folder_1/dir/xxx_src_2.c',
+            '#',
             ``,
         ];
 
