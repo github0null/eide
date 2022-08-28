@@ -1696,9 +1696,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         this.eideDir = new File(this.rootDir.path + File.sep + AbstractProject.EIDE_DIR);
 
         // init cfgs
-        this.configMap.Set(new WorkspaceConfiguration(wsFile, this).load(), AbstractProject.workspaceSuffix);
+        this.configMap.Set(new WorkspaceConfiguration(wsFile).load(), AbstractProject.workspaceSuffix);
         const eideJsonFile = File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
-        this.configMap.Set(new ProjectConfiguration(eideJsonFile, this).load());
+        this.configMap.Set(new ProjectConfiguration(eideJsonFile).load());
 
         // create '.vscode' folder if it's not existed
         File.fromArray([wsFile.dir, AbstractProject.vsCodeDir]).CreateDir(true);
@@ -2247,9 +2247,9 @@ class EIDEProject extends AbstractProject {
         File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR]).CreateDir(true);
         File.fromArray([wsFile.dir, AbstractProject.vsCodeDir]).CreateDir(true);
 
-        const wsConfig = new WorkspaceConfiguration(wsFile, this).load();
+        const wsConfig = new WorkspaceConfiguration(wsFile).load();
         const eideFile = File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
-        const prjConfig = new ProjectConfiguration(eideFile, this, option.type).load();
+        const prjConfig = new ProjectConfiguration(eideFile, option.type).load();
 
         // set project name
         prjConfig.config.name = option.projectName || AbstractProject.formatProjectName(option.name);

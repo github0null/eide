@@ -138,9 +138,8 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
 
     protected eideJsonFile: File;
     protected watcher: FileWatcher;
-    protected project: ProjectBaseApi;
 
-    constructor(configFile: File, prjApi: ProjectBaseApi, type?: ProjectType) {
+    constructor(configFile: File, type?: ProjectType) {
         this._event = new events.EventEmitter();
         this._eventMergeFlag = false;
         this._eventCache = [];
@@ -150,7 +149,6 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
         this.watcher.on('error', (err) => GlobalEvent.emit('error', err));
         this.watcher.OnChanged = () => this.InitConfig(this.watcher.file.Read());
         this.config = this.GetDefault(this.readTypeFromFile(configFile) || type);
-        this.project = prjApi;
     }
 
     public load(): Configuration<ConfigType, EventType> {
@@ -393,6 +391,23 @@ export class ProjectConfiguration<T extends BuilderConfigData>
     compileConfigModel: CompileConfigModel<any> = <any>null;
     uploadConfigModel: UploadConfigModel<any> = <any>null;
 
+    protected project: ProjectBaseApi;
+    protected rootDir: File;
+
+    constructor(eideJsonFile: File, type?: ProjectType) {
+
+        super(eideJsonFile, type);
+
+        this.rootDir = new File(this.eideJsonFile.dir);
+
+        this.project = {
+            getRootDir: () => this.rootDir,
+            toRelativePath: (p) => this.toRelativePath(p),
+            toAbsolutePath: (p) => this.toAbsolutePath(p),
+            resolveEnvVar: (p) => p
+        };
+    }
+
     public load(): ProjectConfiguration<any> {
 
         super.load();
@@ -415,7 +430,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
     }
 
     private getRootDir(): File {
-        return this.project.getRootDir();
+        return this.rootDir;
     }
 
     private toAbsolutePath(path_: string): string {
