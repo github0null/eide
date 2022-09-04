@@ -1241,9 +1241,15 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         //  old project(ver < 3.3) have 'mode' field
         //  new project(ver >= 3.3) not have 'mode' field
         if (this.config.mode == undefined) {
-            // recover current target from 'targets' map
             const usrCtx = this.getProjectUsrCtx();
             this.recoverTarget(usrCtx.target);
+        }
+
+        // fill missing field after target recovered
+        for (const key in defCfg) {
+            if (curCfg[key] == undefined) {
+                curCfg[key] = defCfg[key];
+            }
         }
 
         //
