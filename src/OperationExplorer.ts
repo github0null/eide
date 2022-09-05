@@ -823,6 +823,9 @@ export class OperationExplorer {
 
         const sel = await vscode.window.showQuickPick(selections, {
             canPickMany: false,
+            matchOnDescription: true,
+            matchOnDetail: true,
+            ignoreFocusOut: true,
             placeHolder: 'Select one to install it'
         });
 
