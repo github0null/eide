@@ -1537,6 +1537,7 @@
         "problemMatchers": [
             {
                 "name": "armcc",
+                "source": "Arm C/C++ Compiler",
                 "fileLocation": "autoDetect",
                 "pattern": [
                     {
@@ -1551,6 +1552,7 @@
             },
             {
                 "name": "gcc",
+                "source": "GCC",
                 "fileLocation": "autoDetect",
                 "pattern": [
                     {
@@ -1565,6 +1567,7 @@
             },
             {
                 "name": "keilc51",
+                "source": "Keil C51 Compiler",
                 "fileLocation": "autoDetect",
                 "pattern": [
                     {
