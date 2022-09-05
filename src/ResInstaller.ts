@@ -390,6 +390,7 @@ export class ResInstaller {
                         const unzipper = new SevenZipper(resManager.Get7zDir());
                         const outDir = File.fromArray([resManager.getUtilToolsDir(), resourceName]);
 
+                        platform.DeleteAllChildren(outDir);
                         outDir.CreateDir(true);
 
                         progress.report({ message: `Unzipping ...` });
