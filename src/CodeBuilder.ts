@@ -107,11 +107,13 @@ export abstract class CodeBuilder {
         this._event = new events.EventEmitter();
     }
 
+    on(event: 'launched', listener: () => void): void;
     on(event: 'finished', listener: (done?: boolean) => void): void;
     on(event: any, listener: (arg: any) => void): void {
         this._event.on(event, listener);
     }
 
+    private emit(event: 'launched'): void;
     private emit(event: 'finished', done?: boolean): void;
     private emit(event: any, arg?: any): void {
         this._event.emit(event, arg);
@@ -309,6 +311,9 @@ export abstract class CodeBuilder {
             terminal.show(true);
             terminal.sendText(commandLine);
         }
+
+        // post event
+        this.emit('launched');
     }
 
     genBuildCommand(options?: BuildOptions, disPowershell?: boolean): string | undefined {
@@ -1034,8 +1039,6 @@ class C51CodeBuilder extends CodeBuilder {
                 return ['$gcc'];
             case 'Keil_C51':
                 return ['$keilc51'];
-            case 'IAR_STM8':
-                return ['$iarstm8'];
             default:
                 return [];
         }

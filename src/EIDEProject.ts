@@ -756,8 +756,18 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     ////////////////////////////////// Base Api ///////////////////////////////////////////
 
+    public getProjectName(): string {
+        return this.GetConfiguration().config.name;
+    }
+
     public getRootDir(): File {
         return this.GetRootDir();
+    }
+
+    public getUid(): string {
+        const miscInfo = this.GetConfiguration().config.miscInfo;
+        if (miscInfo.uid == undefined) miscInfo.uid = md5(`${this.getEideDir().path}-${Date.now()}`);
+        return miscInfo.uid;
     }
 
     public toAbsolutePath(p: string): string {
@@ -1790,9 +1800,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         this.emit('dataChanged', 'dependence');
 
         // update uid if project not have
-        if (prjConfig.config.miscInfo.uid === undefined) {
-            prjConfig.config.miscInfo.uid = md5(`${this.getEideDir().path}-${Date.now()}`);
-        }
+        this.getUid();
 
         // remove build-in deps for old version
         prjConfig.BuildIn_RemoveAllDefines();

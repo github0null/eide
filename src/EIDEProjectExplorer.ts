@@ -35,7 +35,7 @@ import { ResManager } from './ResManager';
 import { GlobalEvent } from './GlobalEvents';
 import { AbstractProject, CheckError, DataChangeType, VirtualSource } from './EIDEProject';
 import { ToolchainName, ToolchainManager } from './ToolchainManager';
-import { CreateOptions, VirtualFolder, VirtualFile, ImportOptions, ProjectTargetInfo, ProjectConfigData, ProjectType, ProjectConfiguration } from './EIDETypeDefine';
+import { CreateOptions, VirtualFolder, VirtualFile, ImportOptions, ProjectTargetInfo, ProjectConfigData, ProjectType, ProjectConfiguration, ProjectBaseApi } from './EIDETypeDefine';
 import { PackInfo, ComponentFileItem, DeviceInfo, getComponentKeyDescription, ArmBaseCompileData, ArmBaseCompileConfigModel, RiscvCompileData, AnyGccCompileData } from "./EIDEProjectModules";
 import { WorkspaceManager } from './WorkspaceManager';
 import {
@@ -2258,9 +2258,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     private cppToolsApi: CppToolsApi | undefined;
     private cppToolsOut: vscode.OutputChannel;
 
+    private compiler_diags: Map<string, vscode.DiagnosticCollection>;
+
     constructor(context: vscode.ExtensionContext) {
 
         this._event = new events.EventEmitter();
+        this.compiler_diags = new Map();
 
         // register hook
         GlobalEvent.on('project.opened', (prj) => this.onProjectOpened(prj));
@@ -2657,33 +2660,41 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     private _buildLock: boolean = false;
     BuildSolution(prjItem?: ProjTreeItem, options?: BuildOptions) {
 
-        const prj = this.getProjectByTreeItem(prjItem);
-
-        if (prj === undefined) {
-            GlobalEvent.emit('msg', newMessage('Warning', 'No active project !'));
-            return;
-        }
-
-        if (this._buildLock) {
-            GlobalEvent.emit('msg', newMessage('Warning', 'build busy !, please wait !'));
-            return;
-        }
-
-        this._buildLock = true;
-
-        // save project before build
-        prj.Save(true);
-
         try {
+
+            const prj = this.getProjectByTreeItem(prjItem);
+
+            if (prj === undefined) {
+                GlobalEvent.emit('msg', newMessage('Warning', 'No active project !'));
+                return;
+            }
+
+            if (this._buildLock) {
+                GlobalEvent.emit('msg', newMessage('Warning', 'build busy !, please wait !'));
+                return;
+            }
+
+            this._buildLock = true;
+
+            // save project before build
+            prj.Save(true);
+
             const codeBuilder = CodeBuilder.NewBuilder(prj);
 
-            // set event handler
             const toolchain = prj.getToolchain().name;
 
-            // notify view update after build done !
+            // build launched event
+            codeBuilder.on('launched', () => {
+                if (this.compiler_diags.has(prj.getUid())) {
+                    this.compiler_diags.get(prj.getUid())?.clear();
+                }
+            })
+
+            // build finish event
             codeBuilder.on('finished', (done) => {
                 prj.notifyUpdateSourceRefs(toolchain);
                 this.notifyUpdateOutputFolder(prj);
+                this.updateCompilerDiagsAfterBuild(prj);
                 if (options?.flashAfterBuild && done) this.UploadToDevice(prjItem);
             });
 
@@ -2693,13 +2704,116 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             // update debug configuration
             prj.updateDebugConfig();
 
+            setTimeout(() => {
+                this._buildLock = false;
+            }, 500);
+
         } catch (error) {
             GlobalEvent.emit('error', error);
         }
+    }
 
-        setTimeout(() => {
-            this._buildLock = false;
-        }, 500);
+    private updateCompilerDiagsAfterBuild(prj: AbstractProject) {
+
+        let diag_res: { [path: string]: vscode.Diagnostic[] } | undefined;
+
+        switch (prj.getToolchain().name) {
+            case 'IAR_ARM':
+            case 'IAR_STM8':
+                diag_res = this.parseIarCompilerLog(prj, File.fromArray([prj.getOutputFolder().path, 'compiler.log']));
+                break;
+            default:
+                break;
+        }
+
+        if (diag_res) {
+
+            const uid = prj.getUid();
+
+            let cc_diags: vscode.DiagnosticCollection;
+
+            if (this.compiler_diags.has(uid)) {
+                cc_diags = <any>this.compiler_diags.get(uid);
+            } else {
+                cc_diags = vscode.languages.createDiagnosticCollection(prj.getProjectName());
+                this.compiler_diags.set(uid, cc_diags);
+            }
+
+            for (const path in diag_res) {
+                const uri = vscode.Uri.parse(File.ToUri(path));
+                cc_diags.set(uri, diag_res[path]);
+            }
+        }
+    }
+
+    private parseIarCompilerLog(projApi: ProjectBaseApi, file: File): { [path: string]: vscode.Diagnostic[] } {
+
+        const pattern = {
+            "regexp": "^\\s*\"([^\"]+)\",(\\d+)\\s+([a-z\\s]+)\\[(\\w+)\\]:",
+            "file": 1,
+            "line": 2,
+            "severity": 3,
+            "code": 4
+        };
+
+        const ccLogLines: string[] = [];
+
+        {
+            let logStarted = false;
+            let logEnd = false;
+
+            file.Read().split(/\r\n|\n/).forEach(line => {
+
+                if (logEnd)
+                    return;
+
+                if (logStarted) {
+                    if (line.startsWith('>>>')) {
+                        logEnd = true;
+                    } else {
+                        ccLogLines.push(line);
+                    }
+                } else {
+                    if (line.startsWith('>>> cc')) {
+                        logStarted = true;
+                    }
+                }
+            });
+        }
+
+        const matcher = new RegExp(pattern.regexp, 'i');
+        const result: { [path: string]: vscode.Diagnostic[] } = {};
+
+        const toVscServerity = (str: string): vscode.DiagnosticSeverity => {
+            if (str.toLowerCase().startsWith('err')) {
+                return vscode.DiagnosticSeverity.Error;
+            } else if (str.toLowerCase().startsWith('warn')) {
+                return vscode.DiagnosticSeverity.Warning;
+            } else {
+                return vscode.DiagnosticSeverity.Hint;
+            }
+        };
+
+        for (let idx = 0; idx < ccLogLines.length; idx++) {
+            const line = ccLogLines[idx];
+            const m = matcher.exec(line);
+            if (m && m.length > 4) {
+                const fspath = projApi.toAbsolutePath(m[pattern.file]);
+                const message = ccLogLines[++idx].trim();
+                const line = parseInt(m[pattern.line]);
+                const diags = result[fspath] || [];
+                const severity = m[pattern.severity];
+                const errCode = m[pattern.code];
+                if (result[fspath] == undefined) result[fspath] = diags;
+                const pos = new vscode.Position(line - 1, 0);
+                const vscDiag = new vscode.Diagnostic(new vscode.Range(pos, pos), message, toVscServerity(severity));
+                vscDiag.code = errCode;
+                vscDiag.source = 'IAR C/C++ Compiler';
+                diags.push(vscDiag);
+            }
+        }
+
+        return result;
     }
 
     buildWorkspace(rebuild?: boolean) {
@@ -4013,11 +4127,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                         const line = parseInt(mRes[pattern.line]);
                         const col = parseInt(mRes[pattern.column]);
                         const pos = new vscode.Position(line - 1, col - 1);
-                        diags.push(new vscode.Diagnostic(
-                            new vscode.Range(pos, pos),
-                            mRes[pattern.message],
-                            toVscServerity(mRes[pattern.severity])
-                        ));
+                        const diag = new vscode.Diagnostic(new vscode.Range(pos, pos), mRes[pattern.message], toVscServerity(mRes[pattern.severity]));
+                        diag.source = 'cppcheck';
+                        diags.push(diag);
                         this.cppcheck_diag.set(uri, diags);
                     }
                     // we not need log other cppcheck err msg

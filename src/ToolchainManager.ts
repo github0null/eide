@@ -39,7 +39,10 @@ import * as NodePath from 'path';
 import * as os from 'os';
 import { ICompileOptions, ArmBaseBuilderConfigData } from "./EIDEProjectModules";
 
-export type ToolchainName = 'SDCC' | 'Keil_C51' | 'AC5' | 'AC6' | 'GCC' | 'IAR_STM8' | 'GNU_SDCC_STM8' | 'RISCV_GCC' | 'ANY_GCC' | 'None';
+export type ToolchainName =
+    'SDCC' | 'Keil_C51' | 'IAR_STM8' | 'GNU_SDCC_STM8' |
+    'AC5' | 'AC6' | 'GCC' | 'IAR_ARM' |
+    'RISCV_GCC' | 'ANY_GCC' | 'None';
 
 export interface IProjectInfo {
 
