@@ -39,6 +39,7 @@ import * as fs from 'fs';
 import { AbstractProject } from './EIDEProject';
 import { ExceptionToMessage, newMessage } from './Message';
 import { ResManager } from './ResManager';
+import { ExeCmd } from '../lib/node-utility/Executable';
 
 export enum ComponentUpdateType {
     Disabled = 1,
@@ -1175,6 +1176,31 @@ export class PackageManager {
         } catch (error) {
             GlobalEvent.emit('msg', newMessage('Warning', `Install package error !, ${(<Error>error).message}`));
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            return;
+        }
+
+        // install cmsis device for jlink
+        {
+            const proc = new ExeCmd();
+
+            const cmd = `jlink-device-addon "${File.ToUnixPath(pack.path)}"`;
+
+            proc.on('launch', () => {
+                GlobalEvent.emit('globalLog.show');
+                GlobalEvent.emit('globalLog.append', `\n>>> exec cmd: '${cmd}'\n\n`);
+            });
+
+            proc.on('data', (str) => {
+                GlobalEvent.emit('globalLog.append', str);
+            });
+
+            proc.on('close', (eInf) => {
+                if (eInf.code != 0) {
+                    GlobalEvent.emit('globalLog.append', `\n----- failed, exit code: ${eInf.code} -----\n`);
+                }
+            });
+
+            proc.Run(cmd);
         }
     }
 }
