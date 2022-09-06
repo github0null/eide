@@ -40,6 +40,7 @@ import { SevenZipper } from './Compress';
 import { ResManager } from './ResManager';
 import * as platform from './Platform';
 import { ExternalUtilToolIndexDef } from './WebInterface/WebInterface';
+import { ExeCmd } from '../lib/node-utility/Executable';
 
 let _instance: ResInstaller | undefined;
 
@@ -373,8 +374,8 @@ export class ResInstaller {
                 installedDone = await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
                     title: `Installing package '${resourceName}'`,
-                    cancellable: false
-                }, (progress, __): Promise<boolean> => {
+                    cancellable: true
+                }, (progress, cancel): Promise<boolean> => {
 
                     return new Promise(async (resolve_) => {
 
@@ -395,9 +396,18 @@ export class ResInstaller {
 
                         progress.report({ message: `Unzipping ...` });
 
+                        cancel.onCancellationRequested(_ => {
+                            progress.report({ message: `Canceling ...` });
+                        });
+
                         const unzipErr = await unzipper.Unzip(resourceFile, outDir);
                         if (unzipErr) {
                             GlobalEvent.emit('msg', ExceptionToMessage(unzipErr, 'Warning'));
+                            resolveIf(false);
+                            return;
+                        }
+
+                        if (cancel.isCancellationRequested) {
                             resolveIf(false);
                             return;
                         }
@@ -412,14 +422,47 @@ export class ResInstaller {
 
                         // run post install cmd
                         if (toolInfo.postInstallCmd) {
-                            let command = toolInfo.postInstallCmd();
+
+                            const command = toolInfo.postInstallCmd();
                             if (command) {
-                                let errLog = '';
-                                try {
-                                    progress.report({ message: `Executing post install command: '${command}' ...` });
-                                    errLog = child_process.execSync(command, { cwd: outDir.path }).toString().trim();
-                                } catch (error) {
-                                    GlobalEvent.emit('msg', newMessage('Warning', `Install failed, msg: ${errLog}`));
+
+                                const done = await (new Promise<boolean>((resolve) => {
+
+                                    progress.report({ message: `Running post-install cmd: '${command}' ...` });
+
+                                    const proc = new ExeCmd();
+
+                                    proc.on('launch', () => {
+                                        GlobalEvent.emit('globalLog.show');
+                                        GlobalEvent.emit('globalLog.append', `\n>>> exec cmd: '${command}'\n\n`);
+                                    });
+
+                                    proc.on('data', str => {
+                                        GlobalEvent.emit('globalLog.append', str);
+                                    });
+
+                                    proc.on('close', exitInfo => {
+                                        resolve(exitInfo.code == 0);
+                                    });
+
+                                    cancel.onCancellationRequested(_ => {
+                                        if (!platform.kill(<number>proc.pid())) {
+                                            GlobalEvent.emit('msg', newMessage('Warning', `Can not kill process: ${proc.pid()} !`));
+                                        }
+                                    });
+
+                                    proc.Run(<string>command, undefined, { cwd: outDir.path });
+                                }));
+
+                                if (!done) {
+
+                                    if (cancel.isCancellationRequested) {
+                                        GlobalEvent.emit('globalLog.append', `\n----- user canceled -----\n`);
+                                        GlobalEvent.emit('msg', newMessage('Info', `Installation has been canceled !`));
+                                    } else {
+                                        GlobalEvent.emit('msg', newMessage('Warning', `Install failed, see detail in 'eide.log' !`));
+                                    }
+
                                     resolveIf(false);
                                     return;
                                 }
