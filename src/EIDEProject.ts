@@ -1084,6 +1084,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             .replace(/\$\(OutDir\)|\$\{OutDir\}/ig, outDir)
             .replace(/\$\(OutDirBase\)|\$\{OutDirBase\}/ig, outDirBase)
             .replace(/\$\(ProjectName\)|\$\{ProjectName\}/ig, prjConfig.config.name)
+            .replace(/\$\(ConfigName\)|\$\{ConfigName\}/ig, prjConfig.config.mode)
             .replace(/\$\(ExecutableName\)|\$\{ExecutableName\}/ig, `${outDir}${File.sep}${prjConfig.config.name}`)
             .replace(/\$\(ProjectRoot\)|\$\{ProjectRoot\}/ig, prjRootDir.path);
     }
