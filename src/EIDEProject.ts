@@ -2383,7 +2383,7 @@ class EIDEProject extends AbstractProject {
                 return new Promise((resolve) => {
 
                     proc.on('launch', () => {
-                        GlobalEvent.emit('globalLog.append', os.EOL + `>> running '${scriptName}' ...` + os.EOL);
+                        GlobalEvent.emit('globalLog.append', os.EOL + `>>> running '${scriptName}' ...` + os.EOL + os.EOL);
                         GlobalEvent.emit('globalLog.show');
                     });
 

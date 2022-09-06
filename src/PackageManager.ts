@@ -1186,7 +1186,6 @@ export class PackageManager {
             const cmd = `jlink-device-addon "${File.ToUnixPath(pack.path)}"`;
 
             proc.on('launch', () => {
-                GlobalEvent.emit('globalLog.show');
                 GlobalEvent.emit('globalLog.append', `\n>>> exec cmd: '${cmd}'\n\n`);
             });
 
