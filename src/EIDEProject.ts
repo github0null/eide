@@ -1458,6 +1458,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             return;
         }
 
+        const doneList: string[] = [];
+
         for (const packZipFile of packList) {
 
             const outDir = File.fromArray([this.GetRootDir().path, '.cmsis', packZipFile.noSuffixName]);
@@ -1470,12 +1472,16 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
             outDir.CreateDir(true);
             const compresser = new SevenZipper(ResManager.GetInstance().Get7zDir());
-            const zipMsg = compresser.UnzipSync(packZipFile, outDir);
+            compresser.UnzipSync(packZipFile, outDir);
 
             // add to include folder
             this.addIncludePaths([outDir.path]);
-            GlobalEvent.emit('msg', newMessage('Hidden', zipMsg));
-            GlobalEvent.emit('msg', newMessage('Info', `Installation completed !, [path]: ${rePath}`));
+
+            doneList.push(rePath);
+        }
+
+        if (doneList.length > 0) {
+            GlobalEvent.emit('msg', newMessage('Info', `Installation completed !, [path list]: ${doneList.join(', ')}`));
         }
     }
 
