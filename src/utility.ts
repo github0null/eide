@@ -39,6 +39,24 @@ import * as platform from './Platform';
 import { SevenZipper } from './Compress';
 import { ResManager } from './ResManager';
 
+export interface XmlFormatOptions {
+    indentation?: string;
+    filter?: (node: any) => boolean;
+    stripComments?: boolean;
+    collapseContent?: boolean;
+    lineSeparator?: string;
+    whiteSpaceAtEndOfSelfclosingTag?: boolean;
+}
+
+export function xmlfmt(xml: string, opts?: XmlFormatOptions): string {
+    try {
+        const format = require('xml-formatter');
+        return format(xml, opts);
+    } catch (error) {
+        return xml;
+    }
+}
+
 export function runShellCommand(title: string, commandLine: string, env?: any, useTerminal?: boolean, cwd?: string): Error | undefined {
     try {
         if (!useTerminal && WorkspaceManager.getInstance().hasWorkspaces()) {
