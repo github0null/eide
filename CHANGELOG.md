@@ -4,6 +4,19 @@
 
 ***
 
+### [v3.8.2022090701] preview version
+
+**New**:
+  - New IAR compiler problem message matcher
+  - Support auto install chip info to JLink by `jlink-device-addon` tool when install cmsis device package
+
+**Optimize**:
+  - Allow use `${configName}` in file path environment variables
+  - Do not delete unused files when cmsis device package has been installed
+  - Output compiler log after build done
+
+***
+
 ### [v3.8.2022082801] preview version
 
 **New**
