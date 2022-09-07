@@ -51,7 +51,8 @@ export interface XmlFormatOptions {
 export function xmlfmt(xml: string, opts?: XmlFormatOptions): string {
     try {
         const format = require('xml-formatter');
-        return format(xml, opts);
+        const defOpt = { indentation: '    ', lineSeparator: os.EOL, collapseContent: true };
+        return format(xml, opts || defOpt);
     } catch (error) {
         return xml;
     }
