@@ -49,9 +49,24 @@ export interface XmlFormatOptions {
 }
 
 export function xmlfmt(xml: string, opts?: XmlFormatOptions): string {
+
+    const defOpt = {
+        indentation: '    ',
+        lineSeparator: os.EOL,
+        collapseContent: true,
+        whiteSpaceAtEndOfSelfclosingTag: false
+    };
+
+    if (opts) {
+        for (const key in <any>defOpt) {
+            if ((<any>opts)[key] == undefined) {
+                (<any>opts)[key] = (<any>defOpt)[key];
+            }
+        }
+    }
+
     try {
         const format = require('xml-formatter');
-        const defOpt = { indentation: '    ', lineSeparator: os.EOL, collapseContent: true };
         return format(xml, opts || defOpt);
     } catch (error) {
         return xml;

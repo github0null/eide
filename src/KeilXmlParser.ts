@@ -267,7 +267,7 @@ export abstract class KeilParser<T> {
         if (prjMap[this.TYPE_TAG] == undefined) { throw new Error(`Not support '${this.TYPE_TAG}' project !`); }
         const outFile = File.fromArray([outDir.path, name + prjMap[this.TYPE_TAG]]);
         const xmlTxt = '<?xml version="1.0" encoding="UTF-8" standalone="no" ?>' + this.parser.js2xml<any>(this.doc);
-        outFile.Write(utility.xmlfmt(xmlTxt, { indentation: '  ', collapseContent: true }));
+        outFile.Write(utility.xmlfmt(xmlTxt, { indentation: '  ' }));
         return outFile;
     }
 
