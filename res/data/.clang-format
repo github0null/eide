@@ -9,11 +9,11 @@ Language: Cpp
 UseTab: Never
 IndentWidth: 4
 TabWidth: 4
-BreakBeforeBraces: Allman
 ColumnLimit: 0
 AccessModifierOffset: -4
 NamespaceIndentation: All
 FixNamespaceComments: false
+BreakBeforeBraces: Linux
 
 ###################################
 #          other styles
@@ -35,4 +35,4 @@ SortIncludes: false
 
 AlignConsecutiveMacros: AcrossEmptyLines
 
-AlignConsecutiveAssignments: AcrossComments
+AlignConsecutiveAssignments: AcrossEmptyLines
