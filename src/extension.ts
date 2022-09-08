@@ -1102,17 +1102,12 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
 
     // register map view provider
     context.subscriptions.push(
-        vscode.window.registerCustomEditorProvider('cl.eide.map.view', new MapViewEditorProvider(), {
-            webviewOptions: { enableFindWidget: true }
-        })
-    );
+        vscode.window.registerCustomEditorProvider('cl.eide.map.view',
+            new MapViewEditorProvider(), { webviewOptions: { enableFindWidget: true } }));
 
-    // register some links provider, it only for Keil_C51 compiler
-    if (os.platform() == 'win32') {
-        context.subscriptions.push(
-            vscode.window.registerTerminalLinkProvider(new EideTerminalLinkProvider())
-        );
-    }
+    // terminal link providers
+    context.subscriptions.push(
+        vscode.window.registerTerminalLinkProvider(new EideTerminalLinkProvider()));
 
     return true;
 }
@@ -1159,14 +1154,51 @@ class EideTerminalLink extends vscode.TerminalLink {
     line?: number;
 }
 
+interface TerminalLinkPattern {
+    regexp: RegExp;
+    file: number;
+    line: number;
+    col?: number;
+}
+
 class EideTerminalLinkProvider implements vscode.TerminalLinkProvider<EideTerminalLink> {
 
     private workspace: File | undefined;
-    private macthers: Map<RegExp, { file: number, line: number }> = new Map();
+
+    private patterns: TerminalLinkPattern[] = [
+
+        // keil c51
+        {
+            regexp: new RegExp("IN LINE (\\d+) OF ([^:]+):", 'i'),
+            line: 1,
+            file: 2
+        },
+
+        // armcc
+        {
+            regexp: new RegExp("^\"([^\"]+)\", line (\\d+):", 'i'),
+            file: 1,
+            line: 2
+        },
+
+        // gcc
+        {
+            regexp: new RegExp("^(.+):(\\d+):(\\d+):", 'i'),
+            file: 1,
+            line: 2,
+            col: 3
+        },
+
+        // iar
+        {
+            regexp: new RegExp("^\\s*\"([^\"]+)\",(\\d+)\\s+", 'i'),
+            file: 1,
+            line: 2
+        }
+    ];
 
     constructor() {
         this.workspace = WorkspaceManager.getInstance().getWorkspaceRoot();
-        this.macthers.set(/\bIN LINE (\d+) OF ([^:]+)/, { line: 1, file: 2 }); // keil c51
     }
 
     private toAbsPath(path: string): string {
@@ -1180,29 +1212,28 @@ class EideTerminalLinkProvider implements vscode.TerminalLinkProvider<EideTermin
 
     async provideTerminalLinks(context: vscode.TerminalLinkContext, token: vscode.CancellationToken): Promise<EideTerminalLink[]> {
 
-        const res: EideTerminalLink[] = [];
+        // only for eide builder task
+        if (!context.terminal.name.trim().includes('build')) {
+            return [];
+        }
 
-        this.macthers.forEach((mInfo, matcher) => {
-            const m = matcher.exec(context.line);
+        for (const pattern of this.patterns) {
+            const m = pattern.regexp.exec(context.line);
             if (m && m.length > 1) {
                 const link = new EideTerminalLink(m.index, m[0].length);
-                link.file = this.toAbsPath(m[mInfo.file]);
-                link.line = parseInt(m[mInfo.line]) - 1;
-                res.push(link);
+                link.file = this.toAbsPath(m[pattern.file]);
+                link.line = parseInt(m[pattern.line]) - 1;
+                return [link];
             }
-        });
+        }
 
-        return res;
+        return [];
     }
 
     async handleTerminalLink(link: EideTerminalLink): Promise<void> {
 
-        if (!link.file || !link.line || link.line == -1) return;
-
-        if (!File.IsFile(link.file)) {
-            vscode.window.showWarningMessage(`File '${link.file}' is not existed !`);
+        if (!link.file || !link.line || link.line == -1)
             return;
-        }
 
         const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(link.file));
 

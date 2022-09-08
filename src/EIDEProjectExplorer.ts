@@ -95,6 +95,7 @@ import {
 } from 'vscode-cpptools';
 import * as eclipseParser from './EclipseProjectParser';
 import { isArray } from 'util';
+import { parseIarCompilerLog, CompilerDiagnostics, parseGccCompilerLog, parseArmccCompilerLog, parseKeilc51CompilerLog } from './ProblemMatcher';
 
 enum TreeItemType {
     SOLUTION,
@@ -2715,14 +2716,23 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     private updateCompilerDiagsAfterBuild(prj: AbstractProject) {
 
-        let diag_res: { [path: string]: vscode.Diagnostic[] } | undefined;
+        let diag_res: CompilerDiagnostics | undefined;
+
+        const logFile = File.fromArray([prj.getOutputFolder().path, 'compiler.log']);
 
         switch (prj.getToolchain().name) {
             case 'IAR_ARM':
             case 'IAR_STM8':
-                diag_res = this.parseIarCompilerLog(prj, File.fromArray([prj.getOutputFolder().path, 'compiler.log']));
+                diag_res = parseIarCompilerLog(prj, logFile);
+                break;
+            case 'Keil_C51':
+                diag_res = parseKeilc51CompilerLog(prj, logFile);
+                break;
+            case 'AC5':
+                diag_res = parseArmccCompilerLog(prj, logFile);
                 break;
             default:
+                diag_res = parseGccCompilerLog(prj, logFile);
                 break;
         }
 
@@ -2744,76 +2754,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 cc_diags.set(uri, diag_res[path]);
             }
         }
-    }
-
-    private parseIarCompilerLog(projApi: ProjectBaseApi, file: File): { [path: string]: vscode.Diagnostic[] } {
-
-        const pattern = {
-            "regexp": "^\\s*\"([^\"]+)\",(\\d+)\\s+([a-z\\s]+)\\[(\\w+)\\]:",
-            "file": 1,
-            "line": 2,
-            "severity": 3,
-            "code": 4
-        };
-
-        const ccLogLines: string[] = [];
-
-        {
-            let logStarted = false;
-            let logEnd = false;
-
-            file.Read().split(/\r\n|\n/).forEach(line => {
-
-                if (logEnd)
-                    return;
-
-                if (logStarted) {
-                    if (line.startsWith('>>>')) {
-                        logEnd = true;
-                    } else {
-                        ccLogLines.push(line);
-                    }
-                } else {
-                    if (line.startsWith('>>> cc')) {
-                        logStarted = true;
-                    }
-                }
-            });
-        }
-
-        const matcher = new RegExp(pattern.regexp, 'i');
-        const result: { [path: string]: vscode.Diagnostic[] } = {};
-
-        const toVscServerity = (str: string): vscode.DiagnosticSeverity => {
-            if (str.toLowerCase().startsWith('err')) {
-                return vscode.DiagnosticSeverity.Error;
-            } else if (str.toLowerCase().startsWith('warn')) {
-                return vscode.DiagnosticSeverity.Warning;
-            } else {
-                return vscode.DiagnosticSeverity.Hint;
-            }
-        };
-
-        for (let idx = 0; idx < ccLogLines.length; idx++) {
-            const line = ccLogLines[idx];
-            const m = matcher.exec(line);
-            if (m && m.length > 4) {
-                const fspath = projApi.toAbsolutePath(m[pattern.file]);
-                const message = ccLogLines[++idx].trim();
-                const line = parseInt(m[pattern.line]);
-                const diags = result[fspath] || [];
-                const severity = m[pattern.severity];
-                const errCode = m[pattern.code];
-                if (result[fspath] == undefined) result[fspath] = diags;
-                const pos = new vscode.Position(line - 1, 0);
-                const vscDiag = new vscode.Diagnostic(new vscode.Range(pos, pos), message, toVscServerity(severity));
-                vscDiag.code = errCode;
-                vscDiag.source = 'IAR C/C++ Compiler';
-                diags.push(vscDiag);
-            }
-        }
-
-        return result;
     }
 
     buildWorkspace(rebuild?: boolean) {
@@ -2887,7 +2827,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         /* launch */
         const exeName = ResManager.GetInstance().getBuilder().noSuffixName;
         const commandLine = CmdLineHandler.getCommandLine(exeName, ['-r', paramsFile.path]);
-        runShellCommand('build-workspace', commandLine);
+        runShellCommand('build workspace', commandLine);
     }
 
     openWorkspaceConfig() {

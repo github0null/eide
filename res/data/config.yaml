@@ -2,4 +2,4 @@
 
 version: '1.0'
 
-binary_min_version: '8.0.0'
+binary_min_version: '9.0.0'

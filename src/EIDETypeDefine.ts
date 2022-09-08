@@ -121,6 +121,7 @@ class EventItem {
 
 export interface ProjectBaseApi {
     getRootDir: () => File;
+    toolchainName: () => ToolchainName;
     toAbsolutePath: (path: string) => string;
     toRelativePath: (path: string) => string;
     resolveEnvVar: (path: string) => string;
@@ -402,6 +403,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
         this.project = {
             getRootDir: () => this.rootDir,
+            toolchainName: () => this.config.toolchain,
             toRelativePath: (p) => this.toRelativePath(p),
             toAbsolutePath: (p) => this.toAbsolutePath(p),
             resolveEnvVar: (p) => p

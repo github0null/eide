@@ -287,24 +287,25 @@ export abstract class CodeBuilder {
         }
 
         // run build
-        if (SettingManager.GetInstance().isUseTaskToBuild() && WorkspaceManager.getInstance().hasWorkspaces()) {
-            // use task
+        if (SettingManager.GetInstance().isUseTaskToBuild() &&
+            WorkspaceManager.getInstance().hasWorkspaces()) { // use vscode task
             const task = new vscode.Task({ type: 'shell' }, vscode.TaskScope.Workspace, title, 'shell');
             const shellOption: vscode.ShellExecutionOptions = {};
+            // setup shell
             if (os.platform() == 'win32') { shellOption.executable = 'cmd.exe'; shellOption.shellArgs = ['/C']; }
             else { shellOption.executable = '/bin/bash'; shellOption.shellArgs = ['-c']; }
             shellOption.env = <any>process.env;
+            // setup task
             if (os.platform() == 'win32') commandLine = `"${commandLine}"`;
             task.execution = new vscode.ShellExecution(commandLine, shellOption);
-            task.problemMatchers = this.getProblemMatcher();
+            task.problemMatchers = [];
             task.isBackground = false;
             task.presentationOptions = { echo: true, focus: false, clear: true };
             vscode.tasks.executeTask(task);
-        } else {
-            // use terminal
+        } else { // use terminal
             const index = vscode.window.terminals.findIndex((t) => { return t.name === title; });
             if (index !== -1) { vscode.window.terminals[index].dispose(); }
-            const opts: vscode.TerminalOptions = { name: title };
+            const opts: vscode.TerminalOptions = { name: title, iconPath: new vscode.ThemeIcon('target') };
             if (os.platform() == 'win32') { opts.shellPath = 'cmd.exe'; };
             opts.env = <any>process.env;
             const terminal = vscode.window.createTerminal(opts);
@@ -521,8 +522,6 @@ export abstract class CodeBuilder {
     protected abstract getMcuMemorySize(): MemorySize | undefined;
 
     protected abstract preHandleOptions(options: ICompileOptions): void;
-
-    protected abstract getProblemMatcher(): string[];
 
     static NewBuilder(_project: AbstractProject): CodeBuilder {
         switch (_project.GetConfiguration().config.type) {
@@ -862,15 +861,6 @@ export class ARMCodeBuilder extends CodeBuilder {
         return undefined;
     }
 
-    protected getProblemMatcher(): string[] {
-        switch (this.project.getToolchain().name) {
-            case 'AC5':
-                return ['$armcc'];
-            default:
-                return ['$gcc'];
-        }
-    }
-
     protected preHandleOptions(options: ICompileOptions) {
 
         const config = this.project.GetConfiguration<ArmBaseCompileData>().config;
@@ -962,10 +952,6 @@ export class ARMCodeBuilder extends CodeBuilder {
 
 class RiscvCodeBuilder extends CodeBuilder {
 
-    protected getProblemMatcher(): string[] {
-        return ['$gcc'];
-    }
-
     protected getMcuMemorySize(): MemorySize | undefined {
         return undefined;
     }
@@ -991,10 +977,6 @@ class RiscvCodeBuilder extends CodeBuilder {
 }
 
 class AnyGccCodeBuilder extends CodeBuilder {
-
-    protected getProblemMatcher(): string[] {
-        return ['$gcc'];
-    }
 
     protected getMcuMemorySize(): MemorySize | undefined {
         return undefined;
@@ -1032,17 +1014,6 @@ interface Stm8DeviceAreaInfo {
 }
 
 class C51CodeBuilder extends CodeBuilder {
-
-    protected getProblemMatcher(): string[] {
-        switch (this.project.getToolchain().name) {
-            case 'SDCC':
-                return ['$gcc'];
-            case 'Keil_C51':
-                return ['$keilc51'];
-            default:
-                return [];
-        }
-    }
 
     protected getMcuMemorySize(): MemorySize | undefined {
 

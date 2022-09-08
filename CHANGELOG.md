@@ -4,6 +4,18 @@
 
 ***
 
+### [v3.8.2022090801] preview version
+
+**New**:
+  - Generate `compiler.log` file to build folder
+  - Provide diagnostic informations into `Problems` panel from `compiler.log` file after project build finished
+
+**Change**:
+  - Remove terminal problem matcher, use `vscode.Diagnostic` api to provide project problem after build end
+  - Provide more terminal link matcher for eide builder task
+
+***
+
 ### [v3.8.2022090701] preview version
 
 **New**:

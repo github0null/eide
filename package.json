@@ -33,7 +33,7 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.8.2022090701",
+    "version": "3.8.2022090801",
     "preview": false,
     "engines": {
         "vscode": "^1.63.0"
@@ -1533,53 +1533,6 @@
                 "language": "elf.info",
                 "scopeName": "source.elf.info",
                 "path": "./lang/elf.info.tmLanguage.json"
-            }
-        ],
-        "problemMatchers": [
-            {
-                "name": "armcc",
-                "source": "Arm C/C++ Compiler",
-                "fileLocation": "autoDetect",
-                "pattern": [
-                    {
-                        "regexp": "^\"([^\"]+)\", line (\\d+): (Error|Warning):\\s+#(.+):\\s+(.+)$",
-                        "file": 1,
-                        "line": 2,
-                        "severity": 3,
-                        "code": 4,
-                        "message": 5
-                    }
-                ]
-            },
-            {
-                "name": "gcc",
-                "source": "GCC",
-                "fileLocation": "autoDetect",
-                "pattern": [
-                    {
-                        "regexp": "^(.+):(\\d+):(\\d+):\\s+(\\w+):\\s+(.*)$",
-                        "file": 1,
-                        "line": 2,
-                        "column": 3,
-                        "severity": 4,
-                        "message": 5
-                    }
-                ]
-            },
-            {
-                "name": "keilc51",
-                "source": "Keil C51 Compiler",
-                "fileLocation": "autoDetect",
-                "pattern": [
-                    {
-                        "regexp": "(ERROR|WARNING) (\\w+) IN LINE (\\d+) OF ([^:]+): (.+)",
-                        "severity": 1,
-                        "code": 2,
-                        "line": 3,
-                        "file": 4,
-                        "message": 5
-                    }
-                ]
             }
         ]
     }

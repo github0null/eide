@@ -770,6 +770,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         return miscInfo.uid;
     }
 
+    public toolchainName(): ToolchainName {
+        return this.getToolchain().name;
+    }
+
     public toAbsolutePath(p: string): string {
         return this.ToAbsolutePath(p);
     }
@@ -944,7 +948,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         prjAttr.libList = prjAttr.libList.filter(m => m.trim() != '');
 
         // clear invalid src folders
-        prjConfig.config.srcDirs = prjConfig.config.srcDirs.filter(path => File.IsDir(path));
+        prjConfig.config.srcDirs = prjConfig.config.srcDirs
+            .map(p => this.ToAbsolutePath(p))
+            .filter(p => File.IsDir(p));
 
         // rm prefix for out dir
         prjConfig.config.outDir = NodePath.normalize(File.ToLocalPath(prjConfig.config.outDir));
