@@ -8,31 +8,40 @@ import * as os from 'os';
 import * as yaml from 'yaml';
 import { ProjectBaseApi } from './EIDETypeDefine';
 import { File } from '../lib/node-utility/File';
+import { GlobalEvent } from './GlobalEvents';
+import { ExceptionToMessage } from './Message';
+import { ToolchainName } from './ToolchainManager';
 
 function parseLogLines(file: File): string[] {
 
     const ccLogLines: string[] = [];
 
-    let logStarted = false;
-    let logEnd = false;
+    try {
 
-    file.Read().split(/\r\n|\n/).forEach(line => {
+        let logStarted = false;
+        let logEnd = false;
 
-        if (logEnd)
-            return;
+        file.Read().split(/\r\n|\n/).forEach((line, idx) => {
 
-        if (logStarted) {
-            if (line.startsWith('>>>')) {
-                logEnd = true;
+            if (logEnd)
+                return;
+
+            if (logStarted) {
+                if (line.startsWith('>>>')) {
+                    logEnd = true;
+                } else {
+                    ccLogLines.push(line);
+                }
             } else {
-                ccLogLines.push(line);
+                if (line.startsWith('>>> cc')) {
+                    logStarted = true;
+                }
             }
-        } else {
-            if (line.startsWith('>>> cc')) {
-                logStarted = true;
-            }
-        }
-    });
+        });
+
+    } catch (error) {
+        GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+    }
 
     return ccLogLines;
 }
@@ -43,10 +52,15 @@ function toVscServerity(str_: string): vscode.DiagnosticSeverity {
         return vscode.DiagnosticSeverity.Error;
     } else if (str.startsWith('warn')) {
         return vscode.DiagnosticSeverity.Warning;
-    } else if (str.startsWith('note')) {
-        return vscode.DiagnosticSeverity.Hint;
     } else {
         return vscode.DiagnosticSeverity.Information;
+    }
+}
+
+function newVscFilePosition(toolchain: ToolchainName, line: number, col?: number): vscode.Position {
+    switch (toolchain) {
+        default:
+            return new vscode.Position(line > 0 ? (line - 1) : 0, col || 0);
     }
 }
 
@@ -54,7 +68,7 @@ function toVscServerity(str_: string): vscode.DiagnosticSeverity {
 
 export type CompilerDiagnostics = { [path: string]: vscode.Diagnostic[]; }
 
-export function parseArmccCompilerLog(projApi: ProjectBaseApi, file: File): CompilerDiagnostics {
+export function parseArmccCompilerLog(projApi: ProjectBaseApi, logFile: File): CompilerDiagnostics {
 
     const pattern = {
         "regexp": "^\"([^\"]+)\", line (\\d+): (Error|Warning):\\s+#([^\\s]+):\\s+(.+)$",
@@ -67,7 +81,7 @@ export function parseArmccCompilerLog(projApi: ProjectBaseApi, file: File): Comp
 
     const matcher = new RegExp(pattern.regexp, 'i');
     const result: { [path: string]: vscode.Diagnostic[] } = {};
-    const ccLogLines = parseLogLines(file);
+    const ccLogLines = parseLogLines(logFile);
 
     for (let idx = 0; idx < ccLogLines.length; idx++) {
         const line = ccLogLines[idx];
@@ -83,7 +97,7 @@ export function parseArmccCompilerLog(projApi: ProjectBaseApi, file: File): Comp
             const diags = result[fspath] || [];
             if (result[fspath] == undefined) result[fspath] = diags;
 
-            const pos = new vscode.Position(line - 1, 0);
+            const pos = newVscFilePosition(projApi.toolchainName(), line, 0);
             const vscDiag = new vscode.Diagnostic(new vscode.Range(pos, pos), message, toVscServerity(severity));
             vscDiag.code = errCode;
             vscDiag.source = 'armcc';
@@ -94,7 +108,11 @@ export function parseArmccCompilerLog(projApi: ProjectBaseApi, file: File): Comp
     return result;
 }
 
-export function parseGccCompilerLog(projApi: ProjectBaseApi, file: File): CompilerDiagnostics {
+// 
+// example:
+//  src/bt/blehost/porting/w800/include/nimble/nimble_npl_os.h:82:20: warning: implicit declaration of function 'tls_os_task_id' [-Wimplicit-function-declaration]
+//  include/wifi/wm_wifi.h:446:6: note: expected 'tls_wifi_psm_chipsleep_callback {aka void (*)(unsigned int)}' but argum
+export function parseGccCompilerLog(projApi: ProjectBaseApi, logfile: File): CompilerDiagnostics {
 
     const pattern = {
         "regexp": "^(.+):(\\d+):(\\d+):([^:]+):\\s+(.*)$",
@@ -107,7 +125,7 @@ export function parseGccCompilerLog(projApi: ProjectBaseApi, file: File): Compil
 
     const matcher = new RegExp(pattern.regexp, 'i');
     const result: { [path: string]: vscode.Diagnostic[] } = {};
-    const ccLogLines = parseLogLines(file);
+    const ccLogLines = parseLogLines(logfile);
 
     let problemSource: string = 'gcc';
 
@@ -139,12 +157,22 @@ export function parseGccCompilerLog(projApi: ProjectBaseApi, file: File): Compil
             const severity = m[pattern.severity].trim();
             const message = m[pattern.message].trim();
 
+            let errCode: string | undefined;
+            if (message.includes('[')) {
+                // example: 'tls_os_task_id' [-Wimplicit-function-declaration] 
+                const m = /\[([\w-]+)\]\s*$/.exec(message);
+                if (m && m.length > 1) {
+                    errCode = m[1].trim();
+                }
+            }
+
             const diags = result[fspath] || [];
             if (result[fspath] == undefined) result[fspath] = diags;
 
-            const pos = new vscode.Position(line - 1, col - 1);
+            const pos = newVscFilePosition(projApi.toolchainName(), line, col);
             const vscDiag = new vscode.Diagnostic(new vscode.Range(pos, pos), message, toVscServerity(severity));
             vscDiag.source = problemSource;
+            vscDiag.code = errCode;
             diags.push(vscDiag);
         }
     }
@@ -152,7 +180,7 @@ export function parseGccCompilerLog(projApi: ProjectBaseApi, file: File): Compil
     return result;
 }
 
-export function parseKeilc51CompilerLog(projApi: ProjectBaseApi, file: File): CompilerDiagnostics {
+export function parseKeilc51CompilerLog(projApi: ProjectBaseApi, logfile: File): CompilerDiagnostics {
 
     const pattern = {
         "regexp": "(ERROR|WARNING) (\\w+) IN LINE (\\d+) OF ([^:]+): (.+)",
@@ -166,7 +194,7 @@ export function parseKeilc51CompilerLog(projApi: ProjectBaseApi, file: File): Co
 
     const matcher = new RegExp(pattern.regexp, 'i');
     const result: { [path: string]: vscode.Diagnostic[] } = {};
-    const ccLogLines = parseLogLines(file);
+    const ccLogLines = parseLogLines(logfile);
 
     for (let idx = 0; idx < ccLogLines.length; idx++) {
         const line = ccLogLines[idx];
@@ -182,7 +210,7 @@ export function parseKeilc51CompilerLog(projApi: ProjectBaseApi, file: File): Co
             const diags = result[fspath] || [];
             if (result[fspath] == undefined) result[fspath] = diags;
 
-            const pos = new vscode.Position(line - 1, 0);
+            const pos = newVscFilePosition(projApi.toolchainName(), line, 0);
             const vscDiag = new vscode.Diagnostic(new vscode.Range(pos, pos), message, toVscServerity(severity));
             vscDiag.source = 'Keil_C51';
             vscDiag.code = code;
@@ -193,7 +221,7 @@ export function parseKeilc51CompilerLog(projApi: ProjectBaseApi, file: File): Co
     return result;
 }
 
-export function parseIarCompilerLog(projApi: ProjectBaseApi, file: File): CompilerDiagnostics {
+export function parseIarCompilerLog(projApi: ProjectBaseApi, logfile: File): CompilerDiagnostics {
 
     const pattern = {
         "regexp": "^\\s*\"([^\"]+)\",(\\d+)\\s+([a-z\\s]+)\\[(\\w+)\\]:",
@@ -205,7 +233,7 @@ export function parseIarCompilerLog(projApi: ProjectBaseApi, file: File): Compil
 
     const matcher = new RegExp(pattern.regexp, 'i');
     const result: { [path: string]: vscode.Diagnostic[] } = {};
-    const ccLogLines = parseLogLines(file);
+    const ccLogLines = parseLogLines(logfile);
 
     for (let idx = 0; idx < ccLogLines.length; idx++) {
         const line = ccLogLines[idx];
@@ -221,7 +249,7 @@ export function parseIarCompilerLog(projApi: ProjectBaseApi, file: File): Compil
             const diags = result[fspath] || [];
             if (result[fspath] == undefined) result[fspath] = diags;
 
-            const pos = new vscode.Position(line - 1, 0);
+            const pos = newVscFilePosition(projApi.toolchainName(), line, 0);
             const vscDiag = new vscode.Diagnostic(new vscode.Range(pos, pos), message, toVscServerity(severity));
             vscDiag.code = errCode;
             vscDiag.source = projApi.toolchainName() == 'IAR_STM8' ? 'iccstm8' : 'iccarm';

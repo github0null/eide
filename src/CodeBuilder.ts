@@ -275,13 +275,15 @@ export abstract class CodeBuilder {
             if (!builderLog.IsFile()) builderLog.Write('');
             if (this.logWatcher) { this.logWatcher.Close(); delete this.logWatcher; };
 
-            // start watch
             this.logWatcher = new FileWatcher(builderLog, false);
             this.logWatcher.OnChanged = () => {
                 this.logWatcher?.Close();
-                this.emit('finished', checkBuildDone(builderLog));
+                setTimeout(() => this.emit('finished', checkBuildDone(builderLog)), 400);
             };
+
+            // start watch
             this.logWatcher.Watch();
+
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }

@@ -567,7 +567,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         });
 
         this.loadRecord();
-        this.LoadWorkspaceProject();
     }
 
     onProjectChanged(prj: AbstractProject, type?: DataChangeType) {
@@ -2163,8 +2162,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             try {
                 this.slnRecord = JSON.parse(this.recFile.Read());
             } catch (err) {
-                vscode.window.showWarningMessage(project_record_read_failed);
                 this.slnRecord = [];
+                GlobalEvent.emit('msg', ExceptionToMessage(err, 'Hidden'));
             }
         }
     }
@@ -2198,7 +2197,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         this.UpdateView();
     }
 
-    Close(index: number) {
+    Close(index: number): string | undefined {
 
         if (index < 0 || index >= this.prjList.length) {
             GlobalEvent.emit('error', new Error('index out of range: ' + index.toString()));
@@ -2215,9 +2214,13 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             return;
         }
 
+        const uid = sln.getUid();
+
         sln.Close();
         this.prjList.splice(index, 1);
         this.UpdateView();
+
+        return uid;
     }
 
     private async SwitchProject(prj: AbstractProject) {
@@ -2266,9 +2269,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         this._event = new events.EventEmitter();
         this.compiler_diags = new Map();
 
-        // register hook
-        GlobalEvent.on('project.opened', (prj) => this.onProjectOpened(prj));
-
         this.dataProvider = new ProjectDataProvider(context);
         this.cppcheck_diag = vscode.languages.createDiagnosticCollection('cppcheck');
 
@@ -2303,10 +2303,18 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
         }
 
+        // register project hook
+        GlobalEvent.on('project.opened', (prj) => this.onProjectOpened(prj));
+        GlobalEvent.on('project.closed', (uid) => this.onProjectClosed(uid));
+
         this.on('request_open_project', (fsPath: string) => this.dataProvider.OpenProject(fsPath));
         this.on('request_create_project', (option: CreateOptions) => this.dataProvider.CreateProject(option));
         this.on('request_create_from_template', (option) => this.dataProvider.CreateFromTemplate(option));
         this.on('request_import_project', (option) => this.dataProvider.ImportProject(option));
+    }
+
+    loadWorkspace() {
+        this.dataProvider.LoadWorkspaceProject();
     }
 
     ////////////////////////////////// cpptools intellisense provider ///////////////////////////////////
@@ -2317,7 +2325,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     private isRegisteredCpptoolsProvider: boolean = false;
 
-    private async onProjectOpened(prj: AbstractProject) {
+    private async registerCpptoolsProvider(prj: AbstractProject) {
 
         // notify cpptools update when project config changed
         prj.on('cppConfigChanged', () => {
@@ -2489,12 +2497,29 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     Close(item: ProjTreeItem) {
-        this.dataProvider.Close(item.val.projectIndex);
-        GlobalEvent.emit('project.closed');
+        const uid = this.dataProvider.Close(item.val.projectIndex);
+        GlobalEvent.emit('project.closed', uid);
     }
 
     SaveAll() {
         this.dataProvider.SaveAll();
+    }
+
+    private async onProjectOpened(prj: AbstractProject) {
+
+        await this.registerCpptoolsProvider(prj);
+
+        this.updateCompilerDiagsAfterBuild(prj);
+    }
+
+    private async onProjectClosed(uid: string | undefined) {
+
+        if (!uid) return;
+
+        // clear vscode diags
+        if (this.compiler_diags.has(uid)) {
+            this.compiler_diags.get(uid)?.clear();
+        }
     }
 
     private async createTarget(prj: AbstractProject) {
@@ -2718,22 +2743,28 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         let diag_res: CompilerDiagnostics | undefined;
 
-        const logFile = File.fromArray([prj.getOutputFolder().path, 'compiler.log']);
+        try {
 
-        switch (prj.getToolchain().name) {
-            case 'IAR_ARM':
-            case 'IAR_STM8':
-                diag_res = parseIarCompilerLog(prj, logFile);
-                break;
-            case 'Keil_C51':
-                diag_res = parseKeilc51CompilerLog(prj, logFile);
-                break;
-            case 'AC5':
-                diag_res = parseArmccCompilerLog(prj, logFile);
-                break;
-            default:
-                diag_res = parseGccCompilerLog(prj, logFile);
-                break;
+            const logFile = File.fromArray([prj.getOutputFolder().path, 'compiler.log']);
+
+            switch (prj.getToolchain().name) {
+                case 'IAR_ARM':
+                case 'IAR_STM8':
+                    diag_res = parseIarCompilerLog(prj, logFile);
+                    break;
+                case 'Keil_C51':
+                    diag_res = parseKeilc51CompilerLog(prj, logFile);
+                    break;
+                case 'AC5':
+                    diag_res = parseArmccCompilerLog(prj, logFile);
+                    break;
+                default:
+                    diag_res = parseGccCompilerLog(prj, logFile);
+                    break;
+            }
+
+        } catch (error) {
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
         }
 
         if (diag_res) {

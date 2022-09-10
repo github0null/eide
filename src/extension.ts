@@ -251,6 +251,9 @@ export async function activate(context: vscode.ExtensionContext) {
     // auto save project
     setInterval(() => projectExplorer.SaveAll(), 100 * 1000);
 
+    // load project in this workspace
+    projectExplorer.loadWorkspace();
+
     // launch done
     GlobalEvent.emit('extension_launch_done');
     GlobalEvent.emit('globalLog', newMessage('Info', 'Embedded IDE launch done'));
