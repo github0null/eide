@@ -948,9 +948,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         prjAttr.libList = prjAttr.libList.filter(m => m.trim() != '');
 
         // clear invalid src folders
-        prjConfig.config.srcDirs = prjConfig.config.srcDirs
-            .map(p => this.ToAbsolutePath(p))
-            .filter(p => File.IsDir(p));
+        prjConfig.config.srcDirs = prjConfig.config.srcDirs.filter(p => File.IsDir(p));
 
         // rm prefix for out dir
         prjConfig.config.outDir = NodePath.normalize(File.ToLocalPath(prjConfig.config.outDir));
@@ -1086,13 +1084,22 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             .replace(/\$\{workspaceFolder\}/g, prjRootDir.path)
             .replace(/\$\{workspaceFolderBasename\}/g, prjRootDir.name);
 
-        return str
+        // toolchain vars
+        if (this.toolchain) {
+            str = str
+                .replace(/\$\(ToolchainRoot\)|\$\{ToolchainRoot\}/ig, File.ToUnixPath(this.getToolchain().getToolchainDir().path));
+        }
+
+        // project vars
+        str = str
             .replace(/\$\(OutDir\)|\$\{OutDir\}/ig, outDir)
             .replace(/\$\(OutDirBase\)|\$\{OutDirBase\}/ig, outDirBase)
             .replace(/\$\(ProjectName\)|\$\{ProjectName\}/ig, prjConfig.config.name)
             .replace(/\$\(ConfigName\)|\$\{ConfigName\}/ig, prjConfig.config.mode)
             .replace(/\$\(ExecutableName\)|\$\{ExecutableName\}/ig, `${outDir}${File.sep}${prjConfig.config.name}`)
             .replace(/\$\(ProjectRoot\)|\$\{ProjectRoot\}/ig, prjRootDir.path);
+
+        return str;
     }
 
     // user defined env vars
