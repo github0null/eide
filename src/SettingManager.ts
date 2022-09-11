@@ -436,6 +436,12 @@ export class SettingManager {
         return new File(defPath || 'null');
     }
 
+    getIarForArmDir(): File {
+        return new File(
+            this.getGccFolderFromConfig('IAR.ARM.Toolchain.InstallDirectory', 'iccarm') || 
+            'null');
+    }
+
     //---------------------------- ARM ----------------------------
 
     isUseMultithreadMode(): boolean {

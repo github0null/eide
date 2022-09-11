@@ -416,6 +416,8 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
                 return <any>new Keil51CompileConfigModel(prjConfigData);
             case 'IAR_STM8':
                 return <any>new Iarstm8CompileConfigModel(prjConfigData);
+            case 'IAR_ARM':
+                return <any>new IarArmCompileConfigModel(prjConfigData);
             case 'AC5':
                 return <any>new Armcc5CompileConfigModel(prjConfigData);
             case 'AC6':
@@ -991,6 +993,61 @@ export class GccCompileConfigModel extends ArmBaseCompileConfigModel {
 
     GetDefault(): ArmBaseCompileData {
         return GccCompileConfigModel.getDefaultConfig();
+    }
+}
+
+export class IarArmCompileConfigModel extends ArmBaseCompileConfigModel {
+
+    protected cpuTypeList = [
+        'ARM7EJ-S',
+        'ARM7TDMI',
+        'ARM720T',
+        'ARM7TDMI-S',
+        'ARM9TDMI',
+        'ARM920T',
+        'ARM922T',
+        'ARM9E-S',
+        'ARM926EJ-S',
+        'ARM946E-S',
+        'ARM966E-S',
+        'Cortex-M0',
+        'Cortex-M0+',
+        'Cortex-M3',
+        'Cortex-M4',
+        'Cortex-M7',
+        //'Cortex-R4',
+        //'Cortex-R4F',
+        'SC000',
+        'SC300'
+    ];
+
+    protected GetKeyType(key: string): FieldType {
+        switch (key) {
+            case 'cpuType':
+            case 'floatingPointHardware':
+                return 'SELECTION';
+            case 'scatterFilePath':
+                return 'INPUT';
+            case 'options':
+                return 'EVENT';
+            default:
+                return 'Disable';
+        }
+    }
+
+    static getDefaultConfig(): ArmBaseCompileData {
+        return {
+            cpuType: 'Cortex-M3',
+            floatingPointHardware: 'none',
+            scatterFilePath: '${ToolchainRoot}/config/linker/ST/stm32f103x8.icf',
+            useCustomScatterFile: false,
+            storageLayout: { RAM: [], ROM: [] },
+            options: 'null'
+        };
+    }
+
+    GetDefault(): ArmBaseCompileData {
+        return IarArmCompileConfigModel.getDefaultConfig();
     }
 }
 

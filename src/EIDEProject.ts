@@ -723,7 +723,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     static readonly excludeDirFilter: RegExp = /^\./;
 
     // to show output files
-    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|hex|ihx|bin|s19|sct|ld[s]?|map|map\.view)$/i;
+    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|a|lib|hex|ihx|bin|s19|s37|sct|icf|ld[s]?|map|map\.view)$/i;
 
     //-------
 
@@ -2167,11 +2167,11 @@ class EIDEProject extends AbstractProject {
 
         try {
             const refMap = JSON.parse(refListFile.Read());
-            for (const srcName in refMap) {
-                const refFile = new File((<string>refMap[srcName]).replace(/\.[^\\\/\.]+$/, '.d'));
+            for (const srcpath in refMap) {
+                const refFile = new File((<string>refMap[srcpath]).replace(/\.[^\\\/\.]+$/, '.d'));
                 if (!refFile.IsFile()) continue;
-                const refs = this.parseRefFile(refFile, toolName);
-                this.srcRefMap.set(srcName, refs.map((path) => new File(path)));
+                const refs = this.parseRefFile(refFile, toolName).filter(p => p != srcpath);
+                this.srcRefMap.set(srcpath, refs.map((path) => new File(path)));
             }
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
@@ -2248,8 +2248,9 @@ class EIDEProject extends AbstractProject {
         switch (toolchain) {
             case "AC5":
                 return this.ac5_parseRefLines(lines);
+            case "IAR_ARM":
             case "IAR_STM8":
-                return this.ac5_parseRefLines(lines, 2);
+                return this.ac5_parseRefLines(lines, 1);
             case "SDCC":
             case "AC6":
             case "GCC":

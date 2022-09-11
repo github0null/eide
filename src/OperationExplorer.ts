@@ -239,11 +239,11 @@ export class OperationExplorer {
 
         //---
 
-        const tcList: ToolchainName[] = ['AC5', 'GCC', 'IAR_STM8', 'SDCC', 'Keil_C51', 'RISCV_GCC', 'ANY_GCC', 'GNU_SDCC_STM8'];
+        const tcList: ToolchainName[] = ['AC5', 'AC6', 'GCC', 'IAR_ARM', 'IAR_STM8', 'SDCC', 'Keil_C51', 'RISCV_GCC', 'ANY_GCC'];
         const toolchainManager = ToolchainManager.getInstance();
-        const checkResults = tcList.map((tcName) => { return toolchainManager.isToolchainPathReady(tcName); });
-        const status: CheckStatus = checkResults.every((val) => { return val; }) ?
-            CheckStatus.All_Verified : (checkResults.includes(true) ? CheckStatus.All_Verified : CheckStatus.All_Failed);
+        const status: CheckStatus = tcList.some((tcName) => toolchainManager.isToolchainPathReady(tcName))
+            ? CheckStatus.All_Verified
+            : CheckStatus.All_Failed;
         icoPath = resManager.GetIconByName(<string>this.statusIconMap.get(status));
         this.provider.AddData({
             label: view_str$operation$setToolchainPath,
@@ -646,6 +646,13 @@ export class OperationExplorer {
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC6'))
                     + ` Loc: ${toolchainManager.getToolchainExecutableFolder('AC6')?.path}`,
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V6 Toolchain')
+            },
+            {
+                label: 'IAR ARM C/C++ Compiler',
+                type: 'IAR_ARM',
+                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('IAR_ARM'))
+                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('IAR_ARM')?.path}`,
+                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'IAR ARM C/C++ Compiler')
             },
             {
                 label: 'GNU Arm Embedded Toolchain',

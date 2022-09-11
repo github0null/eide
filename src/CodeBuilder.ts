@@ -893,29 +893,46 @@ export class ARMCodeBuilder extends CodeBuilder {
             scatterFilePath = `${scatterFilePath}.sct`;
         }
 
-        // 'armcc' can select whether use custom linker file
-        if (['AC5', 'AC6'].includes(toolchain.name)) {
-            // use custom linker script files
-            if (config.compileConfig.useCustomScatterFile) {
-                scatterFilePath.split(',')
-                    .filter(s => s.trim() != '')
-                    .forEach((sctPath) => {
-                        ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
-                    });
-            }
-            // auto generate scatter file 
-            else {
-                ldFileList.push(`"${File.ToUnixPath(this.GenMemScatterFile(config).path)}"`);
-            }
-        }
+        switch (toolchain.name) {
+            // 'armcc' can select whether use custom linker file
+            case 'AC5':
+            case 'AC6':
+                {
+                    if (config.compileConfig.useCustomScatterFile) { // use custom linker script files
+                        scatterFilePath.split(',')
+                            .filter(s => s.trim() != '')
+                            .forEach((sctPath) => {
+                                ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
+                            });
+                    } else { // auto generate scatter file 
+                        ldFileList.push(`"${File.ToUnixPath(this.GenMemScatterFile(config).path)}"`);
+                    }
+                }
+                break;
 
-        // other toolchain must use custom linker script file
-        else {
-            scatterFilePath.split(',')
-                .filter(s => s.trim() != '')
-                .forEach((sctPath) => {
-                    ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
-                });
+            // arm gcc
+            case 'GCC':
+                {
+                    scatterFilePath.split(',')
+                        .filter(s => s.trim() != '')
+                        .forEach((sctPath) => {
+                            ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
+                        });
+                }
+                break;
+
+            // iar
+            case 'IAR_ARM':
+                {
+                    scatterFilePath.split(',')
+                        .filter(s => s.trim() != '')
+                        .forEach((sctPath) => {
+                            ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
+                        });
+                }
+                break;
+            default:
+                break;
         }
 
         // set linker script

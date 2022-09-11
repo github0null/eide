@@ -378,6 +378,12 @@
                         "markdownDescription": "%settings.iar.stm8.install.folder%",
                         "default": ""
                     },
+                    "EIDE.IAR.ARM.Toolchain.InstallDirectory": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "%settings.iar.arm.toolchain.install.folder%",
+                        "default": ""
+                    },
                     "EIDE.STM8.GNU-SDCC.InstallDirectory": {
                         "type": "string",
                         "scope": "machine",
@@ -1495,6 +1501,10 @@
             {
                 "fileMatch": "**/*.options.gcc.json",
                 "url": "./lang/arm.gcc.verify.json"
+            },
+            {
+                "fileMatch": "**/*.options.arm.iar.json",
+                "url": "./lang/arm.iar.verify.json"
             },
             {
                 "fileMatch": "**/*.stm8.gnu-sdcc.json",

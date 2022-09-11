@@ -1,0 +1,467 @@
+{
+    "title": "IAR ARM C/C++ Compiler Options",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "definitions": {
+        "misc-controls": {
+            "markdownDescription": "Other Options",
+            "description.zh-cn": "其他选项",
+            "size": "huge",
+            "type": [
+                "string",
+                "array"
+            ],
+            "items": {
+                "type": "string"
+            },
+            "default": ""
+        }
+    },
+    "properties": {
+        "beforeBuildTasks": {
+            "markdownDescription": "List of commands to execute before build",
+            "description.zh-cn": "构建前要执行的命令列表",
+            "type": "array",
+            "default": [
+                {
+                    "name": "clean",
+                    "command": "del /Q \"${OutDir}\\*.*\""
+                }
+            ],
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "command"
+                ],
+                "properties": {
+                    "name": {
+                        "markdownDescription": "A readable name for display",
+                        "description.zh-cn": "用于显示的可读名称",
+                        "type": "string"
+                    },
+                    "command": {
+                        "markdownDescription": "Shell command line",
+                        "description.zh-cn": "Shell 命令行",
+                        "type": "string"
+                    },
+                    "disable": {
+                        "markdownDescription": "Disable this command",
+                        "description.zh-cn": "禁用此命令",
+                        "type": "boolean",
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    },
+                    "abortAfterFailed": {
+                        "markdownDescription": "Whether to skip subsequent commands if this command failed",
+                        "description.zh-cn": "是否在此命令失败时，跳过后续的命令",
+                        "type": "boolean",
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    },
+                    "stopBuildAfterFailed": {
+                        "markdownDescription": "Whether to stop compiling directly when this command failed",
+                        "description.zh-cn": "是否在此命令失败时，直接停止编译",
+                        "type": "boolean",
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    }
+                }
+            }
+        },
+        "afterBuildTasks": {
+            "markdownDescription": "List of commands to execute after build",
+            "description.zh-cn": "构建结束后要执行的命令列表",
+            "type": "array",
+            "default": [
+                {
+                    "name": "clean",
+                    "command": "del \"${OutDir}\\*._*\""
+                }
+            ],
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "command"
+                ],
+                "properties": {
+                    "name": {
+                        "markdownDescription": "A readable name for display",
+                        "description.zh-cn": "用于显示的可读名称",
+                        "type": "string"
+                    },
+                    "command": {
+                        "markdownDescription": "Shell command line",
+                        "description.zh-cn": "Shell 命令行",
+                        "type": "string"
+                    },
+                    "disable": {
+                        "markdownDescription": "Disable this command",
+                        "description.zh-cn": "禁用此命令",
+                        "type": "boolean",
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    },
+                    "abortAfterFailed": {
+                        "markdownDescription": "Whether to skip subsequent commands if this command failed",
+                        "description.zh-cn": "是否在此命令失败时，跳过后续的命令",
+                        "type": "boolean",
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    }
+                }
+            }
+        },
+        "global": {
+            "markdownDescription": "Global Options",
+            "description.zh-cn": "全局选项",
+            "type": "object",
+            "properties": {
+                "endian-mode": {
+                    "description": "Endian Mode",
+                    "type": "string",
+                    "default": "little",
+                    "enum": [
+                        "little",
+                        "big"
+                    ]
+                },
+                "runtime-lib": {
+                    "description": "Runtime Library",
+                    "type": "string",
+                    "default": "none",
+                    "enum": [
+                        "none",
+                        "normal",
+                        "full"
+                    ]
+                },
+                "output-debug-info": {
+                    "description": "Output Debug Information",
+                    "type": "string",
+                    "default": "disable",
+                    "enum": [
+                        "disable",
+                        "enable"
+                    ]
+                },
+                "printf-formatter": {
+                    "type": "string",
+                    "description": "Printf Formatter Option",
+                    "default": "auto",
+                    "enum": [
+                        "auto",
+                        "tiny",
+                        "small",
+                        "small-without-multibyte",
+                        "large",
+                        "large-without-multibyte",
+                        "full",
+                        "full-without-multibyte"
+                    ],
+                    "enumDescriptions": [
+                        "Automatic choice of formatter.",
+                        "No specifier a or A, no specifier n, no float, no flags.",
+                        "No specifier a or A, no specifier n, no float.",
+                        "No specifier a or A, no specifier n, no float, without multibytes",
+                        "No specifier a or A.",
+                        "No specifier a or A, without multibytes.",
+                        "Full formatting.",
+                        "Full formatting, without multibytes."
+                    ]
+                },
+                "scanf-formatter": {
+                    "type": "string",
+                    "description": "Scanf Formatter Option",
+                    "default": "auto",
+                    "enum": [
+                        "auto",
+                        "small",
+                        "small-without-multibyte",
+                        "large",
+                        "large-without-multibyte",
+                        "full",
+                        "full-without-multibyte"
+                    ],
+                    "enumDescriptions": [
+                        "Automatic choice of formatter.",
+                        "No specifier n, no float, no scan set, no assignment suppressing.",
+                        "No specifier n, no float, no scan set, no assignment suppressing, without multibytes.",
+                        "No specifier n, no float.",
+                        "No specifier n, no float, without multibytes.",
+                        "Full formatting.",
+                        "Full formatting, without multibytes."
+                    ]
+                },
+                "misc-controls": {
+                    "markdownDescription": "Other Global Options",
+                    "description.zh-cn": "全局参数",
+                    "$ref": "#/definitions/misc-controls"
+                }
+            }
+        },
+        "c/cpp-compiler": {
+            "markdownDescription": "C/C++ Compiler Options",
+            "description.zh-cn": "C/C++ 编译器选项",
+            "type": "object",
+            "properties": {
+                "language-c": {
+                    "markdownDescription": "C Standard",
+                    "description.zh-cn": "C 标准",
+                    "type": "string",
+                    "default": "c99",
+                    "enum": [
+                        "c89",
+                        "c99"
+                    ]
+                },
+                "language-cpp": {
+                    "markdownDescription": "C++ Standard",
+                    "description.zh-cn": "C++ 标准",
+                    "type": "string",
+                    "default": "Extended-EC++",
+                    "enum": [
+                        "Embedded-C++",
+                        "Extended-EC++"
+                    ]
+                },
+                "optimization": {
+                    "markdownDescription": "Optimization Level",
+                    "description.zh-cn": "代码优化级别",
+                    "type": "string",
+                    "default": "no",
+                    "enum": [
+                        "no",
+                        "low",
+                        "medium",
+                        "high",
+                        "size",
+                        "speed",
+                        "speed-no-size-constraints"
+                    ],
+                    "enumDescriptions": [
+                        "not optimize",
+                        "low",
+                        "medium",
+                        "high, balanced",
+                        "high, size",
+                        "high, speed",
+                        "high, speed, no size constraints"
+                    ]
+                },
+                "language-conformance": {
+                    "description": "Language Conformance",
+                    "type": "string",
+                    "default": "IAR-extensions",
+                    "enum": [
+                        "strict",
+                        "standard",
+                        "IAR-extensions"
+                    ]
+                },
+                "destroy-cpp-static-object": {
+                    "description": "Destroy C++ Static Object",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "allow-VLA": {
+                    "description": "Allow VLA (for language c)",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "use-cpp-inline-semantics": {
+                    "description": "Use C++ Inline Semantics (for language c++)",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "require-prototypes": {
+                    "description": "Require Prototypes",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "floating-point": {
+                    "description": "Floating Point",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "multibyte-support": {
+                    "description": "Multibyte Support",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "plain-char-is-signed": {
+                    "markdownDescription": "Plain Char Is Signed",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "turn-Warning-into-errors": {
+                    "markdownDescription": "Turn Warnings Into Errors",
+                    "description.zh-cn": "将警告转化为错误",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "misc-controls": {
+                    "markdownDescription": "Other C/C++ Compiler Options",
+                    "description.zh-cn": "C/C++ 编译器附加选项",
+                    "$ref": "#/definitions/misc-controls"
+                }
+            }
+        },
+        "asm-compiler": {
+            "markdownDescription": "Assembler Options",
+            "description.zh-cn": "汇编器选项",
+            "type": "object",
+            "properties": {
+                "defines": {
+                    "readable_name": "Preprocessor Definitions",
+                    "readable_name.zh-cn": "预处理器定义",
+                    "markdownDescription": "Preprocessor Definitions",
+                    "description.zh-cn": "预处理器定义",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "case-sensitive-user-symbols": {
+                    "description": "Case Sensitive User Symbols",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "multibyte-support": {
+                    "description": "Multibyte Support",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "misc-controls": {
+                    "markdownDescription": "Other Assembler Options",
+                    "description.zh-cn": "汇编器附加选项",
+                    "$ref": "#/definitions/misc-controls"
+                }
+            }
+        },
+        "linker": {
+            "markdownDescription": "Linker Options",
+            "description.zh-cn": "链接器选项",
+            "type": "object",
+            "properties": {
+                "output-format": {
+                    "type": "string",
+                    "default": "elf",
+                    "description": "Output Format",
+                    "description.zh-cn": "输出格式",
+                    "enum": [
+                        "elf",
+                        "lib"
+                    ],
+                    "enumDescriptions": [
+                        "ELF",
+                        "LIB"
+                    ]
+                },
+                "$disableOutputTask": {
+                    "type": "boolean",
+                    "markdownDescription": "Not Output hex/bin File",
+                    "description.zh-cn": "不生成 Hex/Bin 文件",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "perform-cpp-virtual-func-elimination": {
+                    "description": "Perform C++ Virtual Function Elimination",
+                    "type": "string",
+                    "default": "none",
+                    "enum": [
+                        "none",
+                        "enable",
+                        "enable-forced",
+                        "disable"
+                    ],
+                    "enumDescriptions": [
+                        "None (Default)",
+                        "Enable",
+                        "Enable Forced",
+                        "Disable"
+                    ]
+                },
+                "auto-search-runtime-lib": {
+                    "description": "Auto Search Runtime Library",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "merge-duplicate-sections": {
+                    "description": "Merge Duplicate Sections",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "config-defines": {
+                    "description": "Define Config Symbols",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "program-entry": {
+                    "readable_name": "Program Entry",
+                    "readable_name.zh-cn": "程序入口",
+                    "description": "Program entry，default: __iar_program_start",
+                    "description.zh-cn": "程序入口，默认：__iar_program_start",
+                    "type": "string",
+                    "default": "__iar_program_start"
+                },
+                "misc-controls": {
+                    "markdownDescription": "Other Linker Options",
+                    "description.zh-cn": "链接器附加选项",
+                    "$ref": "#/definitions/misc-controls"
+                }
+            }
+        }
+    }
+}
