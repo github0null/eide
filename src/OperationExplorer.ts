@@ -509,18 +509,18 @@ export class OperationExplorer {
         const ideType = await vscode.window.showQuickPick<vscode.QuickPickItem>([
             {
                 label: 'MDK',
-                description: 'any Arm, 8051 projects',
-                detail: `Import Keil MDK Project (Only Keil v5+)`
+                description: 'arm, 8051 projects',
+                detail: `Import Keil MDK Projects (Only Keil v5+)`
             },
             {
-                label: 'IAR',
-                description: 'any arm project',
-                detail: `Import IAR ARM Project`
+                label: 'IAR Workbench',
+                description: 'arm projects',
+                detail: `Import IAR ARM Projects (IAR Workbench Version >= v7.80.2)`
             },
             {
                 label: 'Eclipse',
-                description: 'any embedded project',
-                detail: `Import Eclipse Project`
+                description: 'embedded gcc projects',
+                detail: `Import Eclipse Projects`
             }
         ], { placeHolder: `Project Type` });
 
@@ -615,7 +615,7 @@ export class OperationExplorer {
         //
         // for IAR projects
         //
-        else if (ideType.label == 'IAR') {
+        else if (ideType.label.startsWith('IAR')) {
 
             const prjFileUri = await vscode.window.showOpenDialog({
                 openLabel: 'Import',
