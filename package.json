@@ -28,7 +28,8 @@
         "keil",
         "eide",
         "cmsis",
-        "eclipse"
+        "eclipse",
+        "iar"
     ],
     "homepage": "https://em-ide.com",
     "license": "MIT",

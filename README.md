@@ -21,7 +21,7 @@ Provide `8051/AVR/STM8/Cortex-M/RISC-V` project development, compilation, progra
 ## Features 🎉
 
 * Support 8051, AVR, STM8, Cortex-M, RISC-V, Universal-Gcc projects.
-* Support to import KEIL5/Eclipse projects, support to import 'IAR-STM8, IAR-ARM, Segger Embedded Studio' project source file resource tree.
+* Support to import KEIL5/IAR/Eclipse projects, support to import 'IAR-STM8, IAR-ARM, Segger Embedded Studio' project source file resource tree.
 * Support for installing standard KEIL chip support packs (only for Cortex-M projects).
 * Provides many project templates for quick start a project.
 * Build, rebuild, support many toolchains (armcc, gcc-arm-none-eabi, riscv-gcc, xxx-gcc, keil_c51, sdcc ...).
