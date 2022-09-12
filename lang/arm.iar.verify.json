@@ -232,6 +232,7 @@
                     "type": "string",
                     "default": "Extended-EC++",
                     "enum": [
+                        "C++",
                         "Embedded-C++",
                         "Extended-EC++"
                     ]
@@ -302,12 +303,17 @@
                         false
                     ]
                 },
-                "floating-point": {
-                    "description": "Floating Point",
-                    "type": "boolean",
+                "floating-point-semantics": {
+                    "description": "Floating Point Semantics",
+                    "type": "string",
+                    "default": "strict",
                     "enum": [
-                        true,
-                        false
+                        "strict",
+                        "relaxed"
+                    ],
+                    "enumDescriptions": [
+                        "Strict Conformance",
+                        "Relaxed (smaller or faster)"
                     ]
                 },
                 "multibyte-support": {
@@ -443,6 +449,13 @@
                 },
                 "config-defines": {
                     "description": "Define Config Symbols",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "LIB_FLAGS": {
+                    "description": "Additional Libraries",
                     "type": "array",
                     "items": {
                         "type": "string"

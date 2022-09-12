@@ -38,6 +38,13 @@ import { GitFileInfo } from './WebInterface/GithubInterface';
 import * as platform from './Platform';
 import { SevenZipper } from './Compress';
 import { ResManager } from './ResManager';
+import { isArray } from 'util';
+
+export function toArray(obj: any): any[] {
+    if (obj == undefined || obj == null) return [];
+    if (isArray(obj)) return obj;
+    return [obj];
+}
 
 export interface XmlFormatOptions {
     indentation?: string;

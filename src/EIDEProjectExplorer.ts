@@ -78,7 +78,7 @@ import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import {
     copyObject, downloadFileWithProgress, getDownloadUrlFromGitea,
     runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
-    genGithubHash, md5
+    genGithubHash, md5, toArray
 } from './utility';
 import { concatSystemEnvPath, DeleteDir, exeSuffix, kill } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
@@ -96,6 +96,8 @@ import {
 import * as eclipseParser from './EclipseProjectParser';
 import { isArray } from 'util';
 import { parseIarCompilerLog, CompilerDiagnostics, parseGccCompilerLog, parseArmccCompilerLog, parseKeilc51CompilerLog } from './ProblemMatcher';
+import * as iarParser from './IarProjectParser';
+import * as ArmCpuUtils from './ArmCpuUtils';
 
 enum TreeItemType {
     SOLUTION,
@@ -1420,8 +1422,292 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             case 'eclipse':
                 this.ImportEclipseProject(option).catch(err => catchErr(err));
                 break;
+            case 'iar':
+                this.ImportIarProject(option).catch(err => catchErr(err));
+                break;
             default:
                 break;
+        }
+    }
+
+    private async ImportIarProject(option: ImportOptions) {
+
+        if (!ToolchainManager.getInstance().isToolchainPathReady('IAR_ARM')) {
+            const msg = `Your 'IAR_ARM' toolchain path is invalid, we suggest that you set it before start to import !`;
+            const ans = await vscode.window.showWarningMessage(msg, `Ok`, 'Skip');
+            if (ans != 'Skip') {
+                if (ans == 'Ok') { // jump to setup toolchain
+                    vscode.commands.executeCommand('eide.operation.install_toolchain');
+                }
+                return;
+            }
+        }
+
+        const ewwInfo = await iarParser.parseIarWorkbench(
+            new File(option.projectFile.path), SettingManager.GetInstance().getIarForArmDir());
+        const ewwRoot = new File(option.projectFile.dir);
+
+        let projectnum = 0;
+        for (const _ in ewwInfo.projects) projectnum++;
+
+        if (projectnum == 0)
+            throw new Error(`Not found any project in this IAR workbench ! [path]: ${option.projectFile.path}`);
+
+        // store vscode workspace
+        const vscWorkspaceFile = File.fromArray([ewwRoot.path, `${ewwInfo.name}.code-workspace`]);
+        {
+            const vscWorkspace = {
+                "folders": <any[]>[]
+            };
+
+            for (const projpath in ewwInfo.projects) {
+                const repath = ewwRoot.ToRelativePath(projpath) || projpath;
+                const project = ewwInfo.projects[projpath];
+                vscWorkspace.folders.push({
+                    name: project.name,
+                    path: NodePath.dirname(repath)
+                });
+            }
+
+            fs.writeFileSync(vscWorkspaceFile.path, JSON.stringify(vscWorkspace, undefined, 4));
+        }
+
+        const toolchainType: ToolchainName = 'IAR_ARM';
+
+        //
+        let project0workspacefile: File = <any>undefined;
+        for (const path_ in ewwInfo.projects) {
+
+            const iarproj = ewwInfo.projects[path_];
+            const prjRoot = new File(NodePath.dirname(path_));
+
+            const basePrj = AbstractProject.NewProject().createBase({
+                name: iarproj.name,
+                projectName: iarproj.name,
+                type: 'ARM',
+                outDir: prjRoot
+            }, false);
+
+            if (!project0workspacefile)
+                project0workspacefile = basePrj.workspaceFile;
+
+            const eidePrjCfg = basePrj.prjConfig.config;
+            const eideFolder = File.fromArray([prjRoot.path, AbstractProject.EIDE_DIR]);
+
+            // set project env
+            {
+                const envFile = File.fromArray([eideFolder.path, 'env.ini']);
+                const envCont = [
+                    `###########################################################`,
+                    `#              project environment variables`,
+                    `###########################################################`,
+                    ``,
+                ];
+                for (const key in iarproj.envs) {
+                    envCont.push(`${key} = ${iarproj.envs[key]}`);
+                }
+                envFile.Write(envCont.join(os.EOL));
+            }
+
+            // file groups
+            eidePrjCfg.virtualFolder = iarproj.fileGroups;
+            eidePrjCfg.outDir = 'build';
+            basePrj.prjConfig.setToolchain(toolchainType);
+
+            // targets
+            let firstTargetName: string = '';
+            for (const tname in iarproj.targets) {
+
+                if (!firstTargetName)
+                    firstTargetName = tname;
+
+                const targetName = tname;
+                const iarTarget = iarproj.targets[tname];
+
+                const nEideTarget: ProjectTargetInfo = <any>{
+                    excludeList: iarTarget.excludeList,
+                    toolchain: eidePrjCfg.toolchain,
+                    compileConfig: copyObject(eidePrjCfg.compileConfig),
+                    uploader: eidePrjCfg.uploader,
+                    uploadConfig: copyObject(eidePrjCfg.uploadConfig),
+                    uploadConfigMap: copyObject(eidePrjCfg.uploadConfigMap)
+                };
+
+                eidePrjCfg.targets[targetName] = nEideTarget;
+
+                nEideTarget.custom_dep = {
+                    name: 'default',
+                    incList: [],
+                    defineList: [],
+                    sourceDirList: [],
+                    libList: []
+                };
+
+                nEideTarget.custom_dep.defineList = toArray(iarTarget.settings['ICCARM.CCDefines']);
+                nEideTarget.custom_dep.incList = toArray(iarTarget.settings['ICCARM.CCIncludePath2']);
+
+                //
+                // compiler base config
+                //
+                const compilerMod = <ArmBaseCompileConfigModel>basePrj.prjConfig.compileConfigModel;
+                const compilerOpt = <ArmBaseCompileData>nEideTarget.compileConfig;
+
+                if (iarTarget.core) {
+                    const expname = iarTarget.core;
+                    const cpus = compilerMod.getValidCpus();
+                    const idx = cpus.findIndex(n => expname == n || expname.toLowerCase().startsWith(n.toLowerCase()));
+                    if (idx != -1) {
+                        compilerOpt.cpuType = cpus[idx];
+                    }
+                }
+
+                if (ArmCpuUtils.hasFpu(compilerOpt.cpuType)) {
+                    if (iarTarget.settings['General.FPU2'] != '0') {
+                        compilerOpt.floatingPointHardware =
+                            ArmCpuUtils.hasFpu(compilerOpt.cpuType, true) ? 'double' : 'single';
+                    }
+                }
+
+                compilerOpt.scatterFilePath = iarTarget.icfPath;
+
+                //
+                // builder options
+                //
+                const toolchain = ToolchainManager.getInstance().getToolchain(eidePrjCfg.type, eidePrjCfg.toolchain);
+                const builderConfig = toolchain.getDefaultConfig();
+                const builderConfigFile = File.fromArray([eideFolder.path, `${targetName.toLowerCase()}.${toolchain.configName}`]);
+
+                const iar2eideOptsMap = iarParser.IAR2EIDE_OPTS_MAP;
+
+                // set iar compiler options
+                for (const cfgGroupName in iar2eideOptsMap) {
+
+                    const optsGrp = iar2eideOptsMap[cfgGroupName];
+
+                    for (const iarsname in iar2eideOptsMap[cfgGroupName]) {
+
+                        if (typeof iarTarget.settings[iarsname] != 'string')
+                            continue;
+
+                        const iarOptVal = <string>iarTarget.settings[iarsname];
+
+                        for (const fieldname in optsGrp[iarsname]) {
+                            const eideOptVal = optsGrp[iarsname][fieldname][iarOptVal];
+                            if (eideOptVal) {
+                                (<any>builderConfig)[cfgGroupName][fieldname] = eideOptVal;
+                            }
+                        }
+                    }
+                }
+
+                // copy string options
+
+                const optToString = (obj: string | string[]): string => {
+                    if (isArray(obj)) {
+                        return obj[0];
+                    } else {
+                        return obj;
+                    }
+                };
+
+                // linker
+                {
+                    builderConfig.linker['LIB_FLAGS'] = toArray(iarTarget.settings['ILINK.IlinkAdditionalLibs']);
+
+                    if (iarTarget.settings['ILINK.IlinkOverrideProgramEntryLabel'] == '1') {
+                        builderConfig.linker['program-entry'] = optToString(iarTarget.settings['ILINK.IlinkProgramEntryLabel']);
+                    }
+
+                    builderConfig.linker['config-defines'] = toArray(iarTarget.settings['ILINK.IlinkConfigDefines']);
+
+                    const extraOpts: string[] = [];
+
+                    toArray(iarTarget.settings['ILINK.IlinkKeepSymbols'])
+                        .forEach(s => extraOpts.push(`--keep ${s}`));
+
+                    toArray(iarTarget.settings['ILINK.IlinkDefines'])
+                        .forEach(s => extraOpts.push(`--define_symbol ${s}`));
+
+                    if (iarTarget.settings['ILINK.IlinkUseExtraOptions'] == '1') {
+                        toArray(iarTarget.settings['ILINK.IlinkExtraOptions'])
+                            .forEach(opt => extraOpts.push(opt));
+                    }
+
+                    builderConfig.linker['misc-controls'] = extraOpts.join(' ');
+                }
+
+                // asm
+                {
+                    builderConfig["asm-compiler"]['defines'] = toArray(iarTarget.settings['AARM.ADefines']);
+
+                    if (iarTarget.settings['AARM.AExtraOptionsCheckV2'] == '1') {
+                        builderConfig["asm-compiler"]['misc-controls'] =
+                            toArray(iarTarget.settings['AARM.AExtraOptionsV2']);
+                    }
+                }
+
+                // cpp
+                {
+                    const extraOpts: string[] = [];
+
+                    toArray(iarTarget.settings['ICCARM.PreInclude'])
+                        .forEach(s => extraOpts.push(`--preinclude ${s}`));
+
+                    if (iarTarget.settings['ICCARM.IExtraOptionsCheck'] == '1') {
+                        toArray(iarTarget.settings['ICCARM.IExtraOptions'])
+                            .forEach(s => extraOpts.push(s));
+                    }
+
+                    builderConfig["c/cpp-compiler"]['misc-controls'] = extraOpts.join(' ');
+                }
+
+                // builder tasks
+                {
+                    if (iarTarget.builderActions.prebuild) {
+                        builderConfig.beforeBuildTasks?.push({
+                            name: 'iar prebuild',
+                            command: iarTarget.builderActions.prebuild,
+                            stopBuildAfterFailed: true,
+                        });
+                    }
+
+                    if (iarTarget.builderActions.postbuild) {
+                        builderConfig.afterBuildTasks?.push({
+                            name: 'iar postbuild',
+                            command: iarTarget.builderActions.postbuild
+                        });
+                    }
+                }
+
+                builderConfigFile.Write(JSON.stringify(builderConfig, undefined, 4));
+            }
+
+            // init current target
+
+            const tname = firstTargetName;
+            const curTarget: any = eidePrjCfg.targets[tname];
+            eidePrjCfg.mode = tname; // set current target name
+            for (const key in curTarget) {
+                if (key === 'custom_dep') {
+                    eidePrjCfg.dependenceList =
+                        [{ groupName: 'custom', depList: [curTarget[key]] }];
+                    continue;
+                }
+                (<any>eidePrjCfg)[key] = curTarget[key];
+            }
+
+            // save all config
+
+            basePrj.prjConfig.Save();
+        }
+
+        // switch project
+        const selection = await vscode.window.showInformationMessage(
+            view_str$operation$import_done, continue_text, cancel_text);
+        if (selection === continue_text) {
+            WorkspaceManager.getInstance().openWorkspace(projectnum > 1
+                ? vscWorkspaceFile
+                : project0workspacefile);
         }
     }
 

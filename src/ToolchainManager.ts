@@ -1730,10 +1730,10 @@ class IARARM implements IToolchian {
         ];
 
         if (builderOpts["c/cpp-compiler"]) {
-            if (builderOpts["c/cpp-compiler"]['language-cpp'] == 'Embedded-C++') {
-                result.push(File.fromArray([iarPath, 'inc', 'cpp']).path);
-            } else { // Extended-EC++
+            if (builderOpts["c/cpp-compiler"]['language-cpp'] == 'Extended-EC++') {
                 result.push(File.fromArray([iarPath, 'inc', 'ecpp']).path);
+            } else { // C++
+                result.push(File.fromArray([iarPath, 'inc', 'cpp']).path);
             }
         }
 

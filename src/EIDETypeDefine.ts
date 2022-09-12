@@ -87,7 +87,7 @@ export interface CreateOptions {
     type: ProjectType;
 }
 
-export type ImportProjectIDEType = 'mdk' | 'eclipse';
+export type ImportProjectIDEType = 'mdk' | 'eclipse' | 'iar';
 
 export interface ImportOptions {
     type: ImportProjectIDEType;

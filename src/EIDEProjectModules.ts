@@ -536,6 +536,10 @@ export abstract class ArmBaseCompileConfigModel
         { name: 'double', desc: 'double precision' }
     ];
 
+    getValidCpus(): string[] {
+        return this.cpuTypeList.filter(n => !n.startsWith(this.DIV_TAG));
+    }
+
     onPropertyChanged(key: string) {
         switch (key) {
             case 'cpuType':
@@ -985,7 +989,7 @@ export class GccCompileConfigModel extends ArmBaseCompileConfigModel {
             cpuType: 'Cortex-M3',
             floatingPointHardware: 'none',
             scatterFilePath: 'undefined.lds',
-            useCustomScatterFile: false,
+            useCustomScatterFile: true,
             storageLayout: { RAM: [], ROM: [] },
             options: 'null'
         };
@@ -996,7 +1000,7 @@ export class GccCompileConfigModel extends ArmBaseCompileConfigModel {
     }
 }
 
-export class IarArmCompileConfigModel extends ArmBaseCompileConfigModel {
+class IarArmCompileConfigModel extends ArmBaseCompileConfigModel {
 
     protected cpuTypeList = [
         'ARM7EJ-S',
@@ -1040,7 +1044,7 @@ export class IarArmCompileConfigModel extends ArmBaseCompileConfigModel {
             cpuType: 'Cortex-M3',
             floatingPointHardware: 'none',
             scatterFilePath: '${ToolchainRoot}/config/linker/ST/stm32f103x8.icf',
-            useCustomScatterFile: false,
+            useCustomScatterFile: true,
             storageLayout: { RAM: [], ROM: [] },
             options: 'null'
         };

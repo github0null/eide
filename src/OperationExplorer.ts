@@ -513,6 +513,11 @@ export class OperationExplorer {
                 detail: `Import Keil MDK Project (Only Keil v5+)`
             },
             {
+                label: 'IAR',
+                description: 'any arm project',
+                detail: `Import IAR ARM Project`
+            },
+            {
                 label: 'Eclipse',
                 description: 'any embedded project',
                 detail: `Import Eclipse Project`
@@ -525,7 +530,6 @@ export class OperationExplorer {
         //
         // for MDK project
         //
-
         if (ideType.label == "MDK") {
 
             const prjFileUri = await vscode.window.showOpenDialog({
@@ -583,7 +587,6 @@ export class OperationExplorer {
         //
         // for Eclipse
         //
-
         else if (ideType.label == "Eclipse") {
 
             const prjFileUri = await vscode.window.showOpenDialog({
@@ -608,6 +611,34 @@ export class OperationExplorer {
             // emit event
             this.emit('request_import_project', importOpts);
         }
+
+        //
+        // for IAR projects
+        //
+        else if (ideType.label == 'IAR') {
+
+            const prjFileUri = await vscode.window.showOpenDialog({
+                openLabel: 'Import',
+                canSelectFolders: false,
+                canSelectFiles: true,
+                canSelectMany: false,
+                filters: {
+                    'IAR Workbench': ['eww']
+                }
+            });
+
+            if (!prjFileUri || prjFileUri.length == 0)
+                return;
+
+            const importOpts: ImportOptions = {
+                type: 'iar',
+                projectFile: new File(prjFileUri[0].fsPath),
+                createNewFolder: false
+            };
+
+            // emit event
+            this.emit('request_import_project', importOpts);
+        }
     }
 
     private getStatusTxt(status: boolean): string {
@@ -621,55 +652,55 @@ export class OperationExplorer {
 
         const pickItems: ToolchainDespPickItem[] = [
             {
-                label: 'Keil C51',
+                label: 'Keil C51 (cx51) (ide path)',
                 type: 'Keil_C51',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('Keil_C51'))
                     + ` Loc: ${toolchainManager.getToolchainExecutableFolder('Keil_C51')?.path}`,
                 detail: view_str$operation$setKeil51Path
             },
             {
-                label: 'Keil MDK',
+                label: 'Keil MDK (ide path)',
                 type: 'AC5',
                 description: this.getStatusTxt(settingManager.isMDKIniReady()),
                 detail: view_str$operation$setMDKPath
             },
             {
-                label: 'ARMCC V5 (standalone toolchain)',
+                label: 'ARMCC V5 (armcc) (standalone toolchain)',
                 type: 'AC5',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC5'))
                     + ` Loc: ${toolchainManager.getToolchainExecutableFolder('AC5')?.path}`,
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V5 Toolchain')
             },
             {
-                label: 'ARMCC V6 (standalone toolchain)',
+                label: 'ARMCC V6 (armclang) (standalone toolchain)',
                 type: 'AC6',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC6'))
                     + ` Loc: ${toolchainManager.getToolchainExecutableFolder('AC6')?.path}`,
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V6 Toolchain')
             },
             {
-                label: 'IAR ARM C/C++ Compiler',
+                label: 'IAR ARM C/C++ Compiler (iccarm) (standalone toolchain)',
                 type: 'IAR_ARM',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('IAR_ARM'))
                     + ` Loc: ${toolchainManager.getToolchainExecutableFolder('IAR_ARM')?.path}`,
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'IAR ARM C/C++ Compiler')
             },
             {
-                label: 'GNU Arm Embedded Toolchain',
+                label: 'GNU Arm Embedded Toolchain (arm-none-eabi-gcc)',
                 type: 'GCC',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('GCC'))
                     + ` Loc: ${toolchainManager.getToolchainExecutableFolder('GCC')?.path}`,
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'GNU Arm Embedded Toolchain')
             },
             {
-                label: 'IAR For STM8 (iccstm8)',
+                label: 'IAR For STM8 (iccstm8) (ide path)',
                 type: 'IAR_STM8',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('IAR_STM8'))
                     + ` Loc: ${toolchainManager.getToolchainExecutableFolder('IAR_STM8')?.path}`,
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'IAR For STM8')
             },
             {
-                label: 'Small Device C Compiler (SDCC)',
+                label: 'Small Device C Compiler (sdcc)',
                 type: 'SDCC',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('SDCC'))
                     + ` Loc: ${toolchainManager.getToolchainExecutableFolder('SDCC')?.path}`,
@@ -682,14 +713,14 @@ export class OperationExplorer {
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'GNU_SDCC_STM8')
             }, */
             {
-                label: 'RISC-V GCC Toolchain (RISC-V GCC)',
+                label: 'RISC-V GCC Toolchain (riscv-gcc)',
                 type: 'RISCV_GCC',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('RISCV_GCC'))
                     + ` Loc: ${toolchainManager.getToolchainExecutableFolder('RISCV_GCC')?.path}`,
                 detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'RISC-V GCC Toolchain')
             },
             {
-                label: 'ANY GCC Toolchain',
+                label: 'ANY GCC Toolchain (gcc)',
                 type: 'ANY_GCC',
                 description: this.getStatusTxt(toolchainManager.isToolchainPathReady('ANY_GCC'))
                     + ` Loc: ${toolchainManager.getToolchainExecutableFolder('ANY_GCC')?.path}`,
