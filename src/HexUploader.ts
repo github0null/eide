@@ -1027,8 +1027,7 @@ class CustomUploader extends HexUploader<string> {
         });
 
         // replace env
-        commandLine = this.project.replaceProjEnv(commandLine);
-        commandLine = this.project.replaceUserEnv(commandLine);
+        commandLine = this.project.replacePathEnv(commandLine);
 
         return {
             isOk: true,
