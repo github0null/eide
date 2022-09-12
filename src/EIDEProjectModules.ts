@@ -854,7 +854,7 @@ export abstract class ArmBaseCompileConfigModel
             cpuType: 'Cortex-M3',
             floatingPointHardware: 'none',
             useCustomScatterFile: false,
-            scatterFilePath: 'undefined',
+            scatterFilePath: '<YOUR_SCATTER_FILE>.sct',
             storageLayout: {
                 RAM: [
                     {
@@ -988,7 +988,7 @@ export class GccCompileConfigModel extends ArmBaseCompileConfigModel {
         return {
             cpuType: 'Cortex-M3',
             floatingPointHardware: 'none',
-            scatterFilePath: 'undefined.lds',
+            scatterFilePath: '<YOUR_LINKER_SCRIPT>.lds',
             useCustomScatterFile: true,
             storageLayout: { RAM: [], ROM: [] },
             options: 'null'
@@ -1043,7 +1043,7 @@ class IarArmCompileConfigModel extends ArmBaseCompileConfigModel {
         return {
             cpuType: 'Cortex-M3',
             floatingPointHardware: 'none',
-            scatterFilePath: '${ToolchainRoot}/config/linker/ST/stm32f103x8.icf',
+            scatterFilePath: '${ToolchainRoot}/config/<YOUR_LINKER_CFG>.icf',
             useCustomScatterFile: true,
             storageLayout: { RAM: [], ROM: [] },
             options: 'null'

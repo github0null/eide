@@ -889,9 +889,6 @@ export class ARMCodeBuilder extends CodeBuilder {
         const ldFileList: string[] = [];
 
         let scatterFilePath: string = config.compileConfig.scatterFilePath;
-        if (scatterFilePath == 'undefined') {
-            scatterFilePath = `${scatterFilePath}.sct`;
-        }
 
         switch (toolchain.name) {
             // 'armcc' can select whether use custom linker file
