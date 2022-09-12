@@ -24,9 +24,7 @@
 
 import * as xml2js from 'x2js';
 import { File } from '../lib/node-utility/File';
-import {
-    ProjectType, FileGroup, ProjectConfiguration
-} from './EIDETypeDefine';
+import { ProjectType, FileGroup, ProjectConfiguration } from './EIDETypeDefine';
 import { ToolchainName, ToolchainManager } from './ToolchainManager';
 import { AbstractProject } from './EIDEProject';
 import { GlobalEvent } from './GlobalEvents';
@@ -36,6 +34,7 @@ import * as NodePath from 'path';
 import { DependenceManager } from './DependenceManager';
 import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import { ICompileOptions, CurrentDevice, C51BaseCompileData, ArmBaseCompileData, ARMStorageLayout, ArmBaseCompileConfigModel } from './EIDEProjectModules';
+import * as utility from './utility';
 
 export interface KeilRteDependence {
     class?: string;
@@ -267,8 +266,8 @@ export abstract class KeilParser<T> {
         const prjMap: any = KeilParser.TYPE_SUFFIX_MAP;
         if (prjMap[this.TYPE_TAG] == undefined) { throw new Error(`Not support '${this.TYPE_TAG}' project !`); }
         const outFile = File.fromArray([outDir.path, name + prjMap[this.TYPE_TAG]]);
-        const header = '<?xml version="1.0" encoding="UTF-8" standalone="no" ?>';
-        outFile.Write(header + this.parser.js2xml<any>(this.doc));
+        const xmlTxt = '<?xml version="1.0" encoding="UTF-8" standalone="no" ?>' + this.parser.js2xml<any>(this.doc);
+        outFile.Write(utility.xmlfmt(xmlTxt, { indentation: '  ' }));
         return outFile;
     }
 
@@ -498,11 +497,10 @@ class C51Parser extends KeilParser<KeilC51Option> {
         target.TargetOption.TargetCommonOption.ListingPath = `.\\${outFolder}\\Keil\\`;
         target.TargetOption.TargetCommonOption.OutputName = target.TargetName;
 
-        target.TargetOption.Target51.C51.VariousControls.IncludePath = mergedDep.incList.map<string>(inc => {
-
-            return prj.ToRelativePath(inc) || inc;
-
-        }).filter(v => { return v !== undefined; }).join(File.delimiter);
+        target.TargetOption.Target51.C51.VariousControls.IncludePath = mergedDep.incList
+            .map(s => prj.resolveEnvVar(s))
+            .map(inc => File.ToLocalPath(prj.toRelativePath(inc)))
+            .join(File.delimiter);
 
         target.TargetOption.Target51.C51.VariousControls.Define = mergedDep.defineList.join(",");
 
@@ -1084,11 +1082,10 @@ class ARMParser extends KeilParser<KeilARMOption> {
         target.TargetOption.TargetCommonOption.ListingPath = `.\\${outFolder}\\Keil\\`;
         target.TargetOption.TargetCommonOption.OutputName = target.TargetName;
 
-        target.TargetOption.TargetArmAds.Cads.VariousControls.IncludePath = mergedDep.incList.map<string>(inc => {
-
-            return prj.ToRelativePath(inc) || inc;
-
-        }).filter(v => { return v !== undefined; }).join(File.delimiter);
+        target.TargetOption.TargetArmAds.Cads.VariousControls.IncludePath = mergedDep.incList
+            .map(s => prj.resolveEnvVar(s))
+            .map(inc => File.ToLocalPath(prj.toRelativePath(inc)))
+            .join(File.delimiter);
 
         target.TargetOption.TargetArmAds.Cads.VariousControls.Define = mergedDep.defineList.join(","); // C/CPP
         target.TargetOption.TargetArmAds.Aads.VariousControls.Define = mergedDep.defineList.join(","); // ASM
@@ -1128,70 +1125,3 @@ class ARMParser extends KeilParser<KeilARMOption> {
         }
     }
 }
-
-/*let info = this.doc.Project.Targets.Target[0].TargetOption.TargetArmAds.ArmAdsMisc;
-
-        default startUp index: 3
-        memScatter.startUpIndex = 3;
-        let index = Number.parseInt(info.StupSel);
-        memScatter.startUpIndex = Math.log2(index);
-
-        memScatter.ramList[0].noInit = info.NoZi1 !== '0';
-        memScatter.ramList[1].noInit = info.NoZi2 !== '0';
-        memScatter.ramList[2].noInit = info.NoZi3 !== '0';
-        memScatter.ramList[3].noInit = info.NoZi4 !== '0';
-        memScatter.ramList[4].noInit = info.NoZi5 !== '0';
-
-        memScatter.romList[0].selected = info.Ro1Chk !== '0';
-        memScatter.romList[1].selected = info.Ro2Chk !== '0';
-        memScatter.romList[2].selected = info.Ro3Chk !== '0';
-        memScatter.romList[3].selected = info.Ir1Chk !== '0';
-        memScatter.romList[4].selected = info.Ir2Chk !== '0';
-        memScatter.romList[3].selected = true;
-
-        memScatter.ramList[0].selected = info.Ra1Chk !== '0';
-        memScatter.ramList[1].selected = info.Ra2Chk !== '0';
-        memScatter.ramList[2].selected = info.Ra3Chk !== '0';
-        memScatter.ramList[3].selected = info.Im1Chk !== '0';
-        memScatter.ramList[4].selected = info.Im2Chk !== '0';
-        memScatter.ramList[3].selected = true;
-
-        let chipData = info.OnChipMemories;
-
-        memScatter.romList[0].memInfo.startAddr = this.FillHexNumber(chipData.OCR_RVCT1.StartAddress);
-        memScatter.romList[0].memInfo.size = this.FillHexNumber(chipData.OCR_RVCT1.Size);
-
-        memScatter.romList[1].memInfo.startAddr = this.FillHexNumber(chipData.OCR_RVCT2.StartAddress);
-        memScatter.romList[1].memInfo.size = this.FillHexNumber(chipData.OCR_RVCT2.Size);
-
-        memScatter.romList[2].memInfo.startAddr = this.FillHexNumber(chipData.OCR_RVCT3.StartAddress);
-        memScatter.romList[2].memInfo.size = this.FillHexNumber(chipData.OCR_RVCT3.Size);
-
-        memScatter.romList[3].memInfo.startAddr = this.FillHexNumber(chipData.OCR_RVCT4.StartAddress);
-        memScatter.romList[3].memInfo.size = this.FillHexNumber(chipData.OCR_RVCT4.Size);
-
-        memScatter.romList[4].memInfo.startAddr = this.FillHexNumber(chipData.OCR_RVCT5.StartAddress);
-        memScatter.romList[4].memInfo.size = this.FillHexNumber(chipData.OCR_RVCT5.Size);
-
-        memScatter.romList[3].memInfo.startAddr = this.FillHexNumber(mem.rom.startAddr);
-        memScatter.romList[3].memInfo.size = this.FillHexNumber(mem.rom.size);
-
-        //------------------------------------Ram-----------------------------------------------
-        memScatter.ramList[0].memInfo.startAddr = this.FillHexNumber(chipData.OCR_RVCT6.StartAddress);
-        memScatter.ramList[0].memInfo.size = this.FillHexNumber(chipData.OCR_RVCT6.Size);
-
-        memScatter.ramList[1].memInfo.startAddr = this.FillHexNumber(chipData.OCR_RVCT7.StartAddress);
-        memScatter.ramList[1].memInfo.size = this.FillHexNumber(chipData.OCR_RVCT7.Size);
-
-        memScatter.ramList[2].memInfo.startAddr = this.FillHexNumber(chipData.OCR_RVCT8.StartAddress);
-        memScatter.ramList[2].memInfo.size = this.FillHexNumber(chipData.OCR_RVCT8.Size);
-
-        memScatter.ramList[3].memInfo.startAddr = this.FillHexNumber(chipData.OCR_RVCT9.StartAddress);
-        memScatter.ramList[3].memInfo.size = this.FillHexNumber(chipData.OCR_RVCT9.Size);
-
-        memScatter.ramList[4].memInfo.startAddr = this.FillHexNumber(chipData.OCR_RVCT10.StartAddress);
-        memScatter.ramList[4].memInfo.size = this.FillHexNumber(chipData.OCR_RVCT10.Size);
-
-        memScatter.ramList[3].memInfo.startAddr = this.FillHexNumber(mem.ram.startAddr);
-        memScatter.ramList[3].memInfo.size = this.FillHexNumber(mem.ram.size);*/
-

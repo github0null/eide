@@ -39,7 +39,10 @@ import * as NodePath from 'path';
 import * as os from 'os';
 import { ICompileOptions, ArmBaseBuilderConfigData } from "./EIDEProjectModules";
 
-export type ToolchainName = 'SDCC' | 'Keil_C51' | 'AC5' | 'AC6' | 'GCC' | 'IAR_STM8' | 'GNU_SDCC_STM8' | 'RISCV_GCC' | 'ANY_GCC' | 'None';
+export type ToolchainName =
+    'SDCC' | 'Keil_C51' | 'IAR_STM8' | 'GNU_SDCC_STM8' |
+    'AC5' | 'AC6' | 'GCC' | 'IAR_ARM' |
+    'RISCV_GCC' | 'ANY_GCC' | 'None';
 
 export interface IProjectInfo {
 
@@ -131,8 +134,8 @@ interface ToolchainEnums {
 export class ToolchainManager {
 
     private readonly toolchainNames: ToolchainEnums = {
-        'C51': ['Keil_C51', 'SDCC', 'IAR_STM8'/*, 'GNU_SDCC_STM8'*/],
-        'ARM': ['AC5', 'AC6', 'GCC'],
+        'C51': ['Keil_C51', 'SDCC', 'IAR_STM8'],
+        'ARM': ['AC5', 'AC6', 'GCC', 'IAR_ARM'],
         'RISC-V': ['RISCV_GCC'],
         'ANY-GCC': ['ANY_GCC']
     };
@@ -163,7 +166,7 @@ export class ToolchainManager {
         this.add(new IARSTM8());
         this.add(new RISCV_GCC());
         this.add(new AnyGcc());
-        //this.add(new GnuStm8Sdcc());
+        this.add(new IARARM());
     }
 
     on(event: 'onChanged', listener: (toolchainName: ToolchainName) => void): void;
@@ -254,8 +257,10 @@ export class ToolchainManager {
                 return 'Small Device C Compiler';
             case 'GCC':
                 return 'GNU Arm Embedded Toolchain';
+            case 'IAR_ARM':
+                return 'IAR ARM C/C++ Compiler';
             case 'IAR_STM8':
-                return 'IAR C Compiler For STM8';
+                return 'IAR STM8 C/C++ Compiler';
             case 'GNU_SDCC_STM8':
                 return 'SDCC With GNU Patch For STM8';
             case 'RISCV_GCC':
@@ -374,6 +379,8 @@ export class ToolchainManager {
                 return File.fromArray([settingManager.GetC51Dir().path, 'BIN']);
             case 'GCC':
                 return File.fromArray([settingManager.getGCCDir().path, 'bin']);
+            case 'IAR_ARM':
+                return File.fromArray([settingManager.getIarForArmDir().path, 'bin']);
             case 'IAR_STM8':
                 return File.fromArray([settingManager.getIARForStm8Dir().path, 'stm8', 'bin']);
             case 'SDCC':
@@ -1649,6 +1656,140 @@ class GCC implements IToolchian {
     }
 }
 
+class IARARM implements IToolchian {
+
+    readonly version = 1;
+
+    readonly name: ToolchainName = 'IAR_ARM';
+
+    readonly categoryName: string = 'IAR';
+
+    readonly modelName: string = 'arm.iar.model.json';
+
+    readonly configName: string = 'options.arm.iar.json';
+
+    readonly settingName: string = 'EIDE.IAR.ARM.Toolchain.InstallDirectory';
+
+    readonly verifyFileName: string = 'arm.iar.verify.json';
+
+    newInstance(): IToolchian {
+        return new IARARM();
+    }
+
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
+        return undefined;
+    }
+
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+
+        cppToolsConfig.cStandard = 'c99';
+        cppToolsConfig.cppStandard = 'c++11';
+
+        if (builderOpts["c/cpp-compiler"]) {
+            if (builderOpts["c/cpp-compiler"]['language-c']) {
+                cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'];
+            }
+        }
+    }
+
+    preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
+
+        // init null options
+        for (const key of ['linker', 'c/cpp-compiler']) {
+            if ((<any>options)[key] === undefined) {
+                (<any>options)[key] = Object.create(null);
+            }
+        }
+
+        // convert output lib commmand
+        if (options['linker']['output-format'] === 'lib') {
+            options['linker']['$use'] = 'linker-lib';
+        }
+    }
+
+    getToolchainDir(): File {
+        return SettingManager.GetInstance().getIarForArmDir();
+    }
+
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
+        return [];
+    }
+
+    getCustomDefines(): string[] | undefined {
+        return undefined;
+    }
+
+    getSystemIncludeList(builderOpts: ICompileOptions): string[] {
+
+        const iarPath = this.getToolchainDir().path;
+
+        let result: string[] = [
+            File.fromArray([iarPath, 'inc']).path,
+            File.fromArray([iarPath, 'inc', 'c']).path,
+            File.fromArray([iarPath, 'lib']).path
+        ];
+
+        if (builderOpts["c/cpp-compiler"]) {
+            if (builderOpts["c/cpp-compiler"]['language-cpp'] == 'Extended-EC++') {
+                result.push(File.fromArray([iarPath, 'inc', 'ecpp']).path);
+            } else { // C++
+                result.push(File.fromArray([iarPath, 'inc', 'cpp']).path);
+            }
+        }
+
+        return result;
+    }
+
+    getForceIncludeHeaders(): string[] | undefined {
+        return [
+            ResManager.GetInstance().getIarArmForceIncludeHeaders().path
+        ];
+    }
+
+    getDefaultIncludeList(): string[] {
+        const toolDir = this.getToolchainDir();
+        return [
+            File.fromArray([toolDir.path, 'lib']).path
+        ];
+    }
+
+    getLibDirs(): string[] {
+        const toolDir = this.getToolchainDir();
+        return [
+            File.fromArray([toolDir.path, 'lib']).path
+        ];
+    }
+
+    getDefaultConfig(): ICompileOptions {
+        return <ICompileOptions>{
+            version: this.version,
+            beforeBuildTasks: [],
+            afterBuildTasks: [],
+            global: {
+                "endian-mode": "little",
+                "runtime-lib": "normal",
+                "printf-formatter": "auto",
+                "scanf-formatter": "auto",
+                //"math-functions": "default",
+                "output-debug-info": "enable"
+            },
+            'c/cpp-compiler': {
+                "optimization": "no",
+                "destroy-cpp-static-object": true
+            },
+            'asm-compiler': {
+                "case-sensitive-user-symbols": true
+            },
+            'linker': {
+                "output-format": 'elf',
+                "auto-search-runtime-lib": true,
+                "perform-cpp-virtual-func-elimination": "enable",
+                "config-defines": []
+            }
+        };
+    }
+}
+
 class IARSTM8 implements IToolchian {
 
     readonly version = 5;
@@ -1702,18 +1843,13 @@ class IARSTM8 implements IToolchian {
         }
 
         // set linker path
-        const linkerConfig: string | undefined = options.linker['linker-config'];
-        if (linkerConfig) {
-
-            // path is relative by project root folder
-            if (linkerConfig.startsWith('./') || linkerConfig.startsWith('.\\')) {
-                options.linker['linker-config'] = `"${prjInfo.toAbsolutePath(options.linker['linker-config'])}"`;
-            }
-
-            // use toolchain root folder, like ${ToolchainRoot}\stm8\config
-            else if (linkerConfig.toLowerCase().startsWith('${ToolchainRoot}')) {
-                const absPath = (<string>options.linker['linker-config']).replace(/\$\{ToolchainRoot\}/i, this.getToolchainDir().path);
-                options.linker['linker-config'] = `"${NodePath.normalize(absPath)}"`;
+        const linkCfgPath_: string | undefined = options.linker['linker-config'];
+        if (linkCfgPath_) {
+            const linkerCfgPath = linkCfgPath_.trim();
+            if (/^[\w-]+\.icf$/i.test(linkerCfgPath)) { // in system icf files
+                options.linker['linker-config'] = linkerCfgPath;
+            } else { // user icf files
+                options.linker['linker-config'] = `"${prjInfo.toAbsolutePath(linkerCfgPath)}"`;
             }
         }
 

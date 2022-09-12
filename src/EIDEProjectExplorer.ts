@@ -35,7 +35,7 @@ import { ResManager } from './ResManager';
 import { GlobalEvent } from './GlobalEvents';
 import { AbstractProject, CheckError, DataChangeType, VirtualSource } from './EIDEProject';
 import { ToolchainName, ToolchainManager } from './ToolchainManager';
-import { CreateOptions, VirtualFolder, VirtualFile, ImportOptions, ProjectTargetInfo, ProjectConfigData, ProjectType } from './EIDETypeDefine';
+import { CreateOptions, VirtualFolder, VirtualFile, ImportOptions, ProjectTargetInfo, ProjectConfigData, ProjectType, ProjectConfiguration, ProjectBaseApi } from './EIDETypeDefine';
 import { PackInfo, ComponentFileItem, DeviceInfo, getComponentKeyDescription, ArmBaseCompileData, ArmBaseCompileConfigModel, RiscvCompileData, AnyGccCompileData } from "./EIDEProjectModules";
 import { WorkspaceManager } from './WorkspaceManager';
 import {
@@ -78,7 +78,7 @@ import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import {
     copyObject, downloadFileWithProgress, getDownloadUrlFromGitea,
     runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
-    genGithubHash, md5
+    genGithubHash, md5, toArray
 } from './utility';
 import { concatSystemEnvPath, DeleteDir, exeSuffix, kill } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
@@ -95,6 +95,9 @@ import {
 } from 'vscode-cpptools';
 import * as eclipseParser from './EclipseProjectParser';
 import { isArray } from 'util';
+import { parseIarCompilerLog, CompilerDiagnostics, parseGccCompilerLog, parseArmccCompilerLog, parseKeilc51CompilerLog } from './ProblemMatcher';
+import * as iarParser from './IarProjectParser';
+import * as ArmCpuUtils from './ArmCpuUtils';
 
 enum TreeItemType {
     SOLUTION,
@@ -566,7 +569,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         });
 
         this.loadRecord();
-        this.LoadWorkspaceProject();
     }
 
     onProjectChanged(prj: AbstractProject, type?: DataChangeType) {
@@ -944,7 +946,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                     obj: new ModifiableDepInfo('None', key),
                                     childKey: key,
                                     child: depValues
-                                        .map((val) => { return project.ToRelativePath(val) || val; })
+                                        .map((val) => { return project.toRelativePath(val); })
                                         .sort((val_1, val_2) => { return val_1.length - val_2.length; }),
                                     projectIndex: element.val.projectIndex
                                 }));
@@ -1182,7 +1184,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
                                     iList.push(new ProjTreeItem(TreeItemType.ITEM, {
                                         key: 'SvdPath',
-                                        value: device.svdPath ? (project.ToRelativePath(device.svdPath) || device.svdPath) : 'null',
+                                        value: device.svdPath ? project.toRelativePath(device.svdPath) : 'null',
                                         projectIndex: element.val.projectIndex
                                     }));
 
@@ -1229,10 +1231,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                     for (const key in component) {
 
                                         if (Array.isArray(component[key])) {
-                                            const list: string[] = (<ComponentFileItem[]>component[key]).map<string>((item) => {
-                                                return project.ToRelativePath(item.path) || item.path;
-                                            });
-
+                                            const list: string[] = (<ComponentFileItem[]>component[key])
+                                                .map(item => project.toRelativePath(item.path));
                                             iList.push(new ProjTreeItem(TreeItemType.GROUP, {
                                                 value: getComponentKeyDescription(key),
                                                 child: list,
@@ -1422,8 +1422,292 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             case 'eclipse':
                 this.ImportEclipseProject(option).catch(err => catchErr(err));
                 break;
+            case 'iar':
+                this.ImportIarProject(option).catch(err => catchErr(err));
+                break;
             default:
                 break;
+        }
+    }
+
+    private async ImportIarProject(option: ImportOptions) {
+
+        if (!ToolchainManager.getInstance().isToolchainPathReady('IAR_ARM')) {
+            const msg = `Your 'IAR_ARM' toolchain path is invalid, we suggest that you set it before start to import !`;
+            const ans = await vscode.window.showWarningMessage(msg, `Ok`, 'Skip');
+            if (ans != 'Skip') {
+                if (ans == 'Ok') { // jump to setup toolchain
+                    vscode.commands.executeCommand('eide.operation.install_toolchain');
+                }
+                return;
+            }
+        }
+
+        const ewwInfo = await iarParser.parseIarWorkbench(
+            new File(option.projectFile.path), SettingManager.GetInstance().getIarForArmDir());
+        const ewwRoot = new File(option.projectFile.dir);
+
+        let projectnum = 0;
+        for (const _ in ewwInfo.projects) projectnum++;
+
+        if (projectnum == 0)
+            throw new Error(`Not found any project in this IAR workbench ! [path]: ${option.projectFile.path}`);
+
+        // store vscode workspace
+        const vscWorkspaceFile = File.fromArray([ewwRoot.path, `${ewwInfo.name}.code-workspace`]);
+        {
+            const vscWorkspace = {
+                "folders": <any[]>[]
+            };
+
+            for (const projpath in ewwInfo.projects) {
+                const repath = ewwRoot.ToRelativePath(projpath) || projpath;
+                const project = ewwInfo.projects[projpath];
+                vscWorkspace.folders.push({
+                    name: project.name,
+                    path: NodePath.dirname(repath)
+                });
+            }
+
+            fs.writeFileSync(vscWorkspaceFile.path, JSON.stringify(vscWorkspace, undefined, 4));
+        }
+
+        const toolchainType: ToolchainName = 'IAR_ARM';
+
+        //
+        let project0workspacefile: File = <any>undefined;
+        for (const path_ in ewwInfo.projects) {
+
+            const iarproj = ewwInfo.projects[path_];
+            const prjRoot = new File(NodePath.dirname(path_));
+
+            const basePrj = AbstractProject.NewProject().createBase({
+                name: iarproj.name,
+                projectName: iarproj.name,
+                type: 'ARM',
+                outDir: prjRoot
+            }, false);
+
+            if (!project0workspacefile)
+                project0workspacefile = basePrj.workspaceFile;
+
+            const eidePrjCfg = basePrj.prjConfig.config;
+            const eideFolder = File.fromArray([prjRoot.path, AbstractProject.EIDE_DIR]);
+
+            // set project env
+            {
+                const envFile = File.fromArray([eideFolder.path, 'env.ini']);
+                const envCont = [
+                    `###########################################################`,
+                    `#              project environment variables`,
+                    `###########################################################`,
+                    ``,
+                ];
+                for (const key in iarproj.envs) {
+                    envCont.push(`${key} = ${iarproj.envs[key]}`);
+                }
+                envFile.Write(envCont.join(os.EOL));
+            }
+
+            // file groups
+            eidePrjCfg.virtualFolder = iarproj.fileGroups;
+            eidePrjCfg.outDir = 'build';
+            basePrj.prjConfig.setToolchain(toolchainType);
+
+            // targets
+            let firstTargetName: string = '';
+            for (const tname in iarproj.targets) {
+
+                if (!firstTargetName)
+                    firstTargetName = tname;
+
+                const targetName = tname;
+                const iarTarget = iarproj.targets[tname];
+
+                const nEideTarget: ProjectTargetInfo = <any>{
+                    excludeList: iarTarget.excludeList,
+                    toolchain: eidePrjCfg.toolchain,
+                    compileConfig: copyObject(eidePrjCfg.compileConfig),
+                    uploader: eidePrjCfg.uploader,
+                    uploadConfig: copyObject(eidePrjCfg.uploadConfig),
+                    uploadConfigMap: copyObject(eidePrjCfg.uploadConfigMap)
+                };
+
+                eidePrjCfg.targets[targetName] = nEideTarget;
+
+                nEideTarget.custom_dep = {
+                    name: 'default',
+                    incList: [],
+                    defineList: [],
+                    sourceDirList: [],
+                    libList: []
+                };
+
+                nEideTarget.custom_dep.defineList = toArray(iarTarget.settings['ICCARM.CCDefines']);
+                nEideTarget.custom_dep.incList = toArray(iarTarget.settings['ICCARM.CCIncludePath2']);
+
+                //
+                // compiler base config
+                //
+                const compilerMod = <ArmBaseCompileConfigModel>basePrj.prjConfig.compileConfigModel;
+                const compilerOpt = <ArmBaseCompileData>nEideTarget.compileConfig;
+
+                if (iarTarget.core) {
+                    const expname = iarTarget.core;
+                    const cpus = compilerMod.getValidCpus();
+                    const idx = cpus.findIndex(n => expname == n || expname.toLowerCase().startsWith(n.toLowerCase()));
+                    if (idx != -1) {
+                        compilerOpt.cpuType = cpus[idx];
+                    }
+                }
+
+                if (ArmCpuUtils.hasFpu(compilerOpt.cpuType)) {
+                    if (iarTarget.settings['General.FPU2'] != '0') {
+                        compilerOpt.floatingPointHardware =
+                            ArmCpuUtils.hasFpu(compilerOpt.cpuType, true) ? 'double' : 'single';
+                    }
+                }
+
+                compilerOpt.scatterFilePath = iarTarget.icfPath;
+
+                //
+                // builder options
+                //
+                const toolchain = ToolchainManager.getInstance().getToolchain(eidePrjCfg.type, eidePrjCfg.toolchain);
+                const builderConfig = toolchain.getDefaultConfig();
+                const builderConfigFile = File.fromArray([eideFolder.path, `${targetName.toLowerCase()}.${toolchain.configName}`]);
+
+                const iar2eideOptsMap = iarParser.IAR2EIDE_OPTS_MAP;
+
+                // set iar compiler options
+                for (const cfgGroupName in iar2eideOptsMap) {
+
+                    const optsGrp = iar2eideOptsMap[cfgGroupName];
+
+                    for (const iarsname in iar2eideOptsMap[cfgGroupName]) {
+
+                        if (typeof iarTarget.settings[iarsname] != 'string')
+                            continue;
+
+                        const iarOptVal = <string>iarTarget.settings[iarsname];
+
+                        for (const fieldname in optsGrp[iarsname]) {
+                            const eideOptVal = optsGrp[iarsname][fieldname][iarOptVal];
+                            if (eideOptVal) {
+                                (<any>builderConfig)[cfgGroupName][fieldname] = eideOptVal;
+                            }
+                        }
+                    }
+                }
+
+                // copy string options
+
+                const optToString = (obj: string | string[]): string => {
+                    if (isArray(obj)) {
+                        return obj[0];
+                    } else {
+                        return obj;
+                    }
+                };
+
+                // linker
+                {
+                    builderConfig.linker['LIB_FLAGS'] = toArray(iarTarget.settings['ILINK.IlinkAdditionalLibs']);
+
+                    if (iarTarget.settings['ILINK.IlinkOverrideProgramEntryLabel'] == '1') {
+                        builderConfig.linker['program-entry'] = optToString(iarTarget.settings['ILINK.IlinkProgramEntryLabel']);
+                    }
+
+                    builderConfig.linker['config-defines'] = toArray(iarTarget.settings['ILINK.IlinkConfigDefines']);
+
+                    const extraOpts: string[] = [];
+
+                    toArray(iarTarget.settings['ILINK.IlinkKeepSymbols'])
+                        .forEach(s => extraOpts.push(`--keep ${s}`));
+
+                    toArray(iarTarget.settings['ILINK.IlinkDefines'])
+                        .forEach(s => extraOpts.push(`--define_symbol ${s}`));
+
+                    if (iarTarget.settings['ILINK.IlinkUseExtraOptions'] == '1') {
+                        toArray(iarTarget.settings['ILINK.IlinkExtraOptions'])
+                            .forEach(opt => extraOpts.push(opt));
+                    }
+
+                    builderConfig.linker['misc-controls'] = extraOpts.join(' ');
+                }
+
+                // asm
+                {
+                    builderConfig["asm-compiler"]['defines'] = toArray(iarTarget.settings['AARM.ADefines']);
+
+                    if (iarTarget.settings['AARM.AExtraOptionsCheckV2'] == '1') {
+                        builderConfig["asm-compiler"]['misc-controls'] =
+                            toArray(iarTarget.settings['AARM.AExtraOptionsV2']);
+                    }
+                }
+
+                // cpp
+                {
+                    const extraOpts: string[] = [];
+
+                    toArray(iarTarget.settings['ICCARM.PreInclude'])
+                        .forEach(s => extraOpts.push(`--preinclude ${s}`));
+
+                    if (iarTarget.settings['ICCARM.IExtraOptionsCheck'] == '1') {
+                        toArray(iarTarget.settings['ICCARM.IExtraOptions'])
+                            .forEach(s => extraOpts.push(s));
+                    }
+
+                    builderConfig["c/cpp-compiler"]['misc-controls'] = extraOpts.join(' ');
+                }
+
+                // builder tasks
+                {
+                    if (iarTarget.builderActions.prebuild) {
+                        builderConfig.beforeBuildTasks?.push({
+                            name: 'iar prebuild',
+                            command: iarTarget.builderActions.prebuild,
+                            stopBuildAfterFailed: true,
+                        });
+                    }
+
+                    if (iarTarget.builderActions.postbuild) {
+                        builderConfig.afterBuildTasks?.push({
+                            name: 'iar postbuild',
+                            command: iarTarget.builderActions.postbuild
+                        });
+                    }
+                }
+
+                builderConfigFile.Write(JSON.stringify(builderConfig, undefined, 4));
+            }
+
+            // init current target
+
+            const tname = firstTargetName;
+            const curTarget: any = eidePrjCfg.targets[tname];
+            eidePrjCfg.mode = tname; // set current target name
+            for (const key in curTarget) {
+                if (key === 'custom_dep') {
+                    eidePrjCfg.dependenceList =
+                        [{ groupName: 'custom', depList: [curTarget[key]] }];
+                    continue;
+                }
+                (<any>eidePrjCfg)[key] = curTarget[key];
+            }
+
+            // save all config
+
+            basePrj.prjConfig.Save();
+        }
+
+        // switch project
+        const selection = await vscode.window.showInformationMessage(
+            view_str$operation$import_done, continue_text, cancel_text);
+        if (selection === continue_text) {
+            WorkspaceManager.getInstance().openWorkspace(projectnum > 1
+                ? vscWorkspaceFile
+                : project0workspacefile);
         }
     }
 
@@ -1958,7 +2242,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
             // init custom dependence after specific configs done
             newTarget.custom_dep = <any>{ name: 'default', sourceDirList: [], libList: [] };
-            const incList = keilTarget.incList.map((path) => { return baseInfo.rootFolder.ToRelativePath(path) || path; });
+            const incList = keilTarget.incList.map((path) => baseInfo.rootFolder.ToRelativePath(path) || path);
             newTarget.custom_dep.incList = defIncList.concat(incList);
             newTarget.custom_dep.defineList = keilTarget.defineList;
 
@@ -2164,8 +2448,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             try {
                 this.slnRecord = JSON.parse(this.recFile.Read());
             } catch (err) {
-                vscode.window.showWarningMessage(project_record_read_failed);
                 this.slnRecord = [];
+                GlobalEvent.emit('msg', ExceptionToMessage(err, 'Hidden'));
             }
         }
     }
@@ -2199,7 +2483,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         this.UpdateView();
     }
 
-    Close(index: number) {
+    Close(index: number): string | undefined {
 
         if (index < 0 || index >= this.prjList.length) {
             GlobalEvent.emit('error', new Error('index out of range: ' + index.toString()));
@@ -2216,9 +2500,13 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             return;
         }
 
+        const uid = sln.getUid();
+
         sln.Close();
         this.prjList.splice(index, 1);
         this.UpdateView();
+
+        return uid;
     }
 
     private async SwitchProject(prj: AbstractProject) {
@@ -2260,12 +2548,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     private cppToolsApi: CppToolsApi | undefined;
     private cppToolsOut: vscode.OutputChannel;
 
+    private compiler_diags: Map<string, vscode.DiagnosticCollection>;
+
     constructor(context: vscode.ExtensionContext) {
 
         this._event = new events.EventEmitter();
-
-        // register hook
-        GlobalEvent.on('project.opened', (prj) => this.onProjectOpened(prj));
+        this.compiler_diags = new Map();
 
         this.dataProvider = new ProjectDataProvider(context);
         this.cppcheck_diag = vscode.languages.createDiagnosticCollection('cppcheck');
@@ -2301,10 +2589,18 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
         }
 
+        // register project hook
+        GlobalEvent.on('project.opened', (prj) => this.onProjectOpened(prj));
+        GlobalEvent.on('project.closed', (uid) => this.onProjectClosed(uid));
+
         this.on('request_open_project', (fsPath: string) => this.dataProvider.OpenProject(fsPath));
         this.on('request_create_project', (option: CreateOptions) => this.dataProvider.CreateProject(option));
         this.on('request_create_from_template', (option) => this.dataProvider.CreateFromTemplate(option));
         this.on('request_import_project', (option) => this.dataProvider.ImportProject(option));
+    }
+
+    loadWorkspace() {
+        this.dataProvider.LoadWorkspaceProject();
     }
 
     ////////////////////////////////// cpptools intellisense provider ///////////////////////////////////
@@ -2315,7 +2611,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     private isRegisteredCpptoolsProvider: boolean = false;
 
-    private async onProjectOpened(prj: AbstractProject) {
+    private async registerCpptoolsProvider(prj: AbstractProject) {
 
         // notify cpptools update when project config changed
         prj.on('cppConfigChanged', () => {
@@ -2487,12 +2783,29 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     Close(item: ProjTreeItem) {
-        this.dataProvider.Close(item.val.projectIndex);
-        GlobalEvent.emit('project.closed');
+        const uid = this.dataProvider.Close(item.val.projectIndex);
+        GlobalEvent.emit('project.closed', uid);
     }
 
     SaveAll() {
         this.dataProvider.SaveAll();
+    }
+
+    private async onProjectOpened(prj: AbstractProject) {
+
+        await this.registerCpptoolsProvider(prj);
+
+        this.updateCompilerDiagsAfterBuild(prj);
+    }
+
+    private async onProjectClosed(uid: string | undefined) {
+
+        if (!uid) return;
+
+        // clear vscode diags
+        if (this.compiler_diags.has(uid)) {
+            this.compiler_diags.get(uid)?.clear();
+        }
     }
 
     private async createTarget(prj: AbstractProject) {
@@ -2659,33 +2972,41 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     private _buildLock: boolean = false;
     BuildSolution(prjItem?: ProjTreeItem, options?: BuildOptions) {
 
-        const prj = this.getProjectByTreeItem(prjItem);
-
-        if (prj === undefined) {
-            GlobalEvent.emit('msg', newMessage('Warning', 'No active project !'));
-            return;
-        }
-
-        if (this._buildLock) {
-            GlobalEvent.emit('msg', newMessage('Warning', 'build busy !, please wait !'));
-            return;
-        }
-
-        this._buildLock = true;
-
-        // save project before build
-        prj.Save(true);
-
         try {
+
+            const prj = this.getProjectByTreeItem(prjItem);
+
+            if (prj === undefined) {
+                GlobalEvent.emit('msg', newMessage('Warning', 'No active project !'));
+                return;
+            }
+
+            if (this._buildLock) {
+                GlobalEvent.emit('msg', newMessage('Warning', 'build busy !, please wait !'));
+                return;
+            }
+
+            this._buildLock = true;
+
+            // save project before build
+            prj.Save(true);
+
             const codeBuilder = CodeBuilder.NewBuilder(prj);
 
-            // set event handler
             const toolchain = prj.getToolchain().name;
 
-            // notify view update after build done !
+            // build launched event
+            codeBuilder.on('launched', () => {
+                if (this.compiler_diags.has(prj.getUid())) {
+                    this.compiler_diags.get(prj.getUid())?.clear();
+                }
+            })
+
+            // build finish event
             codeBuilder.on('finished', (done) => {
                 prj.notifyUpdateSourceRefs(toolchain);
                 this.notifyUpdateOutputFolder(prj);
+                this.updateCompilerDiagsAfterBuild(prj);
                 if (options?.flashAfterBuild && done) this.UploadToDevice(prjItem);
             });
 
@@ -2695,13 +3016,61 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             // update debug configuration
             prj.updateDebugConfig();
 
+            setTimeout(() => {
+                this._buildLock = false;
+            }, 500);
+
         } catch (error) {
             GlobalEvent.emit('error', error);
         }
+    }
 
-        setTimeout(() => {
-            this._buildLock = false;
-        }, 500);
+    private updateCompilerDiagsAfterBuild(prj: AbstractProject) {
+
+        let diag_res: CompilerDiagnostics | undefined;
+
+        try {
+
+            const logFile = File.fromArray([prj.getOutputFolder().path, 'compiler.log']);
+
+            switch (prj.getToolchain().name) {
+                case 'IAR_ARM':
+                case 'IAR_STM8':
+                    diag_res = parseIarCompilerLog(prj, logFile);
+                    break;
+                case 'Keil_C51':
+                    diag_res = parseKeilc51CompilerLog(prj, logFile);
+                    break;
+                case 'AC5':
+                    diag_res = parseArmccCompilerLog(prj, logFile);
+                    break;
+                default:
+                    diag_res = parseGccCompilerLog(prj, logFile);
+                    break;
+            }
+
+        } catch (error) {
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+        }
+
+        if (diag_res) {
+
+            const uid = prj.getUid();
+
+            let cc_diags: vscode.DiagnosticCollection;
+
+            if (this.compiler_diags.has(uid)) {
+                cc_diags = <any>this.compiler_diags.get(uid);
+            } else {
+                cc_diags = vscode.languages.createDiagnosticCollection(prj.getProjectName());
+                this.compiler_diags.set(uid, cc_diags);
+            }
+
+            for (const path in diag_res) {
+                const uri = vscode.Uri.parse(File.ToUri(path));
+                cc_diags.set(uri, diag_res[path]);
+            }
+        }
     }
 
     buildWorkspace(rebuild?: boolean) {
@@ -2775,7 +3144,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         /* launch */
         const exeName = ResManager.GetInstance().getBuilder().noSuffixName;
         const commandLine = CmdLineHandler.getCommandLine(exeName, ['-r', paramsFile.path]);
-        runShellCommand('build-workspace', commandLine);
+        runShellCommand('build workspace', commandLine);
     }
 
     openWorkspaceConfig() {
@@ -2851,7 +3220,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             const xmlFile = prj.ExportToKeilProject();
 
             if (xmlFile) {
-                GlobalEvent.emit('msg', newMessage('Info', export_keil_xml_ok + prj.ToRelativePath(xmlFile.path)));
+                GlobalEvent.emit('msg', newMessage('Info', export_keil_xml_ok + prj.toRelativePath(xmlFile.path)));
             } else {
                 GlobalEvent.emit('msg', newMessage('Warning', export_keil_xml_failed));
             }
@@ -3827,7 +4196,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const defMacros: string[] = ['__VSCODE_CPPTOOL']; /* it's for internal force include header */
         let defList: string[] = defMacros.concat(depMerge.defineList);
         depMerge.incList = ArrayDelRepetition(depMerge.incList.concat(prj.getSourceIncludeList()));
-        const includeList: string[] = depMerge.incList.map((_path) => { return File.ToUnixPath(confRootDir.ToRelativePath(_path) || _path); });
+        const includeList: string[] = depMerge.incList.map(p => prj.resolveEnvVar(p)).map(p => File.ToUnixPath(confRootDir.ToRelativePath(p) || p));
         const intrHeader: string[] | undefined = toolchain.getForceIncludeHeaders();
 
         const getSourceList = (project: AbstractProject): string[] => {
@@ -4015,11 +4384,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                         const line = parseInt(mRes[pattern.line]);
                         const col = parseInt(mRes[pattern.column]);
                         const pos = new vscode.Position(line - 1, col - 1);
-                        diags.push(new vscode.Diagnostic(
-                            new vscode.Range(pos, pos),
-                            mRes[pattern.message],
-                            toVscServerity(mRes[pattern.severity])
-                        ));
+                        const diag = new vscode.Diagnostic(new vscode.Range(pos, pos), mRes[pattern.message], toVscServerity(mRes[pattern.severity]));
+                        diag.source = 'cppcheck';
+                        diags.push(diag);
                         this.cppcheck_diag.set(uri, diags);
                     }
                     // we not need log other cppcheck err msg
@@ -4302,7 +4669,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                             const vFolder = folderStack.pop();
                             if (vFolder) {
                                 vFolder.files = vFolder.files.map((file) => {
-                                    return { path: prj.ToRelativePath(file.path) || file.path }
+                                    return { path: prj.toRelativePath(file.path) }
                                 });
                                 vFolder.folders.forEach((folder) => {
                                     folderStack.push(folder)
@@ -4341,7 +4708,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
                             const excRePathLi = prjInfo.excludeList
                                 .filter(path => path.trim() != '')
-                                .map(path => prj.ToRelativePath(path) || path);
+                                .map(path => prj.toRelativePath(path));
 
                             const realExcLi: string[] = [];
 
@@ -4448,20 +4815,34 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         prj.GetConfiguration().getAllDepGroup().forEach((group) => {
             for (const dep of group.depList) {
                 for (const incPath of dep.incList) {
-                    includesMap.set(prj.ToRelativePath(incPath) || incPath, group.groupName);
+                    includesMap.set(prj.toRelativePath(incPath), group.groupName);
                 }
             }
         });
 
         // add source include paths
         prj.getSourceIncludeList().forEach((incPath) => {
-            includesMap.set(prj.ToRelativePath(incPath) || incPath, 'source');
+            includesMap.set(prj.toRelativePath(incPath), 'source');
         });
 
         for (const keyVal of includesMap) {
+
+            const incPath = keyVal[0];
+            const grpName = keyVal[1];
+
+            let descpLi: string[] = [];
+
+            if (grpName != ProjectConfiguration.CUSTOM_GROUP_NAME) {
+                descpLi.push(grpName);
+            }
+
+            if (File.isEnvPath(incPath)) {
+                descpLi.push(`loc: ${prj.resolveEnvVar(incPath)}`);
+            }
+
             pickItems.push({
-                label: keyVal[0],
-                description: keyVal[1]
+                label: incPath,
+                description: descpLi.join(', ')
             });
         }
 
@@ -4492,15 +4873,29 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         prj.GetConfiguration().getAllDepGroup().forEach((group) => {
             for (const dep of group.depList) {
                 for (const libPath of dep.libList) {
-                    libMaps.set(prj.ToRelativePath(libPath) || libPath, group.groupName);
+                    libMaps.set(prj.toRelativePath(libPath), group.groupName);
                 }
             }
         });
 
         for (const keyVal of libMaps) {
+
+            const libPath = keyVal[0];
+            const grpName = keyVal[1];
+
+            let descpLi: string[] = [];
+
+            if (grpName != ProjectConfiguration.CUSTOM_GROUP_NAME) {
+                descpLi.push(grpName);
+            }
+
+            if (File.isEnvPath(libPath)) {
+                descpLi.push(`loc: ${prj.resolveEnvVar(libPath)}`);
+            }
+
             pickItems.push({
-                label: keyVal[0],
-                description: keyVal[1]
+                label: libPath,
+                description: descpLi.join(', ')
             });
         }
 
@@ -5023,7 +5418,7 @@ class VFolderSourcePathsModifier implements ModifiableYamlConfigProvider {
                 return;
             }
 
-            const repath = project.ToRelativePath(path) || path;
+            const repath = project.toRelativePath(path);
             const vFileInfo = vSourceManager.getFile(vInfo.path);
             if (vFileInfo) {
                 vFileInfo.path = repath;
@@ -5068,6 +5463,12 @@ class VFolderSourcePathsModifier implements ModifiableYamlConfigProvider {
                     `#`,
                     `# You can modify files path by editing and saving this file (allow relative path).`,
                     `#`,
+                    `# format:`,
+                    '#     - path: ./src_1.c',
+                    '#     - path: ../xxx/xxx/src_2.c',
+                    '#     - path: xxx/${VAR}/src_3.c',
+                    '#     - path: D:/path/xxx/src_n.c',
+                    `#`,
                     ``,
                     yml.stringify(vFolderInfo.files, { indent: 4 })
                 ];
@@ -5106,7 +5507,7 @@ class VFolderSourcePathsModifier implements ModifiableYamlConfigProvider {
             if (fileList) {
                 fileList = fileList.map((vFile) => {
                     return {
-                        path: info.project.ToRelativePath(vFile.path) || vFile.path
+                        path: info.project.toRelativePath(vFile.path)
                     };
                 });
             }
@@ -5164,7 +5565,7 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
                 `#   - ./Your/Include/Folder/Path`
             );
             cusDep.incList.forEach((path) => {
-                yamlLines.push(`    - ${prj.ToRelativePath(path) || path}`)
+                yamlLines.push(`    - ${prj.toRelativePath(path)}`)
             });
 
             // push lib folder path
@@ -5175,7 +5576,7 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
                 `#   - ./Your/Library/Path`
             );
             cusDep.libList.forEach((path) => {
-                yamlLines.push(`    - ${prj.ToRelativePath(path) || path}`)
+                yamlLines.push(`    - ${prj.toRelativePath(path)}`)
             });
 
             // push macros
@@ -5233,7 +5634,7 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
             if (Array.isArray(cfg.IncludeFolders)) {
                 const li = cfg.IncludeFolders
                     .filter((path: any) => typeof (path) == 'string')
-                    .map((path: string) => prj.ToAbsolutePath(path));
+                    .map((path: string) => prj.ToAbsolutePath(path, false));
                 cusDep.incList = ArrayDelRepetition(li);
             } else {
                 cusDep.incList = [];
@@ -5243,7 +5644,7 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
             if (Array.isArray(cfg.LibraryFolders)) {
                 const li = cfg.LibraryFolders
                     .filter((path: any) => typeof (path) == 'string')
-                    .map((path: string) => prj.ToAbsolutePath(path));
+                    .map((path: string) => prj.ToAbsolutePath(path, false));
                 cusDep.libList = ArrayDelRepetition(li);
             } else {
                 cusDep.libList = [];
@@ -5251,8 +5652,7 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
 
             // macro list
             if (Array.isArray(cfg.Defines)) {
-                const li = cfg.Defines
-                    .filter((path: any) => typeof (path) == 'string');
+                const li = cfg.Defines.filter((path: any) => typeof (path) == 'string');
                 cusDep.defineList = ArrayDelRepetition(li);
             } else {
                 cusDep.defineList = [];
@@ -5296,6 +5696,12 @@ class ProjectExcSourceModifier implements ModifiableYamlConfigProvider {
             `#`,
             `# You can modify the configuration by editing and saving this file.`,
             `#`,
+            '# format:',
+            '#      - ./xxx/xxx_src_1.c',
+            '#      - ../xx/a/b/x/xxx_src_2.c',
+            '#      - <virtual_root>/virtual_folder_1/xxx_src_1.c',
+            '#      - <virtual_root>/virtual_folder_1/dir/xxx_src_2.c',
+            '#',
             ``,
         ];
 

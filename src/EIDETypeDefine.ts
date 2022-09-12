@@ -87,7 +87,7 @@ export interface CreateOptions {
     type: ProjectType;
 }
 
-export type ImportProjectIDEType = 'mdk' | 'eclipse';
+export type ImportProjectIDEType = 'mdk' | 'eclipse' | 'iar';
 
 export interface ImportOptions {
     type: ImportProjectIDEType;
@@ -119,6 +119,14 @@ class EventItem {
     }
 }
 
+export interface ProjectBaseApi {
+    getRootDir: () => File;
+    toolchainName: () => ToolchainName;
+    toAbsolutePath: (path: string) => string;
+    toRelativePath: (path: string) => string;
+    resolveEnvVar: (path: string) => string;
+}
+
 export abstract class Configuration<ConfigType = any, EventType = any> {
 
     readonly FILE_NAME: string;
@@ -127,28 +135,32 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
 
     private _eventMergeFlag: boolean;
     private _eventCache: EventItem[];
-
-    protected watcher: FileWatcher;
     protected _event: events.EventEmitter;
+
+    protected eideJsonFile: File;
+    protected watcher: FileWatcher;
 
     constructor(configFile: File, type?: ProjectType) {
         this._event = new events.EventEmitter();
         this._eventMergeFlag = false;
         this._eventCache = [];
+        this.eideJsonFile = configFile;
         this.FILE_NAME = configFile.name;
         this.watcher = new FileWatcher(configFile, false);
         this.watcher.on('error', (err) => GlobalEvent.emit('error', err));
-        this.watcher.OnChanged = () => this.Update(this.watcher.file.Read());
+        this.watcher.OnChanged = () => this.InitConfig(this.watcher.file.Read());
         this.config = this.GetDefault(this.readTypeFromFile(configFile) || type);
-        this.load(configFile);
     }
 
-    protected load(f: File) {
-        if (f.IsFile()) {
-            this.Update(f.Read());
+    public load(): Configuration<ConfigType, EventType> {
+
+        if (this.eideJsonFile.IsFile()) {
+            this.InitConfig(this.eideJsonFile.Read());
         } else {
             this.Save(true);
         }
+
+        return this;
     }
 
     Dispose(): void {
@@ -156,7 +168,7 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
     }
 
     GetFile(): File {
-        return this.watcher.file;
+        return this.eideJsonFile;
     }
 
     Watch() {
@@ -204,7 +216,7 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
         this._eventMergeFlag = false;
     }
 
-    Update(json: string | object): void {
+    protected InitConfig(json: string | object): void {
 
         const _configFromFile: any = (typeof json === 'string') ? this.Parse(json) : json;
 
@@ -225,7 +237,7 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
     }
 
     Save(force?: boolean): void {
-        this.watcher.file.Write(this.ToJson());
+        this.eideJsonFile.Write(this.ToJson());
     }
 
     protected afterInitConfigData() {
@@ -286,9 +298,9 @@ export class ConfigMap {
 
 export interface Dependence {
     name: string;
-    incList: string[];
-    libList: string[];
-    sourceDirList: string[];
+    incList: string[];          // absolute path with env variables
+    libList: string[];          // absolute path with env variables
+    sourceDirList: string[];    // absolute path with env variables
     defineList: string[];
 }
 
@@ -369,50 +381,41 @@ export interface ProjectConfigEvent {
     data?: any;
 }
 
-export interface ProjectConfigApi {
-    getRootDir: () => File;
-    toAbsolutePath: (path: string) => string;
-    toRelativePath: (path: string) => string;
-}
-
 export class ProjectConfiguration<T extends BuilderConfigData>
     extends Configuration<ProjectConfigData<T>, ProjectConfigEvent> {
 
     static readonly BUILD_IN_GROUP_NAME = 'build-in';
     static readonly CUSTOM_GROUP_NAME = 'custom';
     static readonly MERGE_DEP_NAME = 'merge';
-
     static readonly USR_CTX_FILE_NAME = '.eide.usr.ctx.json';
-
-    private rootDir: File | undefined;
-    private api: ProjectConfigApi;
 
     compileConfigModel: CompileConfigModel<any> = <any>null;
     uploadConfigModel: UploadConfigModel<any> = <any>null;
 
-    protected load(f: File) {
+    protected project: ProjectBaseApi;
+    protected rootDir: File;
 
-        // init project root folder before constructor
-        this.rootDir = new File(NodePath.dirname(this.GetFile().dir));
+    constructor(eideJsonFile: File, type?: ProjectType) {
 
-        // load superclass
-        super.load(f);
+        super(eideJsonFile, type);
+
+        this.rootDir = new File(NodePath.dirname(this.eideJsonFile.dir));
+
+        this.project = {
+            getRootDir: () => this.rootDir,
+            toolchainName: () => this.config.toolchain,
+            toRelativePath: (p) => this.toRelativePath(p),
+            toAbsolutePath: (p) => this.toAbsolutePath(p),
+            resolveEnvVar: (p) => p
+        };
     }
 
-    constructor(f: File, type?: ProjectType) {
+    public load(): ProjectConfiguration<any> {
 
-        super(f, type);
-
-        this.api = {
-            getRootDir: () => this.getRootDir(),
-            toAbsolutePath: (path) => this.toAbsolutePath(path),
-            toRelativePath: (path) => this.toRelativePath(path)
-        };
-
-        // init project
+        super.load();
 
         this.compileConfigModel = CompileConfigModel.getInstance(this.config);
-        this.uploadConfigModel = UploadConfigModel.getInstance(this.config.uploader, this.api);
+        this.uploadConfigModel = UploadConfigModel.getInstance(this.config.uploader, this.project);
 
         this.compileConfigModel.Update(this.config.compileConfig);
         this.config.compileConfig = this.compileConfigModel.data;
@@ -424,10 +427,12 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
         // update upload model
         this.compileConfigModel.on('dataChanged', () => this.uploadConfigModel.emit('NotifyUpdate', this));
+
+        return this;
     }
 
     private getRootDir(): File {
-        return <File>this.rootDir;
+        return this.rootDir;
     }
 
     private toAbsolutePath(path_: string): string {
@@ -436,9 +441,9 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         return NodePath.normalize(File.ToLocalPath(this.getRootDir().path + File.sep + path));
     }
 
-    private toRelativePath(_path: string): string {
-        const path = _path.trim();
-        return this.getRootDir().ToRelativePath(path) || path;
+    private toRelativePath(path_: string): string {
+        const path = path_.trim();
+        return this.getRootDir().ToRelativePath(path) || File.ToUnixPath(path);
     }
 
     private MergeDepList(depList: Dependence[], name?: string): Dependence {
@@ -583,7 +588,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         }
 
         // update new config
-        this.uploadConfigModel = UploadConfigModel.getInstance(uploader, this.api);
+        this.uploadConfigModel = UploadConfigModel.getInstance(uploader, this.project);
         this.config.uploader = uploader;
         this.uploadConfigModel.data = utility.copyObject(oldCfg) || this.uploadConfigModel.data;
         this.config.uploadConfig = this.uploadConfigModel.data; // bind obj
@@ -896,7 +901,9 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         }
     }
 
-    //======================== custom ================================
+    /////////////////////////////////////////////////////////
+    // custom dependence
+    /////////////////////////////////////////////////////////
 
     CustomDep_GetEnabledKeys(): string[] {
         return [
@@ -953,12 +960,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         this.emit('dataChanged', { type: 'dependence' });
     }
 
-    CustomDep_RemoveInvalidIncDirs() {
-        const dep = this.CustomDep_getDependence();
-        dep.incList = dep.incList.filter((_path) => { return new File(_path).IsDir(); });
-        dep.libList = dep.libList.filter((_path) => { return new File(_path).IsDir(); });
-        dep.sourceDirList = dep.sourceDirList.filter((_path) => { return new File(_path).IsDir(); });
-    }
+    // --- includePath
 
     CustomDep_AddIncDir(dir: File) {
         const dep = this.CustomDep_getDependence();
@@ -993,21 +995,21 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         return dupList;
     }
 
-    CustomDep_RemoveIncDir(_path: string) {
+    CustomDep_RemoveIncDir(path: string) {
         const dep = this.CustomDep_getDependence();
-        let index = dep.incList.findIndex((path) => { return path === _path; });
+        let index = dep.incList.findIndex((p) => { return p === path; });
         if (index !== -1) {
             dep.incList.splice(index, 1);
             this.emit('dataChanged', { type: 'dependence' });
         }
     }
 
-    CustomDep_RemoveIncDirs(_dirList: string[]) {
+    CustomDep_RemoveIncDirs(pathList: string[]) {
         const dep = this.CustomDep_getDependence();
         const oldLen = dep.incList.length;
 
         dep.incList = dep.incList.filter((incPath) => {
-            return !_dirList.includes(incPath);
+            return !pathList.includes(incPath);
         });
 
         if (oldLen !== dep.incList.length) {
@@ -1015,7 +1017,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         }
     }
 
-    //--------------------------------------------
+    // --- defines (macros)
 
     CustomDep_AddDefine(define: string) {
         const dep = this.CustomDep_getDependence();
@@ -1063,15 +1065,16 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         }
     }
 
-    //---------------------------lib----------------------
+    // --- libraries dir
 
-    CustomDep_AddAllFromLibList(_libList: string[]) {
+    CustomDep_AddAllFromLibList(pathList: string[]) {
 
         let needNotify: boolean = false;
         const dep = this.CustomDep_getDependence();
-        _libList.forEach((lib) => {
-            if (!dep.libList.includes(lib)) {
-                dep.libList.push(lib);
+
+        pathList.forEach((path) => {
+            if (!dep.libList.includes(path)) {
+                dep.libList.push(path);
                 needNotify = true;
             }
         });
@@ -1081,18 +1084,18 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         }
     }
 
-    CustomDep_RemoveLib(_lib: string) {
+    CustomDep_RemoveLib(path: string) {
         const dep = this.CustomDep_getDependence();
-        let index = dep.libList.findIndex((lib) => { return _lib === lib; });
+        let index = dep.libList.findIndex((p) => { return path === p; });
         if (index !== -1) {
             dep.libList.splice(index, 1);
             this.emit('dataChanged', { type: 'dependence' });
         }
     }
 
-    //--------------------------source----------------------
+    // --- src dirs
 
-    CustomDep_AddAllFromSourceList(_sourceList: string[]) {
+    /* CustomDep_AddAllFromSourceList(_sourceList: string[]) {
 
         let needNotify: boolean = false;
         const dep = this.CustomDep_getDependence();
@@ -1115,16 +1118,18 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             dep.sourceDirList.splice(index, 1);
             this.emit('dataChanged', { type: 'dependence' });
         }
-    }
+    } */
+
+    // --- store
 
     cloneCurrentTarget(): ProjectTargetInfo {
 
         const target = this.config;
 
         const custom_dep = <Dependence>utility.deepCloneObject(this.CustomDep_getDependence());
-        custom_dep.incList = custom_dep.incList.map((path) => { return this.toRelativePath(path) || path; });
-        custom_dep.libList = custom_dep.libList.map((path) => { return this.toRelativePath(path) || path; });
-        custom_dep.sourceDirList = custom_dep.sourceDirList.map((path) => { return this.toRelativePath(path) || path; });
+        custom_dep.incList = custom_dep.incList.map((path) => this.toRelativePath(path));
+        custom_dep.libList = custom_dep.libList.map((path) => this.toRelativePath(path));
+        custom_dep.sourceDirList = custom_dep.sourceDirList.map((path) => this.toRelativePath(path));
 
         return {
             excludeList: Array.from(target.excludeList),
@@ -1238,9 +1243,15 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         //  old project(ver < 3.3) have 'mode' field
         //  new project(ver >= 3.3) not have 'mode' field
         if (this.config.mode == undefined) {
-            // recover current target from 'targets' map
             const usrCtx = this.getProjectUsrCtx();
             this.recoverTarget(usrCtx.target);
+        }
+
+        // fill missing field after target recovered
+        for (const key in defCfg) {
+            if (curCfg[key] == undefined) {
+                curCfg[key] = defCfg[key];
+            }
         }
 
         //
@@ -1272,7 +1283,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         // convert abspath to relative path before save to file
         //
 
-        eidePrjObj.srcDirs = eidePrjObj.srcDirs.map((path) => { return this.toRelativePath(path); });
+        eidePrjObj.srcDirs = eidePrjObj.srcDirs.map((path) => this.toRelativePath(path));
 
         // ignore some 'dynamic' dependence
         eidePrjObj.dependenceList = eidePrjObj.dependenceList.filter((g) => {
@@ -1282,9 +1293,9 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
         for (const depGroup of eidePrjObj.dependenceList) {
             for (const dep of depGroup.depList) {
-                dep.incList = dep.incList.map((path) => { return this.toRelativePath(path); });
-                dep.libList = dep.libList.map((path) => { return this.toRelativePath(path); });
-                dep.sourceDirList = dep.sourceDirList.map((path) => { return this.toRelativePath(path); });
+                dep.incList = dep.incList.map((path) => this.toRelativePath(path));
+                dep.libList = dep.libList.map((path) => this.toRelativePath(path));
+                dep.sourceDirList = dep.sourceDirList.map((path) => this.toRelativePath(path));
             }
         }
 

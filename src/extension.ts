@@ -251,6 +251,9 @@ export async function activate(context: vscode.ExtensionContext) {
     // auto save project
     setInterval(() => projectExplorer.SaveAll(), 100 * 1000);
 
+    // load project in this workspace
+    projectExplorer.loadWorkspace();
+
     // launch done
     GlobalEvent.emit('extension_launch_done');
     GlobalEvent.emit('globalLog', newMessage('Info', 'Embedded IDE launch done'));
@@ -701,7 +704,7 @@ function exportEnvToSysPath() {
     }
 
     // export def tools path to system env path from extension setting
-    const pathList: { key: string, path: string }[] = [];
+    const pathList: { key: string, path: string, extraPath?: string[] }[] = [];
 
     // try to export some user setted tools path to env
     [
@@ -716,37 +719,48 @@ function exportEnvToSysPath() {
 
     // search tools folder and export path to system env
     eideToolsFolder.GetList(File.EMPTY_FILTER).forEach((subDir) => {
+
         if (!/^\w+$/.test(subDir.name)) return; // filter dir name
-        let binFolderPath: string | undefined;
+
+        let binFolderPaths: string[] = [];
+
         // try get path from 'BIN_PATH' file
         const BIN_PATH_FILE = File.fromArray([subDir.path, 'BIN_PATH']);
         if (BIN_PATH_FILE.IsFile()) {
+
+            let binDirs: string[] = [];
             try {
-                const binDir = BIN_PATH_FILE.Read().trim();
-                if (binDir != '') {
-                    const binFolder = NodePath.normalize(`${subDir.path}/${binDir}`);
-                    if (File.IsDir(binFolder)) {
-                        binFolderPath = binFolder;
-                    }
-                }
+                binDirs = BIN_PATH_FILE.Read().split(/\r\n|\n/)
+                    .map(s => s.trim())
+                    .filter(s => s != '');
             } catch (error) {
                 GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
             }
+
+            binDirs.forEach(dir => {
+                const binFolder = NodePath.normalize(`${subDir.path}/${dir}`);
+                if (File.IsDir(binFolder)) {
+                    binFolderPaths.push(binFolder);
+                }
+            });
         }
+
         // try use ./bin
-        if (!binFolderPath) {
+        if (binFolderPaths.length == 0) {
             const binFolder = NodePath.normalize(`${subDir.path}/bin`);
             if (File.IsDir(binFolder)) {
-                binFolderPath = binFolder;
+                binFolderPaths.push(binFolder);
             }
         }
+
         // export bin folder if we found
-        if (binFolderPath) {
+        if (binFolderPaths.length > 0) {
             const keyName = `EIDE_TOOL_${subDir.name.toUpperCase()}`;
             if (pathList.findIndex(o => o.key == keyName) != -1) return; // skip repeat key name
             pathList.push({
                 key: keyName,
-                path: binFolderPath
+                path: binFolderPaths[0],
+                extraPath: binFolderPaths.length > 1 ? binFolderPaths.slice(1) : undefined
             });
         }
     });
@@ -764,10 +778,19 @@ function exportEnvToSysPath() {
 
     /* append to System Path if we not */
     if (isEnvSetuped == false) {
-        const pList = pathList
+
+        // append all tools env paths
+        pathList
             .filter((env) => File.IsDir(env.path))
-            .map((env) => env.path);
-        platform.appendToSysEnv(process.env, defEnvPath.concat(pList));
+            .forEach(envInfo => {
+                defEnvPath.push(envInfo.path);
+                if (envInfo.extraPath) {
+                    envInfo.extraPath.forEach(p => defEnvPath.push(p));
+                }
+            });
+
+        // apply to system env path
+        platform.prependToSysEnv(process.env, defEnvPath);
         isEnvSetuped = true;
     }
 
@@ -1082,17 +1105,12 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
 
     // register map view provider
     context.subscriptions.push(
-        vscode.window.registerCustomEditorProvider('cl.eide.map.view', new MapViewEditorProvider(), {
-            webviewOptions: { enableFindWidget: true }
-        })
-    );
+        vscode.window.registerCustomEditorProvider('cl.eide.map.view',
+            new MapViewEditorProvider(), { webviewOptions: { enableFindWidget: true } }));
 
-    // register some links provider, it only for Keil_C51 compiler
-    if (os.platform() == 'win32') {
-        context.subscriptions.push(
-            vscode.window.registerTerminalLinkProvider(new EideTerminalLinkProvider())
-        );
-    }
+    // terminal link providers
+    context.subscriptions.push(
+        vscode.window.registerTerminalLinkProvider(new EideTerminalLinkProvider()));
 
     return true;
 }
@@ -1139,14 +1157,51 @@ class EideTerminalLink extends vscode.TerminalLink {
     line?: number;
 }
 
+interface TerminalLinkPattern {
+    regexp: RegExp;
+    file: number;
+    line: number;
+    col?: number;
+}
+
 class EideTerminalLinkProvider implements vscode.TerminalLinkProvider<EideTerminalLink> {
 
     private workspace: File | undefined;
-    private macthers: Map<RegExp, { file: number, line: number }> = new Map();
+
+    private patterns: TerminalLinkPattern[] = [
+
+        // keil c51
+        {
+            regexp: new RegExp("IN LINE (\\d+) OF ([^:]+):", 'i'),
+            line: 1,
+            file: 2
+        },
+
+        // armcc
+        {
+            regexp: new RegExp("^\"([^\"]+)\", line (\\d+):", 'i'),
+            file: 1,
+            line: 2
+        },
+
+        // gcc
+        {
+            regexp: new RegExp("^(.+):(\\d+):(\\d+):", 'i'),
+            file: 1,
+            line: 2,
+            col: 3
+        },
+
+        // iar
+        {
+            regexp: new RegExp("^\\s*\"([^\"]+)\",(\\d+)\\s+", 'i'),
+            file: 1,
+            line: 2
+        }
+    ];
 
     constructor() {
         this.workspace = WorkspaceManager.getInstance().getWorkspaceRoot();
-        this.macthers.set(/\bIN LINE (\d+) OF ([^:]+)/, { line: 1, file: 2 }); // keil c51
     }
 
     private toAbsPath(path: string): string {
@@ -1160,29 +1215,28 @@ class EideTerminalLinkProvider implements vscode.TerminalLinkProvider<EideTermin
 
     async provideTerminalLinks(context: vscode.TerminalLinkContext, token: vscode.CancellationToken): Promise<EideTerminalLink[]> {
 
-        const res: EideTerminalLink[] = [];
+        // only for eide builder task
+        if (!context.terminal.name.trim().includes('build')) {
+            return [];
+        }
 
-        this.macthers.forEach((mInfo, matcher) => {
-            const m = matcher.exec(context.line);
+        for (const pattern of this.patterns) {
+            const m = pattern.regexp.exec(context.line);
             if (m && m.length > 1) {
                 const link = new EideTerminalLink(m.index, m[0].length);
-                link.file = this.toAbsPath(m[mInfo.file]);
-                link.line = parseInt(m[mInfo.line]) - 1;
-                res.push(link);
+                link.file = this.toAbsPath(m[pattern.file]);
+                link.line = parseInt(m[pattern.line]) - 1;
+                return [link];
             }
-        });
+        }
 
-        return res;
+        return [];
     }
 
     async handleTerminalLink(link: EideTerminalLink): Promise<void> {
 
-        if (!link.file || !link.line || link.line == -1) return;
-
-        if (!File.IsFile(link.file)) {
-            vscode.window.showWarningMessage(`File '${link.file}' is not existed !`);
+        if (!link.file || !link.line || link.line == -1)
             return;
-        }
 
         const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(link.file));
 

@@ -22,6 +22,7 @@
 	SOFTWARE.
 */
 
+import * as child_process from 'child_process';
 import * as events from 'events';
 import { File } from '../lib/node-utility/File';
 import { DeleteDir } from './Platform';
@@ -38,6 +39,7 @@ import * as fs from 'fs';
 import { AbstractProject } from './EIDEProject';
 import { ExceptionToMessage, newMessage } from './Message';
 import { ResManager } from './ResManager';
+import { ExeCmd } from '../lib/node-utility/Executable';
 
 export enum ComponentUpdateType {
     Disabled = 1,
@@ -1154,33 +1156,50 @@ export class PackageManager {
             reporter(undefined, 'Start parsing package description file ...');
         }
 
-        // delete list
-        const delList: File[] = outDir.GetAll(File.EMPTY_FILTER, [
-            /^Debug$/i, /^BSP$/i, /^Boards$/i, /^Flash$/i, /^document/i, /^Images$/i
-        ]);
-
-        // delete unused folders
-        for (const dDir of delList) {
-            if (dDir.IsExist()) {
-                console.log('[delete dir] : ' + dDir.name + ' : ' + DeleteDir(dDir));
+        const postCmdFile = File.fromArray([this.project.getEideDir().path, 'post-install.cmsis-pack.sh']);
+        if (postCmdFile.IsFile()) {
+            try {
+                let fpath = outDir.ToRelativePath(postCmdFile.path);
+                fpath = fpath ? `./${fpath}` : File.ToUnixPath(postCmdFile.path);
+                if (fpath.includes(' ')) fpath = `"${fpath}"`;
+                const logTxt = child_process.execSync(`bash ${fpath}`, { cwd: outDir.path }).toString();
+                GlobalEvent.emit('globalLog.append', `\n>>> exec script: '${postCmdFile.name}'\n\n`);
+                GlobalEvent.emit('globalLog.append', logTxt + '\n');
+            } catch (error) {
+                GlobalEvent.emit('msg', newMessage('Warning', `Exec '${postCmdFile.name}' failed !, [path]: ${postCmdFile.path}`));
+                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
             }
         }
-
-        // delete unused files
-        outDir.GetAll([/\.md$/i, /\.chm$/i, /\.pdf$/i, /\.exe$/i, /\.html$/i, /\.jpg$/i, /\.jpeg$/i, /\.png$/i, /\.js$/i, /\.css$/i], File.EMPTY_FILTER)
-            .forEach((f) => {
-                try {
-                    fs.unlinkSync(f.path);
-                } catch (error) {
-                    GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
-                }
-            });
 
         try {
             this.LoadPackage(outDir);
         } catch (error) {
-            GlobalEvent.emit('error', error);
             GlobalEvent.emit('msg', newMessage('Warning', `Install package error !, ${(<Error>error).message}`));
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            return;
+        }
+
+        // install cmsis device for jlink
+        {
+            const proc = new ExeCmd();
+
+            const cmd = `jlink-device-addon "${File.ToUnixPath(pack.path)}"`;
+
+            proc.on('launch', () => {
+                GlobalEvent.emit('globalLog.append', `\n>>> exec cmd: '${cmd}'\n\n`);
+            });
+
+            proc.on('data', (str) => {
+                GlobalEvent.emit('globalLog.append', str);
+            });
+
+            proc.on('close', (eInf) => {
+                if (eInf.code != 0) {
+                    GlobalEvent.emit('globalLog.append', `\n----- failed, exit code: ${eInf.code} -----\n`);
+                }
+            });
+
+            proc.Run(cmd);
         }
     }
 }

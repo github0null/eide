@@ -28,12 +28,13 @@
         "keil",
         "eide",
         "cmsis",
-        "eclipse"
+        "eclipse",
+        "iar"
     ],
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.8.8",
+    "version": "3.9.0",
     "preview": false,
     "engines": {
         "vscode": "^1.63.0"
@@ -99,6 +100,7 @@
         "node-7z": "^3.0.0",
         "vscode-cpptools": "^5.0.0",
         "x2js": "3.4.1",
+        "xml-formatter": "^2.6.1",
         "xml2js": "^0.4.23",
         "yaml": "^1.10.2"
     },
@@ -375,6 +377,12 @@
                         "type": "string",
                         "scope": "machine",
                         "markdownDescription": "%settings.iar.stm8.install.folder%",
+                        "default": ""
+                    },
+                    "EIDE.IAR.ARM.Toolchain.InstallDirectory": {
+                        "type": "string",
+                        "scope": "machine",
+                        "markdownDescription": "%settings.iar.arm.toolchain.install.folder%",
                         "default": ""
                     },
                     "EIDE.STM8.GNU-SDCC.InstallDirectory": {
@@ -1496,6 +1504,10 @@
                 "url": "./lang/arm.gcc.verify.json"
             },
             {
+                "fileMatch": "**/*.options.arm.iar.json",
+                "url": "./lang/arm.iar.verify.json"
+            },
+            {
                 "fileMatch": "**/*.stm8.gnu-sdcc.json",
                 "url": "./lang/stm8.gnu-sdcc.verify.json"
             },
@@ -1532,64 +1544,6 @@
                 "language": "elf.info",
                 "scopeName": "source.elf.info",
                 "path": "./lang/elf.info.tmLanguage.json"
-            }
-        ],
-        "problemMatchers": [
-            {
-                "name": "armcc",
-                "fileLocation": "autoDetect",
-                "pattern": [
-                    {
-                        "regexp": "^\"([^\"]+)\", line (\\d+): (Error|Warning):\\s+#(.+):\\s+(.+)$",
-                        "file": 1,
-                        "line": 2,
-                        "severity": 3,
-                        "code": 4,
-                        "message": 5
-                    }
-                ]
-            },
-            {
-                "name": "gcc",
-                "fileLocation": "autoDetect",
-                "pattern": [
-                    {
-                        "regexp": "^(.+):(\\d+):(\\d+):\\s+(\\w+):\\s+(.*)$",
-                        "file": 1,
-                        "line": 2,
-                        "column": 3,
-                        "severity": 4,
-                        "message": 5
-                    }
-                ]
-            },
-            {
-                "name": "keilc51",
-                "fileLocation": "autoDetect",
-                "pattern": [
-                    {
-                        "regexp": "(ERROR|WARNING) (\\w+) IN LINE (\\d+) OF ([^:]+): (.+)",
-                        "severity": 1,
-                        "code": 2,
-                        "line": 3,
-                        "file": 4,
-                        "message": 5
-                    }
-                ]
-            },
-            {
-                "name": "iarstm8",
-                "fileLocation": "autoDetect",
-                "pattern": [
-                    {
-                        "regexp": "^\\s*\"([^\"]+)\",(\\d+)\\s+(Error|Warning)\\[(Pe\\w+)\\]: ",
-                        "file": 1,
-                        "line": 2,
-                        "severity": 3,
-                        "code": 4,
-                        "message": 4
-                    }
-                ]
             }
         ]
     }

@@ -427,7 +427,8 @@ function parseToolOption(optionObj: any): { type: string, val: string[] } | unde
 }
 
 function toArray(obj: any): any[] {
-    if (!isArray(obj)) return [];
+    if (obj == undefined || obj == null) return [];
+    if (!isArray(obj)) return [obj];
     return obj;
 }
 

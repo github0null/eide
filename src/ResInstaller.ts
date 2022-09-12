@@ -40,6 +40,7 @@ import { SevenZipper } from './Compress';
 import { ResManager } from './ResManager';
 import * as platform from './Platform';
 import { ExternalUtilToolIndexDef } from './WebInterface/WebInterface';
+import { ExeCmd } from '../lib/node-utility/Executable';
 
 let _instance: ResInstaller | undefined;
 
@@ -52,6 +53,7 @@ export interface ExternalToolInfo {
     detail?: string;
     is_third_party?: boolean;
     getDrvInstaller?: () => string | undefined;
+    postInstallCmd?: () => string | undefined;
 
     // for built-in tools
     setting_name?: string;
@@ -290,7 +292,8 @@ export class ResInstaller {
                     if (drvPathMap) {
                         return drvPathMap[arch];
                     }
-                }
+                },
+                postInstallCmd: () => tool.resources[node_plat].post_install_cmd
             });
         }
     }
@@ -371,8 +374,8 @@ export class ResInstaller {
                 installedDone = await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
                     title: `Installing package '${resourceName}'`,
-                    cancellable: false
-                }, (progress, __): Promise<boolean> => {
+                    cancellable: true
+                }, (progress, cancel): Promise<boolean> => {
 
                     return new Promise(async (resolve_) => {
 
@@ -388,13 +391,23 @@ export class ResInstaller {
                         const unzipper = new SevenZipper(resManager.Get7zDir());
                         const outDir = File.fromArray([resManager.getUtilToolsDir(), resourceName]);
 
+                        platform.DeleteAllChildren(outDir);
                         outDir.CreateDir(true);
 
                         progress.report({ message: `Unzipping ...` });
 
+                        cancel.onCancellationRequested(_ => {
+                            progress.report({ message: `Canceling ...` });
+                        });
+
                         const unzipErr = await unzipper.Unzip(resourceFile, outDir);
                         if (unzipErr) {
                             GlobalEvent.emit('msg', ExceptionToMessage(unzipErr, 'Warning'));
+                            resolveIf(false);
+                            return;
+                        }
+
+                        if (cancel.isCancellationRequested) {
                             resolveIf(false);
                             return;
                         }
@@ -407,11 +420,60 @@ export class ResInstaller {
                             BIN_PATH_FILE.Write(`${toolInfo.bin_dir}`);
                         }
 
+                        // run post install cmd
+                        if (toolInfo.postInstallCmd) {
+
+                            const command = toolInfo.postInstallCmd();
+                            if (command) {
+
+                                const done = await (new Promise<boolean>((resolve) => {
+
+                                    progress.report({ message: `Running post-install cmd: '${command}' ...` });
+
+                                    const proc = new ExeCmd();
+
+                                    proc.on('launch', () => {
+                                        GlobalEvent.emit('globalLog.show');
+                                        GlobalEvent.emit('globalLog.append', `\n>>> exec cmd: '${command}'\n\n`);
+                                    });
+
+                                    proc.on('data', str => {
+                                        GlobalEvent.emit('globalLog.append', str);
+                                    });
+
+                                    proc.on('close', exitInfo => {
+                                        resolve(exitInfo.code == 0);
+                                    });
+
+                                    cancel.onCancellationRequested(_ => {
+                                        if (!platform.kill(<number>proc.pid())) {
+                                            GlobalEvent.emit('msg', newMessage('Warning', `Can not kill process: ${proc.pid()} !`));
+                                        }
+                                    });
+
+                                    proc.Run(<string>command, undefined, { cwd: outDir.path });
+                                }));
+
+                                if (!done) {
+
+                                    if (cancel.isCancellationRequested) {
+                                        GlobalEvent.emit('globalLog.append', `\n----- user canceled -----\n`);
+                                        GlobalEvent.emit('msg', newMessage('Info', `Installation has been canceled !`));
+                                    } else {
+                                        GlobalEvent.emit('msg', newMessage('Warning', `Install failed, see detail in 'eide.log' !`));
+                                    }
+
+                                    resolveIf(false);
+                                    return;
+                                }
+                            }
+                        }
+
                         // update eide settings
                         if (toolInfo.setting_name) {
                             let setting_val = ['${userRoot}', '.eide', 'tools', resourceName].join(File.sep);
                             setting_val = toolInfo.require_name ? `${setting_val}/${toolInfo.require_name}` : setting_val;
-                            SettingManager.GetInstance().setConfigValue(toolInfo.setting_name, File.ToLocalPath(setting_val));
+                            SettingManager.GetInstance().setConfigValue(toolInfo.setting_name, File.ToUnixPath(setting_val));
                         }
 
                         // install drivers if we need

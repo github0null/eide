@@ -167,7 +167,10 @@ class CortexDebugConfigProvider extends IDebugConfigProvider {
 
             // setup svd file, if existed
             const device = prj.GetPackManager().getCurrentDevInfo();
-            if (device) { debugConfig.svdFile = device.svdPath ? prj.ToRelativePath(device.svdPath) : undefined; }
+            debugConfig.svdFile = undefined;
+            if (device && device.svdPath) {
+                debugConfig.svdFile = prj.ToRelativePath(device.svdPath) || device.svdPath;
+            }
 
             // setup specific debugger options
             if (debugConfig.servertype == uploader_name) {

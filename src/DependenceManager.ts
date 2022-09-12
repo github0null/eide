@@ -125,7 +125,7 @@ export class DependenceManager implements ManagerInterface {
         // add condiions to cache
         this.addComponentCache(packName, component.groupName, Array.from(conditionList));
 
-        const incList = component.incDirList.map((item): string => { return item.path; });
+        const incList = component.incDirList.map(item => item.path);
 
         // add dependence dir
         incList.push(componentDir.path);
@@ -153,7 +153,7 @@ export class DependenceManager implements ManagerInterface {
 
         const dep: Dependence = {
             name: component.groupName,
-            incList: component.incDirList.map((item): string => { return item.path; }),
+            incList: component.incDirList.map(item => item.path),
             sourceDirList: [],
             libList: component.libList ? component.libList.map<string>((item) => { return item.path; }) : [],
             defineList: component.defineList || []

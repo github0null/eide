@@ -107,6 +107,7 @@
 
     "settings.keilc51.ini": "Keil C51 `UV4.exe` 或 `TOOLS.INI` 文件路径 [`example: C:\\Keil_v5\\UV4\\UV4.exe`]",
     "settings.iar.stm8.install.folder": "IAR for STM8 安装目录 [`example: D:\\IAR`]",
+    "settings.iar.arm.toolchain.install.folder": "IAR ARM C/C++ 编译器根目录 [`example: D:\\IAR_ARM\\arm`]",
     "settings.sdcc.install.folder": "SDCC 安装目录 [`example: C:\\Program Files (x86)\\SDCC`]",
 
     "settings.arm.armcc5.install.folder": "Armcc v5 toolchain 安装目录 [`example: D:\\ac5`]",

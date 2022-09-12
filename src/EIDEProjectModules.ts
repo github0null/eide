@@ -44,7 +44,7 @@ import { SettingManager } from "./SettingManager";
 import { WorkspaceManager } from "./WorkspaceManager";
 import * as utility from './utility';
 import * as ArmCpuUtils from './ArmCpuUtils';
-import { ProjectConfiguration, ProjectConfigData, BuilderConfigData, ProjectConfigApi } from './EIDETypeDefine';
+import { ProjectConfiguration, ProjectConfigData, BuilderConfigData, ProjectBaseApi } from './EIDETypeDefine';
 
 export interface Memory {
     startAddr: string;
@@ -416,6 +416,8 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
                 return <any>new Keil51CompileConfigModel(prjConfigData);
             case 'IAR_STM8':
                 return <any>new Iarstm8CompileConfigModel(prjConfigData);
+            case 'IAR_ARM':
+                return <any>new IarArmCompileConfigModel(prjConfigData);
             case 'AC5':
                 return <any>new Armcc5CompileConfigModel(prjConfigData);
             case 'AC6':
@@ -533,6 +535,10 @@ export abstract class ArmBaseCompileConfigModel
         { name: 'single', desc: 'single precision' },
         { name: 'double', desc: 'double precision' }
     ];
+
+    getValidCpus(): string[] {
+        return this.cpuTypeList.filter(n => !n.startsWith(this.DIV_TAG));
+    }
 
     onPropertyChanged(key: string) {
         switch (key) {
@@ -793,7 +799,7 @@ export abstract class ArmBaseCompileConfigModel
     protected GetKeyType(key: string): FieldType {
         switch (key) {
             case 'scatterFilePath':
-                return 'OPEN_FILE';
+                return 'INPUT';
             case 'cpuType':
             case 'floatingPointHardware':
             case 'useCustomScatterFile':
@@ -848,7 +854,7 @@ export abstract class ArmBaseCompileConfigModel
             cpuType: 'Cortex-M3',
             floatingPointHardware: 'none',
             useCustomScatterFile: false,
-            scatterFilePath: 'undefined',
+            scatterFilePath: '<YOUR_SCATTER_FILE>.sct',
             storageLayout: {
                 RAM: [
                     {
@@ -982,8 +988,8 @@ export class GccCompileConfigModel extends ArmBaseCompileConfigModel {
         return {
             cpuType: 'Cortex-M3',
             floatingPointHardware: 'none',
-            scatterFilePath: 'undefined.lds',
-            useCustomScatterFile: false,
+            scatterFilePath: '<YOUR_LINKER_SCRIPT>.lds',
+            useCustomScatterFile: true,
             storageLayout: { RAM: [], ROM: [] },
             options: 'null'
         };
@@ -991,6 +997,61 @@ export class GccCompileConfigModel extends ArmBaseCompileConfigModel {
 
     GetDefault(): ArmBaseCompileData {
         return GccCompileConfigModel.getDefaultConfig();
+    }
+}
+
+class IarArmCompileConfigModel extends ArmBaseCompileConfigModel {
+
+    protected cpuTypeList = [
+        'ARM7EJ-S',
+        'ARM7TDMI',
+        'ARM720T',
+        'ARM7TDMI-S',
+        'ARM9TDMI',
+        'ARM920T',
+        'ARM922T',
+        'ARM9E-S',
+        'ARM926EJ-S',
+        'ARM946E-S',
+        'ARM966E-S',
+        'Cortex-M0',
+        'Cortex-M0+',
+        'Cortex-M3',
+        'Cortex-M4',
+        'Cortex-M7',
+        //'Cortex-R4',
+        //'Cortex-R4F',
+        'SC000',
+        'SC300'
+    ];
+
+    protected GetKeyType(key: string): FieldType {
+        switch (key) {
+            case 'cpuType':
+            case 'floatingPointHardware':
+                return 'SELECTION';
+            case 'scatterFilePath':
+                return 'INPUT';
+            case 'options':
+                return 'EVENT';
+            default:
+                return 'Disable';
+        }
+    }
+
+    static getDefaultConfig(): ArmBaseCompileData {
+        return {
+            cpuType: 'Cortex-M3',
+            floatingPointHardware: 'none',
+            scatterFilePath: '${ToolchainRoot}/config/<YOUR_LINKER_CFG>.icf',
+            useCustomScatterFile: true,
+            storageLayout: { RAM: [], ROM: [] },
+            options: 'null'
+        };
+    }
+
+    GetDefault(): ArmBaseCompileData {
+        return IarArmCompileConfigModel.getDefaultConfig();
     }
 }
 
@@ -1387,14 +1448,14 @@ export abstract class UploadConfigModel<T> extends ConfigModel<T> {
 
     abstract readonly uploader: HexUploaderType;
 
-    protected api: ProjectConfigApi;
+    protected api: ProjectBaseApi;
 
-    constructor(api_: ProjectConfigApi) {
+    constructor(api_: ProjectBaseApi) {
         super();
         this.api = api_;
     }
 
-    static getInstance(uploaderType: HexUploaderType, api: ProjectConfigApi): UploadConfigModel<any> {
+    static getInstance(uploaderType: HexUploaderType, api: ProjectBaseApi): UploadConfigModel<any> {
         switch (uploaderType) {
             case 'JLink':
                 return new JLinkUploadModel(api);
@@ -1736,7 +1797,7 @@ class STLinkUploadModel extends UploadConfigModel<STLinkOptions> {
         { label: 'Core Reset', val: 'Crst' }
     ];
 
-    constructor(api: ProjectConfigApi) {
+    constructor(api: ProjectBaseApi) {
         super(api);
         this.on('NotifyUpdate', (prjConfig) => {
             // update start address
@@ -2043,7 +2104,7 @@ class PyOCDUploadModel extends UploadConfigModel<PyOCDFlashOptions> {
 
     uploader: HexUploaderType = 'pyOCD';
 
-    constructor(api: ProjectConfigApi) {
+    constructor(api: ProjectBaseApi) {
         super(api);
         this.on('NotifyUpdate', (prjConfig) => {
             // update option bytes file name

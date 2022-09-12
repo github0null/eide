@@ -38,6 +38,47 @@ import { GitFileInfo } from './WebInterface/GithubInterface';
 import * as platform from './Platform';
 import { SevenZipper } from './Compress';
 import { ResManager } from './ResManager';
+import { isArray } from 'util';
+
+export function toArray(obj: any): any[] {
+    if (obj == undefined || obj == null) return [];
+    if (isArray(obj)) return obj;
+    return [obj];
+}
+
+export interface XmlFormatOptions {
+    indentation?: string;
+    filter?: (node: any) => boolean;
+    stripComments?: boolean;
+    collapseContent?: boolean;
+    lineSeparator?: string;
+    whiteSpaceAtEndOfSelfclosingTag?: boolean;
+}
+
+export function xmlfmt(xml: string, opts?: XmlFormatOptions): string {
+
+    const defOpt = {
+        indentation: '    ',
+        lineSeparator: os.EOL,
+        collapseContent: true,
+        whiteSpaceAtEndOfSelfclosingTag: false
+    };
+
+    if (opts) {
+        for (const key in <any>defOpt) {
+            if ((<any>opts)[key] == undefined) {
+                (<any>opts)[key] = (<any>defOpt)[key];
+            }
+        }
+    }
+
+    try {
+        const format = require('xml-formatter');
+        return format(xml, opts || defOpt);
+    } catch (error) {
+        return xml;
+    }
+}
 
 export function runShellCommand(title: string, commandLine: string, env?: any, useTerminal?: boolean, cwd?: string): Error | undefined {
     try {

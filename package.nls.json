@@ -117,6 +117,7 @@
 
     "settings.keilc51.ini": "Keil C51 `UV4.exe` or `TOOLS.INI` file path [`example: C:\\Keil_v5\\UV4\\UV4.exe`]",
     "settings.iar.stm8.install.folder": "IAR for STM8 install directory [`example: D:\\IAR`]",
+    "settings.iar.arm.toolchain.install.folder": "IAR ARM C/C++ Compiler root directory [`example: D:\\IAR_ARM\\arm`]",
     "settings.sdcc.install.folder": "SDCC install folder [`example: C:\\Program Files (x86)\\SDCC`]",
 
     "settings.arm.armcc5.install.folder": "Armcc v5 toolchain install directory [`example: D:\\ac5`]",

@@ -107,11 +107,13 @@ export abstract class CodeBuilder {
         this._event = new events.EventEmitter();
     }
 
+    on(event: 'launched', listener: () => void): void;
     on(event: 'finished', listener: (done?: boolean) => void): void;
     on(event: any, listener: (arg: any) => void): void {
         this._event.on(event, listener);
     }
 
+    private emit(event: 'launched'): void;
     private emit(event: 'finished', done?: boolean): void;
     private emit(event: any, arg?: any): void {
         this._event.emit(event, arg);
@@ -218,14 +220,14 @@ export abstract class CodeBuilder {
 
     getIncludeDirs(): string[] {
 
-        const incList = this.project.GetConfiguration().GetAllMergeDep([
-            `${ProjectConfiguration.BUILD_IN_GROUP_NAME}.${DependenceManager.toolchainDepName}`
-        ]).incList;
+        const incList = this.project.GetConfiguration()
+            .GetAllMergeDep([`${ProjectConfiguration.BUILD_IN_GROUP_NAME}.${DependenceManager.toolchainDepName}`])
+            .incList;
 
         return ArrayDelRepetition(incList.concat(
             this.project.getToolchain().getDefaultIncludeList(),
             this.project.getSourceIncludeList()
-        ));
+        )).map(p => this.project.ToAbsolutePath(p));
     }
 
     getDefineList(): string[] {
@@ -234,9 +236,8 @@ export abstract class CodeBuilder {
 
     getLibDirs(): string[] {
         return this.project.GetConfiguration()
-            .GetAllMergeDep([
-                `${ProjectConfiguration.BUILD_IN_GROUP_NAME}.${DependenceManager.toolchainDepName}`
-            ]).libList;
+            .GetAllMergeDep([`${ProjectConfiguration.BUILD_IN_GROUP_NAME}.${DependenceManager.toolchainDepName}`])
+            .libList.map(p => this.project.ToAbsolutePath(p));
     }
 
     protected enableRebuild(_enable: boolean = true) {
@@ -274,42 +275,48 @@ export abstract class CodeBuilder {
             if (!builderLog.IsFile()) builderLog.Write('');
             if (this.logWatcher) { this.logWatcher.Close(); delete this.logWatcher; };
 
-            // start watch
             this.logWatcher = new FileWatcher(builderLog, false);
             this.logWatcher.OnChanged = () => {
                 this.logWatcher?.Close();
-                this.emit('finished', checkBuildDone(builderLog));
+                setTimeout(() => this.emit('finished', checkBuildDone(builderLog)), 400);
             };
+
+            // start watch
             this.logWatcher.Watch();
+
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
 
         // run build
-        if (SettingManager.GetInstance().isUseTaskToBuild() && WorkspaceManager.getInstance().hasWorkspaces()) {
-            // use task
+        if (SettingManager.GetInstance().isUseTaskToBuild() &&
+            WorkspaceManager.getInstance().hasWorkspaces()) { // use vscode task
             const task = new vscode.Task({ type: 'shell' }, vscode.TaskScope.Workspace, title, 'shell');
             const shellOption: vscode.ShellExecutionOptions = {};
+            // setup shell
             if (os.platform() == 'win32') { shellOption.executable = 'cmd.exe'; shellOption.shellArgs = ['/C']; }
             else { shellOption.executable = '/bin/bash'; shellOption.shellArgs = ['-c']; }
             shellOption.env = <any>process.env;
+            // setup task
             if (os.platform() == 'win32') commandLine = `"${commandLine}"`;
             task.execution = new vscode.ShellExecution(commandLine, shellOption);
-            task.problemMatchers = this.getProblemMatcher();
+            task.problemMatchers = [];
             task.isBackground = false;
             task.presentationOptions = { echo: true, focus: false, clear: true };
             vscode.tasks.executeTask(task);
-        } else {
-            // use terminal
+        } else { // use terminal
             const index = vscode.window.terminals.findIndex((t) => { return t.name === title; });
             if (index !== -1) { vscode.window.terminals[index].dispose(); }
-            const opts: vscode.TerminalOptions = { name: title };
+            const opts: vscode.TerminalOptions = { name: title, iconPath: new vscode.ThemeIcon('target') };
             if (os.platform() == 'win32') { opts.shellPath = 'cmd.exe'; };
             opts.env = <any>process.env;
             const terminal = vscode.window.createTerminal(opts);
             terminal.show(true);
             terminal.sendText(commandLine);
         }
+
+        // post event
+        this.emit('launched');
     }
 
     genBuildCommand(options?: BuildOptions, disPowershell?: boolean): string | undefined {
@@ -404,8 +411,8 @@ export abstract class CodeBuilder {
             outDir: File.ToLocalPath(outDir),
             ram: memMaxSize?.ram,
             rom: memMaxSize?.rom,
-            incDirs: this.getIncludeDirs().map((incPath) => { return this.project.ToRelativePath(incPath) || incPath; }),
-            libDirs: this.getLibDirs().map((libPath) => { return this.project.ToRelativePath(libPath) || libPath; }),
+            incDirs: this.getIncludeDirs().map(p => this.project.toRelativePath(p)),
+            libDirs: this.getLibDirs().map(p => this.project.toRelativePath(p)),
             defines: this.getDefineList(),
             sourceList: sourceInfo.sources.sort(),
             sourceParams: sourceInfo.params,
@@ -517,8 +524,6 @@ export abstract class CodeBuilder {
     protected abstract getMcuMemorySize(): MemorySize | undefined;
 
     protected abstract preHandleOptions(options: ICompileOptions): void;
-
-    protected abstract getProblemMatcher(): string[];
 
     static NewBuilder(_project: AbstractProject): CodeBuilder {
         switch (_project.GetConfiguration().config.type) {
@@ -858,15 +863,6 @@ export class ARMCodeBuilder extends CodeBuilder {
         return undefined;
     }
 
-    protected getProblemMatcher(): string[] {
-        switch (this.project.getToolchain().name) {
-            case 'AC5':
-                return ['$armcc'];
-            default:
-                return ['$gcc'];
-        }
-    }
-
     protected preHandleOptions(options: ICompileOptions) {
 
         const config = this.project.GetConfiguration<ArmBaseCompileData>().config;
@@ -893,29 +889,47 @@ export class ARMCodeBuilder extends CodeBuilder {
         const ldFileList: string[] = [];
 
         let scatterFilePath: string = config.compileConfig.scatterFilePath;
-        if (scatterFilePath == 'undefined') {
-            scatterFilePath = `${scatterFilePath}.sct`;
-        }
 
-        // 'armcc' can select whether use custom linker file
-        if (['AC5', 'AC6'].includes(toolchain.name)) {
-            // use custom linker script files
-            if (config.compileConfig.useCustomScatterFile) {
-                scatterFilePath.split(',').forEach((sctPath) => {
-                    ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
-                });
-            }
-            // auto generate scatter file 
-            else {
-                ldFileList.push(`"${File.ToUnixPath(this.GenMemScatterFile(config).path)}"`);
-            }
-        }
+        switch (toolchain.name) {
+            // 'armcc' can select whether use custom linker file
+            case 'AC5':
+            case 'AC6':
+                {
+                    if (config.compileConfig.useCustomScatterFile) { // use custom linker script files
+                        scatterFilePath.split(',')
+                            .filter(s => s.trim() != '')
+                            .forEach((sctPath) => {
+                                ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
+                            });
+                    } else { // auto generate scatter file 
+                        ldFileList.push(`"${File.ToUnixPath(this.GenMemScatterFile(config).path)}"`);
+                    }
+                }
+                break;
 
-        // other toolchain must use custom linker script file
-        else {
-            scatterFilePath.split(',').forEach((sctPath) => {
-                ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
-            });
+            // arm gcc
+            case 'GCC':
+                {
+                    scatterFilePath.split(',')
+                        .filter(s => s.trim() != '')
+                        .forEach((sctPath) => {
+                            ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
+                        });
+                }
+                break;
+
+            // iar
+            case 'IAR_ARM':
+                {
+                    scatterFilePath.split(',')
+                        .filter(s => s.trim() != '')
+                        .forEach((sctPath) => {
+                            ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
+                        });
+                }
+                break;
+            default:
+                break;
         }
 
         // set linker script
@@ -954,10 +968,6 @@ export class ARMCodeBuilder extends CodeBuilder {
 
 class RiscvCodeBuilder extends CodeBuilder {
 
-    protected getProblemMatcher(): string[] {
-        return ['$gcc'];
-    }
-
     protected getMcuMemorySize(): MemorySize | undefined {
         return undefined;
     }
@@ -967,9 +977,11 @@ class RiscvCodeBuilder extends CodeBuilder {
         const config = this.project.GetConfiguration<RiscvCompileData>().config;
 
         const ldFileList: string[] = [];
-        config.compileConfig.linkerScriptPath.split(',').forEach((sctPath) => {
-            ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
-        });
+        config.compileConfig.linkerScriptPath.split(',')
+            .filter(s => s.trim() != '')
+            .forEach((sctPath) => {
+                ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
+            });
 
         if (!options['linker']) {
             options.linker = Object.create(null);
@@ -981,10 +993,6 @@ class RiscvCodeBuilder extends CodeBuilder {
 }
 
 class AnyGccCodeBuilder extends CodeBuilder {
-
-    protected getProblemMatcher(): string[] {
-        return ['$gcc'];
-    }
 
     protected getMcuMemorySize(): MemorySize | undefined {
         return undefined;
@@ -999,16 +1007,12 @@ class AnyGccCodeBuilder extends CodeBuilder {
         }
 
         // set linker script
-        if (config.compileConfig.linkerScriptPath.trim() !== '') {
-            options.linker['linker-script'] = config.compileConfig.linkerScriptPath.split(',').map((sctPath) => {
+        options.linker['linker-script'] = config.compileConfig.linkerScriptPath.split(',')
+            .filter(s => s.trim() != '')
+            .map((sctPath) => {
                 const absPath = File.ToUnixPath(this.project.ToAbsolutePath(sctPath));
                 return absPath.includes(' ') ? `"${absPath}"` : absPath;
             });
-        } else { // clear old
-            if (options.linker['linker-script']) {
-                delete options.linker['linker-script'];
-            }
-        }
     }
 }
 
@@ -1026,19 +1030,6 @@ interface Stm8DeviceAreaInfo {
 }
 
 class C51CodeBuilder extends CodeBuilder {
-
-    protected getProblemMatcher(): string[] {
-        switch (this.project.getToolchain().name) {
-            case 'SDCC':
-                return ['$gcc'];
-            case 'Keil_C51':
-                return ['$keilc51'];
-            case 'IAR_STM8':
-                return ['$iarstm8'];
-            default:
-                return [];
-        }
-    }
 
     protected getMcuMemorySize(): MemorySize | undefined {
 
@@ -1075,9 +1066,11 @@ class C51CodeBuilder extends CodeBuilder {
 
             const ldFileList: string[] = [];
 
-            config.compileConfig.linkerScript.split(',').forEach((sctPath) => {
-                ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
-            });
+            config.compileConfig.linkerScript.split(',')
+                .filter(s => s.trim() != '')
+                .forEach((sctPath) => {
+                    ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
+                });
 
             if (!options['linker']) {
                 options.linker = Object.create(null);

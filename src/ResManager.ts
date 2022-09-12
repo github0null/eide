@@ -362,6 +362,10 @@ export class ResManager extends events.EventEmitter {
         return File.fromArray([(<File>this.GetDir('include')).path, 'internal_headers', 'iar_stm8_intr.h']);
     }
 
+    getIarArmForceIncludeHeaders(): File {
+        return File.fromArray([(<File>this.GetDir('include')).path, 'internal_headers', 'iar_arm_intr.h']);
+    }
+
     /* ------------------ builder and runtime ----------------- */
 
     getBuilderDir(): File {

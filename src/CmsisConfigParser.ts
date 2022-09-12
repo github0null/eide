@@ -63,9 +63,11 @@ export interface CmsisConfigItem {
 
     var_name?: string;
 
-    var_disp_value?: string; /* for format value, use for display */
+    var_disp_value?: string; // displayed in UI, and will be modified by UI
 
-    var_value: string;
+    var_value: string; // real value to be wrote to file
+
+    var_fmt_value?: string; // value format string
 
     // --- var attr
 
@@ -104,27 +106,33 @@ export interface CmsisConfiguration {
 const macroMatcher = /^\s*#define\s+(?<key>\w+)\s*(?<value>.+)?/;
 export function parse(lines: string[]): CmsisConfiguration | undefined {
 
-    let startIdx = -1, endIdx = -1;
-
     // rm whitespace for line
     lines = lines.map((line) => line.trimEnd());
 
-    // The Configuration Wizard section must begin within the first 100 lines of code and must start with the following comment line:
-    //  '// <<< Use Configuration Wizard in Context Menu >>>'
-    // The Configuration Wizard section can end with the following optional comment:
-    //  '// <<< end of configuration section >>>'
-    lines.forEach((line_, idx) => {
-
-        const line = line_.toLowerCase();
-
-        if (startIdx == -1 && line.indexOf('<<< use configuration wizard in context menu >>>') != -1) {
-            startIdx = idx;
+    let startIdx = -1, endIdx = -1;
+    {
+        // The Configuration Wizard section must begin within the first 100 lines of code and must start with the following comment line:
+        //  '// <<< Use Configuration Wizard in Context Menu >>>'
+        for (let idx = 0; idx < 200; idx++) {
+            const line = lines[idx].toLowerCase();
+            if (line.indexOf('<<< use configuration wizard in context menu >>>') != -1) {
+                startIdx = idx;
+                break;
+            }
         }
 
-        else if (line.indexOf('<<< end of configuration section >>>') != -1) {
-            endIdx = idx;
+        // The Configuration Wizard section can end with the following optional comment:
+        //  '// <<< end of configuration section >>>'
+        if (startIdx != -1) {
+            for (let idx = startIdx + 1; idx < lines.length; idx++) {
+                const line = lines[idx].toLowerCase();
+                if (line.indexOf('<<< end of configuration section >>>') != -1) {
+                    endIdx = idx;
+                    break;
+                }
+            }
         }
-    });
+    }
 
     // check index
     if ((startIdx == -1 || endIdx == -1) || (startIdx >= endIdx)) {
@@ -279,13 +287,29 @@ function parseVarName(str: string): string | undefined {
     if (match && match.length > 1) return match[1];
 }
 
-function parseNumber(str: string): number {
-    if (isHexNumber(str)) return parseInt(str, 16);
-    return parseInt(str);
+interface NumberValueInfo {
+    num: number;
+    isHex?: boolean;
+    fmtStr?: string;
 }
 
-function isHexNumber(str: string): boolean {
-    return str.toLowerCase().startsWith('0x')
+const numberMatcher = /(0x[0-9a-f]+|\d+)/i;
+function parseNumber(str: string): NumberValueInfo {
+    const m = numberMatcher.exec(str);
+    if (m && m.length > 1) {
+        const numVal = m[1];
+        const isHex = numVal.toLowerCase().startsWith('0x');
+        return {
+            num: parseInt(numVal, isHex ? 16 : 10),
+            isHex: isHex,
+            fmtStr: str.replace(numberMatcher, '<num>') // in UI, '<num>' will be replace to real value
+        };
+    }
+    return { num: NaN }
+}
+
+function toNumber(numStr: string): number {
+    return parseInt(numStr, numStr.toLowerCase().startsWith('0x') ? 16 : 10);
 }
 
 function parseEnums(str: string): CmsisConfigItemEnums[] | undefined {
@@ -386,8 +410,8 @@ function parseElement(line: string, type: string, match: RegExpExecArray, contex
         }
 
         if (keyVal['var_range_s'] && keyVal['var_range_e']) {
-            item.var_range = { start: parseNumber(keyVal['var_range_s']), end: parseNumber(keyVal['var_range_e']) };
-            if (keyVal['var_range_step']) item.var_range.step = parseNumber(keyVal['var_range_step'])
+            item.var_range = { start: toNumber(keyVal['var_range_s']), end: toNumber(keyVal['var_range_e']) };
+            if (keyVal['var_range_step']) item.var_range.step = toNumber(keyVal['var_range_step'])
         }
 
         if (keyVal['enum_val']) {
@@ -396,21 +420,21 @@ function parseElement(line: string, type: string, match: RegExpExecArray, contex
             if (enums) item.var_enum = item.var_enum.concat(enums);
         }
 
-        if (keyVal['var_skip_val']) item.var_skip_val = parseNumber(keyVal['var_skip_val']);
+        if (keyVal['var_skip_val']) item.var_skip_val = toNumber(keyVal['var_skip_val']);
 
         if (keyVal['var_mod_bit_s']) {
-            item.var_mod_bit = { start: parseNumber(keyVal['var_mod_bit_s']) };
-            if (keyVal['var_mod_bit_e']) item.var_mod_bit.end = parseNumber(keyVal['var_mod_bit_e']);
+            item.var_mod_bit = { start: toNumber(keyVal['var_mod_bit_s']) };
+            if (keyVal['var_mod_bit_e']) item.var_mod_bit.end = toNumber(keyVal['var_mod_bit_e']);
         }
 
         if (keyVal['var_len_limit']) {
-            item.var_len_limit = parseNumber(keyVal['var_len_limit']);
+            item.var_len_limit = toNumber(keyVal['var_len_limit']);
         }
 
         if (keyVal['disp_operator'] && keyVal['disp_operate_val']) {
             item.var_disp_inf.operate = {
                 operator: keyVal['disp_operator'],
-                val: parseNumber(keyVal['disp_operate_val'])
+                val: toNumber(keyVal['disp_operate_val'])
             };
         }
 
@@ -481,40 +505,67 @@ function updateElementDispVal(item: CmsisConfigItem) {
 
     if (item.type == 'section') {
 
+        let { num, isHex, fmtStr } = parseNumber(item.var_value);
+
+        // raw value
+        {
+            item.var_disp_value = isHex ? `0x${num.toString(16)}` : num.toString();
+            item.var_fmt_value = fmtStr;
+        }
+
         // apply bits
-        if (item.var_mod_bit) {
-            let real_num = parseNumber(item.var_value)
-            if (real_num != NaN) {
+        if (item.var_mod_bit && num != NaN) {
 
-                item.var_mod_bit.end = undefined // 'section' bits size must be '1'
-                let mask = get_mask(item.var_mod_bit.start, item.var_mod_bit.end) >>> item.var_mod_bit.start
+            item.var_mod_bit.end = undefined // 'section' bits size must be '1'
+            let mask = get_mask(item.var_mod_bit.start, item.var_mod_bit.end) >>> item.var_mod_bit.start
 
-                real_num >>= item.var_mod_bit.start
-                real_num &= mask
+            num >>= item.var_mod_bit.start
+            num &= mask
 
-                item.var_disp_value = real_num.toString()
-            }
+            item.var_disp_value = num.toString()
+            item.var_fmt_value = fmtStr;
+        }
+    }
+
+    else if (item.type == 'bool') {
+
+        let { num, isHex, fmtStr } = parseNumber(item.var_value);
+
+        // raw value
+        {
+            item.var_disp_value = num.toString();
+            item.var_fmt_value = fmtStr;
         }
     }
 
     else if (item.type == 'option') {
 
+        let { num, isHex, fmtStr } = parseNumber(item.var_value);
+
+        // normal val
+        {
+            item.var_disp_value = isHex ? `0x${num.toString(16)}` : num.toString();
+            item.var_fmt_value = fmtStr;
+        }
+
         // apply bits
         if (item.var_mod_bit) {
-            let real_num = parseNumber(item.var_value)
-            if (real_num != NaN) {
+
+            if (num != NaN) {
 
                 let mask = get_mask(item.var_mod_bit.start, item.var_mod_bit.end) >>> item.var_mod_bit.start
 
-                real_num >>= item.var_mod_bit.start
-                real_num &= mask
+                num >>= item.var_mod_bit.start
+                num &= mask
 
-                if (isHexNumber(item.var_value)) {
-                    real_num >>>= 0
-                    item.var_disp_value = `0x${align_hex_val(real_num.toString(16))}`
+                if (isHex) {
+                    num >>>= 0
+                    item.var_disp_value = `0x${align_hex_val(num.toString(16))}`
                 } else {
-                    item.var_disp_value = real_num.toString()
+                    item.var_disp_value = num.toString()
                 }
+
+                item.var_fmt_value = fmtStr;
             }
         }
 
@@ -540,11 +591,13 @@ function updateElementDispVal(item: CmsisConfigItem) {
                     break;
             }
 
-            let var_val = item.var_disp_value || item.var_value
-            let disp_val = eval(`${parseNumber(var_val)}${operator}${item.var_disp_inf.operate.val}`)
+            let var_val = item.var_disp_value || item.var_value;
+            let { num, isHex, fmtStr } = parseNumber(var_val);
+            let disp_val = eval(`${num}${operator}${item.var_disp_inf.operate.val}`)
 
             if (typeof (disp_val) == 'string') {
-                disp_val = parseNumber(disp_val)
+                let { num, isHex, fmtStr } = parseNumber(item.var_value);
+                disp_val = num;
             }
 
             if (typeof (disp_val) != 'number') {
@@ -552,12 +605,15 @@ function updateElementDispVal(item: CmsisConfigItem) {
             }
 
             if (disp_val != NaN) {
-                if (isHexNumber(item.var_value)) {
+
+                if (isHex) {
                     disp_val >>>= 0
                     item.var_disp_value = `0x${align_hex_val(disp_val.toString(16))}`
                 } else {
                     item.var_disp_value = disp_val.toString()
                 }
+
+                item.var_fmt_value = fmtStr;
             }
         }
     }
@@ -568,7 +624,7 @@ function updateElementDispVal(item: CmsisConfigItem) {
         const m = matcher.exec(item.var_value)
         if (m && m.length > 1) {
             item.var_disp_value = m[1];
-            item.var_value = item.var_value.replace(matcher, '"{}"')
+            item.var_fmt_value = item.var_value.replace(matcher, '"{}"') // in UI, '{}' will be replace to real value
         }
     }
 }

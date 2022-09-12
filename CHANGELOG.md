@@ -2,6 +2,77 @@
 
 所有值得注意的版本变化将被记录在这个文件中。
 
+All notable version changes will be recorded in this file.
+
+***
+
+### [v3.9.0]
+
+**New**:
+  - Support IAR ARM C/C++ Compiler
+  - Support import IAR ARM workbench
+  - Support install chip info for JLink when installed cmsis device package (you need to install `jlink-devices-addon` before getting start)
+  - New compiler problem matcher
+  - Allow nested env variables (max deep: 5)
+  - Generate `compiler.log` file to build folder
+  - Provide diagnostic informations into `Problems` panel from `compiler.log` file after project build finished
+  - Allow execute post install command when install external tools.
+  - Allow empty `linkerScript` file path for `armcc/gcc`. (empty path will cause builder ignore pass linkerScript args to linker)
+  - Allow use env variables in `includePath`, `libPath`
+
+**Fix**:
+  - Can not post progress message when install external tools
+  - Some compiler config errors in `sdcc` model
+
+**Change**:
+  - Remove terminal problem matcher, use `vscode.Diagnostic` api to provide project problem after build end
+  - Provide more terminal link matcher for eide builder task
+
+**Optimize**:
+  - Add `${configName}` in file path env map
+  - Search keywords in external tools details
+  - Del old folder when reinstall external tools
+  - Optimize prompt message for `Configure Toolchain` function.
+  - Optimize cmsis header wizard parser. (allow string prefix/suffix for number value)
+
+***
+
+### [v3.8.2022090801] preview version
+
+**New**:
+  - Generate `compiler.log` file to build folder
+  - Provide diagnostic informations into `Problems` panel from `compiler.log` file after project build finished
+
+**Change**:
+  - Remove terminal problem matcher, use `vscode.Diagnostic` api to provide project problem after build end
+  - Provide more terminal link matcher for eide builder task
+
+***
+
+### [v3.8.2022090701] preview version
+
+**New**:
+  - New IAR compiler problem message matcher
+  - Support auto install chip info to JLink by `jlink-device-addon` tool when install cmsis device package
+
+**Optimize**:
+  - Allow use `${configName}` in file path environment variables
+  - Do not delete unused files when cmsis device package has been installed
+  - Output compiler log after build done
+
+***
+
+### [v3.8.2022082801] preview version
+
+**New**
+  - Allow execute post install command when install external tools.
+
+**Optimize**
+  - Optimize prompt message for `Configure Toolchain` function.
+  - Allow empty `linkerScript` file path for `armcc/gcc`. (empty path will cause builder ignore pass linkerScript args to linker)
+  - Allow use env variables in `includePath`, `libPath`.
+  - Optimize cmsis header wizard parser. (allow string prefix/suffix for number value)
+
 ***
 
 ### [v3.8.8] revision (patch for v3.8.4)
