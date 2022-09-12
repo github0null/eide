@@ -99,7 +99,7 @@ export async function parseIarWorkbench(ewwFile: File, iarToolchainRoot: File): 
                     const name = var_.name[0].trim();
                     const valu = var_.value[0].trim();
                     if (isValidEnvName(name)) {
-                        result.envs[name] = resolveEnv(valu);
+                        result.envs[name] = formatEnvNameAndPathSep(valu); // do not resolve nested vars
                     }
                 });
             }
