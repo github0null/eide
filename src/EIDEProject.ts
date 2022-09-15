@@ -2530,7 +2530,7 @@ class EIDEProject extends AbstractProject {
                         "type": "shell",
                         "command": "${command:eide.project.build}",
                         "group": "build",
-                        "problemMatcher": "$gcc"
+                        "problemMatcher": []
                     },
                     {
                         "label": "flash",
@@ -2543,14 +2543,15 @@ class EIDEProject extends AbstractProject {
                         "label": "build and flash",
                         "type": "shell",
                         "command": "${command:eide.project.buildAndFlash}",
-                        "group": "build"
+                        "group": "build",
+                        "problemMatcher": []
                     },
                     {
                         "label": "rebuild",
                         "type": "shell",
                         "command": "${command:eide.project.rebuild}",
                         "group": "build",
-                        "problemMatcher": "$gcc"
+                        "problemMatcher": []
                     },
                     {
                         "label": "clean",
