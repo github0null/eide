@@ -10,6 +10,7 @@ import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import { File } from '../lib/node-utility/File';
 import { GlobalEvent } from './GlobalEvents';
 import { ExceptionToMessage } from './Message';
+import * as utility from './utility';
 
 export interface IarProjectTarget {
 
@@ -128,7 +129,7 @@ export async function parseIarWorkbench(ewwFile: File, iarToolchainRoot: File): 
 
         const project: IarProjectInfo = {
             name: new File(prjpath).noSuffixName,
-            envs: result.envs,
+            envs: utility.copyObject(result.envs),
             targets: {},
             fileGroups: {
                 name: VirtualSource.rootName,
