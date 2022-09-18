@@ -137,14 +137,16 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
     private _eventCache: EventItem[];
     protected _event: events.EventEmitter;
 
-    protected eideJsonFile: File;
+    protected cfgFile: File;
     protected watcher: FileWatcher;
+
+    protected isDelUnknownKeysWhenLoad: boolean = true;
 
     constructor(configFile: File, type?: ProjectType) {
         this._event = new events.EventEmitter();
         this._eventMergeFlag = false;
         this._eventCache = [];
-        this.eideJsonFile = configFile;
+        this.cfgFile = configFile;
         this.FILE_NAME = configFile.name;
         this.watcher = new FileWatcher(configFile, false);
         this.watcher.on('error', (err) => GlobalEvent.emit('error', err));
@@ -154,8 +156,8 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
 
     public load(): Configuration<ConfigType, EventType> {
 
-        if (this.eideJsonFile.IsFile()) {
-            this.InitConfig(this.eideJsonFile.Read());
+        if (this.cfgFile.IsFile()) {
+            this.InitConfig(this.cfgFile.Read());
         } else {
             this.Save(true);
         }
@@ -168,7 +170,7 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
     }
 
     GetFile(): File {
-        return this.eideJsonFile;
+        return this.cfgFile;
     }
 
     Watch() {
@@ -221,9 +223,11 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
         const _configFromFile: any = (typeof json === 'string') ? this.Parse(json) : json;
 
         // clear invalid property
-        for (const key in (<any>_configFromFile)) {
-            if ((<any>this.config)[key] === undefined) {
-                _configFromFile[key] = undefined;
+        if (this.isDelUnknownKeysWhenLoad) {
+            for (const key in (<any>_configFromFile)) {
+                if ((<any>this.config)[key] === undefined) {
+                    _configFromFile[key] = undefined;
+                }
             }
         }
 
@@ -237,7 +241,7 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
     }
 
     Save(force?: boolean): void {
-        this.eideJsonFile.Write(this.ToJson());
+        this.cfgFile.Write(this.ToJson());
     }
 
     protected afterInitConfigData() {
@@ -399,7 +403,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
         super(eideJsonFile, type);
 
-        this.rootDir = new File(NodePath.dirname(this.eideJsonFile.dir));
+        this.rootDir = new File(NodePath.dirname(this.cfgFile.dir));
 
         this.project = {
             getRootDir: () => this.rootDir,
@@ -1351,6 +1355,8 @@ export interface WorkspaceConfig {
 }
 
 export class WorkspaceConfiguration extends Configuration<WorkspaceConfig> {
+
+    isDelUnknownKeysWhenLoad = false;
 
     protected readTypeFromFile(configFile: File): ProjectType | undefined {
         return undefined;

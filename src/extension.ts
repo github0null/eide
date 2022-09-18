@@ -437,7 +437,7 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
         // try fetch update after 5sec delay
         if (localVersion) {
             setTimeout(async (curLocalVersion: string) => {
-                const done = await tryUpdateBinaries(binFolder, curLocalVersion);
+                const done = await tryUpdateBinaries(binFolder, curLocalVersion, true); // no prompt
                 if (!done) {
                     const msg = `Update eide-binaries failed, please restart vscode to try again !`;
                     const sel = await vscode.window.showErrorMessage(msg, 'Restart', 'Cancel');

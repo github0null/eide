@@ -371,8 +371,8 @@ class SourceRootList implements SourceProvider {
     //      val: SourceRootInfo
     private srcFolderMaps: Map<string, SourceRootInfo>;
 
-    private isAutoSearchIncPath: boolean;
-    private isAutoSearchObjFile: boolean;
+    private isAutoSearchIncPath: boolean = false;
+    private isAutoSearchObjFile: boolean = false;
 
     on(event: 'dataChanged', listener: (event: SourceChangedEvent) => void): void;
     on(event: any, listener: (arg: any) => void): void {
@@ -383,8 +383,6 @@ class SourceRootList implements SourceProvider {
         this.project = _project;
         this._event = new events.EventEmitter();
         this.srcFolderMaps = new Map();
-        this.isAutoSearchIncPath = SettingManager.GetInstance().isAutoSearchIncludePath();
-        this.isAutoSearchObjFile = SettingManager.GetInstance().isAutoSearchObjFile();
     }
 
     isAutoSearchObjectFile(): boolean {
@@ -392,6 +390,9 @@ class SourceRootList implements SourceProvider {
     }
 
     load(notEmitEvt?: boolean) {
+
+        this.isAutoSearchIncPath = SettingManager.GetInstance().isAutoSearchIncludePath();
+        this.isAutoSearchObjFile = SettingManager.GetInstance().isAutoSearchObjFile();
 
         this.DisposeAll();
 
@@ -959,6 +960,20 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
                 if (oldEnv.length > 0) {
                     const cont = this.getEnvFileDefCont().concat(oldEnv);
                     envFile.Write(cont.join(os.EOL));
+                }
+            }
+
+            // add some compatiable settings for old project
+            {
+                const workspaceConfig = this.GetWorkspaceConfig();
+                const settings = workspaceConfig.config.settings;
+
+                // auto search includePath and libPath for old ver project
+                if (this.oldProjectVersion &&
+                    compareVersion('3.3', this.oldProjectVersion) > 0) { // old ver < 3.3
+                    settings['EIDE.SourceTree.AutoSearchIncludePath'] = true;
+                    settings['EIDE.SourceTree.AutoSearchObjFile'] = true;
+                    workspaceConfig.Save(true); // save it now
                 }
             }
         }
@@ -1826,6 +1841,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     protected isNewProject?: boolean | undefined;
     protected isOldVersionProject?: boolean | undefined;
+    protected oldProjectVersion?: string | undefined;
 
     protected async BeforeLoad(wsFile: File): Promise<void> {
 
@@ -1842,6 +1858,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
                 conf.version = EIDE_CONF_VERSION;
                 eideFile.Write(JSON.stringify(conf));
                 this.isOldVersionProject = true;
+                this.oldProjectVersion = prj_version;
             }
         }
 
@@ -2492,14 +2509,14 @@ class EIDEProject extends AbstractProject {
         // register cfg watcher
         this.onSrcExtraOptionsChanged('changed'); // notify cpptools update now
 
-        // update workspace settings
+        // init settings for new project
         if (this.isNewProject) {
 
             const workspaceConfig = this.GetWorkspaceConfig();
             const settings = workspaceConfig.config.settings;
 
             // --- eide settings
-
+            // TODO
 
             // --- vscode settings
 
