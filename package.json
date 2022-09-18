@@ -550,6 +550,11 @@
                 "title": "%eide.function.reinstall.binaries%"
             },
             {
+                "command": "eide.create.clang-format.file",
+                "category": "eide",
+                "title": "Create a new .clang-format template file"
+            },
+            {
                 "command": "_cl.eide.workspace.build",
                 "title": "%eide.workspace.build%",
                 "icon": {

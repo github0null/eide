@@ -122,6 +122,7 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('eide.ReloadJlinkDevs', () => reloadJlinkDevices()));
     subscriptions.push(vscode.commands.registerCommand('eide.ReloadStm8Devs', () => reloadStm8Devices()));
     subscriptions.push(vscode.commands.registerCommand('eide.selectBaudrate', () => onSelectSerialBaudrate()));
+    subscriptions.push(vscode.commands.registerCommand('eide.create.clang-format.file', () => newClangFormatFile()));
 
     // internal command
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.selectCurSerialName', () => onSelectCurSerialName()));
@@ -305,6 +306,25 @@ function updateSerialportBarState() {
         StatusBarManager.getInstance().hide('serialport');
         StatusBarManager.getInstance().hide('serialport-name');
         StatusBarManager.getInstance().hide('serialport-baud');
+    }
+}
+
+async function newClangFormatFile() {
+
+    let root = WorkspaceManager.getInstance().getWorkspaceRoot();
+    if (!root) {
+        const li = WorkspaceManager.getInstance().getWorkspaceList();
+        if (li.length > 0) {
+            root = li[0];
+        }
+    }
+
+    if (root) {
+        const fSrc = File.fromArray([ResManager.GetInstance().GetAppDataDir().path, '.clang-format']);
+        fs.copyFileSync(fSrc.path, [root.path, '.clang-format'].join(File.sep));
+        vscode.window.showInformationMessage(`.clang-format file was created in '${fSrc.dir}' !`);
+    } else {
+        vscode.window.showWarningMessage(`No opened workspace or folders !`);
     }
 }
 
