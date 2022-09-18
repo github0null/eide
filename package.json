@@ -744,10 +744,6 @@
                 "title": "%eide.project.show.commands%"
             },
             {
-                "command": "_cl.eide.project.generate.makefile",
-                "title": "%eide.project.gen.makefile%"
-            },
-            {
                 "command": "_cl.eide.project.installCMSISHeaders",
                 "title": "%eide.package.install.cmsis%",
                 "icon": {
@@ -1251,10 +1247,6 @@
                 },
                 {
                     "command": "_cl.eide.project.showBuildParams",
-                    "when": "viewItem == SOLUTION && view == Project"
-                },
-                {
-                    "command": "_cl.eide.project.generate.makefile",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {
