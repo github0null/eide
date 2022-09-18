@@ -48,9 +48,9 @@ function parseLogLines(file: File): string[] {
 
 function toVscServerity(str_: string): vscode.DiagnosticSeverity {
     const str = str_.toLowerCase();
-    if (str.startsWith('err') || str.startsWith('fatal')) {
+    if (str.startsWith('err') || str.startsWith('fatal') || str.includes('error')) {
         return vscode.DiagnosticSeverity.Error;
-    } else if (str.startsWith('warn')) {
+    } else if (str.startsWith('warn') || str.includes('warning')) {
         return vscode.DiagnosticSeverity.Warning;
     } else {
         return vscode.DiagnosticSeverity.Information;
