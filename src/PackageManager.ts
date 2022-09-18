@@ -1196,6 +1196,8 @@ export class PackageManager {
             proc.on('close', (eInf) => {
                 if (eInf.code != 0) {
                     GlobalEvent.emit('globalLog.append', `\n----- failed, exit code: ${eInf.code} -----\n`);
+                } else {// done, update jlink device list
+                    ResManager.GetInstance().loadJlinkDevList();
                 }
             });
 
