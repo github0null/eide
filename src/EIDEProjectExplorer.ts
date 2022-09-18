@@ -1480,13 +1480,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
             const iarproj = ewwInfo.projects[path_];
             const prjRoot = new File(NodePath.dirname(path_));
+            const createNewDir = NodePath.normalize(prjRoot.path) == NodePath.normalize(ewwRoot.path);
 
             const basePrj = AbstractProject.NewProject().createBase({
                 name: iarproj.name,
                 projectName: iarproj.name,
                 type: 'ARM',
                 outDir: prjRoot
-            }, false);
+            }, createNewDir);
 
             if (!project0workspacefile)
                 project0workspacefile = basePrj.workspaceFile;
