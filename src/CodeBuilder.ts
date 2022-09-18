@@ -418,7 +418,7 @@ export abstract class CodeBuilder {
             sourceParams: sourceInfo.params,
             sourceParamsMtime: sourceInfo.paramsModTime,
             options: JSON.parse(JSON.stringify(compileOptions)),
-            env: this.project.getProjectEnv()
+            env: this.project.getProjectVariables()
         };
 
         // set ram size from env

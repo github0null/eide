@@ -741,6 +741,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     protected sourceRoots: SourceRootList;
     protected virtualSource: VirtualSource;
 
+    private builtinEnvVars: { [key: string]: () => string } = {};
+
     ////////////////////////////////// cpptools provider interface ///////////////////////////////////
 
     name: string = 'eide';
@@ -784,6 +786,36 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     public resolveEnvVar(p: string): string {
         return this.replacePathEnv(p);
+    }
+
+    public registerBuiltinVar(key: string, func: () => string) {
+        this.builtinEnvVars[key] = func;
+    }
+
+    public enumBuiltinVars(): string[] {
+        const keys: string[] = [];
+        for (const key in this.builtinEnvVars) keys.push(key);
+        return keys;
+    }
+
+    public getBuiltinVarValue(key: string): string | undefined {
+        const func = this.builtinEnvVars[key];
+        if (func !== undefined) {
+            return func();
+        }
+    }
+
+    public getBuiltinVarKvMap(): { [key: string]: string } {
+        const _env: { [key: string]: string } = {};
+        for (const key in this.builtinEnvVars) _env[key] = this.builtinEnvVars[key]();
+        return _env;
+    }
+
+    public getProjectVariables(): { [key: string]: string } {
+        const _env: { [key: string]: string } = this.getProjectUserEnv() || {};
+        const _ienv = this.getBuiltinVarKvMap();
+        for (const key in _ienv) _env[key] = _ienv[key];
+        return _env;
     }
 
     ////////////////////////////////// Abstract Project ///////////////////////////////////
@@ -1082,37 +1114,18 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     // project internal env vars
     private _replaceProjEnv(str: string): string {
 
-        const prjConfig = this.GetConfiguration();
-        const prjRootDir = this.GetRootDir();
-        const outDirBase = prjConfig.getOutDir();
-        const outDir = NodePath.normalize(prjRootDir.path + File.sep + outDirBase);
-
-        // vscode vars
-        str = str
-            .replace(/\$\{workspaceFolder\}/g, prjRootDir.path)
-            .replace(/\$\{workspaceFolderBasename\}/g, prjRootDir.name);
-
-        // toolchain vars
-        if (this.toolchain) {
-            str = str
-                .replace(/\$\(ToolchainRoot\)|\$\{ToolchainRoot\}/ig, File.ToUnixPath(this.getToolchain().getToolchainDir().path));
+        for (const key in this.builtinEnvVars) {
+            const pattern = new RegExp(String.raw`\$\{${key}\}|\$\(${key}\)`, 'ig');
+            const val = this.builtinEnvVars[key]();
+            str = str.replace(pattern, val);
         }
-
-        // project vars
-        str = str
-            .replace(/\$\(OutDir\)|\$\{OutDir\}/ig, outDir)
-            .replace(/\$\(OutDirBase\)|\$\{OutDirBase\}/ig, outDirBase)
-            .replace(/\$\(ProjectName\)|\$\{ProjectName\}/ig, prjConfig.config.name)
-            .replace(/\$\(ConfigName\)|\$\{ConfigName\}/ig, prjConfig.config.mode)
-            .replace(/\$\(ExecutableName\)|\$\{ExecutableName\}/ig, `${outDir}${File.sep}${prjConfig.config.name}`)
-            .replace(/\$\(ProjectRoot\)|\$\{ProjectRoot\}/ig, prjRootDir.path);
 
         return str;
     }
 
     // user defined env vars
     private _replaceUserEnv(str: string, ignore_case_sensitivity: boolean = false): string {
-        const prjEnv = this.getProjectEnv();
+        const prjEnv = this.getProjectUserEnv();
         if (prjEnv) {
             for (const key in prjEnv) {
                 let flag = 'g';
@@ -1595,7 +1608,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     private __env_lastUpdateTime: number = 0;
     private __env_lastEnvObj: { [name: string]: any } | undefined;
-    getProjectEnv(): { [name: string]: any } | undefined {
+    getProjectUserEnv(): { [name: string]: any } | undefined {
 
         // limit read interval (350 ms), improve speed
         if (this.__env_lastEnvObj != undefined &&
@@ -1676,9 +1689,13 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     //---
 
     protected loadToolchain() {
+
         const prjConfig = this.GetConfiguration();
         const toolManager = ToolchainManager.getInstance();
+
         this.toolchain = toolManager.getToolchain(prjConfig.config.type, prjConfig.config.toolchain);
+        this.registerBuiltinVar('ToolchainRoot', () => this.getToolchain().getToolchainDir().path);
+
         const opFile = prjConfig.compileConfigModel.getOptionsFile(this.getEideDir().path, prjConfig.config);
         toolManager.updateToolchainConfig(opFile, this.toolchain);
     }
@@ -1729,6 +1746,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     protected LoadConfigurations(wsFile: File) {
 
+        ////////////////////////////////////
+        // load eide.json, init project
+
         // init folders
         this.rootDir = new File(wsFile.dir);
         this.eideDir = new File(this.rootDir.path + File.sep + AbstractProject.EIDE_DIR);
@@ -1740,6 +1760,22 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
         // create '.vscode' folder if it's not existed
         File.fromArray([wsFile.dir, AbstractProject.vsCodeDir]).CreateDir(true);
+
+        /////////////////////////////////////
+        // init base builtin env
+
+        // vscode vars
+        this.registerBuiltinVar('workspaceFolder', () => this.getRootDir().path);
+        this.registerBuiltinVar('workspaceFolderBasename', () => this.getRootDir().name);
+
+        // project vars
+        this.registerBuiltinVar('OutDir', () => this.getRootDir().path + File.sep + this.GetConfiguration().getOutDir());
+        this.registerBuiltinVar('OutDirRoot', () => this.GetConfiguration().getOutDirRoot());
+        this.registerBuiltinVar('OutDirBase', () => this.GetConfiguration().getOutDir());
+        this.registerBuiltinVar('ProjectName', () => this.GetConfiguration().config.name);
+        this.registerBuiltinVar('ConfigName', () => this.GetConfiguration().config.mode);
+        this.registerBuiltinVar('ProjectRoot', () => this.getRootDir().path);
+        this.registerBuiltinVar('ExecutableName', () => [this.getRootDir().path, this.GetConfiguration().getOutDir(), this.GetConfiguration().config.name].join(File.sep));
     }
 
     private RegisterEvent(): void {

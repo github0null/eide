@@ -32,6 +32,7 @@ import { view_str$compile$options, view_str$compile$storageLayout, view_str$env_
 import * as NodePath from 'path';
 import * as CmsisConfigParser from './CmsisConfigParser'
 import * as os from 'os'
+import * as platform from './Platform';
 
 let _instance: WebPanelManager;
 
@@ -145,18 +146,18 @@ export class WebPanelManager {
         }
 
         const envList: any[] = [
-            { name: '${TargetName}', desc: view_str$env_desc$project_name },
-            { name: '${ProjectRoot}', desc: view_str$env_desc$project_root },
-            { name: '${OutDir}', desc: view_str$env_desc$output_dir },
+            // unify_builder specific variables
             { name: '${BuilderFolder}', desc: view_str$env_desc$builer_folder },
-            { name: '${ToolchainRoot}', desc: view_str$env_desc$toolchain_root },
             { name: '${CompilerPrefix}', desc: view_str$env_desc$compiler_prefix },
             { name: '${CompilerFolder}', desc: view_str$env_desc$compiler_folder }
         ];
 
-        const prjEnv = project.getProjectEnv() || {};
+        const prjEnv = project.getProjectVariables();
         for (const key in prjEnv) {
-            envList.push({ name: `%${key}%`, desc: `${prjEnv[key]}` })
+            envList.push({
+                name: `\$\{${key}\}`,
+                desc: `${prjEnv[key]}`
+            })
         }
 
         /* prepare page-init event data */
