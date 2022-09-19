@@ -194,7 +194,7 @@ export class ResInstaller {
             const instDir = File.fromArray([ResManager.GetInstance().getUtilToolsDir(), tool.resource_name]);
             if (instDir.IsDir()) {
                 if (tool.require_name) {
-                    const p = NodePath.normalize(instDir.path + File.sep + tool.require_name);
+                    const p = File.normalize(instDir.path + File.sep + tool.require_name);
                     return File.IsExist(p);
                 } else {
                     return true;

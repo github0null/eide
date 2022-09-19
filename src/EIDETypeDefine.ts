@@ -441,8 +441,8 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
     private toAbsolutePath(path_: string): string {
         const path = path_.trim();
-        if (File.isAbsolute(path)) { return NodePath.normalize(path); }
-        return NodePath.normalize(File.ToLocalPath(this.getRootDir().path + File.sep + path));
+        if (File.isAbsolute(path)) { return File.normalize(path); }
+        return File.normalize(File.ToLocalPath(this.getRootDir().path + File.sep + path));
     }
 
     private toRelativePath(path_: string): string {

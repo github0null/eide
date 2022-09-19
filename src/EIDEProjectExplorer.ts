@@ -970,7 +970,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                         // setting: out folder
                         iList.push(new ProjTreeItem(TreeItemType.SETTINGS_ITEM, {
                             key: 'outDir',
-                            value: NodePath.normalize(config.config.outDir),
+                            value: File.normalize(config.config.outDir),
                             alias: view_str$settings$outFolderName,
                             tooltip: view_str$settings$outFolderName,
                             projectIndex: element.val.projectIndex
@@ -1453,24 +1453,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         if (projectnum == 0)
             throw new Error(`Not found any project in this IAR workbench ! [path]: ${option.projectFile.path}`);
 
-        // store vscode workspace
+        const vscWorkspace = {
+            "folders": <any[]>[]
+        };
+
         const vscWorkspaceFile = File.fromArray([ewwRoot.path, `${ewwInfo.name}.code-workspace`]);
-        {
-            const vscWorkspace = {
-                "folders": <any[]>[]
-            };
-
-            for (const projpath in ewwInfo.projects) {
-                const repath = ewwRoot.ToRelativePath(projpath) || projpath;
-                const project = ewwInfo.projects[projpath];
-                vscWorkspace.folders.push({
-                    name: project.name,
-                    path: NodePath.dirname(repath)
-                });
-            }
-
-            fs.writeFileSync(vscWorkspaceFile.path, JSON.stringify(vscWorkspace, undefined, 4));
-        }
 
         const toolchainType: ToolchainName = 'IAR_ARM';
 
@@ -1479,15 +1466,22 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         for (const path_ in ewwInfo.projects) {
 
             const iarproj = ewwInfo.projects[path_];
-            const prjRoot = new File(NodePath.dirname(path_));
-            const createNewDir = NodePath.normalize(prjRoot.path) == NodePath.normalize(ewwRoot.path);
+            const iarPrjRoot = new File(NodePath.dirname(path_));
 
+            const needCreateNewDir = File.normalize(iarPrjRoot.path) == File.normalize(ewwRoot.path);
             const basePrj = AbstractProject.NewProject().createBase({
                 name: iarproj.name,
                 projectName: iarproj.name,
                 type: 'ARM',
-                outDir: prjRoot
-            }, createNewDir);
+                outDir: iarPrjRoot
+            }, needCreateNewDir);
+
+            const prjRoot = basePrj.rootFolder;
+
+            vscWorkspace.folders.push({
+                name: iarproj.name,
+                path: ewwRoot.ToRelativePath(prjRoot.path) || prjRoot.path
+            });
 
             if (!project0workspacefile)
                 project0workspacefile = basePrj.workspaceFile;
@@ -1495,7 +1489,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             const eidePrjCfg = basePrj.prjConfig.config;
             const eideFolder = File.fromArray([prjRoot.path, AbstractProject.EIDE_DIR]);
 
-            // set project env
+            // export project env
             {
                 const envFile = File.fromArray([eideFolder.path, 'env.ini']);
                 const envCont = [
@@ -1504,9 +1498,13 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                     `###########################################################`,
                     ``,
                 ];
+
+                iarproj.envs['PROJ_DIR'] = needCreateNewDir ? '..' : '.';
+
                 for (const key in iarproj.envs) {
                     envCont.push(`${key} = ${iarproj.envs[key]}`);
                 }
+
                 envFile.Write(envCont.join(os.EOL));
             }
 
@@ -1702,11 +1700,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             basePrj.prjConfig.Save();
         }
 
+        // store vscode workspace
+        fs.writeFileSync(vscWorkspaceFile.path, JSON.stringify(vscWorkspace, undefined, 4));
+
         // switch project
         const selection = await vscode.window.showInformationMessage(
             view_str$operation$import_done, continue_text, cancel_text);
         if (selection === continue_text) {
-            WorkspaceManager.getInstance().openWorkspace(projectnum > 1
+            WorkspaceManager.getInstance().openWorkspace(vscWorkspace.folders.length > 1
                 ? vscWorkspaceFile
                 : project0workspacefile);
         }
@@ -3494,7 +3495,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 rootDir = prj.GetRootDir();
                 templateName = prjConfig.name;
                 tmp_suffix = 'ept';
-                const prjOutFolder = NodePath.normalize(prj.GetConfiguration().config.outDir);
+                const prjOutFolder = File.normalize(prj.GetConfiguration().config.outDir);
                 defExcludeList.push(`${prjOutFolder}`, `${prjOutFolder}${File.sep}*`);
                 resIgnoreList = prj.readIgnoreList();
                 const prjUid = prjConfig.miscInfo.uid;
@@ -4167,7 +4168,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
 
         cppcheckConf = cppcheckConf
-            .replace('${cppcheck_build_folder}', NodePath.normalize(prj.getOutputRoot()))
+            .replace('${cppcheck_build_folder}', File.normalize(prj.getOutputRoot()))
             .replace('${platform}', cppcheck_plat)
             .replace('${lib_list}', cfgList.map((str) => `<library>${str}</library>`).join(os.EOL + '\t\t'))
             .replace('${include_list}', includeList.map((str) => `<dir name="${str}/"/>`).join(os.EOL + '\t\t'))
@@ -4396,7 +4397,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             case 'outDir':
                 {
                     const prjConfig = prj.GetConfiguration().config;
-                    const oldFolderName = NodePath.normalize(prjConfig.outDir);
+                    const oldFolderName = File.normalize(prjConfig.outDir);
 
                     const newName = await vscode.window.showInputBox({
                         value: oldFolderName,
@@ -4972,7 +4973,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         let file: File | undefined;
 
         if (item.val.value instanceof File) { // if value is a file, use it
-            file = new File(NodePath.normalize(item.val.value.path));
+            file = new File(File.normalize(item.val.value.path));
         }
 
         if (file) {

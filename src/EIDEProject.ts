@@ -900,7 +900,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         if (this.isOldVersionProject) {
 
             // rename old 'deps' folder name for old eide version
-            const depsFolder = File.fromArray([this.GetRootDir().path, NodePath.normalize(DependenceManager.DEPENDENCE_DIR)]);
+            const depsFolder = File.fromArray([this.GetRootDir().path, File.normalize(DependenceManager.DEPENDENCE_DIR)]);
             if (!depsFolder.IsDir()) { // if 'deps' folder is not exist
 
                 // these folder is for old eide version
@@ -998,7 +998,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         prjConfig.config.srcDirs = prjConfig.config.srcDirs.filter(p => File.IsDir(p));
 
         // rm prefix for out dir
-        prjConfig.config.outDir = NodePath.normalize(File.ToLocalPath(prjConfig.config.outDir));
+        prjConfig.config.outDir = File.normalize(File.ToLocalPath(prjConfig.config.outDir));
 
         // use unix path for source path
         if (this.isNewProject || this.isOldVersionProject) {
@@ -1154,8 +1154,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     ToAbsolutePath(path_: string, resolveEnv: boolean = true): string {
         const path = resolveEnv ? this.replacePathEnv(path_.trim()) : path_.trim();
-        if (File.isAbsolute(path)) { return NodePath.normalize(path); }
-        return NodePath.normalize(File.ToLocalPath(this.GetRootDir().path + NodePath.sep + path));
+        if (File.isAbsolute(path)) { return File.normalize(path); }
+        return File.normalize(File.ToLocalPath(this.GetRootDir().path + NodePath.sep + path));
     }
 
     /**
@@ -2325,8 +2325,10 @@ class EIDEProject extends AbstractProject {
 
     public createBase(option: CreateOptions, createNewPrjFolder: boolean = true): BaseProjectInfo {
 
-        const rootDir: File = createNewPrjFolder ?
-            File.fromArray([option.outDir.path, option.name]) : option.outDir;
+        const rootDir: File = createNewPrjFolder
+            ? File.fromArray([option.outDir.path, option.name])
+            : option.outDir;
+
         rootDir.CreateDir(true);
 
         const wsFile = File.fromArray([rootDir.path, option.name + AbstractProject.workspaceSuffix]);
@@ -2967,7 +2969,7 @@ class EIDEProject extends AbstractProject {
         this.cppToolsConfig.forcedInclude = [];
 
         toolchain.getForceIncludeHeaders()?.forEach((f_path) => {
-            this.cppToolsConfig.forcedInclude?.push(NodePath.normalize(f_path));
+            this.cppToolsConfig.forcedInclude?.push(File.normalize(f_path));
         });
 
         SettingManager.GetInstance().getForceIncludeList().forEach((path) => {

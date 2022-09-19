@@ -402,7 +402,7 @@ export abstract class CodeBuilder {
             target: this.project.getCurrentTarget(),
             toolchain: toolchain.name,
             toolchainLocation: toolchain.getToolchainDir().path,
-            toolchainCfgFile: NodePath.normalize(`../cfg/${toolchain.modelName}`),
+            toolchainCfgFile: File.normalize(`../cfg/${toolchain.modelName}`),
             buildMode: 'fast|multhread',
             showRepathOnLog: settingManager.isPrintRelativePathWhenBuild(),
             threadNum: settingManager.getThreadNumber(),

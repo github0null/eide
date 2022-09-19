@@ -303,7 +303,6 @@ function tryGetIarChipInfo(iarToolRoot: File, rawChipNameStr: string): { [key: s
 export function formatEnvNameAndPathSep(str: string): string {
     return str.replace(/\\/g, '/')
         .replace(/\/$/, '')
-        .replace(/\$PROJ_DIR\$\//g, '')
         .replace(/\$TOOLKIT_DIR\$/g, '${ToolchainRoot}')
         .replace(/\$(\w+)\$/g, '$${$1}');
 }

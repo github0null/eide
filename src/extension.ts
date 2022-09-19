@@ -707,13 +707,13 @@ function exportEnvToSysPath() {
 
     // export some eide binaries path to system env path
     const defEnvPath: string[] = [
-        NodePath.normalize(`${builderFolder.path}/bin`), // builder bin folder
-        NodePath.normalize(`${builderFolder.path}/utils`), // utils tool folder
-        NodePath.normalize(`${builderFolder.dir}/scripts`),
+        File.normalize(`${builderFolder.path}/bin`), // builder bin folder
+        File.normalize(`${builderFolder.path}/utils`), // utils tool folder
+        File.normalize(`${builderFolder.dir}/scripts`),
     ];
 
     //
-    const eideToolsFolder = new File(NodePath.normalize(`${os.homedir()}/.eide/tools`));
+    const eideToolsFolder = new File(File.normalize(`${os.homedir()}/.eide/tools`));
     if (!eideToolsFolder.IsDir()) {
         try {
             new File(eideToolsFolder.path).CreateDir(true);
@@ -757,7 +757,7 @@ function exportEnvToSysPath() {
             }
 
             binDirs.forEach(dir => {
-                const binFolder = NodePath.normalize(`${subDir.path}/${dir}`);
+                const binFolder = File.normalize(`${subDir.path}/${dir}`);
                 if (File.IsDir(binFolder)) {
                     binFolderPaths.push(binFolder);
                 }
@@ -766,7 +766,7 @@ function exportEnvToSysPath() {
 
         // try use ./bin
         if (binFolderPaths.length == 0) {
-            const binFolder = NodePath.normalize(`${subDir.path}/bin`);
+            const binFolder = File.normalize(`${subDir.path}/bin`);
             if (File.IsDir(binFolder)) {
                 binFolderPaths.push(binFolder);
             }
@@ -786,7 +786,7 @@ function exportEnvToSysPath() {
 
     // search built-in tools and export path to system env
     builderFolder.GetList(File.EMPTY_FILTER).forEach((subDir) => {
-        const binFolder = NodePath.normalize(`${subDir.path}/bin`);
+        const binFolder = File.normalize(`${subDir.path}/bin`);
         if (File.IsDir(binFolder)) {
             pathList.push({
                 key: `EIDE_${subDir.name.toUpperCase()}`,
@@ -1229,7 +1229,7 @@ class EideTerminalLinkProvider implements vscode.TerminalLinkProvider<EideTermin
             return path;
         }
 
-        return NodePath.normalize(`${this.workspace.path}/${path}`);
+        return File.normalize(`${this.workspace.path}/${path}`);
     }
 
     async provideTerminalLinks(context: vscode.TerminalLinkContext, token: vscode.CancellationToken): Promise<EideTerminalLink[]> {

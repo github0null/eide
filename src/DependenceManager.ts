@@ -63,7 +63,7 @@ export class DependenceManager implements ManagerInterface {
     Init() {
         const rootDir = this.project.GetRootDir();
         this.prjType = this.project.GetConfiguration().config.type;
-        this.depDir = File.fromArray([rootDir.path, NodePath.normalize(DependenceManager.DEPENDENCE_DIR)]);
+        this.depDir = File.fromArray([rootDir.path, File.normalize(DependenceManager.DEPENDENCE_DIR)]);
         this.LoadComponents();
     }
 

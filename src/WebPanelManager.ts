@@ -100,7 +100,7 @@ export class WebPanelManager {
         panel.webview.html = htmlFile.Read()
             .replace(/"[\w\-\.\/]+?\.(?:css|js)"/ig, (str) => {
                 const fileName = str.substr(1, str.length - 2); // remove '"'
-                const absPath = NodePath.normalize(htmlFolder.path + NodePath.sep + fileName);
+                const absPath = File.normalize(htmlFolder.path + NodePath.sep + fileName);
                 return `"${panel.webview.asWebviewUri(vscode.Uri.file(absPath)).toString()}"`;
             });
 
@@ -139,7 +139,7 @@ export class WebPanelManager {
                 const fileSuffix = validationObj.fileMatch.replace('**/*', '');
                 if (dataFilePath.endsWith(fileSuffix)) {
                     const path = resManager.getAppRootFolder().path + File.sep + validationObj.url;
-                    return new File(NodePath.normalize(path));
+                    return new File(File.normalize(path));
                 }
             }
             throw new Error(`not found model file for '${dataFilePath}'`)
@@ -221,7 +221,7 @@ export class WebPanelManager {
         panel.webview.html = htmlEntryFile.Read()
             .replace(/"[\w\-\.\/]+?\.(?:css|js)"/ig, (str) => {
                 const fileName = str.substr(1, str.length - 2); // remove '"'
-                const absPath = NodePath.normalize(htmlFolder.path + NodePath.sep + fileName);
+                const absPath = File.normalize(htmlFolder.path + NodePath.sep + fileName);
                 return `"${panel.webview.asWebviewUri(vscode.Uri.file(absPath)).toString()}"`;
             });
 
@@ -332,7 +332,7 @@ export class WebPanelManager {
         panel.webview.html = htmlEntryFile.Read()
             .replace(/"[\w\-\.\/]+?\.(?:css|js)"/ig, (str) => {
                 const fileName = str.substr(1, str.length - 2); // remove '"'
-                const absPath = NodePath.normalize(htmlFolder.path + NodePath.sep + fileName);
+                const absPath = File.normalize(htmlFolder.path + NodePath.sep + fileName);
                 return `"${panel.webview.asWebviewUri(vscode.Uri.file(absPath)).toString()}"`;
             });
 
