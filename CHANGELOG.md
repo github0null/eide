@@ -6,11 +6,12 @@ All notable version changes will be recorded in this file.
 
 ***
 
-### [v3.9.2022091901] revision (preview)
+### [v3.9.2022092001] revision (preview)
 
 **Fix**:
   - Env was overrided when import a 'multi-project' iar workspace
   - Sdcc problem matcher doesn't work
+  - error convert: '${VAR}/../A' -> 'A' when use 'NodePath.normalize()', use 'File.normalize' replace 'NodePath.normalize'
 
 **Change**:
   - Remove Makefile template file generate
