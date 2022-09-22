@@ -6,12 +6,13 @@ All notable version changes will be recorded in this file.
 
 ***
 
-### [v3.9.2022092001] revision (preview)
+### [v3.9.1] revision (v3.9.2022092001 preview)
 
 **Fix**:
   - Env was overrided when import a 'multi-project' iar workspace
   - Sdcc problem matcher doesn't work
-  - error convert: '${VAR}/../A' -> 'A' when use 'NodePath.normalize()', use 'File.normalize' replace 'NodePath.normalize'
+  - Error path convert: '${VAR}/../path/dir' -> 'path/dir' when use `NodeJs.normalize()`, use `File.normalize` replace `NodeJs.normalize()`
+  - Source file is not compiled when their reference were updated (unify_builder)
 
 **Change**:
   - Remove Makefile template file generate
