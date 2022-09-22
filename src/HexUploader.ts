@@ -1040,7 +1040,7 @@ class CustomUploader extends HexUploader<string> {
         let env = process.env;
 
         // set env
-        const prjEnv = this.project.getProjectEnv();
+        const prjEnv = this.project.getProjectVariables();
         if (prjEnv) {
             for (const key in prjEnv) {
                 if (key.toUpperCase() == 'PATH') {

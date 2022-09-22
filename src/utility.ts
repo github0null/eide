@@ -91,7 +91,7 @@ export function runShellCommand(title: string, commandLine: string, env?: any, u
             if (platform.osType() == 'win32') commandLine = `"${commandLine}"`;
             task.execution = new vscode.ShellExecution(commandLine, shellOption);
             task.isBackground = false;
-            task.problemMatchers = ['$gcc'];
+            task.problemMatchers = [];
             task.presentationOptions = { echo: true, focus: false, clear: true };
             vscode.tasks.executeTask(task);
         } else {

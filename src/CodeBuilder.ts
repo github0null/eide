@@ -402,7 +402,7 @@ export abstract class CodeBuilder {
             target: this.project.getCurrentTarget(),
             toolchain: toolchain.name,
             toolchainLocation: toolchain.getToolchainDir().path,
-            toolchainCfgFile: NodePath.normalize(`../cfg/${toolchain.modelName}`),
+            toolchainCfgFile: File.normalize(`../cfg/${toolchain.modelName}`),
             buildMode: 'fast|multhread',
             showRepathOnLog: settingManager.isPrintRelativePathWhenBuild(),
             threadNum: settingManager.getThreadNumber(),
@@ -418,7 +418,7 @@ export abstract class CodeBuilder {
             sourceParams: sourceInfo.params,
             sourceParamsMtime: sourceInfo.paramsModTime,
             options: JSON.parse(JSON.stringify(compileOptions)),
-            env: this.project.getProjectEnv()
+            env: this.project.getProjectVariables()
         };
 
         // set ram size from env

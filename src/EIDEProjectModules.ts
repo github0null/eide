@@ -2396,7 +2396,7 @@ class OpenOCDUploadModel extends UploadConfigModel<OpenOCDFlashOptions> {
 
         // find in build-in path
         for (const path of this.configSearchList['build-in']) {
-            const cfgFolder = new File(NodePath.normalize(`${NodePath.dirname(openocdExe.dir)}/${path}/${configClass}`));
+            const cfgFolder = new File(File.normalize(`${NodePath.dirname(openocdExe.dir)}/${path}/${configClass}`));
             if (cfgFolder.IsDir()) {
                 cfgFolder.GetAll([/\.cfg$/i], File.EMPTY_FILTER).forEach((file) => {
                     const rePath = (cfgFolder.ToRelativePath(file.path) || file.name);

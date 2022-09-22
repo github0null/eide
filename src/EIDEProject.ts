@@ -371,8 +371,8 @@ class SourceRootList implements SourceProvider {
     //      val: SourceRootInfo
     private srcFolderMaps: Map<string, SourceRootInfo>;
 
-    private isAutoSearchIncPath: boolean;
-    private isAutoSearchObjFile: boolean;
+    private isAutoSearchIncPath: boolean = false;
+    private isAutoSearchObjFile: boolean = false;
 
     on(event: 'dataChanged', listener: (event: SourceChangedEvent) => void): void;
     on(event: any, listener: (arg: any) => void): void {
@@ -383,8 +383,6 @@ class SourceRootList implements SourceProvider {
         this.project = _project;
         this._event = new events.EventEmitter();
         this.srcFolderMaps = new Map();
-        this.isAutoSearchIncPath = SettingManager.GetInstance().isAutoSearchIncludePath();
-        this.isAutoSearchObjFile = SettingManager.GetInstance().isAutoSearchObjFile();
     }
 
     isAutoSearchObjectFile(): boolean {
@@ -392,6 +390,9 @@ class SourceRootList implements SourceProvider {
     }
 
     load(notEmitEvt?: boolean) {
+
+        this.isAutoSearchIncPath = SettingManager.GetInstance().isAutoSearchIncludePath();
+        this.isAutoSearchObjFile = SettingManager.GetInstance().isAutoSearchObjFile();
 
         this.DisposeAll();
 
@@ -741,6 +742,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     protected sourceRoots: SourceRootList;
     protected virtualSource: VirtualSource;
 
+    private builtinEnvVars: { [key: string]: () => string } = {};
+
     ////////////////////////////////// cpptools provider interface ///////////////////////////////////
 
     name: string = 'eide';
@@ -784,6 +787,36 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     public resolveEnvVar(p: string): string {
         return this.replacePathEnv(p);
+    }
+
+    public registerBuiltinVar(key: string, func: () => string) {
+        this.builtinEnvVars[key] = func;
+    }
+
+    public enumBuiltinVars(): string[] {
+        const keys: string[] = [];
+        for (const key in this.builtinEnvVars) keys.push(key);
+        return keys;
+    }
+
+    public getBuiltinVarValue(key: string): string | undefined {
+        const func = this.builtinEnvVars[key];
+        if (func !== undefined) {
+            return func();
+        }
+    }
+
+    public getBuiltinVarKvMap(): { [key: string]: string } {
+        const _env: { [key: string]: string } = {};
+        for (const key in this.builtinEnvVars) _env[key] = this.builtinEnvVars[key]();
+        return _env;
+    }
+
+    public getProjectVariables(): { [key: string]: string } {
+        const _env: { [key: string]: string } = this.getProjectUserEnv() || {};
+        const _ienv = this.getBuiltinVarKvMap();
+        for (const key in _ienv) _env[key] = _ienv[key];
+        return _env;
     }
 
     ////////////////////////////////// Abstract Project ///////////////////////////////////
@@ -867,7 +900,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         if (this.isOldVersionProject) {
 
             // rename old 'deps' folder name for old eide version
-            const depsFolder = File.fromArray([this.GetRootDir().path, NodePath.normalize(DependenceManager.DEPENDENCE_DIR)]);
+            const depsFolder = File.fromArray([this.GetRootDir().path, File.normalize(DependenceManager.DEPENDENCE_DIR)]);
             if (!depsFolder.IsDir()) { // if 'deps' folder is not exist
 
                 // these folder is for old eide version
@@ -929,6 +962,20 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
                     envFile.Write(cont.join(os.EOL));
                 }
             }
+
+            // add some compatiable settings for old project
+            {
+                const workspaceConfig = this.GetWorkspaceConfig();
+                const settings = workspaceConfig.config.settings;
+
+                // auto search includePath and libPath for old ver project
+                if (this.oldProjectVersion &&
+                    compareVersion('3.3', this.oldProjectVersion) > 0) { // old ver < 3.3
+                    settings['EIDE.SourceTree.AutoSearchIncludePath'] = true;
+                    settings['EIDE.SourceTree.AutoSearchObjFile'] = true;
+                    workspaceConfig.Save(true); // save it now
+                }
+            }
         }
     }
 
@@ -951,7 +998,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         prjConfig.config.srcDirs = prjConfig.config.srcDirs.filter(p => File.IsDir(p));
 
         // rm prefix for out dir
-        prjConfig.config.outDir = NodePath.normalize(File.ToLocalPath(prjConfig.config.outDir));
+        prjConfig.config.outDir = File.normalize(File.ToLocalPath(prjConfig.config.outDir));
 
         // use unix path for source path
         if (this.isNewProject || this.isOldVersionProject) {
@@ -1082,37 +1129,18 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     // project internal env vars
     private _replaceProjEnv(str: string): string {
 
-        const prjConfig = this.GetConfiguration();
-        const prjRootDir = this.GetRootDir();
-        const outDirBase = prjConfig.getOutDir();
-        const outDir = NodePath.normalize(prjRootDir.path + File.sep + outDirBase);
-
-        // vscode vars
-        str = str
-            .replace(/\$\{workspaceFolder\}/g, prjRootDir.path)
-            .replace(/\$\{workspaceFolderBasename\}/g, prjRootDir.name);
-
-        // toolchain vars
-        if (this.toolchain) {
-            str = str
-                .replace(/\$\(ToolchainRoot\)|\$\{ToolchainRoot\}/ig, File.ToUnixPath(this.getToolchain().getToolchainDir().path));
+        for (const key in this.builtinEnvVars) {
+            const pattern = new RegExp(String.raw`\$\{${key}\}|\$\(${key}\)`, 'ig');
+            const val = this.builtinEnvVars[key]();
+            str = str.replace(pattern, val);
         }
-
-        // project vars
-        str = str
-            .replace(/\$\(OutDir\)|\$\{OutDir\}/ig, outDir)
-            .replace(/\$\(OutDirBase\)|\$\{OutDirBase\}/ig, outDirBase)
-            .replace(/\$\(ProjectName\)|\$\{ProjectName\}/ig, prjConfig.config.name)
-            .replace(/\$\(ConfigName\)|\$\{ConfigName\}/ig, prjConfig.config.mode)
-            .replace(/\$\(ExecutableName\)|\$\{ExecutableName\}/ig, `${outDir}${File.sep}${prjConfig.config.name}`)
-            .replace(/\$\(ProjectRoot\)|\$\{ProjectRoot\}/ig, prjRootDir.path);
 
         return str;
     }
 
     // user defined env vars
     private _replaceUserEnv(str: string, ignore_case_sensitivity: boolean = false): string {
-        const prjEnv = this.getProjectEnv();
+        const prjEnv = this.getProjectUserEnv();
         if (prjEnv) {
             for (const key in prjEnv) {
                 let flag = 'g';
@@ -1126,8 +1154,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     ToAbsolutePath(path_: string, resolveEnv: boolean = true): string {
         const path = resolveEnv ? this.replacePathEnv(path_.trim()) : path_.trim();
-        if (File.isAbsolute(path)) { return NodePath.normalize(path); }
-        return NodePath.normalize(File.ToLocalPath(this.GetRootDir().path + NodePath.sep + path));
+        if (File.isAbsolute(path)) { return File.normalize(path); }
+        return File.normalize(File.ToLocalPath(this.GetRootDir().path + NodePath.sep + path));
     }
 
     /**
@@ -1595,7 +1623,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     private __env_lastUpdateTime: number = 0;
     private __env_lastEnvObj: { [name: string]: any } | undefined;
-    getProjectEnv(): { [name: string]: any } | undefined {
+    getProjectUserEnv(): { [name: string]: any } | undefined {
 
         // limit read interval (350 ms), improve speed
         if (this.__env_lastEnvObj != undefined &&
@@ -1676,9 +1704,13 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     //---
 
     protected loadToolchain() {
+
         const prjConfig = this.GetConfiguration();
         const toolManager = ToolchainManager.getInstance();
+
         this.toolchain = toolManager.getToolchain(prjConfig.config.type, prjConfig.config.toolchain);
+        this.registerBuiltinVar('ToolchainRoot', () => this.getToolchain().getToolchainDir().path);
+
         const opFile = prjConfig.compileConfigModel.getOptionsFile(this.getEideDir().path, prjConfig.config);
         toolManager.updateToolchainConfig(opFile, this.toolchain);
     }
@@ -1729,6 +1761,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     protected LoadConfigurations(wsFile: File) {
 
+        ////////////////////////////////////
+        // load eide.json, init project
+
         // init folders
         this.rootDir = new File(wsFile.dir);
         this.eideDir = new File(this.rootDir.path + File.sep + AbstractProject.EIDE_DIR);
@@ -1740,6 +1775,22 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
         // create '.vscode' folder if it's not existed
         File.fromArray([wsFile.dir, AbstractProject.vsCodeDir]).CreateDir(true);
+
+        /////////////////////////////////////
+        // init base builtin env
+
+        // vscode vars
+        this.registerBuiltinVar('workspaceFolder', () => this.getRootDir().path);
+        this.registerBuiltinVar('workspaceFolderBasename', () => this.getRootDir().name);
+
+        // project vars
+        this.registerBuiltinVar('OutDir', () => this.getRootDir().path + File.sep + this.GetConfiguration().getOutDir());
+        this.registerBuiltinVar('OutDirRoot', () => this.GetConfiguration().getOutDirRoot());
+        this.registerBuiltinVar('OutDirBase', () => this.GetConfiguration().getOutDir());
+        this.registerBuiltinVar('ProjectName', () => this.GetConfiguration().config.name);
+        this.registerBuiltinVar('ConfigName', () => this.GetConfiguration().config.mode);
+        this.registerBuiltinVar('ProjectRoot', () => this.getRootDir().path);
+        this.registerBuiltinVar('ExecutableName', () => [this.getRootDir().path, this.GetConfiguration().getOutDir(), this.GetConfiguration().config.name].join(File.sep));
     }
 
     private RegisterEvent(): void {
@@ -1790,6 +1841,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     protected isNewProject?: boolean | undefined;
     protected isOldVersionProject?: boolean | undefined;
+    protected oldProjectVersion?: string | undefined;
 
     protected async BeforeLoad(wsFile: File): Promise<void> {
 
@@ -1806,6 +1858,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
                 conf.version = EIDE_CONF_VERSION;
                 eideFile.Write(JSON.stringify(conf));
                 this.isOldVersionProject = true;
+                this.oldProjectVersion = prj_version;
             }
         }
 
@@ -2272,8 +2325,10 @@ class EIDEProject extends AbstractProject {
 
     public createBase(option: CreateOptions, createNewPrjFolder: boolean = true): BaseProjectInfo {
 
-        const rootDir: File = createNewPrjFolder ?
-            File.fromArray([option.outDir.path, option.name]) : option.outDir;
+        const rootDir: File = createNewPrjFolder
+            ? File.fromArray([option.outDir.path, option.name])
+            : option.outDir;
+
         rootDir.CreateDir(true);
 
         const wsFile = File.fromArray([rootDir.path, option.name + AbstractProject.workspaceSuffix]);
@@ -2456,14 +2511,14 @@ class EIDEProject extends AbstractProject {
         // register cfg watcher
         this.onSrcExtraOptionsChanged('changed'); // notify cpptools update now
 
-        // update workspace settings
+        // init settings for new project
         if (this.isNewProject) {
 
             const workspaceConfig = this.GetWorkspaceConfig();
             const settings = workspaceConfig.config.settings;
 
             // --- eide settings
-
+            // TODO
 
             // --- vscode settings
 
@@ -2530,7 +2585,7 @@ class EIDEProject extends AbstractProject {
                         "type": "shell",
                         "command": "${command:eide.project.build}",
                         "group": "build",
-                        "problemMatcher": "$gcc"
+                        "problemMatcher": []
                     },
                     {
                         "label": "flash",
@@ -2543,14 +2598,15 @@ class EIDEProject extends AbstractProject {
                         "label": "build and flash",
                         "type": "shell",
                         "command": "${command:eide.project.buildAndFlash}",
-                        "group": "build"
+                        "group": "build",
+                        "problemMatcher": []
                     },
                     {
                         "label": "rebuild",
                         "type": "shell",
                         "command": "${command:eide.project.rebuild}",
                         "group": "build",
-                        "problemMatcher": "$gcc"
+                        "problemMatcher": []
                     },
                     {
                         "label": "clean",
@@ -2913,7 +2969,7 @@ class EIDEProject extends AbstractProject {
         this.cppToolsConfig.forcedInclude = [];
 
         toolchain.getForceIncludeHeaders()?.forEach((f_path) => {
-            this.cppToolsConfig.forcedInclude?.push(NodePath.normalize(f_path));
+            this.cppToolsConfig.forcedInclude?.push(File.normalize(f_path));
         });
 
         SettingManager.GetInstance().getForceIncludeList().forEach((path) => {

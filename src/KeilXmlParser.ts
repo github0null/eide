@@ -182,7 +182,7 @@ export abstract class KeilParser<T> {
         if (File.isAbsolute(path)) {
             return path.replace(/\//g, '\\');
         } else {
-            return NodePath.normalize(this._file.dir + File.sep + path);
+            return File.normalize(this._file.dir + File.sep + path);
         }
     }
 
@@ -492,7 +492,7 @@ class C51Parser extends KeilParser<KeilC51Option> {
         target.TargetOption.TargetCommonOption.Device = devName;
         target.TargetOption.TargetCommonOption.Vendor = vendor;
 
-        const outFolder = NodePath.normalize(prjConfig.config.outDir);
+        const outFolder = File.normalize(prjConfig.config.outDir);
         target.TargetOption.TargetCommonOption.OutputDirectory = `.\\${outFolder}\\Keil\\`;
         target.TargetOption.TargetCommonOption.ListingPath = `.\\${outFolder}\\Keil\\`;
         target.TargetOption.TargetCommonOption.OutputName = target.TargetName;
@@ -1077,7 +1077,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
         target.TargetOption.TargetCommonOption.Device = devName;
         target.TargetOption.TargetCommonOption.Vendor = vendor;
 
-        const outFolder = NodePath.normalize(prjConfig.config.outDir);
+        const outFolder = File.normalize(prjConfig.config.outDir);
         target.TargetOption.TargetCommonOption.OutputDirectory = `.\\${outFolder}\\Keil\\`;
         target.TargetOption.TargetCommonOption.ListingPath = `.\\${outFolder}\\Keil\\`;
         target.TargetOption.TargetCommonOption.OutputName = target.TargetName;

@@ -10,6 +10,7 @@ import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import { File } from '../lib/node-utility/File';
 import { GlobalEvent } from './GlobalEvents';
 import { ExceptionToMessage } from './Message';
+import * as utility from './utility';
 
 export interface IarProjectTarget {
 
@@ -72,16 +73,19 @@ export async function parseIarWorkbench(ewwFile: File, iarToolchainRoot: File): 
             'EW_DIR': ewwFile.dir,
             'WS_DIR': ewwFile.dir,
             'USER_NAME': os.userInfo().username,
+            'ToolchainRoot': iarToolchainRoot.path
         };
 
         for (const key in envs || result.envs) {
             _env[key] = result.envs[key];
         }
 
-        for (const key in _env) {
-            if (!isValidEnvName(key)) continue;
-            const pattern = new RegExp('\\$' + key + '\\$', 'g');
-            str = str.replace(pattern, _env[key]);
+        for (let index = 0; index < 5; index++) {
+            for (const key in _env) {
+                if (!isValidEnvName(key)) continue;
+                const pattern = new RegExp('\\$' + key + '\\$', 'g');
+                str = str.replace(pattern, _env[key]);
+            }
         }
 
         return str;
@@ -128,7 +132,7 @@ export async function parseIarWorkbench(ewwFile: File, iarToolchainRoot: File): 
 
         const project: IarProjectInfo = {
             name: new File(prjpath).noSuffixName,
-            envs: result.envs,
+            envs: utility.copyObject(result.envs),
             targets: {},
             fileGroups: {
                 name: VirtualSource.rootName,
@@ -299,7 +303,6 @@ function tryGetIarChipInfo(iarToolRoot: File, rawChipNameStr: string): { [key: s
 export function formatEnvNameAndPathSep(str: string): string {
     return str.replace(/\\/g, '/')
         .replace(/\/$/, '')
-        .replace(/\$PROJ_DIR\$\//g, '')
         .replace(/\$TOOLKIT_DIR\$/g, '${ToolchainRoot}')
         .replace(/\$(\w+)\$/g, '$${$1}');
 }

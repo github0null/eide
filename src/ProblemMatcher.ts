@@ -48,9 +48,9 @@ function parseLogLines(file: File): string[] {
 
 function toVscServerity(str_: string): vscode.DiagnosticSeverity {
     const str = str_.toLowerCase();
-    if (str.startsWith('err') || str.startsWith('fatal')) {
+    if (str.startsWith('err') || str.startsWith('fatal') || str.includes('error')) {
         return vscode.DiagnosticSeverity.Error;
-    } else if (str.startsWith('warn')) {
+    } else if (str.startsWith('warn') || str.includes('warning')) {
         return vscode.DiagnosticSeverity.Warning;
     } else {
         return vscode.DiagnosticSeverity.Information;
@@ -108,6 +108,64 @@ export function parseArmccCompilerLog(projApi: ProjectBaseApi, logFile: File): C
     return result;
 }
 
+//
+// example:
+//  .\src\main.c:46: syntax error: token -> '}' ; column 1
+//  .\src\main.c:53: syntax error: token -> 'TIM4_TypeDef' ; column 22
+//  .\libraries\STM8S_StdPeriph_Driver\source\stm8s_itc.c:61: warning 59: function 'ITC_GetCPUCC' must return value
+export function parseSdccCompilerLog(projApi: ProjectBaseApi, logfile: File): CompilerDiagnostics {
+
+    const pattern = {
+        "regexp": "^(.+):(\\d+):([^:]+):\\s+(.*)$",
+        "file": 1,
+        "line": 2,
+        "severity": 3,
+        "message": 4
+    };
+
+    const matcher = new RegExp(pattern.regexp, 'i');
+    const result: { [path: string]: vscode.Diagnostic[] } = {};
+    const ccLogLines = parseLogLines(logfile);
+
+    for (let idx = 0; idx < ccLogLines.length; idx++) {
+        const line = ccLogLines[idx];
+        const m = matcher.exec(line);
+        if (m && m.length > 4) {
+
+            const fspath = projApi.toAbsolutePath(m[pattern.file]);
+            const line = parseInt(m[pattern.line]);
+            const severity = m[pattern.severity].trim();
+            const message = m[pattern.message].trim();
+
+            // example: warning 59:
+            let errCode: string | undefined;
+            const ec_m = /\s+(\d+)$/.exec(severity);
+            if (ec_m && ec_m.length > 1) {
+                errCode = ec_m[1];
+            }
+
+            // xxxx ; column 22
+            let col: number | undefined;
+            const col_m = /column\s+(\d+)$/.exec(message);
+            if (col_m && col_m.length > 1) {
+                col = parseInt(col_m[1]);
+            }
+
+            const diags = result[fspath] || [];
+            if (result[fspath] == undefined) result[fspath] = diags;
+
+            const pos = newVscFilePosition(projApi.toolchainName(), line, col);
+            const vscDiag = new vscode.Diagnostic(
+                new vscode.Range(pos, pos), `${severity}: ${message}`, toVscServerity(severity));
+            vscDiag.source = 'sdcc';
+            vscDiag.code = errCode;
+            diags.push(vscDiag);
+        }
+    }
+
+    return result;
+}
+
 // 
 // example:
 //  src/bt/blehost/porting/w800/include/nimble/nimble_npl_os.h:82:20: warning: implicit declaration of function 'tls_os_task_id' [-Wimplicit-function-declaration]
@@ -138,9 +196,6 @@ export function parseGccCompilerLog(projApi: ProjectBaseApi, logfile: File): Com
             break;
         case 'RISCV_GCC':
             problemSource = 'riscv-gcc';
-            break
-        case 'SDCC':
-            problemSource = 'sdcc';
             break
         default:
             break;

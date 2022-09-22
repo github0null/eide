@@ -6,6 +6,29 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.9.1] revision (v3.9.2022092001 preview)
+
+**Fix**:
+  - Env was overrided when import a 'multi-project' iar workspace
+  - Sdcc problem matcher doesn't work
+  - Error path convert: '${VAR}/../path/dir' -> 'path/dir' when use `NodeJs.normalize()`, use `File.normalize` replace `NodeJs.normalize()`
+  - Source file is not compiled when their reference were updated (unify_builder)
+
+**Change**:
+  - Remove Makefile template file generate
+
+**Optimize**:
+  - Export built-in env variables to unify_builder
+  - Export more env variables to builder process envirnoment
+  - Resolve recursive vars when parse iar eww file
+  - When import a iar project, create new folder if iar project not have independent folder
+  - Reload jlink device list after install a cmsis device package
+  - Add '${OutDirRoot}' var
+  - Auto convert '\' to '/' when use `bash` command in builder task for win32
+  - Update built-in msys version to `v1.0.18`
+
+***
+
 ### [v3.9.0]
 
 **New**:

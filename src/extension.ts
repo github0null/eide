@@ -122,6 +122,7 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('eide.ReloadJlinkDevs', () => reloadJlinkDevices()));
     subscriptions.push(vscode.commands.registerCommand('eide.ReloadStm8Devs', () => reloadStm8Devices()));
     subscriptions.push(vscode.commands.registerCommand('eide.selectBaudrate', () => onSelectSerialBaudrate()));
+    subscriptions.push(vscode.commands.registerCommand('eide.create.clang-format.file', () => newClangFormatFile()));
 
     // internal command
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.selectCurSerialName', () => onSelectCurSerialName()));
@@ -165,7 +166,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // project
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.showBuildParams', (item) => projectExplorer.BuildSolution(item, { useDebug: true })));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.generate.makefile', (item) => projectExplorer.generateMakefile(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.setActive', (item) => projectExplorer.setActiveProject(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.close', (item) => projectExplorer.Close(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.saveAll', () => projectExplorer.SaveAll()));
@@ -309,6 +309,25 @@ function updateSerialportBarState() {
     }
 }
 
+async function newClangFormatFile() {
+
+    let root = WorkspaceManager.getInstance().getWorkspaceRoot();
+    if (!root) {
+        const li = WorkspaceManager.getInstance().getWorkspaceList();
+        if (li.length > 0) {
+            root = li[0];
+        }
+    }
+
+    if (root) {
+        const fSrc = File.fromArray([ResManager.GetInstance().GetAppDataDir().path, '.clang-format']);
+        fs.copyFileSync(fSrc.path, [root.path, '.clang-format'].join(File.sep));
+        vscode.window.showInformationMessage(`.clang-format file was created in '${fSrc.dir}' !`);
+    } else {
+        vscode.window.showWarningMessage(`No opened workspace or folders !`);
+    }
+}
+
 async function onSelectSerialBaudrate() {
 
     const baudList: string[] = [
@@ -418,7 +437,7 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
         // try fetch update after 5sec delay
         if (localVersion) {
             setTimeout(async (curLocalVersion: string) => {
-                const done = await tryUpdateBinaries(binFolder, curLocalVersion);
+                const done = await tryUpdateBinaries(binFolder, curLocalVersion, true); // no prompt
                 if (!done) {
                     const msg = `Update eide-binaries failed, please restart vscode to try again !`;
                     const sel = await vscode.window.showErrorMessage(msg, 'Restart', 'Cancel');
@@ -688,13 +707,13 @@ function exportEnvToSysPath() {
 
     // export some eide binaries path to system env path
     const defEnvPath: string[] = [
-        NodePath.normalize(`${builderFolder.path}/bin`), // builder bin folder
-        NodePath.normalize(`${builderFolder.path}/utils`), // utils tool folder
-        NodePath.normalize(`${builderFolder.dir}/scripts`),
+        File.normalize(`${builderFolder.path}/bin`), // builder bin folder
+        File.normalize(`${builderFolder.path}/utils`), // utils tool folder
+        File.normalize(`${builderFolder.dir}/scripts`),
     ];
 
     //
-    const eideToolsFolder = new File(NodePath.normalize(`${os.homedir()}/.eide/tools`));
+    const eideToolsFolder = new File(File.normalize(`${os.homedir()}/.eide/tools`));
     if (!eideToolsFolder.IsDir()) {
         try {
             new File(eideToolsFolder.path).CreateDir(true);
@@ -738,7 +757,7 @@ function exportEnvToSysPath() {
             }
 
             binDirs.forEach(dir => {
-                const binFolder = NodePath.normalize(`${subDir.path}/${dir}`);
+                const binFolder = File.normalize(`${subDir.path}/${dir}`);
                 if (File.IsDir(binFolder)) {
                     binFolderPaths.push(binFolder);
                 }
@@ -747,7 +766,7 @@ function exportEnvToSysPath() {
 
         // try use ./bin
         if (binFolderPaths.length == 0) {
-            const binFolder = NodePath.normalize(`${subDir.path}/bin`);
+            const binFolder = File.normalize(`${subDir.path}/bin`);
             if (File.IsDir(binFolder)) {
                 binFolderPaths.push(binFolder);
             }
@@ -767,7 +786,7 @@ function exportEnvToSysPath() {
 
     // search built-in tools and export path to system env
     builderFolder.GetList(File.EMPTY_FILTER).forEach((subDir) => {
-        const binFolder = NodePath.normalize(`${subDir.path}/bin`);
+        const binFolder = File.normalize(`${subDir.path}/bin`);
         if (File.IsDir(binFolder)) {
             pathList.push({
                 key: `EIDE_${subDir.name.toUpperCase()}`,
@@ -1210,7 +1229,7 @@ class EideTerminalLinkProvider implements vscode.TerminalLinkProvider<EideTermin
             return path;
         }
 
-        return NodePath.normalize(`${this.workspace.path}/${path}`);
+        return File.normalize(`${this.workspace.path}/${path}`);
     }
 
     async provideTerminalLinks(context: vscode.TerminalLinkContext, token: vscode.CancellationToken): Promise<EideTerminalLink[]> {

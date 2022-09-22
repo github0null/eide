@@ -34,7 +34,7 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.9.0",
+    "version": "3.9.1",
     "preview": false,
     "engines": {
         "vscode": "^1.63.0"
@@ -550,6 +550,11 @@
                 "title": "%eide.function.reinstall.binaries%"
             },
             {
+                "command": "eide.create.clang-format.file",
+                "category": "eide",
+                "title": "Create a new .clang-format template file"
+            },
+            {
                 "command": "_cl.eide.workspace.build",
                 "title": "%eide.workspace.build%",
                 "icon": {
@@ -742,10 +747,6 @@
             {
                 "command": "_cl.eide.project.showBuildParams",
                 "title": "%eide.project.show.commands%"
-            },
-            {
-                "command": "_cl.eide.project.generate.makefile",
-                "title": "%eide.project.gen.makefile%"
             },
             {
                 "command": "_cl.eide.project.installCMSISHeaders",
@@ -1251,10 +1252,6 @@
                 },
                 {
                     "command": "_cl.eide.project.showBuildParams",
-                    "when": "viewItem == SOLUTION && view == Project"
-                },
-                {
-                    "command": "_cl.eide.project.generate.makefile",
                     "when": "viewItem == SOLUTION && view == Project"
                 },
                 {

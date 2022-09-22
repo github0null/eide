@@ -95,7 +95,7 @@ import {
 } from 'vscode-cpptools';
 import * as eclipseParser from './EclipseProjectParser';
 import { isArray } from 'util';
-import { parseIarCompilerLog, CompilerDiagnostics, parseGccCompilerLog, parseArmccCompilerLog, parseKeilc51CompilerLog } from './ProblemMatcher';
+import { parseIarCompilerLog, CompilerDiagnostics, parseGccCompilerLog, parseArmccCompilerLog, parseKeilc51CompilerLog, parseSdccCompilerLog } from './ProblemMatcher';
 import * as iarParser from './IarProjectParser';
 import * as ArmCpuUtils from './ArmCpuUtils';
 
@@ -970,7 +970,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                         // setting: out folder
                         iList.push(new ProjTreeItem(TreeItemType.SETTINGS_ITEM, {
                             key: 'outDir',
-                            value: NodePath.normalize(config.config.outDir),
+                            value: File.normalize(config.config.outDir),
                             alias: view_str$settings$outFolderName,
                             tooltip: view_str$settings$outFolderName,
                             projectIndex: element.val.projectIndex
@@ -1453,24 +1453,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         if (projectnum == 0)
             throw new Error(`Not found any project in this IAR workbench ! [path]: ${option.projectFile.path}`);
 
-        // store vscode workspace
+        const vscWorkspace = {
+            "folders": <any[]>[]
+        };
+
         const vscWorkspaceFile = File.fromArray([ewwRoot.path, `${ewwInfo.name}.code-workspace`]);
-        {
-            const vscWorkspace = {
-                "folders": <any[]>[]
-            };
-
-            for (const projpath in ewwInfo.projects) {
-                const repath = ewwRoot.ToRelativePath(projpath) || projpath;
-                const project = ewwInfo.projects[projpath];
-                vscWorkspace.folders.push({
-                    name: project.name,
-                    path: NodePath.dirname(repath)
-                });
-            }
-
-            fs.writeFileSync(vscWorkspaceFile.path, JSON.stringify(vscWorkspace, undefined, 4));
-        }
 
         const toolchainType: ToolchainName = 'IAR_ARM';
 
@@ -1479,14 +1466,22 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         for (const path_ in ewwInfo.projects) {
 
             const iarproj = ewwInfo.projects[path_];
-            const prjRoot = new File(NodePath.dirname(path_));
+            const iarPrjRoot = new File(NodePath.dirname(path_));
 
+            const needCreateNewDir = File.normalize(iarPrjRoot.path) == File.normalize(ewwRoot.path);
             const basePrj = AbstractProject.NewProject().createBase({
                 name: iarproj.name,
                 projectName: iarproj.name,
                 type: 'ARM',
-                outDir: prjRoot
-            }, false);
+                outDir: iarPrjRoot
+            }, needCreateNewDir);
+
+            const prjRoot = basePrj.rootFolder;
+
+            vscWorkspace.folders.push({
+                name: iarproj.name,
+                path: ewwRoot.ToRelativePath(prjRoot.path) || prjRoot.path
+            });
 
             if (!project0workspacefile)
                 project0workspacefile = basePrj.workspaceFile;
@@ -1494,7 +1489,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             const eidePrjCfg = basePrj.prjConfig.config;
             const eideFolder = File.fromArray([prjRoot.path, AbstractProject.EIDE_DIR]);
 
-            // set project env
+            // export project env
             {
                 const envFile = File.fromArray([eideFolder.path, 'env.ini']);
                 const envCont = [
@@ -1503,9 +1498,13 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                     `###########################################################`,
                     ``,
                 ];
+
+                iarproj.envs['PROJ_DIR'] = needCreateNewDir ? '..' : '.';
+
                 for (const key in iarproj.envs) {
                     envCont.push(`${key} = ${iarproj.envs[key]}`);
                 }
+
                 envFile.Write(envCont.join(os.EOL));
             }
 
@@ -1701,11 +1700,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             basePrj.prjConfig.Save();
         }
 
+        // store vscode workspace
+        fs.writeFileSync(vscWorkspaceFile.path, JSON.stringify(vscWorkspace, undefined, 4));
+
         // switch project
         const selection = await vscode.window.showInformationMessage(
             view_str$operation$import_done, continue_text, cancel_text);
         if (selection === continue_text) {
-            WorkspaceManager.getInstance().openWorkspace(projectnum > 1
+            WorkspaceManager.getInstance().openWorkspace(vscWorkspace.folders.length > 1
                 ? vscWorkspaceFile
                 : project0workspacefile);
         }
@@ -3044,6 +3046,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 case 'AC5':
                     diag_res = parseArmccCompilerLog(prj, logFile);
                     break;
+                case 'SDCC':
+                    diag_res = parseSdccCompilerLog(prj, logFile);
+                    break;
                 default:
                     diag_res = parseGccCompilerLog(prj, logFile);
                     break;
@@ -3490,7 +3495,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 rootDir = prj.GetRootDir();
                 templateName = prjConfig.name;
                 tmp_suffix = 'ept';
-                const prjOutFolder = NodePath.normalize(prj.GetConfiguration().config.outDir);
+                const prjOutFolder = File.normalize(prj.GetConfiguration().config.outDir);
                 defExcludeList.push(`${prjOutFolder}`, `${prjOutFolder}${File.sep}*`);
                 resIgnoreList = prj.readIgnoreList();
                 const prjUid = prjConfig.miscInfo.uid;
@@ -3557,108 +3562,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
 
         this.exportLocked = false;
-    }
-
-    async generateMakefile(prjItem: ProjTreeItem) {
-        try {
-            const mkFileName = 'Makefile';
-            const resManager = ResManager.GetInstance();
-
-            const cache = resManager.getCache(mkFileName);
-            const tmpFile = resManager.getCachedFileByName(mkFileName);
-
-            /* if found cache, check it, if not found, download it */
-            const hasCache: boolean = (cache != undefined) && tmpFile.IsFile();
-
-            const err = await vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: hasCache ? 'Checking makefile template' : 'Downloading makefile template',
-                cancellable: true
-            }, (progress, token): Thenable<Error | undefined> => {
-                return new Promise(async (resolve) => {
-
-                    const fileInfo = await getDownloadUrlFromGitea('eide_makefile_template', '', mkFileName);
-                    if (fileInfo instanceof Error || fileInfo == undefined) {
-                        if (hasCache) { /* can't get from network ? use cache */
-                            resolve(undefined);
-                            return;
-                        } else {
-                            resolve(fileInfo || new Error(`not found Makefile in repo !`));
-                            return;
-                        }
-                    }
-
-                    const downloadUrl: string | undefined = fileInfo['download_url'];
-                    const fileHash: string | undefined = fileInfo['sha'];
-                    if (downloadUrl == undefined || fileHash == undefined) {
-                        if (hasCache) { /* can't get from network ? use cache */
-                            resolve(undefined);
-                            return;
-                        } else {
-                            resolve(new Error(`not found Makefile in repo !`));
-                            return;
-                        }
-                    }
-
-                    if (hasCache && cache?.sha == fileHash) { /* check makefile whether need update ? if not, exit */
-                        resolve(undefined);
-                        return;
-                    }
-
-                    const data = await downloadFileWithProgress(
-                        <string>downloadUrl, tmpFile.name,
-                        progress, token, false);
-
-                    if (data instanceof Buffer) {
-                        fs.writeFileSync(tmpFile.path, data);
-                        resManager.addCache({
-                            name: tmpFile.name,
-                            size: data.length,
-                            version: '1.0',
-                            sha: <string>fileHash
-                        });
-                        resolve(undefined);
-                        return;
-                    }
-
-                    else if (data instanceof Error) {
-                        if (hasCache) { /* can't get from network ? use cache */
-                            resolve(undefined);
-                            return;
-                        } else {
-                            resolve(data);
-                            return;
-                        }
-                    }
-
-                    // res is undefined, operation canceled
-                    resolve(new Error(`operation canceled !`));
-                });
-            });
-
-            if (err) { /* if operation failed, exit */
-                GlobalEvent.emit('msg', ExceptionToMessage(err, 'Warning'));
-                return;
-            }
-
-            const prj = this.dataProvider.GetProjectByIndex(prjItem.val.projectIndex);
-            const targetFile = new File(prj.getWsFile().dir + File.sep + mkFileName);
-
-            /* already existed, override ? */
-            if (targetFile.IsFile()) {
-                const isOk = await vscode.window.showInformationMessage(
-                    `Makefile is already existed !, Override it ?`,
-                    'Yes', 'No');
-                if (isOk == 'No') return; /* exit */
-            }
-
-            /* generate makefile */
-            fs.copyFileSync(tmpFile.path, targetFile.path);
-            GlobalEvent.emit('msg', newMessage('Info', 'Generate Done !'));
-
-        } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
-        }
     }
 
     async AddSrcDir(item: ProjTreeItem) {
@@ -4265,7 +4168,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
 
         cppcheckConf = cppcheckConf
-            .replace('${cppcheck_build_folder}', NodePath.normalize(prj.getOutputRoot()))
+            .replace('${cppcheck_build_folder}', File.normalize(prj.getOutputRoot()))
             .replace('${platform}', cppcheck_plat)
             .replace('${lib_list}', cfgList.map((str) => `<library>${str}</library>`).join(os.EOL + '\t\t'))
             .replace('${include_list}', includeList.map((str) => `<dir name="${str}/"/>`).join(os.EOL + '\t\t'))
@@ -4494,7 +4397,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             case 'outDir':
                 {
                     const prjConfig = prj.GetConfiguration().config;
-                    const oldFolderName = NodePath.normalize(prjConfig.outDir);
+                    const oldFolderName = File.normalize(prjConfig.outDir);
 
                     const newName = await vscode.window.showInputBox({
                         value: oldFolderName,
@@ -5070,7 +4973,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         let file: File | undefined;
 
         if (item.val.value instanceof File) { // if value is a file, use it
-            file = new File(NodePath.normalize(item.val.value.path));
+            file = new File(File.normalize(item.val.value.path));
         }
 
         if (file) {
