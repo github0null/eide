@@ -34,7 +34,7 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.9.1",
+    "version": "3.9.2022100701",
     "preview": false,
     "engines": {
         "vscode": "^1.63.0"
@@ -526,7 +526,7 @@
         "commands": [
             {
                 "command": "eide.project.save",
-                "title": "Save Project"
+                "title": "%eide.project.save%"
             },
             {
                 "command": "eide.project.genBuilderParams",

@@ -6,6 +6,16 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.9.2022100701] preview
+
+**New**:
+  - Use markdown string for tooltips.
+
+**Optimize**:
+  - Error welcome string for project view.
+
+***
+
 ### [v3.9.1] revision (v3.9.2022092001 preview)
 
 **Fix**:

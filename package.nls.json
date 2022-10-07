@@ -12,6 +12,7 @@
     "eide.function.reload.stm8.dev.list": "Reload STM8 Devices List",
     "eide.function.reinstall.binaries": "Reinstall eide binaries",
 
+    "eide.project.save": "Save Project",
     "eide.project.refresh": "Refresh",
     "eide.project.save.all": "Save All Projects",
     "eide.project.active": "Active Project",

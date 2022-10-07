@@ -12,6 +12,7 @@
     "eide.function.reload.stm8.dev.list": "重新加载 STM8 芯片信息列表",
     "eide.function.reinstall.binaries": "重新安装 eide binaries",
 
+    "eide.project.save": "保存项目",
     "eide.project.refresh": "刷新",
     "eide.project.save.all": "保存所有项目",
     "eide.project.active": "设为活动",
