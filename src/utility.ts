@@ -40,6 +40,51 @@ import { SevenZipper } from './Compress';
 import { ResManager } from './ResManager';
 import { isArray } from 'util';
 
+export function newMarkdownString(lines: string | string[]): vscode.MarkdownString {
+    if (typeof lines == 'string') {
+        return new vscode.MarkdownString(lines);
+    } else {
+        return new vscode.MarkdownString(lines.join(os.EOL));
+    }
+}
+
+export interface FileTooltipInfo {
+    name: string;
+    path: string;
+    desc?: string;
+    attr: { [key: string]: string | undefined };
+}
+
+export function newFileTooltipString(f: File | FileTooltipInfo, root?: File): vscode.MarkdownString {
+
+    let title = `**Name:** \`${f.name}\``;
+
+    if (!(f instanceof File) && f.desc) {
+        title = title + ` (\`${f.desc}\`)`
+    }
+
+    const s = [
+        title,
+        `- **Path:** \`${f.path}\``];
+
+    if (root) {
+        const re = root.ToRelativePath(f.path);
+        if (re) {
+            s.push(`- **RelativePath:** \`${re}\``);
+        }
+    }
+
+    if (!(f instanceof File) && f.attr) { // not a File obj
+        for (const key in f.attr) {
+            if (f.attr[key]) {
+                s.push(`- **${key}:** \`${f.attr[key]}\``);
+            }
+        }
+    }
+
+    return newMarkdownString(s);
+}
+
 export function toArray(obj: any): any[] {
     if (obj == undefined || obj == null) return [];
     if (isArray(obj)) return obj;
