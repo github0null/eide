@@ -141,9 +141,9 @@
     "string.eide.setup.toolchain": "设置编译器路径",
     "string.eide.setup.toolchain.detail": "在开始之前，我们需要设置工具链(编译器)的路径。\n[设置工具链](command:eide.operation.install_toolchain)",
     "string.eide.start_project": "开始你的项目",
-    "string.eide.start_project.detail": "现在，我们可以创建一个项目 ！\n[New Project](command:eide.operation.new_project)\n或者导入一个 MDK 项目 ！\n[Import Keil Project](command:eide.operation.import_project)",
+    "string.eide.start_project.detail": "现在，我们可以创建一个项目 ！\n[New Project](command:eide.operation.new_project)\n或者导入其他IDE的项目 ！\n[Import Project](command:eide.operation.import_project)",
     "string.eide.open_docs": "了解更多",
     "string.eide.open_docs.detail": "点击链接可以打开主页，也许能帮您了解到更多的用法。\n[Embedded IDE](https://em-ide.com/)",
 
-    "string.eide.project.welcome": "该工作区中没有任何项目！\n[新建项目](command:eide.operation.new_project)\n[导入Keil项目](command:eide.operation.import_project)"
+    "string.eide.project.welcome": "该工作区中没有任何项目！\n[新建项目](command:eide.operation.new_project)\n[导入项目](command:eide.operation.import_project)"
 }
