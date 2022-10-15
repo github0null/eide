@@ -313,6 +313,10 @@
                     "markdownDescription": "Remove Unused Input Sections",
                     "type": "boolean"
                 },
+                "not-print-mem-usage": {
+                    "markdownDescription": "Disable Print Memory Usage (For Old GCC)",
+                    "type": "boolean"
+                },
                 "LD_FLAGS": {
                     "readable_name": "Other Linker Options",
                     "readable_name.zh-cn": "链接器附加选项",
