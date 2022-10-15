@@ -249,7 +249,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.workspace.registerTextDocumentContentProvider(VirtualDocument.scheme, VirtualDocument.instance());
 
     // auto save project
-    setInterval(() => projectExplorer.SaveAll(), 100 * 1000);
+    projectExplorer.enableAutoSave(true);
 
     // load project in this workspace
     projectExplorer.loadWorkspace();

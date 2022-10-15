@@ -2613,6 +2613,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     private compiler_diags: Map<string, vscode.DiagnosticCollection>;
 
+    private autosaveTimer: NodeJS.Timeout | undefined;
+
     constructor(context: vscode.ExtensionContext) {
 
         this._event = new events.EventEmitter();
@@ -2664,6 +2666,21 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     loadWorkspace() {
         this.dataProvider.LoadWorkspaceProject();
+    }
+
+    enableAutoSave(enable: boolean) {
+        if (enable) {
+            if (this.autosaveTimer) {
+                this.autosaveTimer.refresh();
+            } else {
+                this.autosaveTimer = setInterval(() => this.SaveAll(), 3 * 60 * 1000);
+            }
+        } else {
+            if (this.autosaveTimer) {
+                clearInterval(this.autosaveTimer);
+                this.autosaveTimer = undefined;
+            }
+        }
     }
 
     ////////////////////////////////// cpptools intellisense provider ///////////////////////////////////
@@ -2863,16 +2880,42 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         prj.on('projectFileChanged', () => this.onProjectFileChanged(prj));
     }
 
+    private __autosaveDisableTimeoutTimer: NodeJS.Timeout | undefined;
     private async onProjectFileChanged(prj: AbstractProject) {
 
         const nam = prj.getProjectName();
         const uid = prj.getUid();
         const wsf = prj.getWorkspaceFile();
 
+        //
+        // disable autosave
+        //
+        this.enableAutoSave(false);
+
+        if (this.__autosaveDisableTimeoutTimer) {
+            this.__autosaveDisableTimeoutTimer.refresh();
+        } else {
+            this.__autosaveDisableTimeoutTimer = setTimeout((_this: ProjectExplorer) => {
+                _this.__autosaveDisableTimeoutTimer = undefined;
+                _this.enableAutoSave(true);
+            }, 5 * 60 * 1000, this);
+        }
+
+        //
+        // do something
+        //
         const msg = `The Project file of '${nam}' has been changed !, reload it ?`;
         const ans = await vscode.window.showInformationMessage(msg, 'Yes', 'No');
         if (ans == 'Yes') {
             this.reloadProject(uid, wsf);
+        }
+
+        //
+        // enable auto save
+        //
+        this.enableAutoSave(true);
+        if (this.__autosaveDisableTimeoutTimer) {
+            clearTimeout(this.__autosaveDisableTimeoutTimer);
         }
     }
 
