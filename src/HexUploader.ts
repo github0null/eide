@@ -143,6 +143,8 @@ export abstract class HexUploader<InvokeParamsType> {
 
     abstract readonly toolType: HexUploaderType;
 
+    protected DEF_BIN_ADDR: string = '0x00000000';
+
     protected project: AbstractProject;
     protected shellPath: string | undefined;
 
@@ -500,6 +502,8 @@ class STLinkUploader extends HexUploader<string[]> {
 
     toolType: HexUploaderType = 'STLink';
 
+    DEF_BIN_ADDR = '0x08000000';
+
     constructor(prj: AbstractProject) {
         super(prj);
     }
@@ -533,7 +537,7 @@ class STLinkUploader extends HexUploader<string[]> {
             );
 
             if (/\.bin$/i.test(programs[0].path)) {
-                commands.push(options.address || programs[0].addr || '0x08000000');
+                commands.push(programs[0].addr || options.address || this.DEF_BIN_ADDR);
             }
 
             if (/\.stldr$/i.test(options.elFile)) {
@@ -623,7 +627,7 @@ class STLinkUploader extends HexUploader<string[]> {
             commands.push('--download', programs[0].path);
 
             if (/\.bin$/i.test(programs[0].path)) {
-                commands.push(options.address || programs[0].addr || '0x08000000');
+                commands.push(programs[0].addr || options.address || this.DEF_BIN_ADDR);
             }
 
             /* verify program */
@@ -868,7 +872,7 @@ class PyOCDUploader extends HexUploader<string[]> {
         if (!eraseAll) {
             programs.forEach((file) => {
                 if (/\.bin$/i.test(file.path)) {
-                    const baseAddr = option.baseAddr || programs[0].addr || '0x08000000';
+                    const baseAddr = programs[0].addr || option.baseAddr || this.DEF_BIN_ADDR;
                     commandLines.push(`${file.path}@${baseAddr}`);
                 } else {
                     commandLines.push(file.path);
@@ -951,7 +955,7 @@ class OpenOCDUploader extends HexUploader<string[]> {
 
         programs.forEach(file => {
             if (/\.bin$/i.test(file.path)) {
-                const addrStr = option.baseAddr || file.addr || '0x08000000';
+                const addrStr = file.addr || option.baseAddr || this.DEF_BIN_ADDR;
                 commands.push(`-c "program \\"${File.ToUnixPath(file.path)}\\" ${addrStr} verify"`);
             } else {
                 commands.push(`-c "program \\"${File.ToUnixPath(file.path)}\\" verify"`);
