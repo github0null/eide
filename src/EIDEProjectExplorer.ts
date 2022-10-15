@@ -2555,22 +2555,12 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         }
 
         const sln = this.prjList[index];
-        if (this.isRootWorkspaceProject(sln)) {
-            GlobalEvent.emit('msg', {
-                type: 'Warning',
-                contentType: 'string',
-                content: can_not_close_project
-            });
-            return;
-        }
-
-        const uid = sln.getUid();
 
         sln.Close();
         this.prjList.splice(index, 1);
         this.UpdateView();
 
-        return uid;
+        return sln.getUid();
     }
 
     private async SwitchProject(prj: AbstractProject) {
