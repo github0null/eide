@@ -819,6 +819,14 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         return _env;
     }
 
+    public getWorkspaceFile(): File {
+        return this.getWsFile();
+    }
+
+    public getProjectFile(): File {
+        return File.fromArray([this.getEideDir().path, AbstractProject.prjConfigName]);
+    }
+
     ////////////////////////////////// Abstract Project ///////////////////////////////////
 
     constructor() {
@@ -833,6 +841,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     protected emit(event: 'dataChanged', type?: DataChangeType): boolean;
     protected emit(event: 'cppConfigChanged'): boolean;
     protected emit(event: 'targetSwitched'): boolean;
+    protected emit(event: 'projectFileChanged'): boolean;
     protected emit(event: any, argc?: any): boolean {
         return this._event.emit(event, argc);
     }
@@ -840,6 +849,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     on(event: 'dataChanged', listener: (type?: DataChangeType) => void): this;
     on(event: 'cppConfigChanged', listener: () => void): this;
     on(event: 'targetSwitched', listener: () => void): this;
+    on(event: 'projectFileChanged', listener: () => void): this;
     on(event: any, listener: (argc?: any) => void): this {
         this._event.on(event, listener);
         return this;
@@ -1241,7 +1251,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
                     prj.__saveDelayTimer = undefined;
                     try { prj.configMap.SaveAll(); }
                     catch (error) { GlobalEvent.emit('error', error); }
-                }, delay || 600, this);
+                }, delay || 800, this);
             }
         }
     }
@@ -2056,6 +2066,10 @@ class EIDEProject extends AbstractProject {
             case 'dependence':
                 this.emit('dataChanged', 'dependence');
                 this.UpdateCppConfig();
+                break;
+            case 'projectFileChanged':
+                console.log(`eide project file changed: ${this.getProjectFile().path}`);
+                this.emit('projectFileChanged');
                 break;
             default:
                 this.emit('dataChanged');

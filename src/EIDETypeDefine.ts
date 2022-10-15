@@ -174,7 +174,11 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
     }
 
     Watch() {
-        this.watcher.Watch();
+        try {
+            this.watcher.Watch();
+        } catch (error) {
+            GlobalEvent.emit('error', error);
+        }
     }
 
     on(event: 'dataChanged', listener: (dataType: EventType) => void): void;
@@ -378,7 +382,7 @@ export interface ProjectUserContextData {
 }
 
 export type ProjectConfigEventType =
-    'dependence' | 'srcRootAdd' | 'srcRootRemoved' | 'compiler' | 'uploader';
+    'dependence' | 'srcRootAdd' | 'srcRootRemoved' | 'compiler' | 'uploader' | 'projectFileChanged';
 
 export interface ProjectConfigEvent {
     type: ProjectConfigEventType;
@@ -412,6 +416,23 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             toAbsolutePath: (p) => this.toAbsolutePath(p),
             resolveEnvVar: (p) => p
         };
+
+        this.watcher.OnChanged = () => this.onProjectFileChanged();
+        this.watcher.OnRename = () => this.onProjectFileChanged();
+
+        this.Watch();
+    }
+
+    private __fileChgEvtEmitDelayTimer: NodeJS.Timeout | undefined;
+    private onProjectFileChanged() {
+        if (this.__fileChgEvtEmitDelayTimer) {
+            this.__fileChgEvtEmitDelayTimer.refresh();
+        } else {
+            this.__fileChgEvtEmitDelayTimer = setTimeout((this_: ProjectConfiguration<any>) => {
+                this_.__fileChgEvtEmitDelayTimer = undefined;
+                this_.emit('dataChanged', { type: 'projectFileChanged' });
+            }, 600, this);
+        }
     }
 
     public load(): ProjectConfiguration<any> {
@@ -1306,7 +1327,10 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         return utility.ToJsonStringExclude(eidePrjObj, ProjectConfiguration.EXCL_KEYS_IN_EIDE_JSON, 2);
     }
 
+    private __watcherReloadDelayTimer: NodeJS.Timeout | undefined;
     Save(force?: boolean) {
+
+        this.watcher.Close();
 
         const usrCtx = this.getProjectUsrCtx();
 
@@ -1316,6 +1340,15 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         this.setProjectUsrCtx(usrCtx);
 
         super.Save();
+
+        if (this.__watcherReloadDelayTimer) {
+            this.__watcherReloadDelayTimer.refresh();
+        } else {
+            this.__watcherReloadDelayTimer = setTimeout((_this: ProjectConfiguration<any>) => {
+                _this.__watcherReloadDelayTimer = undefined;
+                _this.Watch();
+            }, 1500, this);
+        }
     }
 }
 

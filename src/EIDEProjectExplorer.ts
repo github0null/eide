@@ -670,6 +670,10 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         return this.prjList[index];
     }
 
+    getIndexByProject(uid: string): number {
+        return this.prjList.findIndex(prj => prj.getUid() == uid);
+    }
+
     getProjectCount(): number {
         return this.prjList.length;
     }
@@ -748,6 +752,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                     value: sln.GetConfiguration().config.name + ' : ' + sln.GetConfiguration().config.mode,
                     tooltip: new vscode.MarkdownString([
                         `**Name:** \`${sln.GetConfiguration().config.name}\``,
+                        `- **Uid**: \`${sln.getUid()}\``,
                         `- **Config:** \`${sln.GetConfiguration().config.mode}\``,
                         `- **Path:** \`${sln.GetRootDir().path}\``
                     ].join(os.EOL)),
@@ -1356,7 +1361,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             try {
                 const prj = AbstractProject.NewProject();
                 await prj.Load(wsFile);
-                this.AddProject(prj);
+                this.registerProject(prj);
                 GlobalEvent.emit('project.opened', prj);
                 return prj;
             } catch (err) {
@@ -1398,7 +1403,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         }
     }
 
-    async OpenProject(workspaceFilePath: string): Promise<AbstractProject | undefined> {
+    async OpenProject(workspaceFilePath: string, switchWorkspaceImmediately?: boolean): Promise<AbstractProject | undefined> {
 
         const wsFolder = new File(NodePath.dirname(workspaceFilePath));
 
@@ -1416,7 +1421,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
         const prj = await this._OpenProject(workspaceFilePath);
         if (prj) {
-            this.SwitchProject(prj);
+            this.SwitchProject(prj, switchWorkspaceImmediately);
             return prj;
         }
 
@@ -1437,7 +1442,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         try {
             const prj = AbstractProject.NewProject();
             await prj.Create(option);
-            this.AddProject(prj);
+            this.registerProject(prj);
             this.SwitchProject(prj);
             return prj;
         } catch (err) {
@@ -2540,17 +2545,17 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         }
     }
 
-    private AddProject(proj: AbstractProject) {
+    private registerProject(proj: AbstractProject) {
         this.prjList.push(proj);
-        this.addRecord(proj.getWsPath());
         proj.on('dataChanged', (type) => this.onProjectChanged(proj, type));
+        this.addRecord(proj.getWsPath());
         this.UpdateView();
     }
 
     Close(index: number): string | undefined {
 
         if (index < 0 || index >= this.prjList.length) {
-            GlobalEvent.emit('error', new Error('index out of range: ' + index.toString()));
+            GlobalEvent.emit('error', new Error('Project index out of range: ' + index.toString()));
             return;
         }
 
@@ -2563,10 +2568,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         return sln.getUid();
     }
 
-    private async SwitchProject(prj: AbstractProject) {
-        const selection = await vscode.window.showInformationMessage(switch_workspace_hint, continue_text, cancel_text);
-        if (selection === continue_text) {
+    private async SwitchProject(prj: AbstractProject, immediately?: boolean) {
+        if (immediately) {
             WorkspaceManager.getInstance().openWorkspace(prj.GetWorkspaceConfig().GetFile());
+        } else {
+            const selection = await vscode.window.showInformationMessage(switch_workspace_hint, continue_text, cancel_text);
+            if (selection === continue_text) {
+                WorkspaceManager.getInstance().openWorkspace(prj.GetWorkspaceConfig().GetFile());
+            }
         }
     }
 }
@@ -2850,6 +2859,34 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         await this.registerCpptoolsProvider(prj);
 
         this.updateCompilerDiagsAfterBuild(prj);
+
+        prj.on('projectFileChanged', () => this.onProjectFileChanged(prj));
+    }
+
+    private async onProjectFileChanged(prj: AbstractProject) {
+
+        const nam = prj.getProjectName();
+        const uid = prj.getUid();
+        const wsf = prj.getWorkspaceFile();
+
+        const msg = `The Project file of '${nam}' has been changed !, reload it ?`;
+        const ans = await vscode.window.showInformationMessage(msg, 'Yes', 'No');
+        if (ans == 'Yes') {
+            this.reloadProject(uid, wsf);
+        }
+    }
+
+    private reloadProject(uid: string, workspaceFile: File) {
+
+        const idx = this.dataProvider.getIndexByProject(uid);
+        if (idx == -1) {
+            GlobalEvent.emit('msg', newMessage('Error', `Project '${uid}' is not actived !`));
+            return;
+        }
+
+        this.dataProvider.Close(idx);
+
+        this.dataProvider.OpenProject(workspaceFile.path, true);
     }
 
     private async onProjectClosed(uid: string | undefined) {
