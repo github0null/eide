@@ -253,7 +253,7 @@ export abstract class CodeBuilder {
         let commandLine = this.genBuildCommand(options);
         if (!commandLine) return;
 
-        const title = options?.useDebug ? 'compiler params' : 'build';
+        const title = (options?.useDebug ? 'compiler params' : 'build') + `:${this.project.getCurrentTarget()}`;
 
         // watch log, to emit done event
         try {
@@ -291,7 +291,7 @@ export abstract class CodeBuilder {
         // run build
         if (SettingManager.GetInstance().isUseTaskToBuild() &&
             WorkspaceManager.getInstance().hasWorkspaces()) { // use vscode task
-            const task = new vscode.Task({ type: 'shell' }, vscode.TaskScope.Workspace, title, 'shell');
+            const task = new vscode.Task({ type: 'shell' }, vscode.TaskScope.Workspace, title, 'eide');
             const shellOption: vscode.ShellExecutionOptions = {};
             // setup shell
             if (os.platform() == 'win32') { shellOption.executable = 'cmd.exe'; shellOption.shellArgs = ['/C']; }
