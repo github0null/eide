@@ -6,6 +6,23 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.9.2022101601] preview
+
+**New**:
+  - Notify user to reload project when project file has been changed.
+
+**Fix**:
+  - Error program file addr priority for `.bin` file
+
+**Optimize**:
+  - New linker options: `Disable memory print for old gcc`
+  - Allow close workspace project
+  - Optimize project attr yaml config hint
+  - Add path completion provider for project yaml config
+  - Project auto save period: 3 min
+
+***
+
 ### [v3.9.2022100701] preview
 
 **New**:
