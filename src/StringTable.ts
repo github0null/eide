@@ -406,6 +406,11 @@ export const view_str$env_desc$compiler_folder = [
 
 //---------------Other---------------
 
+export const view_str$prompt$need_reload_project = [
+    `'{}' 的项目文件已被更改，重新加载项目？`,
+    `The Project file of '{}' has been changed !, reload project ?`
+][langIndex];
+
 export const view_str$prompt$src_folder_must_be_a_child_of_root = [
     `要被添加的源文件夹必须是项目根目录的子文件夹 !`,
     `The source folder to be added must be a child of project root folder !`

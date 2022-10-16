@@ -66,7 +66,8 @@ import {
     view_str$project$folder_type_fs_desc,
     view_str$msg$err_ewt_hash,
     view_str$msg$err_ept_hash,
-    view_str$prompt$eclipse_imp_warning
+    view_str$prompt$eclipse_imp_warning,
+    view_str$prompt$need_reload_project
 } from './StringTable';
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
@@ -2963,7 +2964,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         //
         // do something
         //
-        const msg = `The Project file of '${nam}' has been changed !, reload it ?`;
+        const msg = view_str$prompt$need_reload_project.replace('{}', prj.getProjectName());
         const ans = await vscode.window.showInformationMessage(msg, 'Yes', 'No');
         if (ans == 'Yes') {
             this.reloadProject(uid, wsf);
