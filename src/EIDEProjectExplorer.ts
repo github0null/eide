@@ -630,7 +630,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         const workspaceManager = WorkspaceManager.getInstance();
 
         // not a workspace, exit
-        if (workspaceManager.getWorkspaceRoot() === undefined) { return; }
+        if (workspaceManager.getWorkspaceRoot() === undefined) {
+            return;
+        }
 
         const wsFolders = workspaceManager.getWorkspaceList();
         const validList: File[] = [];
@@ -2597,6 +2599,25 @@ interface ImporterProjectInfo {
     excludeList?: string[] | { [targetName: string]: string[] };
 }
 
+class PathCompletionItem extends vscode.CompletionItem {
+
+    file: File;
+
+    constructor(f: File) {
+
+        super(f.name);
+
+        this.file = f;
+
+        if (f.IsExist()) {
+            this.kind = f.IsDir() ? vscode.CompletionItemKind.Folder : vscode.CompletionItemKind.File;
+        }
+
+        this.detail = f.path;
+        this.insertText = f.name;
+    }
+}
+
 export class ProjectExplorer implements CustomConfigurationProvider {
 
     private readonly vFolderNameMatcher = /^\w[\w\t \-:@\.]*$/;
@@ -2654,6 +2675,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
         }
 
+        // register path completion item provider
+        context.subscriptions.push(
+            vscode.languages.registerCompletionItemProvider({ scheme: 'file', pattern: '**/*.eide.*.{yml,yaml}' }, this.newPathStringCompletionItemProvider(), '/', '\\'));
+
         // register project hook
         GlobalEvent.on('project.opened', (prj) => this.onProjectOpened(prj));
         GlobalEvent.on('project.closed', (uid) => this.onProjectClosed(uid));
@@ -2681,6 +2706,40 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 this.autosaveTimer = undefined;
             }
         }
+    }
+
+    newPathStringCompletionItemProvider(): vscode.CompletionItemProvider<PathCompletionItem> {
+        return {
+            provideCompletionItems: (document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken, context: vscode.CompletionContext):
+                vscode.ProviderResult<PathCompletionItem[] | vscode.CompletionList<PathCompletionItem>> => {
+
+                let proj: AbstractProject | undefined;
+
+                for (const provider of this.yamlCfgProviderList.values()) {
+                    proj = provider.getSourceProjectByFileName(NodePath.basename(document.fileName));
+                    if (proj) {
+                        break;
+                    }
+                }
+
+                if (proj == undefined) {
+                    return;
+                }
+
+                const fullrange = document.getWordRangeAtPosition(position, /[^\s"]+|"[^"]+"/);
+                if (fullrange) {
+
+                    let txt = document.getText(new vscode.Range(fullrange.start, position)).trim()
+                        .replace(/^(\/|\\)+/, '')
+                        .replace(/(\/|\\)+$/, '');
+
+                    let p = new File(proj.toAbsolutePath(txt));
+                    if (p.IsDir()) {
+                        return p.GetList(undefined, undefined).map(f => new PathCompletionItem(f));
+                    }
+                }
+            }
+        };
     }
 
     ////////////////////////////////// cpptools intellisense provider ///////////////////////////////////
@@ -4035,7 +4094,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             let exeFile: File;
             let cmds: string[];
 
-            const tmpFile = File.fromArray([os.tmpdir(), `eide-${Date.now()}.edasm`]);
+            const tmpFile = File.fromArray([os.tmpdir(), `${NodePath.basename(srcPath)}.edasm`]);
             if (tmpFile.IsFile()) { // force del tmp file
                 try { fs.unlinkSync(tmpFile.path); } catch (error) { }
             }
@@ -5126,7 +5185,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const docName = NodePath.basename(doc.uri.fsPath);
 
         this.yamlCfgProviderList.forEach((val, key) => {
-            if (docName.startsWith(`eide.${key}.`)) {
+            if (docName.endsWith(`eide.${key}.yaml`)) {
                 val.onYamlDocSaved(doc);
             }
         });
@@ -5137,7 +5196,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const docName = NodePath.basename(doc.uri.fsPath);
 
         this.yamlCfgProviderList.forEach((val, key) => {
-            if (docName.startsWith(`eide.${key}.`)) {
+            if (docName.endsWith(`eide.${key}.yaml`)) {
                 val.onYamlDocClosed(doc);
             }
         });
@@ -5152,7 +5211,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         // provide file
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
-        const defFileName = `eide.${id}.${Date.now()}.yaml`;
+        const defFileName = `${prj.getUid()}.eide.${id}.yaml`;
         const res = await provider.provideYamlDocument(prj, item, defFileName);
         if (res instanceof Error) {
             GlobalEvent.emit('msg', ExceptionToMessage(res, 'Warning'));
@@ -5425,6 +5484,8 @@ interface ModifiableYamlConfigProvider {
     onYamlDocSaved(doc: vscode.TextDocument): Promise<void>;
 
     onYamlDocClosed(doc: vscode.TextDocument): Promise<void>;
+
+    getSourceProjectByFileName(filename: string): AbstractProject | undefined;
 }
 
 class VFolderSourcePathsModifier implements ModifiableYamlConfigProvider {
@@ -5568,6 +5629,10 @@ class VFolderSourcePathsModifier implements ModifiableYamlConfigProvider {
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
+    }
+
+    getSourceProjectByFileName(filename: string): AbstractProject | undefined {
+        return this.prjFolderSourceChangesMap.get(filename)?.project;
     }
 }
 
@@ -5714,6 +5779,10 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
     }
+
+    getSourceProjectByFileName(filename: string): AbstractProject | undefined {
+        return this.prjCusDepChangesMap.get(filename);
+    }
 }
 
 class ProjectExcSourceModifier implements ModifiableYamlConfigProvider {
@@ -5810,5 +5879,9 @@ class ProjectExcSourceModifier implements ModifiableYamlConfigProvider {
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
+    }
+
+    getSourceProjectByFileName(filename: string): AbstractProject | undefined {
+        return this.yamlFilesMap.get(filename);
     }
 }
