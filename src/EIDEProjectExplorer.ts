@@ -5652,7 +5652,22 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
         const yamlLines: string[] = [
             `#`,
             `# You can modify the configuration by editing and saving this file.`,
-            `#`
+            `#`,
+            `# example:`,
+            `#`,
+            `# IncludeFolders:`,
+            '#     - ./dir_1',
+            '#     - ../xxx/xxx/dir_2',
+            '#     - xxx/variable/path/${VAR1}/${VAR2}/dir_3',
+            '#     - D:/absolute/path/xxx/dir_n',
+            `# LibraryFolders:`,
+            '#     - ./dir_1',
+            '#     - ../xxx/xxx/dir_2',
+            `# Defines:`,
+            '#     - TEST',
+            '#     - DEFINE_1=123',
+            '#     - DEFINE_2=${VAR1}',
+            '#',
         ];
 
         // fill data
@@ -5662,7 +5677,6 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
                 ``,
                 `# Header Include Path`,
                 `IncludeFolders:`,
-                `#   - ./Your/Include/Folder/Path`
             );
             cusDep.incList.forEach((path) => {
                 yamlLines.push(`    - ${prj.toRelativePath(path)}`)
@@ -5673,7 +5687,6 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
                 ``,
                 `# Library Search Path`,
                 `LibraryFolders:`,
-                `#   - ./Your/Library/Path`
             );
             cusDep.libList.forEach((path) => {
                 yamlLines.push(`    - ${prj.toRelativePath(path)}`)
@@ -5684,7 +5697,6 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
                 ``,
                 `# Preprocessor Definitions`,
                 `Defines:`,
-                `#   - TEST=1`
             );
             cusDep.defineList.forEach((macro) => {
                 yamlLines.push(`    - ${macro}`)
