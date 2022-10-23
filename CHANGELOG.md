@@ -6,6 +6,17 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.9.2022102302] preview
+
+**New**:
+  - macOS support (Only have tested in 'macOS 10.15 x64')
+
+**Optimize**:
+  - Built-in task format warning in vscode `OUTPUT` panel.
+  - Enable install utility tools functions for non-win32 platform.
+
+***
+
 ### [v3.9.2022101601] preview
 
 **New**:
