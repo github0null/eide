@@ -830,7 +830,12 @@ export class OperationExplorer {
 
         let hasDiv: boolean = false;
         resInstaller.listAllTools().forEach(t => {
+
             const installed = resInstaller.isToolInstalled(t.id) || false;
+
+            if (!t.is_third_party && t.no_binaries)
+                return; // skip no_binaries built-in tools
+
             if (!hasDiv && t.is_third_party) {
                 hasDiv = true;
                 selections.push({
@@ -839,6 +844,7 @@ export class OperationExplorer {
                     kind: vscode.QuickPickItemKind.Separator
                 });
             }
+
             let detail: string | undefined = t.detail;
             if (!detail) {
                 detail = `ID: ${t.resource_name}`;
@@ -848,6 +854,7 @@ export class OperationExplorer {
                     detail += `, From: ${t.url}`;
                 }
             }
+
             selections.push({
                 id: t.id,
                 label: t.readable_name,
