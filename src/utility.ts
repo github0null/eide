@@ -127,20 +127,26 @@ export function xmlfmt(xml: string, opts?: XmlFormatOptions): string {
 
 export function runShellCommand(title: string, commandLine: string, env?: any, useTerminal?: boolean, cwd?: string): Error | undefined {
     try {
+
+        // use vsc task
         if (!useTerminal && WorkspaceManager.getInstance().hasWorkspaces()) {
-            // use task
+            // init shell
             const shellOption: vscode.ShellExecutionOptions = { env: env || process.env, cwd: cwd };
             if (platform.osType() == 'win32') { shellOption.executable = 'cmd.exe'; shellOption.shellArgs = ['/C']; }
             else { shellOption.executable = '/bin/bash'; shellOption.shellArgs = ['-c']; }
+            // init task
             const task = new vscode.Task({ type: 'shell' }, vscode.TaskScope.Global, title, 'shell');
             if (platform.osType() == 'win32') commandLine = `"${commandLine}"`;
             task.execution = new vscode.ShellExecution(commandLine, shellOption);
+            task.definition['command'] = commandLine;
             task.isBackground = false;
             task.problemMatchers = [];
             task.presentationOptions = { echo: true, focus: false, clear: true };
             vscode.tasks.executeTask(task);
-        } else {
-            // use terminal
+        }
+
+        // use terminal
+        else {
             const index = vscode.window.terminals.findIndex((t) => { return t.name === title; });
             if (index !== -1) { vscode.window.terminals[index].dispose(); }
             const tOpts: vscode.TerminalOptions = { name: title, env: env || process.env, cwd: cwd };
@@ -149,6 +155,7 @@ export function runShellCommand(title: string, commandLine: string, env?: any, u
             terminal.show(true);
             terminal.sendText(CmdLineHandler.DeleteCmdPrefix(commandLine));
         }
+
     } catch (error) {
         return error;
     }
@@ -299,7 +306,7 @@ export async function downloadFile(url: string): Promise<Buffer | Error | undefi
 }
 
 export function isVersionString(str: string): boolean {
-    return /^\s*\d+(?:\.\d+)+\s*$/.test(str);
+    return /^\d+(?:\.\d+)+$/.test(str.trim());
 }
 
 export async function requestTxt(url: string): Promise<string | Error | undefined> {
