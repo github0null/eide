@@ -29,6 +29,7 @@ import * as fs from 'fs';
 
 import { File } from '../lib/node-utility/File';
 import { FileWatcher } from '../lib/node-utility/FileWatcher';
+import { ERROR } from './StringTable';
 
 export const UUID_NULL = 'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF';
 
@@ -39,6 +40,81 @@ let osPlatform: NodeJS.Platform = os.platform();
 let linuxOsId: string | undefined;
 
 const devNull: string = os.platform() == 'win32' ? 'nul' : '/dev/null';
+
+// arch class
+const ARCH_ID_MAP: { [id: string]: string[] } = {
+    'x86': ['x86', 'i32', 'ia32', 'x32', 'i686'],
+    'x86_64': ['x86_64', 'amd64', 'x64', 'ia64', 'i64'],
+    'arm64': ['arm64', 'aarch64'],
+};
+
+function fmtArchId(n: string): string {
+    n = n.toLowerCase();
+    for (const key in ARCH_ID_MAP) {
+        if (ARCH_ID_MAP[key].includes(n)) {
+            return key;
+        }
+    }
+    return n;
+}
+
+// platform info, default value is for 'Windows-x64'
+let runtimeId: string = 'win32';
+let archId: string = 'x86_64';
+
+// platform requirements
+const SUPPORTED_OS_TYPE: NodeJS.Platform[] = ['win32', 'linux', 'darwin'];
+const SUPPORTED_ARCH_TYPE: string[] = ARCH_ID_MAP['x86_64'].concat(ARCH_ID_MAP['arm64']);
+
+export function init() {
+
+    if (!SUPPORTED_OS_TYPE.includes(os.platform())) {
+        const msg = `${ERROR} : This plug-in is only for '${SUPPORTED_OS_TYPE.join('/')}' platform, but your OS is '${os.platform()}' !`;
+        throw new Error(msg);
+    }
+
+    // win32
+    if (osPlatform == 'win32') {
+        if (process.env['PROCESSOR_ARCHITECTURE']) {
+            const archStr = process.env['PROCESSOR_ARCHITECTURE'].toLowerCase();
+            archId = fmtArchId(archStr);
+            if (!SUPPORTED_ARCH_TYPE.includes(archStr)) {
+                const msg = `${ERROR} : This plug-in is only support '${SUPPORTED_ARCH_TYPE.join('/')}' arch, but your CPU ARCH is '${archStr}' !`;
+                throw new Error(msg);
+            }
+        }
+    }
+
+    // linux
+    else if (osPlatform == 'linux') {
+        const archStr = child_process.execSync(`uname -m`).toString().trim();
+        archId = fmtArchId(archStr);
+        runtimeId = `linux-${archId}`;
+        if (!SUPPORTED_ARCH_TYPE.includes(archStr)) {
+            const msg = `${ERROR} : This plug-in is only support '${SUPPORTED_ARCH_TYPE.join('/')}' arch, but your CPU ARCH is '${archStr}' !`;
+            throw new Error(msg);
+        }
+    }
+
+    // MacOS
+    else if (osPlatform == 'darwin') {
+        const archStr = child_process.execSync(`uname -m`).toString().trim();
+        archId = fmtArchId(archStr);
+        runtimeId = `osx-${archId}`;
+        if (!SUPPORTED_ARCH_TYPE.includes(archStr)) {
+            const msg = `${ERROR} : This plug-in is only support '${SUPPORTED_ARCH_TYPE.join('/')}' arch, but your CPU ARCH is '${archStr}' !`;
+            throw new Error(msg);
+        }
+    }
+}
+
+export function getRuntimeId(): string {
+    return runtimeId;
+}
+
+export function getArchId(): string {
+    return archId;
+}
 
 export function getLinuxOsId(): string | undefined {
     if (linuxOsId) return linuxOsId;

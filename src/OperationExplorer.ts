@@ -261,22 +261,20 @@ export class OperationExplorer {
         vscode.commands.executeCommand('setContext', 'cl.eide.toolchain_ready', status != CheckStatus.All_Failed);
 
         //---
-        const hasTools = ResInstaller.instance().listAllTools().some(t => !t.no_binaries);
-        if (hasTools) {
-            icoPath = resManager.GetIconByName('PatchPackage_16x.svg');
-            this.provider.AddData({
-                label: view_str$operation$setupUtilTools,
-                command: {
-                    title: 'Setup Utility Tools',
-                    command: '_cl.eide.Operation.SetupUtilTools'
-                },
-                tooltip: view_str$operation$setupUtilTools,
-                iconPath: {
-                    light: icoPath.path,
-                    dark: icoPath.path
-                }
-            });
-        }
+
+        icoPath = resManager.GetIconByName('PatchPackage_16x.svg');
+        this.provider.AddData({
+            label: view_str$operation$setupUtilTools,
+            command: {
+                title: 'Setup Utility Tools',
+                command: '_cl.eide.Operation.SetupUtilTools'
+            },
+            tooltip: view_str$operation$setupUtilTools,
+            iconPath: {
+                light: icoPath.path,
+                dark: icoPath.path
+            }
+        });
 
         //---
 

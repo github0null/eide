@@ -2310,7 +2310,7 @@ class EIDEProject extends AbstractProject {
 
         let cont: string | undefined;
 
-        if (platform.osType() == 'win32' && ResManager.getLocalCodePage() == '936') { // win32 gbk
+        if (ResManager.getLocalCodePage() == '936') { // win32 gbk
             cont = iconv.decode(fs.readFileSync(dFile.path), '936');
         } else {
             cont = fs.readFileSync(dFile.path, 'utf8');

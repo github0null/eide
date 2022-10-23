@@ -204,12 +204,12 @@ export const view_str$compile$floatingPointHardware = [
 
 export const view_str$compile$selectToolchain = [
     '选择一个工具链',
-    'Select A Toolchain'
+    'Select Toolchain'
 ][langIndex];
 
 export const view_str$compile$selectFlasher = [
     '选择一个烧录工具',
-    'Select A Flasher'
+    'Select Flasher'
 ][langIndex];
 
 //-------------------Project View string----------------
@@ -226,7 +226,7 @@ export const view_str$project$folder_type_fs = [
 
 export const view_str$project$folder_type_fs_desc = [
     '从磁盘中选择一个文件夹，将其直接链接到项目中，自动添加其中的源文件以及包含路径',
-    'Select a folder from disk, eide will link it directly into your project.'
+    'Select folder from disk, eide will link it directly into your project.'
 ][langIndex];
 
 export const view_str$project$folder_type_virtual = [
@@ -236,7 +236,7 @@ export const view_str$project$folder_type_virtual = [
 
 export const view_str$project$folder_type_virtual_desc = [
     '新建一个虚拟文件夹（该文件夹在磁盘上是不存在的）来组织源文件的结构',
-    'Create a VirtualFolder (The folder does not exist on disk) to organize the source file structure.'
+    'Create VirtualFolder (The folder does not exist on disk) to organize the source file structure.'
 ][langIndex];
 
 export const view_str$project$add_source = [
@@ -341,7 +341,7 @@ export const compile_config = [
 
 export const set_device_hint = [
     '为项目设置芯片型号',
-    'Set a device for this project'
+    'Set device for this project'
 ][langIndex];
 
 export const switch_workspace_hint = [
@@ -848,7 +848,7 @@ export const open_project = [
 
 export const open_project_hit = [
     '打开 EIDE 项目',
-    'Open a EIDE project'
+    'Open EIDE Project'
 ][langIndex];
 
 export const close_project = [
