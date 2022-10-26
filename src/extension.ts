@@ -131,6 +131,7 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('eide.operation.install_toolchain', () => operationExplorer.OnSetToolchainPath()));
     subscriptions.push(vscode.commands.registerCommand('eide.operation.import_project', () => operationExplorer.OnImportProject()));
     subscriptions.push(vscode.commands.registerCommand('eide.operation.new_project', () => operationExplorer.OnCreateProject()));
+    subscriptions.push(vscode.commands.registerCommand('eide.operation.open_project', () => operationExplorer.OnOpenProject()));
 
     // projects
     projectExplorer = new ProjectExplorer(context);

@@ -545,6 +545,10 @@
                 "title": "Create a new project by eide"
             },
             {
+                "command": "eide.operation.open_project",
+                "title": "Open an eide project"
+            },
+            {
                 "command": "eide.reinstall.binaries",
                 "category": "eide",
                 "title": "%eide.function.reinstall.binaries%"
