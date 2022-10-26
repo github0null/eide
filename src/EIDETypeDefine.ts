@@ -177,7 +177,7 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
         try {
             this.watcher.Watch();
         } catch (error) {
-            GlobalEvent.emit('error', error);
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
         }
     }
 
@@ -1347,7 +1347,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             this.__watcherReloadDelayTimer = setTimeout((_this: ProjectConfiguration<any>) => {
                 _this.__watcherReloadDelayTimer = undefined;
                 _this.Watch();
-            }, 1500, this);
+            }, 1600, this);
         }
     }
 }
