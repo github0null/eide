@@ -407,8 +407,8 @@ export const view_str$env_desc$compiler_folder = [
 //---------------Other---------------
 
 export const view_str$prompt$need_reload_project = [
-    `'{}' 的项目文件已被更改，重新加载项目？`,
-    `The Project file of '{}' has been changed !, reload project ?`
+    `'{}' 的项目文件 'eide.json' 已被更改，重新加载项目？`,
+    `The project file 'eide.json' of '{}' has been changed !, reload it ?`
 ][langIndex];
 
 export const view_str$prompt$src_folder_must_be_a_child_of_root = [
