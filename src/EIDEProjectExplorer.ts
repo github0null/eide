@@ -36,7 +36,7 @@ import { GlobalEvent } from './GlobalEvents';
 import { AbstractProject, CheckError, DataChangeType, VirtualSource } from './EIDEProject';
 import { ToolchainName, ToolchainManager } from './ToolchainManager';
 import { CreateOptions, VirtualFolder, VirtualFile, ImportOptions, ProjectTargetInfo, ProjectConfigData, ProjectType, ProjectConfiguration, ProjectBaseApi } from './EIDETypeDefine';
-import { PackInfo, ComponentFileItem, DeviceInfo, getComponentKeyDescription, ArmBaseCompileData, ArmBaseCompileConfigModel, RiscvCompileData, AnyGccCompileData } from "./EIDEProjectModules";
+import { PackInfo, ComponentFileItem, DeviceInfo, getComponentKeyDescription, ArmBaseCompileData, ArmBaseCompileConfigModel, RiscvCompileData, AnyGccCompileData, ICompileOptions } from "./EIDEProjectModules";
 import { WorkspaceManager } from './WorkspaceManager';
 import {
     can_not_close_project, project_is_opened, project_load_failed,
@@ -2267,6 +2267,25 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             }
         }
 
+        const mergeBuilderOpts = (baseOpts_: any, opts: any): any => {
+
+            const baseOpts = copyObject(baseOpts_);
+
+            if (opts == undefined) return baseOpts;
+
+            for (const clasName in opts) {
+                if (baseOpts[clasName] == undefined) {
+                    baseOpts[clasName] = opts[clasName];
+                } else {
+                    for (const key in opts[clasName]) {
+                        baseOpts[clasName][key] = opts[clasName][key];
+                    }
+                }
+            }
+
+            return baseOpts;
+        }
+
         // init all targets
         for (const keilTarget of targets) {
 
@@ -2279,37 +2298,45 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             newTarget.uploadConfig = copyObject(projectInfo.uploadConfig);
             newTarget.uploadConfigMap = copyObject(projectInfo.uploadConfigMap);
 
-            // set specific configs
-            if (keilTarget.type === 'C51') { // C51 project
-                const cmpConfig = (<KeilC51Option>keilTarget.compileOption);
-                // set toolchain
+            //
+            // import specific configs
+            //
+
+            // C51 project
+            if (keilTarget.type === 'C51') {
+                const keilCompileConf = (<KeilC51Option>keilTarget.compileOption);
+                // base config
                 newTarget.toolchain = 'Keil_C51';
-                // set def include folders
-                const toolchain = ToolchainManager.getInstance().getToolchainByName('Keil_C51');
-                if (cmpConfig.includeFolder && toolchain) {
-                    const absPath = [toolchain.getToolchainDir().path, 'INC', cmpConfig.includeFolder].join(File.sep);
+                const toolchain = ToolchainManager.getInstance().getToolchain('C51', 'Keil_C51');
+                if (keilCompileConf.includeFolder) {
+                    const absPath = [toolchain.getToolchainDir().path, 'INC', keilCompileConf.includeFolder].join(File.sep);
                     defIncList.push(baseInfo.rootFolder.ToRelativePath(absPath) || absPath);
                 }
+                // import builder options
+                const opts = mergeBuilderOpts(toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
+                const cfgFile = File.fromArray([baseInfo.rootFolder.path, AbstractProject.EIDE_DIR, `${keilTarget.name.toLowerCase()}.${toolchain.configName}`]);
+                cfgFile.Write(JSON.stringify(opts, undefined, 4));
             }
+
             // ARM project
             else {
                 const keilCompileConf = <KeilARMOption>keilTarget.compileOption;
                 const prjCompileOption = (<ArmBaseCompileData>newTarget.compileConfig);
-                // set toolchain
+                // base config
                 newTarget.toolchain = keilCompileConf.toolchain;
-                // set cpu type
                 prjCompileOption.cpuType = keilCompileConf.cpuType;
-                // set cpu float point
                 prjCompileOption.floatingPointHardware = keilCompileConf.floatingPointHardware || 'none';
-                // set whether use custom scatter file
                 prjCompileOption.useCustomScatterFile = keilCompileConf.useCustomScatterFile;
-                // set lds path
-                if (keilCompileConf.scatterFilePath) {
-                    prjCompileOption.scatterFilePath = baseInfo.rootFolder.
-                        ToRelativePath(keilCompileConf.scatterFilePath) || keilCompileConf.scatterFilePath;
-                }
-                // set storage layout
                 prjCompileOption.storageLayout = keilCompileConf.storageLayout;
+                if (keilCompileConf.scatterFilePath) {
+                    prjCompileOption.scatterFilePath =
+                        baseInfo.rootFolder.ToRelativePath(keilCompileConf.scatterFilePath) || keilCompileConf.scatterFilePath;
+                }
+                // import builder options
+                const toolchain = ToolchainManager.getInstance().getToolchain('ARM', keilCompileConf.toolchain);
+                const opts = mergeBuilderOpts(toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
+                const cfgFile = File.fromArray([baseInfo.rootFolder.path, AbstractProject.EIDE_DIR, `${keilTarget.name.toLowerCase()}.${toolchain.configName}`]);
+                cfgFile.Write(JSON.stringify(opts, undefined, 4));
             }
 
             // init custom dependence after specific configs done
