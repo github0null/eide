@@ -6,6 +6,30 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.10.0]
+
+**New**:
+  - macOS support (Only have tested in 'macOS 10.15 x64').
+  - Notify user to reload project when project file has been changed.
+  - Use markdown string for tooltips.
+
+**Fix**:
+  - Error program file addr priority for `.bin` file.
+  - Error welcome string for project view.
+
+**Optimize**:
+  - MDK Importer: auto import keil project options.
+  - Builder Options UI: auto scroll variables table.
+  - Built-in task format warning in vscode `OUTPUT` panel.
+  - Enable install utility tools functions for non-win32 platform.
+  - New linker options: `Disable memory print for old gcc`.
+  - Allow close workspace project.
+  - Optimize project attr yaml config hint.
+  - Add path completion provider for project yaml config (use char '\' trigger completion).
+  - Project auto save period: 3 min.
+
+***
+
 ### [v3.9.2022102302] preview
 
 **New**:
