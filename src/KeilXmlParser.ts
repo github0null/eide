@@ -659,23 +659,53 @@ class ARMParser extends KeilParser<KeilARMOption> {
             option.optionsGroup = Object.create(null);
 
             // AC5, AC6 setting
-            for (let i = 5; i < 7; i++) {
+            for (const t of ['AC5', 'AC6']) {
 
-                const toolV = <ToolchainName>('AC' + i.toString());
+                const toolV = <ToolchainName>(t);
                 const keilMapper = new KeilSettingMapper(toolV);
                 option.optionsGroup[toolV] = Object.create(null);
 
                 const optionData: any = option.optionsGroup[toolV];
                 for (const groupName of keilMapper.getGroupList()) {
+
                     if (optionData[groupName] === undefined) {
                         optionData[groupName] = Object.create(null);
                     }
+
                     for (const opKey of keilMapper.getOptionKeyList(groupName)) {
                         const val = keilMapper.fromKeil(targetOptionObj, groupName, opKey);
                         if (val !== undefined && val !== false) {
                             optionData[groupName][opKey] = val;
                         }
                     }
+                }
+            }
+
+            // parse misc options
+            {
+                const ccMiscOpts = armAdsObj.Cads.VariousControls.MiscControls;
+                if (ccMiscOpts) {
+                    if (option.optionsGroup[option.toolchain]["c/cpp-compiler"] == undefined) {
+                        option.optionsGroup[option.toolchain]["c/cpp-compiler"] = {};
+                    }
+                    option.optionsGroup[option.toolchain]["c/cpp-compiler"]['C_FLAGS'] = ccMiscOpts;
+                    option.optionsGroup[option.toolchain]["c/cpp-compiler"]['CXX_FLAGS'] = ccMiscOpts;
+                }
+
+                const asMiscOpts = armAdsObj.Aads.VariousControls.MiscControls;
+                if (asMiscOpts) {
+                    if (option.optionsGroup[option.toolchain]["asm-compiler"] == undefined) {
+                        option.optionsGroup[option.toolchain]["asm-compiler"] = {};
+                    }
+                    option.optionsGroup[option.toolchain]["asm-compiler"]['misc-controls'] = asMiscOpts;
+                }
+
+                const ldMiscOpts = armAdsObj.LDads.Misc;
+                if (ldMiscOpts) {
+                    if (option.optionsGroup[option.toolchain]["linker"] == undefined) {
+                        option.optionsGroup[option.toolchain]["linker"] = {};
+                    }
+                    option.optionsGroup[option.toolchain]["linker"]['misc-controls'] = ldMiscOpts;
                 }
             }
 

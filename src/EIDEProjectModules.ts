@@ -1688,7 +1688,7 @@ class JLinkUploadModel extends UploadConfigModel<JLinkOptions> {
             case 'otherCmds':
                 return true;
             case 'baseAddr':
-                return /\.bin$/i.test(this.data.bin);
+                return /\.bin\b/i.test(this.data.bin);
             default:
                 return false;
         }
@@ -1860,7 +1860,7 @@ class STLinkUploadModel extends UploadConfigModel<STLinkOptions> {
             case 'otherCmds':
                 return true;
             case 'address':
-                return /\.bin$/.test(this.data.bin);
+                return /\.bin\b/i.test(this.data.bin);
             default:
                 return false;
         }
@@ -2140,7 +2140,7 @@ class PyOCDUploadModel extends UploadConfigModel<PyOCDFlashOptions> {
     isKeyEnable(key: string): boolean {
         switch (key) {
             case 'baseAddr':
-                return /\.bin$/i.test(this.data.bin);
+                return /\.bin\b/i.test(this.data.bin);
             default:
                 return true;
         }
@@ -2324,7 +2324,7 @@ class OpenOCDUploadModel extends UploadConfigModel<OpenOCDFlashOptions> {
     isKeyEnable(key: string): boolean {
         switch (key) {
             case 'baseAddr':
-                return /\.bin$/i.test(this.data.bin);
+                return /\.bin\b/i.test(this.data.bin);
             default:
                 return true;
         }

@@ -6,11 +6,14 @@
 
 ## 简述 📑
 
-> 受支持的平台: **Windows X64 (>= Windows 10)**, **Linux x64**
-
 一款适用于 8051/STM8/Cortex-M/RISC-V 的单片机开发环境。
 
 在 vscode 上提供 **8051**, **AVR**, **STM8**, **Cortex-M**, **RISC-V** ... 项目的 开发, 编译, 烧录 等功能。
+
+支持的平台: 
+  - **Windows X64 (>= Windows 10)**
+  - **Linux x64**
+  - **macOS**（仅在 'macOS 10.15 x64' 中测试过）
 
 ![preview](https://docs.em-ide.com/preview.png)
 
@@ -24,7 +27,7 @@
 * 提供丰富的项目模板方便快速开始项目。
 * 一键编译，支持多种主流的编译工具 (armcc, gcc-arm-none-eabi, riscv-gcc, xxx-gcc, keil_c51, sdcc ...)。
 * 一键烧录到芯片，支持多种主流的烧录器 (jlink, stlink, openocd, pyocd ...)。
-* 内置的串口监视器，一键打开串口。
+* ~~内置的串口监视器，一键打开串口~~（建议使用 `Serial Monitor` 插件）。
 * 支持使用 Cppcheck 对项目进行静态检查。
 * 自动生成默认调试配置，为调试器插件 Cortex-debug / STM8-debug 生成默认配置。
 * 内置多种实用工具，`CMSIS Config Wizard UI`, `反汇编查看`，`程序资源视图` ...

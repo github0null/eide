@@ -36,7 +36,7 @@ import { GlobalEvent } from './GlobalEvents';
 import { AbstractProject, CheckError, DataChangeType, VirtualSource } from './EIDEProject';
 import { ToolchainName, ToolchainManager } from './ToolchainManager';
 import { CreateOptions, VirtualFolder, VirtualFile, ImportOptions, ProjectTargetInfo, ProjectConfigData, ProjectType, ProjectConfiguration, ProjectBaseApi } from './EIDETypeDefine';
-import { PackInfo, ComponentFileItem, DeviceInfo, getComponentKeyDescription, ArmBaseCompileData, ArmBaseCompileConfigModel, RiscvCompileData, AnyGccCompileData } from "./EIDEProjectModules";
+import { PackInfo, ComponentFileItem, DeviceInfo, getComponentKeyDescription, ArmBaseCompileData, ArmBaseCompileConfigModel, RiscvCompileData, AnyGccCompileData, ICompileOptions } from "./EIDEProjectModules";
 import { WorkspaceManager } from './WorkspaceManager';
 import {
     can_not_close_project, project_is_opened, project_load_failed,
@@ -66,7 +66,8 @@ import {
     view_str$project$folder_type_fs_desc,
     view_str$msg$err_ewt_hash,
     view_str$msg$err_ept_hash,
-    view_str$prompt$eclipse_imp_warning
+    view_str$prompt$eclipse_imp_warning,
+    view_str$prompt$need_reload_project
 } from './StringTable';
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
@@ -78,7 +79,7 @@ import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import {
     copyObject, downloadFileWithProgress, getDownloadUrlFromGitea,
     runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
-    genGithubHash, md5, toArray
+    genGithubHash, md5, toArray, newMarkdownString, newFileTooltipString, FileTooltipInfo, escapeXml
 } from './utility';
 import { concatSystemEnvPath, DeleteDir, exeSuffix, kill } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
@@ -166,7 +167,7 @@ interface TreeItemValue {
     alias?: string;
     value: string | File; // if TreeItem refer to a file, the value type is 'File'
     contextVal?: string;
-    tooltip?: string;
+    tooltip?: string | vscode.MarkdownString;
     icon?: string;
     obj?: any;
     childKey?: string;
@@ -270,16 +271,18 @@ export class ProjTreeItem extends vscode.TreeItem {
         return TreeItemType[type].endsWith('FILE_ITEM');
     }
 
-    private GetTooltip(): string {
-        if (this.val.value instanceof File) {
-            return this.val.value.path;
-        }
-        else if (this.val.tooltip) {
+    private GetTooltip(): string | vscode.MarkdownString {
+
+        if (this.val.tooltip) {
             return this.val.tooltip;
         }
-        else if (ProjTreeItem.isItem(this.type)) {
+
+        if (this.val.value instanceof File) {
+            return this.val.value.path;
+        } else if (ProjTreeItem.isItem(this.type)) {
             return this.val.value;
         }
+
         return TreeItemType[this.type];
     }
 
@@ -628,7 +631,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         const workspaceManager = WorkspaceManager.getInstance();
 
         // not a workspace, exit
-        if (workspaceManager.getWorkspaceRoot() === undefined) { return; }
+        if (workspaceManager.getWorkspaceRoot() === undefined) {
+            return;
+        }
 
         const wsFolders = workspaceManager.getWorkspaceList();
         const validList: File[] = [];
@@ -666,6 +671,10 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
     GetProjectByIndex(index: number): AbstractProject {
         return this.prjList[index];
+    }
+
+    getIndexByProject(uid: string): number {
+        return this.prjList.findIndex(prj => prj.getUid() == uid);
     }
 
     getProjectCount(): number {
@@ -744,7 +753,12 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                 const isActive = this.activePrjPath === sln.getWsPath();
                 const cItem = new ProjTreeItem(TreeItemType.SOLUTION, {
                     value: sln.GetConfiguration().config.name + ' : ' + sln.GetConfiguration().config.mode,
-                    tooltip: sln.GetRootDir().path,
+                    tooltip: new vscode.MarkdownString([
+                        `**Name:** \`${sln.GetConfiguration().config.name}\``,
+                        `- **Uid**: \`${sln.getUid()}\``,
+                        `- **Config:** \`${sln.GetConfiguration().config.mode}\``,
+                        `- **Path:** \`${sln.GetRootDir().path}\``
+                    ].join(os.EOL)),
                     projectIndex: index,
                     icon: this.prjList.length > 1 ? (isActive ? 'active.svg' : 'idle.svg') : undefined
                 });
@@ -824,9 +838,13 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                     obj: rootInfo.fileWatcher.file,
                                     projectIndex: element.val.projectIndex,
                                     contextVal: isComponent ? 'FOLDER_ROOT_DEPS' : undefined,
-                                    tooltip: rootInfo.needUpdate ? view_str$project$needRefresh : folderDispName,
-                                    icon: rootInfo.needUpdate ?
-                                        'StatusWarning_16x.svg' : (isComponent ? 'DependencyGraph_16x.svg' : undefined)
+                                    tooltip: newFileTooltipString({
+                                        name: rootInfo.displayName,
+                                        path: rootInfo.fileWatcher.file.path,
+                                        desc: rootInfo.needUpdate ? view_str$project$needRefresh : undefined,
+                                        attr: {}
+                                    }, project.getRootDir()),
+                                    icon: rootInfo.needUpdate ? 'StatusWarning_16x.svg' : (isComponent ? 'DependencyGraph_16x.svg' : undefined)
                                 }));
                             });
 
@@ -835,12 +853,21 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                             .sort((folder1, folder2) => { return folder1.name.localeCompare(folder2.name); })
                             .forEach((vFolder) => {
                                 const vFolderPath = `${VirtualSource.rootName}/${vFolder.name}`;
-                                const itemType = project.isExcluded(vFolderPath) ? TreeItemType.V_EXCFOLDER : TreeItemType.V_FOLDER_ROOT;
+                                const isExcluded = project.isExcluded(vFolderPath);
+                                const itemType = isExcluded ? TreeItemType.V_EXCFOLDER : TreeItemType.V_FOLDER_ROOT;
                                 iList.push(new ProjTreeItem(itemType, {
                                     value: vFolder.name,
                                     obj: <VirtualFolderInfo>{ path: vFolderPath, vFolder: vFolder },
                                     projectIndex: element.val.projectIndex,
-                                    tooltip: `${vFolder.name} (${vFolder.files.length} files, ${vFolder.folders.length} folders)`
+                                    tooltip: newFileTooltipString({
+                                        name: vFolder.name,
+                                        path: vFolderPath,
+                                        desc: isExcluded ? view_str$project$excludeFolder : undefined,
+                                        attr: {
+                                            'SubFiles': vFolder.files.length.toString(),
+                                            'SubFolders': vFolder.folders.length.toString()
+                                        }
+                                    })
                                 }));
                             });
 
@@ -858,7 +885,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                         vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
                                     obj: <VirtualFileInfo>{ path: vFilePath, vFile: vFile },
                                     projectIndex: element.val.projectIndex,
-                                    tooltip: isFileExcluded ? view_str$project$excludeFile : file.path,
+                                    tooltip: newFileTooltipString({
+                                        name: file.name,
+                                        path: file.path,
+                                        desc: isFileExcluded ? view_str$project$excludeFile : undefined,
+                                        attr: {
+                                            'VirtualPath': vFilePath
+                                        }
+                                    }, project.getRootDir()),
                                 }));
                             });
 
@@ -902,7 +936,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                     key: key,
                                     alias: cConfig.GetKeyDescription(key),
                                     value: cConfig.getKeyValue(key),
-                                    tooltip: cConfig.GetKeyDescription(key),
+                                    tooltip: newMarkdownString([
+                                        `${cConfig.GetKeyDescription(key)}`,
+                                        `- **Value:** \`${cConfig.getKeyValue(key)}\``]),
                                     icon: cConfig.getKeyIcon(key),
                                     projectIndex: element.val.projectIndex
                                 }));
@@ -922,7 +958,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                         key: key,
                                         alias: model.GetKeyDescription(key),
                                         value: model.getKeyValue(key),
-                                        tooltip: model.GetKeyDescription(key),
+                                        tooltip: newMarkdownString([
+                                            `${model.GetKeyDescription(key)}`,
+                                            `- **Value:** \`${model.getKeyValue(key)}\``]),
                                         icon: model.getKeyIcon(key),
                                         projectIndex: element.val.projectIndex
                                     }));
@@ -942,7 +980,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                             if (Array.isArray(depValues)) {
                                 iList.push(new ProjTreeItem(TreeItemType.DEPENDENCE_GROUP_ARRAY_FIELD, {
                                     value: config.GetDepKeyDesc(key),
-                                    tooltip: config.GetDepKeyDesc(key),
+                                    tooltip: newMarkdownString([
+                                        `${config.GetDepKeyDesc(key)}`,
+                                        `- **Count:** \`${depValues.length}\``]),
                                     obj: new ModifiableDepInfo('None', key),
                                     childKey: key,
                                     child: depValues
@@ -963,7 +1003,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                             key: 'name',
                             value: config.config.name,
                             alias: view_str$settings$prj_name,
-                            tooltip: view_str$settings$prj_name,
+                            tooltip: newMarkdownString(`**${view_str$settings$prj_name}**: \`${config.config.name}\``),
                             projectIndex: element.val.projectIndex
                         }));
 
@@ -972,7 +1012,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                             key: 'outDir',
                             value: File.normalize(config.config.outDir),
                             alias: view_str$settings$outFolderName,
-                            tooltip: view_str$settings$outFolderName,
+                            tooltip: newMarkdownString(`**${view_str$settings$outFolderName}**: \`${config.config.outDir}\``),
                             projectIndex: element.val.projectIndex
                         }));
 
@@ -1030,7 +1070,12 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                     iFolderList.push(new ProjTreeItem(type, {
                                         value: f.name,
                                         obj: f,
-                                        tooltip: isExcluded ? view_str$project$excludeFolder : f.name,
+                                        tooltip: newFileTooltipString({
+                                            name: f.name,
+                                            path: f.path,
+                                            desc: isExcluded ? view_str$project$excludeFolder : undefined,
+                                            attr: {}
+                                        }, project.getRootDir()),
                                         projectIndex: element.val.projectIndex
                                     }));
                                 } else { // is file
@@ -1040,7 +1085,12 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                         collapsibleState: project.getSourceRefs(f).length > 0 ?
                                             vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
                                         projectIndex: element.val.projectIndex,
-                                        tooltip: isExcluded ? view_str$project$excludeFile : f.path,
+                                        tooltip: newFileTooltipString({
+                                            name: f.name,
+                                            path: f.path,
+                                            desc: isExcluded ? view_str$project$excludeFile : undefined,
+                                            attr: {}
+                                        }, project.getRootDir())
                                     });
                                     // use normal file icon for 'obj' file
                                     if (!project.isAutoSearchObjectFile()) {
@@ -1074,9 +1124,15 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                     value: vFolder.name,
                                     obj: <VirtualFolderInfo>{ path: vFolderPath, vFolder: vFolder },
                                     projectIndex: element.val.projectIndex,
-                                    tooltip: isFolderExcluded
-                                        ? view_str$project$excludeFolder
-                                        : `${vFolder.name} (${vFolder.files.length} files, ${vFolder.folders.length} folders)`,
+                                    tooltip: newFileTooltipString({
+                                        name: vFolder.name,
+                                        path: vFolderPath,
+                                        desc: isFolderExcluded ? view_str$project$excludeFolder : undefined,
+                                        attr: {
+                                            'SubFiles': vFolder.files.length.toString(),
+                                            'SubFolders': vFolder.folders.length.toString()
+                                        }
+                                    })
                                 }));
                             });
 
@@ -1094,7 +1150,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                         vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
                                     obj: <VirtualFileInfo>{ path: vFilePath, vFile: vFile },
                                     projectIndex: element.val.projectIndex,
-                                    tooltip: isFileExcluded ? view_str$project$excludeFile : file.path,
+                                    tooltip: newFileTooltipString({
+                                        name: file.name,
+                                        path: file.path,
+                                        desc: isFileExcluded ? view_str$project$excludeFile : undefined,
+                                        attr: {
+                                            'VirtualPath': vFilePath
+                                        }
+                                    }, project.getRootDir())
                                 }));
                             });
                     }
@@ -1116,7 +1179,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                             iList.push(new ProjTreeItem(TreeItemType.SRCREF_FILE_ITEM, {
                                 value: refFile,
                                 projectIndex: element.val.projectIndex,
-                                tooltip: refFile.path,
+                                tooltip: newFileTooltipString(refFile, project.getRootDir()),
                             }));
                         }
                     }
@@ -1128,11 +1191,18 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                         if (outFolder.IsDir()) {
                             const fList = outFolder.GetList([AbstractProject.buildOutputMatcher], File.EMPTY_FILTER);
                             fList.forEach((file) => {
+                                const fsize = file.getSize();
                                 iList.push(new ProjTreeItem(TreeItemType.OUTPUT_FILE_ITEM, {
                                     value: file,
                                     collapsibleState: vscode.TreeItemCollapsibleState.None,
                                     projectIndex: element.val.projectIndex,
-                                    tooltip: file.path,
+                                    tooltip: newFileTooltipString({
+                                        name: file.name,
+                                        path: file.path,
+                                        attr: {
+                                            'FileSize': fsize > 4096 ? `${(fsize / 1024).toFixed(2)} KB` : `${fsize} B`
+                                        }
+                                    }, project.getRootDir()),
                                 }));
                             });
                         }
@@ -1294,7 +1364,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             try {
                 const prj = AbstractProject.NewProject();
                 await prj.Load(wsFile);
-                this.AddProject(prj);
+                this.registerProject(prj);
                 GlobalEvent.emit('project.opened', prj);
                 return prj;
             } catch (err) {
@@ -1336,7 +1406,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         }
     }
 
-    async OpenProject(workspaceFilePath: string): Promise<AbstractProject | undefined> {
+    async OpenProject(workspaceFilePath: string, switchWorkspaceImmediately?: boolean): Promise<AbstractProject | undefined> {
 
         const wsFolder = new File(NodePath.dirname(workspaceFilePath));
 
@@ -1354,7 +1424,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
         const prj = await this._OpenProject(workspaceFilePath);
         if (prj) {
-            this.SwitchProject(prj);
+            this.SwitchProject(prj, switchWorkspaceImmediately);
             return prj;
         }
 
@@ -1375,7 +1445,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         try {
             const prj = AbstractProject.NewProject();
             await prj.Create(option);
-            this.AddProject(prj);
+            this.registerProject(prj);
             this.SwitchProject(prj);
             return prj;
         } catch (err) {
@@ -2197,6 +2267,25 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             }
         }
 
+        const mergeBuilderOpts = (baseOpts_: any, opts: any): any => {
+
+            const baseOpts = copyObject(baseOpts_);
+
+            if (opts == undefined) return baseOpts;
+
+            for (const clasName in opts) {
+                if (baseOpts[clasName] == undefined) {
+                    baseOpts[clasName] = opts[clasName];
+                } else {
+                    for (const key in opts[clasName]) {
+                        baseOpts[clasName][key] = opts[clasName][key];
+                    }
+                }
+            }
+
+            return baseOpts;
+        }
+
         // init all targets
         for (const keilTarget of targets) {
 
@@ -2209,37 +2298,45 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             newTarget.uploadConfig = copyObject(projectInfo.uploadConfig);
             newTarget.uploadConfigMap = copyObject(projectInfo.uploadConfigMap);
 
-            // set specific configs
-            if (keilTarget.type === 'C51') { // C51 project
-                const cmpConfig = (<KeilC51Option>keilTarget.compileOption);
-                // set toolchain
+            //
+            // import specific configs
+            //
+
+            // C51 project
+            if (keilTarget.type === 'C51') {
+                const keilCompileConf = (<KeilC51Option>keilTarget.compileOption);
+                // base config
                 newTarget.toolchain = 'Keil_C51';
-                // set def include folders
-                const toolchain = ToolchainManager.getInstance().getToolchainByName('Keil_C51');
-                if (cmpConfig.includeFolder && toolchain) {
-                    const absPath = [toolchain.getToolchainDir().path, 'INC', cmpConfig.includeFolder].join(File.sep);
+                const toolchain = ToolchainManager.getInstance().getToolchain('C51', 'Keil_C51');
+                if (keilCompileConf.includeFolder) {
+                    const absPath = [toolchain.getToolchainDir().path, 'INC', keilCompileConf.includeFolder].join(File.sep);
                     defIncList.push(baseInfo.rootFolder.ToRelativePath(absPath) || absPath);
                 }
+                // import builder options
+                const opts = mergeBuilderOpts(toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
+                const cfgFile = File.fromArray([baseInfo.rootFolder.path, AbstractProject.EIDE_DIR, `${keilTarget.name.toLowerCase()}.${toolchain.configName}`]);
+                cfgFile.Write(JSON.stringify(opts, undefined, 4));
             }
+
             // ARM project
             else {
                 const keilCompileConf = <KeilARMOption>keilTarget.compileOption;
                 const prjCompileOption = (<ArmBaseCompileData>newTarget.compileConfig);
-                // set toolchain
+                // base config
                 newTarget.toolchain = keilCompileConf.toolchain;
-                // set cpu type
                 prjCompileOption.cpuType = keilCompileConf.cpuType;
-                // set cpu float point
                 prjCompileOption.floatingPointHardware = keilCompileConf.floatingPointHardware || 'none';
-                // set whether use custom scatter file
                 prjCompileOption.useCustomScatterFile = keilCompileConf.useCustomScatterFile;
-                // set lds path
-                if (keilCompileConf.scatterFilePath) {
-                    prjCompileOption.scatterFilePath = baseInfo.rootFolder.
-                        ToRelativePath(keilCompileConf.scatterFilePath) || keilCompileConf.scatterFilePath;
-                }
-                // set storage layout
                 prjCompileOption.storageLayout = keilCompileConf.storageLayout;
+                if (keilCompileConf.scatterFilePath) {
+                    prjCompileOption.scatterFilePath =
+                        baseInfo.rootFolder.ToRelativePath(keilCompileConf.scatterFilePath) || keilCompileConf.scatterFilePath;
+                }
+                // import builder options
+                const toolchain = ToolchainManager.getInstance().getToolchain('ARM', keilCompileConf.toolchain);
+                const opts = mergeBuilderOpts(toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
+                const cfgFile = File.fromArray([baseInfo.rootFolder.path, AbstractProject.EIDE_DIR, `${keilTarget.name.toLowerCase()}.${toolchain.configName}`]);
+                cfgFile.Write(JSON.stringify(opts, undefined, 4));
             }
 
             // init custom dependence after specific configs done
@@ -2478,43 +2575,37 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         }
     }
 
-    private AddProject(proj: AbstractProject) {
+    private registerProject(proj: AbstractProject) {
         this.prjList.push(proj);
-        this.addRecord(proj.getWsPath());
         proj.on('dataChanged', (type) => this.onProjectChanged(proj, type));
+        this.addRecord(proj.getWsPath());
         this.UpdateView();
     }
 
     Close(index: number): string | undefined {
 
         if (index < 0 || index >= this.prjList.length) {
-            GlobalEvent.emit('error', new Error('index out of range: ' + index.toString()));
+            GlobalEvent.emit('error', new Error('Project index out of range: ' + index.toString()));
             return;
         }
 
         const sln = this.prjList[index];
-        if (this.isRootWorkspaceProject(sln)) {
-            GlobalEvent.emit('msg', {
-                type: 'Warning',
-                contentType: 'string',
-                content: can_not_close_project
-            });
-            return;
-        }
-
-        const uid = sln.getUid();
 
         sln.Close();
         this.prjList.splice(index, 1);
         this.UpdateView();
 
-        return uid;
+        return sln.getUid();
     }
 
-    private async SwitchProject(prj: AbstractProject) {
-        const selection = await vscode.window.showInformationMessage(switch_workspace_hint, continue_text, cancel_text);
-        if (selection === continue_text) {
+    private async SwitchProject(prj: AbstractProject, immediately?: boolean) {
+        if (immediately) {
             WorkspaceManager.getInstance().openWorkspace(prj.GetWorkspaceConfig().GetFile());
+        } else {
+            const selection = await vscode.window.showInformationMessage(switch_workspace_hint, continue_text, cancel_text);
+            if (selection === continue_text) {
+                WorkspaceManager.getInstance().openWorkspace(prj.GetWorkspaceConfig().GetFile());
+            }
         }
     }
 }
@@ -2536,6 +2627,25 @@ interface ImporterProjectInfo {
     excludeList?: string[] | { [targetName: string]: string[] };
 }
 
+class PathCompletionItem extends vscode.CompletionItem {
+
+    file: File;
+
+    constructor(f: File) {
+
+        super(f.name);
+
+        this.file = f;
+
+        if (f.IsExist()) {
+            this.kind = f.IsDir() ? vscode.CompletionItemKind.Folder : vscode.CompletionItemKind.File;
+        }
+
+        this.detail = f.path;
+        this.insertText = f.name;
+    }
+}
+
 export class ProjectExplorer implements CustomConfigurationProvider {
 
     private readonly vFolderNameMatcher = /^\w[\w\t \-:@\.]*$/;
@@ -2551,6 +2661,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     private cppToolsOut: vscode.OutputChannel;
 
     private compiler_diags: Map<string, vscode.DiagnosticCollection>;
+
+    private autosaveTimer: NodeJS.Timeout | undefined;
 
     constructor(context: vscode.ExtensionContext) {
 
@@ -2591,6 +2703,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
         }
 
+        // register path completion item provider
+        context.subscriptions.push(
+            vscode.languages.registerCompletionItemProvider({ scheme: 'file', pattern: '**/*.eide.*.{yml,yaml}' }, this.newPathStringCompletionItemProvider(), '/', '\\'));
+
         // register project hook
         GlobalEvent.on('project.opened', (prj) => this.onProjectOpened(prj));
         GlobalEvent.on('project.closed', (uid) => this.onProjectClosed(uid));
@@ -2603,6 +2719,55 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     loadWorkspace() {
         this.dataProvider.LoadWorkspaceProject();
+    }
+
+    enableAutoSave(enable: boolean) {
+        if (enable) {
+            if (this.autosaveTimer) {
+                this.autosaveTimer.refresh();
+            } else {
+                this.autosaveTimer = setInterval(() => this.SaveAll(), 3 * 60 * 1000);
+            }
+        } else {
+            if (this.autosaveTimer) {
+                clearInterval(this.autosaveTimer);
+                this.autosaveTimer = undefined;
+            }
+        }
+    }
+
+    newPathStringCompletionItemProvider(): vscode.CompletionItemProvider<PathCompletionItem> {
+        return {
+            provideCompletionItems: (document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken, context: vscode.CompletionContext):
+                vscode.ProviderResult<PathCompletionItem[] | vscode.CompletionList<PathCompletionItem>> => {
+
+                let proj: AbstractProject | undefined;
+
+                for (const provider of this.yamlCfgProviderList.values()) {
+                    proj = provider.getSourceProjectByFileName(NodePath.basename(document.fileName));
+                    if (proj) {
+                        break;
+                    }
+                }
+
+                if (proj == undefined) {
+                    return;
+                }
+
+                const fullrange = document.getWordRangeAtPosition(position, /[^\s"]+|"[^"]+"/);
+                if (fullrange) {
+
+                    let txt = document.getText(new vscode.Range(fullrange.start, position)).trim()
+                        .replace(/^(\/|\\)+/, '')
+                        .replace(/(\/|\\)+$/, '');
+
+                    let p = new File(proj.toAbsolutePath(txt));
+                    if (p.IsDir()) {
+                        return p.GetList(undefined, undefined).map(f => new PathCompletionItem(f));
+                    }
+                }
+            }
+        };
     }
 
     ////////////////////////////////// cpptools intellisense provider ///////////////////////////////////
@@ -2798,6 +2963,60 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         await this.registerCpptoolsProvider(prj);
 
         this.updateCompilerDiagsAfterBuild(prj);
+
+        prj.on('projectFileChanged', () => this.onProjectFileChanged(prj));
+    }
+
+    private __autosaveDisableTimeoutTimer: NodeJS.Timeout | undefined;
+    private async onProjectFileChanged(prj: AbstractProject) {
+
+        const nam = prj.getProjectName();
+        const uid = prj.getUid();
+        const wsf = prj.getWorkspaceFile();
+
+        //
+        // disable autosave
+        //
+        this.enableAutoSave(false);
+
+        if (this.__autosaveDisableTimeoutTimer) {
+            this.__autosaveDisableTimeoutTimer.refresh();
+        } else {
+            this.__autosaveDisableTimeoutTimer = setTimeout((_this: ProjectExplorer) => {
+                _this.__autosaveDisableTimeoutTimer = undefined;
+                _this.enableAutoSave(true);
+            }, 5 * 60 * 1000, this);
+        }
+
+        //
+        // do something
+        //
+        const msg = view_str$prompt$need_reload_project.replace('{}', prj.getProjectName());
+        const ans = await vscode.window.showInformationMessage(msg, 'Yes', 'No');
+        if (ans == 'Yes') {
+            this.reloadProject(uid, wsf);
+        }
+
+        //
+        // enable auto save
+        //
+        this.enableAutoSave(true);
+        if (this.__autosaveDisableTimeoutTimer) {
+            clearTimeout(this.__autosaveDisableTimeoutTimer);
+        }
+    }
+
+    private reloadProject(uid: string, workspaceFile: File) {
+
+        const idx = this.dataProvider.getIndexByProject(uid);
+        if (idx == -1) {
+            GlobalEvent.emit('msg', newMessage('Error', `Project '${uid}' is not actived !`));
+            return;
+        }
+
+        this.dataProvider.Close(idx);
+
+        this.dataProvider.OpenProject(workspaceFile.path, true);
     }
 
     private async onProjectClosed(uid: string | undefined) {
@@ -3903,7 +4122,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             let exeFile: File;
             let cmds: string[];
 
-            const tmpFile = File.fromArray([os.tmpdir(), `eide-${Date.now()}.edasm`]);
+            const tmpFile = File.fromArray([os.tmpdir(), `${NodePath.basename(srcPath)}.edasm`]);
             if (tmpFile.IsFile()) { // force del tmp file
                 try { fs.unlinkSync(tmpFile.path); } catch (error) { }
             }
@@ -4170,10 +4389,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         cppcheckConf = cppcheckConf
             .replace('${cppcheck_build_folder}', File.normalize(prj.getOutputRoot()))
             .replace('${platform}', cppcheck_plat)
-            .replace('${lib_list}', cfgList.map((str) => `<library>${str}</library>`).join(os.EOL + '\t\t'))
-            .replace('${include_list}', includeList.map((str) => `<dir name="${str}/"/>`).join(os.EOL + '\t\t'))
-            .replace('${macro_list}', fixedDefList.map((str) => `<define name="${str}"/>`).join(os.EOL + '\t\t'))
-            .replace('${source_list}', getSourceList(prj).map((str) => `<dir name="${str}"/>`).join(os.EOL + '\t\t'));
+            .replace('${lib_list}', cfgList.map((str) => `<library>${escapeXml(str)}</library>`).join(os.EOL + '\t\t'))
+            .replace('${include_list}', includeList.map((str) => `<dir name="${escapeXml(str)}/"/>`).join(os.EOL + '\t\t'))
+            .replace('${macro_list}', fixedDefList.map((str) => `<define name="${escapeXml(str)}"/>`).join(os.EOL + '\t\t'))
+            .replace('${source_list}', getSourceList(prj).map((str) => `<dir name="${escapeXml(str)}"/>`).join(os.EOL + '\t\t'));
 
         confFile.Write(cppcheckConf);
 
@@ -4994,7 +5213,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const docName = NodePath.basename(doc.uri.fsPath);
 
         this.yamlCfgProviderList.forEach((val, key) => {
-            if (docName.startsWith(`eide.${key}.`)) {
+            if (docName.endsWith(`eide.${key}.yaml`)) {
                 val.onYamlDocSaved(doc);
             }
         });
@@ -5005,7 +5224,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const docName = NodePath.basename(doc.uri.fsPath);
 
         this.yamlCfgProviderList.forEach((val, key) => {
-            if (docName.startsWith(`eide.${key}.`)) {
+            if (docName.endsWith(`eide.${key}.yaml`)) {
                 val.onYamlDocClosed(doc);
             }
         });
@@ -5020,7 +5239,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         // provide file
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
-        const defFileName = `eide.${id}.${Date.now()}.yaml`;
+        const defFileName = `${prj.getUid()}.eide.${id}.yaml`;
         const res = await provider.provideYamlDocument(prj, item, defFileName);
         if (res instanceof Error) {
             GlobalEvent.emit('msg', ExceptionToMessage(res, 'Warning'));
@@ -5040,7 +5259,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     CopyItemValue(item: ProjTreeItem) {
         if (item.val.value instanceof File) {
             vscode.env.clipboard.writeText(item.val.value.path);
-        } else {
+        } else if (typeof item.val.value == 'string') {
             vscode.env.clipboard.writeText(item.val.value);
         }
     }
@@ -5293,6 +5512,8 @@ interface ModifiableYamlConfigProvider {
     onYamlDocSaved(doc: vscode.TextDocument): Promise<void>;
 
     onYamlDocClosed(doc: vscode.TextDocument): Promise<void>;
+
+    getSourceProjectByFileName(filename: string): AbstractProject | undefined;
 }
 
 class VFolderSourcePathsModifier implements ModifiableYamlConfigProvider {
@@ -5437,6 +5658,10 @@ class VFolderSourcePathsModifier implements ModifiableYamlConfigProvider {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
     }
+
+    getSourceProjectByFileName(filename: string): AbstractProject | undefined {
+        return this.prjFolderSourceChangesMap.get(filename)?.project;
+    }
 }
 
 class ProjectAttrModifier implements ModifiableYamlConfigProvider {
@@ -5455,7 +5680,22 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
         const yamlLines: string[] = [
             `#`,
             `# You can modify the configuration by editing and saving this file.`,
-            `#`
+            `#`,
+            `# example:`,
+            `#`,
+            `# IncludeFolders:`,
+            '#     - ./dir_1',
+            '#     - ../xxx/xxx/dir_2',
+            '#     - xxx/variable/path/${VAR1}/${VAR2}/dir_3',
+            '#     - D:/absolute/path/xxx/dir_n',
+            `# LibraryFolders:`,
+            '#     - ./dir_1',
+            '#     - ../xxx/xxx/dir_2',
+            `# Defines:`,
+            '#     - TEST',
+            '#     - DEFINE_1=123',
+            '#     - DEFINE_2=${VAR1}',
+            '#',
         ];
 
         // fill data
@@ -5465,7 +5705,6 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
                 ``,
                 `# Header Include Path`,
                 `IncludeFolders:`,
-                `#   - ./Your/Include/Folder/Path`
             );
             cusDep.incList.forEach((path) => {
                 yamlLines.push(`    - ${prj.toRelativePath(path)}`)
@@ -5476,7 +5715,6 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
                 ``,
                 `# Library Search Path`,
                 `LibraryFolders:`,
-                `#   - ./Your/Library/Path`
             );
             cusDep.libList.forEach((path) => {
                 yamlLines.push(`    - ${prj.toRelativePath(path)}`)
@@ -5487,7 +5725,6 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
                 ``,
                 `# Preprocessor Definitions`,
                 `Defines:`,
-                `#   - TEST=1`
             );
             cusDep.defineList.forEach((macro) => {
                 yamlLines.push(`    - ${macro}`)
@@ -5581,6 +5818,10 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
+    }
+
+    getSourceProjectByFileName(filename: string): AbstractProject | undefined {
+        return this.prjCusDepChangesMap.get(filename);
     }
 }
 
@@ -5678,5 +5919,9 @@ class ProjectExcSourceModifier implements ModifiableYamlConfigProvider {
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
         }
+    }
+
+    getSourceProjectByFileName(filename: string): AbstractProject | undefined {
+        return this.yamlFilesMap.get(filename);
     }
 }

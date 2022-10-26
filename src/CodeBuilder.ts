@@ -253,7 +253,7 @@ export abstract class CodeBuilder {
         let commandLine = this.genBuildCommand(options);
         if (!commandLine) return;
 
-        const title = options?.useDebug ? 'compiler params' : 'build';
+        const title = (options?.useDebug ? 'compiler params' : 'build') + `:${this.project.getCurrentTarget()}`;
 
         // watch log, to emit done event
         try {
@@ -291,15 +291,17 @@ export abstract class CodeBuilder {
         // run build
         if (SettingManager.GetInstance().isUseTaskToBuild() &&
             WorkspaceManager.getInstance().hasWorkspaces()) { // use vscode task
-            const task = new vscode.Task({ type: 'shell' }, vscode.TaskScope.Workspace, title, 'shell');
-            const shellOption: vscode.ShellExecutionOptions = {};
             // setup shell
+            const shellOption: vscode.ShellExecutionOptions = {};
             if (os.platform() == 'win32') { shellOption.executable = 'cmd.exe'; shellOption.shellArgs = ['/C']; }
             else { shellOption.executable = '/bin/bash'; shellOption.shellArgs = ['-c']; }
             shellOption.env = <any>process.env;
             // setup task
+            const task = new vscode.Task({ type: 'shell' }, vscode.TaskScope.Workspace, title, 'eide');
             if (os.platform() == 'win32') commandLine = `"${commandLine}"`;
             task.execution = new vscode.ShellExecution(commandLine, shellOption);
+            task.definition['command'] = commandLine;
+            task.group = vscode.TaskGroup.Build;
             task.problemMatchers = [];
             task.isBackground = false;
             task.presentationOptions = { echo: true, focus: false, clear: true };

@@ -55,8 +55,6 @@ import * as platform from './Platform';
 const extension_deps: string[] = [];
 
 let projectExplorer: ProjectExplorer;
-let platformArch: string = 'x86_64';
-let platformType: string = 'win32';
 
 // set yaml global style
 yaml.scalarOptions.str.fold.lineWidth = 1000;
@@ -65,29 +63,21 @@ yaml.scalarOptions.str.fold.lineWidth = 1000;
 // your extension is activated the very first time the command is executed
 export async function activate(context: vscode.ExtensionContext) {
 
-    // check platform, exit
-    const supportedOs: NodeJS.Platform[] = ['win32', 'linux'];
-    if (!supportedOs.includes(os.platform())) {
-        vscode.window.showErrorMessage(`${ERROR} : This plug-in is only for '${supportedOs.join('/')}' platform, your pc is '${os.platform()}' !`);
-        return;
-    }
-
-    // check linux arch, we only support x86-64
-    const archLi = [`x86_64`];
-    if (os.platform() == 'linux') {
-        platformArch = ChildProcess.execSync(`uname -m`).toString().trim();
-        platformType = `linux-${platformArch}`;
-        if (!archLi.includes(platformArch)) {
-            vscode.window.showErrorMessage(`${ERROR} : This plug-in is only support '${archLi.join('/')}' arch, your pc is '${platformArch}' !`);
-            return;
-        }
-    }
-
     // init event emiter
     RegisterGlobalEvent();
     RegisterMsgListener();
 
     GlobalEvent.emit('globalLog', newMessage('Info', 'Embedded IDE launch begin'));
+
+    // init platform
+    try {
+        platform.init();
+    } catch (error) {
+        const msg = (<Error>error).message;
+        vscode.window.showErrorMessage(msg);
+        GlobalEvent.emit('globalLog', newMessage('Error', msg));
+        return;
+    }
 
     // try active dependence plug-ins
     for (const name of extension_deps) {
@@ -141,6 +131,7 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('eide.operation.install_toolchain', () => operationExplorer.OnSetToolchainPath()));
     subscriptions.push(vscode.commands.registerCommand('eide.operation.import_project', () => operationExplorer.OnImportProject()));
     subscriptions.push(vscode.commands.registerCommand('eide.operation.new_project', () => operationExplorer.OnCreateProject()));
+    subscriptions.push(vscode.commands.registerCommand('eide.operation.open_project', () => operationExplorer.OnOpenProject()));
 
     // projects
     projectExplorer = new ProjectExplorer(context);
@@ -249,7 +240,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.workspace.registerTextDocumentContentProvider(VirtualDocument.scheme, VirtualDocument.instance());
 
     // auto save project
-    setInterval(() => projectExplorer.SaveAll(), 100 * 1000);
+    projectExplorer.enableAutoSave(true);
 
     // load project in this workspace
     projectExplorer.loadWorkspace();
@@ -474,7 +465,7 @@ async function tryUpdateBinaries(binFolder: File, localVer?: string, notConfirm?
 
     const getVersionFromRepo = async (): Promise<string | Error | undefined> => {
         try {
-            const url = `https://api-github.em-ide.com/repos/github0null/eide-resource/contents/binaries/${platformType}/VERSION`;
+            const url = `https://api-github.em-ide.com/repos/github0null/eide-resource/contents/binaries/${platform.getRuntimeId()}/VERSION`;
             const cont = await utility.requestTxt(url);
             if (typeof cont != 'string') return cont;
             let obj: any = undefined;
@@ -488,7 +479,7 @@ async function tryUpdateBinaries(binFolder: File, localVer?: string, notConfirm?
 
     const getAvailableBinariesVersions = async (): Promise<string[] | Error | undefined> => {
         try {
-            const url = `https://api-github.em-ide.com/repos/github0null/eide-resource/contents/binaries/${platformType}`;
+            const url = `https://api-github.em-ide.com/repos/github0null/eide-resource/contents/binaries/${platform.getRuntimeId()}`;
             const fList = await utility.readGithubRepoFolder(url);
             if (fList instanceof Error) throw fList;
             return fList.filter(f => f.name.startsWith('bin-'))
@@ -572,8 +563,8 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
 
     // binaries download site
     const downloadSites: string[] = [
-        `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/${platformType}/bin-${binVersion}.${binType}`,
-        `https://raw-github.em-ide.com/github0null/eide-resource/master/binaries/${platformType}/bin-${binVersion}.${binType}`,
+        `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/${platform.getRuntimeId()}/bin-${binVersion}.${binType}`,
+        `https://raw-github.em-ide.com/github0null/eide-resource/master/binaries/${platform.getRuntimeId()}/bin-${binVersion}.${binType}`,
     ];
 
     /* random select the order of site */
@@ -582,7 +573,7 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
     }
 
     // add github default download url
-    downloadSites.push(`https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/${platformType}/bin-${binVersion}.${binType}`);
+    downloadSites.push(`https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/${platform.getRuntimeId()}/bin-${binVersion}.${binType}`);
 
     let installedDone = false;
 
@@ -972,34 +963,28 @@ function initBinariesExecutablePermission() {
     // chmod +x for other executable files
     if (os.platform() != 'win32') {
 
-        const exeLi: string[] = [
-            `${[resManager.GetBinDir().path, 'scripts', 'qjs'].join(File.sep)}`
-        ];
+        const exeLi: string[] = [];
 
-        // get exe file list from 'utils' folder
-        File.fromArray([resManager.getBuilderDir().path, 'utils'])
-            .GetList(undefined, File.EMPTY_FILTER)
-            .forEach((f) => {
-                if (!f.suffix) { // nosuffix file is an exe file
-                    exeLi.push(f.path);
-                }
-            });
-
-        // get exe file list from 'bin' folder
-        File.fromArray([resManager.getBuilderDir().path, 'bin'])
-            .GetList(undefined, File.EMPTY_FILTER)
-            .forEach((f) => {
-                if (!f.suffix) { // nosuffix file is an exe file
-                    exeLi.push(f.path);
-                }
-            });
+        // get exe file list from folders
+        for (const dir of [
+            File.fromArray([resManager.GetBinDir().path, 'scripts']),
+            File.fromArray([resManager.getBuilderDir().path, 'utils']),
+            File.fromArray([resManager.getBuilderDir().path, 'bin'])
+        ]) {
+            dir.GetList(undefined, File.EMPTY_FILTER)
+                .forEach((f) => {
+                    if (!f.suffix) { // nosuffix file is an exe file
+                        exeLi.push(f.path);
+                    }
+                });
+        }
 
         for (const path of exeLi) {
             try {
                 ChildProcess.execSync(`chmod +x "${path}"`);
                 GlobalEvent.emit('globalLog', newMessage('Info', `chmod +x "${path}"`));
             } catch (error) {
-                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Error'));
+                GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
             }
         }
     }

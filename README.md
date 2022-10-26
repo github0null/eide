@@ -8,11 +8,14 @@
 
 ## Summary 📑
 
-> Supported Platform: **Windows X64 (>= Windows 10)**, **Linux x64**
-
 A mcu development environment for `8051/AVR/STM8/Cortex-M/RISC-V/Universal-Gcc` on VsCode. 
 
 Provide `8051/AVR/STM8/Cortex-M/RISC-V` project development, compilation, program flash and other functions.
+
+Supported Platforms: 
+  - **Windows X64 (>= Windows 10)**
+  - **Linux x64**
+  - **macOS**(Only tested in 'macOS 10.15 x64')
 
 ![preview](https://docs.em-ide.com/preview.png)
 
@@ -26,7 +29,7 @@ Provide `8051/AVR/STM8/Cortex-M/RISC-V` project development, compilation, progra
 * Provides many project templates for quick start a project.
 * Build, rebuild, support many toolchains (armcc, gcc-arm-none-eabi, riscv-gcc, xxx-gcc, keil_c51, sdcc ...).
 * Program flash, support: jlink, stlink, openocd, pyocd ...
-* Built-in serial port monitor.
+* ~~Built-in serial port monitor~~ (recommended to use `Serial Monitor` plug-in).
 * Supports static checking projects by using Cppcheck.
 * Automatically generates default debug configurations for debugger plug-in `cortex-debug, STM8-Debug`.
 * Built-in many utility tools, 'CMSIS Config Wizard UI', 'Disassembly view', 'Program resource view'...

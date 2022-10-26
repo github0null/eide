@@ -12,6 +12,7 @@
     "eide.function.reload.stm8.dev.list": "Reload STM8 Devices List",
     "eide.function.reinstall.binaries": "Reinstall eide binaries",
 
+    "eide.project.save": "Save Project",
     "eide.project.refresh": "Refresh",
     "eide.project.save.all": "Save All Projects",
     "eide.project.active": "Active Project",
@@ -152,5 +153,5 @@
     "string.eide.open_docs": "Learn More",
     "string.eide.open_docs.detail": "Click the link will open the home page that may help you learn more about usage.\n[Embedded IDE](https://em-ide.com/)",
 
-    "string.eide.project.welcome": "There are no project in this workspace ! \n[New Project](command:eide.operation.new_project)\n[Import Project](command:eide.operation.import_project)"
+    "string.eide.project.welcome": "There are no projects in this workspace !\n[Open Project](command:eide.operation.open_project)\n[Create Project](command:eide.operation.new_project)\n[Import Project](command:eide.operation.import_project)"
 }

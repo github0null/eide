@@ -45,8 +45,6 @@ import { CodeConverter } from "./CodeConverter";
 
 let resManager: ResManager | undefined;
 
-const OS_ID: NodeJS.Platform = osType() != 'win32' ? 'linux' : 'win32';
-
 // plug-in built-in folders
 const eideBuiltinDirs: { [key: string]: string } = {
     'lib': 'lib',
@@ -55,8 +53,8 @@ const eideBuiltinDirs: { [key: string]: string } = {
     'icon': 'res' + File.sep + 'icon',
     'template': 'res' + File.sep + 'template',
     'data': 'res' + File.sep + 'data',
-    'tools': 'res' + File.sep + 'tools' + File.sep + OS_ID,
-    '7z': 'res' + File.sep + 'tools' + File.sep + OS_ID + File.sep + '7z',
+    'tools': 'res' + File.sep + 'tools' + File.sep + osType(),
+    '7z': 'res' + File.sep + 'tools' + File.sep + osType() + File.sep + '7z',
 };
 
 // eide-binaries built-in folders
