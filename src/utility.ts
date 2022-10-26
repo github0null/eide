@@ -125,6 +125,19 @@ export function xmlfmt(xml: string, opts?: XmlFormatOptions): string {
     }
 }
 
+export function escapeXml(str: string): string {
+    return str.replace(/[<>&'"]/g, (c: string): string => {
+        switch (c) {
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '&': return '&amp;';
+            case '\'': return '&apos;';
+            case '"': return '&quot;';
+            default: return c;
+        }
+    });
+}
+
 export function runShellCommand(title: string, commandLine: string, env?: any, useTerminal?: boolean, cwd?: string): Error | undefined {
     try {
 

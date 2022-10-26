@@ -79,7 +79,7 @@ import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import {
     copyObject, downloadFileWithProgress, getDownloadUrlFromGitea,
     runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
-    genGithubHash, md5, toArray, newMarkdownString, newFileTooltipString, FileTooltipInfo
+    genGithubHash, md5, toArray, newMarkdownString, newFileTooltipString, FileTooltipInfo, escapeXml
 } from './utility';
 import { concatSystemEnvPath, DeleteDir, exeSuffix, kill } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
@@ -4362,10 +4362,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         cppcheckConf = cppcheckConf
             .replace('${cppcheck_build_folder}', File.normalize(prj.getOutputRoot()))
             .replace('${platform}', cppcheck_plat)
-            .replace('${lib_list}', cfgList.map((str) => `<library>${str}</library>`).join(os.EOL + '\t\t'))
-            .replace('${include_list}', includeList.map((str) => `<dir name="${str}/"/>`).join(os.EOL + '\t\t'))
-            .replace('${macro_list}', fixedDefList.map((str) => `<define name="${str}"/>`).join(os.EOL + '\t\t'))
-            .replace('${source_list}', getSourceList(prj).map((str) => `<dir name="${str}"/>`).join(os.EOL + '\t\t'));
+            .replace('${lib_list}', cfgList.map((str) => `<library>${escapeXml(str)}</library>`).join(os.EOL + '\t\t'))
+            .replace('${include_list}', includeList.map((str) => `<dir name="${escapeXml(str)}/"/>`).join(os.EOL + '\t\t'))
+            .replace('${macro_list}', fixedDefList.map((str) => `<define name="${escapeXml(str)}"/>`).join(os.EOL + '\t\t'))
+            .replace('${source_list}', getSourceList(prj).map((str) => `<dir name="${escapeXml(str)}"/>`).join(os.EOL + '\t\t'));
 
         confFile.Write(cppcheckConf);
 
