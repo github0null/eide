@@ -419,8 +419,6 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
         this.watcher.OnChanged = () => this.onProjectFileChanged();
         this.watcher.OnRename = () => this.onProjectFileChanged();
-
-        this.Watch();
     }
 
     private __fileChgEvtEmitDelayTimer: NodeJS.Timeout | undefined;
@@ -452,6 +450,8 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
         // update upload model
         this.compileConfigModel.on('dataChanged', () => this.uploadConfigModel.emit('NotifyUpdate', this));
+
+        this.Watch();
 
         return this;
     }
