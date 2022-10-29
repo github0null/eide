@@ -42,7 +42,9 @@ import {
     view_str$operation$create_from_internal_temp_detail, view_str$operation$create_from_local_disk_detail,
     view_str$operation$create_from_remote_repo_detail, view_str$operation$openSettings,
     view_str$prompt$select_file, view_str$prompt$select_folder, view_str$prompt$select_file_or_folder, view_str$prompt$select_tool_install_mode,
-    view_str$prompt$tool_install_mode_online, view_str$prompt$tool_install_mode_local, view_str$operation$empty_anygcc_prj, view_str$operation$setupUtilTools
+    view_str$prompt$tool_install_mode_online, view_str$prompt$tool_install_mode_local, view_str$operation$empty_anygcc_prj, view_str$operation$setupUtilTools,
+    view_str$prompt$setupToolchainPrefix,
+    view_str$prompt$needReloadToUpdateEnv
 } from './StringTable';
 import { CreateOptions, ImportOptions, ProjectType } from './EIDETypeDefine';
 import { File } from '../lib/node-utility/File';
@@ -60,6 +62,7 @@ import * as vscode from 'vscode';
 import * as NodePath from 'path';
 import { ResInstaller, ExternalToolName } from './ResInstaller';
 import { AbstractProject } from './EIDEProject';
+import { WorkspaceManager } from './WorkspaceManager';
 
 interface TemplatePickItem extends vscode.QuickPickItem, TemplateInfo {
     cacheFileName: string | undefined;
@@ -239,12 +242,15 @@ export class OperationExplorer {
 
         //---
 
-        const tcList: ToolchainName[] = ['AC5', 'AC6', 'GCC', 'IAR_ARM', 'IAR_STM8', 'SDCC', 'Keil_C51', 'RISCV_GCC', 'ANY_GCC'];
-        const toolchainManager = ToolchainManager.getInstance();
-        const status: CheckStatus = tcList.some((tcName) => toolchainManager.isToolchainPathReady(tcName))
-            ? CheckStatus.All_Verified
-            : CheckStatus.All_Failed;
-        icoPath = resManager.GetIconByName(<string>this.statusIconMap.get(status));
+        // @deprecated 暂时弃用，isToolchainPathReady 查询会影响启动速度
+        // const tcList: ToolchainName[] = ['AC5', 'AC6', 'GCC', 'IAR_ARM', 'IAR_STM8', 'SDCC', 'Keil_C51', 'RISCV_GCC', 'ANY_GCC'];
+        // const toolchainManager = ToolchainManager.getInstance();
+        // const status: CheckStatus = tcList.some((tcName) => toolchainManager.isToolchainPathReady(tcName))
+        //     ? CheckStatus.All_Verified
+        //     : CheckStatus.All_Failed;
+        // vscode.commands.executeCommand('setContext', 'cl.eide.toolchain_ready', status != CheckStatus.All_Failed);
+        // icoPath = resManager.GetIconByName(<string>this.statusIconMap.get(status));
+        icoPath = resManager.GetIconByName('Toolbox_16x.svg');
         this.provider.AddData({
             label: view_str$operation$setToolchainPath,
             command: {
@@ -257,8 +263,6 @@ export class OperationExplorer {
                 dark: icoPath.path
             }
         });
-        // setup env if toolchain is ready
-        vscode.commands.executeCommand('setContext', 'cl.eide.toolchain_ready', status != CheckStatus.All_Failed);
 
         //---
 
@@ -643,94 +647,195 @@ export class OperationExplorer {
         return status ? '✔' : '✘';
     }
 
+    private _SelectToolchain(): Promise<ToolchainDespPickItem | undefined> {
+
+        return new Promise((resolve) => {
+
+            const settingManager = SettingManager.GetInstance();
+            const toolchainManager = ToolchainManager.getInstance();
+            const resManager = ResManager.GetInstance();
+
+            const toolchainPickItems: ToolchainDespPickItem[] = [
+                {
+                    type: 'None',
+                    label: 'MCS51/STM8/8Bit Compiler',
+                    kind: vscode.QuickPickItemKind.Separator,
+                },
+                {
+                    label: 'Keil C51 (cx51) (ide path)',
+                    type: 'Keil_C51',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('Keil_C51'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('Keil_C51')?.path}`,
+                    detail: view_str$operation$setKeil51Path
+                },
+                {
+                    label: 'IAR For STM8 (iccstm8) (ide path)',
+                    type: 'IAR_STM8',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('IAR_STM8'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('IAR_STM8')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'IAR For STM8')
+                },
+                {
+                    label: 'Small Device C Compiler (sdcc)',
+                    type: 'SDCC',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('SDCC'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('SDCC')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'SDCC')
+                },
+                /* {
+                    label: 'SDCC With GNU Patch For STM8 (Only for stm8)',
+                    type: 'GNU_SDCC_STM8',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('GNU_SDCC_STM8')),
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'GNU_SDCC_STM8')
+                }, */
+
+                // armcc (non-free)
+                {
+                    type: 'None',
+                    label: 'Arm C/C++ Compiler (non-free)',
+                    kind: vscode.QuickPickItemKind.Separator,
+                },
+                {
+                    label: 'Keil MDK (ide path) (used to locate armcc compiler path)',
+                    type: 'AC5',
+                    description: this.getStatusTxt(settingManager.isMDKIniReady()),
+                    detail: view_str$operation$setMDKPath
+                },
+                {
+                    label: 'ARMCC V5 (armcc) (standalone toolchain)',
+                    type: 'AC5',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC5'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('AC5')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V5 Toolchain')
+                },
+                {
+                    label: 'ARMCC V6 (armclang) (standalone toolchain)',
+                    type: 'AC6',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC6'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('AC6')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V6 Toolchain')
+                },
+                {
+                    label: 'IAR ARM C/C++ Compiler (iccarm) (standalone toolchain)',
+                    type: 'IAR_ARM',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('IAR_ARM'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('IAR_ARM')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'IAR ARM C/C++ Compiler')
+                },
+
+                // gcc family
+                {
+                    type: 'None',
+                    label: 'GCC Family Compiler (free)',
+                    kind: vscode.QuickPickItemKind.Separator,
+                },
+                {
+                    label: 'GNU Arm Embedded Toolchain (arm-none-eabi-gcc)',
+                    type: 'GCC',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('GCC'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('GCC')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'GNU Arm Embedded Toolchain'),
+                    buttons: [
+                        {
+                            iconPath: vscode.Uri.file(resManager.GetIconByName('EditTitleString_16x.svg').path),
+                            tooltip: view_str$prompt$setupToolchainPrefix
+                        }
+                    ]
+                },
+                {
+                    label: 'RISC-V GCC Toolchain (riscv-gcc)',
+                    type: 'RISCV_GCC',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('RISCV_GCC'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('RISCV_GCC')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'RISC-V GCC Toolchain'),
+                    buttons: [
+                        {
+                            iconPath: vscode.Uri.file(resManager.GetIconByName('EditTitleString_16x.svg').path),
+                            tooltip: view_str$prompt$setupToolchainPrefix
+                        }
+                    ]
+                },
+                {
+                    label: 'Universal GCC Toolchain (gcc)',
+                    type: 'ANY_GCC',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('ANY_GCC'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('ANY_GCC')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ANY GCC Toolchain'),
+                    buttons: [
+                        {
+                            iconPath: vscode.Uri.file(resManager.GetIconByName('EditTitleString_16x.svg').path),
+                            tooltip: view_str$prompt$setupToolchainPrefix
+                        }
+                    ]
+                }
+            ];
+
+            const picker = vscode.window.createQuickPick<ToolchainDespPickItem>();
+
+            {
+                picker.title = view_str$operation$setToolchainPath;
+                picker.placeholder = 'Click one toolchain to setup it';
+                picker.canSelectMany = false;
+                picker.items = toolchainPickItems;
+                picker.matchOnDescription = true;
+                picker.matchOnDetail = true;
+                picker.ignoreFocusOut = true;
+            }
+
+            let selected: ToolchainDespPickItem | undefined;
+
+            picker.onDidChangeSelection((items) => {
+                selected = items.length > 0 ? items[0] : undefined;
+            });
+
+            picker.onDidTriggerItemButton(async (ctx) => {
+
+                if (ctx.button.tooltip == view_str$prompt$setupToolchainPrefix) {
+
+                    const toolchain = toolchainManager.getToolchainByName(ctx.item.type);
+
+                    if (toolchain == undefined)
+                        return;
+
+                    if (toolchain?.getToolchainPrefix == undefined) {
+                        GlobalEvent.emit('msg', newMessage('Warning', `Not support modify prefix for toolchain: '${toolchain.name}'`));
+                        return;
+                    }
+
+                    const val = await vscode.window.showInputBox({
+                        title: view_str$prompt$setupToolchainPrefix + ' (Global)',
+                        value: toolchain.getToolchainPrefix(),
+                        ignoreFocusOut: true,
+                        placeHolder: 'Input a new toolchain prefix'
+                    });
+
+                    if (val != undefined) {
+                        settingManager.setGccToolPrefix(toolchain.name, val, true);
+                        const msg = view_str$prompt$needReloadToUpdateEnv;
+                        const resp = await vscode.window.showInformationMessage(msg, 'Ok', 'Later');
+                        if (resp == 'Ok') {
+                            await vscode.commands.executeCommand('workbench.action.reloadWindow');
+                        }
+                    }
+                }
+            });
+
+            picker.onDidAccept(() => {
+                picker.hide();
+                picker.dispose();
+                resolve(selected);
+            });
+
+            picker.show();
+        });
+    }
+
     async OnSetToolchainPath() {
 
         const settingManager = SettingManager.GetInstance();
-        const toolchainManager = ToolchainManager.getInstance();
 
-        const pickItems: ToolchainDespPickItem[] = [
-            {
-                label: 'Keil C51 (cx51) (ide path)',
-                type: 'Keil_C51',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('Keil_C51'))
-                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('Keil_C51')?.path}`,
-                detail: view_str$operation$setKeil51Path
-            },
-            {
-                label: 'Keil MDK (ide path)',
-                type: 'AC5',
-                description: this.getStatusTxt(settingManager.isMDKIniReady()),
-                detail: view_str$operation$setMDKPath
-            },
-            {
-                label: 'ARMCC V5 (armcc) (standalone toolchain)',
-                type: 'AC5',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC5'))
-                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('AC5')?.path}`,
-                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V5 Toolchain')
-            },
-            {
-                label: 'ARMCC V6 (armclang) (standalone toolchain)',
-                type: 'AC6',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC6'))
-                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('AC6')?.path}`,
-                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V6 Toolchain')
-            },
-            {
-                label: 'IAR ARM C/C++ Compiler (iccarm) (standalone toolchain)',
-                type: 'IAR_ARM',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('IAR_ARM'))
-                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('IAR_ARM')?.path}`,
-                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'IAR ARM C/C++ Compiler')
-            },
-            {
-                label: 'GNU Arm Embedded Toolchain (arm-none-eabi-gcc)',
-                type: 'GCC',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('GCC'))
-                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('GCC')?.path}`,
-                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'GNU Arm Embedded Toolchain')
-            },
-            {
-                label: 'IAR For STM8 (iccstm8) (ide path)',
-                type: 'IAR_STM8',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('IAR_STM8'))
-                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('IAR_STM8')?.path}`,
-                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'IAR For STM8')
-            },
-            {
-                label: 'Small Device C Compiler (sdcc)',
-                type: 'SDCC',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('SDCC'))
-                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('SDCC')?.path}`,
-                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'SDCC')
-            },
-            /* {
-                label: 'SDCC With GNU Patch For STM8 (Only for stm8)',
-                type: 'GNU_SDCC_STM8',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('GNU_SDCC_STM8')),
-                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'GNU_SDCC_STM8')
-            }, */
-            {
-                label: 'RISC-V GCC Toolchain (riscv-gcc)',
-                type: 'RISCV_GCC',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('RISCV_GCC'))
-                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('RISCV_GCC')?.path}`,
-                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'RISC-V GCC Toolchain')
-            },
-            {
-                label: 'ANY GCC Toolchain (gcc)',
-                type: 'ANY_GCC',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('ANY_GCC'))
-                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('ANY_GCC')?.path}`,
-                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ANY GCC Toolchain')
-            }
-        ];
-
-        const item = await vscode.window.showQuickPick(pickItems, {
-            canPickMany: false,
-            placeHolder: view_str$operation$setToolchainPath
-        });
-        if (item === undefined) {
+        const item = await this._SelectToolchain();
+        if (item == undefined) {
             return;
         }
 

@@ -406,6 +406,16 @@ export const view_str$env_desc$compiler_folder = [
 
 //---------------Other---------------
 
+export const view_str$prompt$needReloadToUpdateEnv = [
+    `需要重启插件以刷新内置的环境变量，立即重启插件？`,
+    `We need relaunch plug-in to refresh internal environment variables, relaunch now ?`
+][langIndex];
+
+export const view_str$prompt$setupToolchainPrefix = [
+    `设置编译器前缀`,
+    `Setup Compiler Prefix`
+][langIndex];
+
 export const view_str$prompt$need_reload_project = [
     `'{}' 的项目文件 'eide.json' 已被更改，重新加载项目？`,
     `The project file 'eide.json' of '{}' has been changed !, reload it ?`

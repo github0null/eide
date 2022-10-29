@@ -160,6 +160,10 @@ enum TreeItemType {
     ACTIVED_GROUP
 }
 
+function getTreeItemTypeName(typ: TreeItemType): string {
+    return TreeItemType[typ];
+}
+
 type GroupRegion = 'PACK' | 'Components' | 'ComponentItem';
 
 interface TreeItemValue {
@@ -287,12 +291,15 @@ export class ProjTreeItem extends vscode.TreeItem {
     }
 
     private GetContext(): string {
+
         if (this.val.obj instanceof ModifiableDepInfo) {
             return this.val.obj.type;
         }
+
         if (this.val.contextVal) {
             return this.val.contextVal;
         }
+
         return TreeItemType[this.type];
     }
 
@@ -755,7 +762,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                     value: sln.GetConfiguration().config.name + ' : ' + sln.GetConfiguration().config.mode,
                     tooltip: new vscode.MarkdownString([
                         `**Name:** \`${sln.GetConfiguration().config.name}\``,
-                        `- **Uid**: \`${sln.getUid()}\``,
+                        `- **Uid:** \`${sln.getUid()}\``,
                         `- **Config:** \`${sln.GetConfiguration().config.mode}\``,
                         `- **Path:** \`${sln.GetRootDir().path}\``
                     ].join(os.EOL)),
@@ -790,10 +797,18 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                             }));
                         }
 
+                        const toolchain = project.getToolchain();
+                        const toolprefix = toolchain.getToolchainPrefix ? toolchain.getToolchainPrefix() : undefined;
                         iList.push(new ProjTreeItem(TreeItemType.COMPILE_CONFIGURATION, {
-                            value: `${compile_config} : ${project.getToolchain().name}`,
+                            value: `${compile_config} : ${toolchain.name}`,
                             projectIndex: element.val.projectIndex,
-                            tooltip: `${compile_config} : ${ToolchainManager.getInstance().getToolchainDesc(project.getToolchain().name)}`
+                            tooltip: newMarkdownString([
+                                `${compile_config} : ${toolchain.name}`,
+                                ` - **Id:** \`${toolchain.name}\``,
+                                ` - **Prefix:** ` + (toolprefix ? `\`${toolprefix}\`` : ''),
+                                ` - **Family:** \`${toolchain.categoryName}\``,
+                                ` - **Description:** \`${ToolchainManager.getInstance().getToolchainDesc(toolchain.name)}\``,
+                            ])
                         }));
 
                         const curUploader = project.GetConfiguration().uploadConfigModel.uploader;
@@ -801,6 +816,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                         iList.push(new ProjTreeItem(TreeItemType.UPLOAD_OPTION, {
                             value: `${uploadConfig_desc} : ${uploaderLabel}`,
                             projectIndex: element.val.projectIndex,
+                            contextVal: curUploader == 'Custom' ? `${getTreeItemTypeName(TreeItemType.UPLOAD_OPTION)}_Shell` : undefined,
                             tooltip: `${uploadConfig_desc} : ${uploaderLabel}`
                         }));
 

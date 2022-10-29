@@ -34,6 +34,7 @@ import { ExceptionToMessage } from './Message';
 import * as Utility from './utility';
 import { find, exeSuffix } from './Platform';
 import { WorkspaceManager } from './WorkspaceManager';
+import { ToolchainName } from './ToolchainManager';
 
 export enum CheckStatus {
     All_Verified,
@@ -264,8 +265,9 @@ export class SettingManager {
         return this.getConfiguration().get<number>('SerialPortMonitor.BaudRate') || 115200
     }
 
-    setSerialBaudrate(baudrate: number, toGlobal?: boolean) {
-        return this.getConfiguration().update('SerialPortMonitor.BaudRate', baudrate, toGlobal);
+    setSerialBaudrate(baudrate: number, global?: boolean) {
+        const region = global ? vscode.ConfigurationTarget.Global : vscode.ConfigurationTarget.Workspace;
+        return this.getConfiguration().update('SerialPortMonitor.BaudRate', baudrate, region);
     }
 
     //--------------------- Global Option ------------------------
@@ -437,9 +439,7 @@ export class SettingManager {
     }
 
     getIarForArmDir(): File {
-        return new File(
-            this.getGccFolderFromConfig('IAR.ARM.Toolchain.InstallDirectory', 'iccarm') || 
-            'null');
+        return new File(this.getGccFolderFromConfig('IAR.ARM.Toolchain.InstallDirectory', 'iccarm') || 'null');
     }
 
     //---------------------------- ARM ----------------------------
@@ -611,6 +611,25 @@ export class SettingManager {
 
     getAnyGccToolPrefix(): string {
         return this.getConfiguration().get<string>('Toolchain.AnyGcc.ToolPrefix') || '';
+    }
+
+    setGccToolPrefix(id: ToolchainName, newPrefix: string, global?: boolean) {
+
+        const region = global ? vscode.ConfigurationTarget.Global : vscode.ConfigurationTarget.Workspace;
+
+        switch (id) {
+            case 'GCC':
+                this.getConfiguration().update('ARM.GCC.Prefix', newPrefix, region);
+                break;
+            case 'RISCV_GCC':
+                this.getConfiguration().update('RISCV.ToolPrefix', newPrefix, region);
+                break;
+            case 'ANY_GCC':
+                this.getConfiguration().update('Toolchain.AnyGcc.ToolPrefix', newPrefix, region);
+                break;
+            default:
+                break;
+        }
     }
 
     //------------------------------- C51 ----------------------------------
