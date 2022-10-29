@@ -295,7 +295,9 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
             const vPath = link.name[0].trim();
             if (vPath == '') return;
             const vFolder = getVirtualFolder(NodePath.dirname(vPath));
-            vFolder.files.push({ path: formatFilePath(link.locationURI[0]) });
+            const locations = link.locationURI || link.location;
+            if (!Array.isArray(locations)) return;
+            vFolder.files.push({ path: formatFilePath(locations[0]) });
         });
     }
 
