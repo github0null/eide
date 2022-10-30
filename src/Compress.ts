@@ -27,6 +27,7 @@ import { ExeFile } from "../lib/node-utility/Executable";
 import * as events from 'events';
 import * as child_process from 'child_process';
 import * as platform from './Platform';
+import { ResManager } from "./ResManager";
 
 export interface CompressOption {
     zipType: string;
@@ -47,8 +48,9 @@ export class SevenZipper {
         return this;
     }
 
-    constructor(_7zFolder: File) {
+    constructor(_7zFolder?: File) {
         this._event = new events.EventEmitter();
+        if (_7zFolder == undefined) _7zFolder = ResManager.GetInstance().Get7zDir();
         this._7za = File.fromArray([_7zFolder.path, `7za${platform.exeSuffix()}`]);
         if (!this._7za.IsFile()) {
             throw new Error(`\'7za${platform.exeSuffix()}\' is not exist`);

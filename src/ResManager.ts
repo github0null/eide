@@ -311,6 +311,10 @@ export class ResManager extends events.EventEmitter {
         return File.fromArray([os.homedir(), '.eide']);
     }
 
+    getEideToolsInstallDir(): string {
+        return [os.homedir(), '.eide', 'tools'].join(File.sep);
+    }
+
     GetLogDir(): File {
         return this.getEideHomeFolder();
     }
@@ -382,12 +386,6 @@ export class ResManager extends events.EventEmitter {
 
     getSerialPortExe(): File {
         return File.fromArray([this.getBuilderDir().path, 'bin', `serial_monitor${exeSuffix()}`]);
-    }
-
-    /* --------------- tools -------------------- */
-
-    getUtilToolsDir(): string {
-        return [os.homedir(), '.eide', 'tools'].join(File.sep);
     }
 
     /* ----------------------------------- */

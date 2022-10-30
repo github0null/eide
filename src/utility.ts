@@ -40,6 +40,13 @@ import { SevenZipper } from './Compress';
 import { ResManager } from './ResManager';
 import { isArray } from 'util';
 
+export async function notifyReloadWindow(msg: string) {
+    const resp = await vscode.window.showInformationMessage(msg, 'Ok', 'Later');
+    if (resp == 'Ok') {
+        await vscode.commands.executeCommand('workbench.action.reloadWindow');
+    }
+}
+
 export function newMarkdownString(lines: string | string[]): vscode.MarkdownString {
     if (typeof lines == 'string') {
         return new vscode.MarkdownString(lines);
@@ -453,10 +460,10 @@ export async function getDownloadUrlFromGitea(repo: string, folder: string, file
     });
 }
 
-export async function readGithubRepoFolder(remoteUrl_: string, token?: vscode.CancellationToken): Promise<GitFileInfo[] | Error> {
+export async function readGithubRepoFolder(repo_url: string, token?: vscode.CancellationToken): Promise<GitFileInfo[] | Error> {
 
     // URL: https://api.github.com/repos/github0null/eide-doc/contents/eide-template-list
-    const remoteUrl = remoteUrl_.replace(/^http[s]?:\/\//, '');
+    const remoteUrl = redirectHost(repo_url).replace(/^http[s]?:\/\//, '');
     const netReq = new NetRequest();
 
     let reqError: Error | undefined;
@@ -493,6 +500,16 @@ export async function readGithubRepoFolder(remoteUrl_: string, token?: vscode.Ca
     }
 
     return <GitFileInfo[]>res.content;
+}
+
+/**
+ * @param repo_path like: github0null/eide_default_external_tools_index
+ * @param file_path like: dir/index.json
+*/
+export async function readGithubRepoTxtFile(repo_path: string, file_path: string): Promise<string | Error | undefined> {
+    // https://raw.githubusercontent.com/github0null/eide_default_external_tools_index/master/xxx
+    const url = redirectHost(`https://raw.githubusercontent.com/${repo_path}/master/${file_path}`);
+    return await requestTxt(url);
 }
 
 export function genGithubHash(f: File | Buffer): string {

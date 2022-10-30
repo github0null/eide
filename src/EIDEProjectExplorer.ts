@@ -67,7 +67,8 @@ import {
     view_str$msg$err_ewt_hash,
     view_str$msg$err_ept_hash,
     view_str$prompt$eclipse_imp_warning,
-    view_str$prompt$need_reload_project
+    view_str$prompt$need_reload_project,
+    view_str$prompt$needReloadToUpdateEnv
 } from './StringTable';
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
@@ -79,9 +80,9 @@ import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import {
     copyObject, downloadFileWithProgress, getDownloadUrlFromGitea,
     runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
-    genGithubHash, md5, toArray, newMarkdownString, newFileTooltipString, FileTooltipInfo, escapeXml
+    genGithubHash, md5, toArray, newMarkdownString, newFileTooltipString, FileTooltipInfo, escapeXml, readGithubRepoTxtFile, downloadFile, notifyReloadWindow, formatPath
 } from './utility';
-import { concatSystemEnvPath, DeleteDir, exeSuffix, kill } from './Platform';
+import { concatSystemEnvPath, DeleteDir, exeSuffix, kill, osType } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
 import { VirtualDocument } from './VirtualDocsProvider';
 import { ResInstaller } from './ResInstaller';
@@ -99,6 +100,7 @@ import { isArray } from 'util';
 import { parseIarCompilerLog, CompilerDiagnostics, parseGccCompilerLog, parseArmccCompilerLog, parseKeilc51CompilerLog, parseSdccCompilerLog } from './ProblemMatcher';
 import * as iarParser from './IarProjectParser';
 import * as ArmCpuUtils from './ArmCpuUtils';
+import { ShellFlasherIndexItem } from './WebInterface/WebInterface';
 
 enum TreeItemType {
     SOLUTION,
@@ -5384,6 +5386,138 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             } catch (error) {
                 GlobalEvent.emit('error', error);
             }
+        }
+    }
+
+    async fetchShellFlasher(item: ProjTreeItem) {
+
+        const project = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        const resManager = ResManager.GetInstance();
+
+        const err = await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: `Fetch Shell Flasher`,
+            cancellable: true
+        }, async (reporter, token): Promise<Error | undefined> => {
+
+            try {
+
+                const REPO_PATH = 'github0null/eide_shell_flasher_index';
+
+                // get index.json
+                //
+
+                if (token.isCancellationRequested) {
+                    return;
+                }
+
+                reporter.report({ message: 'fetching index.json' });
+                const idxTxt = await readGithubRepoTxtFile(REPO_PATH, 'index.json');
+                if (typeof idxTxt != 'string') {
+                    throw idxTxt || new Error(`Cannot read index.json`);
+                }
+
+                const idxObj = <ShellFlasherIndexItem[]>JSON.parse(idxTxt);
+                const pickItems: any[] = [];
+
+                idxObj.forEach((item, idx) => {
+                    if (item.platform.includes(osType())) {
+                        pickItems.push({
+                            idx: idx,
+                            label: item.name,
+                            detail: item.detail || item.name
+                        });
+                    }
+                });
+
+                // select flasher
+                //
+
+                if (token.isCancellationRequested) {
+                    return;
+                }
+
+                reporter.report({ message: 'select flasher' });
+                const sel = await vscode.window.showQuickPick(pickItems, {
+                    title: 'Select Flasher',
+                    matchOnDescription: true,
+                    matchOnDetail: true,
+                    canPickMany: false
+                });
+
+                if (sel == undefined) {
+                    return;
+                }
+
+                // install
+                //
+
+                if (token.isCancellationRequested) {
+                    return;
+                }
+
+                const tarFlasher = idxObj[sel.idx];
+
+                reporter.report({ message: 'download flasher' });
+                let scriptDirPath = project.getRootDir().path;
+                if (tarFlasher.scriptInstallDir) scriptDirPath = scriptDirPath + File.sep + tarFlasher.scriptInstallDir;
+                const scriptsList = await readGithubRepoFolder(`https://api.github.com/repos/${REPO_PATH}/contents/scripts/${tarFlasher.id}`);
+                if (scriptsList instanceof Error) throw scriptsList;
+                for (const scriptInfo of scriptsList) {
+                    if (scriptInfo.download_url) {
+                        const buff = await downloadFile(redirectHost(scriptInfo.download_url));
+                        if (!(buff instanceof Buffer)) throw buff || new Error(`Cannot download '${scriptInfo.name}'`);
+                        fs.writeFileSync(`${scriptDirPath}/${scriptInfo.name}`, buff);
+                    }
+                }
+
+                let needReload = false;
+                if (tarFlasher.resources[osType()]) {
+
+                    if (token.isCancellationRequested) {
+                        return;
+                    }
+
+                    reporter.report({ message: 'downloading resources' });
+                    const res = tarFlasher.resources[osType()];
+                    const buf = await downloadFile(redirectHost(res.url));
+                    if (!(buf instanceof Buffer)) throw buf || new Error('Cannot download resource');
+                    const tmpPath = os.tmpdir() + File.sep + Date.now().toString();
+                    fs.writeFileSync(tmpPath, buf);
+
+                    reporter.report({ message: 'installing resources' });
+                    let insRootDir = res.locationType == 'global' ? resManager.getEideToolsInstallDir() : project.getRootDir().path;
+                    if (res.locationType == 'workspace') insRootDir = insRootDir + File.sep + res.location;
+                    const installDir = new File(insRootDir);
+                    installDir.CreateDir(true);
+                    const szip = new SevenZipper();
+                    szip.UnzipSync(new File(tmpPath), installDir);
+
+                    needReload = res.locationType == 'global';
+                }
+
+                if (token.isCancellationRequested) {
+                    return;
+                }
+
+                project.GetConfiguration().uploadConfigModel.SetKeyValue('bin', tarFlasher.flashConfigTemplate.bin);
+                project.GetConfiguration().uploadConfigModel.SetKeyValue('commandLine', tarFlasher.flashConfigTemplate.commandLine);
+                project.GetConfiguration().uploadConfigModel.SetKeyValue('eraseChipCommand', tarFlasher.flashConfigTemplate.eraseChipCommand);
+
+                GlobalEvent.emit('msg', newMessage('Info', `Shell flasher '${tarFlasher.id}' has been setuped !`));
+                if (needReload) {
+                    notifyReloadWindow(view_str$prompt$needReloadToUpdateEnv);
+                }
+
+                return;
+
+            } catch (error) {
+                return error;
+            }
+        });
+
+        if (err) {
+            GlobalEvent.emit('msg', ExceptionToMessage(err, 'Warning'));
         }
     }
 

@@ -191,7 +191,7 @@ export class ResInstaller {
     isToolInstalled(name: ExternalToolName): boolean | undefined {
         const tool = this.toolsMap.get(name.toLowerCase());
         if (tool) {
-            const instDir = File.fromArray([ResManager.GetInstance().getUtilToolsDir(), tool.resource_name]);
+            const instDir = File.fromArray([ResManager.GetInstance().getEideToolsInstallDir(), tool.resource_name]);
             if (instDir.IsDir()) {
                 if (tool.require_name) {
                     const p = File.normalize(instDir.path + File.sep + tool.require_name);
@@ -389,7 +389,7 @@ export class ResInstaller {
 
                         const resManager = ResManager.GetInstance();
                         const unzipper = new SevenZipper(resManager.Get7zDir());
-                        const outDir = File.fromArray([resManager.getUtilToolsDir(), resourceName]);
+                        const outDir = File.fromArray([resManager.getEideToolsInstallDir(), resourceName]);
 
                         platform.DeleteAllChildren(outDir);
                         outDir.CreateDir(true);

@@ -811,11 +811,7 @@ export class OperationExplorer {
 
                     if (val != undefined) {
                         settingManager.setGccToolPrefix(toolchain.name, val, true);
-                        const msg = view_str$prompt$needReloadToUpdateEnv;
-                        const resp = await vscode.window.showInformationMessage(msg, 'Ok', 'Later');
-                        if (resp == 'Ok') {
-                            await vscode.commands.executeCommand('workbench.action.reloadWindow');
-                        }
+                        utility.notifyReloadWindow(view_str$prompt$needReloadToUpdateEnv);
                     }
                 }
             });
