@@ -1833,9 +1833,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
         nPrjConfig.virtualFolder = ePrjInfo.virtualSource;
         nPrjConfig.outDir = 'build';
-        nPrjConfig.srcDirs = File.NotMatchFilter(ePrjRoot.GetList(File.EMPTY_FILTER), File.EMPTY_FILTER,
-            [/^\./, /^(build|dist|out|bin|obj|exe|debug|release|log[s]?|ipch|docs|doc|img|image[s]?)$/i])
-            .map(d => ePrjRoot.ToRelativePath(d.path) || d.path);
+
+        if (ePrjInfo.sourceEntries.length > 0) {
+            nPrjConfig.srcDirs = ePrjInfo.sourceEntries;
+        } else {
+            nPrjConfig.srcDirs = File.NotMatchFilter(ePrjRoot.GetList(File.EMPTY_FILTER), File.EMPTY_FILTER,
+                [/^\./, /^(build|dist|out|bin|obj|exe|debug|release|log[s]?|ipch|docs|doc|img|image[s]?)$/i])
+                .map(d => ePrjRoot.ToRelativePath(d.path) || d.path);
+        }
 
         // init all target
         for (const eTarget of ePrjInfo.targets) {

@@ -14,6 +14,7 @@ export interface EclipseProjectInfo {
     type: EclipseProjectType;
     targets: EclipseProjectTarget[];
     virtualSource: VirtualFolder;
+    sourceEntries: string[];
     envs: { [name: string]: string }; // only use to show for user, not use in program
 }
 
@@ -112,6 +113,7 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
             files: [],
             folders: [],
         },
+        sourceEntries: [],
         envs: {}
     };
 
@@ -251,6 +253,12 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
 
         if (cTarget.sourceEntries) {
             toArray(cTarget.sourceEntries[0].entry).forEach(e => {
+
+                //<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="src" />
+                if (<string>e.$['kind'] == 'sourcePath') {
+                    PROJ_INFO.sourceEntries.push(formatFilePath(e.$['name']));
+                }
+
                 (<string>e.$['excluding'] || '')
                     .split('|').filter(s => s.trim() != '')
                     .forEach(p => {
