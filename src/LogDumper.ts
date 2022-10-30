@@ -47,14 +47,14 @@ export class LogDumper {
         this.logFile = File.fromArray([logDir.path, ResManager.GetInstance().getAppFullName() + '.log']);
 
         // limit max size
-        if (this.logFile.IsFile() && this.logFile.getSize() > (1024 * 512)) {
-            try {
+        try {
+            if (this.logFile.IsFile() && this.logFile.getSize() > (1024 * 512)) {
                 const p = [logDir.path, this.logFile.noSuffixName + `_${Date.now()}` + this.logFile.suffix].join(File.sep);
                 fs.renameSync(this.logFile.path, p);
                 this.logFile.Write('');
-            } catch (err) {
-                // nothing todo
             }
+        } catch (err) {
+            // nothing todo
         }
 
         const outStream = fs.createWriteStream(this.logFile.path, { flags: 'a' });
