@@ -42,7 +42,7 @@ import { isArray } from 'util';
 import { ExeCmd } from '../lib/node-utility/Executable';
 import { GlobalEvent } from './GlobalEvents';
 
-export function execCommandWithProgress(command: string, cwd?: string, cancel?: vscode.CancellationToken): Promise<boolean> {
+export function execInternalCommand(command: string, cwd?: string, cancel?: vscode.CancellationToken): Promise<boolean> {
 
     return new Promise<boolean>((resolve) => {
 

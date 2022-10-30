@@ -426,7 +426,7 @@ export class ResInstaller {
                             const command = toolInfo.postInstallCmd();
                             if (command) {
                                 progress.report({ message: `Running post-install cmd: '${command}' ...` });
-                                const done = await utility.execCommandWithProgress(command, outDir.path, cancel);
+                                const done = await utility.execInternalCommand(command, outDir.path, cancel);
                                 if (!done) {
 
                                     if (cancel.isCancellationRequested) {

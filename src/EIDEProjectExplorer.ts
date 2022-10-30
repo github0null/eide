@@ -80,7 +80,7 @@ import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import {
     copyObject, downloadFileWithProgress, getDownloadUrlFromGitea,
     runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
-    genGithubHash, md5, toArray, newMarkdownString, newFileTooltipString, FileTooltipInfo, escapeXml, readGithubRepoTxtFile, downloadFile, notifyReloadWindow, formatPath, execCommandWithProgress
+    genGithubHash, md5, toArray, newMarkdownString, newFileTooltipString, FileTooltipInfo, escapeXml, readGithubRepoTxtFile, downloadFile, notifyReloadWindow, formatPath, execInternalCommand
 } from './utility';
 import { concatSystemEnvPath, DeleteDir, exeSuffix, kill, osType, DeleteAllChildren } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
@@ -5501,7 +5501,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
                     if (res.setupCommand) {
                         reporter.report({ message: 'execuate setup command ...' });
-                        const done = await execCommandWithProgress(res.setupCommand, installDir.path, cancel);
+                        const done = await execInternalCommand(res.setupCommand, installDir.path, cancel);
                         if (!done) {
                             if (cancel.isCancellationRequested) {
                                 GlobalEvent.emit('globalLog.append', `\n----- user canceled -----\n`);
