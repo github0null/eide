@@ -82,7 +82,7 @@ import {
     runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
     genGithubHash, md5, toArray, newMarkdownString, newFileTooltipString, FileTooltipInfo, escapeXml, readGithubRepoTxtFile, downloadFile, notifyReloadWindow, formatPath
 } from './utility';
-import { concatSystemEnvPath, DeleteDir, exeSuffix, kill, osType } from './Platform';
+import { concatSystemEnvPath, DeleteDir, exeSuffix, kill, osType, DeleteAllChildren } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
 import { VirtualDocument } from './VirtualDocsProvider';
 import { ResInstaller } from './ResInstaller';
@@ -5401,7 +5401,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         const err = await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
-            title: `Fetch Shell Flasher`,
+            title: `Setup Shell Flasher`,
             cancellable: true
         }, async (reporter, token): Promise<Error | undefined> => {
 
@@ -5427,10 +5427,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
                 idxObj.forEach((item, idx) => {
                     if (item.platform.includes(osType())) {
-                        pickItems.push({
+                        let detail = item.detail || `no detail`;
+                        if (item.provider) detail = detail + `, provider: ${item.provider}`;
+                        pickItems.push(<vscode.QuickPickItem>{
                             idx: idx,
                             label: item.name,
-                            detail: item.detail || item.name
+                            detail: detail
                         });
                     }
                 });
@@ -5463,25 +5465,24 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
                 const tarFlasher = idxObj[sel.idx];
 
-                reporter.report({ message: 'download flasher' });
-                let scriptDirPath = project.getRootDir().path;
-                if (tarFlasher.scriptInstallDir) scriptDirPath = scriptDirPath + File.sep + tarFlasher.scriptInstallDir;
+                reporter.report({ message: 'download shell scripts' });
+                let scriptDir = new File(project.getRootDir().path);
+                if (tarFlasher.scriptInstallDir) scriptDir = File.fromArray([scriptDir.path, tarFlasher.scriptInstallDir]);
+                scriptDir.CreateDir(true);
                 const scriptsList = await readGithubRepoFolder(`https://api.github.com/repos/${REPO_PATH}/contents/scripts/${tarFlasher.id}`);
                 if (scriptsList instanceof Error) throw scriptsList;
                 for (const scriptInfo of scriptsList) {
                     if (scriptInfo.download_url) {
                         const buff = await downloadFile(redirectHost(scriptInfo.download_url));
                         if (!(buff instanceof Buffer)) throw buff || new Error(`Cannot download '${scriptInfo.name}'`);
-                        fs.writeFileSync(`${scriptDirPath}/${scriptInfo.name}`, buff);
+                        fs.writeFileSync(`${scriptDir.path}/${scriptInfo.name}`, buff);
                     }
                 }
 
                 let needReload = false;
                 if (tarFlasher.resources[osType()]) {
 
-                    if (token.isCancellationRequested) {
-                        return;
-                    }
+                    if (token.isCancellationRequested) return;
 
                     reporter.report({ message: 'downloading resources' });
                     const res = tarFlasher.resources[osType()];
@@ -5491,12 +5492,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     fs.writeFileSync(tmpPath, buf);
 
                     reporter.report({ message: 'installing resources' });
-                    let insRootDir = res.locationType == 'global' ? resManager.getEideToolsInstallDir() : project.getRootDir().path;
-                    if (res.locationType == 'workspace') insRootDir = insRootDir + File.sep + res.location;
-                    const installDir = new File(insRootDir);
+                    let installDir = res.locationType == 'global' ? new File(resManager.getEideToolsInstallDir()) : project.getRootDir();
+                    if (res.locationType == 'workspace') installDir = File.fromArray([project.getRootDir().path, res.location]);
                     installDir.CreateDir(true);
                     const szip = new SevenZipper();
-                    szip.UnzipSync(new File(tmpPath), installDir);
+                    const r = szip.UnzipSync(new File(tmpPath), installDir);
+                    GlobalEvent.emit('globalLog', newMessage('Info', r));
 
                     needReload = res.locationType == 'global';
                 }
@@ -5509,7 +5510,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 project.GetConfiguration().uploadConfigModel.SetKeyValue('commandLine', tarFlasher.flashConfigTemplate.commandLine);
                 project.GetConfiguration().uploadConfigModel.SetKeyValue('eraseChipCommand', tarFlasher.flashConfigTemplate.eraseChipCommand);
 
-                GlobalEvent.emit('msg', newMessage('Info', `Shell flasher '${tarFlasher.id}' has been setuped !`));
+                GlobalEvent.emit('msg', newMessage('Info', `Shell flasher '${tarFlasher.id}' has been setup !`));
                 if (needReload) {
                     notifyReloadWindow(view_str$prompt$needReloadToUpdateEnv);
                 }

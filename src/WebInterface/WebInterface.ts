@@ -123,6 +123,11 @@ export interface ShellFlasherIndexItem {
 	detail?: string;
 
 	/**
+	 * provider (auther)
+	*/
+	provider?: string;
+
+	/**
 	 * platform requirement, like: win32, linux, darwin ...
 	*/
 	platform: string[];
