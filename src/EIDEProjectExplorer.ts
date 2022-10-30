@@ -5449,7 +5449,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     title: 'Select Flasher',
                     matchOnDescription: true,
                     matchOnDetail: true,
-                    canPickMany: false
+                    canPickMany: false,
+                    ignoreFocusOut: true
                 });
 
                 if (sel == undefined) {
