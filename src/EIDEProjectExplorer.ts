@@ -5484,20 +5484,23 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
                     if (cancel.isCancellationRequested) return;
 
-                    reporter.report({ message: 'downloading resources' });
                     const res = tarFlasher.resources[osType()];
-                    const buf = await downloadFile(redirectHost(res.url));
-                    if (!(buf instanceof Buffer)) throw buf || new Error('Cannot download resource');
-                    const tmpPath = os.tmpdir() + File.sep + Date.now().toString();
-                    fs.writeFileSync(tmpPath, buf);
-
-                    reporter.report({ message: 'unzip resources' });
                     let installDir = res.locationType == 'global' ? new File(resManager.getEideToolsInstallDir()) : project.getRootDir();
                     if (res.locationType == 'workspace') installDir = File.fromArray([project.getRootDir().path, res.location]);
-                    installDir.CreateDir(true);
-                    const szip = new SevenZipper();
-                    const r = szip.UnzipSync(new File(tmpPath), installDir);
-                    GlobalEvent.emit('globalLog', newMessage('Info', r));
+
+                    if (res.zipType != 'none') {
+                        reporter.report({ message: 'downloading resources' });
+                        const buf = await downloadFile(redirectHost(res.url));
+                        if (!(buf instanceof Buffer)) throw buf || new Error('Cannot download resource');
+                        const tmpPath = os.tmpdir() + File.sep + Date.now().toString();
+                        fs.writeFileSync(tmpPath, buf);
+
+                        reporter.report({ message: 'unzip resources' });
+                        installDir.CreateDir(true);
+                        const szip = new SevenZipper();
+                        const r = szip.UnzipSync(new File(tmpPath), installDir);
+                        GlobalEvent.emit('globalLog', newMessage('Info', r));
+                    }
 
                     if (res.setupCommand) {
                         reporter.report({ message: 'execuate setup command ...' });

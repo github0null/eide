@@ -156,7 +156,7 @@ export interface ShellFlasherIndexItem {
 
 			url: string; // zip, 7z direct download link (https), like: 'https://test.com/gcc.zip'
 
-			zipType: string; // '7z' or 'zip'
+			zipType: 'zip' | '7z' | 'none'; // if zipType == 'none', field 'url' will be ignored
 
 			locationType: 'workspace' | 'global';
 
