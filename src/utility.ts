@@ -31,7 +31,7 @@ import * as os from 'os';
 
 import { WorkspaceManager } from "./WorkspaceManager";
 import { CmdLineHandler } from "./CmdLineHandler";
-import { ExceptionToMessage } from "./Message";
+import { ExceptionToMessage, newMessage } from "./Message";
 import { NetRequest, NetResponse } from '../lib/node-utility/NetRequest';
 import { File } from '../lib/node-utility/File';
 import { GitFileInfo } from './WebInterface/GithubInterface';
@@ -39,6 +39,37 @@ import * as platform from './Platform';
 import { SevenZipper } from './Compress';
 import { ResManager } from './ResManager';
 import { isArray } from 'util';
+import { ExeCmd } from '../lib/node-utility/Executable';
+import { GlobalEvent } from './GlobalEvents';
+
+export function execCommandWithProgress(command: string, cwd?: string, cancel?: vscode.CancellationToken): Promise<boolean> {
+
+    return new Promise<boolean>((resolve) => {
+
+        const proc = new ExeCmd();
+
+        proc.on('launch', () => {
+            GlobalEvent.emit('globalLog.show');
+            GlobalEvent.emit('globalLog.append', `\n>>> exec cmd: '${command}'\n\n`);
+        });
+
+        proc.on('data', str => {
+            GlobalEvent.emit('globalLog.append', str);
+        });
+
+        proc.on('close', exitInfo => {
+            resolve(exitInfo.code == 0);
+        });
+
+        cancel?.onCancellationRequested(_ => {
+            if (!platform.kill(<number>proc.pid())) {
+                GlobalEvent.emit('msg', newMessage('Warning', `Can not kill process: ${proc.pid()} !`));
+            }
+        });
+
+        proc.Run(<string>command, undefined, { cwd: cwd });
+    });
+}
 
 export async function notifyReloadWindow(msg: string) {
     const resp = await vscode.window.showInformationMessage(msg, 'Ok', 'Later');

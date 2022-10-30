@@ -80,7 +80,7 @@ import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import {
     copyObject, downloadFileWithProgress, getDownloadUrlFromGitea,
     runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
-    genGithubHash, md5, toArray, newMarkdownString, newFileTooltipString, FileTooltipInfo, escapeXml, readGithubRepoTxtFile, downloadFile, notifyReloadWindow, formatPath
+    genGithubHash, md5, toArray, newMarkdownString, newFileTooltipString, FileTooltipInfo, escapeXml, readGithubRepoTxtFile, downloadFile, notifyReloadWindow, formatPath, execCommandWithProgress
 } from './utility';
 import { concatSystemEnvPath, DeleteDir, exeSuffix, kill, osType, DeleteAllChildren } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
@@ -5403,7 +5403,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             location: vscode.ProgressLocation.Notification,
             title: `Setup Shell Flasher`,
             cancellable: true
-        }, async (reporter, token): Promise<Error | undefined> => {
+        }, async (reporter, cancel): Promise<Error | undefined> => {
 
             try {
 
@@ -5412,7 +5412,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 // get index.json
                 //
 
-                if (token.isCancellationRequested) {
+                if (cancel.isCancellationRequested) {
                     return;
                 }
 
@@ -5440,7 +5440,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 // select flasher
                 //
 
-                if (token.isCancellationRequested) {
+                if (cancel.isCancellationRequested) {
                     return;
                 }
 
@@ -5459,7 +5459,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 // install
                 //
 
-                if (token.isCancellationRequested) {
+                if (cancel.isCancellationRequested) {
                     return;
                 }
 
@@ -5482,7 +5482,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 let needReload = false;
                 if (tarFlasher.resources[osType()]) {
 
-                    if (token.isCancellationRequested) return;
+                    if (cancel.isCancellationRequested) return;
 
                     reporter.report({ message: 'downloading resources' });
                     const res = tarFlasher.resources[osType()];
@@ -5491,7 +5491,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     const tmpPath = os.tmpdir() + File.sep + Date.now().toString();
                     fs.writeFileSync(tmpPath, buf);
 
-                    reporter.report({ message: 'installing resources' });
+                    reporter.report({ message: 'unzip resources' });
                     let installDir = res.locationType == 'global' ? new File(resManager.getEideToolsInstallDir()) : project.getRootDir();
                     if (res.locationType == 'workspace') installDir = File.fromArray([project.getRootDir().path, res.location]);
                     installDir.CreateDir(true);
@@ -5499,10 +5499,23 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     const r = szip.UnzipSync(new File(tmpPath), installDir);
                     GlobalEvent.emit('globalLog', newMessage('Info', r));
 
+                    if (res.setupCommand) {
+                        reporter.report({ message: 'execuate setup command ...' });
+                        const done = await execCommandWithProgress(res.setupCommand, installDir.path, cancel);
+                        if (!done) {
+                            if (cancel.isCancellationRequested) {
+                                GlobalEvent.emit('globalLog.append', `\n----- user canceled -----\n`);
+                                return;
+                            } else {
+                                return new Error(`Setup command failed, see detail in 'OUTPUT panel' -> 'eide.log' !`);
+                            }
+                        }
+                    }
+
                     needReload = res.locationType == 'global';
                 }
 
-                if (token.isCancellationRequested) {
+                if (cancel.isCancellationRequested) {
                     return;
                 }
 

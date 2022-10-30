@@ -425,35 +425,8 @@ export class ResInstaller {
 
                             const command = toolInfo.postInstallCmd();
                             if (command) {
-
-                                const done = await (new Promise<boolean>((resolve) => {
-
-                                    progress.report({ message: `Running post-install cmd: '${command}' ...` });
-
-                                    const proc = new ExeCmd();
-
-                                    proc.on('launch', () => {
-                                        GlobalEvent.emit('globalLog.show');
-                                        GlobalEvent.emit('globalLog.append', `\n>>> exec cmd: '${command}'\n\n`);
-                                    });
-
-                                    proc.on('data', str => {
-                                        GlobalEvent.emit('globalLog.append', str);
-                                    });
-
-                                    proc.on('close', exitInfo => {
-                                        resolve(exitInfo.code == 0);
-                                    });
-
-                                    cancel.onCancellationRequested(_ => {
-                                        if (!platform.kill(<number>proc.pid())) {
-                                            GlobalEvent.emit('msg', newMessage('Warning', `Can not kill process: ${proc.pid()} !`));
-                                        }
-                                    });
-
-                                    proc.Run(<string>command, undefined, { cwd: outDir.path });
-                                }));
-
+                                progress.report({ message: `Running post-install cmd: '${command}' ...` });
+                                const done = await utility.execCommandWithProgress(command, outDir.path, cancel);
                                 if (!done) {
 
                                     if (cancel.isCancellationRequested) {

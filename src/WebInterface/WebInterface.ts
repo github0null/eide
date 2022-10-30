@@ -166,6 +166,8 @@ export interface ShellFlasherIndexItem {
 			 * if 'locationType' == 'global', this field means tool exe file dir path
 			*/
 			location: string;
+
+			setupCommand?: string; // (optional) This command will be execuate after resource has been unziped
 		}
 	}
 }
