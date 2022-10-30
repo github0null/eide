@@ -1005,7 +1005,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         prjAttr.libList = prjAttr.libList.filter(m => m.trim() != '');
 
         // clear invalid src folders
-        prjConfig.config.srcDirs = prjConfig.config.srcDirs.filter(p => File.IsDir(p));
+        //prjConfig.config.srcDirs = prjConfig.config.srcDirs.filter(p => File.IsDir(p));
 
         // rm prefix for out dir
         prjConfig.config.outDir = File.normalize(File.ToLocalPath(prjConfig.config.outDir));
@@ -2082,8 +2082,7 @@ class EIDEProject extends AbstractProject {
             case 'dataChanged':
                 // update to config
                 const prjConfig = this.GetConfiguration();
-                prjConfig.config.srcDirs = this.getSourceRootFolders()
-                    .map((folder) => { return folder.fileWatcher.file.path; });
+                prjConfig.config.srcDirs = this.getSourceRootFolders().map(folder => folder.fileWatcher.file.path);
                 // update cpp config
                 this.UpdateCppConfig();
                 this.emit('dataChanged', 'files');
