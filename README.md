@@ -13,7 +13,7 @@ A mcu development environment for `8051/AVR/STM8/Cortex-M/RISC-V/Universal-Gcc` 
 Provide `8051/AVR/STM8/Cortex-M/RISC-V` project development, compilation, program flash and other functions.
 
 Supported Platforms: 
-  - **Windows X64 (>= Windows 10)**
+  - **Windows x64 (>= Windows 10)**
   - **Linux x64**
   - **macOS**(Only tested in 'macOS 10.15 x64')
 

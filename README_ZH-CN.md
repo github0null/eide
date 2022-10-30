@@ -11,7 +11,7 @@
 在 vscode 上提供 **8051**, **AVR**, **STM8**, **Cortex-M**, **RISC-V** ... 项目的 开发, 编译, 烧录 等功能。
 
 支持的平台: 
-  - **Windows X64 (>= Windows 10)**
+  - **Windows x64 (>= Windows 10)**
   - **Linux x64**
   - **macOS**（仅在 'macOS 10.15 x64' 中测试过）
 

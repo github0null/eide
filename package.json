@@ -34,7 +34,7 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.10.0",
+    "version": "3.10.1",
     "preview": false,
     "engines": {
         "vscode": "^1.63.0"
@@ -143,7 +143,7 @@
                             "altText": "setup toolchain"
                         },
                         "completionEvents": [
-                            "onContext:cl.eide.toolchain_ready"
+                            "onCommand:eide.operation.install_toolchain"
                         ]
                     },
                     {
@@ -678,8 +678,8 @@
                 "command": "_cl.eide.project.historyRecord",
                 "title": "%eide.operation.open.history%",
                 "icon": {
-                    "dark": "./res/icon/Note_16x.svg",
-                    "light": "./res/icon/Note_16x.svg"
+                    "dark": "./res/icon/History_16x.svg",
+                    "light": "./res/icon/History_16x.svg"
                 }
             },
             {
@@ -846,6 +846,14 @@
                 "icon": {
                     "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
                     "light": "./res/icon/SwitchSourceOrTarget_16x.svg"
+                }
+            },
+            {
+                "command": "_cl.eide.project.fetchShellFlasher",
+                "title": "%eide.flash.fetch-shell-flasher%",
+                "icon": {
+                    "dark": "./res/icon/DownloadFile_16x.svg",
+                    "light": "./res/icon/DownloadFile_16x.svg"
                 }
             },
             {
@@ -1338,7 +1346,12 @@
                 {
                     "command": "_cl.eide.project.switchUploader",
                     "group": "inline",
-                    "when": "view == Project && viewItem == UPLOAD_OPTION"
+                    "when": "viewItem == UPLOAD_OPTION || viewItem == UPLOAD_OPTION_Shell && view == Project"
+                },
+                {
+                    "command": "_cl.eide.project.fetchShellFlasher",
+                    "group": "inline",
+                    "when": "viewItem == UPLOAD_OPTION_Shell && view == Project"
                 },
                 {
                     "command": "_cl.eide.project.modifyCompileConfig",

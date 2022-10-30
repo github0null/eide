@@ -6,6 +6,21 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.10.1] preview
+
+**New**:
+  - `Shell Flasher`: Allow install shell flasher scripts from remote repo.
+  - `Configure Toolchain`: Add a button to setup tool prefix for gcc family compiler.
+
+**Fix**:
+  - `Eclipse Importer`: Can not parse 'link.location' in '.project' file.
+
+**Optimize**:
+  - `Configure Toolchain`: Don't check all toolchain status when plug-in launch.
+  - `Resource Manager`: Don't remove non-existed source dirs in eide.json.
+
+***
+
 ### [v3.10.0]
 
 **New**:
