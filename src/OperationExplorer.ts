@@ -1084,12 +1084,11 @@ export class OperationExplorer {
         this.locked = true;
 
         const settingManager = SettingManager.GetInstance();
-        const redirectUri = (uri: string) => settingManager.isUseGithubProxy() ? utility.redirectHost(uri) : uri;
 
         // URL: https://api.github.com/repos/github0null/eide-doc/contents/eide-template-list
         const rawUrl = `api.github.com/repos/${settingManager.getGithubRepositoryUrl()}`;
         const acToken = settingManager.getGithubRepositoryToken();
-        const remoteUrl = acToken ? rawUrl : redirectUri(rawUrl); // if token is enabled, not proxy
+        const remoteUrl = acToken ? rawUrl : utility.redirectHost(rawUrl); // if token is enabled, not proxy
 
         let targetTempFile: File | undefined;
 
@@ -1160,8 +1159,8 @@ export class OperationExplorer {
 
                 // redirect uri
                 file_list.forEach((gitFileInfo) => {
-                    gitFileInfo.download_url = gitFileInfo.download_url ? redirectUri(gitFileInfo.download_url) : undefined;
-                    gitFileInfo.git_url = redirectUri(gitFileInfo.git_url);
+                    gitFileInfo.download_url = gitFileInfo.download_url ? utility.redirectHost(gitFileInfo.download_url) : undefined;
+                    gitFileInfo.git_url = utility.redirectHost(gitFileInfo.git_url);
                 });
 
                 // get template index file info

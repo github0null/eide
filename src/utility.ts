@@ -41,6 +41,7 @@ import { ResManager } from './ResManager';
 import { isArray } from 'util';
 import { ExeCmd } from '../lib/node-utility/Executable';
 import { GlobalEvent } from './GlobalEvents';
+import { SettingManager } from './SettingManager';
 
 export function execInternalCommand(command: string, cwd?: string, cancel?: vscode.CancellationToken): Promise<boolean> {
 
@@ -280,9 +281,10 @@ export function compareVersion(v1: string, v2: string): number {
     return 0;
 }
 
-const hostMap: any = {
+const PROXY_HOST_MAP: { [host: string]: string[] } = {
     'api.github.com': [
-        'api-github.em-ide.com'
+        'api-github.em-ide.com',
+        'api-github.github0null.io'
     ],
     'raw.githubusercontent.com': [
         'raw-github.em-ide.com',
@@ -292,9 +294,13 @@ const hostMap: any = {
 
 export function redirectHost(url: string) {
 
+    if (!SettingManager.GetInstance().isUseGithubProxy()) {
+        return url;
+    }
+
     // replace host
-    for (const host in hostMap) {
-        const hostList = <string[]>hostMap[host];
+    for (const host in PROXY_HOST_MAP) {
+        const hostList = PROXY_HOST_MAP[host];
         if (hostList.length > 1) {
             const idx = Math.floor(Math.random() * hostList.length); // random index
             url = url.replace(host, hostList[idx]);

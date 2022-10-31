@@ -466,8 +466,8 @@ async function tryUpdateBinaries(binFolder: File, localVer?: string, notConfirm?
 
     const getVersionFromRepo = async (): Promise<string | Error | undefined> => {
         try {
-            const url = `https://api-github.em-ide.com/repos/github0null/eide-resource/contents/binaries/${platform.getRuntimeId()}/VERSION`;
-            const cont = await utility.requestTxt(url);
+            const url = `https://api.github.com/repos/github0null/eide-resource/contents/binaries/${platform.getRuntimeId()}/VERSION`;
+            const cont = await utility.requestTxt(utility.redirectHost(url));
             if (typeof cont != 'string') return cont;
             let obj: any = undefined;
             try { obj = JSON.parse(cont); } catch (error) { return error; }
@@ -480,8 +480,8 @@ async function tryUpdateBinaries(binFolder: File, localVer?: string, notConfirm?
 
     const getAvailableBinariesVersions = async (): Promise<string[] | Error | undefined> => {
         try {
-            const url = `https://api-github.em-ide.com/repos/github0null/eide-resource/contents/binaries/${platform.getRuntimeId()}`;
-            const fList = await utility.readGithubRepoFolder(url);
+            const url = `https://api.github.com/repos/github0null/eide-resource/contents/binaries/${platform.getRuntimeId()}`;
+            const fList = await utility.readGithubRepoFolder(utility.redirectHost(url));
             if (fList instanceof Error) throw fList;
             return fList.filter(f => f.name.startsWith('bin-'))
                 .map(f => f.name.replace('bin-', '').replace('.7z', ''))

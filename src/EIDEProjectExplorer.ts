@@ -3608,12 +3608,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     private async startDownloadCmsisPack(): Promise<File | Error | undefined> {
 
-        const redirectUri = (uri: string) => {
-            return SettingManager.GetInstance().isUseGithubProxy() ? redirectHost(uri) : uri;
-        };
-
         // URL: https://api.github.com/repos/github0null/eide-cmsis-pack/contents/packages
-        const repoUrl = redirectUri('api.github.com/repos/' + SettingManager.GetInstance().getCmsisPackRepositoryUrl());
+        const repoUrl = redirectHost('api.github.com/repos/' + SettingManager.GetInstance().getCmsisPackRepositoryUrl());
 
         return await vscode.window.withProgress<File | Error | undefined>({
             location: vscode.ProgressLocation.Notification,
@@ -3673,7 +3669,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     return new Error(`Can't download '${gitFileInfo.name}', not download url found !`);
                 }
 
-                const url = redirectUri(gitFileInfo.download_url);
+                const url = redirectHost(gitFileInfo.download_url);
                 const buff = await downloadFileWithProgress(url, gitFileInfo.name, progress, cancelToken);
 
                 if (buff == undefined) { // canceled
