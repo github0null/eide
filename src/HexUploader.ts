@@ -253,8 +253,6 @@ class JLinkUploader extends HexUploader<any> {
             return { isOk: false };
         }
 
-        const jlinkCmdFileLines: string[] = [];
-
         // create output dir
         const outFolder = new File(this.project.ToAbsolutePath(this.project.getOutputDir()));
         outFolder.CreateDir(true);
@@ -263,14 +261,23 @@ class JLinkUploader extends HexUploader<any> {
         const option = this.getUploadOptions<JLinkOptions>();
         const files = this.parseProgramFiles(option);
 
-        // program
+        // jlink cmd template
+        let jlinkCommandtemplate: string = '${EIDE_JLINK_FLASHER_CMD}';
+        const tFile = File.fromArray([this.project.getEideDir().path, 'jlink.flasher.cmd.template']);
+        if (tFile.IsFile()) {
+            jlinkCommandtemplate = tFile.Read();
+        }
+
+        // program cmds
+        const flasherCmds: string[] = [];
+
         if (!eraseAll) {
 
             if (files.length == 0) {
                 return { isOk: new Error(`no any program files !`) };
             }
 
-            jlinkCmdFileLines.push(
+            flasherCmds.push(
                 'r',
                 'halt'
             );
@@ -278,39 +285,41 @@ class JLinkUploader extends HexUploader<any> {
             files.forEach((file) => {
                 if (/\.bin$/i.test(file.path)) {
                     const addr = file.addr || option.baseAddr
-                    jlinkCmdFileLines.push(`loadfile "${file.path}"${addr ? (`,${addr}`) : ''}`);
+                    flasherCmds.push(`loadfile "${file.path}"${addr ? (`,${addr}`) : ''}`);
                 } else {
-                    jlinkCmdFileLines.push(`loadfile "${file.path}"`);
+                    flasherCmds.push(`loadfile "${file.path}"`);
                 }
             });
 
-            jlinkCmdFileLines.push(
+            flasherCmds.push(
                 'r',
-                'go',
-                'exit'
+                'go'
             );
         }
 
         // erase internal falsh
         else {
-            jlinkCmdFileLines.push(
+            flasherCmds.push(
                 'r',
                 'halt',
                 'erase',
-                'r',
-                'exit'
+                'r'
             );
         }
 
+        // replace vars
+        jlinkCommandtemplate = jlinkCommandtemplate.replace(/\$\{EIDE_JLINK_FLASHER_CMD\}/g, flasherCmds.join(os.EOL));
+        jlinkCommandtemplate = this.project.resolveEnvVar(jlinkCommandtemplate);
+        jlinkCommandtemplate = jlinkCommandtemplate + os.EOL + 'exit'; // append 'exit' command
+
         const codeConverter = new CodeConverter();
         const codePage = ResManager.getLocalCodePage();
-        const content = jlinkCmdFileLines.join(os.EOL);
 
         // write commands file
         if (codePage && codeConverter.ExistCode(codePage)) {
-            fs.writeFileSync(jlinkCommandsFile.path, codeConverter.toTargetCode(content, codePage));
+            fs.writeFileSync(jlinkCommandsFile.path, codeConverter.toTargetCode(jlinkCommandtemplate, codePage));
         } else {
-            jlinkCommandsFile.Write(content);
+            jlinkCommandsFile.Write(jlinkCommandtemplate);
         }
 
         // -AutoConnect 1 -Device <DevName> -If <Interface> -Speed <value> -CommandFile <file>
