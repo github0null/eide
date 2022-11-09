@@ -38,12 +38,12 @@ import { File } from '../lib/node-utility/File';
 import { FileWatcher } from '../lib/node-utility/FileWatcher';
 import { KeilParser } from './KeilXmlParser';
 import { ResManager } from './ResManager';
-import { SevenZipper } from './Compress';
+import { SevenZipper, SevenZipUnzipExcludeList } from './Compress';
 import {
     ConfigMap, FileGroup,
     ProjectConfiguration, ProjectConfigData, WorkspaceConfiguration,
     CreateOptions,
-    ProjectConfigEvent, ProjectFileGroup, FileItem, EIDE_CONF_VERSION, ProjectTargetInfo, VirtualFolder, VirtualFile, CppConfigItem, ProjectBaseApi
+    ProjectConfigEvent, ProjectFileGroup, FileItem, EIDE_CONF_VERSION, ProjectTargetInfo, VirtualFolder, VirtualFile, CppConfigItem, ProjectBaseApi, ProjectType
 } from './EIDETypeDefine';
 import { ToolchainName, IToolchian, ToolchainManager } from './ToolchainManager';
 import { GlobalEvent } from './GlobalEvents';
@@ -763,6 +763,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         return this.GetConfiguration().config.name;
     }
 
+    public getProjectType(): ProjectType {
+        return this.GetConfiguration().config.type;
+    }
+
     public getRootDir(): File {
         return this.GetRootDir();
     }
@@ -1315,11 +1319,14 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         const prjConfigData = prjConfig.config;
         const targets = prjConfigData.targets;
 
+        let isNewTarget = false;
+
         // save old target
         this.saveTarget(prjConfigData.mode);
 
         // if target is not existed, create it
         if (targets[targetName] === undefined) {
+            isNewTarget = true;
             targets[targetName] = prjConfig.cloneCurrentTarget();
         }
 
@@ -1395,6 +1402,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
         this.sourceRoots.forceUpdateAllFolders();
         this.virtualSource.forceUpdateAllFolders();
+
+        if (isNewTarget) {
+            this.Save();
+        }
     }
 
     getPrevToolchain(): IToolchian | undefined {
