@@ -220,7 +220,9 @@ export function runShellCommand(title: string, commandLine: string, env?: any, u
 }
 
 export function copyObject(src: any): any {
-    if (typeof src === 'object') {
+    if (Array.isArray(src)) {
+        return Array.from(src);
+    } else if (typeof src === 'object') {
         return JSON.parse(JSON.stringify(src));
     } else {
         return src;

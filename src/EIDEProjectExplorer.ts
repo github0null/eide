@@ -3023,14 +3023,15 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             this.reloadProject(uid, wsf);
         }
 
-        //
-        // enable auto save
-        //
-        this.enableAutoSave(true);
         if (this.__autosaveDisableTimeoutTimer) {
             clearTimeout(this.__autosaveDisableTimeoutTimer);
             this.__autosaveDisableTimeoutTimer = undefined;
         }
+
+        //
+        // enable auto save
+        //
+        this.enableAutoSave(true);
     }
 
     private reloadProject(uid: string, workspaceFile: File) {
