@@ -844,7 +844,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     protected emit(event: 'dataChanged', type?: DataChangeType): boolean;
     protected emit(event: 'cppConfigChanged'): boolean;
-    protected emit(event: 'targetSwitched'): boolean;
+    protected emit(event: 'targetSwitched', t: { name: string, isNew?: boolean; }): boolean;
     protected emit(event: 'projectFileChanged'): boolean;
     protected emit(event: any, argc?: any): boolean {
         return this._event.emit(event, argc);
@@ -852,7 +852,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     on(event: 'dataChanged', listener: (type?: DataChangeType) => void): this;
     on(event: 'cppConfigChanged', listener: () => void): this;
-    on(event: 'targetSwitched', listener: () => void): this;
+    on(event: 'targetSwitched', listener: (t: { name: string, isNew?: boolean; }) => void): this;
     on(event: 'projectFileChanged', listener: () => void): this;
     on(event: any, listener: (argc?: any) => void): this {
         this._event.on(event, listener);
@@ -1293,10 +1293,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     async switchTarget(targetName: string) {
         const prjConfig = this.GetConfiguration<any>().config;
         if (targetName !== prjConfig.mode) {
-            this._switchTarget(targetName);
+            const inf = this._switchTarget(targetName);
             this.reloadToolchain();
             this.reloadUploader();
-            this.emit('targetSwitched');
+            this.emit('targetSwitched', inf);
         }
     }
 
@@ -1313,7 +1313,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         prjConfigData.targets[target] = prjConfig.cloneCurrentTarget();
     }
 
-    private _switchTarget(targetName: string) {
+    private _switchTarget(targetName: string): { name: string, isNew?: boolean; } {
 
         const prjConfig = this.GetConfiguration();
         const prjConfigData = prjConfig.config;
@@ -1403,8 +1403,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         this.sourceRoots.forceUpdateAllFolders();
         this.virtualSource.forceUpdateAllFolders();
 
-        if (isNewTarget) {
-            this.Save();
+        return {
+            name: targetName,
+            isNew: isNewTarget,
         }
     }
 
@@ -1930,7 +1931,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
         ToolchainManager.getInstance().on('onChanged', (tName) => this.onToolchainModified(tName));
 
-        this.on('targetSwitched', () => this.onTargetChanged());
+        this.on('targetSwitched', (t) => this.onTargetChanged(t));
 
         // update config which depend other configs
         this.on('dataChanged', (type) => {
@@ -2080,7 +2081,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     protected abstract onPackageChanged(): void;
 
-    protected abstract onTargetChanged(): void;
+    protected abstract onTargetChanged(info: { name: string, isNew?: boolean }): void;
 
     protected abstract onEideDirChanged(evt: 'changed' | 'renamed', file: File): void;
 
@@ -2249,8 +2250,9 @@ class EIDEProject extends AbstractProject {
         this.emit('dataChanged', 'pack');
     }
 
-    protected onTargetChanged(): void {
+    protected onTargetChanged(t: { name: string, isNew?: boolean }): void {
         this.onSrcExtraOptionsChanged('changed');
+        if (t.isNew) this.Save();
     }
 
     protected onEideDirChanged(evt: 'changed' | 'renamed', file: File): void {
