@@ -43,6 +43,22 @@ import { ExeCmd } from '../lib/node-utility/Executable';
 import { GlobalEvent } from './GlobalEvents';
 import { SettingManager } from './SettingManager';
 
+export function mergeEnv(old_kv: any, new_kv: any, prependPath?: boolean): any {
+
+    const pnam = platform.osType() == 'win32' ? 'Path' : 'PATH';
+    const psep = platform.osType() == 'win32' ? ';' : ':';
+
+    for (const key in new_kv) {
+        if (key == pnam && old_kv[key]) {
+            old_kv[key] = prependPath ? `${new_kv[key]}${psep}${old_kv[key]}` : `${old_kv[key]}${psep}${new_kv[key]}`;
+        } else {
+            old_kv[key] = new_kv[key];
+        }
+    }
+
+    return old_kv;
+}
+
 export function copyAndMakeObjectKeysToLowerCase(kv_obj: any): any {
     const nObj: any = {};
     for (const key in kv_obj) nObj[key.toLowerCase()] = kv_obj[key];
