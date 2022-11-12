@@ -655,16 +655,16 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
     //-----------------------------------------------------------
 
-    GetDepKeyDesc(key: string): string {
+    GetDepKeyDesc(key: string, withRawName?: boolean): string {
         switch (key) {
             case 'incList':
-                return include_desc;
+                return include_desc + (withRawName ? ` (IncludePaths)` : '');
             case 'libList':
-                return lib_desc;
+                return lib_desc + (withRawName ? ` (StaticLibrarySearchDirs)` : '');
             case 'sourceDirList':
-                return source_dir_desc;
+                return source_dir_desc + (withRawName ? ` (SourceDirs)` : '');
             case 'defineList':
-                return definition_list_desc;
+                return definition_list_desc + (withRawName ? ` (C/C++ Macros)` : '');
             default:
                 return key;
         }

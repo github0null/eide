@@ -29,8 +29,12 @@ export enum LanguageIndexs {
     English
 }
 
-export const langIndex: number = /zh-cn/.test(vscode.env.language)
+const langIndex: number = /zh-cn/.test(vscode.env.language)
     ? LanguageIndexs.Chinese : LanguageIndexs.English;
+
+export function getLocalLanguageType(): LanguageIndexs {
+    return langIndex;
+}
 
 //------------------------------------------------
 //---------------string table-------------
@@ -290,8 +294,8 @@ export const include_desc = [
 ][langIndex];
 
 export const lib_desc = [
-    '链接库目录',
-    'Library Directories'
+    '库搜索目录',
+    'Library Search Directories'
 ][langIndex];
 
 export const source_dir_desc = [
@@ -300,7 +304,7 @@ export const source_dir_desc = [
 ][langIndex];
 
 export const definition_list_desc = [
-    '预处理器定义',
+    '预处理宏定义',
     'Preprocessor Definitions'
 ][langIndex];
 

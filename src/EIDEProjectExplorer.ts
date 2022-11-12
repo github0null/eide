@@ -68,7 +68,9 @@ import {
     view_str$msg$err_ept_hash,
     view_str$prompt$eclipse_imp_warning,
     view_str$prompt$need_reload_project,
-    view_str$prompt$needReloadToUpdateEnv
+    view_str$prompt$needReloadToUpdateEnv,
+    getLocalLanguageType,
+    LanguageIndexs
 } from './StringTable';
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
@@ -1001,7 +1003,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                 iList.push(new ProjTreeItem(TreeItemType.DEPENDENCE_GROUP_ARRAY_FIELD, {
                                     value: config.GetDepKeyDesc(key),
                                     tooltip: newMarkdownString([
-                                        `${config.GetDepKeyDesc(key)}`,
+                                        `${config.GetDepKeyDesc(key, getLocalLanguageType() == LanguageIndexs.Chinese)}`,
                                         `- **Count:** \`${depValues.length}\``]),
                                     obj: new ModifiableDepInfo('None', key),
                                     childKey: key,
@@ -1219,9 +1221,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                     tooltip: newFileTooltipString({
                                         name: file.name,
                                         path: file.path,
-                                        attr: {
-                                            'FileSize': fsize > 4096 ? `${(fsize / 1024).toFixed(2)} KB` : `${fsize} B`
-                                        }
+                                        attr: {}
                                     }, project.getRootDir()),
                                 }));
                             });
