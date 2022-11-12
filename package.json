@@ -754,11 +754,11 @@
             },
             {
                 "command": "_cl.eide.project.installCMSISHeaders",
-                "title": "%eide.package.install.cmsis%",
-                "icon": {
-                    "dark": "./res/icon/AddBuildQueue_16x.svg",
-                    "light": "./res/icon/AddBuildQueue_16x.svg"
-                }
+                "title": "Install CMSIS Core Headers"
+            },
+            {
+                "command": "_cl.eide.project.installCmsisLibs",
+                "title": "Install CMSIS Core Libs"
             },
             {
                 "command": "_cl.eide.project.addSrcDir",
@@ -1209,6 +1209,10 @@
                 },
                 {
                     "command": "_cl.eide.project.installCMSISHeaders",
+                    "when": "viewItem == PACK && view == Project"
+                },
+                {
+                    "command": "_cl.eide.project.installCmsisLibs",
                     "when": "viewItem == PACK && view == Project"
                 },
                 {

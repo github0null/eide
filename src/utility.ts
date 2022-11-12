@@ -43,6 +43,12 @@ import { ExeCmd } from '../lib/node-utility/Executable';
 import { GlobalEvent } from './GlobalEvents';
 import { SettingManager } from './SettingManager';
 
+export function copyAndMakeObjectKeysToLowerCase(kv_obj: any): any {
+    const nObj: any = {};
+    for (const key in kv_obj) nObj[key.toLowerCase()] = kv_obj[key];
+    return nObj;
+}
+
 export function execInternalCommand(command: string, cwd?: string, cancel?: vscode.CancellationToken): Promise<boolean> {
 
     return new Promise<boolean>((resolve) => {

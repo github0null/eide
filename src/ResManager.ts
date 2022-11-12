@@ -329,9 +329,15 @@ export class ResManager extends events.EventEmitter {
 
     getCMSISHeaderPacks(): File[] {
         const dir = File.fromArray([(<File>this.GetDir('include')).path, 'cmsis']);
-        return dir.GetList(undefined, File.EMPTY_FILTER).filter((f) => {
-            return f.suffix === '.zip' || f.suffix === '.7z';
-        });
+        return dir.GetList(undefined, File.EMPTY_FILTER)
+            .filter(f => f.suffix === '.zip' || f.suffix === '.7z')
+            .filter(f => !f.noSuffixName.startsWith('lib') && !f.noSuffixName.endsWith('_lib'));
+    }
+
+    getCmsisLibPacks(): { [name: string]: File } {
+        return {
+            'libdsp': File.fromArray([(<File>this.GetDir('include')).path, 'cmsis', 'dsp_lib.7z'])
+        }
     }
 
     getStvpToolsDir(): File {

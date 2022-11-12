@@ -1555,6 +1555,100 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         }
     }
 
+    installCmsisLibs() {
+
+        const packs = ResManager.GetInstance().getCmsisLibPacks();
+        if (Object.keys(packs).length == 0) {
+            GlobalEvent.emit('msg', newMessage('Info', 'Not found available libraries !'));
+            return;
+        }
+
+        const prjLibTypKeywords: Map<ToolchainName, string[]> = new Map();
+        prjLibTypKeywords.set('AC5', ['arm', 'armcc', 'keil']);
+        prjLibTypKeywords.set('AC6', ['arm', 'armcc', 'armclang', 'keil']);
+        prjLibTypKeywords.set('GCC', ['gcc', 'gnu']);
+        prjLibTypKeywords.set('IAR_ARM', ['iar']);
+
+        const matchLibFileAndCpuTyp = (fname: string, cpuname: string): boolean => {
+
+            const archNameKeywords: { [name: string]: string[] } = {
+                'armv8': ['arm', 'v8'],
+                'cortex-m0': ['cortex', 'm0'],
+                'cortex-m3': ['cortex', 'm3'],
+                'sc300': ['cortex', 'm3'],
+                'sc000': ['cortex', 'm0'],
+                'cortex-m33': ['cortex', 'm33'],
+                'cortex-m4': ['cortex', 'm4'],
+                'cortex-m7': ['cortex', 'm7'],
+                'cortex-r4': ['cortex', 'r4'],
+                'cortex-r5': ['cortex', 'r5'],
+                'cortex-r7': ['cortex', 'r7'],
+                'cortex-r8': ['cortex', 'r8']
+            };
+
+            fname = fname.toLowerCase();
+            cpuname = cpuname.toLowerCase();
+
+            for (const ckey in archNameKeywords) {
+                if (cpuname.includes(ckey)) {
+                    const keywords = archNameKeywords[ckey];
+                    if (keywords.every(k => fname.includes(k))) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        };
+
+        const doneList: string[] = [];
+
+        for (const distname in packs) {
+
+            const zipfile = packs[distname];
+            const outDir = File.fromArray([this.GetRootDir().path, '.cmsis', distname]);
+            const rePath = this.ToRelativePath(outDir.path) || outDir.path;
+
+            // install
+            outDir.CreateDir(true);
+            platform.DeleteAllChildren(outDir);
+            const compresser = new SevenZipper();
+            compresser.UnzipSync(zipfile, outDir);
+
+            // setup
+            const libPaths: string[] = [outDir.path];
+            const keywords = prjLibTypKeywords.get(this.getToolchain().name);
+            if (keywords) {
+                // do match
+                const subdirs = outDir
+                    .GetList(File.EMPTY_FILTER, undefined)
+                    .filter(f => keywords.some(k => f.name.toLowerCase().includes(k)));
+                // matched dirs, filter files
+                if (subdirs.length > 0) {
+                    const cpuTyp = (<ArmBaseCompileConfigModel>this.GetConfiguration().compileConfigModel).data.cpuType;
+                    const allfiles = subdirs[0].GetList(undefined, File.EMPTY_FILTER);
+                    const unusedFiles = allfiles.filter(f => !matchLibFileAndCpuTyp(f.name, cpuTyp));
+                    libPaths.push(subdirs[0].path);
+                    if (unusedFiles.length < allfiles.length) {
+                        unusedFiles.forEach(f => { try { fs.unlinkSync(f.path) } catch (e) { } });
+                    }
+                }
+                // delete non-matched dirs
+                outDir.GetList(File.EMPTY_FILTER, undefined)
+                    .filter(f => !keywords.some(k => f.name.toLowerCase().includes(k)))
+                    .forEach(f => platform.DeleteDir(f));
+            }
+
+            this.GetConfiguration().BuildIn_AddAllFromDefineList(libPaths);
+
+            doneList.push(rePath);
+        }
+
+        if (doneList.length > 0) {
+            GlobalEvent.emit('msg', newMessage('Info', `Installation completed !, [path list]: ${doneList.join(', ')}`));
+        }
+    }
+
     //-------------------- other ------------------
 
     isAutoSearchObjectFile(): boolean {

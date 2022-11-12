@@ -35,6 +35,8 @@ export interface CompressOption {
     excludeList?: string[];
 }
 
+export type SevenZipUnzipExcludeList = { name: string, recurse?: boolean }[];
+
 export class SevenZipper {
 
     static readonly MaxStep = 18;
@@ -57,7 +59,7 @@ export class SevenZipper {
         }
     }
 
-    Unzip(zipFile: File, outDir?: File): Promise<Error | null> {
+    Unzip(zipFile: File, outDir?: File, excList?: SevenZipUnzipExcludeList): Promise<Error | null> {
 
         if (!zipFile.IsFile()) {
             throw new Error('\'' + zipFile.path + '\' is not exist');
@@ -71,6 +73,17 @@ export class SevenZipper {
             paramList.push('-r');
             paramList.push('-aoa');
             paramList.push(zipFile.path);
+
+            if (excList) {
+                for (const exclude of excList) {
+                    if (exclude.recurse) {
+                        paramList.push(`-xr!${exclude.name.trim()}`);
+                    } else {
+                        paramList.push(`-x!${exclude.name.trim()}`);
+                    }
+                }
+            }
+
             const outPath = (outDir ? outDir.path : zipFile.dir);
             paramList.push('-o' + outPath);
 
@@ -108,7 +121,7 @@ export class SevenZipper {
         });
     }
 
-    UnzipSync(zipFile: File, outDir?: File): string {
+    UnzipSync(zipFile: File, outDir?: File, excList?: SevenZipUnzipExcludeList): string {
 
         if (!zipFile.IsFile()) {
             throw new Error('\'' + zipFile.path + '\' is not exist');
@@ -120,6 +133,17 @@ export class SevenZipper {
         paramList.push('-r');
         paramList.push('-aoa');
         paramList.push(zipFile.path);
+
+        if (excList) {
+            for (const exclude of excList) {
+                if (exclude.recurse) {
+                    paramList.push(`-xr!${exclude.name.trim()}`);
+                } else {
+                    paramList.push(`-x!${exclude.name.trim()}`);
+                }
+            }
+        }
+
         const outPath = (outDir ? outDir.path : zipFile.dir);
         paramList.push('-o' + outPath);
 

@@ -80,7 +80,9 @@ import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import {
     copyObject, downloadFileWithProgress, getDownloadUrlFromGitea,
     runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
-    genGithubHash, md5, toArray, newMarkdownString, newFileTooltipString, FileTooltipInfo, escapeXml, readGithubRepoTxtFile, downloadFile, notifyReloadWindow, formatPath, execInternalCommand
+    genGithubHash, md5, toArray, newMarkdownString, newFileTooltipString, FileTooltipInfo, escapeXml,
+    readGithubRepoTxtFile, downloadFile, notifyReloadWindow, formatPath, execInternalCommand,
+    copyAndMakeObjectKeysToLowerCase
 } from './utility';
 import { concatSystemEnvPath, DeleteDir, exeSuffix, kill, osType, DeleteAllChildren } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
@@ -1483,10 +1485,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         }
 
         for (const packZipFile of packList) {
+            // make dir
             const outDir = File.fromArray([rootDir.path, '.cmsis', packZipFile.noSuffixName]);
             if (outDir.IsDir()) { continue; } /* folder existed, exit */
             outDir.CreateDir(true);
-
+            // unzip
             const compresser = new SevenZipper(ResManager.GetInstance().Get7zDir());
             compresser.UnzipSync(packZipFile, outDir);
             folders.push(outDir);
@@ -3026,6 +3029,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         this.enableAutoSave(true);
         if (this.__autosaveDisableTimeoutTimer) {
             clearTimeout(this.__autosaveDisableTimeoutTimer);
+            this.__autosaveDisableTimeoutTimer = undefined;
         }
     }
 
@@ -4133,9 +4137,19 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             let objPath: string | undefined;
             const refFile = File.fromArray([activePrj.ToAbsolutePath(activePrj.getOutputDir()), 'ref.json']);
             if (!refFile.IsFile()) { throw new Error(`Not found 'ref.json' at output folder, you need build project !`) }
-            const ref = JSON.parse(refFile.Read());
-            if (typeof ref[srcPath] == 'string') { objPath = <string>ref[srcPath]; }
-            else { throw new Error(`Not found any reference for this source file !, [path]: '${srcPath}'`) }
+            let ref = JSON.parse(refFile.Read());
+
+            if (osType() == 'win32') { // to lower-case path for win32
+                ref = copyAndMakeObjectKeysToLowerCase(ref);
+                srcPath = srcPath.toLowerCase();
+            }
+
+            // get obj path by source file path
+            objPath = <string>ref[srcPath];
+
+            if (typeof objPath != 'string') {
+                throw new Error(`Not found any reference for this source file !, [path]: '${srcPath}'`);
+            }
 
             // prepare command
             let exeFile: File;
@@ -4556,7 +4570,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     private install_lock: boolean = false;
-    async installCMSISHeaders(item: ProjTreeItem) {
+    async installCmsisSourcePack(item: ProjTreeItem, type: 'header' | 'lib') {
 
         if (this.install_lock) {
             GlobalEvent.emit('msg', newMessage('Warning', 'Operation is busy !'));
@@ -4565,13 +4579,19 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         this.install_lock = true; // lock op
 
-        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
-        if (prj) {
-            try {
-                prj.installCMSISHeaders();
-            } catch (error) {
-                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+        try {
+
+            const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+            if (prj) {
+                if (type == 'header') {
+                    prj.installCMSISHeaders();
+                } else if (type == 'lib') {
+                    prj.installCmsisLibs();
+                }
             }
+
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
         }
 
         this.install_lock = false; // unlock op
@@ -5760,7 +5780,7 @@ class VFolderSourcePathsModifier implements ModifiableYamlConfigProvider {
                     '#     - path: ./src_1.c',
                     '#     - path: ../xxx/xxx/src_2.c',
                     '#     - path: xxx/${VAR}/src_3.c',
-                    '#     - path: D:/path/xxx/src_n.c',
+                    '#     - path: d:/path/xxx/src_n.c',
                     `#`,
                     ``,
                     yml.stringify(vFolderInfo.files, { indent: 4 })
@@ -5856,7 +5876,7 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
             '#     - ./dir_1',
             '#     - ../xxx/xxx/dir_2',
             '#     - xxx/variable/path/${VAR1}/${VAR2}/dir_3',
-            '#     - D:/absolute/path/xxx/dir_n',
+            '#     - d:/absolute/path/xxx/dir_n',
             `# LibraryFolders:`,
             '#     - ./dir_1',
             '#     - ../xxx/xxx/dir_2',
