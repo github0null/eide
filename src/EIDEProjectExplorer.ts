@@ -2415,8 +2415,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         const compresser = new SevenZipper(ResManager.GetInstance().Get7zDir());
         const templateFile = <File>option.templateFile;
 
+        const targetDir = new File(option.outDir.path + File.sep + option.name);
+        const targetWorkspaceFilePath = targetDir.path + File.sep + option.name + AbstractProject.workspaceSuffix;
+
         try {
-            const targetDir = new File(option.outDir.path + File.sep + option.name);
+
             targetDir.CreateDir(true);
 
             let templateShaStr: string | undefined;
@@ -2450,71 +2453,92 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                 }
             }
 
-            const res = await compresser.Unzip(templateFile, targetDir);
-            if (res) { throw res; }
+            const err = await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: `Creating project`
+            }, async (progress): Promise<Error> => {
 
-            setTimeout(async () => {
+                progress.report({ message: 'Unzip template', increment: 10 });
 
-                try {
+                const e = await compresser.Unzip(templateFile, targetDir);
+                if (e) return e;
 
-                    const wsFileList = targetDir.GetList([/\.code-workspace$/i], File.EXCLUDE_ALL_FILTER);
-                    const wsFile: File | undefined = wsFileList.length > 0 ? wsFileList[0] : undefined;
+                progress.report({ message: 'Generating', increment: 50 });
 
-                    if (wsFile) {
+                return new Promise((resolve) => {
 
-                        // rename workspace file name
-                        const targetPath = targetDir.path + File.sep + option.name + AbstractProject.workspaceSuffix;
-                        fs.renameSync(wsFile.path, targetPath);
+                    const post_create_task = async () => {
 
-                        // rename project
-                        if (templateFile.suffix != '.ewt') { // ignore eide workspace project
+                        try {
 
-                            // convert .EIDE to .eide
-                            this.toLowercaseEIDEFolder(targetDir);
+                            const wsFileList = targetDir.GetList([/\.code-workspace$/i], File.EXCLUDE_ALL_FILTER);
+                            const wsFile: File | undefined = wsFileList.length > 0 ? wsFileList[0] : undefined;
 
-                            // if not verified, del *.sh
-                            if (!isVerified) {
-                                const eideFolder = File.fromArray([targetDir.path, AbstractProject.EIDE_DIR]);
-                                if (eideFolder.IsDir()) {
-                                    eideFolder.GetList([/\-install\.sh$/i], File.EXCLUDE_ALL_FILTER)
-                                        .forEach((f) => {
-                                            try { fs.unlinkSync(f.path); } catch (err) { }
-                                        });
+                            if (wsFile) {
+
+                                // rename workspace file name
+                                fs.renameSync(wsFile.path, targetWorkspaceFilePath);
+
+                                // rename project
+                                if (templateFile.suffix != '.ewt') { // ignore eide workspace project
+
+                                    // convert .EIDE to .eide
+                                    this.toLowercaseEIDEFolder(targetDir);
+
+                                    // if not verified, del *.sh
+                                    if (!isVerified) {
+                                        const eideFolder = File.fromArray([targetDir.path, AbstractProject.EIDE_DIR]);
+                                        if (eideFolder.IsDir()) {
+                                            eideFolder.GetList([/\-install\.sh$/i], File.EXCLUDE_ALL_FILTER)
+                                                .forEach((f) => {
+                                                    try { fs.unlinkSync(f.path); } catch (err) { }
+                                                });
+                                        }
+                                    }
+
+                                    // rename project name
+                                    {
+                                        const prjFile = File.fromArray([targetDir.path, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
+                                        if (!prjFile.IsFile()) throw Error(`project file: '${prjFile.path}' is not exist !`);
+
+                                        try {
+                                            const prjConf: ProjectConfigData<any> = JSON.parse(prjFile.Read());
+                                            prjConf.name = option.name; // set project name
+                                            prjFile.Write(JSON.stringify(prjConf));
+                                        } catch (error) {
+                                            throw Error(`change project name failed !, msg: ${error.message}`);
+                                        }
+                                    }
                                 }
                             }
 
-                            // rename project name
-                            {
-                                const prjFile = File.fromArray([targetDir.path, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
-                                if (!prjFile.IsFile()) throw Error(`project file: '${prjFile.path}' is not exist !`);
+                            resolve(undefined);
 
-                                try {
-                                    const prjConf: ProjectConfigData<any> = JSON.parse(prjFile.Read());
-                                    prjConf.name = option.name; // set project name
-                                    prjFile.Write(JSON.stringify(prjConf));
-                                } catch (error) {
-                                    throw Error(`change project name failed !, msg: ${error.message}`);
-                                }
-                            }
+                        } catch (error) {
+                            resolve(error);
                         }
+                    };
 
-                        // switch workspace if user select `yes`
-                        const item = await vscode.window.showInformationMessage(
-                            view_str$operation$create_prj_done, 'Yes', 'Later'
-                        );
+                    setTimeout(post_create_task, 400);
+                });
+            });
 
-                        // switch workspace
-                        if (item === 'Yes') {
-                            const wsFile = new File(targetPath);
-                            if (wsFile.IsFile()) {
-                                WorkspaceManager.getInstance().openWorkspace(wsFile);
-                            }
-                        }
-                    }
-                } catch (error) {
-                    GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+            if (err) {
+                throw err;
+            }
+
+            // switch workspace if user select `yes`
+            const item = await vscode.window.showInformationMessage(
+                view_str$operation$create_prj_done, 'Yes', 'Later'
+            );
+
+            // switch workspace
+            if (item === 'Yes') {
+                const wsFile = new File(targetWorkspaceFilePath);
+                if (wsFile.IsFile()) {
+                    WorkspaceManager.getInstance().openWorkspace(wsFile);
                 }
-            }, 400);
+            }
 
         } catch (error) {
             GlobalEvent.emit('msg', newMessage('Warning', `Create project failed !, msg: ${(<Error>error).message}`));
