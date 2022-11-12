@@ -703,6 +703,7 @@ function exportEnvToSysPath() {
         File.normalize(`${builderFolder.path}/bin`), // builder bin folder
         File.normalize(`${builderFolder.path}/utils`), // utils tool folder
         File.normalize(`${builderFolder.dir}/scripts`),
+        File.normalize(`${resManager.getBuiltInToolsDir().path}/utils`) // builtin utils tool folder
     ];
 
     //

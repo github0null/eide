@@ -311,6 +311,10 @@ export class ResManager extends events.EventEmitter {
         return File.fromArray([os.homedir(), '.eide']);
     }
 
+    getBuiltInToolsDir(): File {
+        return <File>this.GetDir('tools');
+    }
+
     getEideToolsInstallDir(): string {
         return [os.homedir(), '.eide', 'tools'].join(File.sep);
     }
