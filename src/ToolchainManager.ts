@@ -1187,7 +1187,7 @@ class AC5 implements IToolchian {
 
         const incDir = File.fromArray([toolSearchLoc, 'include']);
         if (incDir.IsDir()) {
-            return [incDir].concat(incDir.GetList(File.EMPTY_FILTER)).map((f) => { return f.path; });
+            return [incDir].concat(incDir.GetList(File.EXCLUDE_ALL_FILTER)).map((f) => { return f.path; });
         }
 
         return [incDir.path];

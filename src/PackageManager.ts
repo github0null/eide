@@ -602,7 +602,7 @@ export class PackageManager {
         this.packList = [];
 
         let pdscFile: File;
-        let fList = packDir.GetList([/.pdsc/i], File.EMPTY_FILTER);
+        let fList = packDir.GetList([/.pdsc/i], File.EXCLUDE_ALL_FILTER);
 
         if (fList.length === 0) {
             throw new Error('Not found \'.pdsc\' suffix file');

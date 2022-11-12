@@ -619,7 +619,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         if (wsFolder.IsDir()) {
 
             // rename eide folder name
-            const folderList = wsFolder.GetList(File.EMPTY_FILTER, [/^\.EIDE$/]);
+            const folderList = wsFolder.GetList(File.EXCLUDE_ALL_FILTER, [/^\.EIDE$/]);
             if (folderList.length > 0) {
                 const oldEideFolder = folderList[0];
                 fs.renameSync(oldEideFolder.path, `${oldEideFolder.dir}${File.sep}${AbstractProject.EIDE_DIR}`);
@@ -628,7 +628,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             // rename eide conf file
             const eideFolder = File.fromArray([wsFolder.path, AbstractProject.EIDE_DIR]);
             if (eideFolder.IsDir()) {
-                const fList = eideFolder.GetList([/^EIDE\.json$/], File.EMPTY_FILTER);
+                const fList = eideFolder.GetList([/^EIDE\.json$/], File.EXCLUDE_ALL_FILTER);
                 if (fList.length > 0) {
                     const oldEideConfFile = fList[0];
                     fs.renameSync(oldEideConfFile.path, `${oldEideConfFile.dir}${File.sep}${AbstractProject.prjConfigName}`);
@@ -650,7 +650,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         const validList: File[] = [];
 
         for (const wsDir of wsFolders) {
-            const wsList = wsDir.GetList([/.code-workspace$/i], File.EMPTY_FILTER);
+            const wsList = wsDir.GetList([/.code-workspace$/i], File.EXCLUDE_ALL_FILTER);
             if (wsList.length > 0) {
 
                 // convert .EIDE to .eide
@@ -1209,7 +1209,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                     {
                         const outFolder = project.getOutputFolder();
                         if (outFolder.IsDir()) {
-                            const fList = outFolder.GetList([AbstractProject.buildOutputMatcher], File.EMPTY_FILTER);
+                            const fList = outFolder.GetList([AbstractProject.buildOutputMatcher], File.EXCLUDE_ALL_FILTER);
                             fList.forEach((file) => {
                                 const fsize = file.getSize();
                                 iList.push(new ProjTreeItem(TreeItemType.OUTPUT_FILE_ITEM, {
@@ -1454,7 +1454,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
     async CreateProject(option: CreateOptions): Promise<AbstractProject | undefined> {
 
         // check folder
-        const dList = option.outDir.GetList(File.EMPTY_FILTER);
+        const dList = option.outDir.GetList(File.EXCLUDE_ALL_FILTER);
         if (dList.findIndex((_folder) => { return _folder.name === option.name; }) !== -1) {
             const item = await vscode.window.showWarningMessage(`${WARNING}: ${project_exist_txt}`, 'Yes', 'No');
             if (item === undefined || item === 'No') {
@@ -1840,7 +1840,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         if (ePrjInfo.sourceEntries.length > 0) {
             nPrjConfig.srcDirs = ePrjInfo.sourceEntries;
         } else {
-            nPrjConfig.srcDirs = File.NotMatchFilter(ePrjRoot.GetList(File.EMPTY_FILTER), File.EMPTY_FILTER,
+            nPrjConfig.srcDirs = File.NotMatchFilter(ePrjRoot.GetList(File.EXCLUDE_ALL_FILTER), File.EXCLUDE_ALL_FILTER,
                 [/^\./, /^(build|dist|out|bin|obj|exe|debug|release|log[s]?|ipch|docs|doc|img|image[s]?)$/i])
                 .map(d => ePrjRoot.ToRelativePath(d.path) || d.path);
         }
@@ -2457,7 +2457,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
                 try {
 
-                    const wsFileList = targetDir.GetList([/\.code-workspace$/i], File.EMPTY_FILTER);
+                    const wsFileList = targetDir.GetList([/\.code-workspace$/i], File.EXCLUDE_ALL_FILTER);
                     const wsFile: File | undefined = wsFileList.length > 0 ? wsFileList[0] : undefined;
 
                     if (wsFile) {
@@ -2476,7 +2476,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                             if (!isVerified) {
                                 const eideFolder = File.fromArray([targetDir.path, AbstractProject.EIDE_DIR]);
                                 if (eideFolder.IsDir()) {
-                                    eideFolder.GetList([/\-install\.sh$/i], File.EMPTY_FILTER)
+                                    eideFolder.GetList([/\-install\.sh$/i], File.EXCLUDE_ALL_FILTER)
                                         .forEach((f) => {
                                             try { fs.unlinkSync(f.path); } catch (err) { }
                                         });
@@ -5155,7 +5155,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             case TreeItemType.FOLDER_ROOT:
                 if (onlyChildren) {
                     const dir = <File>item.val.obj;
-                    dir.GetList(undefined, File.EMPTY_FILTER).forEach(f => {
+                    dir.GetList(undefined, File.EXCLUDE_ALL_FILTER).forEach(f => {
                         prj.excludeSourceFile(f.path);
                     });
                 } else {
@@ -5190,7 +5190,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 case TreeItemType.FOLDER_ROOT:
                     {
                         const dir = <File>item.val.obj;
-                        dir.GetList(undefined, File.EMPTY_FILTER).forEach(f => {
+                        dir.GetList(undefined, File.EXCLUDE_ALL_FILTER).forEach(f => {
                             prj.unexcludeSourceFile(f.path);
                         });
                     }

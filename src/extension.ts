@@ -731,7 +731,7 @@ function exportEnvToSysPath() {
     });
 
     // search tools folder and export path to system env
-    eideToolsFolder.GetList(File.EMPTY_FILTER).forEach((subDir) => {
+    eideToolsFolder.GetList(File.EXCLUDE_ALL_FILTER).forEach((subDir) => {
 
         if (!/^\w+$/.test(subDir.name)) return; // filter dir name
 
@@ -779,7 +779,7 @@ function exportEnvToSysPath() {
     });
 
     // search built-in tools and export path to system env
-    builderFolder.GetList(File.EMPTY_FILTER).forEach((subDir) => {
+    builderFolder.GetList(File.EXCLUDE_ALL_FILTER).forEach((subDir) => {
         const binFolder = File.normalize(`${subDir.path}/bin`);
         if (File.IsDir(binFolder)) {
             pathList.push({
@@ -974,7 +974,7 @@ function initBinariesExecutablePermission() {
             File.fromArray([resManager.getBuilderDir().path, 'utils']),
             File.fromArray([resManager.getBuilderDir().path, 'bin'])
         ]) {
-            dir.GetList(undefined, File.EMPTY_FILTER)
+            dir.GetList(undefined, File.EXCLUDE_ALL_FILTER)
                 .forEach((f) => {
                     if (!f.suffix) { // nosuffix file is an exe file
                         exeLi.push(f.path);

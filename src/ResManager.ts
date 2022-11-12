@@ -278,7 +278,7 @@ export class ResManager extends events.EventEmitter {
                     if (/WindowsPowerShell/.test(path)) {
                         if (path && fs.existsSync(path) && fs.lstatSync(path).isDirectory) {
                             const res = path.replace(/\\*\s*$/, '');
-                            const psList = new File(res).GetList([/powershell\.exe/i], File.EMPTY_FILTER);
+                            const psList = new File(res).GetList([/powershell\.exe/i], File.EXCLUDE_ALL_FILTER);
                             if (psList.length > 0 && psList[0].IsFile()) {
                                 return psList[0];
                             }
@@ -333,7 +333,7 @@ export class ResManager extends events.EventEmitter {
 
     getCMSISHeaderPacks(): File[] {
         const dir = File.fromArray([(<File>this.GetDir('include')).path, 'cmsis']);
-        return dir.GetList(undefined, File.EMPTY_FILTER)
+        return dir.GetList(undefined, File.EXCLUDE_ALL_FILTER)
             .filter(f => f.suffix === '.zip' || f.suffix === '.7z')
             .filter(f => !f.noSuffixName.startsWith('lib') && !f.noSuffixName.endsWith('_lib'));
     }

@@ -630,7 +630,7 @@ class SourceRootList implements SourceProvider {
                 const cFolder = <File>folderStack.pop();
                 const isSourceRoot = cFolder.path === rootFolder.path;
                 if (cFolder.name.startsWith('.') && !isSourceRoot) continue; // skip '.xxx' folders, not root folder
-                const fileList = cFolder.GetList(fileFilter, File.EMPTY_FILTER);
+                const fileList = cFolder.GetList(fileFilter, File.EXCLUDE_ALL_FILTER);
 
                 if (fileList.length > 0) {
 
@@ -672,7 +672,7 @@ class SourceRootList implements SourceProvider {
                 }
 
                 // push subfolders
-                cFolder.GetList(File.EMPTY_FILTER)
+                cFolder.GetList(File.EXCLUDE_ALL_FILTER)
                     .filter((folder) => !AbstractProject.excludeDirFilter.test(folder.name))
                     .forEach((folder) => folderStack.push(folder));
             }
@@ -953,7 +953,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             const envFile: File = this.getEnvFile(true);
             if (!envFile.IsFile()) { // if 'env.ini' file is not existed, we try to merge it
                 const oldEnv: string[] = [];
-                this.getEideDir().GetList([/[^\.]+\.env\.ini$/], File.EMPTY_FILTER)
+                this.getEideDir().GetList([/[^\.]+\.env\.ini$/], File.EXCLUDE_ALL_FILTER)
                     .forEach((file) => {
                         const tName = NodePath.basename(file.path, '.env.ini');
                         if (tName) {
@@ -1621,12 +1621,12 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             if (keywords) {
                 // do match
                 const subdirs = outDir
-                    .GetList(File.EMPTY_FILTER, undefined)
+                    .GetList(File.EXCLUDE_ALL_FILTER, undefined)
                     .filter(f => keywords.some(k => f.name.toLowerCase().includes(k)));
                 // matched dirs, filter files
                 if (subdirs.length > 0) {
                     const cpuTyp = (<ArmBaseCompileConfigModel>this.GetConfiguration().compileConfigModel).data.cpuType;
-                    const allfiles = subdirs[0].GetList(undefined, File.EMPTY_FILTER);
+                    const allfiles = subdirs[0].GetList(undefined, File.EXCLUDE_ALL_FILTER);
                     const unusedFiles = allfiles.filter(f => !matchLibFileAndCpuTyp(f.name, cpuTyp));
                     libPaths.push(subdirs[0].path);
                     if (unusedFiles.length < allfiles.length) {
@@ -1634,7 +1634,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
                     }
                 }
                 // delete non-matched dirs
-                outDir.GetList(File.EMPTY_FILTER, undefined)
+                outDir.GetList(File.EXCLUDE_ALL_FILTER, undefined)
                     .filter(f => !keywords.some(k => f.name.toLowerCase().includes(k)))
                     .forEach(f => platform.DeleteDir(f));
             }
@@ -2500,7 +2500,7 @@ class EIDEProject extends AbstractProject {
         if (localKeilFile.IsFile()) {
             keilFile = localKeilFile;
         } else {
-            const keilFileList = ResManager.GetInstance().GetTemplateDir().GetList(suffixFilter, File.EMPTY_FILTER);
+            const keilFileList = ResManager.GetInstance().GetTemplateDir().GetList(suffixFilter, File.EXCLUDE_ALL_FILTER);
             const fIndex = keilFileList.findIndex((f) => { return f.noSuffixName === prjConfig.type; });
             if (fIndex === -1) { throw new Error('Not found \'' + prjConfig.type + '\' keil template file'); }
             keilFile = keilFileList[fIndex];
@@ -2871,7 +2871,7 @@ class EIDEProject extends AbstractProject {
         // show warnings if we have
         setTimeout(async (rootFolder: File) => {
             try {
-                for (const f of rootFolder.GetList([/importer\.warning\.txt$/], File.EMPTY_FILTER)) {
+                for (const f of rootFolder.GetList([/importer\.warning\.txt$/], File.EXCLUDE_ALL_FILTER)) {
                     const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(f.ToUri()));
                     vscode.window.showTextDocument(doc, { preview: false, selection: doc.lineAt(0).range });
                     break;

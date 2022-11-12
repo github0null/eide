@@ -1940,7 +1940,7 @@ class STLinkUploadModel extends UploadConfigModel<STLinkOptions> {
                     // find in workspace
                     const wsFolder = WorkspaceManager.getInstance().getWorkspaceRoot();
                     if (wsFolder) {
-                        wsFolder.GetList([/\.stldr$/i], File.EMPTY_FILTER)
+                        wsFolder.GetList([/\.stldr$/i], File.EXCLUDE_ALL_FILTER)
                             .forEach((file) => {
                                 resultList.push({
                                     label: file.name,
@@ -1954,7 +1954,7 @@ class STLinkUploadModel extends UploadConfigModel<STLinkOptions> {
                     const stCliPath = SettingManager.GetInstance().getSTLinkExePath();
                     const elFolder = File.fromArray([NodePath.dirname(stCliPath), 'ExternalLoader']);
                     if (elFolder.IsDir()) {
-                        elFolder.GetList([/\.stldr$/i], File.EMPTY_FILTER)
+                        elFolder.GetList([/\.stldr$/i], File.EXCLUDE_ALL_FILTER)
                             .forEach((file) => {
                                 resultList.push({
                                     label: file.name,
@@ -2383,7 +2383,7 @@ class OpenOCDUploadModel extends UploadConfigModel<OpenOCDFlashOptions> {
             for (const path of ['.', '.eide', 'tools']) {
                 const cfgFolder = File.fromArray([wsFolder.path, path]);
                 if (cfgFolder.IsDir()) {
-                    cfgFolder.GetList([/\.cfg$/i], File.EMPTY_FILTER).forEach((file) => {
+                    cfgFolder.GetList([/\.cfg$/i], File.EXCLUDE_ALL_FILTER).forEach((file) => {
                         const rePath = (wsFolder.ToRelativePath(file.path) || file.name);
                         resultList.push({
                             name: File.ToUnixPath(rePath).replace('.cfg', ''),
@@ -2398,7 +2398,7 @@ class OpenOCDUploadModel extends UploadConfigModel<OpenOCDFlashOptions> {
         for (const path of this.configSearchList['build-in']) {
             const cfgFolder = new File(File.normalize(`${NodePath.dirname(openocdExe.dir)}/${path}/${configClass}`));
             if (cfgFolder.IsDir()) {
-                cfgFolder.GetAll([/\.cfg$/i], File.EMPTY_FILTER).forEach((file) => {
+                cfgFolder.GetAll([/\.cfg$/i], File.EXCLUDE_ALL_FILTER).forEach((file) => {
                     const rePath = (cfgFolder.ToRelativePath(file.path) || file.name);
                     resultList.push({
                         name: File.ToUnixPath(rePath).replace('.cfg', '')
