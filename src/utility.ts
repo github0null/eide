@@ -110,7 +110,18 @@ export function newFileTooltipString(f: File | FileTooltipInfo, root?: File): vs
 
     const s = [
         title,
-        `- **Path:** \`${f.path}\``];
+        `- **Path:** \`${f.path}\``,
+    ];
+
+    if (File.IsFile(f.path)) {
+        try {
+            const meta = fs.statSync(f.path);
+            s.push(`- **Size:** \`${meta.size.toString()} (${(meta.size / 1024).toFixed(1)} KB)\``);
+            s.push(`- **LastModifyTime:** \`${meta.mtime.toString()}\``);
+        } catch (error) {
+            // nothing
+        }
+    }
 
     if (root) {
         const re = root.ToRelativePath(f.path);
