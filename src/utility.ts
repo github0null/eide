@@ -220,12 +220,10 @@ export function runShellCommand(title: string, commandLine: string, env?: any, u
             if (platform.osType() == 'win32') { shellOption.executable = 'cmd.exe'; shellOption.shellArgs = ['/C']; }
             else { shellOption.executable = '/bin/bash'; shellOption.shellArgs = ['-c']; }
             // init task
-            const task = new vscode.Task({ type: 'shell' }, vscode.TaskScope.Global, title, 'shell');
             if (platform.osType() == 'win32') commandLine = `"${commandLine}"`;
-            task.execution = new vscode.ShellExecution(commandLine, shellOption);
-            task.definition['command'] = commandLine;
+            const task = new vscode.Task({ type: 'shell', command: commandLine }, vscode.TaskScope.Global,
+                title, 'shell', new vscode.ShellExecution(commandLine, shellOption), []);
             task.isBackground = false;
-            task.problemMatchers = [];
             task.presentationOptions = { echo: true, focus: false, clear: true };
             vscode.tasks.executeTask(task);
         }

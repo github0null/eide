@@ -1180,28 +1180,29 @@ class EideTaskProvider implements vscode.TaskProvider {
     public static TASK_TYPE_MSYS = 'eide.msys';
 
     provideTasks(token: vscode.CancellationToken): vscode.ProviderResult<vscode.Task[]> {
-        return [
-            new vscode.Task({ type: EideTaskProvider.TASK_TYPE_MSYS }, vscode.TaskScope.Workspace, 'msys', EideTaskProvider.TASK_TYPE_MSYS)
-        ];
+        return undefined;
     }
 
-    resolveTask(task: vscode.Task, token: vscode.CancellationToken): vscode.ProviderResult<vscode.Task> {
+    resolveTask(task_: vscode.Task, token: vscode.CancellationToken): vscode.ProviderResult<vscode.Task> {
 
         const workspaceManager = WorkspaceManager.getInstance();
 
-        if (task.definition.type == EideTaskProvider.TASK_TYPE_MSYS) {
+        if (task_.definition.type == EideTaskProvider.TASK_TYPE_MSYS) {
 
-            const definition: EideShellTaskDef = <any>task.definition;
+            const definition: EideShellTaskDef = <any>task_.definition;
 
-            task.name = definition.name || task.name;
+            const task = new vscode.Task(definition, vscode.TaskScope.Workspace,
+                definition.name, EideTaskProvider.TASK_TYPE_MSYS, definition.problemMatchers);
 
-            const shellcommand = platform.osType() == 'win32' ? `"${definition.command}"` : definition.command;
+            const shellcommand = definition.command;
             task.execution = new vscode.ShellExecution(shellcommand, {
                 executable: platform.osType() == 'win32' ? `${process.env['EIDE_MSYS']}/bash.exe` : '/bin/bash',
                 shellArgs: ['-c'],
                 cwd: definition?.options?.cwd || workspaceManager.getCurrentFolder()?.path,
                 env: utility.mergeEnv(process.env, {})
             });
+
+            task.group = definition.group;
 
             return task;
         }

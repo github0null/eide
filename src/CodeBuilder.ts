@@ -297,12 +297,10 @@ export abstract class CodeBuilder {
             else { shellOption.executable = '/bin/bash'; shellOption.shellArgs = ['-c']; }
             shellOption.env = <any>process.env;
             // setup task
-            const task = new vscode.Task({ type: 'shell' }, vscode.TaskScope.Workspace, title, 'eide');
             if (os.platform() == 'win32') commandLine = `"${commandLine}"`;
-            task.execution = new vscode.ShellExecution(commandLine, shellOption);
-            task.definition['command'] = commandLine;
+            const task = new vscode.Task({ type: 'shell', command: commandLine }, vscode.TaskScope.Workspace,
+                title, 'eide', new vscode.ShellExecution(commandLine, shellOption), []);
             task.group = vscode.TaskGroup.Build;
-            task.problemMatchers = [];
             task.isBackground = false;
             task.presentationOptions = { echo: true, focus: false, clear: true };
             vscode.tasks.executeTask(task);
