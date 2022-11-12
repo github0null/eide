@@ -45,6 +45,8 @@ export interface TemplateInfo {
 
 	download_url: string | undefined;
 
+	git_clone_url: string | undefined;
+
 	size: number | undefined;
 
 	disabled: boolean | undefined;

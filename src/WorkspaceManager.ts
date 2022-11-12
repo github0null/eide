@@ -88,7 +88,7 @@ export class WorkspaceManager {
     }
 
     /**
-     * @param workspaceFile '.code-workspace' file obj
+     * @param workspaceFile '.code-workspace' file or a folder
     */
     openWorkspace(workspaceFile: File) {
         vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(workspaceFile.path));

@@ -44,7 +44,8 @@ import {
     view_str$prompt$select_file, view_str$prompt$select_folder, view_str$prompt$select_file_or_folder, view_str$prompt$select_tool_install_mode,
     view_str$prompt$tool_install_mode_online, view_str$prompt$tool_install_mode_local, view_str$operation$empty_anygcc_prj, view_str$operation$setupUtilTools,
     view_str$prompt$setupToolchainPrefix,
-    view_str$prompt$needReloadToUpdateEnv
+    view_str$prompt$needReloadToUpdateEnv,
+    view_str$operation$create_prj_done
 } from './StringTable';
 import { CreateOptions, ImportOptions, ProjectType } from './EIDETypeDefine';
 import { File } from '../lib/node-utility/File';
@@ -63,6 +64,7 @@ import * as NodePath from 'path';
 import { ResInstaller, ExternalToolName } from './ResInstaller';
 import { AbstractProject } from './EIDEProject';
 import { WorkspaceManager } from './WorkspaceManager';
+import * as child_process from 'child_process';
 
 interface TemplatePickItem extends vscode.QuickPickItem, TemplateInfo {
     cacheFileName: string | undefined;
@@ -1091,6 +1093,7 @@ export class OperationExplorer {
         const remoteUrl = acToken ? rawUrl : utility.redirectHost(rawUrl); // if token is enabled, not proxy
 
         let targetTempFile: File | undefined;
+        let targetCloneUrl: string | undefined;
 
         // get template from Github
         {
@@ -1257,6 +1260,7 @@ export class OperationExplorer {
                         version: templateInfo.version,
                         category: templateInfo.category,
                         download_url: gitFileInfo?.download_url || templateInfo.download_url,
+                        git_clone_url: templateInfo.git_clone_url,
                         size: gitFileInfo?.size || templateInfo.size,
                         disabled: templateInfo.disabled,
                         upload_time: templateInfo.upload_time,
@@ -1282,6 +1286,10 @@ export class OperationExplorer {
                         desc_list.push(`${size_str} KB`);
                     }
 
+                    if (tPickItem.git_clone_url) {
+                        desc_list.push(`Git Repo`);
+                    }
+
                     const detail_list: string[] = [];
 
                     if (tPickItem.author) {
@@ -1294,6 +1302,10 @@ export class OperationExplorer {
 
                     if (tPickItem.version) {
                         detail_list.push(`Version: ${tPickItem.version}`);
+                    }
+
+                    if (tPickItem.git_clone_url) {
+                        detail_list.push(`Git-Url: ${tPickItem.git_clone_url}`);
                     }
 
                     // set descriptions
@@ -1313,58 +1325,66 @@ export class OperationExplorer {
                     return;
                 }
 
-                if (temp_sel_item.download_url === undefined) {
-                    this.locked = false;
-                    GlobalEvent.emit('msg', newMessage('Warning', `error !, download url is null !`));
-                    return;
+                // use git clone
+                if (temp_sel_item.git_clone_url) {
+                    targetCloneUrl = temp_sel_item.git_clone_url;
                 }
 
-                // found cache, use cache install
-                if (temp_sel_item.cacheFileName) {
-                    targetTempFile = resManager.getCachedFileByName(temp_sel_item.cacheFileName);
-                }
+                // use template file
+                else if (temp_sel_item.download_url) {
 
-                // has no cache, redownload it
-                else {
-                    // create cache file
-                    targetTempFile = resManager.getCachedFileByName(temp_sel_item.file_name);
-
-                    const done = await vscode.window.withProgress({
-                        location: vscode.ProgressLocation.Notification,
-                        title: 'Downloading template',
-                        cancellable: true
-                    }, (progress, token): Thenable<boolean> => {
-                        return new Promise(async (resolve) => {
-
-                            const res = await utility.downloadFileWithProgress(
-                                <string>temp_sel_item.download_url, temp_sel_item.file_name, progress, token);
-
-                            if (res instanceof Buffer) {
-                                fs.writeFileSync((<File>targetTempFile).path, res);
-                                resManager.addCache({
-                                    name: (<File>targetTempFile).name,
-                                    size: res.length,
-                                    version: temp_sel_item.version
-                                });
-                                resolve(true);
-                                return;
-                            }
-
-                            else if (res instanceof Error) {
-                                GlobalEvent.emit('msg', ExceptionToMessage(res, 'Warning'));
-                                resolve(false);
-                                return;
-                            }
-
-                            // res is undefined, operation canceled
-                            resolve(false);
-                        });
-                    });
-
-                    // download failed, reset targetTempFile to undefined
-                    if (done === false) {
-                        targetTempFile = undefined;
+                    // found cache, use cache install
+                    if (temp_sel_item.cacheFileName) {
+                        targetTempFile = resManager.getCachedFileByName(temp_sel_item.cacheFileName);
                     }
+                    // has no cache, redownload it
+                    else {
+                        // create cache file
+                        targetTempFile = resManager.getCachedFileByName(temp_sel_item.file_name);
+
+                        const done = await vscode.window.withProgress({
+                            location: vscode.ProgressLocation.Notification,
+                            title: 'Downloading template',
+                            cancellable: true
+                        }, (progress, token): Thenable<boolean> => {
+                            return new Promise(async (resolve) => {
+
+                                const res = await utility.downloadFileWithProgress(
+                                    <string>temp_sel_item.download_url, temp_sel_item.file_name, progress, token);
+
+                                if (res instanceof Buffer) {
+                                    fs.writeFileSync((<File>targetTempFile).path, res);
+                                    resManager.addCache({
+                                        name: (<File>targetTempFile).name,
+                                        size: res.length,
+                                        version: temp_sel_item.version
+                                    });
+                                    resolve(true);
+                                    return;
+                                }
+
+                                else if (res instanceof Error) {
+                                    GlobalEvent.emit('msg', ExceptionToMessage(res, 'Warning'));
+                                    resolve(false);
+                                    return;
+                                }
+
+                                // res is undefined, operation canceled
+                                resolve(false);
+                            });
+                        });
+
+                        // download failed, reset targetTempFile to undefined
+                        if (done === false) {
+                            targetTempFile = undefined;
+                        }
+                    }
+                }
+
+                // error
+                else {
+                    this.locked = false;
+                    GlobalEvent.emit('msg', newMessage('Warning', `'download_url' and 'git_clone_url' can not be null !`));
                 }
 
             } catch (error) {
@@ -1374,43 +1394,97 @@ export class OperationExplorer {
             }
         }
 
-        //====================================================
+        //
+        // start create project
+        //
 
-        if (targetTempFile === undefined) {
+        if (targetTempFile == undefined &&
+            targetCloneUrl == undefined) {
             this.locked = false;
             return;
         }
 
-        const name = await vscode.window.showInputBox({
-            placeHolder: input_project_name,
-            ignoreFocusOut: true,
-            validateInput: (name) => AbstractProject.validateProjectName(name)
-        });
+        // do create project by template file
+        if (targetTempFile) {
 
-        if (name === undefined) {
-            this.locked = false;
-            return;
+            const projectname = await vscode.window.showInputBox({
+                placeHolder: input_project_name,
+                ignoreFocusOut: true,
+                validateInput: (name) => AbstractProject.validateProjectName(name)
+            });
+
+            if (projectname === undefined) {
+                this.locked = false;
+                return;
+            }
+
+            const outDir = await vscode.window.showOpenDialog({
+                openLabel: select_out_dir,
+                canSelectFiles: false,
+                canSelectFolders: true,
+                canSelectMany: false
+            });
+
+            if (outDir === undefined) {
+                this.locked = false;
+                return;
+            }
+
+            const outputDirPath = outDir[0].fsPath;
+
+            this.emit('request_create_from_template', {
+                type: <any>'null', // ignore it
+                name: projectname,
+                templateFile: targetTempFile,
+                outDir: new File(outputDirPath)
+            });
         }
 
-        const outDir = await vscode.window.showOpenDialog({
-            openLabel: select_out_dir,
-            canSelectFiles: false,
-            canSelectFolders: true,
-            canSelectMany: false
-        });
+        // clone git repo now
+        else if (targetCloneUrl) {
 
-        if (outDir === undefined) {
-            this.locked = false;
-            return;
+            const outDir = await vscode.window.showOpenDialog({
+                openLabel: select_out_dir,
+                canSelectFiles: false,
+                canSelectFolders: true,
+                canSelectMany: false
+            });
+
+            if (outDir === undefined) {
+                this.locked = false;
+                return;
+            }
+
+            const outputDirPath = outDir[0].fsPath;
+
+            const done = await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: `Cloning Template`,
+                cancellable: true,
+            }, (progress, cancel): Promise<boolean> => {
+                return new Promise(async (resolve) => {
+                    progress.report({ message: targetCloneUrl });
+                    const done = await utility.execInternalCommand(`git clone ${targetCloneUrl}`, outputDirPath, cancel);
+                    if (done) {
+                        try {
+                            child_process.execSync(`git remote remove origin`, { cwd: outputDirPath });
+                        } catch (error) {
+                            // nothing todo
+                        }
+                    }
+                    resolve(done);
+                });
+            });
+
+            if (done) {
+                const item = await vscode.window.showInformationMessage(view_str$operation$create_prj_done, 'Yes', 'Later');
+                if (item == 'Yes') {
+                    WorkspaceManager.getInstance().openWorkspace(new File(outputDirPath));
+                }
+            } else {
+                GlobalEvent.emit('msg', newMessage('Warning', `Clone project failed !, Check log in 'eide.log' panel`));
+            }
         }
-
-        // notify
-        this.emit('request_create_from_template', {
-            type: <any>'null', // ignore it
-            name: name,
-            templateFile: targetTempFile,
-            outDir: new File(outDir[0].fsPath)
-        });
 
         this.locked = false;
     }
