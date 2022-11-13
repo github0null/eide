@@ -30,7 +30,8 @@
     "eide.project.gen.makefile": "生成 Makefile 模板",
     "eide.project.modify.files.options": "为源文件附加单独的编译参数",
     "eide.project.import.ext.project.src.struct": "从其他 IDE 的项目中导入源文件树",
-    
+    "eide.project.generate_builder_params": "生成 builder.params",
+
     "eide.workspace.build": "构建所有项目",
     "eide.workspace.rebuild": "重新构建所有项目",
     "eide.workspace.open.config": "打开工作区配置",

@@ -32,6 +32,7 @@
 * 自动生成默认调试配置，为调试器插件 Cortex-debug / STM8-debug 生成默认配置。
 * 内置多种实用工具，`CMSIS Config Wizard UI`, `反汇编查看`，`程序资源视图` ...
 * 内置 C/C++ 插件的 `C/C++ IntelliSense Provider`，**无需配置** `c_cpp_properties.json` 即可获得源码跳转，补全提示功能。
+* 内置 Msys Unix Shell 环境，方便执行 shell 命令或脚本
 
 ***
 

@@ -29,12 +29,13 @@
         "eide",
         "cmsis",
         "eclipse",
-        "iar"
+        "iar",
+        "msys"
     ],
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.10.2",
+    "version": "3.10.3",
     "preview": false,
     "engines": {
         "vscode": "^1.63.0"
@@ -530,7 +531,7 @@
             },
             {
                 "command": "eide.project.genBuilderParams",
-                "title": "Generate builder.params for project"
+                "title": "%eide.project.generate_builder_params%"
             },
             {
                 "command": "eide.operation.install_toolchain",
@@ -1562,6 +1563,39 @@
                 "language": "elf.info",
                 "scopeName": "source.elf.info",
                 "path": "./lang/elf.info.tmLanguage.json"
+            }
+        ],
+        "taskDefinitions": [
+            {
+                "type": "eide.msys",
+                "required": [
+                    "name",
+                    "command"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Task Name. A human-readable name for this task"
+                    },
+                    "command": {
+                        "type": "string",
+                        "description": "Command. A shell command will be executed."
+                    },
+                    "options": {
+                        "type": "object",
+                        "description": "Other options",
+                        "properties": {
+                            "cwd": {
+                                "type": "string",
+                                "description": "Work Directory"
+                            }
+                        }
+                    },
+                    "env": {
+                        "type": "object",
+                        "description": "Environment variables list. These variables will be exported to shell context."
+                    }
+                }
             }
         ]
     }
