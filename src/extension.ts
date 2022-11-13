@@ -1199,7 +1199,7 @@ class EideTaskProvider implements vscode.TaskProvider {
                 executable: platform.osType() == 'win32' ? `${process.env['EIDE_MSYS']}/bash.exe` : '/bin/bash',
                 shellArgs: ['-c'],
                 cwd: definition?.options?.cwd || workspaceManager.getCurrentFolder()?.path,
-                env: utility.mergeEnv(process.env, {})
+                env: utility.mergeEnv(process.env, definition.env || {})
             });
 
             task.group = definition.group;
