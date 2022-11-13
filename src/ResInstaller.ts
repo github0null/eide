@@ -48,7 +48,7 @@ export type ExternalToolName = ToolchainName | HexUploaderType | 'cppcheck' | st
 
 export interface ExternalToolInfo {
 
-    resource_name: string;
+    resource_name: string; // resource id (unique)
     readable_name: string;
     detail?: string;
     is_third_party?: boolean;
@@ -156,8 +156,8 @@ export class ResInstaller {
         });
 
         this.registerTool('OpenOCD', {
-            resource_name: 'openocd',
-            readable_name: 'OpenOCD Programmer (v0.10.0 stable)',
+            resource_name: 'openocd_7a1adfbec_mingw32',
+            readable_name: 'OpenOCD Programmer (v0.12.0-rc2)',
             setting_name: 'OpenOCD.ExePath',
             require_name: `bin/openocd${platform.exeSuffix()}`,
             no_binaries: no_binaries
@@ -191,7 +191,7 @@ export class ResInstaller {
     isToolInstalled(name: ExternalToolName): boolean | undefined {
         const tool = this.toolsMap.get(name.toLowerCase());
         if (tool) {
-            const instDir = File.fromArray([ResManager.GetInstance().getUtilToolsDir(), tool.resource_name]);
+            const instDir = File.fromArray([ResManager.GetInstance().getEideToolsInstallDir(), tool.resource_name]);
             if (instDir.IsDir()) {
                 if (tool.require_name) {
                     const p = File.normalize(instDir.path + File.sep + tool.require_name);
@@ -322,7 +322,7 @@ export class ResInstaller {
         if (toolInfo.is_third_party) {
             resourceFile = File.fromArray([os.tmpdir(), `${resourceName}.${toolInfo.zip_type}`]);
         } else {
-            resourceFile = File.fromArray([os.tmpdir(), `${resourceName}.7z`])
+            resourceFile = File.fromArray([os.tmpdir(), `${resourceName}.${toolInfo.zip_type || '7z'}`])
         }
 
         try {
@@ -389,7 +389,7 @@ export class ResInstaller {
 
                         const resManager = ResManager.GetInstance();
                         const unzipper = new SevenZipper(resManager.Get7zDir());
-                        const outDir = File.fromArray([resManager.getUtilToolsDir(), resourceName]);
+                        const outDir = File.fromArray([resManager.getEideToolsInstallDir(), resourceName]);
 
                         platform.DeleteAllChildren(outDir);
                         outDir.CreateDir(true);
@@ -425,35 +425,8 @@ export class ResInstaller {
 
                             const command = toolInfo.postInstallCmd();
                             if (command) {
-
-                                const done = await (new Promise<boolean>((resolve) => {
-
-                                    progress.report({ message: `Running post-install cmd: '${command}' ...` });
-
-                                    const proc = new ExeCmd();
-
-                                    proc.on('launch', () => {
-                                        GlobalEvent.emit('globalLog.show');
-                                        GlobalEvent.emit('globalLog.append', `\n>>> exec cmd: '${command}'\n\n`);
-                                    });
-
-                                    proc.on('data', str => {
-                                        GlobalEvent.emit('globalLog.append', str);
-                                    });
-
-                                    proc.on('close', exitInfo => {
-                                        resolve(exitInfo.code == 0);
-                                    });
-
-                                    cancel.onCancellationRequested(_ => {
-                                        if (!platform.kill(<number>proc.pid())) {
-                                            GlobalEvent.emit('msg', newMessage('Warning', `Can not kill process: ${proc.pid()} !`));
-                                        }
-                                    });
-
-                                    proc.Run(<string>command, undefined, { cwd: outDir.path });
-                                }));
-
+                                progress.report({ message: `Running post-install cmd: '${command}' ...` });
+                                const done = await utility.execInternalCommand(command, outDir.path, cancel);
                                 if (!done) {
 
                                     if (cancel.isCancellationRequested) {
@@ -481,7 +454,7 @@ export class ResInstaller {
                             let drvExePath = toolInfo.getDrvInstaller();
                             if (drvExePath) {
                                 drvExePath = outDir.path + File.sep + drvExePath;
-                                utility.runShellCommand(`install driver`, `"${drvExePath}"`, undefined, true);
+                                utility.runShellCommand(`install driver`, `start "${resourceName}" /MAX "${drvExePath}"`, undefined, true);
                             }
                         }
 

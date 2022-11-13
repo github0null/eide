@@ -278,7 +278,7 @@ export class ResManager extends events.EventEmitter {
                     if (/WindowsPowerShell/.test(path)) {
                         if (path && fs.existsSync(path) && fs.lstatSync(path).isDirectory) {
                             const res = path.replace(/\\*\s*$/, '');
-                            const psList = new File(res).GetList([/powershell\.exe/i], File.EMPTY_FILTER);
+                            const psList = new File(res).GetList([/powershell\.exe/i], File.EXCLUDE_ALL_FILTER);
                             if (psList.length > 0 && psList[0].IsFile()) {
                                 return psList[0];
                             }
@@ -311,6 +311,14 @@ export class ResManager extends events.EventEmitter {
         return File.fromArray([os.homedir(), '.eide']);
     }
 
+    getBuiltInToolsDir(): File {
+        return <File>this.GetDir('tools');
+    }
+
+    getEideToolsInstallDir(): string {
+        return [os.homedir(), '.eide', 'tools'].join(File.sep);
+    }
+
     GetLogDir(): File {
         return this.getEideHomeFolder();
     }
@@ -325,9 +333,15 @@ export class ResManager extends events.EventEmitter {
 
     getCMSISHeaderPacks(): File[] {
         const dir = File.fromArray([(<File>this.GetDir('include')).path, 'cmsis']);
-        return dir.GetList(undefined, File.EMPTY_FILTER).filter((f) => {
-            return f.suffix === '.zip' || f.suffix === '.7z';
-        });
+        return dir.GetList(undefined, File.EXCLUDE_ALL_FILTER)
+            .filter(f => f.suffix === '.zip' || f.suffix === '.7z')
+            .filter(f => !f.noSuffixName.startsWith('lib') && !f.noSuffixName.endsWith('_lib'));
+    }
+
+    getCmsisLibPacks(): { [name: string]: File } {
+        return {
+            'libdsp': File.fromArray([(<File>this.GetDir('include')).path, 'cmsis', 'dsp_lib.7z'])
+        }
     }
 
     getStvpToolsDir(): File {
@@ -382,12 +396,6 @@ export class ResManager extends events.EventEmitter {
 
     getSerialPortExe(): File {
         return File.fromArray([this.getBuilderDir().path, 'bin', `serial_monitor${exeSuffix()}`]);
-    }
-
-    /* --------------- tools -------------------- */
-
-    getUtilToolsDir(): string {
-        return [os.homedir(), '.eide', 'tools'].join(File.sep);
     }
 
     /* ----------------------------------- */

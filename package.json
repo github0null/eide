@@ -29,12 +29,13 @@
         "eide",
         "cmsis",
         "eclipse",
-        "iar"
+        "iar",
+        "msys"
     ],
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.10.0",
+    "version": "3.10.3",
     "preview": false,
     "engines": {
         "vscode": "^1.63.0"
@@ -143,7 +144,7 @@
                             "altText": "setup toolchain"
                         },
                         "completionEvents": [
-                            "onContext:cl.eide.toolchain_ready"
+                            "onCommand:eide.operation.install_toolchain"
                         ]
                     },
                     {
@@ -530,7 +531,7 @@
             },
             {
                 "command": "eide.project.genBuilderParams",
-                "title": "Generate builder.params for project"
+                "title": "%eide.project.generate_builder_params%"
             },
             {
                 "command": "eide.operation.install_toolchain",
@@ -678,8 +679,8 @@
                 "command": "_cl.eide.project.historyRecord",
                 "title": "%eide.operation.open.history%",
                 "icon": {
-                    "dark": "./res/icon/Note_16x.svg",
-                    "light": "./res/icon/Note_16x.svg"
+                    "dark": "./res/icon/History_16x.svg",
+                    "light": "./res/icon/History_16x.svg"
                 }
             },
             {
@@ -754,11 +755,11 @@
             },
             {
                 "command": "_cl.eide.project.installCMSISHeaders",
-                "title": "%eide.package.install.cmsis%",
-                "icon": {
-                    "dark": "./res/icon/AddBuildQueue_16x.svg",
-                    "light": "./res/icon/AddBuildQueue_16x.svg"
-                }
+                "title": "Install CMSIS Core Headers"
+            },
+            {
+                "command": "_cl.eide.project.installCmsisLibs",
+                "title": "Install CMSIS Core Libs"
             },
             {
                 "command": "_cl.eide.project.addSrcDir",
@@ -846,6 +847,14 @@
                 "icon": {
                     "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
                     "light": "./res/icon/SwitchSourceOrTarget_16x.svg"
+                }
+            },
+            {
+                "command": "_cl.eide.project.fetchShellFlasher",
+                "title": "%eide.flash.fetch-shell-flasher%",
+                "icon": {
+                    "dark": "./res/icon/DownloadFile_16x.svg",
+                    "light": "./res/icon/DownloadFile_16x.svg"
                 }
             },
             {
@@ -1204,6 +1213,10 @@
                     "when": "viewItem == PACK && view == Project"
                 },
                 {
+                    "command": "_cl.eide.project.installCmsisLibs",
+                    "when": "viewItem == PACK && view == Project"
+                },
+                {
                     "command": "_cl.eide.project.setActive",
                     "when": "viewItem == SOLUTION && view == Project && cl.eide.enable.active"
                 },
@@ -1338,7 +1351,12 @@
                 {
                     "command": "_cl.eide.project.switchUploader",
                     "group": "inline",
-                    "when": "view == Project && viewItem == UPLOAD_OPTION"
+                    "when": "viewItem == UPLOAD_OPTION || viewItem == UPLOAD_OPTION_Shell && view == Project"
+                },
+                {
+                    "command": "_cl.eide.project.fetchShellFlasher",
+                    "group": "inline",
+                    "when": "viewItem == UPLOAD_OPTION_Shell && view == Project"
                 },
                 {
                     "command": "_cl.eide.project.modifyCompileConfig",
@@ -1545,6 +1563,39 @@
                 "language": "elf.info",
                 "scopeName": "source.elf.info",
                 "path": "./lang/elf.info.tmLanguage.json"
+            }
+        ],
+        "taskDefinitions": [
+            {
+                "type": "eide.msys",
+                "required": [
+                    "name",
+                    "command"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Task Name. A human-readable name for this task"
+                    },
+                    "command": {
+                        "type": "string",
+                        "description": "Command. A shell command will be executed."
+                    },
+                    "options": {
+                        "type": "object",
+                        "description": "Other options",
+                        "properties": {
+                            "cwd": {
+                                "type": "string",
+                                "description": "Work Directory"
+                            }
+                        }
+                    },
+                    "env": {
+                        "type": "object",
+                        "description": "Environment variables list. These variables will be exported to shell context."
+                    }
+                }
             }
         ]
     }

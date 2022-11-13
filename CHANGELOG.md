@@ -6,6 +6,35 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.10.3] revision
+
+**New**:
+  - `New task type: 'eide.msys'`: You can write user task in `tasks.json` file, and execute `unix shell` command in `windows` platform.
+  - `Github Template`: Allow Create Project From Github Repository. 
+
+**Optimize**:
+  - `High Cpu Load`: Don't check and search toolchain path when plug-in startup, cache search result.
+  - `Riscv Builder Options UI`: Add auto-complete for `arch`, `abi`, `code-model` options.
+  - `Cmsis Core Libraries`: Filter unused `*.lib` when unzip cmsis core libraries.
+  - `Openocd v0.12.0-rc2`: Update Openocd to `v0.12.0-rc2`, repo: `https://github.com/github0null/eide_builtin_openocd`
+
+***
+
+### [v3.10.1] preview
+
+**New**:
+  - `Shell Flasher`: Allow install shell flasher scripts from remote repo.
+  - `Configure Toolchain`: Add a button to setup tool prefix for gcc family compiler.
+
+**Fix**:
+  - `Eclipse Importer`: Can not parse 'link.location' in '.project' file.
+
+**Optimize**:
+  - `Configure Toolchain`: Don't check all toolchain status when plug-in launch.
+  - `Resource Manager`: Don't remove non-existed source dirs in eide.json.
+
+***
+
 ### [v3.10.0]
 
 **New**:

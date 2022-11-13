@@ -144,7 +144,8 @@
                     "markdownDescription": "Arch",
                     "description.zh-cn": "指令集（arch）",
                     "size": "small",
-                    "type": "string"
+                    "type": "string",
+                    "auto_complete_ctx": "gcc.compiler.archs"
                 },
                 "abi": {
                     "readable_name": "ABI",
@@ -152,13 +153,14 @@
                     "markdownDescription": "Integer and floating-point calling convention",
                     "description.zh-cn": "整数和浮点调用约定",
                     "size": "small",
-                    "type": "string"
+                    "auto_complete_ctx": "gcc.compiler.abis"
                 },
                 "code-model": {
                     "markdownDescription": "Code Model",
                     "description.zh-cn": "代码模型（code-model）",
                     "size": "small",
-                    "type": "string"
+                    "type": "string",
+                    "auto_complete_ctx": "gcc.compiler.riscv.code-models"
                 },
                 "misc-control": {
                     "markdownDescription": "Other Global Options",

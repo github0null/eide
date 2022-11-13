@@ -30,7 +30,8 @@
     "eide.project.gen.makefile": "生成 Makefile 模板",
     "eide.project.modify.files.options": "为源文件附加单独的编译参数",
     "eide.project.import.ext.project.src.struct": "从其他 IDE 的项目中导入源文件树",
-    
+    "eide.project.generate_builder_params": "生成 builder.params",
+
     "eide.workspace.build": "构建所有项目",
     "eide.workspace.rebuild": "重新构建所有项目",
     "eide.workspace.open.config": "打开工作区配置",
@@ -73,8 +74,11 @@
     "eide.package.comp.uninstall": "移除组件",
 
     "eide.builder.switch": "切换编译工具",
+    "eide.builder.setup-toolchain-prefix": "设置编译器前缀",
+
     "eide.flash.switch": "切换烧录器",
-    
+    "eide.flash.fetch-shell-flasher": "从云端安装 Shell 烧录脚本",
+
     "eide.deps.include.show": "显示所有包含路径",
     "eide.deps.include.add": "添加包含路径",
     "eide.deps.inclib.show": "显示所有库目录",

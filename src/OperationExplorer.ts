@@ -42,7 +42,10 @@ import {
     view_str$operation$create_from_internal_temp_detail, view_str$operation$create_from_local_disk_detail,
     view_str$operation$create_from_remote_repo_detail, view_str$operation$openSettings,
     view_str$prompt$select_file, view_str$prompt$select_folder, view_str$prompt$select_file_or_folder, view_str$prompt$select_tool_install_mode,
-    view_str$prompt$tool_install_mode_online, view_str$prompt$tool_install_mode_local, view_str$operation$empty_anygcc_prj, view_str$operation$setupUtilTools
+    view_str$prompt$tool_install_mode_online, view_str$prompt$tool_install_mode_local, view_str$operation$empty_anygcc_prj, view_str$operation$setupUtilTools,
+    view_str$prompt$setupToolchainPrefix,
+    view_str$prompt$needReloadToUpdateEnv,
+    view_str$operation$create_prj_done
 } from './StringTable';
 import { CreateOptions, ImportOptions, ProjectType } from './EIDETypeDefine';
 import { File } from '../lib/node-utility/File';
@@ -60,6 +63,8 @@ import * as vscode from 'vscode';
 import * as NodePath from 'path';
 import { ResInstaller, ExternalToolName } from './ResInstaller';
 import { AbstractProject } from './EIDEProject';
+import { WorkspaceManager } from './WorkspaceManager';
+import * as child_process from 'child_process';
 
 interface TemplatePickItem extends vscode.QuickPickItem, TemplateInfo {
     cacheFileName: string | undefined;
@@ -239,12 +244,15 @@ export class OperationExplorer {
 
         //---
 
-        const tcList: ToolchainName[] = ['AC5', 'AC6', 'GCC', 'IAR_ARM', 'IAR_STM8', 'SDCC', 'Keil_C51', 'RISCV_GCC', 'ANY_GCC'];
-        const toolchainManager = ToolchainManager.getInstance();
-        const status: CheckStatus = tcList.some((tcName) => toolchainManager.isToolchainPathReady(tcName))
-            ? CheckStatus.All_Verified
-            : CheckStatus.All_Failed;
-        icoPath = resManager.GetIconByName(<string>this.statusIconMap.get(status));
+        // @deprecated 暂时弃用，isToolchainPathReady 查询会影响启动速度
+        // const tcList: ToolchainName[] = ['AC5', 'AC6', 'GCC', 'IAR_ARM', 'IAR_STM8', 'SDCC', 'Keil_C51', 'RISCV_GCC', 'ANY_GCC'];
+        // const toolchainManager = ToolchainManager.getInstance();
+        // const status: CheckStatus = tcList.some((tcName) => toolchainManager.isToolchainPathReady(tcName))
+        //     ? CheckStatus.All_Verified
+        //     : CheckStatus.All_Failed;
+        // vscode.commands.executeCommand('setContext', 'cl.eide.toolchain_ready', status != CheckStatus.All_Failed);
+        // icoPath = resManager.GetIconByName(<string>this.statusIconMap.get(status));
+        icoPath = resManager.GetIconByName('Toolbox_16x.svg');
         this.provider.AddData({
             label: view_str$operation$setToolchainPath,
             command: {
@@ -257,8 +265,6 @@ export class OperationExplorer {
                 dark: icoPath.path
             }
         });
-        // setup env if toolchain is ready
-        vscode.commands.executeCommand('setContext', 'cl.eide.toolchain_ready', status != CheckStatus.All_Failed);
 
         //---
 
@@ -643,94 +649,191 @@ export class OperationExplorer {
         return status ? '✔' : '✘';
     }
 
+    private _SelectToolchain(): Promise<ToolchainDespPickItem | undefined> {
+
+        return new Promise((resolve) => {
+
+            const settingManager = SettingManager.GetInstance();
+            const toolchainManager = ToolchainManager.getInstance();
+            const resManager = ResManager.GetInstance();
+
+            const toolchainPickItems: ToolchainDespPickItem[] = [
+                {
+                    type: 'None',
+                    label: 'MCS51/STM8/8Bit Compiler',
+                    kind: vscode.QuickPickItemKind.Separator,
+                },
+                {
+                    label: 'Keil C51 (cx51) (ide path)',
+                    type: 'Keil_C51',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('Keil_C51'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('Keil_C51')?.path}`,
+                    detail: view_str$operation$setKeil51Path
+                },
+                {
+                    label: 'IAR For STM8 (iccstm8) (ide path)',
+                    type: 'IAR_STM8',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('IAR_STM8'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('IAR_STM8')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'IAR For STM8')
+                },
+                {
+                    label: 'Small Device C Compiler (sdcc)',
+                    type: 'SDCC',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('SDCC'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('SDCC')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'SDCC')
+                },
+                /* {
+                    label: 'SDCC With GNU Patch For STM8 (Only for stm8)',
+                    type: 'GNU_SDCC_STM8',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('GNU_SDCC_STM8')),
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'GNU_SDCC_STM8')
+                }, */
+
+                // armcc (non-free)
+                {
+                    type: 'None',
+                    label: 'Arm C/C++ Compiler (non-free)',
+                    kind: vscode.QuickPickItemKind.Separator,
+                },
+                {
+                    label: 'Keil MDK (ide path) (used to locate armcc compiler path)',
+                    type: 'AC5',
+                    description: this.getStatusTxt(settingManager.isMDKIniReady()),
+                    detail: view_str$operation$setMDKPath
+                },
+                {
+                    label: 'ARMCC V5 (armcc) (standalone toolchain)',
+                    type: 'AC5',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC5'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('AC5')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V5 Toolchain')
+                },
+                {
+                    label: 'ARMCC V6 (armclang) (standalone toolchain)',
+                    type: 'AC6',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC6'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('AC6')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V6 Toolchain')
+                },
+                {
+                    label: 'IAR ARM C/C++ Compiler (iccarm) (standalone toolchain)',
+                    type: 'IAR_ARM',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('IAR_ARM'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('IAR_ARM')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'IAR ARM C/C++ Compiler')
+                },
+
+                // gcc family
+                {
+                    type: 'None',
+                    label: 'GCC Family Compiler (free)',
+                    kind: vscode.QuickPickItemKind.Separator,
+                },
+                {
+                    label: 'GNU Arm Embedded Toolchain (arm-none-eabi-gcc)',
+                    type: 'GCC',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('GCC'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('GCC')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'GNU Arm Embedded Toolchain'),
+                    buttons: [
+                        {
+                            iconPath: vscode.Uri.file(resManager.GetIconByName('EditTitleString_16x.svg').path),
+                            tooltip: view_str$prompt$setupToolchainPrefix
+                        }
+                    ]
+                },
+                {
+                    label: 'RISC-V GCC Toolchain (riscv-gcc)',
+                    type: 'RISCV_GCC',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('RISCV_GCC'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('RISCV_GCC')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'RISC-V GCC Toolchain'),
+                    buttons: [
+                        {
+                            iconPath: vscode.Uri.file(resManager.GetIconByName('EditTitleString_16x.svg').path),
+                            tooltip: view_str$prompt$setupToolchainPrefix
+                        }
+                    ]
+                },
+                {
+                    label: 'Universal GCC Toolchain (gcc)',
+                    type: 'ANY_GCC',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('ANY_GCC'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('ANY_GCC')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ANY GCC Toolchain'),
+                    buttons: [
+                        {
+                            iconPath: vscode.Uri.file(resManager.GetIconByName('EditTitleString_16x.svg').path),
+                            tooltip: view_str$prompt$setupToolchainPrefix
+                        }
+                    ]
+                }
+            ];
+
+            const picker = vscode.window.createQuickPick<ToolchainDespPickItem>();
+
+            {
+                picker.title = view_str$operation$setToolchainPath;
+                picker.placeholder = 'Click one toolchain to setup it';
+                picker.canSelectMany = false;
+                picker.items = toolchainPickItems;
+                picker.matchOnDescription = true;
+                picker.matchOnDetail = true;
+                picker.ignoreFocusOut = true;
+            }
+
+            let selected: ToolchainDespPickItem | undefined;
+
+            picker.onDidChangeSelection((items) => {
+                selected = items.length > 0 ? items[0] : undefined;
+            });
+
+            picker.onDidTriggerItemButton(async (ctx) => {
+
+                if (ctx.button.tooltip == view_str$prompt$setupToolchainPrefix) {
+
+                    const toolchain = toolchainManager.getToolchainByName(ctx.item.type);
+
+                    if (toolchain == undefined)
+                        return;
+
+                    if (toolchain?.getToolchainPrefix == undefined) {
+                        GlobalEvent.emit('msg', newMessage('Warning', `Not support modify prefix for toolchain: '${toolchain.name}'`));
+                        return;
+                    }
+
+                    const val = await vscode.window.showInputBox({
+                        title: view_str$prompt$setupToolchainPrefix + ' (Global)',
+                        value: toolchain.getToolchainPrefix(),
+                        ignoreFocusOut: true,
+                        placeHolder: 'Input a new toolchain prefix'
+                    });
+
+                    if (val != undefined) {
+                        settingManager.setGccToolPrefix(toolchain.name, val, true);
+                        utility.notifyReloadWindow(view_str$prompt$needReloadToUpdateEnv);
+                    }
+                }
+            });
+
+            picker.onDidAccept(() => {
+                picker.hide();
+                picker.dispose();
+                resolve(selected);
+            });
+
+            picker.show();
+        });
+    }
+
     async OnSetToolchainPath() {
 
         const settingManager = SettingManager.GetInstance();
-        const toolchainManager = ToolchainManager.getInstance();
 
-        const pickItems: ToolchainDespPickItem[] = [
-            {
-                label: 'Keil C51 (cx51) (ide path)',
-                type: 'Keil_C51',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('Keil_C51'))
-                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('Keil_C51')?.path}`,
-                detail: view_str$operation$setKeil51Path
-            },
-            {
-                label: 'Keil MDK (ide path)',
-                type: 'AC5',
-                description: this.getStatusTxt(settingManager.isMDKIniReady()),
-                detail: view_str$operation$setMDKPath
-            },
-            {
-                label: 'ARMCC V5 (armcc) (standalone toolchain)',
-                type: 'AC5',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC5'))
-                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('AC5')?.path}`,
-                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V5 Toolchain')
-            },
-            {
-                label: 'ARMCC V6 (armclang) (standalone toolchain)',
-                type: 'AC6',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC6'))
-                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('AC6')?.path}`,
-                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V6 Toolchain')
-            },
-            {
-                label: 'IAR ARM C/C++ Compiler (iccarm) (standalone toolchain)',
-                type: 'IAR_ARM',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('IAR_ARM'))
-                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('IAR_ARM')?.path}`,
-                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'IAR ARM C/C++ Compiler')
-            },
-            {
-                label: 'GNU Arm Embedded Toolchain (arm-none-eabi-gcc)',
-                type: 'GCC',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('GCC'))
-                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('GCC')?.path}`,
-                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'GNU Arm Embedded Toolchain')
-            },
-            {
-                label: 'IAR For STM8 (iccstm8) (ide path)',
-                type: 'IAR_STM8',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('IAR_STM8'))
-                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('IAR_STM8')?.path}`,
-                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'IAR For STM8')
-            },
-            {
-                label: 'Small Device C Compiler (sdcc)',
-                type: 'SDCC',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('SDCC'))
-                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('SDCC')?.path}`,
-                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'SDCC')
-            },
-            /* {
-                label: 'SDCC With GNU Patch For STM8 (Only for stm8)',
-                type: 'GNU_SDCC_STM8',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('GNU_SDCC_STM8')),
-                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'GNU_SDCC_STM8')
-            }, */
-            {
-                label: 'RISC-V GCC Toolchain (riscv-gcc)',
-                type: 'RISCV_GCC',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('RISCV_GCC'))
-                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('RISCV_GCC')?.path}`,
-                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'RISC-V GCC Toolchain')
-            },
-            {
-                label: 'ANY GCC Toolchain (gcc)',
-                type: 'ANY_GCC',
-                description: this.getStatusTxt(toolchainManager.isToolchainPathReady('ANY_GCC'))
-                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('ANY_GCC')?.path}`,
-                detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ANY GCC Toolchain')
-            }
-        ];
-
-        const item = await vscode.window.showQuickPick(pickItems, {
-            canPickMany: false,
-            placeHolder: view_str$operation$setToolchainPath
-        });
-        if (item === undefined) {
+        const item = await this._SelectToolchain();
+        if (item == undefined) {
             return;
         }
 
@@ -983,14 +1086,14 @@ export class OperationExplorer {
         this.locked = true;
 
         const settingManager = SettingManager.GetInstance();
-        const redirectUri = (uri: string) => settingManager.isUseGithubProxy() ? utility.redirectHost(uri) : uri;
 
         // URL: https://api.github.com/repos/github0null/eide-doc/contents/eide-template-list
         const rawUrl = `api.github.com/repos/${settingManager.getGithubRepositoryUrl()}`;
         const acToken = settingManager.getGithubRepositoryToken();
-        const remoteUrl = acToken ? rawUrl : redirectUri(rawUrl); // if token is enabled, not proxy
+        const remoteUrl = acToken ? rawUrl : utility.redirectHost(rawUrl); // if token is enabled, not proxy
 
         let targetTempFile: File | undefined;
+        let targetCloneUrl: string | undefined;
 
         // get template from Github
         {
@@ -1059,8 +1162,8 @@ export class OperationExplorer {
 
                 // redirect uri
                 file_list.forEach((gitFileInfo) => {
-                    gitFileInfo.download_url = gitFileInfo.download_url ? redirectUri(gitFileInfo.download_url) : undefined;
-                    gitFileInfo.git_url = redirectUri(gitFileInfo.git_url);
+                    gitFileInfo.download_url = gitFileInfo.download_url ? utility.redirectHost(gitFileInfo.download_url) : undefined;
+                    gitFileInfo.git_url = utility.redirectHost(gitFileInfo.git_url);
                 });
 
                 // get template index file info
@@ -1157,6 +1260,7 @@ export class OperationExplorer {
                         version: templateInfo.version,
                         category: templateInfo.category,
                         download_url: gitFileInfo?.download_url || templateInfo.download_url,
+                        git_clone_url: templateInfo.git_clone_url,
                         size: gitFileInfo?.size || templateInfo.size,
                         disabled: templateInfo.disabled,
                         upload_time: templateInfo.upload_time,
@@ -1182,6 +1286,10 @@ export class OperationExplorer {
                         desc_list.push(`${size_str} KB`);
                     }
 
+                    if (tPickItem.git_clone_url) {
+                        desc_list.push(`Git Repo`);
+                    }
+
                     const detail_list: string[] = [];
 
                     if (tPickItem.author) {
@@ -1194,6 +1302,10 @@ export class OperationExplorer {
 
                     if (tPickItem.version) {
                         detail_list.push(`Version: ${tPickItem.version}`);
+                    }
+
+                    if (tPickItem.git_clone_url) {
+                        detail_list.push(`Git-Url: ${tPickItem.git_clone_url}`);
                     }
 
                     // set descriptions
@@ -1213,58 +1325,66 @@ export class OperationExplorer {
                     return;
                 }
 
-                if (temp_sel_item.download_url === undefined) {
-                    this.locked = false;
-                    GlobalEvent.emit('msg', newMessage('Warning', `error !, download url is null !`));
-                    return;
+                // use git clone
+                if (temp_sel_item.git_clone_url) {
+                    targetCloneUrl = temp_sel_item.git_clone_url;
                 }
 
-                // found cache, use cache install
-                if (temp_sel_item.cacheFileName) {
-                    targetTempFile = resManager.getCachedFileByName(temp_sel_item.cacheFileName);
-                }
+                // use template file
+                else if (temp_sel_item.download_url) {
 
-                // has no cache, redownload it
-                else {
-                    // create cache file
-                    targetTempFile = resManager.getCachedFileByName(temp_sel_item.file_name);
-
-                    const done = await vscode.window.withProgress({
-                        location: vscode.ProgressLocation.Notification,
-                        title: 'Downloading template',
-                        cancellable: true
-                    }, (progress, token): Thenable<boolean> => {
-                        return new Promise(async (resolve) => {
-
-                            const res = await utility.downloadFileWithProgress(
-                                <string>temp_sel_item.download_url, temp_sel_item.file_name, progress, token);
-
-                            if (res instanceof Buffer) {
-                                fs.writeFileSync((<File>targetTempFile).path, res);
-                                resManager.addCache({
-                                    name: (<File>targetTempFile).name,
-                                    size: res.length,
-                                    version: temp_sel_item.version
-                                });
-                                resolve(true);
-                                return;
-                            }
-
-                            else if (res instanceof Error) {
-                                GlobalEvent.emit('msg', ExceptionToMessage(res, 'Warning'));
-                                resolve(false);
-                                return;
-                            }
-
-                            // res is undefined, operation canceled
-                            resolve(false);
-                        });
-                    });
-
-                    // download failed, reset targetTempFile to undefined
-                    if (done === false) {
-                        targetTempFile = undefined;
+                    // found cache, use cache install
+                    if (temp_sel_item.cacheFileName) {
+                        targetTempFile = resManager.getCachedFileByName(temp_sel_item.cacheFileName);
                     }
+                    // has no cache, redownload it
+                    else {
+                        // create cache file
+                        targetTempFile = resManager.getCachedFileByName(temp_sel_item.file_name);
+
+                        const done = await vscode.window.withProgress({
+                            location: vscode.ProgressLocation.Notification,
+                            title: 'Downloading template',
+                            cancellable: true
+                        }, (progress, token): Thenable<boolean> => {
+                            return new Promise(async (resolve) => {
+
+                                const res = await utility.downloadFileWithProgress(
+                                    <string>temp_sel_item.download_url, temp_sel_item.file_name, progress, token);
+
+                                if (res instanceof Buffer) {
+                                    fs.writeFileSync((<File>targetTempFile).path, res);
+                                    resManager.addCache({
+                                        name: (<File>targetTempFile).name,
+                                        size: res.length,
+                                        version: temp_sel_item.version
+                                    });
+                                    resolve(true);
+                                    return;
+                                }
+
+                                else if (res instanceof Error) {
+                                    GlobalEvent.emit('msg', ExceptionToMessage(res, 'Warning'));
+                                    resolve(false);
+                                    return;
+                                }
+
+                                // res is undefined, operation canceled
+                                resolve(false);
+                            });
+                        });
+
+                        // download failed, reset targetTempFile to undefined
+                        if (done === false) {
+                            targetTempFile = undefined;
+                        }
+                    }
+                }
+
+                // error
+                else {
+                    this.locked = false;
+                    GlobalEvent.emit('msg', newMessage('Warning', `'download_url' and 'git_clone_url' can not be null !`));
                 }
 
             } catch (error) {
@@ -1274,43 +1394,97 @@ export class OperationExplorer {
             }
         }
 
-        //====================================================
+        //
+        // start create project
+        //
 
-        if (targetTempFile === undefined) {
+        if (targetTempFile == undefined &&
+            targetCloneUrl == undefined) {
             this.locked = false;
             return;
         }
 
-        const name = await vscode.window.showInputBox({
-            placeHolder: input_project_name,
-            ignoreFocusOut: true,
-            validateInput: (name) => AbstractProject.validateProjectName(name)
-        });
+        // do create project by template file
+        if (targetTempFile) {
 
-        if (name === undefined) {
-            this.locked = false;
-            return;
+            const projectname = await vscode.window.showInputBox({
+                placeHolder: input_project_name,
+                ignoreFocusOut: true,
+                validateInput: (name) => AbstractProject.validateProjectName(name)
+            });
+
+            if (projectname === undefined) {
+                this.locked = false;
+                return;
+            }
+
+            const outDir = await vscode.window.showOpenDialog({
+                openLabel: select_out_dir,
+                canSelectFiles: false,
+                canSelectFolders: true,
+                canSelectMany: false
+            });
+
+            if (outDir === undefined) {
+                this.locked = false;
+                return;
+            }
+
+            const outputDirPath = outDir[0].fsPath;
+
+            this.emit('request_create_from_template', {
+                type: <any>'null', // ignore it
+                name: projectname,
+                templateFile: targetTempFile,
+                outDir: new File(outputDirPath)
+            });
         }
 
-        const outDir = await vscode.window.showOpenDialog({
-            openLabel: select_out_dir,
-            canSelectFiles: false,
-            canSelectFolders: true,
-            canSelectMany: false
-        });
+        // clone git repo now
+        else if (targetCloneUrl) {
 
-        if (outDir === undefined) {
-            this.locked = false;
-            return;
+            const outDir = await vscode.window.showOpenDialog({
+                openLabel: select_out_dir,
+                canSelectFiles: false,
+                canSelectFolders: true,
+                canSelectMany: false
+            });
+
+            if (outDir === undefined) {
+                this.locked = false;
+                return;
+            }
+
+            const outputDirPath = outDir[0].fsPath;
+
+            const done = await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: `Cloning Template`,
+                cancellable: true,
+            }, (progress, cancel): Promise<boolean> => {
+                return new Promise(async (resolve) => {
+                    progress.report({ message: targetCloneUrl });
+                    const done = await utility.execInternalCommand(`git clone ${targetCloneUrl}`, outputDirPath, cancel);
+                    if (done) {
+                        try {
+                            child_process.execSync(`git remote remove origin`, { cwd: outputDirPath });
+                        } catch (error) {
+                            // nothing todo
+                        }
+                    }
+                    resolve(done);
+                });
+            });
+
+            if (done) {
+                const item = await vscode.window.showInformationMessage(view_str$operation$create_prj_done, 'Yes', 'Later');
+                if (item == 'Yes') {
+                    WorkspaceManager.getInstance().openWorkspace(new File(outputDirPath));
+                }
+            } else {
+                GlobalEvent.emit('msg', newMessage('Warning', `Clone project failed !, Check log in 'eide.log' panel`));
+            }
         }
-
-        // notify
-        this.emit('request_create_from_template', {
-            type: <any>'null', // ignore it
-            name: name,
-            templateFile: targetTempFile,
-            outDir: new File(outDir[0].fsPath)
-        });
 
         this.locked = false;
     }

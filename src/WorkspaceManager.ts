@@ -63,18 +63,32 @@ export class WorkspaceManager {
         return vscode.workspace.workspaceFile ? new File(vscode.workspace.workspaceFile.fsPath) : undefined;
     }
 
+    getCurrentFolder(): File | undefined {
+
+        let folder = this.getWorkspaceRoot();
+
+        if (folder == undefined) {
+            const li = this.getWorkspaceList();
+            if (li.length > 0) {
+                folder = li[0];
+            }
+        }
+
+        return folder;
+    }
+
     getWorkspaceList(): File[] {
         const resList: File[] = [];
         if (vscode.workspace.workspaceFolders) {
-            for (const wsFile of vscode.workspace.workspaceFolders) {
-                resList.push(new File(wsFile.uri.fsPath));
+            for (const folder of vscode.workspace.workspaceFolders) {
+                resList.push(new File(folder.uri.fsPath));
             }
         }
         return resList;
     }
 
     /**
-     * @param workspaceFile '.code-workspace' file obj
+     * @param workspaceFile '.code-workspace' file or a folder
     */
     openWorkspace(workspaceFile: File) {
         vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(workspaceFile.path));

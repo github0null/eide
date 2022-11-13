@@ -161,14 +161,26 @@ export class WebPanelManager {
         }
 
         /* prepare page-init event data */
-        const initMsg = {
+        const initMsg = <any>{
             model: JSON.parse(getModelFile(optionsDataFile.path).Read()),
             data: JSON.parse(optionsDataFile.Read()),
             info: {
                 lang: vscode.env.language,
-                envList: envList
+                envList: envList,
+                contextData: {}
             }
         };
+
+        const toolchain = project.getToolchain();
+
+        if (toolchain.getGccCompilerTargetInfo) {
+            const inf = toolchain.getGccCompilerTargetInfo();
+            if (inf) {
+                initMsg.info.contextData['gcc.compiler.archs'] = inf.archs;
+                initMsg.info.contextData['gcc.compiler.abis'] = inf.abis;
+                initMsg.info.contextData['gcc.compiler.riscv.code-models'] = inf.rv_codeModels;
+            }
+        }
 
         panel.onDidDispose(() => {
             // TODO

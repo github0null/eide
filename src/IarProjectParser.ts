@@ -287,7 +287,7 @@ function tryGetIarChipInfo(iarToolRoot: File, rawChipNameStr: string): { [key: s
         const clas = m.groups['clas'];
         const devDir = File.fromArray([iarToolRoot.path, 'config', 'devices', clas]);
         if (devDir.IsDir()) {
-            const fli = devDir.GetAll([/\.i79$/i], File.EMPTY_FILTER);
+            const fli = devDir.GetAll([/\.i79$/i], File.EXCLUDE_ALL_FILTER);
             const idx = fli.findIndex(f => f.noSuffixName.toLowerCase() == chip.toLowerCase());
             if (idx != -1) {
                 try {

@@ -194,7 +194,8 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.modify.path', (item) => projectExplorer.openYamlConfig(item, 'src-path-cfg')));
 
     // package
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.installCMSISHeaders', (item) => projectExplorer.installCMSISHeaders(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.installCMSISHeaders', (item) => projectExplorer.installCmsisSourcePack(item, 'header')));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.installCmsisLibs', (item) => projectExplorer.installCmsisSourcePack(item, 'lib')));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.removePackage', (item) => projectExplorer.UninstallKeilPackage(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.addPackage', (item) => projectExplorer.InstallKeilPackage(item.val.projectIndex)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.exportXml', (item) => projectExplorer.ExportKeilXml(item.val.projectIndex)));
@@ -207,6 +208,7 @@ export async function activate(context: vscode.ExtensionContext) {
     // flasher
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.modifyUploadConfig', (item) => projectExplorer.ModifyUploadConfig(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.switchUploader', (item) => projectExplorer.switchUploader(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.fetchShellFlasher', (item) => projectExplorer.fetchShellFlasher(item)));
 
     // project deps
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.addIncludeDir', (item) => projectExplorer.AddIncludeDir(item.val.projectIndex)));
@@ -238,6 +240,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // others
     vscode.workspace.registerTextDocumentContentProvider(VirtualDocument.scheme, VirtualDocument.instance());
+    vscode.workspace.registerTaskProvider(EideTaskProvider.TASK_TYPE_MSYS, new EideTaskProvider());
 
     // auto save project
     projectExplorer.enableAutoSave(true);
@@ -465,8 +468,8 @@ async function tryUpdateBinaries(binFolder: File, localVer?: string, notConfirm?
 
     const getVersionFromRepo = async (): Promise<string | Error | undefined> => {
         try {
-            const url = `https://api-github.em-ide.com/repos/github0null/eide-resource/contents/binaries/${platform.getRuntimeId()}/VERSION`;
-            const cont = await utility.requestTxt(url);
+            const url = `https://api.github.com/repos/github0null/eide-resource/contents/binaries/${platform.getRuntimeId()}/VERSION`;
+            const cont = await utility.requestTxt(utility.redirectHost(url));
             if (typeof cont != 'string') return cont;
             let obj: any = undefined;
             try { obj = JSON.parse(cont); } catch (error) { return error; }
@@ -479,8 +482,8 @@ async function tryUpdateBinaries(binFolder: File, localVer?: string, notConfirm?
 
     const getAvailableBinariesVersions = async (): Promise<string[] | Error | undefined> => {
         try {
-            const url = `https://api-github.em-ide.com/repos/github0null/eide-resource/contents/binaries/${platform.getRuntimeId()}`;
-            const fList = await utility.readGithubRepoFolder(url);
+            const url = `https://api.github.com/repos/github0null/eide-resource/contents/binaries/${platform.getRuntimeId()}`;
+            const fList = await utility.readGithubRepoFolder(utility.redirectHost(url));
             if (fList instanceof Error) throw fList;
             return fList.filter(f => f.name.startsWith('bin-'))
                 .map(f => f.name.replace('bin-', '').replace('.7z', ''))
@@ -685,7 +688,7 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
 }
 
 //////////////////////////////////////////////////
-//
+// environment sutup
 //////////////////////////////////////////////////
 
 let isEnvSetuped: boolean = false;
@@ -701,6 +704,7 @@ function exportEnvToSysPath() {
         File.normalize(`${builderFolder.path}/bin`), // builder bin folder
         File.normalize(`${builderFolder.path}/utils`), // utils tool folder
         File.normalize(`${builderFolder.dir}/scripts`),
+        File.normalize(`${resManager.getBuiltInToolsDir().path}/utils`) // builtin utils tool folder
     ];
 
     //
@@ -728,7 +732,7 @@ function exportEnvToSysPath() {
     });
 
     // search tools folder and export path to system env
-    eideToolsFolder.GetList(File.EMPTY_FILTER).forEach((subDir) => {
+    eideToolsFolder.GetList(File.EXCLUDE_ALL_FILTER).forEach((subDir) => {
 
         if (!/^\w+$/.test(subDir.name)) return; // filter dir name
 
@@ -776,7 +780,7 @@ function exportEnvToSysPath() {
     });
 
     // search built-in tools and export path to system env
-    builderFolder.GetList(File.EMPTY_FILTER).forEach((subDir) => {
+    builderFolder.GetList(File.EXCLUDE_ALL_FILTER).forEach((subDir) => {
         const binFolder = File.normalize(`${subDir.path}/bin`);
         if (File.IsDir(binFolder)) {
             pathList.push({
@@ -971,7 +975,7 @@ function initBinariesExecutablePermission() {
             File.fromArray([resManager.getBuilderDir().path, 'utils']),
             File.fromArray([resManager.getBuilderDir().path, 'bin'])
         ]) {
-            dir.GetList(undefined, File.EMPTY_FILTER)
+            dir.GetList(undefined, File.EXCLUDE_ALL_FILTER)
                 .forEach((f) => {
                     if (!f.suffix) { // nosuffix file is an exe file
                         exeLi.push(f.path);
@@ -1154,7 +1158,62 @@ function RegisterGlobalEvent() {
     });
 }
 
+////////////////////////////////////////////
+// --- task provider
+////////////////////////////////////////////
+
+interface EideShellTaskDef extends vscode.TaskDefinition {
+
+    name: string;
+
+    command: string;
+
+    options?: {
+        cwd?: string;
+    };
+
+    env?: { [key: string]: string }
+}
+
+class EideTaskProvider implements vscode.TaskProvider {
+
+    public static TASK_TYPE_MSYS = 'eide.msys';
+
+    provideTasks(token: vscode.CancellationToken): vscode.ProviderResult<vscode.Task[]> {
+        return undefined;
+    }
+
+    resolveTask(task_: vscode.Task, token: vscode.CancellationToken): vscode.ProviderResult<vscode.Task> {
+
+        const workspaceManager = WorkspaceManager.getInstance();
+
+        if (task_.definition.type == EideTaskProvider.TASK_TYPE_MSYS) {
+
+            const definition: EideShellTaskDef = <any>task_.definition;
+
+            const task = new vscode.Task(definition, vscode.TaskScope.Workspace,
+                definition.name, EideTaskProvider.TASK_TYPE_MSYS, definition.problemMatchers);
+
+            const shellcommand = definition.command;
+            task.execution = new vscode.ShellExecution(shellcommand, {
+                executable: platform.osType() == 'win32' ? `${process.env['EIDE_MSYS']}/bash.exe` : '/bin/bash',
+                shellArgs: ['-c'],
+                cwd: definition?.options?.cwd || workspaceManager.getCurrentFolder()?.path,
+                env: utility.mergeEnv(process.env, {})
+            });
+
+            task.group = definition.group;
+
+            return task;
+        }
+
+        return undefined;
+    }
+}
+
+////////////////////////////////////////////
 // --- terminal link provider
+////////////////////////////////////////////
 
 class EideTerminalLink extends vscode.TerminalLink {
     file?: string;
@@ -1251,7 +1310,9 @@ class EideTerminalLinkProvider implements vscode.TerminalLinkProvider<EideTermin
     }
 }
 
+///////////////////////////////////////////////
 // --- terminal provider
+///////////////////////////////////////////////
 
 class EideTerminalProvider implements vscode.TerminalProfileProvider {
 
@@ -1360,7 +1421,9 @@ class EideTerminalProvider implements vscode.TerminalProfileProvider {
     }
 }
 
+///////////////////////////////////////////////////
 // --- .mapView viewer
+///////////////////////////////////////////////////
 
 import { FileWatcher } from '../lib/node-utility/FileWatcher';
 
@@ -1579,7 +1642,9 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
     }
 }
 
-//-----------------------------------------
+///////////////////////////////////////////////////
+// KEIL_C51 -> SDCC converter
+///////////////////////////////////////////////////
 
 const sfrMap: Map<string, string> = new Map();
 

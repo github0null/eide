@@ -38,12 +38,12 @@ import { File } from '../lib/node-utility/File';
 import { FileWatcher } from '../lib/node-utility/FileWatcher';
 import { KeilParser } from './KeilXmlParser';
 import { ResManager } from './ResManager';
-import { SevenZipper } from './Compress';
+import { SevenZipper, SevenZipUnzipExcludeList } from './Compress';
 import {
     ConfigMap, FileGroup,
     ProjectConfiguration, ProjectConfigData, WorkspaceConfiguration,
     CreateOptions,
-    ProjectConfigEvent, ProjectFileGroup, FileItem, EIDE_CONF_VERSION, ProjectTargetInfo, VirtualFolder, VirtualFile, CppConfigItem, ProjectBaseApi
+    ProjectConfigEvent, ProjectFileGroup, FileItem, EIDE_CONF_VERSION, ProjectTargetInfo, VirtualFolder, VirtualFile, CppConfigItem, ProjectBaseApi, ProjectType
 } from './EIDETypeDefine';
 import { ToolchainName, IToolchian, ToolchainManager } from './ToolchainManager';
 import { GlobalEvent } from './GlobalEvents';
@@ -630,7 +630,7 @@ class SourceRootList implements SourceProvider {
                 const cFolder = <File>folderStack.pop();
                 const isSourceRoot = cFolder.path === rootFolder.path;
                 if (cFolder.name.startsWith('.') && !isSourceRoot) continue; // skip '.xxx' folders, not root folder
-                const fileList = cFolder.GetList(fileFilter, File.EMPTY_FILTER);
+                const fileList = cFolder.GetList(fileFilter, File.EXCLUDE_ALL_FILTER);
 
                 if (fileList.length > 0) {
 
@@ -672,7 +672,7 @@ class SourceRootList implements SourceProvider {
                 }
 
                 // push subfolders
-                cFolder.GetList(File.EMPTY_FILTER)
+                cFolder.GetList(File.EXCLUDE_ALL_FILTER)
                     .filter((folder) => !AbstractProject.excludeDirFilter.test(folder.name))
                     .forEach((folder) => folderStack.push(folder));
             }
@@ -763,6 +763,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         return this.GetConfiguration().config.name;
     }
 
+    public getProjectType(): ProjectType {
+        return this.GetConfiguration().config.type;
+    }
+
     public getRootDir(): File {
         return this.GetRootDir();
     }
@@ -840,7 +844,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     protected emit(event: 'dataChanged', type?: DataChangeType): boolean;
     protected emit(event: 'cppConfigChanged'): boolean;
-    protected emit(event: 'targetSwitched'): boolean;
+    protected emit(event: 'targetSwitched', t: { name: string, isNew?: boolean; }): boolean;
     protected emit(event: 'projectFileChanged'): boolean;
     protected emit(event: any, argc?: any): boolean {
         return this._event.emit(event, argc);
@@ -848,7 +852,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     on(event: 'dataChanged', listener: (type?: DataChangeType) => void): this;
     on(event: 'cppConfigChanged', listener: () => void): this;
-    on(event: 'targetSwitched', listener: () => void): this;
+    on(event: 'targetSwitched', listener: (t: { name: string, isNew?: boolean; }) => void): this;
     on(event: 'projectFileChanged', listener: () => void): this;
     on(event: any, listener: (argc?: any) => void): this {
         this._event.on(event, listener);
@@ -949,7 +953,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             const envFile: File = this.getEnvFile(true);
             if (!envFile.IsFile()) { // if 'env.ini' file is not existed, we try to merge it
                 const oldEnv: string[] = [];
-                this.getEideDir().GetList([/[^\.]+\.env\.ini$/], File.EMPTY_FILTER)
+                this.getEideDir().GetList([/[^\.]+\.env\.ini$/], File.EXCLUDE_ALL_FILTER)
                     .forEach((file) => {
                         const tName = NodePath.basename(file.path, '.env.ini');
                         if (tName) {
@@ -1005,7 +1009,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         prjAttr.libList = prjAttr.libList.filter(m => m.trim() != '');
 
         // clear invalid src folders
-        prjConfig.config.srcDirs = prjConfig.config.srcDirs.filter(p => File.IsDir(p));
+        //prjConfig.config.srcDirs = prjConfig.config.srcDirs.filter(p => File.IsDir(p));
 
         // rm prefix for out dir
         prjConfig.config.outDir = File.normalize(File.ToLocalPath(prjConfig.config.outDir));
@@ -1289,10 +1293,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     async switchTarget(targetName: string) {
         const prjConfig = this.GetConfiguration<any>().config;
         if (targetName !== prjConfig.mode) {
-            this._switchTarget(targetName);
+            const inf = this._switchTarget(targetName);
             this.reloadToolchain();
             this.reloadUploader();
-            this.emit('targetSwitched');
+            this.emit('targetSwitched', inf);
         }
     }
 
@@ -1309,17 +1313,20 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         prjConfigData.targets[target] = prjConfig.cloneCurrentTarget();
     }
 
-    private _switchTarget(targetName: string) {
+    private _switchTarget(targetName: string): { name: string, isNew?: boolean; } {
 
         const prjConfig = this.GetConfiguration();
         const prjConfigData = prjConfig.config;
         const targets = prjConfigData.targets;
+
+        let isNewTarget = false;
 
         // save old target
         this.saveTarget(prjConfigData.mode);
 
         // if target is not existed, create it
         if (targets[targetName] === undefined) {
+            isNewTarget = true;
             targets[targetName] = prjConfig.cloneCurrentTarget();
         }
 
@@ -1395,6 +1402,11 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
         this.sourceRoots.forceUpdateAllFolders();
         this.virtualSource.forceUpdateAllFolders();
+
+        return {
+            name: targetName,
+            isNew: isNewTarget,
+        }
     }
 
     getPrevToolchain(): IToolchian | undefined {
@@ -1535,6 +1547,100 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
             // add to include folder
             this.addIncludePaths([outDir.path]);
+
+            doneList.push(rePath);
+        }
+
+        if (doneList.length > 0) {
+            GlobalEvent.emit('msg', newMessage('Info', `Installation completed !, [path list]: ${doneList.join(', ')}`));
+        }
+    }
+
+    installCmsisLibs() {
+
+        const packs = ResManager.GetInstance().getCmsisLibPacks();
+        if (Object.keys(packs).length == 0) {
+            GlobalEvent.emit('msg', newMessage('Info', 'Not found available libraries !'));
+            return;
+        }
+
+        const prjLibTypKeywords: Map<ToolchainName, string[]> = new Map();
+        prjLibTypKeywords.set('AC5', ['arm', 'armcc', 'keil']);
+        prjLibTypKeywords.set('AC6', ['arm', 'armcc', 'armclang', 'keil']);
+        prjLibTypKeywords.set('GCC', ['gcc', 'gnu']);
+        prjLibTypKeywords.set('IAR_ARM', ['iar']);
+
+        const matchLibFileAndCpuTyp = (fname: string, cpuname: string): boolean => {
+
+            const archNameKeywords: { [name: string]: string[] } = {
+                'armv8': ['arm', 'v8'],
+                'cortex-m0': ['cortex', 'm0'],
+                'cortex-m3': ['cortex', 'm3'],
+                'sc300': ['cortex', 'm3'],
+                'sc000': ['cortex', 'm0'],
+                'cortex-m33': ['cortex', 'm33'],
+                'cortex-m4': ['cortex', 'm4'],
+                'cortex-m7': ['cortex', 'm7'],
+                'cortex-r4': ['cortex', 'r4'],
+                'cortex-r5': ['cortex', 'r5'],
+                'cortex-r7': ['cortex', 'r7'],
+                'cortex-r8': ['cortex', 'r8']
+            };
+
+            fname = fname.toLowerCase();
+            cpuname = cpuname.toLowerCase();
+
+            for (const ckey in archNameKeywords) {
+                if (cpuname.includes(ckey)) {
+                    const keywords = archNameKeywords[ckey];
+                    if (keywords.every(k => fname.includes(k))) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        };
+
+        const doneList: string[] = [];
+
+        for (const distname in packs) {
+
+            const zipfile = packs[distname];
+            const outDir = File.fromArray([this.GetRootDir().path, '.cmsis', distname]);
+            const rePath = this.ToRelativePath(outDir.path) || outDir.path;
+
+            // install
+            outDir.CreateDir(true);
+            platform.DeleteAllChildren(outDir);
+            const compresser = new SevenZipper();
+            compresser.UnzipSync(zipfile, outDir);
+
+            // setup
+            const libPaths: string[] = [outDir.path];
+            const keywords = prjLibTypKeywords.get(this.getToolchain().name);
+            if (keywords) {
+                // do match
+                const subdirs = outDir
+                    .GetList(File.EXCLUDE_ALL_FILTER, undefined)
+                    .filter(f => keywords.some(k => f.name.toLowerCase().includes(k)));
+                // matched dirs, filter files
+                if (subdirs.length > 0) {
+                    const cpuTyp = (<ArmBaseCompileConfigModel>this.GetConfiguration().compileConfigModel).data.cpuType;
+                    const allfiles = subdirs[0].GetList(undefined, File.EXCLUDE_ALL_FILTER);
+                    const unusedFiles = allfiles.filter(f => !matchLibFileAndCpuTyp(f.name, cpuTyp));
+                    libPaths.push(subdirs[0].path);
+                    if (unusedFiles.length < allfiles.length) {
+                        unusedFiles.forEach(f => { try { fs.unlinkSync(f.path) } catch (e) { } });
+                    }
+                }
+                // delete non-matched dirs
+                outDir.GetList(File.EXCLUDE_ALL_FILTER, undefined)
+                    .filter(f => !keywords.some(k => f.name.toLowerCase().includes(k)))
+                    .forEach(f => platform.DeleteDir(f));
+            }
+
+            this.GetConfiguration().CustomDep_AddAllFromLibList(libPaths);
 
             doneList.push(rePath);
         }
@@ -1825,7 +1931,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
         ToolchainManager.getInstance().on('onChanged', (tName) => this.onToolchainModified(tName));
 
-        this.on('targetSwitched', () => this.onTargetChanged());
+        this.on('targetSwitched', (t) => this.onTargetChanged(t));
 
         // update config which depend other configs
         this.on('dataChanged', (type) => {
@@ -1975,7 +2081,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     protected abstract onPackageChanged(): void;
 
-    protected abstract onTargetChanged(): void;
+    protected abstract onTargetChanged(info: { name: string, isNew?: boolean }): void;
 
     protected abstract onEideDirChanged(evt: 'changed' | 'renamed', file: File): void;
 
@@ -2082,8 +2188,7 @@ class EIDEProject extends AbstractProject {
             case 'dataChanged':
                 // update to config
                 const prjConfig = this.GetConfiguration();
-                prjConfig.config.srcDirs = this.getSourceRootFolders()
-                    .map((folder) => { return folder.fileWatcher.file.path; });
+                prjConfig.config.srcDirs = this.getSourceRootFolders().map(folder => folder.fileWatcher.file.path);
                 // update cpp config
                 this.UpdateCppConfig();
                 this.emit('dataChanged', 'files');
@@ -2145,8 +2250,9 @@ class EIDEProject extends AbstractProject {
         this.emit('dataChanged', 'pack');
     }
 
-    protected onTargetChanged(): void {
+    protected onTargetChanged(t: { name: string, isNew?: boolean }): void {
         this.onSrcExtraOptionsChanged('changed');
+        if (t.isNew) this.Save();
     }
 
     protected onEideDirChanged(evt: 'changed' | 'renamed', file: File): void {
@@ -2396,7 +2502,7 @@ class EIDEProject extends AbstractProject {
         if (localKeilFile.IsFile()) {
             keilFile = localKeilFile;
         } else {
-            const keilFileList = ResManager.GetInstance().GetTemplateDir().GetList(suffixFilter, File.EMPTY_FILTER);
+            const keilFileList = ResManager.GetInstance().GetTemplateDir().GetList(suffixFilter, File.EXCLUDE_ALL_FILTER);
             const fIndex = keilFileList.findIndex((f) => { return f.noSuffixName === prjConfig.type; });
             if (fIndex === -1) { throw new Error('Not found \'' + prjConfig.type + '\' keil template file'); }
             keilFile = keilFileList[fIndex];
@@ -2767,7 +2873,7 @@ class EIDEProject extends AbstractProject {
         // show warnings if we have
         setTimeout(async (rootFolder: File) => {
             try {
-                for (const f of rootFolder.GetList([/importer\.warning\.txt$/], File.EMPTY_FILTER)) {
+                for (const f of rootFolder.GetList([/importer\.warning\.txt$/], File.EXCLUDE_ALL_FILTER)) {
                     const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(f.ToUri()));
                     vscode.window.showTextDocument(doc, { preview: false, selection: doc.lineAt(0).range });
                     break;

@@ -67,7 +67,10 @@ import {
     view_str$msg$err_ewt_hash,
     view_str$msg$err_ept_hash,
     view_str$prompt$eclipse_imp_warning,
-    view_str$prompt$need_reload_project
+    view_str$prompt$need_reload_project,
+    view_str$prompt$needReloadToUpdateEnv,
+    getLocalLanguageType,
+    LanguageIndexs
 } from './StringTable';
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
@@ -79,9 +82,11 @@ import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import {
     copyObject, downloadFileWithProgress, getDownloadUrlFromGitea,
     runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
-    genGithubHash, md5, toArray, newMarkdownString, newFileTooltipString, FileTooltipInfo, escapeXml
+    genGithubHash, md5, toArray, newMarkdownString, newFileTooltipString, FileTooltipInfo, escapeXml,
+    readGithubRepoTxtFile, downloadFile, notifyReloadWindow, formatPath, execInternalCommand,
+    copyAndMakeObjectKeysToLowerCase
 } from './utility';
-import { concatSystemEnvPath, DeleteDir, exeSuffix, kill } from './Platform';
+import { concatSystemEnvPath, DeleteDir, exeSuffix, kill, osType, DeleteAllChildren } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
 import { VirtualDocument } from './VirtualDocsProvider';
 import { ResInstaller } from './ResInstaller';
@@ -99,6 +104,7 @@ import { isArray } from 'util';
 import { parseIarCompilerLog, CompilerDiagnostics, parseGccCompilerLog, parseArmccCompilerLog, parseKeilc51CompilerLog, parseSdccCompilerLog } from './ProblemMatcher';
 import * as iarParser from './IarProjectParser';
 import * as ArmCpuUtils from './ArmCpuUtils';
+import { ShellFlasherIndexItem } from './WebInterface/WebInterface';
 
 enum TreeItemType {
     SOLUTION,
@@ -158,6 +164,10 @@ enum TreeItemType {
 
     ACTIVED_ITEM,
     ACTIVED_GROUP
+}
+
+function getTreeItemTypeName(typ: TreeItemType): string {
+    return TreeItemType[typ];
 }
 
 type GroupRegion = 'PACK' | 'Components' | 'ComponentItem';
@@ -287,12 +297,15 @@ export class ProjTreeItem extends vscode.TreeItem {
     }
 
     private GetContext(): string {
+
         if (this.val.obj instanceof ModifiableDepInfo) {
             return this.val.obj.type;
         }
+
         if (this.val.contextVal) {
             return this.val.contextVal;
         }
+
         return TreeItemType[this.type];
     }
 
@@ -608,7 +621,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         if (wsFolder.IsDir()) {
 
             // rename eide folder name
-            const folderList = wsFolder.GetList(File.EMPTY_FILTER, [/^\.EIDE$/]);
+            const folderList = wsFolder.GetList(File.EXCLUDE_ALL_FILTER, [/^\.EIDE$/]);
             if (folderList.length > 0) {
                 const oldEideFolder = folderList[0];
                 fs.renameSync(oldEideFolder.path, `${oldEideFolder.dir}${File.sep}${AbstractProject.EIDE_DIR}`);
@@ -617,7 +630,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
             // rename eide conf file
             const eideFolder = File.fromArray([wsFolder.path, AbstractProject.EIDE_DIR]);
             if (eideFolder.IsDir()) {
-                const fList = eideFolder.GetList([/^EIDE\.json$/], File.EMPTY_FILTER);
+                const fList = eideFolder.GetList([/^EIDE\.json$/], File.EXCLUDE_ALL_FILTER);
                 if (fList.length > 0) {
                     const oldEideConfFile = fList[0];
                     fs.renameSync(oldEideConfFile.path, `${oldEideConfFile.dir}${File.sep}${AbstractProject.prjConfigName}`);
@@ -639,7 +652,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         const validList: File[] = [];
 
         for (const wsDir of wsFolders) {
-            const wsList = wsDir.GetList([/.code-workspace$/i], File.EMPTY_FILTER);
+            const wsList = wsDir.GetList([/.code-workspace$/i], File.EXCLUDE_ALL_FILTER);
             if (wsList.length > 0) {
 
                 // convert .EIDE to .eide
@@ -755,7 +768,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                     value: sln.GetConfiguration().config.name + ' : ' + sln.GetConfiguration().config.mode,
                     tooltip: new vscode.MarkdownString([
                         `**Name:** \`${sln.GetConfiguration().config.name}\``,
-                        `- **Uid**: \`${sln.getUid()}\``,
+                        `- **Uid:** \`${sln.getUid()}\``,
                         `- **Config:** \`${sln.GetConfiguration().config.mode}\``,
                         `- **Path:** \`${sln.GetRootDir().path}\``
                     ].join(os.EOL)),
@@ -790,10 +803,18 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                             }));
                         }
 
+                        const toolchain = project.getToolchain();
+                        const toolprefix = toolchain.getToolchainPrefix ? toolchain.getToolchainPrefix() : undefined;
                         iList.push(new ProjTreeItem(TreeItemType.COMPILE_CONFIGURATION, {
-                            value: `${compile_config} : ${project.getToolchain().name}`,
+                            value: `${compile_config} : ${toolchain.name}`,
                             projectIndex: element.val.projectIndex,
-                            tooltip: `${compile_config} : ${ToolchainManager.getInstance().getToolchainDesc(project.getToolchain().name)}`
+                            tooltip: newMarkdownString([
+                                `${compile_config} : ${toolchain.name}`,
+                                ` - **Id:** \`${toolchain.name}\``,
+                                ` - **Prefix:** ` + (toolprefix ? `\`${toolprefix}\`` : ''),
+                                ` - **Family:** \`${toolchain.categoryName}\``,
+                                ` - **Description:** \`${ToolchainManager.getInstance().getToolchainDesc(toolchain.name)}\``,
+                            ])
                         }));
 
                         const curUploader = project.GetConfiguration().uploadConfigModel.uploader;
@@ -801,6 +822,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                         iList.push(new ProjTreeItem(TreeItemType.UPLOAD_OPTION, {
                             value: `${uploadConfig_desc} : ${uploaderLabel}`,
                             projectIndex: element.val.projectIndex,
+                            contextVal: curUploader == 'Custom' ? `${getTreeItemTypeName(TreeItemType.UPLOAD_OPTION)}_Shell` : undefined,
                             tooltip: `${uploadConfig_desc} : ${uploaderLabel}`
                         }));
 
@@ -981,7 +1003,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                 iList.push(new ProjTreeItem(TreeItemType.DEPENDENCE_GROUP_ARRAY_FIELD, {
                                     value: config.GetDepKeyDesc(key),
                                     tooltip: newMarkdownString([
-                                        `${config.GetDepKeyDesc(key)}`,
+                                        `${config.GetDepKeyDesc(key, getLocalLanguageType() == LanguageIndexs.Chinese)}`,
                                         `- **Count:** \`${depValues.length}\``]),
                                     obj: new ModifiableDepInfo('None', key),
                                     childKey: key,
@@ -1189,7 +1211,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                     {
                         const outFolder = project.getOutputFolder();
                         if (outFolder.IsDir()) {
-                            const fList = outFolder.GetList([AbstractProject.buildOutputMatcher], File.EMPTY_FILTER);
+                            const fList = outFolder.GetList([AbstractProject.buildOutputMatcher], File.EXCLUDE_ALL_FILTER);
                             fList.forEach((file) => {
                                 const fsize = file.getSize();
                                 iList.push(new ProjTreeItem(TreeItemType.OUTPUT_FILE_ITEM, {
@@ -1199,9 +1221,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                     tooltip: newFileTooltipString({
                                         name: file.name,
                                         path: file.path,
-                                        attr: {
-                                            'FileSize': fsize > 4096 ? `${(fsize / 1024).toFixed(2)} KB` : `${fsize} B`
-                                        }
+                                        attr: {}
                                     }, project.getRootDir()),
                                 }));
                             });
@@ -1434,7 +1454,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
     async CreateProject(option: CreateOptions): Promise<AbstractProject | undefined> {
 
         // check folder
-        const dList = option.outDir.GetList(File.EMPTY_FILTER);
+        const dList = option.outDir.GetList(File.EXCLUDE_ALL_FILTER);
         if (dList.findIndex((_folder) => { return _folder.name === option.name; }) !== -1) {
             const item = await vscode.window.showWarningMessage(`${WARNING}: ${project_exist_txt}`, 'Yes', 'No');
             if (item === undefined || item === 'No') {
@@ -1465,10 +1485,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         }
 
         for (const packZipFile of packList) {
+            // make dir
             const outDir = File.fromArray([rootDir.path, '.cmsis', packZipFile.noSuffixName]);
             if (outDir.IsDir()) { continue; } /* folder existed, exit */
             outDir.CreateDir(true);
-
+            // unzip
             const compresser = new SevenZipper(ResManager.GetInstance().Get7zDir());
             compresser.UnzipSync(packZipFile, outDir);
             folders.push(outDir);
@@ -1815,9 +1836,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
         nPrjConfig.virtualFolder = ePrjInfo.virtualSource;
         nPrjConfig.outDir = 'build';
-        nPrjConfig.srcDirs = File.NotMatchFilter(ePrjRoot.GetList(File.EMPTY_FILTER), File.EMPTY_FILTER,
-            [/^\./, /^(build|dist|out|bin|obj|exe|debug|release|log[s]?|ipch|docs|doc|img|image[s]?)$/i])
-            .map(d => ePrjRoot.ToRelativePath(d.path) || d.path);
+
+        if (ePrjInfo.sourceEntries.length > 0) {
+            nPrjConfig.srcDirs = ePrjInfo.sourceEntries;
+        } else {
+            nPrjConfig.srcDirs = File.NotMatchFilter(ePrjRoot.GetList(File.EXCLUDE_ALL_FILTER), File.EXCLUDE_ALL_FILTER,
+                [/^\./, /^(build|dist|out|bin|obj|exe|debug|release|log[s]?|ipch|docs|doc|img|image[s]?)$/i])
+                .map(d => ePrjRoot.ToRelativePath(d.path) || d.path);
+        }
 
         // init all target
         for (const eTarget of ePrjInfo.targets) {
@@ -2389,8 +2415,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
         const compresser = new SevenZipper(ResManager.GetInstance().Get7zDir());
         const templateFile = <File>option.templateFile;
 
+        const targetDir = new File(option.outDir.path + File.sep + option.name);
+        const targetWorkspaceFilePath = targetDir.path + File.sep + option.name + AbstractProject.workspaceSuffix;
+
         try {
-            const targetDir = new File(option.outDir.path + File.sep + option.name);
+
             targetDir.CreateDir(true);
 
             let templateShaStr: string | undefined;
@@ -2424,71 +2453,92 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                 }
             }
 
-            const res = await compresser.Unzip(templateFile, targetDir);
-            if (res) { throw res; }
+            const err = await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: `Creating project`
+            }, async (progress): Promise<Error> => {
 
-            setTimeout(async () => {
+                progress.report({ message: 'Unzip template', increment: 10 });
 
-                try {
+                const e = await compresser.Unzip(templateFile, targetDir);
+                if (e) return e;
 
-                    const wsFileList = targetDir.GetList([/\.code-workspace$/i], File.EMPTY_FILTER);
-                    const wsFile: File | undefined = wsFileList.length > 0 ? wsFileList[0] : undefined;
+                progress.report({ message: 'Generating', increment: 50 });
 
-                    if (wsFile) {
+                return new Promise((resolve) => {
 
-                        // rename workspace file name
-                        const targetPath = targetDir.path + File.sep + option.name + AbstractProject.workspaceSuffix;
-                        fs.renameSync(wsFile.path, targetPath);
+                    const post_create_task = async () => {
 
-                        // rename project
-                        if (templateFile.suffix != '.ewt') { // ignore eide workspace project
+                        try {
 
-                            // convert .EIDE to .eide
-                            this.toLowercaseEIDEFolder(targetDir);
+                            const wsFileList = targetDir.GetList([/\.code-workspace$/i], File.EXCLUDE_ALL_FILTER);
+                            const wsFile: File | undefined = wsFileList.length > 0 ? wsFileList[0] : undefined;
 
-                            // if not verified, del *.sh
-                            if (!isVerified) {
-                                const eideFolder = File.fromArray([targetDir.path, AbstractProject.EIDE_DIR]);
-                                if (eideFolder.IsDir()) {
-                                    eideFolder.GetList([/\-install\.sh$/i], File.EMPTY_FILTER)
-                                        .forEach((f) => {
-                                            try { fs.unlinkSync(f.path); } catch (err) { }
-                                        });
+                            if (wsFile) {
+
+                                // rename workspace file name
+                                fs.renameSync(wsFile.path, targetWorkspaceFilePath);
+
+                                // rename project
+                                if (templateFile.suffix != '.ewt') { // ignore eide workspace project
+
+                                    // convert .EIDE to .eide
+                                    this.toLowercaseEIDEFolder(targetDir);
+
+                                    // if not verified, del *.sh
+                                    if (!isVerified) {
+                                        const eideFolder = File.fromArray([targetDir.path, AbstractProject.EIDE_DIR]);
+                                        if (eideFolder.IsDir()) {
+                                            eideFolder.GetList([/\-install\.sh$/i], File.EXCLUDE_ALL_FILTER)
+                                                .forEach((f) => {
+                                                    try { fs.unlinkSync(f.path); } catch (err) { }
+                                                });
+                                        }
+                                    }
+
+                                    // rename project name
+                                    {
+                                        const prjFile = File.fromArray([targetDir.path, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
+                                        if (!prjFile.IsFile()) throw Error(`project file: '${prjFile.path}' is not exist !`);
+
+                                        try {
+                                            const prjConf: ProjectConfigData<any> = JSON.parse(prjFile.Read());
+                                            prjConf.name = option.name; // set project name
+                                            prjFile.Write(JSON.stringify(prjConf));
+                                        } catch (error) {
+                                            throw Error(`change project name failed !, msg: ${error.message}`);
+                                        }
+                                    }
                                 }
                             }
 
-                            // rename project name
-                            {
-                                const prjFile = File.fromArray([targetDir.path, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
-                                if (!prjFile.IsFile()) throw Error(`project file: '${prjFile.path}' is not exist !`);
+                            resolve(undefined);
 
-                                try {
-                                    const prjConf: ProjectConfigData<any> = JSON.parse(prjFile.Read());
-                                    prjConf.name = option.name; // set project name
-                                    prjFile.Write(JSON.stringify(prjConf));
-                                } catch (error) {
-                                    throw Error(`change project name failed !, msg: ${error.message}`);
-                                }
-                            }
+                        } catch (error) {
+                            resolve(error);
                         }
+                    };
 
-                        // switch workspace if user select `yes`
-                        const item = await vscode.window.showInformationMessage(
-                            view_str$operation$create_prj_done, 'Yes', 'Later'
-                        );
+                    setTimeout(post_create_task, 400);
+                });
+            });
 
-                        // switch workspace
-                        if (item === 'Yes') {
-                            const wsFile = new File(targetPath);
-                            if (wsFile.IsFile()) {
-                                WorkspaceManager.getInstance().openWorkspace(wsFile);
-                            }
-                        }
-                    }
-                } catch (error) {
-                    GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+            if (err) {
+                throw err;
+            }
+
+            // switch workspace if user select `yes`
+            const item = await vscode.window.showInformationMessage(
+                view_str$operation$create_prj_done, 'Yes', 'Later'
+            );
+
+            // switch workspace
+            if (item === 'Yes') {
+                const wsFile = new File(targetWorkspaceFilePath);
+                if (wsFile.IsFile()) {
+                    WorkspaceManager.getInstance().openWorkspace(wsFile);
                 }
-            }, 400);
+            }
 
         } catch (error) {
             GlobalEvent.emit('msg', newMessage('Warning', `Create project failed !, msg: ${(<Error>error).message}`));
@@ -2997,13 +3047,15 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             this.reloadProject(uid, wsf);
         }
 
+        if (this.__autosaveDisableTimeoutTimer) {
+            clearTimeout(this.__autosaveDisableTimeoutTimer);
+            this.__autosaveDisableTimeoutTimer = undefined;
+        }
+
         //
         // enable auto save
         //
         this.enableAutoSave(true);
-        if (this.__autosaveDisableTimeoutTimer) {
-            clearTimeout(this.__autosaveDisableTimeoutTimer);
-        }
     }
 
     private reloadProject(uid: string, workspaceFile: File) {
@@ -3585,12 +3637,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     private async startDownloadCmsisPack(): Promise<File | Error | undefined> {
 
-        const redirectUri = (uri: string) => {
-            return SettingManager.GetInstance().isUseGithubProxy() ? redirectHost(uri) : uri;
-        };
-
         // URL: https://api.github.com/repos/github0null/eide-cmsis-pack/contents/packages
-        const repoUrl = redirectUri('api.github.com/repos/' + SettingManager.GetInstance().getCmsisPackRepositoryUrl());
+        const repoUrl = redirectHost('api.github.com/repos/' + SettingManager.GetInstance().getCmsisPackRepositoryUrl());
 
         return await vscode.window.withProgress<File | Error | undefined>({
             location: vscode.ProgressLocation.Notification,
@@ -3650,7 +3698,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     return new Error(`Can't download '${gitFileInfo.name}', not download url found !`);
                 }
 
-                const url = redirectUri(gitFileInfo.download_url);
+                const url = redirectHost(gitFileInfo.download_url);
                 const buff = await downloadFileWithProgress(url, gitFileInfo.name, progress, cancelToken);
 
                 if (buff == undefined) { // canceled
@@ -4114,9 +4162,19 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             let objPath: string | undefined;
             const refFile = File.fromArray([activePrj.ToAbsolutePath(activePrj.getOutputDir()), 'ref.json']);
             if (!refFile.IsFile()) { throw new Error(`Not found 'ref.json' at output folder, you need build project !`) }
-            const ref = JSON.parse(refFile.Read());
-            if (typeof ref[srcPath] == 'string') { objPath = <string>ref[srcPath]; }
-            else { throw new Error(`Not found any reference for this source file !, [path]: '${srcPath}'`) }
+            let ref = JSON.parse(refFile.Read());
+
+            if (osType() == 'win32') { // to lower-case path for win32
+                ref = copyAndMakeObjectKeysToLowerCase(ref);
+                srcPath = srcPath.toLowerCase();
+            }
+
+            // get obj path by source file path
+            objPath = <string>ref[srcPath];
+
+            if (typeof objPath != 'string') {
+                throw new Error(`Not found any reference for this source file !, [path]: '${srcPath}'`);
+            }
 
             // prepare command
             let exeFile: File;
@@ -4537,7 +4595,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     private install_lock: boolean = false;
-    async installCMSISHeaders(item: ProjTreeItem) {
+    async installCmsisSourcePack(item: ProjTreeItem, type: 'header' | 'lib') {
 
         if (this.install_lock) {
             GlobalEvent.emit('msg', newMessage('Warning', 'Operation is busy !'));
@@ -4546,13 +4604,19 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         this.install_lock = true; // lock op
 
-        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
-        if (prj) {
-            try {
-                prj.installCMSISHeaders();
-            } catch (error) {
-                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+        try {
+
+            const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+            if (prj) {
+                if (type == 'header') {
+                    prj.installCMSISHeaders();
+                } else if (type == 'lib') {
+                    prj.installCmsisLibs();
+                }
             }
+
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
         }
 
         this.install_lock = false; // unlock op
@@ -5116,7 +5180,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             case TreeItemType.FOLDER_ROOT:
                 if (onlyChildren) {
                     const dir = <File>item.val.obj;
-                    dir.GetList(undefined, File.EMPTY_FILTER).forEach(f => {
+                    dir.GetList(undefined, File.EXCLUDE_ALL_FILTER).forEach(f => {
                         prj.excludeSourceFile(f.path);
                     });
                 } else {
@@ -5151,7 +5215,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 case TreeItemType.FOLDER_ROOT:
                     {
                         const dir = <File>item.val.obj;
-                        dir.GetList(undefined, File.EMPTY_FILTER).forEach(f => {
+                        dir.GetList(undefined, File.EXCLUDE_ALL_FILTER).forEach(f => {
                             prj.unexcludeSourceFile(f.path);
                         });
                     }
@@ -5368,6 +5432,156 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             } catch (error) {
                 GlobalEvent.emit('error', error);
             }
+        }
+    }
+
+    async fetchShellFlasher(item: ProjTreeItem) {
+
+        const project = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        const resManager = ResManager.GetInstance();
+
+        const err = await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: `Setup Shell Flasher`,
+            cancellable: true
+        }, async (reporter, cancel): Promise<Error | undefined> => {
+
+            try {
+
+                const REPO_PATH = 'github0null/eide_shell_flasher_index';
+
+                // get index.json
+                //
+
+                if (cancel.isCancellationRequested) {
+                    return;
+                }
+
+                reporter.report({ message: 'fetching index.json' });
+                const idxTxt = await readGithubRepoTxtFile(REPO_PATH, 'index.json');
+                if (typeof idxTxt != 'string') {
+                    throw idxTxt || new Error(`Cannot read index.json`);
+                }
+
+                const idxObj = <ShellFlasherIndexItem[]>JSON.parse(idxTxt);
+                const pickItems: any[] = [];
+
+                idxObj.forEach((item, idx) => {
+                    if (item.platform.includes(osType())) {
+                        let detail = item.detail || `no detail`;
+                        if (item.provider) detail = detail + `, provider: ${item.provider}`;
+                        pickItems.push(<vscode.QuickPickItem>{
+                            idx: idx,
+                            label: item.name,
+                            detail: detail
+                        });
+                    }
+                });
+
+                // select flasher
+                //
+
+                if (cancel.isCancellationRequested) {
+                    return;
+                }
+
+                reporter.report({ message: 'select flasher' });
+                const sel = await vscode.window.showQuickPick(pickItems, {
+                    title: 'Select Flasher',
+                    matchOnDescription: true,
+                    matchOnDetail: true,
+                    canPickMany: false,
+                    ignoreFocusOut: true
+                });
+
+                if (sel == undefined) {
+                    return;
+                }
+
+                // install
+                //
+
+                if (cancel.isCancellationRequested) {
+                    return;
+                }
+
+                const tarFlasher = idxObj[sel.idx];
+
+                reporter.report({ message: 'download shell scripts' });
+                let scriptDir = new File(project.getRootDir().path);
+                if (tarFlasher.scriptInstallDir) scriptDir = File.fromArray([scriptDir.path, tarFlasher.scriptInstallDir]);
+                scriptDir.CreateDir(true);
+                const scriptsList = await readGithubRepoFolder(`https://api.github.com/repos/${REPO_PATH}/contents/scripts/${tarFlasher.id}`);
+                if (scriptsList instanceof Error) throw scriptsList;
+                for (const scriptInfo of scriptsList) {
+                    if (scriptInfo.download_url) {
+                        const buff = await downloadFile(redirectHost(scriptInfo.download_url));
+                        if (!(buff instanceof Buffer)) throw buff || new Error(`Cannot download '${scriptInfo.name}'`);
+                        fs.writeFileSync(`${scriptDir.path}/${scriptInfo.name}`, buff);
+                    }
+                }
+
+                let needReload = false;
+                if (tarFlasher.resources[osType()]) {
+
+                    if (cancel.isCancellationRequested) return;
+
+                    const res = tarFlasher.resources[osType()];
+                    let installDir = res.locationType == 'global' ? new File(resManager.getEideToolsInstallDir()) : project.getRootDir();
+                    if (res.locationType == 'workspace') installDir = File.fromArray([project.getRootDir().path, res.location]);
+
+                    if (res.zipType != 'none') {
+                        reporter.report({ message: 'downloading resources' });
+                        const buf = await downloadFile(redirectHost(res.url));
+                        if (!(buf instanceof Buffer)) throw buf || new Error('Cannot download resource');
+                        const tmpPath = os.tmpdir() + File.sep + Date.now().toString();
+                        fs.writeFileSync(tmpPath, buf);
+
+                        reporter.report({ message: 'unzip resources' });
+                        installDir.CreateDir(true);
+                        const szip = new SevenZipper();
+                        const r = szip.UnzipSync(new File(tmpPath), installDir);
+                        GlobalEvent.emit('globalLog', newMessage('Info', r));
+                    }
+
+                    if (res.setupCommand) {
+                        reporter.report({ message: 'execuate setup command ...' });
+                        const done = await execInternalCommand(res.setupCommand, installDir.path, cancel);
+                        if (!done) {
+                            if (cancel.isCancellationRequested) {
+                                GlobalEvent.emit('globalLog.append', `\n----- user canceled -----\n`);
+                                return;
+                            } else {
+                                return new Error(`Setup command failed, see detail in 'OUTPUT panel' -> 'eide.log' !`);
+                            }
+                        }
+                    }
+
+                    needReload = res.locationType == 'global';
+                }
+
+                if (cancel.isCancellationRequested) {
+                    return;
+                }
+
+                project.GetConfiguration().uploadConfigModel.SetKeyValue('bin', tarFlasher.flashConfigTemplate.bin);
+                project.GetConfiguration().uploadConfigModel.SetKeyValue('commandLine', tarFlasher.flashConfigTemplate.commandLine);
+                project.GetConfiguration().uploadConfigModel.SetKeyValue('eraseChipCommand', tarFlasher.flashConfigTemplate.eraseChipCommand);
+
+                GlobalEvent.emit('msg', newMessage('Info', `Shell flasher '${tarFlasher.id}' has been setup !`));
+                if (needReload) {
+                    notifyReloadWindow(view_str$prompt$needReloadToUpdateEnv);
+                }
+
+                return;
+
+            } catch (error) {
+                return error;
+            }
+        });
+
+        if (err) {
+            GlobalEvent.emit('msg', ExceptionToMessage(err, 'Warning'));
         }
     }
 
@@ -5591,7 +5805,7 @@ class VFolderSourcePathsModifier implements ModifiableYamlConfigProvider {
                     '#     - path: ./src_1.c',
                     '#     - path: ../xxx/xxx/src_2.c',
                     '#     - path: xxx/${VAR}/src_3.c',
-                    '#     - path: D:/path/xxx/src_n.c',
+                    '#     - path: d:/path/xxx/src_n.c',
                     `#`,
                     ``,
                     yml.stringify(vFolderInfo.files, { indent: 4 })
@@ -5687,7 +5901,7 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
             '#     - ./dir_1',
             '#     - ../xxx/xxx/dir_2',
             '#     - xxx/variable/path/${VAR1}/${VAR2}/dir_3',
-            '#     - D:/absolute/path/xxx/dir_n',
+            '#     - d:/absolute/path/xxx/dir_n',
             `# LibraryFolders:`,
             '#     - ./dir_1',
             '#     - ../xxx/xxx/dir_2',

@@ -13,7 +13,7 @@ A mcu development environment for `8051/AVR/STM8/Cortex-M/RISC-V/Universal-Gcc` 
 Provide `8051/AVR/STM8/Cortex-M/RISC-V` project development, compilation, program flash and other functions.
 
 Supported Platforms: 
-  - **Windows X64 (>= Windows 10)**
+  - **Windows x64 (>= Windows 10)**
   - **Linux x64**
   - **macOS**(Only tested in 'macOS 10.15 x64')
 
@@ -34,6 +34,7 @@ Supported Platforms:
 * Automatically generates default debug configurations for debugger plug-in `cortex-debug, STM8-Debug`.
 * Built-in many utility tools, 'CMSIS Config Wizard UI', 'Disassembly view', 'Program resource view'...
 * Built-in implement `C/C++ IntelliSense Provider` for `ms-vscode.cpptools`, **Not Need to** configurate `c_cpp_properties.json` file.
+* Built-in Msys Unix Shell environment.
 
 ***
 

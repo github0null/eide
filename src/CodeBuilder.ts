@@ -48,7 +48,7 @@ import { ArrayDelRepetition } from "../lib/node-utility/Utility";
 import { DependenceManager } from "./DependenceManager";
 import { WorkspaceManager } from "./WorkspaceManager";
 import { ToolchainName } from "./ToolchainManager";
-import { md5, sha256 } from "./utility";
+import { md5, sha256, copyObject } from "./utility";
 import { MakefileGen } from "./Makefile";
 import { exeSuffix } from "./Platform";
 import { FileWatcher } from "../lib/node-utility/FileWatcher";
@@ -230,8 +230,8 @@ export abstract class CodeBuilder {
         )).map(p => this.project.ToAbsolutePath(p));
     }
 
-    getDefineList(): string[] {
-        return this.project.GetConfiguration().GetAllMergeDep().defineList;
+    getProjectCMacroList(): string[] {
+        return this.project.GetConfiguration().GetAllMergeDep().defineList.map(s => this.project.resolveEnvVar(s));
     }
 
     getLibDirs(): string[] {
@@ -297,12 +297,10 @@ export abstract class CodeBuilder {
             else { shellOption.executable = '/bin/bash'; shellOption.shellArgs = ['-c']; }
             shellOption.env = <any>process.env;
             // setup task
-            const task = new vscode.Task({ type: 'shell' }, vscode.TaskScope.Workspace, title, 'eide');
             if (os.platform() == 'win32') commandLine = `"${commandLine}"`;
-            task.execution = new vscode.ShellExecution(commandLine, shellOption);
-            task.definition['command'] = commandLine;
+            const task = new vscode.Task({ type: 'shell', command: commandLine }, vscode.TaskScope.Workspace,
+                title, 'eide', new vscode.ShellExecution(commandLine, shellOption), []);
             task.group = vscode.TaskGroup.Build;
-            task.problemMatchers = [];
             task.isBackground = false;
             task.presentationOptions = { echo: true, focus: false, clear: true };
             vscode.tasks.executeTask(task);
@@ -415,7 +413,7 @@ export abstract class CodeBuilder {
             rom: memMaxSize?.rom,
             incDirs: this.getIncludeDirs().map(p => this.project.toRelativePath(p)),
             libDirs: this.getLibDirs().map(p => this.project.toRelativePath(p)),
-            defines: this.getDefineList(),
+            defines: this.getProjectCMacroList(),
             sourceList: sourceInfo.sources.sort(),
             sourceParams: sourceInfo.params,
             sourceParamsMtime: sourceInfo.paramsModTime,

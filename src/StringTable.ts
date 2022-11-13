@@ -29,8 +29,12 @@ export enum LanguageIndexs {
     English
 }
 
-export const langIndex: number = /zh-cn/.test(vscode.env.language)
+const langIndex: number = /zh-cn/.test(vscode.env.language)
     ? LanguageIndexs.Chinese : LanguageIndexs.English;
+
+export function getLocalLanguageType(): LanguageIndexs {
+    return langIndex;
+}
 
 //------------------------------------------------
 //---------------string table-------------
@@ -290,8 +294,8 @@ export const include_desc = [
 ][langIndex];
 
 export const lib_desc = [
-    '链接库目录',
-    'Library Directories'
+    '库搜索目录',
+    'Library Search Directories'
 ][langIndex];
 
 export const source_dir_desc = [
@@ -300,7 +304,7 @@ export const source_dir_desc = [
 ][langIndex];
 
 export const definition_list_desc = [
-    '预处理器定义',
+    '预处理宏定义',
     'Preprocessor Definitions'
 ][langIndex];
 
@@ -405,6 +409,16 @@ export const view_str$env_desc$compiler_folder = [
 ][langIndex];
 
 //---------------Other---------------
+
+export const view_str$prompt$needReloadToUpdateEnv = [
+    `需要重启插件以刷新内置的环境变量，立即重启插件？`,
+    `We need relaunch plug-in to refresh internal environment variables, relaunch now ?`
+][langIndex];
+
+export const view_str$prompt$setupToolchainPrefix = [
+    `设置编译器前缀`,
+    `Setup Compiler Prefix`
+][langIndex];
 
 export const view_str$prompt$need_reload_project = [
     `'{}' 的项目文件 'eide.json' 已被更改，重新加载项目？`,

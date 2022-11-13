@@ -27,6 +27,7 @@ import { ExeFile } from "../lib/node-utility/Executable";
 import * as events from 'events';
 import * as child_process from 'child_process';
 import * as platform from './Platform';
+import { ResManager } from "./ResManager";
 
 export interface CompressOption {
     zipType: string;
@@ -34,9 +35,12 @@ export interface CompressOption {
     excludeList?: string[];
 }
 
+export type SevenZipUnzipExcludeList = { name: string, recurse?: boolean }[];
+
 export class SevenZipper {
 
     static readonly MaxStep = 18;
+    static readonly ExcludeCmdSep = platform.osType() == 'win32' ? '!' : '\\!';
 
     private _7za: File;
     private _event: events.EventEmitter;
@@ -47,8 +51,9 @@ export class SevenZipper {
         return this;
     }
 
-    constructor(_7zFolder: File) {
+    constructor(_7zFolder?: File) {
         this._event = new events.EventEmitter();
+        if (_7zFolder == undefined) _7zFolder = ResManager.GetInstance().Get7zDir();
         this._7za = File.fromArray([_7zFolder.path, `7za${platform.exeSuffix()}`]);
         if (!this._7za.IsFile()) {
             throw new Error(`\'7za${platform.exeSuffix()}\' is not exist`);
@@ -69,6 +74,7 @@ export class SevenZipper {
             paramList.push('-r');
             paramList.push('-aoa');
             paramList.push(zipFile.path);
+
             const outPath = (outDir ? outDir.path : zipFile.dir);
             paramList.push('-o' + outPath);
 
@@ -118,6 +124,7 @@ export class SevenZipper {
         paramList.push('-r');
         paramList.push('-aoa');
         paramList.push(zipFile.path);
+
         const outPath = (outDir ? outDir.path : zipFile.dir);
         paramList.push('-o' + outPath);
 
@@ -148,7 +155,7 @@ export class SevenZipper {
 
             if (option.excludeList) {
                 for (let excludeReg of option.excludeList) {
-                    paramList.push('-xr!' + excludeReg.trim());
+                    paramList.push('-xr' + SevenZipper.ExcludeCmdSep + excludeReg.trim());
                 }
             }
 

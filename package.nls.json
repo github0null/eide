@@ -30,6 +30,7 @@
     "eide.project.gen.makefile": "Generate Makefile Template",
     "eide.project.modify.files.options": "Append independent compiler args for sources",
     "eide.project.import.ext.project.src.struct": "Import source tree from other projects",
+    "eide.project.generate_builder_params": "Generate builder.params",
 
     "eide.prj.menus.main.cppcheck": "Static Check",
     "eide.prj.menus.sub.cppcheck.run": "Check Project by Cppcheck",
@@ -80,8 +81,11 @@
     "eide.package.comp.uninstall": "Uninstall Component",
 
     "eide.builder.switch": "Choose Toolchain",
+    "eide.builder.setup-toolchain-prefix": "Setup Compiler Prefix",
+
     "eide.flash.switch": "Choose Flasher",
-    
+    "eide.flash.fetch-shell-flasher": "Install Shell Flasher Script From Remote Repository",
+
     "eide.deps.include.show": "Display All Include Paths",
     "eide.deps.include.add": "Add Include Path",
     "eide.deps.inclib.show": "Display All Library Folders",

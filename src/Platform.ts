@@ -229,20 +229,31 @@ export function DeleteAllChildren(dir: File): string {
     }
 }
 
-export function find(fileName: string): string | undefined {
+const __find_cache: Map<string, string> = new Map();
+export function find(fileName: string, refreshCache?: boolean): string | undefined {
+
+    if (refreshCache)
+        __find_cache.delete(fileName);
+
+    if (__find_cache.has(fileName))
+        return __find_cache.get(fileName);
+
     try {
         if (osPlatform == 'win32') {
             const nameList = child_process.execSync(`where "${fileName}"`,
-                { windowsHide: true, encoding: 'ascii', shell: 'cmd' }).split(/\r\n|\n/);
+                { windowsHide: true, encoding: 'ascii', shell: 'cmd' }).toString().trim().split(/\r\n|\n/);
             if (nameList.length > 0) {
                 const path = nameList[0].replace(/"/g, '');
                 if (File.isAbsolute(path)) {
+                    __find_cache.set(fileName, path);
                     return path;
                 }
             }
         } else {
             const res = child_process.execSync(`which ${fileName}`).toString().trim();
-            return res.replace(/"'/g, '');
+            const path = res.replace(/"'/g, '');
+            __find_cache.set(fileName, path);
+            return path;
         }
     } catch (error) {
         return undefined;

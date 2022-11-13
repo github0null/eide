@@ -31,7 +31,7 @@ import * as os from 'os';
 
 import { WorkspaceManager } from "./WorkspaceManager";
 import { CmdLineHandler } from "./CmdLineHandler";
-import { ExceptionToMessage } from "./Message";
+import { ExceptionToMessage, newMessage } from "./Message";
 import { NetRequest, NetResponse } from '../lib/node-utility/NetRequest';
 import { File } from '../lib/node-utility/File';
 import { GitFileInfo } from './WebInterface/GithubInterface';
@@ -39,6 +39,67 @@ import * as platform from './Platform';
 import { SevenZipper } from './Compress';
 import { ResManager } from './ResManager';
 import { isArray } from 'util';
+import { ExeCmd } from '../lib/node-utility/Executable';
+import { GlobalEvent } from './GlobalEvents';
+import { SettingManager } from './SettingManager';
+
+export function mergeEnv(old_kv: any, new_kv: any, prependPath?: boolean): any {
+
+    const pnam = platform.osType() == 'win32' ? 'Path' : 'PATH';
+    const psep = platform.osType() == 'win32' ? ';' : ':';
+
+    for (const key in new_kv) {
+        if (key == pnam && old_kv[key]) {
+            old_kv[key] = prependPath ? `${new_kv[key]}${psep}${old_kv[key]}` : `${old_kv[key]}${psep}${new_kv[key]}`;
+        } else {
+            old_kv[key] = new_kv[key];
+        }
+    }
+
+    return old_kv;
+}
+
+export function copyAndMakeObjectKeysToLowerCase(kv_obj: any): any {
+    const nObj: any = {};
+    for (const key in kv_obj) nObj[key.toLowerCase()] = kv_obj[key];
+    return nObj;
+}
+
+export function execInternalCommand(command: string, cwd?: string, cancel?: vscode.CancellationToken): Promise<boolean> {
+
+    return new Promise<boolean>((resolve) => {
+
+        const proc = new ExeCmd();
+
+        proc.on('launch', () => {
+            GlobalEvent.emit('globalLog.show');
+            GlobalEvent.emit('globalLog.append', `\n>>> exec cmd: '${command}'\n\n`);
+        });
+
+        proc.on('data', str => {
+            GlobalEvent.emit('globalLog.append', str);
+        });
+
+        proc.on('close', exitInfo => {
+            resolve(exitInfo.code == 0);
+        });
+
+        cancel?.onCancellationRequested(_ => {
+            if (!platform.kill(<number>proc.pid())) {
+                GlobalEvent.emit('msg', newMessage('Warning', `Can not kill process: ${proc.pid()} !`));
+            }
+        });
+
+        proc.Run(<string>command, undefined, { cwd: cwd });
+    });
+}
+
+export async function notifyReloadWindow(msg: string) {
+    const resp = await vscode.window.showInformationMessage(msg, 'Ok', 'Later');
+    if (resp == 'Ok') {
+        await vscode.commands.executeCommand('workbench.action.reloadWindow');
+    }
+}
 
 export function newMarkdownString(lines: string | string[]): vscode.MarkdownString {
     if (typeof lines == 'string') {
@@ -65,7 +126,18 @@ export function newFileTooltipString(f: File | FileTooltipInfo, root?: File): vs
 
     const s = [
         title,
-        `- **Path:** \`${f.path}\``];
+        `- **Path:** \`${f.path}\``,
+    ];
+
+    if (File.IsFile(f.path)) {
+        try {
+            const meta = fs.statSync(f.path);
+            s.push(`- **Size:** \`${meta.size.toString()} Bytes (${(meta.size / 1024).toFixed(1)} KB)\``);
+            s.push(`- **LastModifyTime:** \`${meta.mtime.toString()}\``);
+        } catch (error) {
+            // nothing
+        }
+    }
 
     if (root) {
         const re = root.ToRelativePath(f.path);
@@ -148,12 +220,10 @@ export function runShellCommand(title: string, commandLine: string, env?: any, u
             if (platform.osType() == 'win32') { shellOption.executable = 'cmd.exe'; shellOption.shellArgs = ['/C']; }
             else { shellOption.executable = '/bin/bash'; shellOption.shellArgs = ['-c']; }
             // init task
-            const task = new vscode.Task({ type: 'shell' }, vscode.TaskScope.Global, title, 'shell');
             if (platform.osType() == 'win32') commandLine = `"${commandLine}"`;
-            task.execution = new vscode.ShellExecution(commandLine, shellOption);
-            task.definition['command'] = commandLine;
+            const task = new vscode.Task({ type: 'shell', command: commandLine }, vscode.TaskScope.Global,
+                title, 'shell', new vscode.ShellExecution(commandLine, shellOption), []);
             task.isBackground = false;
-            task.problemMatchers = [];
             task.presentationOptions = { echo: true, focus: false, clear: true };
             vscode.tasks.executeTask(task);
         }
@@ -175,7 +245,9 @@ export function runShellCommand(title: string, commandLine: string, env?: any, u
 }
 
 export function copyObject(src: any): any {
-    if (typeof src === 'object') {
+    if (Array.isArray(src)) {
+        return Array.from(src);
+    } else if (typeof src === 'object') {
         return JSON.parse(JSON.stringify(src));
     } else {
         return src;
@@ -242,9 +314,10 @@ export function compareVersion(v1: string, v2: string): number {
     return 0;
 }
 
-const hostMap: any = {
+const PROXY_HOST_MAP: { [host: string]: string[] } = {
     'api.github.com': [
-        'api-github.em-ide.com'
+        'api-github.em-ide.com',
+        'api-github.github0null.io'
     ],
     'raw.githubusercontent.com': [
         'raw-github.em-ide.com',
@@ -254,9 +327,13 @@ const hostMap: any = {
 
 export function redirectHost(url: string) {
 
+    if (!SettingManager.GetInstance().isUseGithubProxy()) {
+        return url;
+    }
+
     // replace host
-    for (const host in hostMap) {
-        const hostList = <string[]>hostMap[host];
+    for (const host in PROXY_HOST_MAP) {
+        const hostList = PROXY_HOST_MAP[host];
         if (hostList.length > 1) {
             const idx = Math.floor(Math.random() * hostList.length); // random index
             url = url.replace(host, hostList[idx]);
@@ -453,10 +530,10 @@ export async function getDownloadUrlFromGitea(repo: string, folder: string, file
     });
 }
 
-export async function readGithubRepoFolder(remoteUrl_: string, token?: vscode.CancellationToken): Promise<GitFileInfo[] | Error> {
+export async function readGithubRepoFolder(repo_url: string, token?: vscode.CancellationToken): Promise<GitFileInfo[] | Error> {
 
     // URL: https://api.github.com/repos/github0null/eide-doc/contents/eide-template-list
-    const remoteUrl = remoteUrl_.replace(/^http[s]?:\/\//, '');
+    const remoteUrl = redirectHost(repo_url).replace(/^http[s]?:\/\//, '');
     const netReq = new NetRequest();
 
     let reqError: Error | undefined;
@@ -493,6 +570,16 @@ export async function readGithubRepoFolder(remoteUrl_: string, token?: vscode.Ca
     }
 
     return <GitFileInfo[]>res.content;
+}
+
+/**
+ * @param repo_path like: github0null/eide_default_external_tools_index
+ * @param file_path like: dir/index.json
+*/
+export async function readGithubRepoTxtFile(repo_path: string, file_path: string): Promise<string | Error | undefined> {
+    // https://raw.githubusercontent.com/github0null/eide_default_external_tools_index/master/xxx
+    const url = redirectHost(`https://raw.githubusercontent.com/${repo_path}/master/${file_path}`);
+    return await requestTxt(url);
 }
 
 export function genGithubHash(f: File | Buffer): string {

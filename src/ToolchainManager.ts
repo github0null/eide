@@ -53,6 +53,17 @@ export interface IProjectInfo {
     getOutDir: () => string;
 }
 
+export interface ToolchainTargetSupportedInfo {
+
+    machine: string;
+
+    archs: string[];
+
+    abis: string[];
+
+    rv_codeModels?: string[];
+}
+
 export interface IToolchian {
 
     readonly name: ToolchainName;
@@ -110,6 +121,11 @@ export interface IToolchian {
      * force include headers for cpptools intellisence config
      */
     getForceIncludeHeaders(): string[] | undefined;
+
+    /**
+     * get gcc target info
+    */
+    getGccCompilerTargetInfo?: () => ToolchainTargetSupportedInfo | undefined;
 
     /**
      * update cpptools intellisence config
@@ -1187,7 +1203,7 @@ class AC5 implements IToolchian {
 
         const incDir = File.fromArray([toolSearchLoc, 'include']);
         if (incDir.IsDir()) {
-            return [incDir].concat(incDir.GetList(File.EMPTY_FILTER)).map((f) => { return f.path; });
+            return [incDir].concat(incDir.GetList(File.EXCLUDE_ALL_FILTER)).map((f) => { return f.path; });
         }
 
         return [incDir.path];
@@ -2010,6 +2026,57 @@ class RISCV_GCC implements IToolchian {
 
     newInstance(): IToolchian {
         return new RISCV_GCC();
+    }
+
+    private __lastActivedTargetInfo: ToolchainTargetSupportedInfo | undefined;
+    getGccCompilerTargetInfo(): ToolchainTargetSupportedInfo | undefined {
+
+        if (this.__lastActivedTargetInfo)
+            return this.__lastActivedTargetInfo;
+
+        const compilerPath = this.getGccFamilyCompilerPathForCpptools();
+        if (!compilerPath)
+            return undefined;
+
+        try {
+            const machine = child_process.execFileSync(compilerPath, ['-dumpmachine']).toString().trim();
+            const sysroot = child_process.execFileSync(compilerPath, ['-print-sysroot']).toString().trim();
+            const libpath = `${sysroot}/lib`;
+
+            const archs: string[] = fs.readdirSync(libpath)
+                .filter(n => n.startsWith('rv32') || n.startsWith('rv64'))
+                .map(n => n.toLowerCase());
+
+            const lines = child_process.execFileSync(compilerPath, ['-Q', '--help=target'])
+                .toString().trim().split(/\r\n|\n/);
+
+            let abis: string[] = [];
+            let mods: string[] = [];
+
+            for (let index = 0; index < lines.length; index++) {
+                const line = lines[index];
+                if (/^\s*Supported ABIs/.test(line)) {
+                    abis = lines[index + 1].trim().split(/\s+/);
+                } else if (/^\s*Known code models/.test(line)) {
+                    mods = lines[index + 1].trim().split(/\s+/);
+                }
+            }
+
+            const targetInfo: ToolchainTargetSupportedInfo = {
+                machine: machine,
+                archs: archs,
+                abis: abis,
+                rv_codeModels: mods
+            };
+
+            this.__lastActivedTargetInfo = targetInfo;
+
+            return targetInfo;
+
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            return undefined;
+        }
     }
 
     getGccFamilyCompilerPathForCpptools(): string | undefined {
