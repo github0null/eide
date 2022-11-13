@@ -1640,7 +1640,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
                     .forEach(f => platform.DeleteDir(f));
             }
 
-            this.GetConfiguration().BuildIn_AddAllFromDefineList(libPaths);
+            this.GetConfiguration().CustomDep_AddAllFromLibList(libPaths);
 
             doneList.push(rePath);
         }
