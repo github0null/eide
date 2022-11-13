@@ -48,7 +48,7 @@ export type ExternalToolName = ToolchainName | HexUploaderType | 'cppcheck' | st
 
 export interface ExternalToolInfo {
 
-    resource_name: string;
+    resource_name: string; // resource id (unique)
     readable_name: string;
     detail?: string;
     is_third_party?: boolean;
@@ -156,8 +156,8 @@ export class ResInstaller {
         });
 
         this.registerTool('OpenOCD', {
-            resource_name: 'openocd',
-            readable_name: 'OpenOCD Programmer (v0.10.0 stable)',
+            resource_name: 'openocd_7a1adfbec_mingw32',
+            readable_name: 'OpenOCD Programmer (v0.12.0-rc2)',
             setting_name: 'OpenOCD.ExePath',
             require_name: `bin/openocd${platform.exeSuffix()}`,
             no_binaries: no_binaries
@@ -322,7 +322,7 @@ export class ResInstaller {
         if (toolInfo.is_third_party) {
             resourceFile = File.fromArray([os.tmpdir(), `${resourceName}.${toolInfo.zip_type}`]);
         } else {
-            resourceFile = File.fromArray([os.tmpdir(), `${resourceName}.7z`])
+            resourceFile = File.fromArray([os.tmpdir(), `${resourceName}.${toolInfo.zip_type || '7z'}`])
         }
 
         try {
@@ -454,7 +454,7 @@ export class ResInstaller {
                             let drvExePath = toolInfo.getDrvInstaller();
                             if (drvExePath) {
                                 drvExePath = outDir.path + File.sep + drvExePath;
-                                utility.runShellCommand(`install driver`, `"${drvExePath}"`, undefined, true);
+                                utility.runShellCommand(`install driver`, `start "${resourceName}" /MAX "${drvExePath}"`, undefined, true);
                             }
                         }
 
