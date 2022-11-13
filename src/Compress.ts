@@ -40,6 +40,7 @@ export type SevenZipUnzipExcludeList = { name: string, recurse?: boolean }[];
 export class SevenZipper {
 
     static readonly MaxStep = 18;
+    static readonly ExcludeCmdSep = platform.osType() == 'win32' ? '!' : '\\!';
 
     private _7za: File;
     private _event: events.EventEmitter;
@@ -59,7 +60,7 @@ export class SevenZipper {
         }
     }
 
-    Unzip(zipFile: File, outDir?: File, excList?: SevenZipUnzipExcludeList): Promise<Error | null> {
+    Unzip(zipFile: File, outDir?: File): Promise<Error | null> {
 
         if (!zipFile.IsFile()) {
             throw new Error('\'' + zipFile.path + '\' is not exist');
@@ -73,16 +74,6 @@ export class SevenZipper {
             paramList.push('-r');
             paramList.push('-aoa');
             paramList.push(zipFile.path);
-
-            if (excList) {
-                for (const exclude of excList) {
-                    if (exclude.recurse) {
-                        paramList.push(`-xr!${exclude.name.trim()}`);
-                    } else {
-                        paramList.push(`-x!${exclude.name.trim()}`);
-                    }
-                }
-            }
 
             const outPath = (outDir ? outDir.path : zipFile.dir);
             paramList.push('-o' + outPath);
@@ -121,7 +112,7 @@ export class SevenZipper {
         });
     }
 
-    UnzipSync(zipFile: File, outDir?: File, excList?: SevenZipUnzipExcludeList): string {
+    UnzipSync(zipFile: File, outDir?: File): string {
 
         if (!zipFile.IsFile()) {
             throw new Error('\'' + zipFile.path + '\' is not exist');
@@ -133,16 +124,6 @@ export class SevenZipper {
         paramList.push('-r');
         paramList.push('-aoa');
         paramList.push(zipFile.path);
-
-        if (excList) {
-            for (const exclude of excList) {
-                if (exclude.recurse) {
-                    paramList.push(`-xr!${exclude.name.trim()}`);
-                } else {
-                    paramList.push(`-x!${exclude.name.trim()}`);
-                }
-            }
-        }
 
         const outPath = (outDir ? outDir.path : zipFile.dir);
         paramList.push('-o' + outPath);
@@ -174,7 +155,7 @@ export class SevenZipper {
 
             if (option.excludeList) {
                 for (let excludeReg of option.excludeList) {
-                    paramList.push('-xr!' + excludeReg.trim());
+                    paramList.push('-xr' + SevenZipper.ExcludeCmdSep + excludeReg.trim());
                 }
             }
 
