@@ -1569,13 +1569,17 @@
             {
                 "type": "eide.msys",
                 "required": [
-                    "name",
+                    "label",
                     "command"
                 ],
                 "properties": {
-                    "name": {
+                    "label": {
                         "type": "string",
                         "description": "Task Name. A human-readable name for this task"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "**Deprecated !!!** Task Name. A human-readable name for this task"
                     },
                     "command": {
                         "type": "string",
