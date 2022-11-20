@@ -4176,6 +4176,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 throw new Error(`Not found any reference for this source file !, [path]: '${srcPath}'`);
             }
 
+            if (!File.IsFile(objPath)) {
+                throw new Error(`Object file is not existed !, [path]: '${objPath}'`);
+            }
+
             // prepare command
             let exeFile: File;
             let cmds: string[];

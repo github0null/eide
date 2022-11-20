@@ -35,4 +35,4 @@ SortIncludes: false
 
 AlignConsecutiveMacros: AcrossEmptyLines
 
-#AlignConsecutiveAssignments: AcrossEmptyLines
+AlignConsecutiveAssignments: Consecutive

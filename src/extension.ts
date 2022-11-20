@@ -1164,7 +1164,9 @@ function RegisterGlobalEvent() {
 
 interface EideShellTaskDef extends vscode.TaskDefinition {
 
-    name: string;
+    label: string;
+
+    name?: string;
 
     command: string;
 
@@ -1192,14 +1194,14 @@ class EideTaskProvider implements vscode.TaskProvider {
             const definition: EideShellTaskDef = <any>task_.definition;
 
             const task = new vscode.Task(definition, vscode.TaskScope.Workspace,
-                definition.name, EideTaskProvider.TASK_TYPE_MSYS, definition.problemMatchers);
+                definition.name || definition.label, EideTaskProvider.TASK_TYPE_MSYS, definition.problemMatchers);
 
             const shellcommand = definition.command;
             task.execution = new vscode.ShellExecution(shellcommand, {
                 executable: platform.osType() == 'win32' ? `${process.env['EIDE_MSYS']}/bash.exe` : '/bin/bash',
                 shellArgs: ['-c'],
                 cwd: definition?.options?.cwd || workspaceManager.getCurrentFolder()?.path,
-                env: utility.mergeEnv(process.env, {})
+                env: utility.mergeEnv(process.env, definition.env || {})
             });
 
             task.group = definition.group;
