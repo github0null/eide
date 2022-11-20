@@ -6,6 +6,16 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.10.4] revision
+
+**Fix**:
+  - `Task type: 'eide.msys'`: The `env` property does not work.
+
+**Change**:
+  - `Task type: 'eide.msys'`: Use `label` property for task title, not `name`
+
+***
+
 ### [v3.10.3] revision
 
 **New**:
