@@ -276,7 +276,7 @@ export class ResManager extends events.EventEmitter {
                 const pList = process.env['Path'].split(File.delimiter);
                 for (const path of pList) {
                     if (/WindowsPowerShell/.test(path)) {
-                        if (path && fs.existsSync(path) && fs.lstatSync(path).isDirectory) {
+                        if (path && File.IsDir(path)) {
                             const res = path.replace(/\\*\s*$/, '');
                             const psList = new File(res).GetList([/powershell\.exe/i], File.EXCLUDE_ALL_FILTER);
                             if (psList.length > 0 && psList[0].IsFile()) {
