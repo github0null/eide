@@ -2765,7 +2765,8 @@ class EIDEProject extends AbstractProject {
                     "hars.cppsnippets",
                     "zixuanwang.linkerscript",
                     "redhat.vscode-yaml",
-                    "IBM.output-colorizer"
+                    "IBM.output-colorizer",
+                    "cschlosser.doxdocgen"
                 ];
 
                 const prjInfo = this.GetConfiguration().config;
