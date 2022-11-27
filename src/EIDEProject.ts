@@ -1825,7 +1825,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         const toolManager = ToolchainManager.getInstance();
 
         this.toolchain = toolManager.getToolchain(prjConfig.config.type, prjConfig.config.toolchain);
-        this.registerBuiltinVar('ToolchainRoot', () => this.getToolchain().getToolchainDir().path);
+        let toolchainRoot = this.toolchain.getToolchainDir().path;
+        this.registerBuiltinVar('ToolchainRoot', () => toolchainRoot);
 
         const opFile = prjConfig.compileConfigModel.getOptionsFile(this.getEideDir().path, prjConfig.config);
         toolManager.updateToolchainConfig(opFile, this.toolchain);
@@ -2934,7 +2935,7 @@ class EIDEProject extends AbstractProject {
                     } catch (error) {
                         GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
                     }
-                }, 450);
+                }, 600);
         }
 
         // we already have a updater in running, now delay it

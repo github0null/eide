@@ -146,7 +146,7 @@ export class SettingManager {
         this.getConfiguration().update(key, val, vscode.ConfigurationTarget.Global);
     }
 
-    private toFullPathForSettings(path_: string): string {
+    private _formatPathForPluginSettings(path_: string): string {
 
         const wsRoot = WorkspaceManager.getInstance().getWorkspaceRoot();
 
@@ -189,59 +189,61 @@ export class SettingManager {
 
     //------------------------- env and path --------------------------
 
-    private getExePathFromConfig(confName: string, execName: string): string | undefined {
-
-        let defPath: string | undefined;
-
-        const path = this.getConfiguration().get<string>(confName);
+    private getFullPathByPluginConfig(configName: string): string | undefined {
+        const path = this.getConfiguration().get<string>(configName);
         if (path) {
-            defPath = Utility.formatPath(this.toFullPathForSettings(path));
-            if (File.IsExist(defPath)) {
-                return defPath;
+            const p = Utility.formatPath(this._formatPathForPluginSettings(path));
+            if (File.IsExist(p)) {
+                return p;
             }
         }
+    }
 
-        if (this.envPathCache.has(execName)) {
-            return <string>this.envPathCache.get(execName);
+    private findExePathInSystemEnv(exeName: string): string | undefined {
+
+        if (this.envPathCache.has(exeName)) {
+            return <string>this.envPathCache.get(exeName);
         }
 
         else {
-            const absPath = find(execName);
+            const absPath = find(exeName);
             if (absPath) {
-                this.envPathCache.set(execName, absPath);
+                this.envPathCache.set(exeName, absPath);
                 return absPath;
             }
         }
-
-        return defPath;
     }
 
-    private getGccFolderFromConfig(confName: string, execName: string): string | undefined {
+    private findExeDirInSystemEnv(exeName: string): string | undefined {
 
-        let defPath: string | undefined;
-
-        const path = this.getConfiguration().get<string>(confName);
-        if (path) {
-            defPath = Utility.formatPath(this.toFullPathForSettings(path));
-            if (File.IsExist(defPath)) {
-                return defPath;
-            }
-        }
-
-        if (this.envPathCache.has(execName)) {
-            return <string>this.envPathCache.get(execName);
+        if (this.envPathCache.has(exeName)) {
+            return <string>this.envPathCache.get(exeName);
         }
 
         else {
-            const absPath = find(execName);
+            const absPath = find(exeName);
+            if (absPath) {
+                const dirpath = NodePath.dirname(absPath);
+                this.envPathCache.set(exeName, dirpath);
+                return dirpath;
+            }
+        }
+    }
+
+    private findGccCompilerRootInSystemEnv(gccName: string): string | undefined {
+
+        if (this.envPathCache.has(gccName)) {
+            return <string>this.envPathCache.get(gccName);
+        }
+
+        else {
+            const absPath = find(gccName);
             if (absPath) {
                 const dirName = NodePath.dirname(NodePath.dirname(absPath));
-                this.envPathCache.set(execName, dirName);
+                this.envPathCache.set(gccName, dirName);
                 return dirName;
             }
         }
-
-        return defPath;
     }
 
     //-------------------------- Serialport --------------------------------
@@ -350,74 +352,44 @@ export class SettingManager {
     }
 
     getCppcheckerExe(): string | undefined {
-        return this.getExePathFromConfig('Cppcheck.ExecutablePath', 'cppcheck');
+        return this.getFullPathByPluginConfig('Cppcheck.ExecutablePath')
+            || this.findExePathInSystemEnv('cppcheck');
     }
 
     //----------------------------- Flasher --------------------------------
 
     getJlinkDir(): string {
-
-        let defPath: string | undefined;
-
-        const path = this.getConfiguration().get<string>('JLink.InstallDirectory');
-        if (path) {
-            defPath = Utility.formatPath(this.toFullPathForSettings(path));
-            if (File.IsExist(defPath)) {
-                return defPath;
-            }
-        }
-
-        const execName = 'JLink';
-
-        if (this.envPathCache.has(execName)) {
-            return <string>this.envPathCache.get(execName)
-        }
-
-        else {
-            const absPath = find(execName);
-            if (absPath) {
-                const dirName = NodePath.dirname(absPath);
-                this.envPathCache.set(execName, dirName);
-                return dirName;
-            }
-        }
-
-        return defPath || 'null';
+        return this.getFullPathByPluginConfig('JLink.InstallDirectory')
+            || this.findExeDirInSystemEnv('JLink')
+            || 'null';
     }
 
     getStvpExePath(): string {
-        return this.toFullPathForSettings(
-            this.getExePathFromConfig('STM8.STVP.CliExePath', 'STVP_CmdLine') || 'null'
-        );
+        return this.getFullPathByPluginConfig('STM8.STVP.CliExePath')
+            || this.findExePathInSystemEnv('STVP_CmdLine')
+            || 'null';
     }
 
     getSTLinkExePath(): string {
-
-        const flasher =
-            this.getExePathFromConfig('STLink.ExePath', 'STM32_Programmer_CLI') ||
-            this.getExePathFromConfig('STLink.ExePath', 'ST-LINK_CLI');
-
-        return this.toFullPathForSettings(flasher || 'null');
+        return this.getFullPathByPluginConfig('STLink.ExePath')
+            || this.findExePathInSystemEnv('STM32_Programmer_CLI')
+            || this.findExePathInSystemEnv('ST-LINK_CLI')
+            || 'null';
     }
 
     getOpenOCDExePath(): string {
-        return this.toFullPathForSettings(
-            this.getExePathFromConfig('OpenOCD.ExePath', 'openocd') || 'null'
-        );
+        return this.getFullPathByPluginConfig('OpenOCD.ExePath')
+            || this.findExePathInSystemEnv('openocd')
+            || 'null';
     }
 
     //-----------------------------IAR-------------------------------
 
     getIARForStm8Dir(): File {
 
-        let defPath: string | undefined;
-
-        const path = this.getConfiguration().get<string>('IAR.STM8.InstallDirectory');
-        if (path) {
-            defPath = Utility.formatPath(this.toFullPathForSettings(path));
-            if (File.IsExist(defPath)) {
-                return new File(defPath);
-            }
+        const p = this.getFullPathByPluginConfig('IAR.STM8.InstallDirectory');
+        if (p) {
+            return new File(p);
         }
 
         const execName = 'iccstm8';
@@ -435,11 +407,15 @@ export class SettingManager {
             }
         }
 
-        return new File(defPath || 'null');
+        return new File('null');
     }
 
     getIarForArmDir(): File {
-        return new File(this.getGccFolderFromConfig('IAR.ARM.Toolchain.InstallDirectory', 'iccarm') || 'null');
+        return new File(
+            this.getFullPathByPluginConfig('IAR.ARM.Toolchain.InstallDirectory') ||
+            this.findGccCompilerRootInSystemEnv('iccarm') ||
+            'null'
+        );
     }
 
     //---------------------------- ARM ----------------------------
@@ -467,24 +443,29 @@ export class SettingManager {
     }
 
     getGCCDir(): File {
-        const execName = `${this.getGCCPrefix()}gcc`;
-        return new File(this.getGccFolderFromConfig('ARM.GCC.InstallDirectory', execName) || 'null');
+        return new File(
+            this.getFullPathByPluginConfig('ARM.GCC.InstallDirectory') ||
+            this.findGccCompilerRootInSystemEnv(`${this.getGCCPrefix()}gcc`) ||
+            'null'
+        );
     }
 
     // ---
 
     getArmcc5Dir(): File {
         return new File(
-            this.getGccFolderFromConfig('ARM.ARMCC5.InstallDirectory', 'armcc') ||
+            this.getFullPathByPluginConfig('ARM.ARMCC5.InstallDirectory') ||
             this.pathCache.get('ARMCC5') ||
+            this.findGccCompilerRootInSystemEnv('armcc') ||
             'null'
         );
     }
 
     getArmcc6Dir(): File {
         return new File(
-            this.getGccFolderFromConfig('ARM.ARMCC6.InstallDirectory', 'armclang') ||
+            this.getFullPathByPluginConfig('ARM.ARMCC6.InstallDirectory') ||
             this.pathCache.get('ARMCC6') ||
+            this.findGccCompilerRootInSystemEnv('armclang') ||
             'null'
         );
     }
@@ -584,18 +565,25 @@ export class SettingManager {
     //------------------------------- SDCC --------------------------------
 
     getSdccDir(): File {
-        return new File(this.getGccFolderFromConfig('SDCC.InstallDirectory', 'sdcc') || 'null');
+        return new File(
+            this.getFullPathByPluginConfig('SDCC.InstallDirectory') ||
+            this.findGccCompilerRootInSystemEnv('sdcc') ||
+            'null'
+        );
     }
 
     getGnuSdccStm8Dir(): File {
-        return new File(this.getGccFolderFromConfig('STM8.GNU-SDCC.InstallDirectory', 'stm8-as') || 'null');
+        return new File('null'); // disabled
     }
 
     //------------------------------- RISC-V ----------------------------------
 
     getRiscvToolFolder(): File {
-        const execName = `${this.getRiscvToolPrefix()}gcc`;
-        return new File(this.getGccFolderFromConfig('RISCV.InstallDirectory', execName) || 'null');
+        return new File(
+            this.getFullPathByPluginConfig('RISCV.InstallDirectory') ||
+            this.findGccCompilerRootInSystemEnv(`${this.getRiscvToolPrefix()}gcc`) ||
+            'null'
+        );
     }
 
     getRiscvToolPrefix(): string {
@@ -605,8 +593,11 @@ export class SettingManager {
     //------------------------------- Any GCC ----------------------------------
 
     getAnyGccToolFolder(): File {
-        const execName = `${this.getAnyGccToolPrefix()}gcc`;
-        return new File(this.getGccFolderFromConfig('Toolchain.AnyGcc.InstallDirectory', execName) || 'null');
+        return new File(
+            this.getFullPathByPluginConfig('Toolchain.AnyGcc.InstallDirectory') ||
+            this.findGccCompilerRootInSystemEnv(`${this.getAnyGccToolPrefix()}gcc`) ||
+            'null'
+        );
     }
 
     getAnyGccToolPrefix(): string {
