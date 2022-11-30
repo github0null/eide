@@ -756,8 +756,8 @@ export const view_str$operation$setMDKPath = [
 ][langIndex];
 
 export const view_str$operation$setToolchainInstallDir = [
-    '设置 ${name} 的安装目录路径',
-    'Set ${name} installation folder path'
+    '设置 ${name} 的安装目录路径（编译器根目录）',
+    'Set ${name} installation folder path (compiler root directory)'
 ][langIndex];
 
 export const from_disk_desp = [
