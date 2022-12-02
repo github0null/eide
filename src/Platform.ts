@@ -230,6 +230,11 @@ export function DeleteAllChildren(dir: File): string {
 }
 
 const __find_cache: Map<string, string> = new Map();
+/**
+ * @brief Find a exe path in System Path, 
+ *        - if found, return a path with string type.
+ *        - if not found, return 'undefined'
+*/
 export function find(fileName: string, refreshCache?: boolean): string | undefined {
 
     if (refreshCache)

@@ -6,6 +6,16 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.10.5] revision
+
+**Fix**:
+  - `Symbol Link`: Not work for symbol link source folder.
+
+**Optimize**:
+  - `High Cpu Load`: Optimize code, reduce `find in system path` operations
+
+***
+
 ### [v3.10.4] revision
 
 **Fix**:
