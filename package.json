@@ -227,7 +227,7 @@
                     },
                     "EIDE.Cppcheck.ExecutablePath": {
                         "type": "string",
-                        "scope": "machine",
+                        "scope": "resource",
                         "markdownDescription": "%settings.cppcheck.exec.path%",
                         "default": "${userRoot}/.eide/tools/cppcheck/cppcheck.exe"
                     },
@@ -376,19 +376,19 @@
                     },
                     "EIDE.IAR.STM8.InstallDirectory": {
                         "type": "string",
-                        "scope": "machine",
+                        "scope": "resource",
                         "markdownDescription": "%settings.iar.stm8.install.folder%",
                         "default": ""
                     },
                     "EIDE.IAR.ARM.Toolchain.InstallDirectory": {
                         "type": "string",
-                        "scope": "machine",
+                        "scope": "resource",
                         "markdownDescription": "%settings.iar.arm.toolchain.install.folder%",
                         "default": ""
                     },
                     "EIDE.STM8.GNU-SDCC.InstallDirectory": {
                         "type": "string",
-                        "scope": "machine",
+                        "scope": "resource",
                         "markdownDescription": "gnu sdcc for stm8 installation path",
                         "default": "${userRoot}/.eide/tools/stm8_gnu_sdcc"
                     },
@@ -424,19 +424,19 @@
                     },
                     "EIDE.JLink.InstallDirectory": {
                         "type": "string",
-                        "scope": "machine",
+                        "scope": "resource",
                         "markdownDescription": "%settings.jlink.install.folder%",
                         "default": "${userRoot}/.eide/tools/jlink"
                     },
                     "EIDE.OpenOCD.ExePath": {
                         "type": "string",
-                        "scope": "machine",
+                        "scope": "resource",
                         "markdownDescription": "%settings.openocd.install.folder%",
                         "default": "${userRoot}/.eide/tools/openocd/bin/openocd.exe"
                     },
                     "EIDE.STLink.ExePath": {
                         "type": "string",
-                        "scope": "machine",
+                        "scope": "resource",
                         "markdownDescription": "%settings.stlink.install.folder%",
                         "default": "${userRoot}/.eide/tools/st_cube_programer/bin/STM32_Programmer_CLI.exe"
                     },
@@ -454,7 +454,7 @@
                     },
                     "EIDE.STM8.STVP.CliExePath": {
                         "type": "string",
-                        "scope": "machine",
+                        "scope": "resource",
                         "markdownDescription": "%settings.stvp.path%",
                         "default": "${userRoot}/.eide/tools/stvp/STVP_CmdLine.exe"
                     },
@@ -466,7 +466,7 @@
                     },
                     "EIDE.SDCC.InstallDirectory": {
                         "type": "string",
-                        "scope": "machine",
+                        "scope": "resource",
                         "markdownDescription": "%settings.sdcc.install.folder%",
                         "default": "${userRoot}/.eide/tools/sdcc"
                     },
