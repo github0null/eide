@@ -2892,6 +2892,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
     }
 
+    private _sourceWhereFroms: Map<string, AbstractProject> = new Map();
+
     canProvideConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<boolean> {
 
         this.cppToolsOut.appendLine(`[source] cpptools request provideConfigurations for '${uri.fsPath}'`);
@@ -2900,6 +2902,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             let result = false;
             await this.dataProvider.traverseProjectsAsync(async (prj) => {
                 result = await prj.canProvideConfiguration(uri, token);
+                if (result) this._sourceWhereFroms.set(uri.fsPath, prj);
                 return result;
             });
             resolve(result);
@@ -2910,10 +2913,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         return new Promise(async (resolve) => {
             let result: SourceFileConfigurationItem[] = [];
             for (const uri of uris) {
-                await this.dataProvider.traverseProjectsAsync(async (prj) => {
-                    result = result.concat(await prj.provideConfigurations([uri], token));
-                    return true;
-                });
+                const prj = this._sourceWhereFroms.get(uri.fsPath);
+                if (prj) result = result.concat(await prj.provideConfigurations([uri], token));
             }
             resolve(result);
             this.cppToolsOut.appendLine(`[source] provideConfigurations`);

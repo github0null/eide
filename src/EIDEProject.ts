@@ -3161,6 +3161,7 @@ class EIDEProject extends AbstractProject {
     provideConfigurations(uris: vscode.Uri[], token?: vscode.CancellationToken | undefined): Thenable<SourceFileConfigurationItem[]> {
 
         return new Promise((resolve) => {
+
             resolve(uris.map((uri) => {
 
                 let fileArgs: string[] | undefined;
