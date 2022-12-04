@@ -2396,6 +2396,12 @@ class EIDEProject extends AbstractProject {
         return this.srcRefMap.get(file.path) || [];
     }
 
+    public getSourceRefsAll(): string[] {
+        const allHeaders: string[] = [];
+        this.srcRefMap.forEach(v => v.forEach(f => allHeaders.push(f.path)));
+        return ArrayDelRepetition(allHeaders);
+    }
+
     private whitespaceMatcher = /(?<![\\:]) /;
 
     private gnu_parseRefLines(lines: string[]): string[] {
@@ -3123,16 +3129,30 @@ class EIDEProject extends AbstractProject {
     }
 
     canProvideConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<boolean> {
+
         return new Promise((resolve) => {
-            const filePath = platform.realpathSync(uri.fsPath);
+
+            const realPath = platform.realpathSync(uri.fsPath);
+            const lowcasePath = uri.fsPath.toLowerCase();
             const prjRoot = platform.realpathSync(this.GetRootDir().path);
-            const allIncPaths = this.cppToolsConfig.includePath;
-            resolve(
-                filePath.startsWith(prjRoot) ||                     // All source files in current workspace
-                allIncPaths.some(p => filePath.startsWith(p)) ||    // All .h files in IncludePaths
-                this.vSourceList.has(filePath) ||                   // All virtual source files
-                this.sourceRoots.isIncludes(filePath)               // All source files in linked source folders
-            );
+            const allIncPaths = this.cppToolsConfig.includePath.map(p => File.ToLocalPath(p.toLowerCase()));
+
+            // filter source files that can provide
+            let result: boolean =
+                realPath.startsWith(prjRoot) ||                      // All source files in current workspace
+                allIncPaths.some(p => lowcasePath.startsWith(p)) ||  // All files in IncludePaths
+                this.vSourceList.has(realPath) ||                    // All virtual source files
+                this.sourceRoots.isIncludes(realPath);               // All source files in linked source folders
+
+            // other .h files
+            if (!result && AbstractProject.headerFilter.test(lowcasePath)) {
+                const allHeaders = this.getSourceRefsAll().map(p => File.ToLocalPath(p.toLowerCase()));
+                result = result ||
+                    allHeaders.some(p => p == lowcasePath) || // All .h files for this project
+                    lowcasePath.startsWith(this.getToolchain().getToolchainDir().path.toLowerCase()); // All .h files in toolchain dir
+            }
+
+            resolve(result);
         });
     }
 
