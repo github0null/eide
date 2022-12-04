@@ -42,6 +42,7 @@ import * as utility from './utility'
 import { CmdLineHandler } from "./CmdLineHandler";
 import * as yaml from 'yaml';
 import { CodeConverter } from "./CodeConverter";
+import { jsonc } from "jsonc";
 
 let resManager: ResManager | undefined;
 
@@ -339,9 +340,29 @@ export class ResManager extends events.EventEmitter {
     }
 
     getCmsisLibPacks(): { [name: string]: File } {
-        return {
-            'libdsp': File.fromArray([(<File>this.GetDir('include')).path, 'cmsis', 'dsp_lib.7z'])
+
+        const cmsisDir = File.fromArray([(<File>this.GetDir('include')).path, 'cmsis']);
+        const packages: { [name: string]: File } = {
+            'libdsp': File.fromArray([cmsisDir.path, 'dsp_lib.7z'])
+        };
+
+        const libsDir = File.fromArray([cmsisDir.path, 'libs']);
+        const indexFile = File.fromArray([libsDir.path, 'index.json']);
+        if (indexFile.IsFile()) {
+            try {
+                const libs = jsonc.parse(indexFile.Read());
+                for (const key in libs) {
+                    const libpath = libs[key];
+                    if (typeof libpath == 'string') {
+                        packages[key] = File.fromArray([libsDir.path, libpath]);
+                    }
+                }
+            } catch (error) {
+                // nothing todo
+            }
         }
+
+        return packages;
     }
 
     getStvpToolsDir(): File {

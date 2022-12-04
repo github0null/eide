@@ -278,7 +278,7 @@ export abstract class CodeBuilder {
             this.logWatcher = new FileWatcher(builderLog, false);
             this.logWatcher.OnChanged = () => {
                 this.logWatcher?.Close();
-                setTimeout(() => this.emit('finished', checkBuildDone(builderLog)), 400);
+                setTimeout(() => this.emit('finished', checkBuildDone(builderLog)), 500);
             };
 
             // start watch
