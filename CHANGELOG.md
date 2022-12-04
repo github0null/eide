@@ -6,6 +6,19 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.10.6] revision
+
+**Fix**:
+  - `cpptools configuration provider not work`: Fix provider file filter bug.
+
+**Optimize**:
+  - `Resource Explorer`: Keep `non-existed` filesystem source folders. Optimize folder watcher
+  - `Settings Scope`: Allow user override more eide settings by `workspace settings`.
+  - `FileWatcher`: Auto close file watcher if watcher has an error.
+  - `Prompt messages`: Optimize some UI hint messages.
+
+***
+
 ### [v3.10.5] revision
 
 **Fix**:
