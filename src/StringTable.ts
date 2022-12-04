@@ -273,6 +273,11 @@ export const view_str$project$needRefresh = [
     'Need Refresh'
 ][langIndex];
 
+export const view_str$project$fileNotExisted = [
+    '文件不存在',
+    'File Not Existed'
+][langIndex];
+
 export const view_str$project$excludeFolder = [
     '已排除的文件夹',
     'Excluded Folder'

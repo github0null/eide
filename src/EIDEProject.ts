@@ -96,6 +96,7 @@ export interface FolderInfo {
 }
 
 interface SourceRootInfo extends FolderInfo {
+    isValid: () => boolean;
     fileWatcher: FileWatcher;
     fileGroups: ProjectFileGroup[];
     incList: string[];
@@ -400,13 +401,7 @@ class SourceRootList implements SourceProvider {
         const srcFolders = this.project.GetConfiguration().config.srcDirs;
         srcFolders.forEach((path) => {
             const f = new File(path);
-            if (f.IsDir()) {
-                const key: string = this.getRelativePath(path);
-                const watcher = platform.createSafetyFileWatcher(f, true).Watch();
-                watcher.on('error', (err) => GlobalEvent.emit('msg', ExceptionToMessage(err, 'Hidden')));
-                watcher.OnRename = (file) => this.onFolderRenamed(key, file);
-                this.srcFolderMaps.set(key, this.newSourceInfo(key, watcher));
-            }
+            this._add(f);
         });
 
         // update all
@@ -417,19 +412,21 @@ class SourceRootList implements SourceProvider {
         if (!notEmitEvt) { this.emit('dataChanged', 'dataChanged'); }
     }
 
+    private _add(dir: File): SourceRootInfo {
+        const key: string = this.getRelativePath(dir.path);
+        const watcher = platform.createSafetyFileWatcher(dir, true);
+        watcher.on('error', (err) => GlobalEvent.emit('globalLog', ExceptionToMessage(err, 'Warning')));
+        watcher.OnRename = (file) => this.onFolderRenamed(key, file);
+        const sourceInfo = this.newSourceInfo(key, watcher);
+        this.srcFolderMaps.set(key, sourceInfo);
+        return sourceInfo;
+    }
+
     add(absPath: string): boolean {
-        const f = new File(absPath);
-        if (f.IsDir()) {
-            const key: string = this.getRelativePath(absPath);
-            const watcher = platform.createSafetyFileWatcher(f, true).Watch();
-            watcher.on('error', (err) => GlobalEvent.emit('msg', ExceptionToMessage(err, 'Hidden')));
-            watcher.OnRename = (file) => this.onFolderRenamed(key, file);
-            const sourceInfo = this.newSourceInfo(key, watcher);
-            this.srcFolderMaps.set(key, sourceInfo);
-            this.updateFolder(sourceInfo);
-            return true;
-        }
-        return false;
+        const dir = new File(absPath);
+        const sourceInfo = this._add(dir);
+        this.updateFolder(sourceInfo);
+        return true;
     }
 
     remove(absPath: string): boolean {
@@ -470,7 +467,7 @@ class SourceRootList implements SourceProvider {
         if (rootSrcUpdateList.length > 0) {
 
             for (const rootInfo of rootSrcUpdateList) {
-                if (rootInfo.fileWatcher.file.IsDir()) {
+                if (rootInfo.isValid()) {
                     this.updateFolder(rootInfo, [targetDir]);
                 }
             }
@@ -527,6 +524,26 @@ class SourceRootList implements SourceProvider {
         return res;
     }
 
+    isIncludes(abspath: string): boolean {
+
+        if (!File.isAbsolute(abspath)) {
+            abspath = this.project.toAbsolutePath(abspath);
+        }
+
+        const unixPath = File.ToUnixPath(abspath);
+
+        for (const rootInfo of this.srcFolderMaps.values()) {
+            const unixRootPath = File.ToUnixPath(rootInfo.fileWatcher.file.path);
+            const unixRootRealPath = File.ToUnixPath(platform.realpathSync(rootInfo.fileWatcher.file.path));
+            if (unixPath.startsWith(unixRootPath) ||
+                unixPath.startsWith(unixRootRealPath)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     forceUpdateAllFolders() {
         for (const info of this.srcFolderMaps.values()) {
             this.updateFolder(info);
@@ -537,13 +554,8 @@ class SourceRootList implements SourceProvider {
     forceUpdateFolder(rePath: string) {
         const rootInfo = this.srcFolderMaps.get(rePath);
         if (rootInfo) {
-            if (rootInfo.fileWatcher.file.IsDir()) {
-                this.updateFolder(rootInfo);
-                this.emit('dataChanged', 'folderChanged');
-            } else {
-                this.removeByKey(rePath);
-                this.emit('dataChanged', 'dataChanged');
-            }
+            this.updateFolder(rootInfo);
+            this.emit('dataChanged', 'folderChanged');
         }
     }
 
@@ -562,34 +574,41 @@ class SourceRootList implements SourceProvider {
         return {
             displayName: displayName,
             fileWatcher: watcher,
+            isValid: () => watcher.file.IsDir(),
             needUpdate: false,
             fileGroups: [],
             incList: []
         };
     }
 
-    private removeByKey(key: string): boolean {
+    private disposeWatcher(key: string): void {
         this.srcFolderMaps.get(key)?.fileWatcher.Close();
+    }
+
+    private removeByKey(key: string): boolean {
+        this.disposeWatcher(key);
         return this.srcFolderMaps.delete(key);
     }
 
     private onFolderRenamed(folderKey: string, targetFile: File) {
         const rootInfo = this.srcFolderMaps.get(folderKey);
         if (rootInfo) {
-            if (targetFile.path === rootInfo.fileWatcher.file.path) { // root folder has been renamed
-                if (this.removeByKey(folderKey)) { this.emit('dataChanged', 'dataChanged'); }
+
+            if (targetFile.path == rootInfo.fileWatcher.file.path) { // root folder has been renamed
+                this.disposeWatcher(folderKey);
+                this.emit('dataChanged', 'folderStatusChanged');
+            }
+
+            if (rootInfo.refreshTimeout) {
+                rootInfo.refreshTimeout.refresh();
             } else {
-                if (rootInfo.refreshTimeout) {
-                    rootInfo.refreshTimeout.refresh();
-                } else {
-                    rootInfo.refreshTimeout = setTimeout((folderInfo: SourceRootInfo) => {
-                        if (folderInfo.refreshTimeout) {
-                            folderInfo.refreshTimeout = undefined;
-                            this.updateFolder(folderInfo);
-                            this.emit('dataChanged', 'folderChanged');
-                        }
-                    }, 100, rootInfo);
-                }
+                rootInfo.refreshTimeout = setTimeout((folderInfo: SourceRootInfo) => {
+                    if (folderInfo.refreshTimeout) {
+                        folderInfo.refreshTimeout = undefined;
+                        this.updateFolder(folderInfo);
+                        this.emit('dataChanged', 'folderChanged');
+                    }
+                }, 200, rootInfo);
             }
         }
     }
@@ -619,6 +638,9 @@ class SourceRootList implements SourceProvider {
             rootFolderInfo.incList = [];
             rootFolderInfo.fileGroups = [];
             folderStack.push(rootFolder);
+            // if source root have no watcher, watch it !
+            if (rootFolderInfo.isValid() && !rootFolderInfo.fileWatcher.IsWatched())
+                rootFolderInfo.fileWatcher.Watch();
         }
 
         rootFolderInfo.needUpdate = false;
@@ -629,9 +651,14 @@ class SourceRootList implements SourceProvider {
 
                 const cFolder = <File>folderStack.pop();
                 const isSourceRoot = cFolder.path === rootFolder.path;
-                if (cFolder.name.startsWith('.') && !isSourceRoot) continue; // skip '.xxx' folders, not root folder
-                const fileList = cFolder.GetList(fileFilter, File.EXCLUDE_ALL_FILTER);
 
+                if (!cFolder.IsDir())
+                    continue; // skip not-existed folder
+
+                if (cFolder.name.startsWith('.') && !isSourceRoot)
+                    continue; // skip sub '.xxx' folders, but not root folder
+
+                const fileList = cFolder.GetList(fileFilter, File.EXCLUDE_ALL_FILTER);
                 if (fileList.length > 0) {
 
                     // filter source file and add to file group
@@ -679,7 +706,7 @@ class SourceRootList implements SourceProvider {
 
         } catch (error) {
             rootFolderInfo.needUpdate = true; // set need update flag
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
         }
     }
 }
@@ -724,7 +751,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     static readonly excludeDirFilter: RegExp = /^\./;
 
     // to show output files
-    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|a|lib|hex|ihx|bin|s19|s37|sct|icf|ld[s]?|map|map\.view)$/i;
+    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|a|lib|hex|ihx|bin|s19|s37|sct|icf|ld[s]?|map|map\.view|lst)$/i;
 
     //-------
 
@@ -1125,7 +1152,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     replacePathEnv(path: string): string {
 
-        for (let cnt = 0; cnt < 5; cnt++) {
+        for (let cnt = 0; cnt < 3; cnt++) {
 
             if (!File.isEnvPath(path))
                 break; // not have any env var, end
@@ -2668,6 +2695,7 @@ class EIDEProject extends AbstractProject {
 
             const fileAssCfg: any = {
                 ".eideignore": "ignore",
+                "*.a51": "a51",
                 "*.h": "c",
                 "*.c": "c",
                 "*.hxx": "cpp",
@@ -2856,20 +2884,6 @@ class EIDEProject extends AbstractProject {
                     //
                 }
             }
-
-            /* const cppConfig = this.GetCppConfig();
-            const cppConfigItem = cppConfig.getConfig();
-            if (cppConfigItem.configurationProvider) {
-                const newCfg: CppConfigItem = {
-                    name: os.platform(),
-                    includePath: <any>undefined,
-                    defines: <any>undefined,
-                    intelliSenseMode: "${default}",
-                    configurationProvider: this.extensionId
-                };
-                cppConfig.setConfig(newCfg);
-                cppConfig.saveToFile();
-            } */
         }
 
         // show warnings if we have
@@ -3110,10 +3124,12 @@ class EIDEProject extends AbstractProject {
         return new Promise((resolve) => {
             const filePath = platform.realpathSync(uri.fsPath);
             const prjRoot = platform.realpathSync(this.GetRootDir().path);
+            const allIncPaths = this.cppToolsConfig.includePath;
             resolve(
-                AbstractProject.headerFilter.test(filePath) ||
-                filePath.startsWith(prjRoot) ||
-                this.vSourceList.has(filePath)
+                filePath.startsWith(prjRoot) ||                     // All source files in current workspace
+                allIncPaths.some(p => filePath.startsWith(p)) ||    // All .h files in IncludePaths
+                this.vSourceList.has(filePath) ||                   // All virtual source files
+                this.sourceRoots.isIncludes(filePath)               // All source files in linked source folders
             );
         });
     }

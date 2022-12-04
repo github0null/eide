@@ -141,12 +141,12 @@ export function osGetNullDev(): string {
     return devNull;
 }
 
-export function createSafetyFileWatcher(_file: File, _recursive: boolean = false) {
+export function createSafetyFileWatcher(_file: File, _recursive: boolean = false, watchSelfDir?: boolean) {
     if (osPlatform != 'win32' &&
         osPlatform != 'darwin') {
         _recursive = false;
     }
-    return new FileWatcher(_file, _recursive);
+    return new FileWatcher(_file, _recursive, watchSelfDir);
 }
 
 export function exeSuffix(): string {
