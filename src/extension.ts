@@ -138,7 +138,7 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.workspace.build', () => projectExplorer.buildWorkspace()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.workspace.rebuild', () => projectExplorer.buildWorkspace(true)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.workspace.open.config', () => projectExplorer.openWorkspaceConfig()));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.workspace.make.template', (item) => projectExplorer.ExportToTemplate(undefined, true)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.workspace.make.template', (item) => projectExplorer.ExportProjectTemplate(undefined, true)));
 
     // project user cmds
     subscriptions.push(vscode.commands.registerCommand('eide.project.save', (item) => projectExplorer.saveProject(item)));
@@ -162,7 +162,7 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.saveAll', () => projectExplorer.SaveAll()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.refresh', () => projectExplorer.Refresh()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.switchMode', (item) => projectExplorer.switchTarget(item)));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.exportAsTemplate', (item) => projectExplorer.ExportToTemplate(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.exportAsTemplate', (item) => projectExplorer.ExportProjectTemplate(item)));
 
     // project explorer
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.addSrcDir', (item) => projectExplorer.AddSrcDir(item)));
@@ -704,6 +704,7 @@ function exportEnvToSysPath() {
         File.normalize(`${builderFolder.path}/bin`), // builder bin folder
         File.normalize(`${builderFolder.path}/utils`), // utils tool folder
         File.normalize(`${builderFolder.dir}/scripts`),
+        File.normalize(`${resManager.Get7zDir().path}`), // export built-in 7za tool
         File.normalize(`${resManager.getBuiltInToolsDir().path}/utils`) // builtin utils tool folder
     ];
 

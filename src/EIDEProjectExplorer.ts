@@ -49,7 +49,7 @@ import {
     uploadConfig_desc, add_lib_path, view_str$pack$components,
     view_str$project$title, view_str$project$excludeFolder, view_str$project$excludeFile,
     view_str$pack$install_component_failed, view_str$pack$remove_component_failed,
-    view_str$compile$selectToolchain, view_str$compile$selectFlasher, view_str$project$needRefresh,
+    view_str$compile$selectToolchain, view_str$compile$selectFlasher, view_str$project$needRefresh, view_str$project$fileNotExisted,
     WARNING, view_str$project$cmsis_components, view_str$project$other_settings, view_str$settings$outFolderName,
     view_str$dialog$add_to_source_folder, view_str$project$sel_target, view_str$project$folder_type_fs,
     view_str$project$folder_type_virtual, view_str$project$sel_folder_type,
@@ -855,18 +855,25 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                             .forEach((rootInfo) => {
                                 const isComponent = File.ToUnixPath(rootInfo.displayName) === DependenceManager.DEPENDENCE_DIR;
                                 const folderDispName = isComponent ? view_str$project$cmsis_components : rootInfo.displayName;
+                                const isExisted = rootInfo.fileWatcher.file.IsDir();
+                                let dirIcon: string | undefined;
+                                if (isComponent) dirIcon = 'DependencyGraph_16x.svg';
+                                if (rootInfo.needUpdate || !isExisted) dirIcon = 'StatusWarning_16x.svg';
+                                let dirDesc: string | undefined;
+                                if (rootInfo.needUpdate) dirDesc = view_str$project$needRefresh;
+                                if (!isExisted) dirDesc = view_str$project$fileNotExisted;
                                 iList.push(new ProjTreeItem(TreeItemType.FOLDER_ROOT, {
                                     value: folderDispName,
                                     obj: rootInfo.fileWatcher.file,
                                     projectIndex: element.val.projectIndex,
                                     contextVal: isComponent ? 'FOLDER_ROOT_DEPS' : undefined,
+                                    icon: dirIcon,
                                     tooltip: newFileTooltipString({
                                         name: rootInfo.displayName,
                                         path: rootInfo.fileWatcher.file.path,
-                                        desc: rootInfo.needUpdate ? view_str$project$needRefresh : undefined,
+                                        desc: dirDesc,
                                         attr: {}
-                                    }, project.getRootDir()),
-                                    icon: rootInfo.needUpdate ? 'StatusWarning_16x.svg' : (isComponent ? 'DependencyGraph_16x.svg' : undefined)
+                                    }, project.getRootDir())
                                 }));
                             });
 
@@ -2496,7 +2503,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                         }
                                     }
 
-                                    // rename project name
+                                    // init project
                                     {
                                         const prjFile = File.fromArray([targetDir.path, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
                                         if (!prjFile.IsFile()) throw Error(`project file: '${prjFile.path}' is not exist !`);
@@ -2504,9 +2511,10 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
                                         try {
                                             const prjConf: ProjectConfigData<any> = JSON.parse(prjFile.Read());
                                             prjConf.name = option.name; // set project name
+                                            prjConf.miscInfo.uid = undefined; // reset uid
                                             prjFile.Write(JSON.stringify(prjConf));
                                         } catch (error) {
-                                            throw Error(`change project name failed !, msg: ${error.message}`);
+                                            throw Error(`Init project failed !, msg: ${error.message}`);
                                         }
                                     }
                                 }
@@ -3727,7 +3735,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     private exportLocked: boolean = false;
-    async ExportToTemplate(prjItem?: ProjTreeItem, isWorkspace?: boolean) {
+    async ExportProjectTemplate(prjItem?: ProjTreeItem, isWorkspace?: boolean) {
 
         if (this.exportLocked) {
             GlobalEvent.emit('msg', {
@@ -3765,10 +3773,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 const prjOutFolder = File.normalize(prj.GetConfiguration().config.outDir);
                 defExcludeList.push(`${prjOutFolder}`, `${prjOutFolder}${File.sep}*`);
                 resIgnoreList = prj.readIgnoreList();
-                const prjUid = prjConfig.miscInfo.uid;
-                prjConfig.miscInfo.uid = undefined; // clear uid before save prj
-                prj.Save(true); // save project
-                prjConfig.miscInfo.uid = prjUid; // restore uid
             }
 
             /* invalid root folder, exit */
