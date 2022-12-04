@@ -384,6 +384,7 @@ class SourceRootList implements SourceProvider {
         this.project = _project;
         this._event = new events.EventEmitter();
         this.srcFolderMaps = new Map();
+        FileWatcher.on('rename', f => this.onFolderRenamed(this.getSourceRootKeyByAbspath(f.path), f));
     }
 
     isAutoSearchObjectFile(): boolean {
@@ -413,10 +414,9 @@ class SourceRootList implements SourceProvider {
     }
 
     private _add(dir: File): SourceRootInfo {
-        const key: string = this.getRelativePath(dir.path);
+        const key: string = this.getSourceRootKeyByAbspath(dir.path);
         const watcher = platform.createSafetyFileWatcher(dir, true);
         watcher.on('error', (err) => GlobalEvent.emit('globalLog', ExceptionToMessage(err, 'Warning')));
-        watcher.OnRename = (file) => this.onFolderRenamed(key, file);
         const sourceInfo = this.newSourceInfo(key, watcher);
         this.srcFolderMaps.set(key, sourceInfo);
         return sourceInfo;
@@ -430,7 +430,7 @@ class SourceRootList implements SourceProvider {
     }
 
     remove(absPath: string): boolean {
-        const key = this.getRelativePath(absPath);
+        const key = this.getSourceRootKeyByAbspath(absPath);
         return this.removeByKey(key);
     }
 
@@ -566,7 +566,7 @@ class SourceRootList implements SourceProvider {
         this._event.emit(event, arg);
     }
 
-    private getRelativePath(abspath: string): string {
+    private getSourceRootKeyByAbspath(abspath: string): string {
         return this.project.toRelativePath(abspath);
     }
 
@@ -594,7 +594,9 @@ class SourceRootList implements SourceProvider {
         const rootInfo = this.srcFolderMaps.get(folderKey);
         if (rootInfo) {
 
-            if (targetFile.path == rootInfo.fileWatcher.file.path) { // root folder has been renamed
+            // folder self has been renamed ?
+            // - if true, this folder's file watcher is invalid, dispose it
+            if (targetFile.path == rootInfo.fileWatcher.file.path) {
                 this.disposeWatcher(folderKey);
                 this.emit('dataChanged', 'folderStatusChanged');
             }
