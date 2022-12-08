@@ -384,7 +384,7 @@ class SourceRootList implements SourceProvider {
         this.project = _project;
         this._event = new events.EventEmitter();
         this.srcFolderMaps = new Map();
-        FileWatcher.on('rename', f => this.onFolderRenamed(this.getSourceRootKeyByAbspath(f.path), f));
+        FileWatcher.on('rename', f => this.onFileRenamed(f));
     }
 
     isAutoSearchObjectFile(): boolean {
@@ -414,7 +414,7 @@ class SourceRootList implements SourceProvider {
     }
 
     private _add(dir: File): SourceRootInfo {
-        const key: string = this.getSourceRootKeyByAbspath(dir.path);
+        const key: string = this.project.toRelativePath(dir.path);
         const watcher = platform.createSafetyFileWatcher(dir, true);
         watcher.on('error', (err) => GlobalEvent.emit('globalLog', ExceptionToMessage(err, 'Warning')));
         const sourceInfo = this.newSourceInfo(key, watcher);
@@ -430,7 +430,7 @@ class SourceRootList implements SourceProvider {
     }
 
     remove(absPath: string): boolean {
-        const key = this.getSourceRootKeyByAbspath(absPath);
+        const key = this.project.toRelativePath(absPath);
         return this.removeByKey(key);
     }
 
@@ -467,9 +467,7 @@ class SourceRootList implements SourceProvider {
         if (rootSrcUpdateList.length > 0) {
 
             for (const rootInfo of rootSrcUpdateList) {
-                if (rootInfo.isValid()) {
-                    this.updateFolder(rootInfo, [targetDir]);
-                }
+                this.updateFolder(rootInfo, [targetDir]);
             }
 
             this.emit('dataChanged', 'folderStatusChanged');
@@ -566,10 +564,6 @@ class SourceRootList implements SourceProvider {
         this._event.emit(event, arg);
     }
 
-    private getSourceRootKeyByAbspath(abspath: string): string {
-        return this.project.toRelativePath(abspath);
-    }
-
     private newSourceInfo(displayName: string, watcher: FileWatcher): SourceRootInfo {
         return {
             displayName: displayName,
@@ -590,17 +584,19 @@ class SourceRootList implements SourceProvider {
         return this.srcFolderMaps.delete(key);
     }
 
-    private onFolderRenamed(folderKey: string, targetFile: File) {
-        const rootInfo = this.srcFolderMaps.get(folderKey);
+    private onFileRenamed(targetFile: File) {
+
+        const key = this.project.toRelativePath(targetFile.path);
+
+        // it's a root sources folder ?
+        const rootInfo = this.srcFolderMaps.get(key);
         if (rootInfo) {
 
-            // folder self has been renamed ?
-            // - if true, this folder's file watcher is invalid, dispose it
-            if (targetFile.path == rootInfo.fileWatcher.file.path) {
-                this.disposeWatcher(folderKey);
-                this.emit('dataChanged', 'folderStatusChanged');
-            }
+            // this folder's file watcher is invalid, dispose it
+            this.disposeWatcher(key);
+            this.emit('dataChanged', 'folderStatusChanged');
 
+            // try update resources of it
             if (rootInfo.refreshTimeout) {
                 rootInfo.refreshTimeout.refresh();
             } else {
@@ -611,6 +607,32 @@ class SourceRootList implements SourceProvider {
                         this.emit('dataChanged', 'folderChanged');
                     }
                 }, 200, rootInfo);
+            }
+        }
+
+        // it's a text file, or a sub folder, or others
+        else {
+
+            const targetDir = NodePath.dirname(targetFile.path);
+
+            const rootSrcUpdateList = Array.from(this.srcFolderMaps.values())
+                .filter((info) => File.isSubPathOf(info.fileWatcher.file.path, targetDir));
+
+            if (rootSrcUpdateList.length > 0) {
+
+                rootSrcUpdateList.forEach((rootInfo) => {
+                    if (rootInfo.refreshTimeout) {
+                        rootInfo.refreshTimeout.refresh();
+                    } else {
+                        rootInfo.refreshTimeout = setTimeout((folderInfo: SourceRootInfo) => {
+                            if (folderInfo.refreshTimeout) {
+                                folderInfo.refreshTimeout = undefined;
+                                this.updateFolder(rootInfo, [targetDir]);
+                                this.emit('dataChanged', 'folderChanged');
+                            }
+                        }, 200, rootInfo);
+                    }
+                });
             }
         }
     }
@@ -629,6 +651,10 @@ class SourceRootList implements SourceProvider {
             AbstractProject.getSourceFileFilter() : AbstractProject.getSourceFileFilterWithoutObj();
         const fileFilter = AbstractProject.getFileFilters();
 
+        // if source root have no watcher, watch it !
+        if (rootFolderInfo.isValid() && !rootFolderInfo.fileWatcher.IsWatched())
+            rootFolderInfo.fileWatcher.Watch();
+
         if (targetFolderList) { // only update target folders
             targetFolderList = targetFolderList.map((path) => this.project.ToAbsolutePath(path));
             targetFolderList.forEach((dir) => { // rm old record of these folders
@@ -640,9 +666,6 @@ class SourceRootList implements SourceProvider {
             rootFolderInfo.incList = [];
             rootFolderInfo.fileGroups = [];
             folderStack.push(rootFolder);
-            // if source root have no watcher, watch it !
-            if (rootFolderInfo.isValid() && !rootFolderInfo.fileWatcher.IsWatched())
-                rootFolderInfo.fileWatcher.Watch();
         }
 
         rootFolderInfo.needUpdate = false;
