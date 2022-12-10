@@ -183,11 +183,11 @@ export class VirtualSource implements SourceProvider {
 
     // get
 
-    getFolder(path?: string): VirtualFolder | undefined {
-        if (path === undefined || path === VirtualSource.rootName) {
+    getFolder(vpath?: string): VirtualFolder | undefined {
+        if (vpath === undefined || vpath === VirtualSource.rootName) {
             return this.getRoot();
         } else {
-            const nameList = path.split('/');
+            const nameList = vpath.split('/');
             let cur_folder: VirtualFolder = {
                 name: '/',
                 files: [],
@@ -205,11 +205,11 @@ export class VirtualSource implements SourceProvider {
         }
     }
 
-    getFile(path: string): VirtualFile | undefined {
-        const vFolder = this.getFolder(NodePath.dirname(path));
+    getFile(vpath: string): VirtualFile | undefined {
+        const vFolder = this.getFolder(NodePath.dirname(vpath));
         if (vFolder) {
-            const fileName = NodePath.basename(path);
-            const index = vFolder.files.findIndex((file) => { return NodePath.basename(file.path) === fileName; });
+            const fileName = NodePath.basename(vpath);
+            const index = vFolder.files.findIndex((file) => NodePath.basename(file.path) == fileName);
             if (index !== -1) {
                 return vFolder.files[index];
             }
@@ -267,51 +267,48 @@ export class VirtualSource implements SourceProvider {
 
     // set
 
-    addFile(folder_path: string, file_path: string): VirtualFile | undefined {
-
-        const folder = this.getFolder(folder_path);
-        if (folder === undefined) { throw new Error(`not found virtual folder '${folder_path}'`); }
-
-        // file is not existed, add it
-        const vFilePath = `${folder_path}/${NodePath.basename(file_path)}`;
-        if (this.getFile(vFilePath) === undefined) {
-            const vFile: VirtualFile = { path: this.project.toRelativePath(file_path) };
-            folder.files.push(vFile);
-            this.emit('dataChanged', 'folderChanged');
-            return vFile;
-        }
-    }
-
-    addFiles(folder_path: string, pathList: string[]): VirtualFile[] {
-
-        const folder = this.getFolder(folder_path);
-        if (folder === undefined) { throw new Error(`not found virtual folder '${folder_path}'`); }
-
-        const doneList: VirtualFile[] = [];
-
-        for (const abspath of pathList) {
-            const vFilePath = `${folder_path}/${NodePath.basename(abspath)}`;
-            // file is not existed, add it
-            if (this.getFile(vFilePath) === undefined) {
-                const vFile: VirtualFile = { path: this.project.toRelativePath(abspath) };
+    addFile(vfolder_path: string, fspath: string): VirtualFile | undefined {
+        const folder = this.getFolder(vfolder_path);
+        if (folder) {
+            const vFilePath = `${vfolder_path}/${NodePath.basename(fspath)}`;
+            if (this.getFile(vFilePath) === undefined) { // file is not existed, add it
+                const vFile: VirtualFile = { path: this.project.toRelativePath(fspath) };
                 folder.files.push(vFile);
-                doneList.push(vFile);
+                this.emit('dataChanged', 'folderChanged');
+                return vFile;
             }
         }
-
-        if (doneList.length > 0) {
-            this.emit('dataChanged', 'folderChanged');
-        }
-
-        return doneList;
     }
 
-    removeFile(path: string): VirtualFile | undefined {
-        const basename = NodePath.basename(path);
-        const vFolder = this.getFolder(NodePath.dirname(path));
+    addFiles(folder_path: string, pathList: string[]): VirtualFile[] | undefined {
+
+        const folder = this.getFolder(folder_path);
+        if (folder) {
+
+            const doneList: VirtualFile[] = [];
+
+            for (const abspath of pathList) {
+                const vFilePath = `${folder_path}/${NodePath.basename(abspath)}`;
+                if (this.getFile(vFilePath) === undefined) { // file is not existed, add it
+                    const vFile: VirtualFile = { path: this.project.toRelativePath(abspath) };
+                    folder.files.push(vFile);
+                    doneList.push(vFile);
+                }
+            }
+
+            if (doneList.length > 0) {
+                this.emit('dataChanged', 'folderChanged');
+            }
+
+            return doneList;
+        }
+    }
+
+    removeFile(vpath: string): VirtualFile | undefined {
+        const basename = NodePath.basename(vpath);
+        const vFolder = this.getFolder(NodePath.dirname(vpath));
         if (vFolder) {
-            const index = vFolder.files.
-                findIndex((f) => { return NodePath.basename(f.path) === basename; });
+            const index = vFolder.files.findIndex((f) => NodePath.basename(f.path) == basename);
             if (index !== -1) {
                 const rmFile = vFolder.files.splice(index, 1)[0];
                 this.emit('dataChanged', 'folderChanged');
@@ -334,6 +331,18 @@ export class VirtualSource implements SourceProvider {
         }
     }
 
+    insertFolder(parentvPath: string, nFolder: VirtualFolder): string | undefined {
+        const vFolder = this.getFolder(parentvPath);
+        if (vFolder) {
+            const index = vFolder.folders.findIndex((f) => f.name == nFolder.name);
+            if (index === -1) {
+                vFolder.folders.push(nFolder);
+                this.emit('dataChanged', 'folderChanged');
+                return `${parentvPath}/${nFolder.name}`;
+            }
+        }
+    }
+
     removeFolder(path: string): VirtualFolder | undefined {
         const name = NodePath.basename(path);
         const vFolder = this.getFolder(NodePath.dirname(path));
@@ -352,8 +361,8 @@ export class VirtualSource implements SourceProvider {
         return this.getFolder(path) !== undefined;
     }
 
-    renameFolder(path: string, newName: string): VirtualFolder | undefined {
-        const vFolder = this.getFolder(path);
+    renameFolder(vpath: string, newName: string): VirtualFolder | undefined {
+        const vFolder = this.getFolder(vpath);
         if (vFolder) {
             vFolder.name = newName;
             this.emit('dataChanged', 'folderChanged');
@@ -384,7 +393,7 @@ class SourceRootList implements SourceProvider {
         this.project = _project;
         this._event = new events.EventEmitter();
         this.srcFolderMaps = new Map();
-        FileWatcher.on('rename', f => this.onFolderRenamed(this.getSourceRootKeyByAbspath(f.path), f));
+        FileWatcher.on('rename', f => this.onFileRenamed(f));
     }
 
     isAutoSearchObjectFile(): boolean {
@@ -414,7 +423,7 @@ class SourceRootList implements SourceProvider {
     }
 
     private _add(dir: File): SourceRootInfo {
-        const key: string = this.getSourceRootKeyByAbspath(dir.path);
+        const key: string = this.project.toRelativePath(dir.path);
         const watcher = platform.createSafetyFileWatcher(dir, true);
         watcher.on('error', (err) => GlobalEvent.emit('globalLog', ExceptionToMessage(err, 'Warning')));
         const sourceInfo = this.newSourceInfo(key, watcher);
@@ -430,7 +439,7 @@ class SourceRootList implements SourceProvider {
     }
 
     remove(absPath: string): boolean {
-        const key = this.getSourceRootKeyByAbspath(absPath);
+        const key = this.project.toRelativePath(absPath);
         return this.removeByKey(key);
     }
 
@@ -467,9 +476,7 @@ class SourceRootList implements SourceProvider {
         if (rootSrcUpdateList.length > 0) {
 
             for (const rootInfo of rootSrcUpdateList) {
-                if (rootInfo.isValid()) {
-                    this.updateFolder(rootInfo, [targetDir]);
-                }
+                this.updateFolder(rootInfo, [targetDir]);
             }
 
             this.emit('dataChanged', 'folderStatusChanged');
@@ -566,10 +573,6 @@ class SourceRootList implements SourceProvider {
         this._event.emit(event, arg);
     }
 
-    private getSourceRootKeyByAbspath(abspath: string): string {
-        return this.project.toRelativePath(abspath);
-    }
-
     private newSourceInfo(displayName: string, watcher: FileWatcher): SourceRootInfo {
         return {
             displayName: displayName,
@@ -590,17 +593,19 @@ class SourceRootList implements SourceProvider {
         return this.srcFolderMaps.delete(key);
     }
 
-    private onFolderRenamed(folderKey: string, targetFile: File) {
-        const rootInfo = this.srcFolderMaps.get(folderKey);
+    private onFileRenamed(targetFile: File) {
+
+        const key = this.project.toRelativePath(targetFile.path);
+
+        // it's a root sources folder ?
+        const rootInfo = this.srcFolderMaps.get(key);
         if (rootInfo) {
 
-            // folder self has been renamed ?
-            // - if true, this folder's file watcher is invalid, dispose it
-            if (targetFile.path == rootInfo.fileWatcher.file.path) {
-                this.disposeWatcher(folderKey);
-                this.emit('dataChanged', 'folderStatusChanged');
-            }
+            // this folder's file watcher is invalid, dispose it
+            this.disposeWatcher(key);
+            this.emit('dataChanged', 'folderStatusChanged');
 
+            // try update resources of it
             if (rootInfo.refreshTimeout) {
                 rootInfo.refreshTimeout.refresh();
             } else {
@@ -613,9 +618,37 @@ class SourceRootList implements SourceProvider {
                 }, 200, rootInfo);
             }
         }
+
+        // it's a text file, or a sub folder, or others
+        else {
+
+            const targetDir = NodePath.dirname(targetFile.path);
+
+            const rootSrcUpdateList = Array.from(this.srcFolderMaps.values())
+                .filter((info) => File.isSubPathOf(info.fileWatcher.file.path, targetDir));
+
+            if (rootSrcUpdateList.length > 0) {
+
+                rootSrcUpdateList.forEach((rootInfo) => {
+                    if (rootInfo.refreshTimeout) {
+                        rootInfo.refreshTimeout.refresh();
+                    } else {
+                        rootInfo.refreshTimeout = setTimeout((folderInfo: SourceRootInfo) => {
+                            if (folderInfo.refreshTimeout) {
+                                folderInfo.refreshTimeout = undefined;
+                                this.updateFolder(rootInfo, [targetDir]);
+                                this.emit('dataChanged', 'folderChanged');
+                            }
+                        }, 200, rootInfo);
+                    }
+                });
+            }
+        }
     }
 
     private updateFolder(rootFolderInfo: SourceRootInfo, targetFolderList?: string[]) {
+
+        console.log(`[cl.eide] update source folder: '${rootFolderInfo.fileWatcher.file.path}' (${targetFolderList?.join(',')})`);
 
         const rootFolder = rootFolderInfo.fileWatcher.file;
         const folderStack: File[] = [];
@@ -629,6 +662,10 @@ class SourceRootList implements SourceProvider {
             AbstractProject.getSourceFileFilter() : AbstractProject.getSourceFileFilterWithoutObj();
         const fileFilter = AbstractProject.getFileFilters();
 
+        // if source root have no watcher, watch it !
+        if (rootFolderInfo.isValid() && !rootFolderInfo.fileWatcher.IsWatched())
+            rootFolderInfo.fileWatcher.Watch();
+
         if (targetFolderList) { // only update target folders
             targetFolderList = targetFolderList.map((path) => this.project.ToAbsolutePath(path));
             targetFolderList.forEach((dir) => { // rm old record of these folders
@@ -640,9 +677,6 @@ class SourceRootList implements SourceProvider {
             rootFolderInfo.incList = [];
             rootFolderInfo.fileGroups = [];
             folderStack.push(rootFolder);
-            // if source root have no watcher, watch it !
-            if (rootFolderInfo.isValid() && !rootFolderInfo.fileWatcher.IsWatched())
-                rootFolderInfo.fileWatcher.Watch();
         }
 
         rootFolderInfo.needUpdate = false;
@@ -790,6 +824,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     public getProjectName(): string {
         return this.GetConfiguration().config.name;
+    }
+
+    public getProjectCurrentTargetName(): string {
+        return this.getCurrentTarget();
     }
 
     public getProjectType(): ProjectType {

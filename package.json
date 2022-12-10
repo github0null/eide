@@ -35,10 +35,10 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.10.6",
+    "version": "3.10.7",
     "preview": false,
     "engines": {
-        "vscode": "^1.63.0"
+        "vscode": "^1.67.0"
     },
     "categories": [
         "Programming Languages",
@@ -84,7 +84,7 @@
         "@types/mocha": "^5.2.7",
         "@types/node": "^12.12.17",
         "@types/node-7z": "^2.1.4",
-        "@types/vscode": "^1.60.0",
+        "@types/vscode": "1.67.0",
         "@types/x2js": "^3.1.0",
         "@types/xml2js": "^0.4.11",
         "ts-loader": "^6.2.1",
@@ -500,27 +500,27 @@
         "viewsContainers": {
             "activitybar": [
                 {
-                    "id": "EIDEView",
+                    "id": "cl_eide_view",
                     "title": "EIDE",
                     "icon": "./res/icon/activitybar.svg"
                 }
             ]
         },
         "views": {
-            "EIDEView": [
+            "cl_eide_view": [
                 {
-                    "id": "Project",
+                    "id": "cl.eide.view.projects",
                     "name": "%eide.bar.projects%"
                 },
                 {
-                    "id": "Operation",
+                    "id": "cl.eide.view.operations",
                     "name": "%eide.bar.operations%"
                 }
             ]
         },
         "viewsWelcome": [
             {
-                "view": "Project",
+                "view": "cl.eide.view.projects",
                 "contents": "%string.eide.project.welcome%"
             }
         ],
@@ -1062,36 +1062,36 @@
                 {
                     "command": "_cl.eide.workspace.build",
                     "group": "navigation",
-                    "when": "view == Project && cl.eide.isWorkspaceProject"
+                    "when": "view == cl.eide.view.projects && cl.eide.isWorkspaceProject"
                 },
                 {
                     "command": "_cl.eide.workspace.rebuild",
                     "group": "navigation",
-                    "when": "view == Project && cl.eide.isWorkspaceProject"
+                    "when": "view == cl.eide.view.projects && cl.eide.isWorkspaceProject"
                 },
                 {
                     "command": "_cl.eide.workspace.open.config",
                     "group": "navigation",
-                    "when": "view == Project && cl.eide.isWorkspaceProject"
+                    "when": "view == cl.eide.view.projects && cl.eide.isWorkspaceProject"
                 },
                 {
                     "command": "_cl.eide.project.refresh",
                     "group": "navigation",
-                    "when": "view == Project"
+                    "when": "view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.historyRecord",
                     "group": "navigation",
-                    "when": "view == Operation"
+                    "when": "view == cl.eide.view.operations"
                 },
                 {
                     "command": "_cl.eide.project.clearHistoryRecord",
-                    "when": "view == Operation"
+                    "when": "view == cl.eide.view.operations"
                 },
                 {
                     "command": "_cl.eide.project.saveAll",
                     "group": "navigation",
-                    "when": "view == Project"
+                    "when": "view == cl.eide.view.projects"
                 }
             ],
             "editor/title": [
@@ -1143,294 +1143,294 @@
             "view/item/context": [
                 {
                     "command": "_cl.eide.project.cppcheck.check_all",
-                    "when": "viewItem == SOLUTION && view == Project"
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.cppcheck.clear_all",
-                    "when": "viewItem == SOLUTION && view == Project"
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.source.filesystem_folder_add_file",
-                    "when": "viewItem == FOLDER || viewItem == FOLDER_ROOT && view == Project"
+                    "when": "viewItem == FOLDER || viewItem == FOLDER_ROOT && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.source.filesystem_folder_add",
-                    "when": "viewItem == FOLDER || viewItem == FOLDER_ROOT && view == Project"
+                    "when": "viewItem == FOLDER || viewItem == FOLDER_ROOT && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.source.virtual_folder_add_file",
-                    "when": "viewItem == PROJECT || viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == Project"
+                    "when": "viewItem == PROJECT || viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.source.virtual_folder_add",
-                    "when": "viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == Project"
+                    "when": "viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.source.virtual_folder_remove",
-                    "when": "viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == Project"
+                    "when": "viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.source.virtual_folder_rename",
-                    "when": "viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == Project"
+                    "when": "viewItem == V_FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_EXCFOLDER && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.source.virtual_file_remove",
-                    "when": "viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
+                    "when": "viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.source.file.show.dir",
-                    "when": "viewItem == OUTPUT_FILE_ITEM || viewItem == FILE_ITEM || viewItem == EXCFILE_ITEM || viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
+                    "when": "viewItem == OUTPUT_FILE_ITEM || viewItem == FILE_ITEM || viewItem == EXCFILE_ITEM || viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.source.modify.exclude_list",
-                    "when": "viewItem == PROJECT && view == Project"
+                    "when": "viewItem == PROJECT && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.source.modify.path",
-                    "when": "viewItem == PROJECT || viewItem == V_FOLDER || viewItem == V_FOLDER_ROOT || viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
+                    "when": "viewItem == PROJECT || viewItem == V_FOLDER || viewItem == V_FOLDER_ROOT || viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.addPackage",
                     "group": "inline",
-                    "when": "viewItem == PACK && view == Project"
+                    "when": "viewItem == PACK && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.removePackage",
                     "group": "inline",
-                    "when": "viewItem == PACK_GROUP && view == Project"
+                    "when": "viewItem == PACK_GROUP && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.setDevice",
                     "group": "inline",
-                    "when": "viewItem == PACK_GROUP && view == Project"
+                    "when": "viewItem == PACK_GROUP && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.addPackage",
-                    "when": "viewItem == PACK && view == Project"
+                    "when": "viewItem == PACK && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.installCMSISHeaders",
-                    "when": "viewItem == PACK && view == Project"
+                    "when": "viewItem == PACK && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.installCmsisLibs",
-                    "when": "viewItem == PACK && view == Project"
+                    "when": "viewItem == PACK && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.setActive",
-                    "when": "viewItem == SOLUTION && view == Project && cl.eide.enable.active"
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects && cl.eide.enable.active"
                 },
                 {
                     "command": "_cl.eide.project.switchMode",
-                    "when": "viewItem == SOLUTION && view == Project"
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.exportAsTemplate",
-                    "when": "viewItem == SOLUTION && view == Project"
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.exportXml",
-                    "when": "viewItem == SOLUTION && view == Project"
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {
                     "command": "eide.project.save",
-                    "when": "viewItem == SOLUTION && view == Project"
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {
                     "command": "eide.project.genBuilderParams",
-                    "when": "viewItem == SOLUTION && view == Project"
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {
                     "command": "eide.project.rebuild",
-                    "when": "viewItem == SOLUTION && view == Project"
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {
                     "command": "eide.project.rebuild",
                     "group": "inline",
-                    "when": "viewItem == SOLUTION && view == Project"
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {
                     "command": "eide.project.build",
-                    "when": "viewItem == SOLUTION && view == Project"
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {
                     "command": "eide.project.build",
                     "group": "inline",
-                    "when": "viewItem == SOLUTION && view == Project"
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {
                     "command": "eide.project.clean",
-                    "when": "viewItem == SOLUTION && view == Project"
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {
                     "command": "eide.project.clean",
                     "group": "inline",
-                    "when": "viewItem == SOLUTION && view == Project"
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.showBuildParams",
-                    "when": "viewItem == SOLUTION && view == Project"
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {
                     "command": "eide.project.uploadToDevice",
-                    "when": "viewItem == SOLUTION && view == Project"
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {
                     "command": "eide.project.uploadToDevice",
                     "group": "inline",
-                    "when": "viewItem == SOLUTION && view == Project"
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {
                     "command": "eide.project.flash.erase.all",
-                    "when": "viewItem == SOLUTION && view == Project"
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.close",
-                    "when": "viewItem == SOLUTION && view == Project"
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.excludeSource",
                     "group": "inline",
-                    "when": "viewItem == FILE_ITEM || viewItem == V_FILE_ITEM && view == Project"
+                    "when": "viewItem == FILE_ITEM || viewItem == V_FILE_ITEM && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.unexcludeSource",
                     "group": "inline",
-                    "when": "viewItem == EXCFILE_ITEM || viewItem == V_EXCFILE_ITEM && view == Project"
+                    "when": "viewItem == EXCFILE_ITEM || viewItem == V_EXCFILE_ITEM && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.excludeFolder",
                     "group": "inline",
-                    "when": "viewItem == FOLDER || viewItem == V_FOLDER || viewItem == V_FOLDER_ROOT && view == Project"
+                    "when": "viewItem == FOLDER || viewItem == V_FOLDER || viewItem == V_FOLDER_ROOT && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.unexcludeFolder",
                     "group": "inline",
-                    "when": "viewItem == EXCFOLDER || viewItem == V_EXCFOLDER && view == Project"
+                    "when": "viewItem == EXCFOLDER || viewItem == V_EXCFOLDER && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.excludeFolder.childSrcs",
-                    "when": "viewItem == FOLDER || viewItem == V_FOLDER || viewItem == FOLDER_ROOT || viewItem == V_FOLDER_ROOT && view == Project"
+                    "when": "viewItem == FOLDER || viewItem == V_FOLDER || viewItem == FOLDER_ROOT || viewItem == V_FOLDER_ROOT && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.unexcludeFolder.childSrcs",
-                    "when": "viewItem == FOLDER || viewItem == V_FOLDER || viewItem == FOLDER_ROOT || viewItem == V_FOLDER_ROOT && view == Project"
+                    "when": "viewItem == FOLDER || viewItem == V_FOLDER || viewItem == FOLDER_ROOT || viewItem == V_FOLDER_ROOT && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.addSrcDir",
                     "group": "inline",
-                    "when": "viewItem == PROJECT && view == Project"
+                    "when": "viewItem == PROJECT && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.addSrcDir",
-                    "when": "viewItem == PROJECT && view == Project"
+                    "when": "viewItem == PROJECT && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.modify.files.options",
-                    "when": "viewItem == PROJECT && view == Project"
+                    "when": "viewItem == PROJECT && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.import.ext.source.struct",
-                    "when": "viewItem == PROJECT && view == Project"
+                    "when": "viewItem == PROJECT && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.sourceRoot.refresh",
                     "group": "inline",
-                    "when": "viewItem == OUTPUT_FOLDER || viewItem == FOLDER_ROOT_DEPS || viewItem == FOLDER_ROOT || viewItem == V_FOLDER_ROOT && view == Project"
+                    "when": "viewItem == OUTPUT_FOLDER || viewItem == FOLDER_ROOT_DEPS || viewItem == FOLDER_ROOT || viewItem == V_FOLDER_ROOT && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.removeSrcDir",
                     "group": "inline",
-                    "when": "viewItem == FOLDER_ROOT && view == Project"
+                    "when": "viewItem == FOLDER_ROOT && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.switchToolchain",
                     "group": "inline",
-                    "when": "viewItem == COMPILE_CONFIGURATION && view == Project"
+                    "when": "viewItem == COMPILE_CONFIGURATION && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.switchUploader",
                     "group": "inline",
-                    "when": "viewItem == UPLOAD_OPTION || viewItem == UPLOAD_OPTION_Shell && view == Project"
+                    "when": "viewItem == UPLOAD_OPTION || viewItem == UPLOAD_OPTION_Shell && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.fetchShellFlasher",
                     "group": "inline",
-                    "when": "viewItem == UPLOAD_OPTION_Shell && view == Project"
+                    "when": "viewItem == UPLOAD_OPTION_Shell && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.modifyCompileConfig",
                     "group": "inline",
-                    "when": "viewItem == COMPILE_CONFIGURATION_ITEM && view == Project"
+                    "when": "viewItem == COMPILE_CONFIGURATION_ITEM && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.modifyUploadConfig",
                     "group": "inline",
-                    "when": "viewItem == UPLOAD_OPTION_ITEM && view == Project"
+                    "when": "viewItem == UPLOAD_OPTION_ITEM && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.modifyOtherSettings",
                     "group": "inline",
-                    "when": "viewItem == SETTINGS_ITEM && view == Project"
+                    "when": "viewItem == SETTINGS_ITEM && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.modify.deps",
                     "group": "inline",
-                    "when": "viewItem == DEPENDENCE && view == Project"
+                    "when": "viewItem == DEPENDENCE && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.modify.deps",
-                    "when": "viewItem == DEPENDENCE && view == Project"
+                    "when": "viewItem == DEPENDENCE && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.addIncludeDir",
                     "group": "inline",
-                    "when": "viewItem == INC_GROUP && view == Project"
+                    "when": "viewItem == INC_GROUP && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.showIncludeDir",
                     "group": "inline",
-                    "when": "viewItem == INC_GROUP && view == Project"
+                    "when": "viewItem == INC_GROUP && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.addLibDir",
                     "group": "inline",
-                    "when": "viewItem == LIB_GROUP && view == Project"
+                    "when": "viewItem == LIB_GROUP && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.showLibDir",
                     "group": "inline",
-                    "when": "viewItem == LIB_GROUP && view == Project"
+                    "when": "viewItem == LIB_GROUP && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.addDefine",
                     "group": "inline",
-                    "when": "viewItem == DEFINE_GROUP && view == Project"
+                    "when": "viewItem == DEFINE_GROUP && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.showDefine",
                     "group": "inline",
-                    "when": "viewItem == DEFINE_GROUP && view == Project"
+                    "when": "viewItem == DEFINE_GROUP && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.removeDependenceItem",
                     "group": "inline",
-                    "when": "viewItem == INC_ITEM || viewItem == DEFINE_ITEM || viewItem == LIB_ITEM || viewItem == SOURCE_ITEM && view == Project"
+                    "when": "viewItem == INC_ITEM || viewItem == DEFINE_ITEM || viewItem == LIB_ITEM || viewItem == SOURCE_ITEM && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.copyItemValue",
                     "group": "inline",
-                    "when": "viewItem == EXCFILE_ITEM || viewItem == FILE_ITEM || viewItem == SRCREF_FILE_ITEM || viewItem == ITEM || viewItem == DEPENDENCE_ITEM || viewItem == INC_ITEM || viewItem == DEFINE_ITEM || viewItem == LIB_ITEM || viewItem == SOURCE_ITEM && view == Project"
+                    "when": "viewItem == EXCFILE_ITEM || viewItem == FILE_ITEM || viewItem == SRCREF_FILE_ITEM || viewItem == ITEM || viewItem == DEPENDENCE_ITEM || viewItem == INC_ITEM || viewItem == DEFINE_ITEM || viewItem == LIB_ITEM || viewItem == SOURCE_ITEM && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.importDependenceFromPack",
                     "group": "inline",
-                    "when": "viewItem == COMPONENT_GROUP && view == Project"
+                    "when": "viewItem == COMPONENT_GROUP && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.removeDependenceFromPack",
                     "group": "inline",
-                    "when": "viewItem == ACTIVED_GROUP && view == Project"
+                    "when": "viewItem == ACTIVED_GROUP && view == cl.eide.view.projects"
                 }
             ]
         },
