@@ -6,6 +6,21 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.10.7] revision
+
+**Fix**:
+  - `Project Resource`: Can't auto add source files when folder changed.
+
+**New**:
+  - `Project Resource`: Allow drag and drop files and folders in UI (**Only for virtual source items**): 
+    
+    ![](https://em-ide.com/public-assets/img/eide_drag_and_drop.gif)
+
+**Change**:
+  - `Minimum Version Requirement Of VSCode`: Change `v1.63.0` to `v1.67.0`
+
+***
+
 ### [v3.10.6] revision
 
 **Fix**:
