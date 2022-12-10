@@ -105,6 +105,7 @@ import { parseIarCompilerLog, CompilerDiagnostics, parseGccCompilerLog, parseArm
 import * as iarParser from './IarProjectParser';
 import * as ArmCpuUtils from './ArmCpuUtils';
 import { ShellFlasherIndexItem } from './WebInterface/WebInterface';
+import { jsonc } from 'jsonc';
 
 enum TreeItemType {
     SOLUTION,
@@ -173,8 +174,8 @@ function getTreeItemTypeName(typ: TreeItemType): string {
 type GroupRegion = 'PACK' | 'Components' | 'ComponentItem';
 
 interface TreeItemValue {
-    key?: string;
-    alias?: string;
+    key?: string; // name will be show in label
+    alias?: string; // alias name will be show in label
     value: string | File; // if TreeItem refer to a file, the value type is 'File'
     contextVal?: string;
     tooltip?: string | vscode.MarkdownString;
@@ -240,10 +241,19 @@ export class ProjTreeItem extends vscode.TreeItem {
 
     static ITEM_CLICK_EVENT = 'ProjectView.ItemClick';
 
+    static PROJ_ROOT_ITEM_TYPES = [
+        TreeItemType.PROJECT,
+        TreeItemType.PACK,
+        TreeItemType.COMPILE_CONFIGURATION,
+        TreeItemType.UPLOAD_OPTION,
+        TreeItemType.DEPENDENCE,
+        TreeItemType.SETTINGS,
+    ];
+
     type: TreeItemType;
     val: TreeItemValue;
 
-    constructor(type: TreeItemType, val: TreeItemValue) {
+    constructor(type: TreeItemType, val: TreeItemValue, prjUid?: string) {
 
         super('', vscode.TreeItemCollapsibleState.None);
 
@@ -252,6 +262,18 @@ export class ProjTreeItem extends vscode.TreeItem {
         } else {
             const lableName: string | undefined = val.alias ? val.alias : val.key;
             this.label = lableName ? (`${lableName} : ${val.value}`) : val.value;
+        }
+
+        // setup unique id
+        if (prjUid) {
+            // tree root's id is project uid
+            if (type == TreeItemType.SOLUTION) {
+                this.id = prjUid;
+            }
+            // tree sub item's id is their type
+            else if (ProjTreeItem.PROJ_ROOT_ITEM_TYPES.includes(type)) {
+                this.id = `${prjUid}:${TreeItemType[type]}`;
+            }
         }
 
         this.val = val;
@@ -279,6 +301,10 @@ export class ProjTreeItem extends vscode.TreeItem {
 
     public static isFileItem(type: TreeItemType): boolean {
         return TreeItemType[type].endsWith('FILE_ITEM');
+    }
+
+    public static isVirtualFolderItem(type: TreeItemType): boolean {
+        return TreeItemType[type].startsWith('V_FOLDER');
     }
 
     private GetTooltip(): string | vscode.MarkdownString {
@@ -571,8 +597,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
     dataChangedEvent: vscode.EventEmitter<ProjTreeItem | undefined>;
 
     constructor(_context: vscode.ExtensionContext) {
-        this.context = _context;
 
+        this.context = _context;
         this.dataChangedEvent = new vscode.EventEmitter<ProjTreeItem>();
         this.context.subscriptions.push(this.dataChangedEvent);
         this.onDidChangeTreeData = this.dataChangedEvent.event;
@@ -591,19 +617,113 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
     // TreeDragAndDropController
     //---------------------------------------
 
-    readonly dropMimeTypes: string[] = [];
+    static readonly PROJECT_TREE_ITEM_MIME_ID: string = `application/vnd.code.tree.cl.eide.view.projects`;
+
     readonly dragMimeTypes: string[] = [
-        `application/vnd.code.tree.<treeidlowercase>`
+        ProjectDataProvider.PROJECT_TREE_ITEM_MIME_ID
+    ];
+
+    readonly dropMimeTypes: string[] = [
+        ProjectDataProvider.PROJECT_TREE_ITEM_MIME_ID,
+        'text/uri-list'
     ];
 
     handleDrag(source: readonly ProjTreeItem[], dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Thenable<void> | void {
+
         console.log('[cl.eide] handleDrag');
         console.log(source);
+
+        const fList: File[] = [];
+
+        for (const treeItem of source) {
+            if (ProjTreeItem.isFileItem(treeItem.type) &&
+                treeItem.val.value instanceof File) {
+                fList.push(treeItem.val.value);
+            }
+        }
+
+        if (fList.length > 0) {
+            const val = fList.map(f => vscode.Uri.file(f.path).toString()).join('\r\n');
+            dataTransfer.set('text/uri-list', new vscode.DataTransferItem(val));
+        }
     }
 
     handleDrop(target: ProjTreeItem | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Thenable<void> | void {
+
         console.log('[cl.eide] handleDrop');
+
+        if (target == undefined)
+            return;
+
         console.log(target);
+
+        if (!ProjTreeItem.isVirtualFolderItem(target.type) && target.type != TreeItemType.PROJECT) {
+            console.log(`[cl.eide] 'target' is not a virtual folder`);
+            return; // it's not a virtual folder
+        }
+
+        const targetProject = this.GetProjectByIndex(target.val.projectIndex);
+        const targetProjectUid = targetProject.getUid();
+        const targetVirtualFolder = <VirtualFolderInfo>target.val.obj;
+
+        let dataTransferItem: vscode.DataTransferItem | undefined;
+
+        // DataTransferItem struct:
+        //   data:{ value: '{"id":"cl.eide.view.projects","itemHandles":[0/…3b0d9bcc1193787cc:PROJECT/0:user/0:dlink.h"]}' }
+        dataTransferItem = dataTransfer.get(ProjectDataProvider.PROJECT_TREE_ITEM_MIME_ID);
+        if (dataTransferItem) {
+
+            const vPaths = (<string[]>JSON.parse(dataTransferItem.value)['itemHandles'])
+                .filter(s => s.includes(`${targetProjectUid}:PROJECT/`))
+                .map(s => s.replace(/^.+?:PROJECT\//, `${VirtualSource.rootName}/`).replace(/\d+:/g, ''));
+
+            console.log(`[cl.eide] try drop file items '[ ${vPaths.join(', ')} ]' -> '${targetVirtualFolder.path}/'`);
+
+            const vSourceManager = targetProject.getVirtualSourceManager();
+
+            for (const vpath of vPaths) {
+
+                // if it is itself, ignore
+                if (vpath == targetVirtualFolder.path) {
+                    console.log(`[cl.eide] '${vpath}' -> '${targetVirtualFolder.path}/' it is itself, ignore`);
+                    continue;
+                }
+
+                // it's a file ?
+                const vf = vSourceManager.getFile(vpath);
+                if (vf) {
+                    const nf = vSourceManager.addFile(targetVirtualFolder.path, vf.path);
+                    if (nf) { // moved done, del old
+                        vSourceManager.removeFile(vpath);
+                        console.log(`[cl.eide] '${vpath}' -> '${targetVirtualFolder.path}/' moved done`);
+                    }
+                    continue;
+                }
+
+                // it's a folder ?
+                const vd = vSourceManager.getFolder(vpath);
+                if (vd && !File.isSubPathOf(vpath, targetVirtualFolder.path)) { // can't move parent into their child
+                    const npath = vSourceManager.insertFolder(targetVirtualFolder.path, vd);
+                    if (npath) { // moved done, del old
+                        vSourceManager.removeFolder(vpath);
+                        console.log(`[cl.eide] '${vpath}' -> '${targetVirtualFolder.path}/' moved done`);
+                    }
+                    continue;
+                }
+            }
+
+            return;
+        }
+
+        // DataTransferItem struct:
+        //  data:{ value: 'file:///c%3A/xx/xxx.c\r\nfile:///xxx/xxx/m.c' }
+        dataTransferItem = dataTransfer.get('text/uri-list');
+        if (dataTransferItem) {
+            const fileList: string[] = (<string>dataTransferItem.value).split(/\r\n|\n/).map(s => vscode.Uri.parse(s).fsPath);
+            console.log(`[cl.eide] drop files: { ${fileList.join(',')} }`);
+            targetProject.getVirtualSourceManager().addFiles(targetVirtualFolder.path, fileList);
+            return;
+        }
     }
 
     /////////////////////////////////////////////////////////////////////
@@ -784,18 +904,20 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
             this.prjList.forEach((sln, index) => {
 
-                const isActive = this.activePrjPath === sln.getWsPath();
+                const isActived = this.activePrjPath === sln.getWsPath();
+
                 const cItem = new ProjTreeItem(TreeItemType.SOLUTION, {
-                    value: sln.GetConfiguration().config.name + ' : ' + sln.GetConfiguration().config.mode,
+                    value: sln.getProjectName() + ' : ' + sln.getProjectCurrentTargetName(),
+                    projectIndex: index,
+                    icon: this.prjList.length > 1 ? (isActived ? 'active.svg' : 'idle.svg') : undefined,
                     tooltip: new vscode.MarkdownString([
-                        `**Name:** \`${sln.GetConfiguration().config.name}\``,
+                        `**Name:** \`${sln.getProjectName()}\``,
                         `- **Uid:** \`${sln.getUid()}\``,
-                        `- **Config:** \`${sln.GetConfiguration().config.mode}\``,
+                        `- **Config:** \`${sln.getProjectCurrentTargetName()}\``,
                         `- **Path:** \`${sln.GetRootDir().path}\``
                     ].join(os.EOL)),
-                    projectIndex: index,
-                    icon: this.prjList.length > 1 ? (isActive ? 'active.svg' : 'idle.svg') : undefined
-                });
+                }, sln.getUid());
+
                 iList.push(cItem);
 
                 // cache project root item
@@ -814,14 +936,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                             projectIndex: element.val.projectIndex,
                             tooltip: view_str$project$title,
                             obj: <VirtualFolderInfo>{ path: VirtualSource.rootName, vFolder: project.getVirtualSourceRoot() }
-                        }));
+                        }, project.getUid()));
 
                         if (prjType === 'ARM') { // only display for ARM project 
                             iList.push(new ProjTreeItem(TreeItemType.PACK, {
                                 value: pack_info,
                                 projectIndex: element.val.projectIndex,
                                 tooltip: pack_info
-                            }));
+                            }, project.getUid()));
                         }
 
                         const toolchain = project.getToolchain();
@@ -836,7 +958,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                 ` - **Family:** \`${toolchain.categoryName}\``,
                                 ` - **Description:** \`${ToolchainManager.getInstance().getToolchainDesc(toolchain.name)}\``,
                             ])
-                        }));
+                        }, project.getUid()));
 
                         const curUploader = project.GetConfiguration().uploadConfigModel.uploader;
                         const uploaderLabel = HexUploaderManager.getInstance().getUploaderLabelByName(curUploader);
@@ -845,19 +967,19 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                             projectIndex: element.val.projectIndex,
                             contextVal: curUploader == 'Custom' ? `${getTreeItemTypeName(TreeItemType.UPLOAD_OPTION)}_Shell` : undefined,
                             tooltip: `${uploadConfig_desc} : ${uploaderLabel}`
-                        }));
+                        }, project.getUid()));
 
                         iList.push(new ProjTreeItem(TreeItemType.DEPENDENCE, {
                             value: project_dependence,
                             projectIndex: element.val.projectIndex,
                             tooltip: project_dependence
-                        }));
+                        }, project.getUid()));
 
                         iList.push(new ProjTreeItem(TreeItemType.SETTINGS, {
                             value: view_str$project$other_settings,
                             projectIndex: element.val.projectIndex,
                             tooltip: view_str$project$other_settings
-                        }));
+                        }, project.getUid()));
 
                         // cache sub root view
                         iList.forEach((item) => {
@@ -1399,50 +1521,35 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
         const eideConfigFile = File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
         if (!eideConfigFile.IsFile()) {
-            GlobalEvent.emit('msg', {
-                type: 'Warning',
-                contentType: 'string',
-                content: 'Not found eide project file, [path]: ' + eideConfigFile.path
-            });
+            GlobalEvent.emit('msg', newMessage('Warning', `File not existed, [path]: ${eideConfigFile.path}`));
             return undefined;
         }
 
-        const prjIndex = this.prjList.findIndex((prj) => { return prj.getWsPath() === workspaceFilePath; });
-        if (prjIndex === -1) {
-            try {
-                const prj = AbstractProject.NewProject();
-                await prj.Load(wsFile);
-                this.registerProject(prj);
-                GlobalEvent.emit('project.opened', prj);
-                return prj;
-            } catch (err) {
-
-                if (err instanceof CheckError) {
-                    GlobalEvent.emit('msg', {
-                        type: 'Warning',
-                        contentType: 'string',
-                        content: err.message
-                    });
-                } else {
-                    GlobalEvent.emit('error', err);
-                }
-
-                GlobalEvent.emit('msg', {
-                    type: 'Warning',
-                    contentType: 'string',
-                    content: project_load_failed
-                });
-                return undefined;
-            }
+        let eideProjInfo: ProjectConfigData<any>;
+        try {
+            eideProjInfo = jsonc.parse(eideConfigFile.Read());
+        } catch (error) {
+            GlobalEvent.emit('msg', newMessage('Warning', `Load '${eideConfigFile.path}' failed !`));
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
         }
 
-        GlobalEvent.emit('msg', {
-            type: 'Warning',
-            contentType: 'string',
-            content: project_is_opened
-        });
+        const existedPrjIdx = this.prjList.findIndex((prj) => prj.getWsPath() == workspaceFilePath || prj.getUid() == eideProjInfo.miscInfo.uid);
+        if (existedPrjIdx != -1) {
+            GlobalEvent.emit('msg', newMessage('Warning', project_is_opened));
+            return undefined;
+        }
 
-        return undefined;
+        try {
+            const prj = AbstractProject.NewProject();
+            await prj.Load(wsFile);
+            this.registerProject(prj);
+            GlobalEvent.emit('project.opened', prj);
+            return prj;
+        } catch (err) {
+            GlobalEvent.emit('msg', newMessage('Warning', project_load_failed));
+            GlobalEvent.emit('globalLog', ExceptionToMessage(err, 'Error'));
+            return undefined;
+        }
     }
 
     setActiveProject(index: number) {
@@ -2754,6 +2861,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         this.view = vscode.window.createTreeView('cl.eide.view.projects', {
             treeDataProvider: this.dataProvider,
             dragAndDropController: this.dataProvider,
+            canSelectMany: true,
         });
 
         context.subscriptions.push(this.view);

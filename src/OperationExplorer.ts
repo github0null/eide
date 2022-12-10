@@ -208,10 +208,7 @@ export class OperationExplorer {
                 command: '_cl.eide.Operation.Create'
             },
             tooltip: create_project_hit,
-            iconPath: {
-                light: icoPath.path,
-                dark: icoPath.path
-            }
+            iconPath: vscode.Uri.file(icoPath.path)
         });
 
         icoPath = resManager.GetIconByName('Import_16x.svg');
@@ -222,10 +219,7 @@ export class OperationExplorer {
                 command: '_cl.eide.Operation.Import'
             },
             tooltip: import_project_hit,
-            iconPath: {
-                light: icoPath.path,
-                dark: icoPath.path
-            }
+            iconPath: vscode.Uri.file(icoPath.path)
         });
 
         icoPath = resManager.GetIconByName('OpenFileFromProject_16x.svg');
@@ -236,10 +230,7 @@ export class OperationExplorer {
                 command: '_cl.eide.Operation.Open'
             },
             tooltip: open_project_hit,
-            iconPath: {
-                light: icoPath.path,
-                dark: icoPath.path
-            }
+            iconPath: vscode.Uri.file(icoPath.path)
         });
 
         //---
@@ -260,10 +251,7 @@ export class OperationExplorer {
                 command: '_cl.eide.Operation.SetToolchainPath'
             },
             tooltip: view_str$operation$setToolchainPath,
-            iconPath: {
-                light: icoPath.path,
-                dark: icoPath.path
-            }
+            iconPath: vscode.Uri.file(icoPath.path)
         });
 
         //---
@@ -276,10 +264,7 @@ export class OperationExplorer {
                 command: '_cl.eide.Operation.SetupUtilTools'
             },
             tooltip: view_str$operation$setupUtilTools,
-            iconPath: {
-                light: icoPath.path,
-                dark: icoPath.path
-            }
+            iconPath: vscode.Uri.file(icoPath.path)
         });
 
         //---
@@ -292,10 +277,7 @@ export class OperationExplorer {
                 command: '_cl.eide.Operation.openSettings'
             },
             tooltip: view_str$operation$openSettings,
-            iconPath: {
-                light: icoPath.path,
-                dark: icoPath.path
-            }
+            iconPath: vscode.Uri.file(icoPath.path)
         });
 
         this.provider.Update();

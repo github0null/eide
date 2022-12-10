@@ -183,11 +183,11 @@ export class VirtualSource implements SourceProvider {
 
     // get
 
-    getFolder(path?: string): VirtualFolder | undefined {
-        if (path === undefined || path === VirtualSource.rootName) {
+    getFolder(vpath?: string): VirtualFolder | undefined {
+        if (vpath === undefined || vpath === VirtualSource.rootName) {
             return this.getRoot();
         } else {
-            const nameList = path.split('/');
+            const nameList = vpath.split('/');
             let cur_folder: VirtualFolder = {
                 name: '/',
                 files: [],
@@ -205,11 +205,11 @@ export class VirtualSource implements SourceProvider {
         }
     }
 
-    getFile(path: string): VirtualFile | undefined {
-        const vFolder = this.getFolder(NodePath.dirname(path));
+    getFile(vpath: string): VirtualFile | undefined {
+        const vFolder = this.getFolder(NodePath.dirname(vpath));
         if (vFolder) {
-            const fileName = NodePath.basename(path);
-            const index = vFolder.files.findIndex((file) => { return NodePath.basename(file.path) === fileName; });
+            const fileName = NodePath.basename(vpath);
+            const index = vFolder.files.findIndex((file) => NodePath.basename(file.path) == fileName);
             if (index !== -1) {
                 return vFolder.files[index];
             }
@@ -267,51 +267,48 @@ export class VirtualSource implements SourceProvider {
 
     // set
 
-    addFile(folder_path: string, file_path: string): VirtualFile | undefined {
-
-        const folder = this.getFolder(folder_path);
-        if (folder === undefined) { throw new Error(`not found virtual folder '${folder_path}'`); }
-
-        // file is not existed, add it
-        const vFilePath = `${folder_path}/${NodePath.basename(file_path)}`;
-        if (this.getFile(vFilePath) === undefined) {
-            const vFile: VirtualFile = { path: this.project.toRelativePath(file_path) };
-            folder.files.push(vFile);
-            this.emit('dataChanged', 'folderChanged');
-            return vFile;
-        }
-    }
-
-    addFiles(folder_path: string, pathList: string[]): VirtualFile[] {
-
-        const folder = this.getFolder(folder_path);
-        if (folder === undefined) { throw new Error(`not found virtual folder '${folder_path}'`); }
-
-        const doneList: VirtualFile[] = [];
-
-        for (const abspath of pathList) {
-            const vFilePath = `${folder_path}/${NodePath.basename(abspath)}`;
-            // file is not existed, add it
-            if (this.getFile(vFilePath) === undefined) {
-                const vFile: VirtualFile = { path: this.project.toRelativePath(abspath) };
+    addFile(vfolder_path: string, fspath: string): VirtualFile | undefined {
+        const folder = this.getFolder(vfolder_path);
+        if (folder) {
+            const vFilePath = `${vfolder_path}/${NodePath.basename(fspath)}`;
+            if (this.getFile(vFilePath) === undefined) { // file is not existed, add it
+                const vFile: VirtualFile = { path: this.project.toRelativePath(fspath) };
                 folder.files.push(vFile);
-                doneList.push(vFile);
+                this.emit('dataChanged', 'folderChanged');
+                return vFile;
             }
         }
-
-        if (doneList.length > 0) {
-            this.emit('dataChanged', 'folderChanged');
-        }
-
-        return doneList;
     }
 
-    removeFile(path: string): VirtualFile | undefined {
-        const basename = NodePath.basename(path);
-        const vFolder = this.getFolder(NodePath.dirname(path));
+    addFiles(folder_path: string, pathList: string[]): VirtualFile[] | undefined {
+
+        const folder = this.getFolder(folder_path);
+        if (folder) {
+
+            const doneList: VirtualFile[] = [];
+
+            for (const abspath of pathList) {
+                const vFilePath = `${folder_path}/${NodePath.basename(abspath)}`;
+                if (this.getFile(vFilePath) === undefined) { // file is not existed, add it
+                    const vFile: VirtualFile = { path: this.project.toRelativePath(abspath) };
+                    folder.files.push(vFile);
+                    doneList.push(vFile);
+                }
+            }
+
+            if (doneList.length > 0) {
+                this.emit('dataChanged', 'folderChanged');
+            }
+
+            return doneList;
+        }
+    }
+
+    removeFile(vpath: string): VirtualFile | undefined {
+        const basename = NodePath.basename(vpath);
+        const vFolder = this.getFolder(NodePath.dirname(vpath));
         if (vFolder) {
-            const index = vFolder.files.
-                findIndex((f) => { return NodePath.basename(f.path) === basename; });
+            const index = vFolder.files.findIndex((f) => NodePath.basename(f.path) == basename);
             if (index !== -1) {
                 const rmFile = vFolder.files.splice(index, 1)[0];
                 this.emit('dataChanged', 'folderChanged');
@@ -334,6 +331,18 @@ export class VirtualSource implements SourceProvider {
         }
     }
 
+    insertFolder(parentvPath: string, nFolder: VirtualFolder): string | undefined {
+        const vFolder = this.getFolder(parentvPath);
+        if (vFolder) {
+            const index = vFolder.folders.findIndex((f) => f.name == nFolder.name);
+            if (index === -1) {
+                vFolder.folders.push(nFolder);
+                this.emit('dataChanged', 'folderChanged');
+                return `${parentvPath}/${nFolder.name}`;
+            }
+        }
+    }
+
     removeFolder(path: string): VirtualFolder | undefined {
         const name = NodePath.basename(path);
         const vFolder = this.getFolder(NodePath.dirname(path));
@@ -352,8 +361,8 @@ export class VirtualSource implements SourceProvider {
         return this.getFolder(path) !== undefined;
     }
 
-    renameFolder(path: string, newName: string): VirtualFolder | undefined {
-        const vFolder = this.getFolder(path);
+    renameFolder(vpath: string, newName: string): VirtualFolder | undefined {
+        const vFolder = this.getFolder(vpath);
         if (vFolder) {
             vFolder.name = newName;
             this.emit('dataChanged', 'folderChanged');
@@ -639,6 +648,8 @@ class SourceRootList implements SourceProvider {
 
     private updateFolder(rootFolderInfo: SourceRootInfo, targetFolderList?: string[]) {
 
+        console.log(`[cl.eide] update source folder: '${rootFolderInfo.fileWatcher.file.path}' (${targetFolderList?.join(',')})`);
+
         const rootFolder = rootFolderInfo.fileWatcher.file;
         const folderStack: File[] = [];
 
@@ -813,6 +824,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     public getProjectName(): string {
         return this.GetConfiguration().config.name;
+    }
+
+    public getProjectCurrentTargetName(): string {
+        return this.getCurrentTarget();
     }
 
     public getProjectType(): ProjectType {
