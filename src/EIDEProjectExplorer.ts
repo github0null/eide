@@ -553,7 +553,7 @@ class ProjectItemCache {
     }
 }
 
-class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
+class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vscode.TreeDragAndDropController<ProjTreeItem> {
 
     private static readonly recName = 'sln.record';
     private static readonly RecMaxNum = 50;
@@ -586,6 +586,27 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem> {
 
         this.loadRecord();
     }
+
+    //---------------------------------------
+    // TreeDragAndDropController
+    //---------------------------------------
+
+    readonly dropMimeTypes: string[] = [];
+    readonly dragMimeTypes: string[] = [
+        `application/vnd.code.tree.<treeidlowercase>`
+    ];
+
+    handleDrag(source: readonly ProjTreeItem[], dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Thenable<void> | void {
+        console.log('[cl.eide] handleDrag');
+        console.log(source);
+    }
+
+    handleDrop(target: ProjTreeItem | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Thenable<void> | void {
+        console.log('[cl.eide] handleDrop');
+        console.log(target);
+    }
+
+    /////////////////////////////////////////////////////////////////////
 
     onProjectChanged(prj: AbstractProject, type?: DataChangeType) {
 
@@ -2730,7 +2751,11 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         this.dataProvider = new ProjectDataProvider(context);
         this.cppcheck_diag = vscode.languages.createDiagnosticCollection('cppcheck');
 
-        this.view = vscode.window.createTreeView('Project', { treeDataProvider: this.dataProvider });
+        this.view = vscode.window.createTreeView('cl.eide.view.projects', {
+            treeDataProvider: this.dataProvider,
+            dragAndDropController: this.dataProvider,
+        });
+
         context.subscriptions.push(this.view);
 
         // item click event

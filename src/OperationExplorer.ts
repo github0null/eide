@@ -182,7 +182,7 @@ export class OperationExplorer {
         this.statusIconMap.set(CheckStatus.Section_Failed, 'StatusWarning_16x.svg');
         this.statusIconMap.set(CheckStatus.All_Verified, 'StatusOK_16x.svg');
 
-        this.view = vscode.window.createTreeView('Operation', { treeDataProvider: this.provider });
+        this.view = vscode.window.createTreeView('cl.eide.view.operations', { treeDataProvider: this.provider });
         this.UpdateView();
 
         GlobalEvent.on('extension_close', () => {
