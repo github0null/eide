@@ -62,6 +62,7 @@ import {
     view_str$prompt$unresolved_deps,
     view_str$prompt$prj_location,
     view_str$prompt$src_folder_must_be_a_child_of_root,
+    view_str$prompt$removeSrcDir,
     view_str$project$folder_type_virtual_desc,
     view_str$project$folder_type_fs_desc,
     view_str$msg$err_ewt_hash,
@@ -70,7 +71,9 @@ import {
     view_str$prompt$need_reload_project,
     view_str$prompt$needReloadToUpdateEnv,
     getLocalLanguageType,
-    LanguageIndexs
+    LanguageIndexs,
+    txt_yes,
+    txt_no
 } from './StringTable';
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
@@ -4046,11 +4049,17 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     async RemoveSrcDir(item: ProjTreeItem) {
-        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
-        if (item.val.obj instanceof File) {
-            prj.GetConfiguration().RemoveSrcDir(item.val.obj.path);
-        } else {
-            GlobalEvent.emit('error', new Error('remove source root failed !'));
+
+        if (!(item.val.obj instanceof File)) {
+            return;
+        }
+
+        const srcDir = item.val.obj;
+
+        const answer = await vscode.window.showInformationMessage(view_str$prompt$removeSrcDir.replace('{}', srcDir.path), txt_yes, txt_no);
+        if (answer == txt_yes) {
+            const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+            prj.GetConfiguration().RemoveSrcDir(srcDir.path);
         }
     }
 
