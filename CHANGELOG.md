@@ -6,7 +6,7 @@ All notable version changes will be recorded in this file.
 
 ***
 
-### [v3.10.8] update
+### [v3.10.9] update
 
 **New**:
   - `Project Resource`: Add `Symbol Table` virtual file in `Output Files`, click it to show `elf symbols` (support 'armcc', 'gcc', 'iar').
