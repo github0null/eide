@@ -40,7 +40,7 @@ function parseLogLines(file: File): string[] {
         });
 
     } catch (error) {
-        GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+        // nothing todo
     }
 
     return ccLogLines;

@@ -370,6 +370,24 @@
                         false
                     ]
                 },
+                "xo-base": {
+                    "markdownDescription": "X/O Base",
+                    "description.zh-cn": "X/O Base",
+                    "size": "small",
+                    "type": "string"
+                },
+                "ro-base": {
+                    "markdownDescription": "R/O Base",
+                    "description.zh-cn": "R/O Base",
+                    "size": "small",
+                    "type": "string"
+                },
+                "rw-base": {
+                    "markdownDescription": "R/W Base",
+                    "description.zh-cn": "R/W Base",
+                    "size": "small",
+                    "type": "string"
+                },
                 "misc-controls": {
                     "markdownDescription": "Other Linker Options",
                     "description.zh-cn": "链接器附加选项",

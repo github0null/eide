@@ -180,6 +180,15 @@
                             "true": "1",
                             "false": "0"
                         }
+                    },
+                    "xo-base": {
+                        "keilName": "pXoBase"
+                    },
+                    "ro-base": {
+                        "keilName": "TextAddressRange"
+                    },
+                    "rw-base": {
+                        "keilName": "DataAddressRange"
                     }
                 }
             }
@@ -390,6 +399,15 @@
                             "true": "1",
                             "false": "0"
                         }
+                    },
+                    "xo-base": {
+                        "keilName": "pXoBase"
+                    },
+                    "ro-base": {
+                        "keilName": "TextAddressRange"
+                    },
+                    "rw-base": {
+                        "keilName": "DataAddressRange"
                     }
                 }
             }

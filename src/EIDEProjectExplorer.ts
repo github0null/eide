@@ -62,6 +62,7 @@ import {
     view_str$prompt$unresolved_deps,
     view_str$prompt$prj_location,
     view_str$prompt$src_folder_must_be_a_child_of_root,
+    view_str$prompt$removeSrcDir,
     view_str$project$folder_type_virtual_desc,
     view_str$project$folder_type_fs_desc,
     view_str$msg$err_ewt_hash,
@@ -70,7 +71,9 @@ import {
     view_str$prompt$need_reload_project,
     view_str$prompt$needReloadToUpdateEnv,
     getLocalLanguageType,
-    LanguageIndexs
+    LanguageIndexs,
+    txt_yes,
+    txt_no
 } from './StringTable';
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
@@ -174,9 +177,11 @@ function getTreeItemTypeName(typ: TreeItemType): string {
 type GroupRegion = 'PACK' | 'Components' | 'ComponentItem';
 
 interface TreeItemValue {
-    key?: string; // name will be show in label
-    alias?: string; // alias name will be show in label
-    value: string | File; // if TreeItem refer to a file, the value type is 'File'
+    label?: string;         // UI item label, if it's null, item label is '${keyAlias || key} : ${value}' or '${value}'
+    key?: string;           // key name will be show in label
+    keyAlias?: string;      // key's alias name will be show in label
+    value: string | File;   // if TreeItem refer to a file, the value type must be 'File'
+    isVirtualFile?: boolean;
     contextVal?: string;
     tooltip?: string | vscode.MarkdownString;
     icon?: string;
@@ -260,8 +265,12 @@ export class ProjTreeItem extends vscode.TreeItem {
         if (val.value instanceof File) {
             this.label = val.value.name;
         } else {
-            const lableName: string | undefined = val.alias ? val.alias : val.key;
-            this.label = lableName ? (`${lableName} : ${val.value}`) : val.value;
+            const name = val.keyAlias || val.key;
+            this.label = name ? `${name} : ${val.value}` : val.value;
+        }
+
+        if (val.label) {
+            this.label = val.label;
         }
 
         // setup unique id
@@ -827,7 +836,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         return this.prjList[index];
     }
 
-    getIndexByProject(uid: string): number {
+    getProjectByUid(uid: string): AbstractProject | undefined {
+        const idx = this.getIndexByProjectUid(uid);
+        if (idx != -1) {
+            return this.GetProjectByIndex(idx);
+        }
+    }
+
+    getIndexByProjectUid(uid: string): number {
         return this.prjList.findIndex(prj => prj.getUid() == uid);
     }
 
@@ -1106,7 +1122,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                             if (cConfig.isKeyEnable(key) && !excludeKeys.includes(key)) {
                                 iList.push(new ProjTreeItem(TreeItemType.COMPILE_CONFIGURATION_ITEM, {
                                     key: key,
-                                    alias: cConfig.GetKeyDescription(key),
+                                    keyAlias: cConfig.GetKeyDescription(key),
                                     value: cConfig.getKeyValue(key),
                                     tooltip: newMarkdownString([
                                         `${cConfig.GetKeyDescription(key)}`,
@@ -1128,7 +1144,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                 if (model.isKeyEnable(key)) {
                                     iList.push(new ProjTreeItem(TreeItemType.UPLOAD_OPTION_ITEM, {
                                         key: key,
-                                        alias: model.GetKeyDescription(key),
+                                        keyAlias: model.GetKeyDescription(key),
                                         value: model.getKeyValue(key),
                                         tooltip: newMarkdownString([
                                             `${model.GetKeyDescription(key)}`,
@@ -1174,7 +1190,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                         iList.push(new ProjTreeItem(TreeItemType.SETTINGS_ITEM, {
                             key: 'name',
                             value: config.config.name,
-                            alias: view_str$settings$prj_name,
+                            keyAlias: view_str$settings$prj_name,
                             tooltip: newMarkdownString(`**${view_str$settings$prj_name}**: \`${config.config.name}\``),
                             projectIndex: element.val.projectIndex
                         }));
@@ -1183,7 +1199,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                         iList.push(new ProjTreeItem(TreeItemType.SETTINGS_ITEM, {
                             key: 'outDir',
                             value: File.normalize(config.config.outDir),
-                            alias: view_str$settings$outFolderName,
+                            keyAlias: view_str$settings$outFolderName,
                             tooltip: newMarkdownString(`**${view_str$settings$outFolderName}**: \`${config.config.outDir}\``),
                             projectIndex: element.val.projectIndex
                         }));
@@ -1192,7 +1208,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                         iList.push(new ProjTreeItem(TreeItemType.SETTINGS_ITEM, {
                             key: 'project.env',
                             value: 'object {...}',
-                            alias: view_str$settings$prjEnv,
+                            keyAlias: view_str$settings$prjEnv,
                             tooltip: view_str$settings$prjEnv,
                             projectIndex: element.val.projectIndex
                         }));
@@ -1359,11 +1375,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 // output folder
                 case TreeItemType.OUTPUT_FOLDER:
                     {
+                        // put output files
                         const outFolder = project.getOutputFolder();
                         if (outFolder.IsDir()) {
                             const fList = outFolder.GetList([AbstractProject.buildOutputMatcher], File.EXCLUDE_ALL_FILTER);
                             fList.forEach((file) => {
-                                const fsize = file.getSize();
                                 iList.push(new ProjTreeItem(TreeItemType.OUTPUT_FILE_ITEM, {
                                     value: file,
                                     collapsibleState: vscode.TreeItemCollapsibleState.None,
@@ -1375,6 +1391,29 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                     }, project.getRootDir()),
                                 }));
                             });
+                        }
+
+                        // put virtual views
+                        {
+                            // Symbol Table
+                            // - not support sdcc, keil_c51 now !
+                            if (!['Keil_C51', 'SDCC'].includes(project.getToolchain().name)) {
+
+                                let vFile = File.fromArray([project.getRootDir().path, `${project.getUid()}.elf-symbols`]);
+                                iList.push(new ProjTreeItem(TreeItemType.OUTPUT_FILE_ITEM, {
+                                    label: `Symbol Table`,
+                                    value: vFile,
+                                    isVirtualFile: true,
+                                    collapsibleState: vscode.TreeItemCollapsibleState.None,
+                                    projectIndex: element.val.projectIndex,
+                                    tooltip: `Symbols Of Program`,
+                                    icon: `Table_16x.svg`
+                                }));
+                                if (VirtualDocument.instance().hasDocument(vFile.path) == false) {
+                                    VirtualDocument.instance().registerDocumentGetter(vFile.path,
+                                        (uri, args) => this.printProjectBinarySymbols(uri, args[0], args[1]));
+                                }
+                            }
                         }
                     }
                     break;
@@ -1505,6 +1544,441 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             }
         }
         return iList;
+    }
+
+    /*
+      文档：https://sourceware.org/binutils/docs-2.39/binutils.html#nm 
+      下面说明符号类型：对于每一个符号来说，其类型如果是小写的，则表明该符号是local的；大写则表明该符号是global(external)的。
+        A	该符号的值是绝对的，在以后的链接过程中，不允许进行改变。这样的符号值，常常出现在中断向量表中，例如用符号来表示各个中断向量函数在中断向量表中的位置。
+        B	该符号的值出现在非初始化数据段(bss)中。例如，在一个文件中定义全局static int test。则该符号test的类型为b，位于bss section中。其值表示该符号在bss段中的偏移。一般而言，bss段分配于RAM中
+        C	该符号为common。common symbol是未初始话数据段。该符号没有包含于一个普通section中。只有在链接过程中才进行分配。符号的值表示该符号需要的字节数。例如在一个c文件中，定义int test，并且该符号在别的地方会被引用，则该符号类型即为C。否则其类型为B。
+        D	该符号位于初始话数据段中。一般来说，分配到data section中。例如定义全局int baud_table[5] = {9600, 19200, 38400, 57600, 115200}，则会分配于初始化数据段中。
+        G	该符号也位于初始化数据段中。主要用于small object提高访问small data object的一种方式。
+        I	该符号是对另一个符号的间接引用。
+        N	该符号是一个debugging符号。
+        R	该符号位于只读数据区。例如定义全局const int test[] = {123, 123};则test就是一个只读数据区的符号。注意在cygwin下如果使用gcc直接编译成MZ格式时，源文件中的test对应_test，并且其符号类型为D，即初始化数据段中。但是如果使用m6812-elf-gcc这样的交叉编译工具，源文件中的test对应目标文件的test,即没有添加下划线，并且其符号类型为R。一般而言，位于rodata section。值得注意的是，如果在一个函数中定义const char *test = “abc”, const char test_int = 3。使用nm都不会得到符号信息，但是字符串“abc”分配于只读存储器中，test在rodata section中，大小为4。
+        S	符号位于非初始化数据区，用于small object。
+        T	该符号位于代码区text section。
+        U	该符号在当前文件中是未定义的，即该符号的定义在别的文件中。例如，当前文件调用另一个文件中定义的函数，在这个被调用的函数在当前就是未定义的；但是在定义它的文件中类型是T。但是对于全局变量来说，在定义它的文件中，其符号类型为C，在使用它的文件中，其类型为U。
+        V	该符号是一个weak object。
+        W	The symbol is a weak symbol that has not been specifically tagged as a weak object symbol. 未明确指定的弱链接符号；同链接的其他对象文件中有它的定义就用上，否则就用一个系统特别指定的默认值。
+        -	该符号是a.out格式文件中的stabs symbol。
+        ?	该符号类型没有定义
+    */
+    private convGnuSymbolType2ReadableString(typ: string): string {
+
+        let typeStr: string | undefined;
+
+        switch (typ.toLowerCase()) {
+            case 'a':
+                typeStr = 'ABS'
+                break;
+            case 'b':
+                typeStr = 'BSS'
+                break;
+            case 'c':
+                typeStr = 'COMMON'
+                break;
+            case 'd':
+                typeStr = 'DATA'
+                break;
+            case 'i':
+                typeStr = `Indirect Reference`
+                break;
+            case 'n':
+                typeStr = `Debug`
+                break;
+            case 'r':
+                typeStr = `DATA (Read Only)`
+                break;
+            case 't':
+                typeStr = `TEXT`
+                break;
+            case 'u':
+                typeStr = `Undefined`
+                break;
+            case 'v':
+                typeStr = `Weak`
+                break;
+            case 'w':
+                typeStr = `Weak (unspecified)`
+                break;
+            default:
+                break;
+        }
+
+        if (typeStr) {
+            if (typ.toLowerCase() == typ) { // is a lowercase word
+                typeStr += ' (Local)'
+            }
+        }
+
+        if (typeStr) {
+            return `${typ}: ${typeStr}`;
+        }
+
+        return typ;
+    }
+
+    private printProjectBinarySymbols(uri: vscode.Uri,
+        sortType?: 'addr' | 'size', dispType?: 'hide_no_sized' | 'show_all'): Promise<string> {
+
+        if (sortType == undefined) {
+            sortType = 'addr';
+        }
+
+        if (dispType == undefined) {
+            dispType = 'hide_no_sized';
+        }
+
+        return new Promise((resolve) => {
+
+            const uid = new File(uri.fsPath).noSuffixName;
+            const prj = this.getProjectByUid(uid);
+
+            if (prj == undefined) {
+                resolve(`Error: Not found project '${uid}' !`);
+                return;
+            }
+
+            try {
+
+                const toolchain = prj.getToolchain();
+                const toolchainPrefix = toolchain.getToolchainPrefix ? toolchain.getToolchainPrefix() : '';
+
+                let elfpath = '';
+                let elftool = '';
+                let elfcmds = [''];
+                let elfsort = false; // elftool has sorted ?
+
+                let staMatcher: RegExp | undefined;
+                let endMatcher: RegExp | undefined;
+                let symMatcher: RegExp | undefined;
+                let symTypConv: ((type: string) => string) | undefined;
+                let locMatcher: RegExp | undefined;
+
+                // sometimes a long line has been truncated, like this:
+                //  4183: Temperature_Sampling_NVIC_Configuration
+                //                              0x800f4d1   5 Code Gb   0x38
+                // we need match and recover them !
+                let truncatStaMatcher: RegExp | undefined;
+                let truncatEndMatcher: RegExp | undefined;
+
+                switch (toolchain.name) {
+                    // armcc fmt: 
+                    //   #  Symbol Name                Value      Bind  Sec  Type  Vis  Size
+                    case 'AC5':
+                    case 'AC6':
+                        elfpath = prj.getExecutablePathWithoutSuffix() + '.axf';
+                        elftool = [toolchain.getToolchainDir().path, 'bin', `fromelf${exeSuffix()}`].join(File.sep);
+                        elfcmds = ['--text', '-s', elfpath];
+                        staMatcher = /\(SHT_SYMTAB\)/
+                        endMatcher = /^\*\* Section/
+                        truncatStaMatcher = /^\s*\d+\s+(?:[^\s]+)\s*$/i
+                        truncatEndMatcher = /^\s*0x[0-9a-f]+\s+/i
+                        symMatcher = /^\s*\d+\s+(?<name>[^\s]+)\s+(?<addr>0x[0-9a-f]+)\s+(?:[^\s]+)\s+(?:[^\s]+)\s+(?<type>[^\s]+)\s+(?:[^\s]+)(?<size>\s+[^\s]+)?/i
+                        break;
+                    // iar fmt:
+                    //   # Name                                Value      Sec Type Bd Size   Group Other
+                    case 'IAR_ARM':
+                        elfpath = prj.getExecutablePathWithoutSuffix() + '.out';
+                        elftool = [toolchain.getToolchainDir().path, 'bin', `ielfdumparm${exeSuffix()}`].join(File.sep);
+                        elfcmds = ['-s', '.symtab', elfpath];
+                        symMatcher = /^\s*\d+:\s+(?<name>[^\s]+)\s+(?<addr>0x[0-9a-f]+)\s+(?:[^\s]+)\s+(?<type>[^\s]+\s+[^\s]+)(?<size>\s+0x[0-9a-f]+)?/i;
+                        truncatStaMatcher = /^\s*\d+:\s+(?:[^\s]+)\s*$/i
+                        truncatEndMatcher = /^\s*0x[0-9a-f]+\s+/i
+                        break;
+                    case 'IAR_STM8':
+                        elfpath = prj.getExecutablePathWithoutSuffix() + '.out';
+                        elftool = [toolchain.getToolchainDir().path, 'stm8', 'bin', `ielfdumpstm8${exeSuffix()}`].join(File.sep);
+                        elfcmds = ['-s', '.symtab', elfpath];
+                        symMatcher = /^\s*\d+:\s+(?<name>[^\s]+)\s+(?<addr>0x[0-9a-f]+)\s+(?:[^\s]+)\s+(?<type>[^\s]+\s+[^\s]+)(?<size>\s+0x[0-9a-f]+)?/i;
+                        truncatStaMatcher = /^\s*\d+:\s+(?:[^\s]+)\s*$/i
+                        truncatEndMatcher = /^\s*0x[0-9a-f]+\s+/i
+                        break;
+                    case 'GCC':
+                    case 'RISCV_GCC':
+                    case 'ANY_GCC':
+                        elfpath = prj.getExecutablePathWithoutSuffix() + '.elf';
+                        elftool = [toolchain.getToolchainDir().path, 'bin', `${toolchainPrefix}nm${exeSuffix()}`].join(File.sep);
+                        elfcmds = sortType == 'size' ? ['-l', '-S', '--size-sort', elfpath] : ['-ln', '-S', elfpath];
+                        elfsort = true;
+                        symMatcher = /^(?<addr>[0-9a-f]+)\s+(?<size>[0-9a-f]+\s+)?(?<type>\w)\s+(?<name>[^\s]+)\s+(?<loca>.*)/i;
+                        symTypConv = (t) => this.convGnuSymbolType2ReadableString(t)
+                        break;
+                    default:
+                        throw new Error(`Not support symbol view for '${toolchain.name}' !`);
+                }
+
+                if (!File.IsFile(elfpath)) {
+                    throw new Error(`Not found elf file: '${elfpath}', please build your project !`);
+                }
+
+                if (!File.IsFile(elftool)) {
+                    throw new Error(`Not found elf tool: '${elftool}' !`);
+                }
+
+                let textLines = child_process.execFileSync(elftool, elfcmds).toString().split(/\r\n|\n/);
+
+                // filter lines
+                // notes:
+                //  - will contain the line that matched by 'staMatcher'
+                //  - Not  contain the line that matched by 'endMatcher'
+                if (staMatcher) {
+
+                    let matchedLines: string[] = [];
+                    let started = false;
+
+                    for (const line of textLines) {
+
+                        if (!started && staMatcher.test(line)) {
+                            started = true;
+                        }
+
+                        if (started) {
+
+                            if (matchedLines.length > 0 &&
+                                endMatcher && endMatcher.test(line)) {
+                                break;
+                            }
+
+                            matchedLines.push(line);
+                        }
+                    }
+
+                    textLines = matchedLines;
+                }
+
+                // if no pattern, output raw text
+                if (symMatcher === undefined) {
+                    resolve(textLines.join(os.EOL));
+                    return;
+                }
+
+                const tableHeader: string[] = ['Address', 'Size', 'Type', 'Symbol Name', 'Location'];
+
+                let resultLines: string[][] = [];
+
+                let col_addr_maxLen = tableHeader[0].length;
+                let col_size_maxLen = tableHeader[1].length;
+                let col_type_maxLen = tableHeader[2].length;
+                let col_name_maxLen = tableHeader[3].length;
+                let col_loca_maxLen = tableHeader[4].length;
+
+                let sym_cur_file_location: string | undefined;
+
+                let sym_count = 0;
+
+                for (let i = 0; i < textLines.length; i++) {
+
+                    let line = textLines[i];
+
+                    if (locMatcher) {
+                        const m = locMatcher.exec(line);
+                        if (m && m.groups) {
+                            sym_cur_file_location = m.groups['loca']?.trim();
+                        }
+                    }
+
+                    if (truncatStaMatcher && truncatEndMatcher) {
+                        let nxtLine = i + 1 < textLines.length ? textLines[i + 1] : undefined;
+                        if (nxtLine &&
+                            truncatStaMatcher.test(line) && truncatEndMatcher.test(nxtLine)) {
+                            line = line + nxtLine;
+                            i++;
+                        }
+                    }
+
+                    const m = symMatcher.exec(line);
+                    if (!(m && m.groups)) { // no matched
+                        continue;
+                    }
+
+                    let addr = m.groups['addr']?.trim();
+                    let size = m.groups['size']?.trim();
+                    let type = m.groups['type']?.trim();
+                    let name = m.groups['name']?.trim();
+                    let loca = m.groups['loca']?.trim();
+
+                    if (!addr || !name) {
+                        continue;
+                    }
+
+                    sym_count++;
+
+                    if (type && symTypConv) {
+                        type = symTypConv(type);
+                    }
+
+                    // symbol name is a source file ?
+                    if (/\.(?:c|cpp|cxx|c\+\+|cc|s|asm)$/i.test(name)) {
+                        sym_cur_file_location = name;
+                        continue;
+                    }
+
+                    size = size || '--';
+                    type = type || '--';
+                    loca = loca || sym_cur_file_location || '--';
+
+                    if (dispType == 'hide_no_sized' && size == '--') {
+                        continue; // ignore no-size symbols
+                    }
+
+                    col_addr_maxLen = addr.length > col_addr_maxLen ? addr.length : col_addr_maxLen;
+                    col_size_maxLen = size.length > col_size_maxLen ? size.length : col_size_maxLen;
+                    col_type_maxLen = type.length > col_type_maxLen ? type.length : col_type_maxLen;
+                    col_name_maxLen = name.length > col_name_maxLen ? name.length : col_name_maxLen;
+                    col_loca_maxLen = loca.length > col_loca_maxLen ? loca.length : col_loca_maxLen;
+
+                    resultLines.push([addr, size, type, name, loca]);
+                }
+
+                // sort lines
+                if (!elfsort) {
+
+                    if (sortType == 'addr') {
+
+                        resultLines = resultLines.sort((a1, a2) => {
+                            const addr_1 = parseInt(a1[0], 16);
+                            const addr_2 = parseInt(a2[0], 16);
+                            return addr_1 - addr_2;
+                        });
+                    }
+
+                    else if (sortType == 'size') {
+
+                        let notSizeSyms: string[][] = [];
+                        let hasSizeSyms: string[][] = [];
+
+                        resultLines.forEach(sym => {
+                            if (sym[1].startsWith('--')) {
+                                notSizeSyms.push(sym);
+                            } else {
+                                hasSizeSyms.push(sym);
+                            }
+                        });
+
+                        hasSizeSyms = hasSizeSyms.sort((a1, a2) => {
+                            const size_1 = parseInt(a1[1], 16);
+                            const size_2 = parseInt(a2[1], 16);
+                            return size_1 - size_2;
+                        });
+
+                        resultLines = notSizeSyms.concat(hasSizeSyms);
+                    }
+                }
+
+                // dump result
+
+                let headerLines = [
+                    '',
+                    'ELF Symbols',
+                    `  - Tool: '${elftool}'`,
+                    `  - Cmds: '${elfcmds.join(' ')}'`,
+                    `  - Symbol Count: ${sym_count}`,
+                    ''
+                ];
+
+                let outputLines: string[] = headerLines;
+
+                // make header
+                {
+                    outputLines.push(
+                        `--${''.padEnd(col_addr_maxLen, '-')}-` +
+                        `--${''.padEnd(col_size_maxLen, '-')}-` +
+                        `--${''.padEnd(col_type_maxLen, '-')}-` +
+                        `--${''.padEnd(col_name_maxLen, '-')}-` +
+                        `--${''.padEnd(col_loca_maxLen, '-')}-`);
+
+                    outputLines.push(
+                        `| ${tableHeader[0].padEnd(col_addr_maxLen)} ` +
+                        `| ${tableHeader[1].padEnd(col_size_maxLen)} ` +
+                        `| ${tableHeader[2].padEnd(col_type_maxLen)} ` +
+                        `| ${tableHeader[3].padEnd(col_name_maxLen)} ` +
+                        `| ${tableHeader[4].padEnd(col_loca_maxLen)} `);
+
+                    outputLines.push(
+                        `--${''.padEnd(col_addr_maxLen, '-')}-` +
+                        `--${''.padEnd(col_size_maxLen, '-')}-` +
+                        `--${''.padEnd(col_type_maxLen, '-')}-` +
+                        `--${''.padEnd(col_name_maxLen, '-')}-` +
+                        `--${''.padEnd(col_loca_maxLen, '-')}-`);
+                }
+
+                for (let i = 1; i < resultLines.length; i++) {
+
+                    outputLines.push(
+                        `| ${resultLines[i][0].padEnd(col_addr_maxLen)} ` +
+                        `| ${resultLines[i][1].padEnd(col_size_maxLen)} ` +
+                        `| ${resultLines[i][2].padEnd(col_type_maxLen)} ` +
+                        `| ${resultLines[i][3].padEnd(col_name_maxLen)} ` +
+                        `| ${resultLines[i][4].padEnd(col_loca_maxLen)} `);
+                }
+
+                outputLines.push('');
+
+                resolve(outputLines.join(os.EOL));
+
+                //
+                // @deprecated Because this lib is too slow
+                //
+
+                // let maxLen = 0;
+                // for (const l of headerLines) {
+                //     if (l.length > maxLen) maxLen = l.length;
+                // }
+
+                // for (let i = 1; i < headerLines.length; i++) {
+                //     headerLines[i] = headerLines[i].padEnd(maxLen);
+                // }
+
+                // const tableCfg: TxtTable.TableUserConfig = {
+
+                //     header: {
+                //         alignment: 'center',
+                //         content: headerLines.join('\n')
+                //     },
+
+                //     drawHorizontalLine: (idx, rowCount) => idx <= 2 || idx === rowCount,
+
+                //     columns: {
+                //         0: { width: col_addr_maxLen },
+                //         1: { width: col_size_maxLen },
+                //         2: { width: col_type_maxLen },
+                //         3: { width: col_name_maxLen },
+                //         4: { width: col_loca_maxLen }
+                //     },
+
+                //     border: {
+                //         topBody: `─`,
+                //         topJoin: `┬`,
+                //         topLeft: `┌`,
+                //         topRight: `┐`,
+
+                //         bottomBody: `─`,
+                //         bottomJoin: `┴`,
+                //         bottomLeft: `└`,
+                //         bottomRight: `┘`,
+
+                //         bodyLeft: `│`,
+                //         bodyRight: `│`,
+                //         bodyJoin: `│`,
+
+                //         joinBody: `─`,
+                //         joinLeft: `├`,
+                //         joinRight: `┤`,
+                //         joinJoin: `┼`
+                //     }
+                // };
+
+                // const result = TxtTable.table(resultLines, tableCfg);
+
+                // resolve(result);
+
+            } catch (error) {
+                resolve('Error: ' + (<Error>error).message);
+            }
+        });
     }
 
     private async _OpenProject(workspaceFilePath: string): Promise<AbstractProject | undefined> {
@@ -2489,10 +2963,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 prjCompileOption.floatingPointHardware = keilCompileConf.floatingPointHardware || 'none';
                 prjCompileOption.useCustomScatterFile = keilCompileConf.useCustomScatterFile;
                 prjCompileOption.storageLayout = keilCompileConf.storageLayout;
+
                 if (keilCompileConf.scatterFilePath) {
                     prjCompileOption.scatterFilePath =
                         baseInfo.rootFolder.ToRelativePath(keilCompileConf.scatterFilePath) || keilCompileConf.scatterFilePath;
+                } else { // if no scatter, will use X/O Base, R/O Base options, make scatterFilePath empty
+                    prjCompileOption.scatterFilePath = '';
                 }
+
                 // import builder options
                 const toolchain = ToolchainManager.getInstance().getToolchain('ARM', keilCompileConf.toolchain);
                 const opts = mergeBuilderOpts(toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
@@ -3202,7 +3680,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     private reloadProject(uid: string, workspaceFile: File) {
 
-        const idx = this.dataProvider.getIndexByProject(uid);
+        const idx = this.dataProvider.getIndexByProjectUid(uid);
         if (idx == -1) {
             GlobalEvent.emit('msg', newMessage('Error', `Project '${uid}' is not actived !`));
             return;
@@ -3485,7 +3963,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
 
             for (const path in diag_res) {
-                const uri = vscode.Uri.parse(File.ToUri(path));
+                const uri = vscode.Uri.file(path);
                 cc_diags.set(uri, diag_res[path]);
             }
         }
@@ -4046,11 +4524,17 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     async RemoveSrcDir(item: ProjTreeItem) {
-        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
-        if (item.val.obj instanceof File) {
-            prj.GetConfiguration().RemoveSrcDir(item.val.obj.path);
-        } else {
-            GlobalEvent.emit('error', new Error('remove source root failed !'));
+
+        if (!(item.val.obj instanceof File)) {
+            return;
+        }
+
+        const srcDir = item.val.obj;
+
+        const answer = await vscode.window.showInformationMessage(view_str$prompt$removeSrcDir.replace('{}', srcDir.path), txt_yes, txt_no);
+        if (answer == txt_yes) {
+            const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+            prj.GetConfiguration().RemoveSrcDir(srcDir.path);
         }
     }
 
@@ -4701,7 +5185,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     if (mRes && mRes.length > 5) {
                         diagnosticCnt += 1; /* increment cnt */
                         const fpath = prj.ToAbsolutePath(mRes[pattern.file]);
-                        const uri = vscode.Uri.parse(File.ToUri(fpath));
+                        const uri = vscode.Uri.file(fpath);
                         const diags = Array.from(this.cppcheck_diag.get(uri) || []);
                         const line = parseInt(mRes[pattern.line]);
                         const col = parseInt(mRes[pattern.column]);
@@ -5734,7 +6218,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (ProjTreeItem.isFileItem(item.type)) {
 
             const file = <File>item.val.value;
-            const vsUri = vscode.Uri.parse(file.ToUri());
+
             let isPreview = true;
 
             if (this.prev_click_info &&
@@ -5755,9 +6239,15 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 // by vscode default api
                 if (this.showBinaryFiles(file, isPreview)) return;
 
-                /* We need use 'vscode.open' command, not 'showTextDocument' API, 
-                 * because API can't open bin file */
-                vscode.commands.executeCommand('vscode.open', vsUri, { preview: isPreview });
+                if (item.val.isVirtualFile) {
+                    const uri = vscode.Uri.parse(VirtualDocument.instance().getUriByPath(file.path));
+                    VirtualDocument.instance().updateDocument(file.path);
+                    vscode.window.showTextDocument(uri, { preview: isPreview });
+                } else {
+                    /* We need use 'vscode.open' command, not 'showTextDocument' API, 
+                     * because API can't open bin file */
+                    vscode.commands.executeCommand('vscode.open', vscode.Uri.file(file.path), { preview: isPreview });
+                }
 
             } catch (error) {
                 GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
@@ -5787,7 +6277,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     if (!fromelf.IsFile())
                         throw new Error(`Not found '${fromelf.path}' !`);
                     cont = child_process
-                        .execFileSync(fromelf.path, ['--text', '-e', binFile.path])
+                        .execFileSync(fromelf.path, ['--text', '-v', binFile.path])
                         .toString();
                 } catch (error) {
                     const err = <Error>error;

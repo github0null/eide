@@ -360,24 +360,6 @@ export const switch_workspace_hint = [
 
 //--------------- env ---------------
 
-/*
-                    "desc.task.cmd.env.target_name": "项目名称",
-                    "desc.task.cmd.env.project_root": "项目根目录",
-                    "desc.task.cmd.env.output_dir": "编译输出目录",
-                    "desc.task.cmd.env.builer_folder": "构建器可执行文件目录",
-                    "desc.task.cmd.env.toolchain_root": "工具链根目录",
-                    "desc.task.cmd.env.compiler_prefix": "编译器前缀，例如：arm-none-eabi-",
-                    "desc.task.cmd.env.compiler_folder": "编译器可执行文件目录",
-
-                    "desc.task.cmd.env.target_name": "Project name",
-                    "desc.task.cmd.env.project_root": "Project root folder",
-                    "desc.task.cmd.env.output_dir": "Build output folder",
-                    "desc.task.cmd.env.builer_folder": "Builder executable file's folder",
-                    "desc.task.cmd.env.toolchain_root": "Toolchain root folder",
-                    "desc.task.cmd.env.compiler_prefix": "Compiler prefix, like: arm-none-eabi-",
-                    "desc.task.cmd.env.compiler_folder": "Compiler executable file's folder",
-*/
-
 export const view_str$env_desc$project_name = [
     `项目名称`,
     `Project name`
@@ -414,6 +396,11 @@ export const view_str$env_desc$compiler_folder = [
 ][langIndex];
 
 //---------------Other---------------
+
+export const view_str$prompt$removeSrcDir = [
+    `从项目中移除源文件夹 '{}' ?`,
+    `Remove source folder '{}' from current project ?`
+][langIndex];
 
 export const view_str$prompt$needReloadToUpdateEnv = [
     `需要重启插件以刷新内置的环境变量，立即重启插件？`,

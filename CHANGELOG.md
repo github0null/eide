@@ -6,6 +6,18 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.10.8] update
+
+**New**:
+  - `Project Resource`: Add `Symbol Table` virtual file in `Output Files`, click it to show `elf symbols` (support 'armcc', 'gcc', 'iar').
+  - `Builder Options` : Add `X/O Base`, `R/O Base`, `R/W Base` options for armcc, and allow import them from keil project.
+
+**Optimize**:
+  - `launch.json Generator`: Don't force override 'svdPath' in launch.json config.
+  - `Project Resource`: Show promt when remove a filesystem source dir.
+
+***
+
 ### [v3.10.7] revision
 
 **Fix**:

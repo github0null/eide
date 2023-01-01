@@ -572,7 +572,7 @@ class KeilSettingMapper {
         const objGroup = domainObj[groupName];
         const option = objGroup.properties[key];
         if (option) {
-            const value = option.enum[typeof val === 'boolean' ? val.toString() : val];
+            const value = option.enum ? option.enum[typeof val === 'boolean' ? val.toString() : val] : val;
             if (value !== undefined) {
                 const keilCategory = TargetOption[this.mapper.keilName];
                 keilCategory[objGroup.keilName][option.keilName] = value;
@@ -592,6 +592,11 @@ class KeilSettingMapper {
 
             if (keilGroup && keilGroup[option.keilName] !== undefined) {
                 const keilValue = keilGroup[option.keilName];
+
+                if (option.enum == undefined) {
+                    return keilValue;
+                }
+
                 for (const opKey in option.enum) {
                     if (option.enum[opKey] === keilValue) {
                         if (opKey === 'true') {
@@ -962,7 +967,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
                 }
             }
 
-            //set current
+            // set current
             const toolchain = prj.getToolchain();
             const mapper = new KeilSettingMapper(toolchain.name);
             const options: any = compileModel.getOptions(eidePath, prjConfig.config);
@@ -975,8 +980,12 @@ class ARMParser extends KeilParser<KeilARMOption> {
             if (armAdsObj.LDads) {
                 const LDads = armAdsObj.LDads;
                 LDads.umfTarg = config.useCustomScatterFile ? '0' : '1';
-                const absPath = prj.ToAbsolutePath(config.scatterFilePath);
-                LDads.ScatterFile = this.ToRelativePath(absPath);
+                if (config.scatterFilePath) {
+                    const absPath = prj.ToAbsolutePath(config.scatterFilePath);
+                    LDads.ScatterFile = this.ToRelativePath(absPath);
+                } else {
+                    LDads.ScatterFile = '';
+                }
             }
 
             const info = armAdsObj.ArmAdsMisc;

@@ -27,17 +27,22 @@ import { File } from '../lib/node-utility/File';
 
 let _instance: VirtualDocument | undefined;
 
+export type VirtualDocumentContentGetter = (uri: vscode.Uri, ...args: any[]) => Promise<string>;
+
 export class VirtualDocument implements vscode.TextDocumentContentProvider {
 
     public static scheme = 'eide';
 
     private onDidChangeEmitter: vscode.EventEmitter<vscode.Uri>;
-    private docsMap: Map<string, string>;
+
+    private docsMap: Map<string, string | VirtualDocumentContentGetter>;
+    private docsGetterArgs: Map<string, any[]>;
 
     onDidChange: vscode.Event<vscode.Uri>;
 
     private constructor() {
         this.docsMap = new Map();
+        this.docsGetterArgs = new Map();
         this.onDidChangeEmitter = new vscode.EventEmitter<vscode.Uri>();
         this.onDidChange = this.onDidChangeEmitter.event;
     }
@@ -47,9 +52,38 @@ export class VirtualDocument implements vscode.TextDocumentContentProvider {
         return _instance;
     }
 
-    updateDocument(path: string, content: string) {
-        this.docsMap.set(path, content);
+    hasDocument(path: string): boolean {
+        return this.docsMap.has(path);
+    }
+
+    registerDocumentGetter(path: string, getter: VirtualDocumentContentGetter, ...getterArgs: any[]) {
+        this.docsMap.set(path, getter);
+        this.docsGetterArgs.set(path, getterArgs);
+    }
+
+    updateDocument(path: string, content?: string | VirtualDocumentContentGetter, ...getterArgs: any[]) {
+
+        if (content) {
+            this.docsMap.set(path, content);
+        } else {
+            if (!this.docsMap.has(path)) {
+                return; // not has this file and not file content, exit
+            }
+        }
+
+        this.docsGetterArgs.set(path, getterArgs);
+
         this.onDidChangeEmitter.fire(vscode.Uri.parse(this.getUriByPath(path)));
+    }
+
+    removeDocument(path: string) {
+        this.docsMap.delete(path);
+        this.docsGetterArgs.delete(path);
+        this.onDidChangeEmitter.fire(vscode.Uri.parse(this.getUriByPath(path)));
+    }
+
+    getLastGetterArgs(path: string): any[] {
+        return this.docsGetterArgs.get(path) || [];
     }
 
     getUriByPath(path: string): string {
@@ -57,8 +91,19 @@ export class VirtualDocument implements vscode.TextDocumentContentProvider {
     }
 
     provideTextDocumentContent(uri: vscode.Uri, token: vscode.CancellationToken): vscode.ProviderResult<string> {
-        if (this.docsMap.has(uri.fsPath)) {
-            return this.docsMap.get(uri.fsPath);
+        const getter = this.docsMap.get(uri.fsPath);
+        if (getter) {
+            if (typeof getter == 'string') {
+                return getter;
+            } else {
+                return vscode.window.withProgress<string>({
+                    location: vscode.ProgressLocation.Notification,
+                    title: `Provide Text Document`
+                }, async (progress) => {
+                    progress.report({ message: `${uri.fsPath}` });
+                    return await getter(uri, this.docsGetterArgs.get(uri.fsPath) || []);
+                });
+            }
         }
     }
 }
