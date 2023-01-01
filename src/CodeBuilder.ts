@@ -891,6 +891,7 @@ export class ARMCodeBuilder extends CodeBuilder {
         let scatterFilePath: string = config.compileConfig.scatterFilePath;
 
         switch (toolchain.name) {
+
             // 'armcc' can select whether use custom linker file
             case 'AC5':
             case 'AC6':
@@ -934,6 +935,28 @@ export class ARMCodeBuilder extends CodeBuilder {
 
         // set linker script
         options.linker['link-scatter'] = ldFileList;
+
+        // for armcc
+        if (['AC5', 'AC6'].includes(toolchain.name)) {
+
+            // if no scatter, will use X/O Base, R/O Base options
+            if (ldFileList.length == 0) {
+
+                let xo_base = options.linker['xo-base']?.trim();
+                let ro_base = options.linker['ro-base']?.trim();
+                let rw_base = options.linker['rw-base']?.trim();
+
+                let ld_flag: string[] = [];
+
+                if (xo_base) ld_flag.push(`--xo-base ${xo_base}`);
+                if (ro_base) ld_flag.push(`--ro-base ${ro_base} --entry ${ro_base}`);
+                if (rw_base) ld_flag.push(`--rw-base ${rw_base}`);
+
+                ld_flag.push('--entry Reset_Handler', '--first __Vectors');
+
+                options.linker['misc-controls'] = ld_flag.join(' ') + ' ' + (options.linker['misc-controls'] || '');
+            }
+        }
 
         if (options.afterBuildTasks === undefined) {
             options.afterBuildTasks = [];

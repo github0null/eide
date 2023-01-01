@@ -2959,10 +2959,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 prjCompileOption.floatingPointHardware = keilCompileConf.floatingPointHardware || 'none';
                 prjCompileOption.useCustomScatterFile = keilCompileConf.useCustomScatterFile;
                 prjCompileOption.storageLayout = keilCompileConf.storageLayout;
+
                 if (keilCompileConf.scatterFilePath) {
                     prjCompileOption.scatterFilePath =
                         baseInfo.rootFolder.ToRelativePath(keilCompileConf.scatterFilePath) || keilCompileConf.scatterFilePath;
+                } else { // if no scatter, will use X/O Base, R/O Base options, make scatterFilePath empty
+                    prjCompileOption.scatterFilePath = '';
                 }
+
                 // import builder options
                 const toolchain = ToolchainManager.getInstance().getToolchain('ARM', keilCompileConf.toolchain);
                 const opts = mergeBuilderOpts(toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
