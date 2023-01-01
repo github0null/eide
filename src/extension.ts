@@ -172,6 +172,17 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.import.ext.source.struct', (item) => projectExplorer.ImportSourceFromExtProject(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.modify.exclude_list', (item) => projectExplorer.openYamlConfig(item, 'src-exc-cfg')));
 
+    // symbol view editor commands
+    const virtDoc = VirtualDocument.instance();
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.symbol_view.sort_by_addr',
+        (url) => virtDoc.updateDocument(url.fsPath, undefined, 'addr', virtDoc.getLastGetterArgs(url.fsPath)[1])));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.symbol_view.sort_by_size',
+        (url) => virtDoc.updateDocument(url.fsPath, undefined, 'size', virtDoc.getLastGetterArgs(url.fsPath)[1])));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.symbol_view.disp_hide_no_sized',
+        (url) => virtDoc.updateDocument(url.fsPath, undefined, virtDoc.getLastGetterArgs(url.fsPath)[0], 'hide_no_sized')));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.symbol_view.disp_show_all',
+        (url) => virtDoc.updateDocument(url.fsPath, undefined, virtDoc.getLastGetterArgs(url.fsPath)[0], 'show_all')));
+
     // filesystem files
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.filesystem_folder_add_file', (item) => projectExplorer.fs_folderAddFile(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.filesystem_folder_add', (item) => projectExplorer.fs_folderAdd(item)));

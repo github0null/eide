@@ -26,7 +26,6 @@ import * as vscode from 'vscode';
 import * as crypto from 'crypto';
 import * as child_process from 'child_process';
 import * as fs from 'fs';
-
 import * as os from 'os';
 
 import { WorkspaceManager } from "./WorkspaceManager";

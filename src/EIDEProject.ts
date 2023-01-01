@@ -838,6 +838,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         return this.GetRootDir();
     }
 
+    public getExecutablePathWithoutSuffix(): string {
+        return [this.getRootDir().path, this.getOutputDir(), this.getProjectName()].join(File.sep);
+    }
+
     public getUid(): string {
         const miscInfo = this.GetConfiguration().config.miscInfo;
         if (miscInfo.uid == undefined) miscInfo.uid = md5(`${this.getEideDir().path}-${Date.now()}`);
@@ -1170,16 +1174,25 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         }
     }
 
+    /**
+     * get output dir top root name. like: `build`
+    */
+     getOutputRoot(): string {
+        return this.GetConfiguration().getOutDirRoot();
+    }
+
+    /**
+     * get output dir name. like: 'build\Debug'
+    */
     getOutputDir(): string {
         return this.GetConfiguration().getOutDir();
     }
 
+    /**
+     * get output dir full file system path. like: 'c:\xxx\xxx\proj\build\Debug'
+    */
     getOutputFolder(): File {
         return new File(this.ToAbsolutePath(this.GetConfiguration().getOutDir()));
-    }
-
-    getOutputRoot(): string {
-        return this.GetConfiguration().getOutDirRoot();
     }
 
     getEideDir(): File {
@@ -1974,7 +1987,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         this.registerBuiltinVar('ProjectName', () => this.GetConfiguration().config.name);
         this.registerBuiltinVar('ConfigName', () => this.GetConfiguration().config.mode);
         this.registerBuiltinVar('ProjectRoot', () => this.getRootDir().path);
-        this.registerBuiltinVar('ExecutableName', () => [this.getRootDir().path, this.GetConfiguration().getOutDir(), this.GetConfiguration().config.name].join(File.sep));
+        this.registerBuiltinVar('ExecutableName', () => this.getExecutablePathWithoutSuffix());
     }
 
     private RegisterEvent(): void {
