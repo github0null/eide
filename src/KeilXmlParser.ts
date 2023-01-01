@@ -980,8 +980,12 @@ class ARMParser extends KeilParser<KeilARMOption> {
             if (armAdsObj.LDads) {
                 const LDads = armAdsObj.LDads;
                 LDads.umfTarg = config.useCustomScatterFile ? '0' : '1';
-                const absPath = prj.ToAbsolutePath(config.scatterFilePath);
-                LDads.ScatterFile = this.ToRelativePath(absPath);
+                if (config.scatterFilePath) {
+                    const absPath = prj.ToAbsolutePath(config.scatterFilePath);
+                    LDads.ScatterFile = this.ToRelativePath(absPath);
+                } else {
+                    LDads.ScatterFile = '';
+                }
             }
 
             const info = armAdsObj.ArmAdsMisc;

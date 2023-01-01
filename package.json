@@ -35,7 +35,7 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.10.7",
+    "version": "3.10.8",
     "preview": false,
     "engines": {
         "vscode": "^1.67.0"

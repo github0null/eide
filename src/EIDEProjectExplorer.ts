@@ -1396,19 +1396,23 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                         // put virtual views
                         {
                             // Symbol Table
-                            let vFile = File.fromArray([project.getRootDir().path, `${project.getUid()}.elf-symbols`]);
-                            iList.push(new ProjTreeItem(TreeItemType.OUTPUT_FILE_ITEM, {
-                                label: `Symbol Table`,
-                                value: vFile,
-                                isVirtualFile: true,
-                                collapsibleState: vscode.TreeItemCollapsibleState.None,
-                                projectIndex: element.val.projectIndex,
-                                tooltip: `Symbols Of Program`,
-                                icon: `Table_16x.svg`
-                            }));
-                            if (VirtualDocument.instance().hasDocument(vFile.path) == false) {
-                                VirtualDocument.instance().registerDocumentGetter(vFile.path,
-                                    (uri, args) => this.printProjectBinarySymbols(uri, args[0], args[1]));
+                            // - not support sdcc, keil_c51 now !
+                            if (!['Keil_C51', 'SDCC'].includes(project.getToolchain().name)) {
+
+                                let vFile = File.fromArray([project.getRootDir().path, `${project.getUid()}.elf-symbols`]);
+                                iList.push(new ProjTreeItem(TreeItemType.OUTPUT_FILE_ITEM, {
+                                    label: `Symbol Table`,
+                                    value: vFile,
+                                    isVirtualFile: true,
+                                    collapsibleState: vscode.TreeItemCollapsibleState.None,
+                                    projectIndex: element.val.projectIndex,
+                                    tooltip: `Symbols Of Program`,
+                                    icon: `Table_16x.svg`
+                                }));
+                                if (VirtualDocument.instance().hasDocument(vFile.path) == false) {
+                                    VirtualDocument.instance().registerDocumentGetter(vFile.path,
+                                        (uri, args) => this.printProjectBinarySymbols(uri, args[0], args[1]));
+                                }
                             }
                         }
                     }
