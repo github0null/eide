@@ -1103,11 +1103,9 @@ export class OperationExplorer {
                             netReq.emit('abort');
                         });
 
-                        const headers: any = {
+                        const headers: any = utility.setProxyHeader({
                             'User-Agent': 'Mozilla/5.0'
-                        };
-
-                        utility.setProxyHeader(headers);
+                        });
 
                         if (acToken) { // if token is enabled, use it
                             headers['Authorization'] = `token ${acToken}`;

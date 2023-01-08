@@ -83,7 +83,7 @@ import { SevenZipper, CompressOption } from './Compress';
 import { DependenceManager } from './DependenceManager';
 import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import {
-    copyObject, downloadFileWithProgress, getDownloadUrlFromGitea,
+    copyObject, downloadFileWithProgress,
     runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
     genGithubHash, md5, toArray, newMarkdownString, newFileTooltipString, FileTooltipInfo, escapeXml,
     readGithubRepoTxtFile, downloadFile, notifyReloadWindow, formatPath, execInternalCommand,

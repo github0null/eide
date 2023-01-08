@@ -497,38 +497,6 @@ export async function downloadFileWithProgress(url: string, fileLable: string,
     });
 }
 
-export async function getDownloadUrlFromGitea(repo: string, folder: string, fileName: string): Promise<any | Error | undefined> {
-
-    return new Promise(async (resolve) => {
-
-        const req = new NetRequest();
-
-        const res = await req.Request<any, any>({
-            host: `git.github0null.io`,
-            path: `/api/v1/repos/root/${repo}/contents/${folder}`,
-            timeout: 3000,
-            headers: setProxyHeader({ 'User-Agent': 'Mozilla/5.0' }),
-            rejectUnauthorized: false, // ignore cert failed
-        }, 'https');
-
-        if (res.success == false || res.content == undefined) {
-            resolve(new Error(res.msg || `Can't connect to git repo !`));
-            return;
-        }
-
-        let fInfo: any | undefined;
-
-        for (const fileInfo of res.content) {
-            if (fileInfo['name'] == fileName) {
-                fInfo = fileInfo;
-                break;
-            }
-        }
-
-        resolve(fInfo);
-    });
-}
-
 export async function readGithubRepoFolder(repo_url: string, token?: vscode.CancellationToken): Promise<GitFileInfo[] | Error> {
 
     // URL: https://api.github.com/repos/github0null/eide-doc/contents/eide-template-list

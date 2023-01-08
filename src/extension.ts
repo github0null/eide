@@ -576,18 +576,18 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
     const binType = '7z';
 
     // binaries download site
-    const downloadSites: string[] = [
+    let downloadSites: string[] = [
         `https://raw-github.github0null.io/github0null/eide-resource/master/binaries/${platform.getRuntimeId()}/bin-${binVersion}.${binType}`,
         `https://raw-github.em-ide.com/github0null/eide-resource/master/binaries/${platform.getRuntimeId()}/bin-${binVersion}.${binType}`,
+        `https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/${platform.getRuntimeId()}/bin-${binVersion}.${binType}`
     ];
 
-    /* random select the order of site */
-    if (Math.random() > 0.5) {
-        downloadSites.reverse();
+    // random order
+    {
+        const sValMap: Map<string, number> = new Map();
+        downloadSites.forEach(s => sValMap.set(s, Math.floor(Math.random() * 100)));
+        downloadSites = downloadSites.sort((a, b) => (sValMap.get(a) || 0) - (sValMap.get(b) || 0));
     }
-
-    // add github default download url
-    downloadSites.push(`https://raw.githubusercontent.com/github0null/eide-resource/master/binaries/${platform.getRuntimeId()}/bin-${binVersion}.${binType}`);
 
     let installedDone = false;
 
