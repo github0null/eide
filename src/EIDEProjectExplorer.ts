@@ -1681,7 +1681,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     // iar fmt:
                     //   # Name                                Value      Sec Type Bd Size   Group Other
                     case 'IAR_ARM':
-                        elfpath = prj.getExecutablePathWithoutSuffix() + '.out';
+                        elfpath = prj.getExecutablePathWithoutSuffix() + '.elf';
                         elftool = [toolchain.getToolchainDir().path, 'bin', `ielfdumparm${exeSuffix()}`].join(File.sep);
                         elfcmds = ['-s', '.symtab', elfpath];
                         symMatcher = /^\s*\d+:\s+(?<name>[^\s]+)\s+(?<addr>0x[0-9a-f]+)\s+(?:[^\s]+)\s+(?<type>[^\s]+\s+[^\s]+)(?<size>\s+0x[0-9a-f]+)?/i;
