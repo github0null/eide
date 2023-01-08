@@ -97,6 +97,7 @@
         "iconv-lite": "^0.5.0",
         "ini": "^2.0.0",
         "jsonc": "^2.0.0",
+        "mathjs": "^11.5.0",
         "micromatch": "^4.0.4",
         "node-7z": "^3.0.0",
         "vscode-cpptools": "^5.0.0",
