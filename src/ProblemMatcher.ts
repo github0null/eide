@@ -276,14 +276,22 @@ export function parseKeilc51CompilerLog(projApi: ProjectBaseApi, logfile: File):
     return result;
 }
 
+//
+// example:
+//   "c:\Users\xxx\plates\iar\startup_stm32f4xx.s",190 Warning[25]: Label 'BusFault_Handler' is defined pubweak in a section implicitly declared root
+//   "c:\Users\xxxxaster\src\User\main.c",65  Error[Pe065]: 
+//          expected a ";"
+//   "c:\UsersxxxxAR-master\src\User\main.c",107  Warning[Pe223]: 
+//          function "LCD_2004_Init" declared implicitly
 export function parseIarCompilerLog(projApi: ProjectBaseApi, logfile: File): CompilerDiagnostics {
 
     const pattern = {
-        "regexp": "^\\s*\"([^\"]+)\",(\\d+)\\s+([a-z\\s]+)\\[(\\w+)\\]:",
+        "regexp": "^\\s*\"([^\"]+)\",(\\d+)\\s+([a-z\\s]+)\\[(\\w+)\\]:(.+)?",
         "file": 1,
         "line": 2,
         "severity": 3,
-        "code": 4
+        "code": 4,
+        "message": 5
     };
 
     const matcher = new RegExp(pattern.regexp, 'i');
@@ -295,11 +303,15 @@ export function parseIarCompilerLog(projApi: ProjectBaseApi, logfile: File): Com
         const m = matcher.exec(line);
         if (m && m.length > 4) {
 
-            const fspath = projApi.toAbsolutePath(m[pattern.file]);
-            const message = ccLogLines[++idx].trim();
-            const line = parseInt(m[pattern.line]);
+            const fspath   = projApi.toAbsolutePath(m[pattern.file]);
+            let   message  = m[pattern.message]?.trim();
+            const line     = parseInt(m[pattern.line]);
             const severity = m[pattern.severity].trim();
-            const errCode = m[pattern.code].trim();
+            const errCode  = m[pattern.code].trim();
+
+            if (!message) {
+                message = ccLogLines[++idx].trim();
+            }
 
             const diags = result[fspath] || [];
             if (result[fspath] == undefined) result[fspath] = diags;
