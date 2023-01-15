@@ -42,6 +42,34 @@ import { ExeCmd } from '../lib/node-utility/Executable';
 import { GlobalEvent } from './GlobalEvents';
 import { SettingManager } from './SettingManager';
 
+export function sortPaths(pathList: string[], sep?: string): string[] {
+
+    let plist: string[][] = pathList.map(p => p.split(/\\|\//));
+
+    plist = plist.sort((p1, p2) => {
+
+        const minLen = Math.min(p1.length, p2.length);
+
+        for (let i = 0; i < minLen; i++) {
+
+            const e1 = p1[i];
+            const e2 = p2[i];
+
+            if (e1.length != e2.length)
+                return e1.length - e2.length;
+
+            if (e1 == e2)
+                continue;
+
+            return e1.localeCompare(e2);
+        }
+
+        return p1.length - p2.length;
+    });
+
+    return plist.map(pl => pl.join(sep || File.sep));
+}
+
 export function mergeEnv(old_kv: any, new_kv: any, prependPath?: boolean): any {
 
     const pnam = platform.osType() == 'win32' ? 'Path' : 'PATH';
