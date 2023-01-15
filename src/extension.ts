@@ -1146,7 +1146,7 @@ let prj_count: number = 0;
 function RegisterGlobalEvent() {
 
     LogAnalyzer.on('Log', (msg) => {
-        // no workspace, log to output pannel
+        // no workspace, log to output panel
         if (LogAnalyzer.GetInstance().getLogListenerCount() < 2) {
             GlobalEvent.emit('globalLog', msg);
         }

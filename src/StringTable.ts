@@ -563,8 +563,8 @@ export const project_exist_txt = [
 ][langIndex];
 
 export const project_load_failed = [
-    '项目加载失败 !',
-    'Project Load Failed !'
+    '项目加载失败 ! 打开输出面板查看日志以获取更多细节',
+    'Project Load Failed ! Please open output panel and check log'
 ][langIndex];
 
 export const project_is_opened = [
@@ -585,6 +585,11 @@ export const view_str$msg$err_ept_hash = [
 export const view_str$msg$err_ewt_hash = [
     '这个模板的哈希值不正确，我们无法安装它！',
     `This template has incorrect hash and we can't install it !`
+][langIndex];
+
+export const view_str$prompt$project_is_opened_by_another = [
+    `无法锁定项目 '{path}'，这个项目可能已被其他 EIDE 实例打开了 ！`,
+    `Can't lock project: '{path}', maybe this project has been opened by another EIDE instance !`
 ][langIndex];
 
 //---------------Select string------------------

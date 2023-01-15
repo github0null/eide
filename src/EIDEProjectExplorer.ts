@@ -2022,6 +2022,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         } catch (err) {
             GlobalEvent.emit('msg', newMessage('Warning', project_load_failed));
             GlobalEvent.emit('globalLog', ExceptionToMessage(err, 'Error'));
+            GlobalEvent.emit('globalLog.show');
             return undefined;
         }
     }
