@@ -33,6 +33,8 @@ import * as NodePath from 'path';
 import * as CmsisConfigParser from './CmsisConfigParser'
 import * as os from 'os'
 import * as platform from './Platform';
+import * as fs from 'fs';
+import { CodeConverter } from "./CodeConverter";
 
 let _instance: WebPanelManager;
 
@@ -242,8 +244,17 @@ export class WebPanelManager {
 
     showCmsisConfigWizard(uri: vscode.Uri): void {
 
-        const srcFile = new File(uri.fsPath);
-        const lines = srcFile.Read().split(/\r\n|\n/);
+        // get current encoding for this file
+        const fencoding = vscode.workspace.getConfiguration(undefined, uri).get<string>('files.encoding') || 'utf8';
+        const inputFile = new File(uri.fsPath);
+
+        let fileContUtf8Buf = fs.readFileSync(inputFile.path);
+
+        if (fencoding != 'utf8') {
+            fileContUtf8Buf = CodeConverter.toUtf8Code(fileContUtf8Buf, fencoding);
+        }
+
+        const lines = fileContUtf8Buf.toString().split(/\r\n|\n/);
 
         let cmsisConfig: CmsisConfigParser.CmsisConfiguration | undefined;
 
@@ -268,7 +279,7 @@ export class WebPanelManager {
 
         const panel = vscode.window.createWebviewPanel(
             'cmsis_wizard_view',
-            srcFile.name,
+            inputFile.name,
             vscode.ViewColumn.One,
             panelOptions
         );
@@ -326,8 +337,18 @@ export class WebPanelManager {
                 };
 
                 try {
-                    if (!Array.isArray(data)) throw Error(`Error response type: \'${typeof (data)}\'`);
-                    srcFile.Write(data.join(os.EOL));
+                    if (!Array.isArray(data)) {
+                        throw Error(`Error response type: \'${typeof (data)}\'`);
+                    }
+
+                    const fileContent = data.join(os.EOL);
+
+                    if (fencoding != 'utf8') {
+                        fs.writeFileSync(inputFile.path, CodeConverter.toTargetCode(fileContent, fencoding));
+                    } else {
+                        inputFile.Write(fileContent);
+                    }
+
                     status.success = true;
                     status.msg = 'Save Done !';
                 } catch (error) {

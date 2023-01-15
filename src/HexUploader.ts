@@ -312,12 +312,11 @@ class JLinkUploader extends HexUploader<any> {
         jlinkCommandtemplate = this.project.resolveEnvVar(jlinkCommandtemplate);
         jlinkCommandtemplate = jlinkCommandtemplate + os.EOL + 'exit'; // append 'exit' command
 
-        const codeConverter = new CodeConverter();
         const codePage = ResManager.getLocalCodePage();
 
         // write commands file
-        if (codePage && codeConverter.ExistCode(codePage)) {
-            fs.writeFileSync(jlinkCommandsFile.path, codeConverter.toTargetCode(jlinkCommandtemplate, codePage));
+        if (codePage && CodeConverter.existCode(codePage)) {
+            fs.writeFileSync(jlinkCommandsFile.path, CodeConverter.toTargetCode(jlinkCommandtemplate, codePage));
         } else {
             jlinkCommandsFile.Write(jlinkCommandtemplate);
         }

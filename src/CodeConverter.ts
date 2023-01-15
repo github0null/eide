@@ -58,7 +58,7 @@ export class CodeConverter {
         return str;
     }
 
-    private getCodeType(bomHead: Buffer): CodeType {
+    private static getCodeType(bomHead: Buffer): CodeType {
 
         let codeType: CodeType;
 
@@ -111,27 +111,27 @@ export class CodeConverter {
         return codeType;
     }
 
-    GetCodeType(file: File): Promise<CodeType> {
+    static getFileCodeType(file: File): Promise<CodeType> {
         return new Promise((resolve) => {
             const stream = fs.createReadStream(file.path);
             stream.on('readable', () => {
                 let bomHead: Buffer = stream.read(4);
                 stream.close();
-                resolve(this.getCodeType(bomHead));
+                resolve(CodeConverter.getCodeType(bomHead));
             });
         });
     }
 
-    getCodeTypeSync(file: File): CodeType {
+    static getCodeTypeSync(file: File): CodeType {
         const buf = fs.readFileSync(file.path);
-        return this.getCodeType(buf);
+        return CodeConverter.getCodeType(buf);
     }
 
-    ExistCode(encoding: string): boolean {
+    static existCode(encoding: string): boolean {
         return iconv.encodingExists(encoding);
     }
 
-    ConvertToUTF8(file: File, originalEncoding: string, outPath: string) {
+    static convertFileToUTF8(file: File, originalEncoding: string, outPath: string) {
         fs.createReadStream(file.path)
             .pipe(iconv.decodeStream(originalEncoding))
             .pipe(iconv.encodeStream('utf8'))
@@ -140,7 +140,11 @@ export class CodeConverter {
             }));
     }
 
-    toTargetCode(str: string, encoding: string): Buffer {
+    static toTargetCode(str: string, encoding: string): Buffer {
         return iconv.encode(iconv.decode(Buffer.from(str), 'utf8'), encoding);
+    }
+
+    static toUtf8Code(buff: Buffer, encoding: string): Buffer {
+        return iconv.encode(iconv.decode(buff, encoding), 'utf8');
     }
 }
