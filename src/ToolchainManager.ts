@@ -1735,7 +1735,9 @@ class IARARM implements IToolchian {
     }
 
     getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
-        return [];
+        return [
+            '__ICCARM__=1'
+        ];
     }
 
     getCustomDefines(): string[] | undefined {
