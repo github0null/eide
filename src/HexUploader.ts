@@ -29,7 +29,7 @@ import { GlobalEvent } from "./GlobalEvents";
 import { SettingManager } from "./SettingManager";
 import { CmdLineHandler } from "./CmdLineHandler";
 import { gotoSet_text, view_str$download_software } from "./StringTable";
-import { CodeConverter } from "./CodeConverter";
+import { EncodingConverter } from "./EncodingConverter";
 import { ToolchainName } from "./ToolchainManager";
 import { runShellCommand } from './utility';
 import { WorkspaceManager } from "./WorkspaceManager";
@@ -315,8 +315,8 @@ class JLinkUploader extends HexUploader<any> {
         const codePage = ResManager.getLocalCodePage();
 
         // write commands file
-        if (codePage && CodeConverter.existCode(codePage)) {
-            fs.writeFileSync(jlinkCommandsFile.path, CodeConverter.toTargetCode(jlinkCommandtemplate, codePage));
+        if (codePage && EncodingConverter.existCode(codePage)) {
+            fs.writeFileSync(jlinkCommandsFile.path, EncodingConverter.toTargetCode(jlinkCommandtemplate, codePage));
         } else {
             jlinkCommandsFile.Write(jlinkCommandtemplate);
         }

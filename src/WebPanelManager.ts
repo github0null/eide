@@ -34,7 +34,7 @@ import * as CmsisConfigParser from './CmsisConfigParser'
 import * as os from 'os'
 import * as platform from './Platform';
 import * as fs from 'fs';
-import { CodeConverter } from "./CodeConverter";
+import { EncodingConverter } from "./EncodingConverter";
 
 let _instance: WebPanelManager;
 
@@ -251,7 +251,7 @@ export class WebPanelManager {
         let fileContUtf8Buf = fs.readFileSync(inputFile.path);
 
         if (fencoding != 'utf8') {
-            fileContUtf8Buf = CodeConverter.toUtf8Code(fileContUtf8Buf, fencoding);
+            fileContUtf8Buf = EncodingConverter.toUtf8Code(fileContUtf8Buf, fencoding);
         }
 
         const lines = fileContUtf8Buf.toString().split(/\r\n|\n/);
@@ -344,7 +344,7 @@ export class WebPanelManager {
                     const fileContent = data.join(os.EOL);
 
                     if (fencoding != 'utf8') {
-                        fs.writeFileSync(inputFile.path, CodeConverter.toTargetCode(fileContent, fencoding));
+                        fs.writeFileSync(inputFile.path, EncodingConverter.toTargetCode(fileContent, fencoding));
                     } else {
                         inputFile.Write(fileContent);
                     }

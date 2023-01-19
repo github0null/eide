@@ -26,7 +26,7 @@ import * as iconv from 'iconv-lite';
 import { File } from '../lib/node-utility/File';
 import * as fs from 'fs';
 
-export enum CodeType {
+export enum EncodingType {
     UTF8 = 'utf8',
     UNICODE = 'unicode',
     UTF16BE = 'utf16be',
@@ -36,7 +36,7 @@ export enum CodeType {
     NULL = 'null'
 }
 
-export class CodeConverter {
+export class EncodingConverter {
 
     static trimUtf8BomHeader(str: string | Buffer): string {
 
@@ -58,73 +58,73 @@ export class CodeConverter {
         return str;
     }
 
-    private static getCodeType(bomHead: Buffer): CodeType {
+    private static getCodeType(bomHead: Buffer): EncodingType {
 
-        let codeType: CodeType;
+        let codeType: EncodingType;
 
         if (bomHead && bomHead.length === 4) {
 
             switch (bomHead[0]) {
                 case 0xfe:
                     if (bomHead[1] === 0xff) {
-                        codeType = CodeType.UTF16BE;
+                        codeType = EncodingType.UTF16BE;
                     }
                     else {
-                        codeType = CodeType.NULL;
+                        codeType = EncodingType.NULL;
                     }
                     break;
                 case 0xef:
                     if (bomHead[1] === 0xbb && bomHead[2] === 0xbf) {
-                        codeType = CodeType.UTF8;
+                        codeType = EncodingType.UTF8;
                     }
                     else {
-                        codeType = CodeType.NULL;
+                        codeType = EncodingType.NULL;
                     }
                     break;
                 case 0x00:
                     if (bomHead[1] === 0x00 && bomHead[2] === 0xfe && bomHead[3] === 0xff) {
-                        codeType = CodeType.UTF32BE;
+                        codeType = EncodingType.UTF32BE;
                     }
                     else {
-                        codeType = CodeType.NULL;
+                        codeType = EncodingType.NULL;
                     }
                     break;
                 case 0xff:
                     if (bomHead[1] === 0xfe && bomHead[2] === 0x00 && bomHead[3] === 0x00) {
-                        codeType = CodeType.UTF32LE;
+                        codeType = EncodingType.UTF32LE;
                     }
                     else if (bomHead[1] === 0xfe) {
-                        codeType = CodeType.UNICODE;
+                        codeType = EncodingType.UNICODE;
                     }
                     else {
-                        codeType = CodeType.NULL;
+                        codeType = EncodingType.NULL;
                     }
                     break;
                 default:
-                    codeType = CodeType.ASCII;
+                    codeType = EncodingType.ASCII;
                     break;
             }
         } else {
-            codeType = codeType = CodeType.NULL;
+            codeType = codeType = EncodingType.NULL;
         }
 
         return codeType;
     }
 
-    static getFileCodeType(file: File): Promise<CodeType> {
+    static getFileCodeType(file: File): Promise<EncodingType> {
         return new Promise((resolve) => {
             const stream = fs.createReadStream(file.path);
             stream.on('readable', () => {
                 let bomHead: Buffer = stream.read(4);
                 stream.close();
-                resolve(CodeConverter.getCodeType(bomHead));
+                resolve(EncodingConverter.getCodeType(bomHead));
             });
         });
     }
 
-    static getCodeTypeSync(file: File): CodeType {
+    static getCodeTypeSync(file: File): EncodingType {
         const buf = fs.readFileSync(file.path);
-        return CodeConverter.getCodeType(buf);
+        return EncodingConverter.getCodeType(buf);
     }
 
     static existCode(encoding: string): boolean {
