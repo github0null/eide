@@ -412,6 +412,13 @@ export class ToolchainManager {
         }
     }
 
+    getToolchainPrefix(toolchainName: ToolchainName): string | undefined {
+        const toolchain = this.toolchainMap.get(toolchainName);
+        if (toolchain && toolchain.getToolchainPrefix) {
+            return toolchain.getToolchainPrefix();
+        }
+    }
+
     isToolchainPathReady(name: ToolchainName): boolean {
         return this.getToolchainExecutableFolder(name)?.IsDir() || false;
     }
@@ -1728,7 +1735,9 @@ class IARARM implements IToolchian {
     }
 
     getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
-        return [];
+        return [
+            '__ICCARM__=1'
+        ];
     }
 
     getCustomDefines(): string[] | undefined {

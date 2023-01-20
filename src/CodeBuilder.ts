@@ -29,6 +29,7 @@ import * as events from 'events';
 import * as globmatch from 'micromatch'
 import * as os from 'os';
 import * as child_process from 'child_process';
+import * as mathjs from 'mathjs';
 
 import { AbstractProject, VirtualSource } from "./EIDEProject";
 import { ResManager } from "./ResManager";
@@ -425,14 +426,46 @@ export abstract class CodeBuilder {
         if (builderOptions.ram == undefined &&
             builderOptions.env &&
             builderOptions.env['MCU_RAM_SIZE']) {
-            builderOptions.ram = parseInt(builderOptions.env['MCU_RAM_SIZE']) || undefined;
+
+            const expr = (<string>builderOptions.env['MCU_RAM_SIZE']);
+            const expr_args = {
+                B: 1,
+                K: 1024,
+                M: 1024 * 1024,
+                G: 1024 * 1024 * 1024
+            };
+
+            try {
+                builderOptions.ram = mathjs.evaluate(expr, expr_args) as number || undefined;
+            } catch (error) {
+                // nothing todo
+            }
+
+            if (builderOptions.ram && builderOptions.ram <= 0)
+                builderOptions.ram = undefined;
         }
 
         // set rom size from env
         if (builderOptions.rom == undefined &&
             builderOptions.env &&
             builderOptions.env['MCU_ROM_SIZE']) {
-            builderOptions.rom = parseInt(builderOptions.env['MCU_ROM_SIZE']) || undefined;
+
+            const expr = (<string>builderOptions.env['MCU_ROM_SIZE']);
+            const expr_args = {
+                B: 1,
+                K: 1024,
+                M: 1024 * 1024,
+                G: 1024 * 1024 * 1024
+            };
+
+            try {
+                builderOptions.rom = mathjs.evaluate(expr, expr_args) as number || undefined;
+            } catch (error) {
+                // nothing todo
+            }
+
+            if (builderOptions.rom && builderOptions.rom <= 0)
+                builderOptions.rom = undefined;
         }
 
         // handle options by toolchain

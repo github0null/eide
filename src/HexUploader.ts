@@ -29,7 +29,7 @@ import { GlobalEvent } from "./GlobalEvents";
 import { SettingManager } from "./SettingManager";
 import { CmdLineHandler } from "./CmdLineHandler";
 import { gotoSet_text, view_str$download_software } from "./StringTable";
-import { CodeConverter } from "./CodeConverter";
+import { EncodingConverter } from "./EncodingConverter";
 import { ToolchainName } from "./ToolchainManager";
 import { runShellCommand } from './utility';
 import { WorkspaceManager } from "./WorkspaceManager";
@@ -312,12 +312,11 @@ class JLinkUploader extends HexUploader<any> {
         jlinkCommandtemplate = this.project.resolveEnvVar(jlinkCommandtemplate);
         jlinkCommandtemplate = jlinkCommandtemplate + os.EOL + 'exit'; // append 'exit' command
 
-        const codeConverter = new CodeConverter();
         const codePage = ResManager.getLocalCodePage();
 
         // write commands file
-        if (codePage && codeConverter.ExistCode(codePage)) {
-            fs.writeFileSync(jlinkCommandsFile.path, codeConverter.toTargetCode(jlinkCommandtemplate, codePage));
+        if (codePage && EncodingConverter.existCode(codePage)) {
+            fs.writeFileSync(jlinkCommandsFile.path, EncodingConverter.toTargetCode(jlinkCommandtemplate, codePage));
         } else {
             jlinkCommandsFile.Write(jlinkCommandtemplate);
         }

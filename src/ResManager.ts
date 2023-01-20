@@ -41,7 +41,7 @@ import { SettingManager } from "./SettingManager";
 import * as utility from './utility'
 import { CmdLineHandler } from "./CmdLineHandler";
 import * as yaml from 'yaml';
-import { CodeConverter } from "./CodeConverter";
+import { EncodingConverter } from "./EncodingConverter";
 import { jsonc } from "jsonc";
 
 let resManager: ResManager | undefined;
@@ -140,6 +140,10 @@ export class ResManager extends events.EventEmitter {
         return resManager;
     }
 
+    static instance(): ResManager {
+        return ResManager.GetInstance();
+    }
+
     static getLocalCodePage(): string | undefined {
         return codePage;
     }
@@ -161,7 +165,7 @@ export class ResManager extends events.EventEmitter {
         try {
             const cmd = this.getSerialPortExe().noSuffixName;
             const data = ChildProcess.execSync(cmd, { env: process.env });
-            const portList: string[] = JSON.parse(CodeConverter.trimUtf8BomHeader(data));
+            const portList: string[] = JSON.parse(EncodingConverter.trimUtf8BomHeader(data));
             if (!Array.isArray(portList)) { throw Error("get current port list error !"); }
             return portList;
         } catch (error) {
@@ -221,6 +225,29 @@ export class ResManager extends events.EventEmitter {
 
     getAppConfig<T extends any>(): T {
         return this.appConfig;
+    }
+
+    getAppUsrData(): { [key: string]: any } | undefined {
+
+        const dataFile = File.fromArray([this.GetAppDataDir().path, 'data.yaml']);
+
+        if (dataFile.IsFile()) {
+            try {
+                return yaml.parse(dataFile.Read());
+            } catch (error) {
+                // nothing todo
+            }
+        }
+    }
+
+    setAppUsrData(key: string, val: any): void {
+
+        let data = this.getAppUsrData() || {};
+
+        data[key] = val;
+
+        File.fromArray([this.GetAppDataDir().path, 'data.yaml'])
+            .Write(yaml.stringify(data));
     }
 
     //=====================

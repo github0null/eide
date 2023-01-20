@@ -6,6 +6,22 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.10.10] revision
+
+**New**:
+  - `Project Explorer`: Lock opened project.
+  - `Environment Variables View`: Allow show all available variables.
+
+**Fix**:
+  - `Symbol View`: Not found elf path when use IAR ARM toolchain.
+
+**Optimize**:
+  - `Environment Variables`: Allow use 'K, M, G' in 'MCU_RAM_SIZE', 'MCU_ROM_SIZE' variables.
+  - `CMSIS Config Wizard`: Use workspace encoding for cmsis config wizard.
+  - `Github Proxy`: Optimize proxy, enable proxy for 'GMT+8:00' timezone by default.
+
+***
+
 ### [v3.10.9] update
 
 **New**:

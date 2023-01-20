@@ -714,11 +714,11 @@ export class OperationExplorer {
                     kind: vscode.QuickPickItemKind.Separator,
                 },
                 {
-                    label: 'GNU Arm Embedded Toolchain (arm-none-eabi-gcc)',
+                    label: `GNU Arm Embedded Toolchain (${toolchainManager.getToolchainPrefix('GCC')}gcc)`,
                     type: 'GCC',
                     description: this.getStatusTxt(toolchainManager.isToolchainPathReady('GCC'))
                         + ` Loc: ${toolchainManager.getToolchainExecutableFolder('GCC')?.path}`,
-                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'GNU Arm Embedded Toolchain'),
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', `GNU Arm Embedded Toolchain`),
                     buttons: [
                         {
                             iconPath: vscode.Uri.file(resManager.GetIconByName('EditTitleString_16x.svg').path),
@@ -727,11 +727,11 @@ export class OperationExplorer {
                     ]
                 },
                 {
-                    label: 'RISC-V GCC Toolchain (riscv-gcc)',
+                    label: `RISC-V GCC Toolchain (${toolchainManager.getToolchainPrefix('RISCV_GCC')}gcc)`,
                     type: 'RISCV_GCC',
                     description: this.getStatusTxt(toolchainManager.isToolchainPathReady('RISCV_GCC'))
                         + ` Loc: ${toolchainManager.getToolchainExecutableFolder('RISCV_GCC')?.path}`,
-                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'RISC-V GCC Toolchain'),
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', `RISC-V GCC Toolchain`),
                     buttons: [
                         {
                             iconPath: vscode.Uri.file(resManager.GetIconByName('EditTitleString_16x.svg').path),
@@ -740,11 +740,11 @@ export class OperationExplorer {
                     ]
                 },
                 {
-                    label: 'Universal GCC Toolchain (gcc)',
+                    label: `Universal GCC Toolchain (${toolchainManager.getToolchainPrefix('ANY_GCC')}gcc)`,
                     type: 'ANY_GCC',
                     description: this.getStatusTxt(toolchainManager.isToolchainPathReady('ANY_GCC'))
                         + ` Loc: ${toolchainManager.getToolchainExecutableFolder('ANY_GCC')?.path}`,
-                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ANY GCC Toolchain'),
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', `ANY GCC Toolchain`),
                     buttons: [
                         {
                             iconPath: vscode.Uri.file(resManager.GetIconByName('EditTitleString_16x.svg').path),
@@ -1103,11 +1103,9 @@ export class OperationExplorer {
                             netReq.emit('abort');
                         });
 
-                        const headers: any = {
+                        const headers: any = utility.setProxyHeader({
                             'User-Agent': 'Mozilla/5.0'
-                        };
-
-                        utility.setProxyHeader(headers);
+                        });
 
                         if (acToken) { // if token is enabled, use it
                             headers['Authorization'] = `token ${acToken}`;

@@ -42,6 +42,34 @@ import { ExeCmd } from '../lib/node-utility/Executable';
 import { GlobalEvent } from './GlobalEvents';
 import { SettingManager } from './SettingManager';
 
+export function sortPaths(pathList: string[], sep?: string): string[] {
+
+    let plist: string[][] = pathList.map(p => p.split(/\\|\//));
+
+    plist = plist.sort((p1, p2) => {
+
+        const minLen = Math.min(p1.length, p2.length);
+
+        for (let i = 0; i < minLen; i++) {
+
+            const e1 = p1[i];
+            const e2 = p2[i];
+
+            if (e1.length != e2.length)
+                return e1.length - e2.length;
+
+            if (e1 == e2)
+                continue;
+
+            return e1.localeCompare(e2);
+        }
+
+        return p1.length - p2.length;
+    });
+
+    return plist.map(pl => pl.join(sep || File.sep));
+}
+
 export function mergeEnv(old_kv: any, new_kv: any, prependPath?: boolean): any {
 
     const pnam = platform.osType() == 'win32' ? 'Path' : 'PATH';
@@ -260,21 +288,21 @@ export function wrapCommand(cmds: string[]): string {
     }).join(' ');
 }
 
-export function md5(str: string): string {
+export function md5(str_or_buff: string | Buffer): string {
     const md5 = crypto.createHash('md5');
-    md5.update(str);
+    md5.update(str_or_buff);
     return md5.digest('hex');
 }
 
-export function sha256(str: string): string {
+export function sha256(str_or_buff: string | Buffer): string {
     const md5 = crypto.createHash('sha256');
-    md5.update(str);
+    md5.update(str_or_buff);
     return md5.digest('hex');
 }
 
-export function sha1(str: string): string {
+export function sha1(str_or_buff: string | Buffer): string {
     const md5 = crypto.createHash('sha1');
-    md5.update(str);
+    md5.update(str_or_buff);
     return md5.digest('hex');
 }
 
@@ -344,8 +372,15 @@ export function redirectHost(url: string) {
     return url;
 }
 
-export function setProxyHeader(headers: { [key: string]: string }): { [key: string]: string } {
-    // TODO
+export function setProxyHeader(headers: { [key: string]: string | undefined }): { [key: string]: string | undefined } {
+
+    try {
+        const proxyUtils = require('./Private/GithubProxy');
+        proxyUtils.setProxyHeader(headers);
+    } catch (error) {
+        // ignore error
+    }
+
     return headers;
 }
 
@@ -494,38 +529,6 @@ export async function downloadFileWithProgress(url: string, fileLable: string,
         }
 
         resolveIf(result);
-    });
-}
-
-export async function getDownloadUrlFromGitea(repo: string, folder: string, fileName: string): Promise<any | Error | undefined> {
-
-    return new Promise(async (resolve) => {
-
-        const req = new NetRequest();
-
-        const res = await req.Request<any, any>({
-            host: `git.github0null.io`,
-            path: `/api/v1/repos/root/${repo}/contents/${folder}`,
-            timeout: 3000,
-            headers: setProxyHeader({ 'User-Agent': 'Mozilla/5.0' }),
-            rejectUnauthorized: false, // ignore cert failed
-        }, 'https');
-
-        if (res.success == false || res.content == undefined) {
-            resolve(new Error(res.msg || `Can't connect to git repo !`));
-            return;
-        }
-
-        let fInfo: any | undefined;
-
-        for (const fileInfo of res.content) {
-            if (fileInfo['name'] == fileName) {
-                fInfo = fileInfo;
-                break;
-            }
-        }
-
-        resolve(fInfo);
     });
 }
 

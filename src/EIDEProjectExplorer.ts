@@ -83,11 +83,12 @@ import { SevenZipper, CompressOption } from './Compress';
 import { DependenceManager } from './DependenceManager';
 import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import {
-    copyObject, downloadFileWithProgress, getDownloadUrlFromGitea,
+    copyObject, downloadFileWithProgress,
     runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
     genGithubHash, md5, toArray, newMarkdownString, newFileTooltipString, FileTooltipInfo, escapeXml,
     readGithubRepoTxtFile, downloadFile, notifyReloadWindow, formatPath, execInternalCommand,
-    copyAndMakeObjectKeysToLowerCase
+    copyAndMakeObjectKeysToLowerCase,
+    sortPaths
 } from './utility';
 import { concatSystemEnvPath, DeleteDir, exeSuffix, kill, osType, DeleteAllChildren } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
@@ -109,6 +110,7 @@ import * as iarParser from './IarProjectParser';
 import * as ArmCpuUtils from './ArmCpuUtils';
 import { ShellFlasherIndexItem } from './WebInterface/WebInterface';
 import { jsonc } from 'jsonc';
+import * as TxtTable from 'table'
 
 enum TreeItemType {
     SOLUTION,
@@ -1164,7 +1166,13 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                         const keyList = config.CustomDep_GetEnabledKeys();
 
                         for (const key of keyList) {
-                            const depValues: string[] = (<any>customDep)[key];
+
+                            let depValues: string[] = (<any>customDep)[key];
+
+                            if (key == 'incList' || key == 'libList') { // is path list ?
+                                depValues = sortPaths(depValues.map((val) => project.toRelativePath(val)), '/');
+                            }
+
                             if (Array.isArray(depValues)) {
                                 iList.push(new ProjTreeItem(TreeItemType.DEPENDENCE_GROUP_ARRAY_FIELD, {
                                     value: config.GetDepKeyDesc(key),
@@ -1173,9 +1181,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                         `- **Count:** \`${depValues.length}\``]),
                                     obj: new ModifiableDepInfo('None', key),
                                     childKey: key,
-                                    child: depValues
-                                        .map((val) => { return project.toRelativePath(val); })
-                                        .sort((val_1, val_2) => { return val_1.length - val_2.length; }),
+                                    child: depValues,
                                     projectIndex: element.val.projectIndex
                                 }));
                             }
@@ -1681,7 +1687,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     // iar fmt:
                     //   # Name                                Value      Sec Type Bd Size   Group Other
                     case 'IAR_ARM':
-                        elfpath = prj.getExecutablePathWithoutSuffix() + '.out';
+                        elfpath = prj.getExecutablePathWithoutSuffix() + '.elf';
                         elftool = [toolchain.getToolchainDir().path, 'bin', `ielfdumparm${exeSuffix()}`].join(File.sep);
                         elfcmds = ['-s', '.symtab', elfpath];
                         symMatcher = /^\s*\d+:\s+(?<name>[^\s]+)\s+(?<addr>0x[0-9a-f]+)\s+(?:[^\s]+)\s+(?<type>[^\s]+\s+[^\s]+)(?<size>\s+0x[0-9a-f]+)?/i;
@@ -2022,6 +2028,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         } catch (err) {
             GlobalEvent.emit('msg', newMessage('Warning', project_load_failed));
             GlobalEvent.emit('globalLog', ExceptionToMessage(err, 'Error'));
+            GlobalEvent.emit('globalLog.show');
             return undefined;
         }
     }
@@ -4447,6 +4454,76 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         this.exportLocked = false;
     }
 
+    async ShowProjectVariables(item: ProjTreeItem) {
+
+        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        const prjVars = prj.getProjectVariables();
+
+        let key_max_len = 0;
+        let val_max_len = 0;
+
+        let var_lines: string[][] = [
+            ['Name', 'Value']
+        ];
+
+        for (const key in prjVars) {
+
+            const val = prjVars[key] || '';
+
+            if (key.length > key_max_len)
+                key_max_len = key.length;
+
+            if (val.length > val_max_len)
+                val_max_len = val.length;
+
+            var_lines.push([key, val]);
+        }
+
+        //
+        // make txt table
+        //
+
+        const tableCfg: TxtTable.TableUserConfig = {
+
+            header: {
+                alignment: 'center',
+                content: 'Project Variables'
+            },
+
+            columns: {
+                0: { width: key_max_len },
+                1: { width: val_max_len },
+            },
+
+            border: {
+                topBody: `─`,
+                topJoin: `┬`,
+                topLeft: `┌`,
+                topRight: `┐`,
+
+                bottomBody: `─`,
+                bottomJoin: `┴`,
+                bottomLeft: `└`,
+                bottomRight: `┘`,
+
+                bodyLeft: `│`,
+                bodyRight: `│`,
+                bodyJoin: `│`,
+
+                joinBody: `─`,
+                joinLeft: `├`,
+                joinRight: `┤`,
+                joinJoin: `┼`
+            }
+        };
+
+        const vpath = prj.toAbsolutePath('project-variables');
+        VirtualDocument.instance().updateDocument(vpath, TxtTable.table(var_lines, tableCfg));
+        vscode.window.showTextDocument(
+            vscode.Uri.parse(VirtualDocument.instance().getUriByPath(vpath)),
+            { preview: true });
+    }
+
     async AddSrcDir(item: ProjTreeItem) {
 
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
@@ -5620,31 +5697,39 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     async showIncludeDir(prjIndex: number) {
 
         const prj = this.dataProvider.GetProjectByIndex(prjIndex);
-        let pickItems: vscode.QuickPickItem[] = [];
+        const pickItems: vscode.QuickPickItem[] = [];
         const includesMap: Map<string, string> = new Map();
+
+        let includes: string[] = [];
 
         // add dependence include paths
         prj.GetConfiguration().getAllDepGroup().forEach((group) => {
             for (const dep of group.depList) {
                 for (const incPath of dep.incList) {
-                    includesMap.set(prj.toRelativePath(incPath), group.groupName);
+                    const repath = prj.toRelativePath(incPath);
+                    includes.push(repath);
+                    includesMap.set(repath, group.groupName);
                 }
             }
         });
 
         // add source include paths
         prj.getSourceIncludeList().forEach((incPath) => {
-            includesMap.set(prj.toRelativePath(incPath), 'source');
+            const repath = prj.toRelativePath(incPath);
+            includes.push(repath);
+            includesMap.set(repath, 'source');
         });
 
-        for (const keyVal of includesMap) {
+        includes = sortPaths(includes, '/');
 
-            const incPath = keyVal[0];
-            const grpName = keyVal[1];
+        for (const repath of includes) {
+
+            const incPath = repath;
+            const grpName = includesMap.get(repath);
 
             let descpLi: string[] = [];
 
-            if (grpName != ProjectConfiguration.CUSTOM_GROUP_NAME) {
+            if (grpName && grpName != ProjectConfiguration.CUSTOM_GROUP_NAME) {
                 descpLi.push(grpName);
             }
 
@@ -5657,15 +5742,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 description: descpLi.join(', ')
             });
         }
-
-        // sort result
-        pickItems = pickItems.sort((i1, i2) => {
-            if (i1.description && i2.description && i1.description != i2.description) {
-                return i1.description.localeCompare(i2.description);
-            } else {
-                return i1.label.length - i2.label.length;
-            }
-        });
 
         const item = await vscode.window.showQuickPick(pickItems, {
             placeHolder: `${pickItems.length} results, click one copy to clipboard`

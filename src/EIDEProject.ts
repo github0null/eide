@@ -59,7 +59,8 @@ import { md5, copyObject, compareVersion } from './utility';
 import { ResInstaller } from './ResInstaller';
 import {
     view_str$prompt$not_found_compiler, view_str$operation$name_can_not_be_blank,
-    view_str$operation$name_can_not_have_invalid_char
+    view_str$operation$name_can_not_have_invalid_char,
+    view_str$prompt$project_is_opened_by_another,
 } from './StringTable';
 import { SettingManager } from './SettingManager';
 import { ExeCmd } from '../lib/node-utility/Executable';
@@ -67,6 +68,7 @@ import { jsonc } from 'jsonc';
 import * as iconv from 'iconv-lite';
 import * as globmatch from 'micromatch'
 import { ICompileOptions, EventData, CurrentDevice, ArmBaseCompileConfigModel } from './EIDEProjectModules';
+import * as FileLock from '../lib/node-utility/FileLock';
 
 export class CheckError extends Error {
 }
@@ -807,6 +809,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     private builtinEnvVars: { [key: string]: () => string } = {};
 
+    private lock_handle: number | undefined;
+
     ////////////////////////////////// cpptools provider interface ///////////////////////////////////
 
     name: string = 'eide';
@@ -1177,7 +1181,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     /**
      * get output dir top root name. like: `build`
     */
-     getOutputRoot(): string {
+    getOutputRoot(): string {
         return this.GetConfiguration().getOutDirRoot();
     }
 
@@ -1265,6 +1269,12 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     }
 
     async Load(wsFile: File) {
+
+        this.lock_handle = FileLock.lock([os.tmpdir(), `${md5(wsFile.path)}.lock`].join(NodePath.sep));
+        if (this.lock_handle == undefined) {
+            throw new Error(view_str$prompt$project_is_opened_by_another.replace('{path}', wsFile.path));
+        }
+
         await this.BeforeLoad(wsFile);
         this.LoadConfigurations(wsFile);
         this.loadProjectDirectory();
@@ -1278,6 +1288,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     }
 
     Close() {
+        if (this.lock_handle) FileLock.unlock(this.lock_handle);
         this.sourceRoots.DisposeAll();
         this.configMap.Dispose();
         this.eideDirWatcher?.Close();
