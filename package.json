@@ -100,6 +100,7 @@
         "mathjs": "^11.5.0",
         "micromatch": "^4.0.4",
         "node-7z": "^3.0.0",
+        "table": "^6.8.1",
         "vscode-cpptools": "^5.0.0",
         "x2js": "3.4.1",
         "xml-formatter": "^2.6.1",
@@ -559,6 +560,10 @@
                 "command": "eide.create.clang-format.file",
                 "category": "eide",
                 "title": "Create a new .clang-format template file"
+            },
+            {
+                "command": "_cl.eide.project.show_proj_vars",
+                "title": "%eide.project.show_project_vars%"
             },
             {
                 "command": "_cl.eide.workspace.build",
@@ -1323,6 +1328,10 @@
                 },
                 {
                     "command": "_cl.eide.project.close",
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
+                },
+                {
+                    "command": "_cl.eide.project.show_proj_vars",
                     "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {

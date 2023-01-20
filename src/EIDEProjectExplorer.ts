@@ -110,6 +110,7 @@ import * as iarParser from './IarProjectParser';
 import * as ArmCpuUtils from './ArmCpuUtils';
 import { ShellFlasherIndexItem } from './WebInterface/WebInterface';
 import { jsonc } from 'jsonc';
+import * as TxtTable from 'table'
 
 enum TreeItemType {
     SOLUTION,
@@ -4451,6 +4452,76 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
 
         this.exportLocked = false;
+    }
+
+    async ShowProjectVariables(item: ProjTreeItem) {
+
+        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        const prjVars = prj.getProjectVariables();
+
+        let key_max_len = 0;
+        let val_max_len = 0;
+
+        let var_lines: string[][] = [
+            ['Name', 'Value']
+        ];
+
+        for (const key in prjVars) {
+
+            const val = prjVars[key] || '';
+
+            if (key.length > key_max_len)
+                key_max_len = key.length;
+
+            if (val.length > val_max_len)
+                val_max_len = val.length;
+
+            var_lines.push([key, val]);
+        }
+
+        //
+        // make txt table
+        //
+
+        const tableCfg: TxtTable.TableUserConfig = {
+
+            header: {
+                alignment: 'center',
+                content: 'Project Variables'
+            },
+
+            columns: {
+                0: { width: key_max_len },
+                1: { width: val_max_len },
+            },
+
+            border: {
+                topBody: `─`,
+                topJoin: `┬`,
+                topLeft: `┌`,
+                topRight: `┐`,
+
+                bottomBody: `─`,
+                bottomJoin: `┴`,
+                bottomLeft: `└`,
+                bottomRight: `┘`,
+
+                bodyLeft: `│`,
+                bodyRight: `│`,
+                bodyJoin: `│`,
+
+                joinBody: `─`,
+                joinLeft: `├`,
+                joinRight: `┤`,
+                joinJoin: `┼`
+            }
+        };
+
+        const vpath = prj.toAbsolutePath('project-variables');
+        VirtualDocument.instance().updateDocument(vpath, TxtTable.table(var_lines, tableCfg));
+        vscode.window.showTextDocument(
+            vscode.Uri.parse(VirtualDocument.instance().getUriByPath(vpath)),
+            { preview: true });
     }
 
     async AddSrcDir(item: ProjTreeItem) {
