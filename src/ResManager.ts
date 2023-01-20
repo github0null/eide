@@ -229,7 +229,7 @@ export class ResManager extends events.EventEmitter {
 
     getAppUsrData(): { [key: string]: any } | undefined {
 
-        const dataFile = File.fromArray([this.GetAppDataDir().path, 'data.yaml']);
+        const dataFile = File.fromArray([this.getEideHomeFolder().path, 'usr-data.yaml']);
 
         if (dataFile.IsFile()) {
             try {
@@ -246,8 +246,9 @@ export class ResManager extends events.EventEmitter {
 
         data[key] = val;
 
-        File.fromArray([this.GetAppDataDir().path, 'data.yaml'])
-            .Write(yaml.stringify(data));
+        this.getEideHomeFolder().CreateDir(false);
+
+        File.fromArray([this.getEideHomeFolder().path, 'usr-data.yaml']).Write(yaml.stringify(data));
     }
 
     //=====================
