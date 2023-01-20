@@ -40,7 +40,7 @@ import { ResInstaller } from './ResInstaller';
 import {
     ERROR, WARNING, INFORMATION,
     view_str$operation$serialport, view_str$operation$baudrate, view_str$operation$serialport_name,
-    txt_install_now, txt_yes
+    txt_install_now, txt_yes, view_str$prompt$feedback, rating_text, later_text
 } from './StringTable';
 import { LogDumper } from './LogDumper';
 import { StatusBarManager } from './StatusBarManager';
@@ -291,6 +291,23 @@ function postLaunchHook(extensionCtx: vscode.ExtensionContext) {
         if (timeZone != 8) {
             // disable settings: 'EIDE.Repository.UseProxy'
             SettingManager.GetInstance().setConfigValue('Repository.UseProxy', false);
+        }
+    }
+
+    // not first launch
+    else {
+
+        // A few days ago, show feedback message
+        const some_days = 7 * (24 * 3600 * 1000);
+        if (!appUsrData['Feedbacked'] &&
+            Date.now() - appUsrData['InstallTime'] > some_days) {
+            resManager.setAppUsrData('Feedbacked', true);
+            const msg = view_str$prompt$feedback;
+            vscode.window.showInformationMessage(msg, rating_text).then((ans) => {
+                if (ans == rating_text) {
+                    utility.openUrl(`https://marketplace.visualstudio.com/items?itemName=CL.eide&ssr=false#review-details`);
+                }
+            });
         }
     }
 
