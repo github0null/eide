@@ -288,21 +288,21 @@ export function wrapCommand(cmds: string[]): string {
     }).join(' ');
 }
 
-export function md5(str: string): string {
+export function md5(str_or_buff: string | Buffer): string {
     const md5 = crypto.createHash('md5');
-    md5.update(str);
+    md5.update(str_or_buff);
     return md5.digest('hex');
 }
 
-export function sha256(str: string): string {
+export function sha256(str_or_buff: string | Buffer): string {
     const md5 = crypto.createHash('sha256');
-    md5.update(str);
+    md5.update(str_or_buff);
     return md5.digest('hex');
 }
 
-export function sha1(str: string): string {
+export function sha1(str_or_buff: string | Buffer): string {
     const md5 = crypto.createHash('sha1');
-    md5.update(str);
+    md5.update(str_or_buff);
     return md5.digest('hex');
 }
 
@@ -372,8 +372,15 @@ export function redirectHost(url: string) {
     return url;
 }
 
-export function setProxyHeader(headers: { [key: string]: string }): { [key: string]: string } {
-    // TODO
+export function setProxyHeader(headers: { [key: string]: string | undefined }): { [key: string]: string | undefined } {
+
+    try {
+        const proxyUtils = require('./Private/GithubProxy');
+        proxyUtils.setProxyHeader(headers);
+    } catch (error) {
+        // ignore error
+    }
+
     return headers;
 }
 

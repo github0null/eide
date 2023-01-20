@@ -140,6 +140,10 @@ export class ResManager extends events.EventEmitter {
         return resManager;
     }
 
+    static instance(): ResManager {
+        return ResManager.GetInstance();
+    }
+
     static getLocalCodePage(): string | undefined {
         return codePage;
     }
@@ -221,6 +225,29 @@ export class ResManager extends events.EventEmitter {
 
     getAppConfig<T extends any>(): T {
         return this.appConfig;
+    }
+
+    getAppUsrData(): { [key: string]: any } | undefined {
+
+        const dataFile = File.fromArray([this.GetAppDataDir().path, 'data.yaml']);
+
+        if (dataFile.IsFile()) {
+            try {
+                return yaml.parse(dataFile.Read());
+            } catch (error) {
+                // nothing todo
+            }
+        }
+    }
+
+    setAppUsrData(key: string, val: any): void {
+
+        let data = this.getAppUsrData() || {};
+
+        data[key] = val;
+
+        File.fromArray([this.GetAppDataDir().path, 'data.yaml'])
+            .Write(yaml.stringify(data));
     }
 
     //=====================

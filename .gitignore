@@ -1,7 +1,6 @@
 /node_modules
 /out
 /out.min
-src/Telemetry/
 vsc-extension-quickstart.md
 *.vsix
 .EIDE
@@ -12,10 +11,17 @@ vsc-extension-quickstart.md
 pack.js
 test.js
 *.js.map
-**/data/config.json
-**/data/sln.record
 *.cpuprofile
 package-lock.json
+
+# private
+/src/Telemetry
+/src/Private
+
+# eide vars
+/res/data/config.json
+/res/data/sln.record
+/res/data/data.yaml
 
 # internal template projects
 res/template/projects

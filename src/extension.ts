@@ -259,20 +259,44 @@ export async function activate(context: vscode.ExtensionContext) {
     // load project in this workspace
     projectExplorer.loadWorkspace();
 
+    // hook
+    postLaunchHook(context);
+
     // launch done
     GlobalEvent.emit('extension_launch_done');
     GlobalEvent.emit('globalLog', newMessage('Info', 'Embedded IDE launch done'));
-
-    // refresh external tools now
-    ResInstaller.instance().refreshExternalToolsIndex().catch(err => {
-        GlobalEvent.emit('globalLog', ExceptionToMessage(err, 'Warning'));
-    });
 }
 
 // this method is called when your extension is deactivated
 export function deactivate() {
     GlobalEvent.emit('extension_close');
     StatusBarManager.getInstance().disposeAll();
+}
+
+function postLaunchHook(extensionCtx: vscode.ExtensionContext) {
+
+    const resManager = ResManager.instance();
+    const appUsrData = resManager.getAppUsrData() || {};
+    const isFirstLaunch = appUsrData['InstallTime'] == undefined;
+
+    // is first launch ?
+    if (isFirstLaunch) {
+
+        // setup install time
+        resManager.setAppUsrData('InstallTime', Date.now().toString());
+
+        // only enable github proxy for GMT+8:00 by default
+        const timeZone = Math.floor((new Date().getTimezoneOffset() / 60) * -1);
+        if (timeZone != 8) {
+            // disable settings: 'EIDE.Repository.UseProxy'
+            SettingManager.GetInstance().setConfigValue('Repository.UseProxy', false);
+        }
+    }
+
+    // refresh external tools now
+    ResInstaller.instance().refreshExternalToolsIndex().catch(err => {
+        GlobalEvent.emit('globalLog', ExceptionToMessage(err, 'Warning'));
+    });
 }
 
 //////////////////////////////////////////////////
@@ -704,14 +728,16 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
 
 let isEnvSetuped: boolean = false;
 
-function exportEnvToSysPath() {
+let isExport2ExtensionCtx = false;
+
+function exportEnvToSysPath(context?: vscode.ExtensionContext) {
 
     const settingManager = SettingManager.GetInstance();
     const resManager = ResManager.GetInstance();
     const builderFolder = resManager.getBuilderDir();
 
     // export some eide binaries path to system env path
-    const defEnvPath: string[] = [
+    const systemEnvPaths: string[] = [
         File.normalize(`${builderFolder.path}/bin`), // builder bin folder
         File.normalize(`${builderFolder.path}/utils`), // utils tool folder
         File.normalize(`${builderFolder.dir}/scripts`),
@@ -802,22 +828,20 @@ function exportEnvToSysPath() {
         }
     });
 
+    // append all tools to system env paths
+    pathList
+        .filter((env) => File.IsDir(env.path))
+        .forEach(envInfo => {
+            systemEnvPaths.push(envInfo.path);
+            if (envInfo.extraPath) {
+                envInfo.extraPath.forEach(p => systemEnvPaths.push(p));
+            }
+        });
+
     /* append to System Path if we not */
     if (isEnvSetuped == false) {
-
-        // append all tools env paths
-        pathList
-            .filter((env) => File.IsDir(env.path))
-            .forEach(envInfo => {
-                defEnvPath.push(envInfo.path);
-                if (envInfo.extraPath) {
-                    envInfo.extraPath.forEach(p => defEnvPath.push(p));
-                }
-            });
-
-        // apply to system env path
-        platform.prependToSysEnv(process.env, defEnvPath);
         isEnvSetuped = true;
+        platform.prependToSysEnv(process.env, systemEnvPaths);
     }
 
     /* update env key value */
@@ -833,6 +857,24 @@ function exportEnvToSysPath() {
     // 你可通过使用喜欢的 shell 将 DOTNET_CLI_TELEMETRY_OPTOUT 环境变量设置为 "1" 或 "true" 来选择退出遥测。
     // 阅读有关 .NET CLI 工具遥测的更多信息: https://aka.ms/dotnet-cli-telemetry
     process.env['DOTNET_CLI_TELEMETRY_OPTOUT'] = '1'; // disable telemetry
+
+    //
+    // export to vscode extension envs
+    //
+    if (context && !isExport2ExtensionCtx) {
+
+        isExport2ExtensionCtx = true;
+
+        context.environmentVariableCollection.persistent = false;
+
+        context.environmentVariableCollection.prepend('DOTNET_CLI_TELEMETRY_OPTOUT', '1');
+
+        for (const env of pathList) {
+            if (File.IsDir(env.path)) {
+                context.environmentVariableCollection.append(env.key, env.path);
+            }
+        }
+    }
 }
 
 async function checkAndInstallRuntime() {
@@ -1033,7 +1075,7 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
     // register telemetry hook if user enabled
     try {
         if (settingManager.isEnableTelemetry()) {
-            const TelemetryTask = require('./Telemetry/TelemetryTask');
+            const TelemetryTask = require('./Private/TelemetryTask');
             TelemetryTask.registerTelemetryHook();
         }
     } catch (error) {
@@ -1041,7 +1083,7 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
     }
 
     // set some toolpath to env
-    exportEnvToSysPath();
+    exportEnvToSysPath(context);
 
     // init status bar
     {
