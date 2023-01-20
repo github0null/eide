@@ -592,7 +592,17 @@ export const view_str$prompt$project_is_opened_by_another = [
     `Can't lock project: '{path}', maybe this project has been opened by another EIDE instance !`
 ][langIndex];
 
+export const view_str$prompt$feedback = [
+    `已经过去了一段时间，Embedded IDE 这款插件有帮到你吗？您可以在插件商店给予一个评分以帮助我们了解您的感受！`,
+    `A few days passed, has this plugin(Embedded IDE) helped you ? You can help us know how you feel by giving us a rating in the plugin store !`
+][langIndex];
+
 //---------------Select string------------------
+
+export const rating_text = [
+    '打分',
+    'Rating'
+][langIndex];
 
 export const later_text = [
     '稍后',
