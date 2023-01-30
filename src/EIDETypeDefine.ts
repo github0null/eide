@@ -1347,7 +1347,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             this.__watcherReloadDelayTimer = setTimeout((_this: ProjectConfiguration<any>) => {
                 _this.__watcherReloadDelayTimer = undefined;
                 _this.Watch();
-            }, 1600, this);
+            }, 3000, this);
         }
     }
 }

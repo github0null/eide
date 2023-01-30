@@ -6,6 +6,13 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.10.11] revision
+
+**Fix**:
+  - `Terminal Environment Variables`: Environment variable values are incorrectly linked together !
+
+***
+
 ### [v3.10.10] revision
 
 **New**:

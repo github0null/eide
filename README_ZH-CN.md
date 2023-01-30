@@ -63,3 +63,24 @@
 - [Github Issue](https://github.com/github0null/eide/issues)
 
 - [论坛: https://discuss.em-ide.com](https://discuss.em-ide.com/)
+
+***
+
+## 如何构建 ?
+
+你可以自行构建该扩展
+
+1. 安装 `NodeJS 16`
+
+2. 克隆该仓库，用 VSCode 打开该项目，并执行如下命令
+
+   ```shell
+   npm install
+   ```
+
+3. 按下快捷键 `ctrl+shift+b` 打开构建命令
+
+   - 使用 `npm: webpack` 可构建带有调试信息的扩展，稍后你可以按 F5 进行调试
+
+   - 使用 `build vsix` 构建并打包成 VSIX
+
