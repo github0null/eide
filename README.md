@@ -87,3 +87,24 @@ Supported Platforms:
 - [Github](https://github.com/github0null/eide/issues)
 
 - [Forum https://discuss.em-ide.com](https://discuss.em-ide.com/)
+
+***
+
+## How to build ?
+
+You can build this project by your self.
+
+1. Install `NodeJS 16`
+
+2. Clone this repo, Open folder by vscode and then run command: 
+
+   ```shell
+   npm install
+   ```
+
+3. Press `ctrl+shift+b` to show vscode task
+
+   - Use `npm: webpack` to build this extension, and then you can press F5 to debug it.
+
+   - Use `build vsix` to build as a vsix package.
+

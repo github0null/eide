@@ -746,8 +746,6 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
 
 let isEnvSetuped: boolean = false;
 
-let isExport2ExtensionCtx = false;
-
 function exportEnvToSysPath(context?: vscode.ExtensionContext) {
 
     const settingManager = SettingManager.GetInstance();
@@ -875,24 +873,6 @@ function exportEnvToSysPath(context?: vscode.ExtensionContext) {
     // 你可通过使用喜欢的 shell 将 DOTNET_CLI_TELEMETRY_OPTOUT 环境变量设置为 "1" 或 "true" 来选择退出遥测。
     // 阅读有关 .NET CLI 工具遥测的更多信息: https://aka.ms/dotnet-cli-telemetry
     process.env['DOTNET_CLI_TELEMETRY_OPTOUT'] = '1'; // disable telemetry
-
-    //
-    // export to vscode extension envs
-    //
-    if (context && !isExport2ExtensionCtx) {
-
-        isExport2ExtensionCtx = true;
-
-        context.environmentVariableCollection.persistent = false;
-
-        context.environmentVariableCollection.prepend('DOTNET_CLI_TELEMETRY_OPTOUT', '1');
-
-        for (const env of pathList) {
-            if (File.IsDir(env.path)) {
-                context.environmentVariableCollection.append(env.key, env.path);
-            }
-        }
-    }
 }
 
 async function checkAndInstallRuntime() {
