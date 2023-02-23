@@ -27,7 +27,7 @@ Supported Platforms:
 * Provides many project templates for quick start a project.
 * Build, rebuild, support many toolchains (armcc, gcc-arm-none-eabi, riscv-gcc, xxx-gcc, keil_c51, sdcc ...).
 * Program flash, support: jlink, stlink, openocd, pyocd ...
-* ~~Built-in serial port monitor~~ (recommended to use `Serial Monitor` plug-in).
+* ~~Built-in serial port monitor~~ (Use the `Serial Monitor` extension, it will be installed when you install this extension!).
 * Supports static checking projects by using Cppcheck.
 * Automatically generates default debug configurations for debugger plug-in `cortex-debug, STM8-Debug`.
 * Built-in many utility tools, 'CMSIS Config Wizard UI', 'Disassembly view', 'Program resource view'...

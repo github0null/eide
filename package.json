@@ -76,6 +76,9 @@
         "watch": "tsc -watch -p ./",
         "test": "npm run compile && node ./node_modules/vscode/bin/test"
     },
+    "extensionDependencies": [
+        "ms-vscode.vscode-serial-monitor"
+    ],
     "devDependencies": {
         "@types/ftp": "^0.3.31",
         "@types/iconv-lite": "0.0.1",
