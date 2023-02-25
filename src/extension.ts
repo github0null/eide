@@ -111,11 +111,10 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('eide.c51ToSdcc', () => c51ToSDCC()));
     subscriptions.push(vscode.commands.registerCommand('eide.ReloadJlinkDevs', () => reloadJlinkDevices()));
     subscriptions.push(vscode.commands.registerCommand('eide.ReloadStm8Devs', () => reloadStm8Devices()));
-    subscriptions.push(vscode.commands.registerCommand('eide.selectBaudrate', () => onSelectSerialBaudrate()));
     subscriptions.push(vscode.commands.registerCommand('eide.create.clang-format.file', () => newClangFormatFile()));
 
     // internal command
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.selectCurSerialName', () => onSelectCurSerialName()));
+    // TODO
 
     // operations
     const operationExplorer = new OperationExplorer(context);
@@ -321,11 +320,6 @@ function postLaunchHook(extensionCtx: vscode.ExtensionContext) {
 // internal vsc-commands funcs
 //////////////////////////////////////////////////
 
-let serial_curPort: string | undefined;
-let serial_nameBar: vscode.StatusBarItem | undefined;
-let serial_baudBar: vscode.StatusBarItem | undefined;
-let serial_openBar_args: string[] = [<any>null];
-
 function ShowUUID() {
     vscode.window.showInputBox({
         value: platform.GetUUID()
@@ -341,18 +335,6 @@ function reloadJlinkDevices() {
 function reloadStm8Devices() {
     if (ResManager.GetInstance().loadStm8DevList()) {
         GlobalEvent.emit('msg', newMessage('Info', 'Done !, STM8 devices list has been reloaded !'));
-    }
-}
-
-function updateSerialportBarState() {
-    if (SettingManager.GetInstance().isShowSerialportStatusbar()) {
-        StatusBarManager.getInstance().show('serialport');
-        StatusBarManager.getInstance().show('serialport-name');
-        StatusBarManager.getInstance().show('serialport-baud');
-    } else {
-        StatusBarManager.getInstance().hide('serialport');
-        StatusBarManager.getInstance().hide('serialport-name');
-        StatusBarManager.getInstance().hide('serialport-baud');
     }
 }
 
@@ -372,56 +354,6 @@ async function newClangFormatFile() {
         vscode.window.showInformationMessage(`.clang-format file was created in '${fSrc.dir}' !`);
     } else {
         vscode.window.showWarningMessage(`No opened workspace or folders !`);
-    }
-}
-
-async function onSelectSerialBaudrate() {
-
-    const baudList: string[] = [
-        '600', '1200', '2400',
-        '4800', '9600', '14400',
-        '19200', '28800', '38400',
-        '57600', '115200', '230400',
-        '460800', '576000', '921600'
-    ];
-
-    const baudrate = await vscode.window.showQuickPick(baudList, {
-        placeHolder: 'select a baudrate for serialport'
-    });
-
-    if (baudrate) {
-        SettingManager.GetInstance().setSerialBaudrate(
-            parseInt(baudrate),
-            WorkspaceManager.getInstance().hasWorkspaces() == false
-        );
-    }
-}
-
-async function onSelectCurSerialName() {
-    try {
-        const portList: string[] = ResManager.GetInstance().enumSerialPort();
-
-        if (portList.length === 0) {
-            GlobalEvent.emit('msg', newMessage('Info', 'Not found any serial port !'));
-            return;
-        }
-
-        const portName = await vscode.window.showQuickPick(portList, {
-            canPickMany: false,
-            placeHolder: 'select a serial port to open'
-        });
-
-        if (portName && portName != serial_curPort) {
-            serial_curPort = portName;
-            if (serial_nameBar) {
-                serial_nameBar.text = `${view_str$operation$serialport_name}: ${serial_curPort}`;
-                serial_nameBar.tooltip = serial_curPort;
-                serial_openBar_args[0] = serial_curPort;
-                updateSerialportBarState();
-            }
-        }
-    } catch (error) {
-        GlobalEvent.emit('error', error);
     }
 }
 
@@ -1086,49 +1018,8 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
     // init status bar
     {
         const statusBarManager = StatusBarManager.getInstance();
-        const serialDefCfg = settingManager.getPortSerialMonitorOptions();
 
-        // init default port name
-        serial_curPort = serialDefCfg.defaultPort;
-
-        // get current active port
-        try {
-            const ports = ResManager.GetInstance().enumSerialPort();
-            if (ports.length > 0) {
-                if (ports.length == 1 || !ports.includes(serialDefCfg.defaultPort)) {
-                    serial_curPort = ports[0];
-                }
-            }
-        } catch (error) {
-            // nothing todo
-        }
-
-        // serial btn
-        const serial_openBar = statusBarManager.create('serialport');
-        serial_openBar.text = '$(plug) ' + view_str$operation$serialport;
-        serial_openBar.tooltip = view_str$operation$serialport;
-        serial_openBar_args[0] = serial_curPort;
-        serial_openBar.command = {
-            title: 'open serialport',
-            command: '_cl.eide.Operation.OpenSerialPortMonitor',
-            arguments: serial_openBar_args,
-        };
-
-        // serial name btn
-        serial_nameBar = statusBarManager.create('serialport-name');
-        serial_nameBar.text = `${view_str$operation$serialport_name}: ${serial_curPort || 'none'}`;
-        serial_nameBar.tooltip = 'serial name';
-        serial_nameBar.command = '_cl.eide.selectCurSerialName';
-
-        // serial baudrate btn
-        serial_baudBar = statusBarManager.create('serialport-baud');
-        const baudrate = settingManager.getSerialBaudrate();
-        serial_baudBar.text = `${view_str$operation$baudrate}: ${baudrate}`;
-        serial_baudBar.tooltip = serial_baudBar.text;
-        serial_baudBar.command = 'eide.selectBaudrate';
-
-        // show now
-        updateSerialportBarState();
+        // TODO
     }
 
     // register msys bash profile for windows
@@ -1143,17 +1034,6 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
 
     // update onchanged
     settingManager.on('onChanged', (e) => {
-
-        /* serialport */
-        if (e.affectsConfiguration('EIDE.SerialPortMonitor.ShowStatusBar')) {
-            updateSerialportBarState();
-        }
-        else if (e.affectsConfiguration('EIDE.SerialPortMonitor.BaudRate') && serial_baudBar) {
-            const baudrate = settingManager.getSerialBaudrate();
-            serial_baudBar.text = `${view_str$operation$baudrate}: ${baudrate}`;
-            serial_baudBar.tooltip = serial_baudBar.text;
-            updateSerialportBarState();
-        }
 
         /* set some toolpath to env when path is changed */
         if (e.affectsConfiguration('EIDE.ARM.GCC.InstallDirectory') ||
