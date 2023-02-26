@@ -140,7 +140,7 @@ export abstract class CodeBuilder {
                 const rePath = this.project.ToRelativePath(source.file.path);
                 const fInfo: any = { path: rePath || source.file.path }
                 if (AbstractProject.isVirtualSourceGroup(group)) {
-                    fInfo.virtualPath = `${group.name}/${source.file.name}`.replace(`${VirtualSource.rootName}/`, '');
+                    fInfo.virtualPath = `${group.name}/${source.file.name}`;
                 }
                 srcList.push(fInfo);
             }
@@ -507,18 +507,14 @@ export abstract class CodeBuilder {
                 }
             }
 
-            if (config.toolchain === 'Keil_C51') { // disable increment compile for Keil C51
-                builderModeList.push('normal');
+            if (config.toolchain === 'Keil_C51') {
+                builderModeList.push('normal'); // disable increment build for Keil C51
             } else {
-                builderModeList.push(this.isRebuild() ? 'normal' : 'fast');
+                builderModeList.push('fast');
             }
 
             if (settingManager.isUseMultithreadMode()) {
                 builderModeList.push('multhread');
-            }
-
-            if (this.useShowParamsMode) {
-                builderModeList.push('debug');
             }
 
             // set build mode
@@ -541,6 +537,14 @@ export abstract class CodeBuilder {
         let cmds = [
             '-p', paramsPath,
         ];
+
+        if (this.isRebuild()) {
+            cmds.push('--rebuild');
+        }
+
+        if (this.useShowParamsMode) {
+            cmds.push('--only-dump-args');
+        }
 
         const extraCmd = settingManager.getBuilderAdditionalCommandLine()?.trim();
         if (extraCmd) {

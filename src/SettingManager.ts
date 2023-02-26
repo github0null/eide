@@ -138,6 +138,10 @@ export class SettingManager {
         this._event.once(event, listener);
     }
 
+    trimSettingTag(setting_id: string): string {
+        return setting_id.replace(SettingManager.TAG + '.', '');
+    }
+
     getConfiguration(): vscode.WorkspaceConfiguration {
         return vscode.workspace.getConfiguration(SettingManager.TAG);
     }
@@ -604,7 +608,7 @@ export class SettingManager {
         return this.getConfiguration().get<string>('Toolchain.AnyGcc.ToolPrefix') || '';
     }
 
-    setGccToolPrefix(id: ToolchainName, newPrefix: string, global?: boolean) {
+    setGccFamilyToolPrefix(id: ToolchainName, newPrefix: string, global?: boolean) {
 
         const region = global ? vscode.ConfigurationTarget.Global : vscode.ConfigurationTarget.Workspace;
 
@@ -620,6 +624,19 @@ export class SettingManager {
                 break;
             default:
                 break;
+        }
+    }
+
+    getGccFamilyToolPrefix(id: ToolchainName): string | undefined {
+        switch (id) {
+            case 'GCC':
+                return this.getGCCPrefix();
+            case 'RISCV_GCC':
+                return this.getRiscvToolPrefix();
+            case 'ANY_GCC':
+                return this.getAnyGccToolPrefix();
+            default:
+                return undefined;
         }
     }
 

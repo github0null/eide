@@ -35,6 +35,7 @@ import * as os from 'os'
 import * as platform from './Platform';
 import * as fs from 'fs';
 import { EncodingConverter } from "./EncodingConverter";
+import { SimpleUIConfig } from "./SimpleUIDef";
 
 let _instance: WebPanelManager;
 
@@ -43,11 +44,65 @@ export class WebPanelManager {
     private constructor() {
     }
 
-    static newInstance(): WebPanelManager {
+    static instance(): WebPanelManager {
         if (_instance === undefined) {
             _instance = new WebPanelManager();
         }
         return _instance;
+    }
+
+    showSimpleConfigUI(cfg: SimpleUIConfig, onSave: (newCfg: SimpleUIConfig) => void): Promise<void> {
+
+        const resManager = ResManager.GetInstance();
+
+        const panel = vscode.window.createWebviewPanel('eide.simple-cfg-ui',
+            cfg.title, vscode.ViewColumn.One, { enableScripts: true, retainContextWhenHidden: true });
+
+        panel.iconPath = vscode.Uri.file(resManager.GetIconByName(cfg.iconName || 'Property_16x.svg').path);
+
+        return new Promise((resolve_) => {
+
+            panel.onDidDispose(() => {
+                resolve_();
+            });
+
+            panel.webview.onDidReceiveMessage((_data: any) => {
+
+                /* it's a message */
+                if (typeof _data == 'string') {
+                    switch (_data) {
+                        case 'eide.simple-cfg-ui.launched': /* webview launched */
+                            panel.webview.postMessage(cfg);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
+                /* it's obj data */
+                else {
+                    try {
+                        onSave(_data);
+                        panel.webview.postMessage('eide.simple-cfg-ui.status.done');
+                    } catch (error) {
+                        GlobalEvent.emit('error', error);
+                        panel.webview.postMessage('eide.simple-cfg-ui.status.fail');
+                    }
+                }
+            });
+
+            const htmlFolder = File.fromArray([resManager.GetHTMLDir().path, 'simple_config_ui']);
+            const htmlFile = File.fromArray([htmlFolder.path, 'index.html']);
+
+            panel.webview.html = htmlFile.Read()
+                .replace(/"[\w\-\.\/]+?\.(?:css|js)"/ig, (str) => {
+                    const fileName = str.substr(1, str.length - 2); // remove '"'
+                    const absPath = File.normalize(htmlFolder.path + NodePath.sep + fileName);
+                    return `"${panel.webview.asWebviewUri(vscode.Uri.file(absPath)).toString()}"`;
+                });
+
+            panel.reveal();
+        });
     }
 
     showStorageLayoutView(project: AbstractProject): void {

@@ -6,6 +6,27 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.11.0] revision
+
+**New**:
+  - `Object Order For Linker`: Allow specify an order for any obj files before the builder start to link your program.
+    
+    ![](https://em-ide.com/public-assets/img/v3.11.x/obj_order_preview.png)
+
+  - `Extra Compiler Args`: Use Webview UI to replace config file. More Convenience !
+    
+    ![](https://em-ide.com/public-assets/img/v3.11.x/source_extra_args_preview.png)
+
+  - `Toolchain Configurations`: Add webview UI to configure `toolchain path` or `toolchain prefix` for current project.
+    
+    ![](https://em-ide.com/public-assets/img/v3.11.x/toolchain_cfg_preview.png)
+  
+**Change**:
+  - `Remove Built-in Serial-Monitor`: We removed built-in serial monitor for eide. Please use [ms-vscode.vscode-serial-monitor](https://marketplace.visualstudio.com/items?itemName=ms-vscode.vscode-serial-monitor) now !
+  - `Extra Compiler Args For Source Files`: For `virtualPathFiles`, pattern must start with: `<virtual_root>/`
+
+***
+
 ### [v3.10.11] revision
 
 **Fix**:
