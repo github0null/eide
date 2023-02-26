@@ -110,7 +110,7 @@ import * as iarParser from './IarProjectParser';
 import * as ArmCpuUtils from './ArmCpuUtils';
 import { ShellFlasherIndexItem } from './WebInterface/WebInterface';
 import { jsonc } from 'jsonc';
-import * as TxtTable from 'table'
+import { SimpleUIConfig, SimpleUIConfigData_input, SimpleUIConfigData_options, SimpleUIConfigData_text, SimpleUIConfigData_table, SimpleUIConfigData_boolean } from "./SimpleUIDef";
 
 enum TreeItemType {
     SOLUTION,
@@ -193,6 +193,7 @@ interface TreeItemValue {
     projectIndex: number;
     groupRegion?: GroupRegion;
     collapsibleState?: vscode.TreeItemCollapsibleState;
+    otherCtx?: { [key: string]: string | boolean | number; };
 }
 
 type ModifiableDepType = 'INC_GROUP' | 'INC_ITEM'
@@ -384,7 +385,11 @@ export class ProjTreeItem extends vscode.TreeItem {
 
         switch (suffix) {
             case '.c':
-                name = 'file_type_c.svg';
+                if (this.val.otherCtx && this.val.otherCtx['hasExtraArgs']) {
+                    name = 'file_type_c_configured.svg';
+                } else {
+                    name = 'file_type_c.svg';
+                }
                 break;
             case '.h':
                 name = 'file_type_cheader.svg';
@@ -393,7 +398,11 @@ export class ProjTreeItem extends vscode.TreeItem {
             case '.cc':
             case '.cxx':
             case '.c++':
-                name = 'file_type_cpp.svg';
+                if (this.val.otherCtx && this.val.otherCtx['hasExtraArgs']) {
+                    name = 'file_type_cpp_configured.svg';
+                } else {
+                    name = 'file_type_cpp.svg';
+                }
                 break;
             case '.hpp':
             case '.hxx':
@@ -403,7 +412,11 @@ export class ProjTreeItem extends vscode.TreeItem {
             case '.s':
             case '.asm':
             case '.a51':
-                name = 'AssemblerSourceFile_16x.svg';
+                if (this.val.otherCtx && this.val.otherCtx['hasExtraArgs']) {
+                    name = 'AssemblerSourceFile_configured_16x.svg';
+                } else {
+                    name = 'AssemblerSourceFile_16x.svg';
+                }
                 break;
             case '.lib':
             case '.a':
@@ -449,14 +462,26 @@ export class ProjTreeItem extends vscode.TreeItem {
                 name = 'FolderExclude_32x.svg';
                 break;
             case TreeItemType.FOLDER:
-                name = 'Folder_32x.svg';
+                if (this.val.otherCtx && this.val.otherCtx['hasExtraArgs']) {
+                    name = 'folder_type_config.svg';
+                } else {
+                    name = 'Folder_32x.svg';
+                }
                 break;
             case TreeItemType.FOLDER_ROOT:
-                name = 'FolderRoot_32x.svg';
+                if (this.val.otherCtx && this.val.otherCtx['hasExtraArgs']) {
+                    name = 'FolderRoot_configured_32x.svg';
+                } else {
+                    name = 'FolderRoot_32x.svg';
+                }
                 break;
             case TreeItemType.V_FOLDER:
             case TreeItemType.V_FOLDER_ROOT:
-                name = 'folder_virtual.svg';
+                if (this.val.otherCtx && this.val.otherCtx['hasExtraArgs']) {
+                    name = 'folder_type_config.svg';
+                } else {
+                    name = 'folder_virtual.svg';
+                }
                 break;
             case TreeItemType.COMPONENT_GROUP:
                 name = 'Component_16x.svg';
@@ -945,6 +970,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
             const project = this.prjList[element.val.projectIndex];
             const prjType = project.GetConfiguration().config.type;
+            const prjExtraArgs = project.getSourceExtraArgsCfg();
 
             switch (element.type) {
                 case TreeItemType.SOLUTION:
@@ -1023,12 +1049,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                 let dirDesc: string | undefined;
                                 if (rootInfo.needUpdate) dirDesc = view_str$project$needRefresh;
                                 if (!isExisted) dirDesc = view_str$project$fileNotExisted;
+                                const hasExtraArgs = project.hasExtraArgsForFolder(rootInfo.fileWatcher.file.path, prjExtraArgs);
                                 iList.push(new ProjTreeItem(TreeItemType.FOLDER_ROOT, {
                                     value: folderDispName,
                                     obj: rootInfo.fileWatcher.file,
                                     projectIndex: element.val.projectIndex,
                                     contextVal: isComponent ? 'FOLDER_ROOT_DEPS' : undefined,
                                     icon: dirIcon,
+                                    otherCtx: { hasExtraArgs: hasExtraArgs },
                                     tooltip: newFileTooltipString({
                                         name: rootInfo.displayName,
                                         path: rootInfo.fileWatcher.file.path,
@@ -1045,10 +1073,12 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                 const vFolderPath = `${VirtualSource.rootName}/${vFolder.name}`;
                                 const isExcluded = project.isExcluded(vFolderPath);
                                 const itemType = isExcluded ? TreeItemType.V_EXCFOLDER : TreeItemType.V_FOLDER_ROOT;
+                                const hasExtraArgs = project.hasExtraArgsForFolder(vFolderPath, prjExtraArgs, true);
                                 iList.push(new ProjTreeItem(itemType, {
                                     value: vFolder.name,
                                     obj: <VirtualFolderInfo>{ path: vFolderPath, vFolder: vFolder },
                                     projectIndex: element.val.projectIndex,
+                                    otherCtx: { hasExtraArgs: hasExtraArgs },
                                     tooltip: newFileTooltipString({
                                         name: vFolder.name,
                                         path: vFolderPath,
@@ -1069,12 +1099,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                 const vFilePath = `${VirtualSource.rootName}/${file.name}`;
                                 const isFileExcluded = project.isExcluded(vFilePath);
                                 const itemType = isFileExcluded ? TreeItemType.V_EXCFILE_ITEM : TreeItemType.V_FILE_ITEM;
+                                const hasExtraArgs = project.hasExtraArgsForFile(file.path, vFilePath, prjExtraArgs);
                                 iList.push(new ProjTreeItem(itemType, {
                                     value: file,
                                     collapsibleState: project.getSourceRefs(file).length > 0 ?
                                         vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
                                     obj: <VirtualFileInfo>{ path: vFilePath, vFile: vFile },
                                     projectIndex: element.val.projectIndex,
+                                    otherCtx: { hasExtraArgs: hasExtraArgs },
                                     tooltip: newFileTooltipString({
                                         name: file.name,
                                         path: file.path,
@@ -1264,6 +1296,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                     iFolderList.push(new ProjTreeItem(type, {
                                         value: f.name,
                                         obj: f,
+                                        otherCtx: {
+                                            hasExtraArgs: project.hasExtraArgsForFolder(f.path, prjExtraArgs, false)
+                                        },
                                         tooltip: newFileTooltipString({
                                             name: f.name,
                                             path: f.path,
@@ -1279,6 +1314,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                         collapsibleState: project.getSourceRefs(f).length > 0 ?
                                             vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
                                         projectIndex: element.val.projectIndex,
+                                        otherCtx: {
+                                            hasExtraArgs: project.hasExtraArgsForFile(f.path, undefined, prjExtraArgs)
+                                        },
                                         tooltip: newFileTooltipString({
                                             name: f.name,
                                             path: f.path,
@@ -1318,6 +1356,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                     value: vFolder.name,
                                     obj: <VirtualFolderInfo>{ path: vFolderPath, vFolder: vFolder },
                                     projectIndex: element.val.projectIndex,
+                                    otherCtx: {
+                                        hasExtraArgs: project.hasExtraArgsForFolder(vFolderPath, prjExtraArgs, true)
+                                    },
                                     tooltip: newFileTooltipString({
                                         name: vFolder.name,
                                         path: vFolderPath,
@@ -1344,6 +1385,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                         vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
                                     obj: <VirtualFileInfo>{ path: vFilePath, vFile: vFile },
                                     projectIndex: element.val.projectIndex,
+                                    otherCtx: {
+                                        hasExtraArgs: project.hasExtraArgsForFile(file.path, vFilePath, prjExtraArgs)
+                                    },
                                     tooltip: newFileTooltipString({
                                         name: file.name,
                                         path: file.path,
@@ -4459,69 +4503,34 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
         const prjVars = prj.getProjectVariables();
 
-        let key_max_len = 0;
-        let val_max_len = 0;
+        const vars: { [k: string]: string }[] = [];
 
-        let var_lines: string[][] = [
-            ['Name', 'Value']
-        ];
-
-        for (const key in prjVars) {
-
-            const val = prjVars[key] || '';
-
-            if (key.length > key_max_len)
-                key_max_len = key.length;
-
-            if (val.length > val_max_len)
-                val_max_len = val.length;
-
-            var_lines.push([key, val]);
-        }
-
-        //
-        // make txt table
-        //
-
-        const tableCfg: TxtTable.TableUserConfig = {
-
-            header: {
-                alignment: 'center',
-                content: 'Project Variables'
-            },
-
-            columns: {
-                0: { width: key_max_len },
-                1: { width: val_max_len },
-            },
-
-            border: {
-                topBody: `─`,
-                topJoin: `┬`,
-                topLeft: `┌`,
-                topRight: `┐`,
-
-                bottomBody: `─`,
-                bottomJoin: `┴`,
-                bottomLeft: `└`,
-                bottomRight: `┘`,
-
-                bodyLeft: `│`,
-                bodyRight: `│`,
-                bodyJoin: `│`,
-
-                joinBody: `─`,
-                joinLeft: `├`,
-                joinRight: `┤`,
-                joinJoin: `┼`
+        const cfg: SimpleUIConfig = {
+            title: 'Project Variables',
+            readonly: true,
+            items: {
+                vars: {
+                    type: 'table',
+                    attrs: {},
+                    name: '',
+                    data: <SimpleUIConfigData_table>{
+                        value: vars,
+                        default: vars,
+                    }
+                }
             }
         };
 
-        const vpath = prj.toAbsolutePath('project-variables');
-        VirtualDocument.instance().updateDocument(vpath, TxtTable.table(var_lines, tableCfg));
-        vscode.window.showTextDocument(
-            vscode.Uri.parse(VirtualDocument.instance().getUriByPath(vpath)),
-            { preview: true });
+        for (const key in prjVars) {
+            vars.push({
+                Name: key,
+                Value: prjVars[key] || ''
+            });
+        }
+
+        WebPanelManager.instance().showSimpleConfigUI(cfg, () => {
+            // nothing todo
+        });
     }
 
     async AddSrcDir(item: ProjTreeItem) {
@@ -4754,6 +4763,226 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             } catch (error) {
                 GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
             }
+        }
+    }
+
+    private async modifyExtraCompilerArgs_forFile(project: AbstractProject, item: ProjTreeItem) {
+
+        let fspath: string | undefined;
+        let virtpath: string | undefined;
+
+        if (item.type === TreeItemType.V_FILE_ITEM) {
+            virtpath = (<VirtualFileInfo>item.val.obj).path;
+        }
+
+        if (item.val.value instanceof File) { // if value is a file, use it
+            fspath = project.toRelativePath(item.val.value.path);
+        }
+
+        if (!fspath)
+            return;
+
+        const extraArgs = project.getSourceExtraArgsCfg();
+        if (!extraArgs)
+            return;
+
+        const ccArgs = project.getExtraArgsForSource(fspath, virtpath, extraArgs)?.join(' ').trim() || '';
+        const absPattern = project.getExtraArgsAbsPatternForSource(fspath, virtpath, extraArgs);
+        const isInherited = ccArgs && !absPattern;
+
+        const ui_cfg: SimpleUIConfig = {
+            title: 'Extra Compiler Args',
+            items: {},
+        };
+
+        if (isInherited) { // 继承于其他匹配模式
+            ui_cfg.items['inherit'] = {
+                type: 'input',
+                attrs: { readonly: true },
+                name: `Inherited Args (from other args pattern, check your '*.files.options.yml' file for details !)`,
+                data: <SimpleUIConfigData_input>{
+                    value: ccArgs,
+                    default: ccArgs
+                }
+            };
+        }
+
+        ui_cfg.items['args'] = {
+            type: 'input',
+            attrs: {},
+            name: 'Compiler Args',
+            data: <SimpleUIConfigData_input>{
+                placeHolder: `compiler options, like: '-O1', '-Os', '-flto' ...`,
+                value: isInherited ? '' : ccArgs,
+                default: isInherited ? '' : ccArgs,
+            },
+        };
+
+        WebPanelManager.instance().showSimpleConfigUI(ui_cfg, (new_cfg) => {
+
+            const nArgs = (<SimpleUIConfigData_input>new_cfg.items['args'].data).value.trim();
+
+            let pattern: string;
+
+            if (virtpath) {
+                pattern = virtpath;
+            } else {
+                pattern = project.toRelativePath(<string>fspath)
+                    .replace(/\.\.\//g, '')
+                    .replace(/\.\//g, '');
+            }
+
+            let category: string = 'files';
+            let argsConf: any = extraArgs;
+
+            if (virtpath) {
+                category = 'virtualPathFiles';
+            }
+
+            if (!argsConf[category])
+                argsConf[category] = {};
+
+            if (nArgs) {
+                argsConf[category][pattern] = nArgs;
+            } else {
+                if (argsConf[category][pattern] != undefined)
+                    delete argsConf[category][pattern];
+            }
+
+            project.setSourceExtraArgsCfg(extraArgs);
+
+            // update explorer
+            if (virtpath) {
+                project.getVirtualSourceManager().notifyUpdateFile(<string>virtpath);
+            } else {
+                project.getNormalSourceManager().notifyUpdateFile(project.toAbsolutePath(<string>fspath));
+            }
+        });
+    }
+
+    private async modifyExtraCompilerArgs_forFolder(project: AbstractProject, item: ProjTreeItem) {
+
+        let folderpath: string | undefined;
+        let isVirtpath: boolean | undefined;
+
+        if (item.type == TreeItemType.V_FOLDER ||
+            item.type == TreeItemType.V_FOLDER_ROOT) {
+            folderpath = (<VirtualFileInfo>item.val.obj).path;
+            isVirtpath = true;
+        }
+
+        if (item.val.obj instanceof File) { // if value is a file, use it
+            folderpath = project.toRelativePath(item.val.obj.path);
+        }
+
+        if (!folderpath)
+            return;
+
+        const extraArgs = project.getSourceExtraArgsCfg();
+        if (!extraArgs)
+            return;
+
+        const ccArgs = project.getExtraArgsForFolder(folderpath, isVirtpath, extraArgs)?.join(' ').trim() || '';
+        const absPattern = project.getExtraArgsAbsPatternForFolder(folderpath, isVirtpath, extraArgs);
+        const isInherited = ccArgs && !absPattern;
+
+        const ui_cfg: SimpleUIConfig = {
+            title: 'Extra Compiler Args',
+            items: {},
+        };
+
+        if (isInherited) { // 继承于其他匹配模式
+            ui_cfg.items['inherit'] = {
+                type: 'input',
+                attrs: { readonly: true },
+                name: `Inherited Args (from other args pattern, check your '*.files.options.yml' file for details !)`,
+                data: <SimpleUIConfigData_input>{
+                    value: ccArgs,
+                    default: ccArgs
+                }
+            };
+        }
+
+        ui_cfg.items['args'] = {
+            type: 'input',
+            attrs: {},
+            name: 'Compiler Args',
+            data: <SimpleUIConfigData_input>{
+                placeHolder: `compiler options, like: '-O1', '-Os', '-flto' ...`,
+                value: isInherited ? '' : ccArgs,
+                default: isInherited ? '' : ccArgs,
+            },
+        };
+
+        const isRecursived = absPattern ? absPattern.endsWith('/**') : false;
+
+        ui_cfg.items['recursive'] = {
+            type: 'bool',
+            attrs: {},
+            name: 'Recurse All Children',
+            data: <SimpleUIConfigData_boolean>{
+                value: isRecursived,
+                default: isRecursived,
+            },
+        };
+
+        WebPanelManager.instance().showSimpleConfigUI(ui_cfg, (new_cfg) => {
+
+            const nArgs = (<SimpleUIConfigData_input>new_cfg.items['args'].data).value.trim();
+            const isRecursive = (<SimpleUIConfigData_boolean>new_cfg.items['recursive'].data).value;
+
+            let pattern: string;
+
+            if (isVirtpath) {
+                pattern = <string>folderpath;
+            } else {
+                pattern = project.toRelativePath(<string>folderpath).replace(/\.\.\//g, '').replace(/\.\//g, '');
+            }
+
+            let category: string = 'files';
+            let argsConf: any = extraArgs;
+
+            if (isVirtpath) {
+                category = 'virtualPathFiles';
+            }
+
+            if (!argsConf[category])
+                argsConf[category] = {};
+
+            if (absPattern)
+                delete argsConf[category][absPattern];
+
+            if (nArgs) {
+                argsConf[category][pattern + (isRecursive ? '/**' : '/*')] = nArgs;
+            } else {
+                for (const suffix of ['', '/*', '/**']) { // clear all
+                    if (argsConf[category][pattern + suffix] != undefined)
+                        delete argsConf[category][pattern + suffix];
+                }
+            }
+
+            project.setSourceExtraArgsCfg(extraArgs);
+
+            // update explorer
+            if (isVirtpath) {
+                project.getVirtualSourceManager().notifyUpdateFolder(<string>folderpath);
+            } else {
+                project.getNormalSourceManager().notifyUpdateFolder(project.toAbsolutePath(<string>folderpath));
+            }
+        });
+    }
+
+    async modifyExtraCompilerArgs(type: 'file' | 'folder', item: ProjTreeItem) {
+
+        const project = this.getProjectByTreeItem(item);
+        if (!project)
+            return;
+
+        if (type == 'file') {
+            this.modifyExtraCompilerArgs_forFile(project, item);
+        }
+        else { // folder
+            this.modifyExtraCompilerArgs_forFolder(project, item);
         }
     }
 
@@ -4997,7 +5226,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     async showCmsisConfigWizard(uri: vscode.Uri) {
-        WebPanelManager.newInstance().showCmsisConfigWizard(uri);
+        WebPanelManager.instance().showCmsisConfigWizard(uri);
     }
 
     async cppcheckFile(uri: vscode.Uri) {
@@ -6107,6 +6336,60 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (prj.getToolchain().name !== <ToolchainName>pItem.value) {
             prj.setToolchain(<ToolchainName>pItem.value);
         }
+    }
+
+    async onConfigureToolchain(item: ProjTreeItem) {
+
+        const project = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        const setting = SettingManager.GetInstance();
+
+        let toolchainPathSettingName = setting.trimSettingTag(project.getToolchain().settingName);
+        let toolchainPath = setting.getConfiguration().get(toolchainPathSettingName) || '';
+
+        let cfg: SimpleUIConfig = {
+            title: 'Toolchain Configurations',
+            items: {
+                'path': {
+                    type: 'input',
+                    attrs: {
+                        singleLine: true,
+                    },
+                    name: 'Toolchain Path',
+                    data: <SimpleUIConfigData_input>{
+                        placeHolder: 'toolchain dir, like: ${userRoot}/.eide/tools/<toolchain_id>',
+                        value: toolchainPath,
+                        default: toolchainPath
+                    }
+                }
+            }
+        };
+
+        let toolchainPrefix = setting.getGccFamilyToolPrefix(project.getToolchain().name);
+        if (toolchainPrefix != undefined) {
+            cfg.items['prefix'] = {
+                type: 'input',
+                attrs: {
+                    singleLine: true,
+                    size: 30,
+                },
+                name: 'Toolchain Prefix',
+                data: <SimpleUIConfigData_input>{
+                    placeHolder: 'like: arm-none-eabi-',
+                    value: toolchainPrefix,
+                    default: toolchainPrefix
+                },
+            };
+        }
+
+        WebPanelManager.instance().showSimpleConfigUI(cfg, (newCfg) => {
+
+            // update toolchain path
+            setting.getConfiguration().update(
+                toolchainPathSettingName, newCfg.items['path'].data.value, vscode.ConfigurationTarget.Workspace);
+
+            // update toolchain prefix
+            setting.setGccFamilyToolPrefix(project.getToolchain().name, newCfg.items['prefix'].data.value);
+        });
     }
 
     async switchUploader(item: ProjTreeItem) {

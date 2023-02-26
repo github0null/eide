@@ -789,7 +789,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     static readonly excludeDirFilter: RegExp = /^\./;
 
     // to show output files
-    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|a|lib|hex|ihx|bin|s19|s37|sct|icf|ld[s]?|map|map\.view|lst)$/i;
+    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|a|lib|hex|ihx|bin|s19|s37|sct|icf|ld[s]?|map|map\.view|lst|lnp|params)$/i;
 
     //-------
 
@@ -1893,14 +1893,245 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     }
 
     getSourceExtraArgsCfg(): SourceExtraCompilerOptionsCfg | undefined {
-
-        const optFile = this.getSourceExtraArgsCfgFile();
-
         try {
+            const optFile = this.getSourceExtraArgsCfgFile();
             return yaml.parse(optFile.Read());
         } catch (error) {
-            GlobalEvent.emit('msg', newMessage('Warning', `error format '${optFile.name}', it must be a yaml file !`));
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
         }
+    }
+
+    setSourceExtraArgsCfg(cfg: SourceExtraCompilerOptionsCfg) {
+
+        const header: string[] = [
+            `##########################################################################################`,
+            `#                        Append Compiler Options For Source Files`,
+            `#`,
+            `# syntax:`,
+            `#   <your matcher expr>: <your compiler command>`,
+            `#`,
+            `# examples:`,
+            `#   'main.cpp':           --cpp11 -Og ...`,
+            `#   'src/*.c':            -gnu -O2 ...`,
+            `#   'src/lib/**/*.cpp':   --cpp11 -Os ...`,
+            `#   '!Application/*.c':   -O0`,
+            `#   '**/*.c':             -O2 -gnu ...`,
+            `#`,
+            `# For more syntax, please refer to: https://www.npmjs.com/package/micromatch`,
+            `#`,
+            `##########################################################################################`,
+            '',
+            ''
+        ];
+
+        try {
+            const optFile = this.getSourceExtraArgsCfgFile();
+            optFile.Write(header.join(os.EOL) + yaml.stringify(cfg));
+        } catch (error) {
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+        }
+    }
+
+    hasExtraArgsForFolder(path: string, cfg?: SourceExtraCompilerOptionsCfg, isVirtualPath?: boolean): boolean {
+
+        let found: boolean = false;
+
+        this._matchExtraArgsForFolder(path, isVirtualPath, cfg, () => {
+            found = true;
+            return true;
+        });
+
+        return found;
+    }
+
+    hasExtraArgsForFile(fspath: string, virtpath?: string, cfg?: SourceExtraCompilerOptionsCfg): boolean {
+
+        if (cfg == undefined)
+            return false;
+
+        // for fs path
+        if (cfg.files) {
+            const patterns = cfg.files;
+            for (const expr in patterns) {
+                const searchPath = this.toRelativePath(fspath)
+                    .replace(/\.\.\//g, '')
+                    .replace(/\.\//g, ''); // globmatch bug ? it can't parse path which have '.' or '..'
+                if (globmatch.isMatch(searchPath, expr)) {
+                    return true;
+                }
+            }
+        }
+
+        if (cfg.virtualPathFiles && virtpath) {
+            const patterns = cfg.virtualPathFiles;
+            for (const expr in patterns) {
+                const searchPath = virtpath.trim();
+                if (globmatch.isMatch(searchPath, expr)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    getExtraArgsForSource(fspath: string, virtpath?: string, cfg?: SourceExtraCompilerOptionsCfg): string[] | undefined {
+
+        if (cfg == undefined)
+            return undefined;
+
+        const extraArgs: string[] = [];
+
+        // for fs path
+        if (cfg.files) {
+            const patterns = cfg.files;
+            for (const expr in patterns) {
+                const searchPath = this.toRelativePath(fspath)
+                    .replace(/\.\.\//g, '')
+                    .replace(/\.\//g, ''); // globmatch bug ? it can't parse path which have '.' or '..'
+                if (globmatch.isMatch(searchPath, expr)) {
+                    const val = patterns[expr]?.replace(/\r\n|\n/g, ' ').replace(/\\r|\\n|\\t/g, ' ').trim();
+                    if (val) {
+                        extraArgs.push(val);
+                    }
+                }
+            }
+        }
+
+        if (cfg.virtualPathFiles && virtpath) {
+            const patterns = cfg.virtualPathFiles;
+            for (const expr in patterns) {
+                const searchPath = virtpath.trim();
+                if (globmatch.isMatch(searchPath, expr)) {
+                    const val = patterns[expr]?.replace(/\r\n|\n/g, ' ').replace(/\\r|\\n|\\t/g, ' ').trim();
+                    if (val) {
+                        extraArgs.push(val);
+                    }
+                }
+            }
+        }
+
+        return extraArgs.length > 0 ? extraArgs : undefined;
+    }
+
+    getExtraArgsForFolder(folderpath: string, isVirtpath?: boolean, cfg?: SourceExtraCompilerOptionsCfg): string[] | undefined {
+
+        if (cfg == undefined)
+            return undefined;
+
+        const extraArgs: string[] = [];
+
+        this._matchExtraArgsForFolder(folderpath, isVirtpath, cfg, (expr, path, args) => {
+            extraArgs.push(args);
+            return false;
+        });
+
+        return extraArgs.length > 0 ? extraArgs : undefined;
+    }
+
+    private _matchExtraArgsForFolder(
+        folderpath: string, isVirtpath?: boolean,
+        cfg?: SourceExtraCompilerOptionsCfg, callbk?: (pattern: string, pathInSearch: string, out_args: string) => boolean) {
+
+        if (cfg == undefined)
+            return;
+
+        if (isVirtpath) {
+            if (cfg.virtualPathFiles) {
+                const patterns = cfg.virtualPathFiles;
+                for (const expr in patterns) {
+                    const searchPath = folderpath.trim();
+                    if (globmatch.isMatch(searchPath, expr) || searchPath == expr.replace(/\/\*\*$/, '').replace(/\/\*$/, '')) {
+                        const val = patterns[expr]?.replace(/\r\n|\n/g, ' ').replace(/\\r|\\n|\\t/g, ' ').trim();
+                        if (callbk) {
+                            if (callbk(expr, searchPath, val))
+                                return;
+                        }
+                    }
+                }
+            }
+        } else { // for fs path
+            if (cfg.files) {
+                const patterns = cfg.files;
+                for (const expr in patterns) {
+                    const searchPath = this.toRelativePath(folderpath)
+                        .replace(/\.\.\//g, '')
+                        .replace(/\.\//g, ''); // globmatch bug ? it can't parse path which have '.' or '..'
+                    if (globmatch.isMatch(searchPath, expr) || searchPath == expr.replace(/\/\*\*$/, '').replace(/\/\*$/, '')) {
+                        const val = patterns[expr]?.replace(/\r\n|\n/g, ' ').replace(/\\r|\\n|\\t/g, ' ').trim();
+                        if (callbk) {
+                            if (callbk(expr, searchPath, val))
+                                return;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 获取与文件路径绝对匹配的 pattern
+    //  绝对匹配?: 不会匹配到其他路径或文件
+    getExtraArgsAbsPatternForSource(fspath: string, virtpath?: string, cfg?: SourceExtraCompilerOptionsCfg): string | undefined {
+
+        if (cfg == undefined)
+            return undefined;
+
+        // 优先匹配虚拟文件
+        if (cfg.virtualPathFiles && virtpath) {
+            const patterns = cfg.virtualPathFiles;
+            const mpath = virtpath.trim();
+            for (const expr in patterns) {
+                if (mpath == expr)
+                    return expr;
+            }
+        }
+
+        // for fs path
+        if (cfg.files) {
+            const patterns = cfg.files;
+            const mpath = this.toRelativePath(fspath)
+                .replace(/\.\.\//g, '')
+                .replace(/\.\//g, '');
+            for (const expr in patterns) {
+                if (mpath == expr)
+                    return expr;
+            }
+        }
+
+        return undefined;
+    }
+
+    getExtraArgsAbsPatternForFolder(folderpath: string, isVirtpath?: boolean, cfg?: SourceExtraCompilerOptionsCfg): string | undefined {
+
+        if (cfg == undefined)
+            return undefined;
+
+        // for virtual path
+        if (isVirtpath) {
+            if (cfg.virtualPathFiles) {
+                const patterns = cfg.virtualPathFiles;
+                const mpath = folderpath.trim().replace(/\/\*\*$/, '').replace(/\/\*$/, '');
+                for (const expr in patterns) {
+                    if (mpath == expr.replace(/\/\*\*$/, '').replace(/\/\*$/, ''))
+                        return expr;
+                }
+            }
+        }
+
+        // for fs path
+        else if (cfg.files) {
+            const patterns = cfg.files;
+            const mpath = this.toRelativePath(folderpath)
+                .replace(/\.\.\//g, '')
+                .replace(/\.\//g, '')
+                .replace(/\/\*\*$/, '').replace(/\/\*$/, '');
+            for (const expr in patterns) {
+                if (mpath == expr.replace(/\/\*\*$/, '').replace(/\/\*$/, ''))
+                    return expr;
+            }
+        }
+
+        return undefined;
     }
 
     getBuilderOptions(): ICompileOptions {
@@ -2105,13 +2336,13 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         switch (eventData.event) {
             case 'openCompileOptions':
                 try {
-                    WebPanelManager.newInstance().showBuilderOptions(this);
+                    WebPanelManager.instance().showBuilderOptions(this);
                 } catch (err) {
                     GlobalEvent.emit('error', err);
                 }
                 break;
             case 'openMemLayout':
-                WebPanelManager.newInstance().showStorageLayoutView(this);
+                WebPanelManager.instance().showStorageLayoutView(this);
                 break;
             case 'openUploadOptions':
                 if (eventData.data['path'] !== undefined) {
@@ -2380,44 +2611,7 @@ class EIDEProject extends AbstractProject {
     }
 
     private getExtraCompilerOptionsBySrcFile(srcPath: string, vPath?: string): string[] | undefined {
-
-        let commandLine: string | undefined;
-
-        // parser
-        const matcher = (parttenInfo: any, filePath: string) => {
-            for (const expr in parttenInfo) {
-                const searchPath = File.ToUnixPath(filePath)
-                    .replace(/\.\.\//g, '')
-                    .replace(/\.\//g, ''); // globmatch bug ? it can't parse path which have '.' or '..'
-                if (globmatch.isMatch(searchPath, expr)) {
-                    const val = parttenInfo[expr]?.trim().replace(/(?:\r\n|\n)$/, '')
-                    if (val) {
-                        if (commandLine) {
-                            commandLine += ` ${val}`;
-                        } else {
-                            commandLine = val;
-                        }
-                    }
-                }
-            }
-        };
-
-        if (this.srcExtraCompilerConfig) {
-
-            // filesystem files
-            if (typeof this.srcExtraCompilerConfig?.files == 'object') {
-                matcher(this.srcExtraCompilerConfig?.files, this.toRelativePath(srcPath));
-            }
-
-            // virtual files
-            if (vPath && typeof this.srcExtraCompilerConfig?.virtualPathFiles == 'object') {
-                matcher(this.srcExtraCompilerConfig?.virtualPathFiles, vPath.replace(`${VirtualSource.rootName}/`, ''));
-            }
-        }
-
-        if (commandLine) {
-            return commandLine.split(' ');
-        }
+       return this.getExtraArgsForSource(srcPath, vPath, this.getSourceExtraArgsCfg());
     }
 
     //////////////////////////////// source refs ///////////////////////////////////

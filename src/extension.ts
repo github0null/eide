@@ -58,6 +58,8 @@ let projectExplorer: ProjectExplorer;
 
 // set yaml global style
 yaml.scalarOptions.str.fold.lineWidth = 1000;
+yaml.defaultOptions.indent = 4;
+yaml.defaultOptions.indentSeq = true;
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -194,6 +196,9 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.virtual_folder_rename', (item) => projectExplorer.Virtual_renameFolder(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.virtual_file_remove', (item) => projectExplorer.Virtual_removeFile(item)));
 
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.file.modify.extraArgs', (item) => projectExplorer.modifyExtraCompilerArgs('file', item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.folder.modify.extraArgs', (item) => projectExplorer.modifyExtraCompilerArgs('folder', item)));
+
     // file other operations
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.excludeSource', (item) => projectExplorer.ExcludeSourceFile(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.unexcludeSource', (item) => projectExplorer.UnexcludeSourceFile(item)));
@@ -215,6 +220,7 @@ export async function activate(context: vscode.ExtensionContext) {
     // builder
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.modifyCompileConfig', (item) => projectExplorer.ModifyCompileConfig(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.switchToolchain', (item) => projectExplorer.onSwitchCompileTools(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.configToolchain', (item) => projectExplorer.onConfigureToolchain(item)));
 
     // flasher
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.modifyUploadConfig', (item) => projectExplorer.ModifyUploadConfig(item)));

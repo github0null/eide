@@ -794,7 +794,7 @@ export class OperationExplorer {
                     });
 
                     if (val != undefined) {
-                        settingManager.setGccToolPrefix(toolchain.name, val, true);
+                        settingManager.setGccFamilyToolPrefix(toolchain.name, val, true);
                         utility.notifyReloadWindow(view_str$prompt$needReloadToUpdateEnv);
                     }
                 }

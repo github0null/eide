@@ -140,7 +140,7 @@ export abstract class CodeBuilder {
                 const rePath = this.project.ToRelativePath(source.file.path);
                 const fInfo: any = { path: rePath || source.file.path }
                 if (AbstractProject.isVirtualSourceGroup(group)) {
-                    fInfo.virtualPath = `${group.name}/${source.file.name}`.replace(`${VirtualSource.rootName}/`, '');
+                    fInfo.virtualPath = `${group.name}/${source.file.name}`;
                 }
                 srcList.push(fInfo);
             }

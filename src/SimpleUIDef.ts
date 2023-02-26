@@ -21,15 +21,20 @@ export interface SimpleUIConfigData {
 
 export interface SimpleUIConfigItem {
 
-    type: 'input' | 'options' | 'table' | 'text';
+    type: 'input' | 'options' | 'table' | 'text' | 'bool';
 
-    typeDetail: { [key: string]: string | boolean | number };
+    attrs: { [key: string]: string | boolean | number };
 
     name: string; // readable name
 
     description?: string; // a description for this item
 
-    data: SimpleUIConfigData | SimpleUIConfigData_input | SimpleUIConfigData_options | SimpleUIConfigData_table;
+    data: SimpleUIConfigData | 
+          SimpleUIConfigData_input | 
+          SimpleUIConfigData_options | 
+          SimpleUIConfigData_table | 
+          SimpleUIConfigData_text | 
+          SimpleUIConfigData_boolean;
 };
 
 export interface SimpleUIConfigData_input extends SimpleUIConfigData {
@@ -62,4 +67,11 @@ export interface SimpleUIConfigData_table extends SimpleUIConfigData {
 export interface SimpleUIConfigData_text extends SimpleUIConfigData {
 
     value: string;
+}
+
+export interface SimpleUIConfigData_boolean extends SimpleUIConfigData {
+
+    value: boolean;
+
+    default: boolean;
 }
