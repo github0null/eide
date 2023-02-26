@@ -559,7 +559,7 @@ export abstract class ArmBaseCompileConfigModel
         if (this.cpuTypeList.includes(model.data.cpuType)) { // found target cpu, update it
             this.data.cpuType = model.data.cpuType;
         } else { // not found, use cpuList[0]
-            this.data.cpuType = this.cpuTypeList[0];
+            this.data.cpuType = this.cpuTypeList[1];
         }
 
         this.onPropertyChanged('cpuType');
