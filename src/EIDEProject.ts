@@ -226,7 +226,7 @@ export class VirtualSource implements SourceProvider {
 
         this.traverse((folderInfo) => {
             result.push({
-                name: folderInfo.path.replace(`${VirtualSource.rootName}/`, ''),
+                name: folderInfo.path,
                 disabled: this.project.isExcluded(folderInfo.path) || undefined,
                 files: folderInfo.folder.files.map((vFile) => {
                     const file = new File(this.project.ToAbsolutePath(vFile.path));
@@ -2611,7 +2611,7 @@ class EIDEProject extends AbstractProject {
     }
 
     private getExtraCompilerOptionsBySrcFile(srcPath: string, vPath?: string): string[] | undefined {
-       return this.getExtraArgsForSource(srcPath, vPath, this.getSourceExtraArgsCfg());
+        return this.getExtraArgsForSource(srcPath, vPath, this.getSourceExtraArgsCfg());
     }
 
     //////////////////////////////// source refs ///////////////////////////////////
@@ -2830,12 +2830,16 @@ class EIDEProject extends AbstractProject {
 
             // is virtual source
             else {
-                fileGroups.push(_group);
+                fileGroups.push({
+                    name: _group.name.replace(`${VirtualSource.rootName}/`, ''), // remove '<virtual_root>/' header for keil
+                    files: _group.files,
+                    disabled: _group.disabled
+                });
             }
         });
 
         if (halFiles.length > 0) {
-            const index = fileGroups.findIndex((group) => { return group.name === 'HAL'; });
+            const index = fileGroups.findIndex((group) => group.name === 'HAL');
             if (index === -1) {
                 fileGroups.push(<FileGroup>{
                     name: 'HAL',

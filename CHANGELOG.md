@@ -6,7 +6,7 @@ All notable version changes will be recorded in this file.
 
 ***
 
-### [v3.11.0] revision
+### [v3.11.1] update
 
 **New**:
   - `Object Order For Linker`: Allow specify an order for any obj files before the builder start to link your program.
