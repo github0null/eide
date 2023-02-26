@@ -29,7 +29,7 @@
     "eide.project.upload": "烧录",
     "eide.project.flash.erase.all": "擦除芯片",
     "eide.project.gen.makefile": "生成 Makefile 模板",
-    "eide.project.modify.files.options": "为源文件附加单独的编译参数",
+    "eide.project.modify.files.options": "查看所有的源文件附加编译参数",
     "eide.project.import.ext.project.src.struct": "从其他 IDE 的项目中导入源文件树",
     "eide.project.generate_builder_params": "生成 builder.params",
 
@@ -60,7 +60,9 @@
     "eide.explorer.show.file.dir": "在文件浏览器中显示",
     "eide.explorer.modify.file.path": "修改源文件路径",
     "eide.explorer.modify.exclude_list": "修改源文件排除列表",
-    
+    "eide.explorer.file.modify.extraArgs": "修改此文件的附加编译参数",
+    "eide.explorer.folder.modify.extraArgs": "修改此文件夹的附加编译参数",
+
     "eide.source.show_cmsis_config_wizard": "CMSIS Configuration Wizard",
     "eide.source.show.disassembly": "查看反汇编",
     "eide.source.run.cppcheck": "使用 Cppcheck 进行检查",
@@ -74,7 +76,8 @@
     "eide.package.comp.install": "安装组件",
     "eide.package.comp.uninstall": "移除组件",
 
-    "eide.builder.switch": "切换编译工具",
+    "eide.builder.switch": "切换编译器",
+    "eide.builder.config": "编译器配置",
     "eide.builder.setup-toolchain-prefix": "设置编译器前缀",
 
     "eide.flash.switch": "切换烧录器",

@@ -35,7 +35,7 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.10.11",
+    "version": "3.11.0",
     "preview": false,
     "engines": {
         "vscode": "^1.67.0"
@@ -682,6 +682,14 @@
                 "title": "%eide.explorer.rename.folder%"
             },
             {
+                "command": "_cl.eide.project.source.file.modify.extraArgs",
+                "title": "%eide.explorer.file.modify.extraArgs%"
+            },
+            {
+                "command": "_cl.eide.project.source.folder.modify.extraArgs",
+                "title": "%eide.explorer.folder.modify.extraArgs%"
+            },
+            {
                 "command": "_cl.eide.project.refresh",
                 "title": "%eide.project.refresh%",
                 "icon": {
@@ -862,6 +870,10 @@
                     "dark": "./res/icon/SwitchSourceOrTarget_16x.svg",
                     "light": "./res/icon/SwitchSourceOrTarget_16x.svg"
                 }
+            },
+            {
+                "command": "_cl.eide.project.configToolchain",
+                "title": "%eide.builder.config%"
             },
             {
                 "command": "_cl.eide.project.switchUploader",
@@ -1232,6 +1244,14 @@
                     "when": "viewItem == PROJECT || viewItem == V_FOLDER || viewItem == V_FOLDER_ROOT || viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == cl.eide.view.projects"
                 },
                 {
+                    "command": "_cl.eide.project.source.file.modify.extraArgs",
+                    "when": "viewItem == FILE_ITEM || viewItem == V_FILE_ITEM && view == cl.eide.view.projects"
+                },
+                {
+                    "command": "_cl.eide.project.source.folder.modify.extraArgs",
+                    "when": "viewItem == FOLDER || viewItem == FOLDER_ROOT || viewItem == V_FOLDER || viewItem == V_FOLDER_ROOT && view == cl.eide.view.projects"
+                },
+                {
                     "command": "_cl.eide.project.addPackage",
                     "group": "inline",
                     "when": "viewItem == PACK && view == cl.eide.view.projects"
@@ -1392,6 +1412,10 @@
                 {
                     "command": "_cl.eide.project.switchToolchain",
                     "group": "inline",
+                    "when": "viewItem == COMPILE_CONFIGURATION && view == cl.eide.view.projects"
+                },
+                {
+                    "command": "_cl.eide.project.configToolchain",
                     "when": "viewItem == COMPILE_CONFIGURATION && view == cl.eide.view.projects"
                 },
                 {
