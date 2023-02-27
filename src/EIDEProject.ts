@@ -2864,7 +2864,8 @@ class EIDEProject extends AbstractProject {
                     "zixuanwang.linkerscript",
                     "redhat.vscode-yaml",
                     "IBM.output-colorizer",
-                    "cschlosser.doxdocgen"
+                    "cschlosser.doxdocgen",
+                    "ms-vscode.vscode-serial-monitor"
                 ];
 
                 const prjInfo = this.GetConfiguration().config;
