@@ -76,7 +76,7 @@
     "eide.project.run.cppcheck": "Cppcheck Project",
     "eide.project.clear.cppcheck": "Clear Cppcheck Diagnostic Informations",
 
-    "eide.package.install": "Install Chip Support Package",
+    "eide.package.install": "Install CMSIS Chip Package",
     "eide.package.install.cmsis": "Install CMSIS Header Files",
     "eide.package.remove": "Uninstall Chip Support Package",
     "eide.package.select.device": "Choose Device",

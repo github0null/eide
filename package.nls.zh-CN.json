@@ -69,7 +69,7 @@
     "eide.project.run.cppcheck": "使用 Cppcheck 检查项目",
     "eide.project.clear.cppcheck": "清除 Cppcheck 诊断信息",
 
-    "eide.package.install": "安装芯片支持包",
+    "eide.package.install": "安装 CMSIS 芯片支持包",
     "eide.package.install.cmsis": "安装 CMSIS 头文件",
     "eide.package.remove": "卸载芯片支持包",
     "eide.package.select.device": "选择芯片",
