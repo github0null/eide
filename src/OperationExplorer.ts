@@ -211,17 +211,6 @@ export class OperationExplorer {
             iconPath: vscode.Uri.file(icoPath.path)
         });
 
-        icoPath = resManager.GetIconByName('Import_16x.svg');
-        this.provider.AddData({
-            label: view_str$import_project,
-            command: {
-                title: view_str$import_project,
-                command: '_cl.eide.Operation.Import'
-            },
-            tooltip: import_project_hit,
-            iconPath: vscode.Uri.file(icoPath.path)
-        });
-
         icoPath = resManager.GetIconByName('OpenFileFromProject_16x.svg');
         this.provider.AddData({
             label: open_project,
@@ -230,6 +219,17 @@ export class OperationExplorer {
                 command: '_cl.eide.Operation.Open'
             },
             tooltip: open_project_hit,
+            iconPath: vscode.Uri.file(icoPath.path)
+        });
+
+        icoPath = resManager.GetIconByName('Import_16x.svg');
+        this.provider.AddData({
+            label: view_str$import_project,
+            command: {
+                title: view_str$import_project,
+                command: '_cl.eide.Operation.Import'
+            },
+            tooltip: import_project_hit,
             iconPath: vscode.Uri.file(icoPath.path)
         });
 
