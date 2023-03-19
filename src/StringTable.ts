@@ -29,8 +29,25 @@ export enum LanguageIndexs {
     English
 }
 
-const langIndex: number = /zh-cn/.test(vscode.env.language)
-    ? LanguageIndexs.Chinese : LanguageIndexs.English;
+let langIndex: number = /zh-cn/.test(vscode.env.language)
+    ? LanguageIndexs.Chinese
+    : LanguageIndexs.English;
+
+try {
+    const langType = vscode.workspace.getConfiguration('EIDE').get<string>('DisplayLanguage');
+    switch (langType) {
+        case 'zh-cn':
+            langIndex = LanguageIndexs.Chinese;
+            break;
+        case 'en-us':
+            langIndex = LanguageIndexs.English;
+            break;
+        default:
+            break;
+    }
+} catch (error) {
+    // nothing todo
+}
 
 export function getLocalLanguageType(): LanguageIndexs {
     return langIndex;

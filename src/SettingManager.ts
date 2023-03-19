@@ -250,37 +250,7 @@ export class SettingManager {
         }
     }
 
-    //-------------------------- Serialport --------------------------------
-
-    isShowSerialportStatusbar(): boolean {
-        return this.getConfiguration().get<boolean>('SerialPortMonitor.ShowStatusBar') || false;
-    }
-
-    getPortSerialMonitorOptions(): PortSerialOption {
-        return {
-            defaultPort: this.getConfiguration().get<string>('SerialPortMonitor.DefaultPort') || 'null',
-            baudRate: this.getConfiguration().get<number>('SerialPortMonitor.BaudRate') || 9600,
-            dataBits: this.getConfiguration().get<number>('SerialPortMonitor.DataBits') || 8,
-            parity: this.getConfiguration().get<number>('SerialPortMonitor.Parity') || 0,
-            stopBits: this.getConfiguration().get<number>('SerialPortMonitor.StopBits') || 0,
-            useUnixCRLF: this.getConfiguration().get<boolean>('SerialPortMonitor.useUnixLF') || false,
-        };
-    }
-
-    getSerialBaudrate(): number {
-        return this.getConfiguration().get<number>('SerialPortMonitor.BaudRate') || 115200
-    }
-
-    setSerialBaudrate(baudrate: number, global?: boolean) {
-        const region = global ? vscode.ConfigurationTarget.Global : vscode.ConfigurationTarget.Workspace;
-        return this.getConfiguration().update('SerialPortMonitor.BaudRate', baudrate, region);
-    }
-
     //--------------------- Global Option ------------------------
-
-    /* isEnableAutoUpdateEideBinaries(): boolean {
-        return this.getConfiguration().get<boolean>('Option.AutoUpdateEideBinaries') || false;
-    } */
 
     getForceIncludeList(): string[] {
         return this.getConfiguration().get<string[]>('Cpptools.ForceInclude') || [];

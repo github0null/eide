@@ -18,23 +18,52 @@ function parseLogLines(file: File): string[] {
 
     try {
 
+        const fileLines = file.Read().split(/\r\n|\n/);
+
+        //
+        // cc logs
+        //
         let logStarted = false;
         let logEnd = false;
 
-        file.Read().split(/\r\n|\n/).forEach((line, idx) => {
+        fileLines.forEach((line, idx) => {
 
             if (logEnd)
                 return;
 
-            if (logStarted) {
+            if (!logStarted) {
+                if (line.startsWith('>>> cc')) {
+                    logStarted = true;
+                }
+            } else {
                 if (line.startsWith('>>>')) {
                     logEnd = true;
                 } else {
                     ccLogLines.push(line);
                 }
-            } else {
-                if (line.startsWith('>>> cc')) {
+            }
+        });
+
+        //
+        // ld logs
+        //
+        logStarted = false;
+        logEnd = false;
+
+        fileLines.forEach((line, idx) => {
+
+            if (logEnd)
+                return;
+
+            if (!logStarted) {
+                if (line.startsWith('>>> ld')) {
                     logStarted = true;
+                }
+            } else {
+                if (line.startsWith('>>>')) {
+                    logEnd = true;
+                } else {
+                    ccLogLines.push(line);
                 }
             }
         });

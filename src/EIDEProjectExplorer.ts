@@ -88,7 +88,9 @@ import {
     genGithubHash, md5, toArray, newMarkdownString, newFileTooltipString, FileTooltipInfo, escapeXml,
     readGithubRepoTxtFile, downloadFile, notifyReloadWindow, formatPath, execInternalCommand,
     copyAndMakeObjectKeysToLowerCase,
-    sortPaths
+    sortPaths,
+    getGccBinutilsVersion,
+    compareVersion
 } from './utility';
 import { concatSystemEnvPath, DeleteDir, exeSuffix, kill, osType, DeleteAllChildren } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
@@ -5010,6 +5012,11 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 exeFile = File.fromArray([prj.getToolchain().getToolchainDir().path, 'bin', `${toolPrefix}objdump${exeSuffix()}`]);
                 if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
                 cmds = ['-S', '-l', elfPath, '>', dasmFile.path];
+                // https://interrupt.memfault.com/blog/gnu-binutils#new-feature-visualize-jumps
+                const binutilsVer = getGccBinutilsVersion(exeFile.dir, toolPrefix, 'objdump');
+                if (binutilsVer && compareVersion(binutilsVer, '2.34') > 0) {
+                    cmds = ['--visualize-jumps'].concat(cmds);
+                }
             }
             else if (toolchainName.startsWith('AC')) { // armcc
                 exeFile = File.fromArray([prj.getToolchain().getToolchainDir().path, 'bin', `fromelf${exeSuffix()}`]);
@@ -5124,6 +5131,11 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `${toolPrefix}objdump${exeSuffix()}`]);
                 if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
                 cmds = ['-S', '-l', objPath, '>', tmpFile.path];
+                // https://interrupt.memfault.com/blog/gnu-binutils#new-feature-visualize-jumps
+                const binutilsVer = getGccBinutilsVersion(exeFile.dir, toolPrefix, 'objdump');
+                if (binutilsVer && compareVersion(binutilsVer, '2.34') > 0) {
+                    cmds = ['--visualize-jumps'].concat(cmds);
+                }
             }
             else if (toolchainName.startsWith('AC')) { // armcc
                 exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `fromelf${exeSuffix()}`]);

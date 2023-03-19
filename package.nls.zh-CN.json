@@ -69,7 +69,7 @@
     "eide.project.run.cppcheck": "使用 Cppcheck 检查项目",
     "eide.project.clear.cppcheck": "清除 Cppcheck 诊断信息",
 
-    "eide.package.install": "安装芯片支持包",
+    "eide.package.install": "安装 CMSIS 芯片支持包",
     "eide.package.install.cmsis": "安装 CMSIS 头文件",
     "eide.package.remove": "卸载芯片支持包",
     "eide.package.select.device": "选择芯片",
@@ -154,5 +154,5 @@
     "string.eide.open_docs": "了解更多",
     "string.eide.open_docs.detail": "点击链接可以打开主页，也许能帮您了解到更多的用法。\n[Embedded IDE](https://em-ide.com/)",
 
-    "string.eide.project.welcome": "该工作区中没有任何项目！\n[打开项目](command:eide.operation.open_project)\n[新建项目](command:eide.operation.new_project)\n[导入项目](command:eide.operation.import_project)"
+    "string.eide.project.welcome": "该工作区中没有任何项目！\n[新建项目](command:eide.operation.new_project)\n[打开项目](command:eide.operation.open_project)\n[导入项目](command:eide.operation.import_project)"
 }

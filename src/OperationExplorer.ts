@@ -211,17 +211,6 @@ export class OperationExplorer {
             iconPath: vscode.Uri.file(icoPath.path)
         });
 
-        icoPath = resManager.GetIconByName('Import_16x.svg');
-        this.provider.AddData({
-            label: view_str$import_project,
-            command: {
-                title: view_str$import_project,
-                command: '_cl.eide.Operation.Import'
-            },
-            tooltip: import_project_hit,
-            iconPath: vscode.Uri.file(icoPath.path)
-        });
-
         icoPath = resManager.GetIconByName('OpenFileFromProject_16x.svg');
         this.provider.AddData({
             label: open_project,
@@ -230,6 +219,17 @@ export class OperationExplorer {
                 command: '_cl.eide.Operation.Open'
             },
             tooltip: open_project_hit,
+            iconPath: vscode.Uri.file(icoPath.path)
+        });
+
+        icoPath = resManager.GetIconByName('Import_16x.svg');
+        this.provider.AddData({
+            label: view_str$import_project,
+            command: {
+                title: view_str$import_project,
+                command: '_cl.eide.Operation.Import'
+            },
+            tooltip: import_project_hit,
             iconPath: vscode.Uri.file(icoPath.path)
         });
 
@@ -1540,54 +1540,6 @@ export class OperationExplorer {
         });
 
         this.locked = false;
-    }
-
-    async onOpenSerialPortMonitor(port?: string) {
-
-        const resManager = ResManager.GetInstance();
-        const option = SettingManager.GetInstance().getPortSerialMonitorOptions();
-
-        try {
-            const portName: string | undefined = port || option.defaultPort;
-            if (!portName) {
-                return;
-            }
-
-            const paramList: string[] = [
-                '-n', portName,
-                '-b', option.baudRate.toString(),
-                '-d', option.dataBits.toString(),
-                '-p', option.parity.toString(),
-                '-s', option.stopBits.toString(),
-                '-l', option.useUnixCRLF ? '1' : '0'
-            ];
-
-            let terminal: vscode.Terminal;
-            const terminalName = portName;
-
-            const cIndex = vscode.window.terminals.findIndex((term) => { return term.name === terminalName; });
-            const cmdPath = resManager.getCMDPath();
-
-            // close exist terminal
-            if (cIndex !== -1) { vscode.window.terminals[cIndex].dispose(); }
-
-            const opts: vscode.TerminalOptions = {
-                name: terminalName,
-                shellPath: cmdPath,
-                env: process.env
-            };
-
-            terminal = vscode.window.createTerminal(opts);
-            terminal.show(true);
-
-            /* send command */
-            const exeName = resManager.getSerialPortExe().noSuffixName;
-            const cmd = paramList.join(' ');
-            terminal.sendText(`${exeName} ${cmd}`);
-
-        } catch (error) {
-            GlobalEvent.emit('error', error);
-        }
     }
 }
 

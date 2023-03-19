@@ -42,6 +42,31 @@ import { ExeCmd } from '../lib/node-utility/Executable';
 import { GlobalEvent } from './GlobalEvents';
 import { SettingManager } from './SettingManager';
 
+export function getGccBinutilsVersion(gccBinDirPath: string, toolprefix?: string, toolname?: string): string | undefined {
+
+    // example output:
+    //   GNU objdump (GNU Arm Embedded Toolchain 10-2020-q4-major) 2.35.1.20201028
+    //   GNU readelf (GNU Tools for Arm Embedded Processors 8-2019-q3-update) 2.32.0.20190703
+
+    const exeName = toolname || 'objdump';
+
+    try {
+        const lines = child_process.execFileSync(`${toolprefix || ''}${exeName}`, ['-v'], { cwd: gccBinDirPath, encoding: 'ascii' }).split(/\r\n|\n/);
+        for (const line of lines) {
+            if (line.trim().startsWith(`GNU ${exeName}`)) {
+                const m = /(\d+\.\d+\.\d+)(?:\.\d+)*$/.exec(line);
+                if (m && m.length > 1) {
+                    return m[1].trim();
+                }
+            }
+        }
+    } catch (error) {
+        GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+    }
+
+    return undefined;
+}
+
 export function sortPaths(pathList: string[], sep?: string): string[] {
 
     let plist: string[][] = pathList.map(p => p.split(/\\|\//));

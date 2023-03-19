@@ -6,6 +6,21 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.11.2] update
+
+**New**:
+  - `Disassembly View`: Add 'Visualize Jumps' for disassembly code, [more informations](https://interrupt.memfault.com/blog/gnu-binutils#new-feature-visualize-jumps)
+  - `Language Mode`: Add a setting `EIDE.DisplayLanguage` to choose a language for UI, prompts.
+
+**Fix**:
+  - `Memory Layout View`: Error format when user input an integer number.
+
+**Optimize**:
+  - `Utility Tools`: Use `start` command to install win32 driver.
+  - `Promblem Matcher`: Match compiler errors in linker logs.
+
+***
+
 ### [v3.11.1] update
 
 **New**:

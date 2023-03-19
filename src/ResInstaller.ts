@@ -453,8 +453,8 @@ export class ResInstaller {
                         if (toolInfo.getDrvInstaller) {
                             let drvExePath = toolInfo.getDrvInstaller();
                             if (drvExePath) {
-                                drvExePath = outDir.path + File.sep + drvExePath;
-                                utility.runShellCommand(`install driver`, `start "${resourceName}" /MAX "${drvExePath}"`, undefined, true);
+                                const ok = await utility.execInternalCommand(`start "win32 driver: ${resourceName}" ".\\${drvExePath}"`, outDir.path);
+                                GlobalEvent.emit('globalLog.append', `\n=== install win32 driver '${drvExePath}' ${ok ? 'done' : 'failed'} ===\n\n`);
                             }
                         }
 

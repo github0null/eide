@@ -778,7 +778,11 @@ class ARMParser extends KeilParser<KeilARMOption> {
                 }
 
                 // default startUp index: 3 (2^3)
-                const index = Math.log2(parseInt(info.StupSel));
+                let index = Math.log2(parseInt(info.StupSel) || 1);
+                if (index > 4) {
+                    index = 4;
+                }
+
                 memInfo.ROM[index].isStartup = true;
 
                 memInfo.RAM[0].noInit = info.NoZi1 !== '0';

@@ -672,6 +672,14 @@ export abstract class ArmBaseCompileConfigModel
         this._event.emit('dataChanged');
     }
 
+    private parseIntNumber(str: string): number {
+        if (/^\s*0x/i.test(str) || /[a-f]/i.test(str)) {
+            return parseInt(str.replace('0X', ''), 16);
+        } else {
+            return parseInt(str);
+        }
+    }
+
     private sortStorage(storageLayout: ARMStorageLayout): ARMStorageLayout {
 
         storageLayout.RAM = storageLayout.RAM.sort((a, b): number => {
@@ -688,7 +696,7 @@ export abstract class ArmBaseCompileConfigModel
                 return a.id - b.id;
             }
 
-            return parseInt(a.mem.startAddr, 16) < parseInt(b.mem.startAddr, 16) ? -1 : 1;
+            return this.parseIntNumber(a.mem.startAddr) < this.parseIntNumber(b.mem.startAddr) ? -1 : 1;
         });
 
         let id = 1;
@@ -712,7 +720,7 @@ export abstract class ArmBaseCompileConfigModel
                 return a.id - b.id;
             }
 
-            return parseInt(a.mem.startAddr, 16) < parseInt(b.mem.startAddr, 16) ? -1 : 1;
+            return this.parseIntNumber(a.mem.startAddr) < this.parseIntNumber(b.mem.startAddr) ? -1 : 1;
         });
 
         id = 1;
