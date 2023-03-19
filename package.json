@@ -180,6 +180,22 @@
             {
                 "title": "Embedded IDE",
                 "properties": {
+                    "EIDE.DisplayLanguage": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "Choose language type for UI, prompt strings",
+                        "default": "auto",
+                        "enum": [
+                            "auto",
+                            "en-us",
+                            "zh-cn"
+                        ],
+                        "enumDescriptions": [
+                            "Auto select",
+                            "English",
+                            "Chinese"
+                        ]
+                    },
                     "EIDE.ExternalTools.IndexUrl": {
                         "type": "string",
                         "scope": "machine",
