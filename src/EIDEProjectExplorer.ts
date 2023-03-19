@@ -4793,7 +4793,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const isInherited = ccArgs && !absPattern;
 
         const ui_cfg: SimpleUIConfig = {
-            title: 'Extra Compiler Args',
+            title: 'Extra Compiler Options',
             items: {},
         };
 
@@ -4801,7 +4801,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             ui_cfg.items['inherit'] = {
                 type: 'input',
                 attrs: { readonly: true },
-                name: `Inherited Args (from other args pattern, check your '*.files.options.yml' file for details !)`,
+                name: `Inherited Options (from other pattern, check your '*.files.options.yml' file for details !)`,
                 data: <SimpleUIConfigData_input>{
                     value: ccArgs,
                     default: ccArgs
@@ -4812,7 +4812,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         ui_cfg.items['args'] = {
             type: 'input',
             attrs: {},
-            name: 'Compiler Args',
+            name: 'Compiler Options',
             data: <SimpleUIConfigData_input>{
                 placeHolder: `compiler options, like: '-O1', '-Os', '-flto' ...`,
                 value: isInherited ? '' : ccArgs,
@@ -4889,7 +4889,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const isInherited = ccArgs && !absPattern;
 
         const ui_cfg: SimpleUIConfig = {
-            title: 'Extra Compiler Args',
+            title: 'Extra Compiler Options',
             items: {},
         };
 
@@ -4897,7 +4897,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             ui_cfg.items['inherit'] = {
                 type: 'input',
                 attrs: { readonly: true },
-                name: `Inherited Args (from other args pattern, check your '*.files.options.yml' file for details !)`,
+                name: `Inherited Options (from other args pattern, check your '*.files.options.yml' file for details !)`,
                 data: <SimpleUIConfigData_input>{
                     value: ccArgs,
                     default: ccArgs
@@ -4908,7 +4908,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         ui_cfg.items['args'] = {
             type: 'input',
             attrs: {},
-            name: 'Compiler Args',
+            name: 'Compiler Options',
             data: <SimpleUIConfigData_input>{
                 placeHolder: `compiler options, like: '-O1', '-Os', '-flto' ...`,
                 value: isInherited ? '' : ccArgs,
