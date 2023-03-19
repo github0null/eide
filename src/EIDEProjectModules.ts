@@ -673,7 +673,7 @@ export abstract class ArmBaseCompileConfigModel
     }
 
     private parseIntNumber(str: string): number {
-        if (/^\s*0x/i.test(str)) {
+        if (/^\s*0x/i.test(str) || /[a-f]/i.test(str)) {
             return parseInt(str.replace('0X', ''), 16);
         } else {
             return parseInt(str);
