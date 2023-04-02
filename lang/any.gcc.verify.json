@@ -179,7 +179,7 @@
                     }
                 },
                 "ASM_FLAGS": {
-                    "markdownDescription": "Assembler Params",
+                    "markdownDescription": "Assembler Options",
                     "description.zh-cn": "汇编器参数",
                     "$ref": "#/definitions/FLAGS",
                     "default": "-c -x assembler"

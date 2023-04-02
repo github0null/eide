@@ -6,6 +6,22 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.11.3] revision
+
+**Fix**:
+  - `Extra Compiler Options`: Cannot evaluate inherited parameters.
+  - `unify_builder`: Cannot handle more than one `args expressions` for file options.
+  - `unify_builder`: Remove global extra options for `sdxxasm`.
+
+**Optimize**:
+  - `unify_builder`: More color render for compiler output messages.
+  - `unify_builder`: Add 'ASM_FLAGS' for sdcc sdxxasm.
+  - `Debug Config`: Auto generate toolchain prefix for cortex-debug.
+
+**Please update `eide_binaries` to v11.0.1+ (Restart plug-in to auto fetch update).**
+
+***
+
 ### [v3.11.2] update
 
 **New**:

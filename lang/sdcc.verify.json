@@ -15,6 +15,19 @@
                 "type": "string"
             },
             "default": ""
+        },
+        "FLAGS": {
+            "markdownDescription": "Options",
+            "description.zh-cn": "选项",
+            "size": "huge",
+            "type": [
+                "string",
+                "array"
+            ],
+            "items": {
+                "type": "string"
+            },
+            "default": []
         }
     },
     "properties": {
@@ -185,16 +198,6 @@
                         "size"
                     ]
                 },
-                "$one-module-per-function": {
-                    "type": "boolean",
-                    "markdownDescription": "Module Split Optimization (supported by eide)",
-                    "description.zh-cn": "模块拆分优化 (supported by eide)",
-                    "default": false,
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
                 "plain-char-is-signed": {
                     "type": "boolean",
                     "markdownDescription": "plain char is signed",
@@ -351,10 +354,11 @@
             "description.zh-cn": "汇编器选项",
             "type": "object",
             "properties": {
-                "misc-controls": {
-                    "markdownDescription": "Other Assembler Options",
-                    "description.zh-cn": "汇编器附加选项",
-                    "$ref": "#/definitions/misc-controls"
+                "ASM_FLAGS": {
+                    "markdownDescription": "Assembler Options",
+                    "description.zh-cn": "汇编器参数",
+                    "$ref": "#/definitions/FLAGS",
+                    "default": ""
                 }
             }
         },
