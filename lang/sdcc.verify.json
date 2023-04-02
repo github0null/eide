@@ -185,16 +185,6 @@
                         "size"
                     ]
                 },
-                "$one-module-per-function": {
-                    "type": "boolean",
-                    "markdownDescription": "Module Split Optimization (supported by eide)",
-                    "description.zh-cn": "模块拆分优化 (supported by eide)",
-                    "default": false,
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
                 "plain-char-is-signed": {
                     "type": "boolean",
                     "markdownDescription": "plain char is signed",
