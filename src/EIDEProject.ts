@@ -1975,12 +1975,12 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         return false;
     }
 
-    getExtraArgsForSource(fspath: string, virtpath?: string, cfg?: SourceExtraCompilerOptionsCfg): string[] | undefined {
+    getExtraArgsForSource(fspath: string, virtpath?: string, cfg?: SourceExtraCompilerOptionsCfg): { [expr: string]: string | undefined } {
 
         if (cfg == undefined)
-            return undefined;
+            return {};
 
-        const extraArgs: string[] = [];
+        const extraArgs: { [expr: string]: string } = {};
 
         // for fs path
         if (cfg.files) {
@@ -1992,7 +1992,11 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
                 if (globmatch.isMatch(searchPath, expr)) {
                     const val = patterns[expr]?.replace(/\r\n|\n/g, ' ').replace(/\\r|\\n|\\t/g, ' ').trim();
                     if (val) {
-                        extraArgs.push(val);
+                        if (extraArgs[expr]) {
+                            extraArgs[expr] = extraArgs[expr] + ' ' + val;
+                        } else {
+                            extraArgs[expr] = val;
+                        }
                     }
                 }
             }
@@ -2005,28 +2009,40 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
                 if (globmatch.isMatch(searchPath, expr)) {
                     const val = patterns[expr]?.replace(/\r\n|\n/g, ' ').replace(/\\r|\\n|\\t/g, ' ').trim();
                     if (val) {
-                        extraArgs.push(val);
+                        if (extraArgs[expr]) {
+                            extraArgs[expr] = extraArgs[expr] + ' ' + val;
+                        } else {
+                            extraArgs[expr] = val;
+                        }
                     }
                 }
             }
         }
 
-        return extraArgs.length > 0 ? extraArgs : undefined;
+        return extraArgs;
     }
 
-    getExtraArgsForFolder(folderpath: string, isVirtpath?: boolean, cfg?: SourceExtraCompilerOptionsCfg): string[] | undefined {
+    getExtraArgsForFolder(folderpath: string, isVirtpath?: boolean, cfg?: SourceExtraCompilerOptionsCfg): { [expr: string]: string | undefined } {
 
         if (cfg == undefined)
-            return undefined;
+            return {};
 
-        const extraArgs: string[] = [];
+        const extraArgs: { [expr: string]: string | undefined } = {};
 
-        this._matchExtraArgsForFolder(folderpath, isVirtpath, cfg, (expr, path, args) => {
-            extraArgs.push(args);
+        this._matchExtraArgsForFolder(folderpath, isVirtpath, cfg, (expr, path, val) => {
+
+            if (val) {
+                if (extraArgs[expr]) {
+                    extraArgs[expr] = extraArgs[expr] + ' ' + val;
+                } else {
+                    extraArgs[expr] = val;
+                }
+            }
+
             return false;
         });
 
-        return extraArgs.length > 0 ? extraArgs : undefined;
+        return extraArgs;
     }
 
     private _matchExtraArgsForFolder(
@@ -2611,7 +2627,18 @@ class EIDEProject extends AbstractProject {
     }
 
     private getExtraCompilerOptionsBySrcFile(srcPath: string, vPath?: string): string[] | undefined {
-        return this.getExtraArgsForSource(srcPath, vPath, this.getSourceExtraArgsCfg());
+
+        const allArgs = this.getExtraArgsForSource(srcPath, vPath, this.getSourceExtraArgsCfg());
+        if (!allArgs)
+            return undefined;
+
+        const argsList: string[] = [];
+
+        for (const expr in allArgs) {
+            argsList.push(allArgs[expr] || '');
+        }
+
+        return argsList;
     }
 
     //////////////////////////////// source refs ///////////////////////////////////

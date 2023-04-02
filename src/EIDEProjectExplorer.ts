@@ -4788,23 +4788,33 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (!extraArgs)
             return;
 
-        const ccArgs = project.getExtraArgsForSource(fspath, virtpath, extraArgs)?.join(' ').trim() || '';
+        const argsMap    = project.getExtraArgsForSource(fspath, virtpath, extraArgs);
         const absPattern = project.getExtraArgsAbsPatternForSource(fspath, virtpath, extraArgs);
-        const isInherited = ccArgs && !absPattern;
+        const ccOptions  = absPattern ? (argsMap[absPattern] || '') : '';
+
+        // merge all inherited args
+        let inheritedArgs: string = '';
+        for (const key in argsMap) {
+            const val = argsMap[key]?.trim();
+            if (key != absPattern && val) {
+                inheritedArgs = `${inheritedArgs} ${val}`;
+            }
+        }
+        inheritedArgs = inheritedArgs.trim();
 
         const ui_cfg: SimpleUIConfig = {
             title: 'Extra Compiler Options',
             items: {},
         };
 
-        if (isInherited) { // 继承于其他匹配模式
+        if (inheritedArgs) { // 继承于其他匹配模式
             ui_cfg.items['inherit'] = {
                 type: 'input',
                 attrs: { readonly: true },
                 name: `Inherited Options (from other pattern, check your '*.files.options.yml' file for details !)`,
                 data: <SimpleUIConfigData_input>{
-                    value: ccArgs,
-                    default: ccArgs
+                    value: inheritedArgs,
+                    default: inheritedArgs
                 }
             };
         }
@@ -4815,8 +4825,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             name: 'Compiler Options',
             data: <SimpleUIConfigData_input>{
                 placeHolder: `compiler options, like: '-O1', '-Os', '-flto' ...`,
-                value: isInherited ? '' : ccArgs,
-                default: isInherited ? '' : ccArgs,
+                value: ccOptions,
+                default: ccOptions,
             },
         };
 
@@ -4884,23 +4894,33 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (!extraArgs)
             return;
 
-        const ccArgs = project.getExtraArgsForFolder(folderpath, isVirtpath, extraArgs)?.join(' ').trim() || '';
+        const argsMap    = project.getExtraArgsForFolder(folderpath, isVirtpath, extraArgs);
         const absPattern = project.getExtraArgsAbsPatternForFolder(folderpath, isVirtpath, extraArgs);
-        const isInherited = ccArgs && !absPattern;
+        const ccOptions  = absPattern ? (argsMap[absPattern] || '') : '';
+
+        // merge all inherited args
+        let inheritedOptions: string = '';
+        for (const key in argsMap) {
+            const val = argsMap[key]?.trim();
+            if (key != absPattern && val) {
+                inheritedOptions = `${inheritedOptions} ${val}`;
+            }
+        }
+        inheritedOptions = inheritedOptions.trim();
 
         const ui_cfg: SimpleUIConfig = {
             title: 'Extra Compiler Options',
             items: {},
         };
 
-        if (isInherited) { // 继承于其他匹配模式
+        if (inheritedOptions) { // 继承于其他匹配模式
             ui_cfg.items['inherit'] = {
                 type: 'input',
                 attrs: { readonly: true },
                 name: `Inherited Options (from other args pattern, check your '*.files.options.yml' file for details !)`,
                 data: <SimpleUIConfigData_input>{
-                    value: ccArgs,
-                    default: ccArgs
+                    value: inheritedOptions,
+                    default: inheritedOptions
                 }
             };
         }
@@ -4911,8 +4931,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             name: 'Compiler Options',
             data: <SimpleUIConfigData_input>{
                 placeHolder: `compiler options, like: '-O1', '-Os', '-flto' ...`,
-                value: isInherited ? '' : ccArgs,
-                default: isInherited ? '' : ccArgs,
+                value: ccOptions,
+                default: ccOptions,
             },
         };
 
