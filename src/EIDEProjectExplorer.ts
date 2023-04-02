@@ -4822,7 +4822,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         WebPanelManager.instance().showSimpleConfigUI(ui_cfg, (new_cfg) => {
 
-            const nArgs = (<SimpleUIConfigData_input>new_cfg.items['args'].data).value.trim();
+            const nArgs = (<SimpleUIConfigData_input>new_cfg.items['args'].data).value.replace(/\r\n|\n/g, ' ').trim();
 
             let pattern: string;
 
@@ -4930,7 +4930,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         WebPanelManager.instance().showSimpleConfigUI(ui_cfg, (new_cfg) => {
 
-            const nArgs = (<SimpleUIConfigData_input>new_cfg.items['args'].data).value.trim();
+            const nArgs = (<SimpleUIConfigData_input>new_cfg.items['args'].data).value.replace(/\r\n|\n/g, ' ').trim();
             const isRecursive = (<SimpleUIConfigData_boolean>new_cfg.items['recursive'].data).value;
 
             let pattern: string;
