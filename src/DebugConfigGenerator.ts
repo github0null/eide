@@ -165,6 +165,13 @@ class CortexDebugConfigProvider extends IDebugConfigProvider {
             // must use elf to debug
             debugConfig.executable = outDir + File.sep + prjConfig.name + '.elf';
 
+            const toolchain = prj.getToolchain();
+            if (toolchain.getToolchainPrefix) {
+                debugConfig.toolchainPrefix = toolchain.getToolchainPrefix().trim().replace(/-$/, '');
+            } else if (debugConfig.toolchainPrefix) {
+                debugConfig.toolchainPrefix = undefined;
+            }
+
             // setup svd file, if existed
             const device = prj.GetPackManager().getCurrentDevInfo();
             if (device && device.svdPath && debugConfig.svdFile == undefined) {
