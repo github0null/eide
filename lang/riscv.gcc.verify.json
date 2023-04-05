@@ -326,7 +326,7 @@
                     "type": "boolean"
                 },
                 "not-print-mem-usage": {
-                    "markdownDescription": "Disable Print Memory Usage (For Old GCC)",
+                    "markdownDescription": "Not Print Memory Usage (disable: -Wl,--print-memory-usage)",
                     "type": "boolean"
                 },
                 "LD_FLAGS": {
