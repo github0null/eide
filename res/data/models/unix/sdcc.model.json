@@ -1,0 +1,306 @@
+{
+    "name": "SDCC",
+    "id": "SDCC",
+    "version": {
+        "args": "-v",
+        "matcher": "^\\s*(?<name>SDCC) .+? (?<version>\\d+\\.\\d+\\.\\d+)"
+    },
+    "global": {
+        "device": {
+            "type": "value",
+            "command": "-m",
+            "group": [
+                "c/cpp",
+                "linker",
+                "linker-elf",
+                "linker-s19"
+            ],
+            "location": "first"
+        },
+        "stack-auto": {
+            "type": "selectable",
+            "command": {
+                "true": "--stack-auto",
+                "false": ""
+            },
+            "group": [
+                "c/cpp"
+            ]
+        },
+        "use-external-stack": {
+            "type": "selectable",
+            "command": {
+                "true": "--xstack",
+                "false": ""
+            },
+            "group": [
+                "c/cpp"
+            ]
+        },
+        "int-long-reent": {
+            "type": "selectable",
+            "command": {
+                "true": "--int-long-reent",
+                "false": ""
+            },
+            "group": [
+                "c/cpp"
+            ]
+        },
+        "float-reent": {
+            "type": "selectable",
+            "command": {
+                "true": "--float-reent",
+                "false": ""
+            },
+            "group": [
+                "c/cpp"
+            ]
+        },
+        "xram-movc": {
+            "type": "selectable",
+            "command": {
+                "true": "--xram-movc",
+                "false": ""
+            },
+            "group": [
+                "c/cpp"
+            ]
+        },
+        "noinit-xram-from-code": {
+            "type": "selectable",
+            "command": {
+                "true": "--no-xinit-opt",
+                "false": ""
+            },
+            "group": [
+                "c/cpp"
+            ]
+        },
+        "peep-asm": {
+            "type": "selectable",
+            "command": {
+                "true": "--peep-asm",
+                "false": ""
+            },
+            "group": [
+                "c/cpp"
+            ]
+        },
+        "peep-return": {
+            "type": "selectable",
+            "command": {
+                "true": "--peep-return",
+                "false": ""
+            },
+            "group": [
+                "c/cpp"
+            ]
+        },
+        "optimize-type": {
+            "type": "selectable",
+            "command": {
+                "speed": "--opt-code-speed",
+                "size": "--opt-code-size",
+                "false": ""
+            },
+            "group": [
+                "c/cpp"
+            ]
+        },
+        "plain-char-is-signed": {
+            "type": "selectable",
+            "command": {
+                "true": "--fsigned-char",
+                "false": ""
+            },
+            "group": [
+                "c/cpp"
+            ]
+        },
+        "out-debug-info": {
+            "type": "selectable",
+            "command": {
+                "true": "--debug",
+                "false": ""
+            },
+            "group": [
+                "c/cpp",
+                "linker-elf"
+            ]
+        },
+        "allow-unsafe-read": {
+            "type": "selectable",
+            "command": {
+                "true": "--allow-unsafe-read",
+                "false": ""
+            },
+            "group": [
+                "c/cpp"
+            ]
+        },
+        "no-optimize-std-lib": {
+            "type": "selectable",
+            "command": {
+                "true": "--nostdlibcall",
+                "false": ""
+            },
+            "group": [
+                "c/cpp"
+            ]
+        },
+        "use-non-free": {
+            "type": "selectable",
+            "command": {
+                "true": "--use-non-free",
+                "false": ""
+            },
+            "group": [
+                "c/cpp",
+                "linker",
+                "linker-elf",
+                "linker-s19"
+            ]
+        },
+        "misc-controls": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c/cpp",
+                "linker",
+                "linker-elf",
+                "linker-s19"
+            ]
+        },
+        "ASM_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "asm"
+            ]
+        }
+    },
+    "groups": {
+        "c/cpp": {
+            "$path": "bin/sdcc",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "-D${key}=${value}"
+            },
+            "$invoke": {
+                "useFile": false,
+                "body": "${value}"
+            },
+            "$output": "-MMD -o ${out} ${in}",
+            "$outputSuffix": ".rel",
+            "$default": [
+                "-c"
+            ],
+            "$language-c": {
+                "type": "selectable",
+                "command": {
+                    "c89": "--std-c89",
+                    "sdcc89": "--std-sdcc89",
+                    "c95": "--std-c95",
+                    "c99": "--std-c99",
+                    "sdcc99": "--std-sdcc99",
+                    "c11": "--std-c11",
+                    "sdcc11": "--std-sdcc11",
+                    "c2x": "--std-c2x",
+                    "sdcc2x": "--std-sdcc2x",
+                    "false": "--std-c99"
+                }
+            }
+        },
+        "asm": {
+            "$path": "bin/${toolName}",
+            "$defToolName": "sdcc",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$invoke": {
+                "useFile": false,
+                "body": "${value}"
+            },
+            "$output": "${out} ${in}",
+            "$outputSuffix": ".rel",
+            "$default": [
+                "-plosgffw"
+            ]
+        },
+        "linker": {
+            "$path": "bin/sdcc",
+            "$libs": {
+                "body": "-L ${value}"
+            },
+            "$invoke": {
+                "useFile": false,
+                "body": "${value}"
+            },
+            "$default": [
+                "--out-fmt-ihx"
+            ],
+            "$mapSuffix": ".map",
+            "$objPathSep": " ",
+            "$outputSuffix": ".ihx",
+            "$output": "-o ${out} ${in}",
+            "$mainFirst": true,
+            "$outputBin": [
+                {
+                    "name": "output hex file",
+                    "toolPath": "bin/packihx",
+                    "outputSuffix": ".hex",
+                    "command": "${linkerOutput}>${output}"
+                }
+            ]
+        },
+        "linker-lib": {
+            "$path": "bin/sdar",
+            "$invoke": {
+                "useFile": false,
+                "body": "${value}"
+            },
+            "$objPathSep": " ",
+            "$outputSuffix": ".lib",
+            "$output": "-rcv ${out} ${in}"
+        },
+        "linker-s19": {
+            "$path": "bin/sdcc",
+            "$libs": {
+                "body": "-L ${value}"
+            },
+            "$invoke": {
+                "useFile": false,
+                "body": "${value}"
+            },
+            "$default": [
+                "--out-fmt-s19"
+            ],
+            "$mapSuffix": ".map",
+            "$objPathSep": " ",
+            "$outputSuffix": ".s19",
+            "$output": "-o ${out} ${in}",
+            "$mainFirst": true
+        },
+        "linker-elf": {
+            "$path": "bin/sdcc",
+            "$libs": {
+                "body": "-L ${value}"
+            },
+            "$invoke": {
+                "useFile": false,
+                "body": "${value}"
+            },
+            "$default": [
+                "--out-fmt-elf"
+            ],
+            "$mapSuffix": ".map",
+            "$objPathSep": " ",
+            "$outputSuffix": ".elf",
+            "$output": "-o ${out} ${in}",
+            "$mainFirst": true
+        }
+    }
+}

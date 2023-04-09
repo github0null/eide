@@ -1,0 +1,643 @@
+{
+    "name": "ARMCLANG 6",
+    "id": "AC6",
+    "version": {
+        "args": "--help",
+        "matcher": "(?<name>ARM Compiler) (?<version>[\\d\\.]+)"
+    },
+    "useUnixPath": true,
+    "global": {
+        "big-endian": {
+            "type": "selectable",
+            "command": {
+                "true": "-mbig-endian",
+                "false": "-mlittle-endian"
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm-clang"
+            ],
+            "location": "first"
+        },
+        "microcontroller-cpu": {
+            "type": "keyValue",
+            "command": "-mcpu=",
+            "enum": {
+                "cortex-m0": "cortex-m0",
+                "cortex-m0+": "cortex-m0plus",
+                "cortex-m23": "cortex-m23",
+                "cortex-m3": "cortex-m3",
+                "cortex-m33": "cortex-m33+nodsp",
+                "cortex-m33-sp": "cortex-m33+nodsp",
+                "cortex-m33.dsp": "cortex-m33",
+                "cortex-m33.dsp-sp": "cortex-m33",
+                "cortex-m35p": "cortex-m35p+nodsp",
+                "cortex-m35p-sp": "cortex-m35p+nodsp",
+                "cortex-m35p.dsp": "cortex-m35p",
+                "cortex-m35p.dsp-sp": "cortex-m35p",
+                "cortex-m4": "cortex-m4",
+                "cortex-m4-sp": "cortex-m4",
+                "cortex-m7": "cortex-m7",
+                "cortex-m7-sp": "cortex-m7",
+                "cortex-m7-dp": "cortex-m7",
+                "sc000": "sc000",
+                "sc300": "sc300",
+                "armv8-m.base": "armv8m.base",
+                "armv8-m.main": "armv8m.main",
+                "armv8-m.main-dp": "armv8m.main",
+                "armv8-m.main.dsp": "armv8m.main+dsp",
+                "armv8-m.main.dsp-dp": "armv8m.main+dsp",
+                "armv8-m.main.dsp-sp": "armv8m.main+dsp",
+                "armv8-m.main-sp": "armv8m.main"
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm-clang"
+            ],
+            "location": "first"
+        },
+        "microcontroller-fpu": {
+            "type": "selectable",
+            "command": {
+                "cortex-m0": "",
+                "cortex-m0+": "",
+                "cortex-m23": "",
+                "cortex-m3": "",
+                "cortex-m33": "-mfpu=none",
+                "cortex-m33-sp": "-mfpu=fpv5-sp-d16",
+                "cortex-m33.dsp": "-mfpu=none",
+                "cortex-m33.dsp-sp": "-mfpu=fpv5-sp-d16",
+                "cortex-m35p": "-mfpu=none",
+                "cortex-m35p-sp": "-mfpu=fpv5-sp-d16",
+                "cortex-m35p.dsp": "-mfpu=none",
+                "cortex-m35p.dsp-sp": "-mfpu=fpv5-sp-d16",
+                "cortex-m4": "-mfpu=none",
+                "cortex-m4-sp": "-mfpu=fpv4-sp-d16",
+                "cortex-m7": "-mfpu=none",
+                "cortex-m7-sp": "-mfpu=fpv5-sp-d16",
+                "cortex-m7-dp": "-mfpu=fpv5-d16",
+                "sc000": "",
+                "sc300": "",
+                "armv8-m.base": "",
+                "armv8-m.main": "-mfpu=none",
+                "armv8-m.main-dp": "-mfpu=fpv5-d16",
+                "armv8-m.main.dsp": "-mfpu=none",
+                "armv8-m.main.dsp-dp": "-mfpu=fpv5-d16",
+                "armv8-m.main.dsp-sp": "-mfpu=fpv5-sp-d16",
+                "armv8-m.main-sp": "-mfpu=fpv5-sp-d16"
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm-clang"
+            ],
+            "location": "first"
+        },
+        "microcontroller-float": {
+            "type": "selectable",
+            "command": {
+                "cortex-m0": "",
+                "cortex-m0+": "",
+                "cortex-m23": "",
+                "cortex-m3": "",
+                "cortex-m33": "-mfloat-abi=soft",
+                "cortex-m33-sp": "-mfloat-abi=hard",
+                "cortex-m33.dsp": "-mfloat-abi=soft",
+                "cortex-m33.dsp-sp": "-mfloat-abi=hard",
+                "cortex-m35p": "-mfloat-abi=soft",
+                "cortex-m35p-sp": "-mfloat-abi=hard",
+                "cortex-m35p.dsp": "-mfloat-abi=soft",
+                "cortex-m35p.dsp-sp": "-mfloat-abi=hard",
+                "cortex-m4": "-mfloat-abi=soft",
+                "cortex-m4-sp": "-mfloat-abi=hard",
+                "cortex-m7": "-mfloat-abi=soft",
+                "cortex-m7-sp": "-mfloat-abi=hard",
+                "cortex-m7-dp": "-mfloat-abi=hard",
+                "sc000": "",
+                "sc300": "",
+                "armv8-m.base": "",
+                "armv8-m.main": "-mfloat-abi=soft",
+                "armv8-m.main-dp": "-mfloat-abi=hard",
+                "armv8-m.main.dsp": "-mfloat-abi=soft",
+                "armv8-m.main.dsp-dp": "-mfloat-abi=hard",
+                "armv8-m.main.dsp-sp": "-mfloat-abi=hard",
+                "armv8-m.main-sp": "-mfloat-abi=hard"
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm-clang"
+            ],
+            "location": "first"
+        },
+        "output-debug-info": {
+            "type": "selectable",
+            "command": {
+                "enable": "-g",
+                "disable": "",
+                "dwarf-2": "-g -gdwarf-2",
+                "dwarf-3": "-g -gdwarf-3",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "asm-clang"
+            ]
+        },
+        "misc-controls": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "asm-clang",
+                "linker"
+            ]
+        }
+    },
+    "groups": {
+        "c": {
+            "$path": "bin\\armclang.exe",
+            "$encoding": "UTF8",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "-D${key}=\"${value}\""
+            },
+            "$output": "-o ${out} -MMD ${in}",
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$default": [
+                "--target=arm-arm-none-eabi",
+                "-c",
+                "-xc"
+            ],
+            "$language-c": {
+                "type": "keyValue",
+                "command": "-std=",
+                "enum": {
+                    "default": "gnu11",
+                    "c90": "c90",
+                    "gnu90": "gnu90",
+                    "c99": "c99",
+                    "gnu99": "gnu99",
+                    "c11": "c11",
+                    "gnu11": "gnu11"
+                }
+            },
+            "use-microLIB": {
+                "type": "selectable",
+                "command": {
+                    "true": "-D__MICROLIB",
+                    "false": ""
+                }
+            },
+            "execute-only-code": {
+                "type": "selectable",
+                "command": {
+                    "true": "-mexecute-only",
+                    "false": ""
+                }
+            },
+            "optimization": {
+                "type": "keyValue",
+                "command": "",
+                "enum": {
+                    "default": "-O0",
+                    "level-0": "-O0",
+                    "level-1": "-O1",
+                    "level-2": "-O2",
+                    "level-3": "-O3",
+                    "level-fast": "-Ofast",
+                    "level-balanced": "-Os",
+                    "level-image-size": "-Oz"
+                }
+            },
+            "link-time-optimization": {
+                "type": "selectable",
+                "command": {
+                    "true": "-flto",
+                    "false": ""
+                }
+            },
+            "split-load-and-store-multiple": {
+                "type": "selectable",
+                "command": {
+                    "true": "-ldm-stm",
+                    "false": ""
+                }
+            },
+            "one-elf-section-per-function": {
+                "type": "selectable",
+                "command": {
+                    "true": "-ffunction-sections",
+                    "false": "-fno-function-sections"
+                }
+            },
+            "turn-Warning-into-errors": {
+                "type": "selectable",
+                "command": {
+                    "true": "-Werror",
+                    "false": ""
+                }
+            },
+            "plain-char-is-signed": {
+                "type": "selectable",
+                "command": {
+                    "true": "-fsigned-char",
+                    "false": "-funsigned-char"
+                }
+            },
+            "read-only-position-independent": {
+                "type": "selectable",
+                "command": {
+                    "true": "-fropi",
+                    "false": ""
+                }
+            },
+            "read-write-position-independent": {
+                "type": "selectable",
+                "command": {
+                    "true": "-frwpi",
+                    "false": ""
+                }
+            },
+            "short-enums#wchar": {
+                "type": "selectable",
+                "command": {
+                    "true": "-fshort-enums -fshort-wchar",
+                    "false": ""
+                }
+            },
+            "use-rtti": {
+                "type": "selectable",
+                "command": {
+                    "true": "",
+                    "false": "-fno-rtti"
+                }
+            },
+            "warnings": {
+                "type": "keyValue",
+                "command": "",
+                "enum": {
+                    "default": "-Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality",
+                    "unspecified": "",
+                    "no-warnings": "-w",
+                    "all-warnings": "-Weverything -Wno-packed -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality",
+                    "ac5-like-warnings": "-Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality",
+                    "misra-compatible": "-Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-covered-switch-default -Wno-unreachable-code-break"
+                }
+            },
+            "C_FLAGS": {
+                "type": "list",
+                "command": ""
+            }
+        },
+        "cpp": {
+            "$path": "bin\\armclang.exe",
+            "$encoding": "UTF8",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "-D${key}=\"${value}\""
+            },
+            "$output": "-o ${out} -MMD ${in}",
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$default": [
+                "--target=arm-arm-none-eabi",
+                "-c",
+                "-xc++"
+            ],
+            "$language-cpp": {
+                "type": "keyValue",
+                "command": "-std=",
+                "enum": {
+                    "default": "gnu++98",
+                    "c++98": "c++98",
+                    "gnu++98": "gnu++98",
+                    "c++11": "c++11",
+                    "gnu++11": "gnu++11",
+                    "c++03": "c++03",
+                    "c++14": "c++14"
+                }
+            },
+            "use-microLIB": {
+                "type": "selectable",
+                "command": {
+                    "true": "-D__MICROLIB",
+                    "false": ""
+                }
+            },
+            "execute-only-code": {
+                "type": "selectable",
+                "command": {
+                    "true": "-mexecute-only",
+                    "false": ""
+                }
+            },
+            "optimization": {
+                "type": "keyValue",
+                "command": "",
+                "enum": {
+                    "default": "-O0",
+                    "level-0": "-O0",
+                    "level-1": "-O1",
+                    "level-2": "-O2",
+                    "level-3": "-O3",
+                    "level-fast": "-Ofast",
+                    "level-balanced": "-Os",
+                    "level-image-size": "-Oz"
+                }
+            },
+            "link-time-optimization": {
+                "type": "selectable",
+                "command": {
+                    "true": "-flto",
+                    "false": ""
+                }
+            },
+            "split-load-and-store-multiple": {
+                "type": "selectable",
+                "command": {
+                    "true": "-ldm-stm",
+                    "false": ""
+                }
+            },
+            "one-elf-section-per-function": {
+                "type": "selectable",
+                "command": {
+                    "true": "-ffunction-sections",
+                    "false": "-fno-function-sections"
+                }
+            },
+            "turn-Warning-into-errors": {
+                "type": "selectable",
+                "command": {
+                    "true": "-Werror",
+                    "false": ""
+                }
+            },
+            "plain-char-is-signed": {
+                "type": "selectable",
+                "command": {
+                    "true": "-fsigned-char",
+                    "false": "-funsigned-char"
+                }
+            },
+            "read-only-position-independent": {
+                "type": "selectable",
+                "command": {
+                    "true": "-fropi",
+                    "false": ""
+                }
+            },
+            "read-write-position-independent": {
+                "type": "selectable",
+                "command": {
+                    "true": "-frwpi",
+                    "false": ""
+                }
+            },
+            "short-enums#wchar": {
+                "type": "selectable",
+                "command": {
+                    "true": "-fshort-enums -fshort-wchar",
+                    "false": ""
+                }
+            },
+            "use-rtti": {
+                "type": "selectable",
+                "command": {
+                    "true": "",
+                    "false": "-fno-rtti"
+                }
+            },
+            "warnings": {
+                "type": "keyValue",
+                "command": "",
+                "enum": {
+                    "default": "-Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality",
+                    "unspecified": "",
+                    "no-warnings": "-w",
+                    "all-warnings": "-Weverything -Wno-packed -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality",
+                    "ac5-like-warnings": "-Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality",
+                    "misra-compatible": "-Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-covered-switch-default -Wno-unreachable-code-break"
+                }
+            },
+            "CXX_FLAGS": {
+                "type": "list",
+                "command": ""
+            }
+        },
+        "asm": {
+            "microcontroller-cpu": {
+                "type": "keyValue",
+                "command": "--cpu ",
+                "enum": {
+                    "cortex-m0": "Cortex-M0",
+                    "cortex-m0+": "Cortex-M0+",
+                    "cortex-m23": "Cortex-M23",
+                    "cortex-m3": "Cortex-M3",
+                    "cortex-m33": "Cortex-M33.no_dsp --fpu=SoftVFP",
+                    "cortex-m33-sp": "Cortex-M33.no_dsp --fpu=FPv5-SP",
+                    "cortex-m33.dsp": "Cortex-M33 --fpu=SoftVFP",
+                    "cortex-m33.dsp-sp": "Cortex-M33 --fpu=FPv5-SP",
+                    "cortex-m35p": "Cortex-M35P.no_dsp --fpu=SoftVFP",
+                    "cortex-m35p-sp": "Cortex-M35P.no_dsp --fpu=FPv5-SP",
+                    "cortex-m35p.dsp": "Cortex-M35P --fpu=SoftVFP",
+                    "cortex-m35p.dsp-sp": "Cortex-M35P --fpu=FPv5-SP",
+                    "cortex-m4": "Cortex-M4 --fpu=SoftVFP",
+                    "cortex-m4-sp": "Cortex-M4.fp",
+                    "cortex-m7": "Cortex-M7 --fpu=SoftVFP",
+                    "cortex-m7-sp": "Cortex-M7.fp.sp",
+                    "cortex-m7-dp": "Cortex-M7.fp.dp",
+                    "sc000": "SC000",
+                    "sc300": "SC300",
+                    "armv8-m.base": "8-M.Base",
+                    "armv8-m.main": "8-M.Main --fpu=SoftVFP",
+                    "armv8-m.main-dp": "8-M.Main --fpu=FPv5_D16",
+                    "armv8-m.main.dsp": "8-M.Main.dsp --fpu=SoftVFP",
+                    "armv8-m.main.dsp-dp": "8-M.Main.dsp --fpu=FPv5_D16",
+                    "armv8-m.main.dsp-sp": "8-M.Main.dsp --fpu=FPv5-SP",
+                    "armv8-m.main-sp": "8-M.Main --fpu=FPv5-SP"
+                }
+            },
+            "big-endian": {
+                "type": "selectable",
+                "command": {
+                    "true": "--bi",
+                    "false": "--li"
+                }
+            },
+            "$path": "bin\\armasm.exe",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$output": "-o ${out} --depend ${refPath} ${in}",
+            "$invoke": {
+                "useFile": true,
+                "body": "--Via ${value}"
+            },
+            "defines": {
+                "type": "list",
+                "command": "--pd "
+            },
+            "use-microLIB": {
+                "type": "selectable",
+                "command": {
+                    "true": "--pd \"__MICROLIB SETA 1\"",
+                    "false": ""
+                }
+            }
+        },
+        "asm-clang": {
+            "$path": "bin\\armclang.exe",
+            "$encoding": "UTF8",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$output": "-o ${out} -MMD ${in}",
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$default": [
+                "--target=arm-arm-none-eabi",
+                "-c",
+                "-x assembler-with-cpp"
+            ],
+            "defines": {
+                "type": "list",
+                "command": "-D"
+            },
+            "use-microLIB": {
+                "type": "selectable",
+                "command": {
+                    "true": "-D__MICROLIB",
+                    "false": ""
+                }
+            }
+        },
+        "linker": {
+            "microcontroller-cpu": {
+                "type": "keyValue",
+                "command": "--cpu=",
+                "enum": {
+                    "cortex-m0": "Cortex-M0",
+                    "cortex-m0+": "Cortex-M0+",
+                    "cortex-m23": "Cortex-M23",
+                    "cortex-m3": "Cortex-M3",
+                    "cortex-m33": "Cortex-M33.no_dsp.no_fp --fpu=SoftVFP",
+                    "cortex-m33-sp": "Cortex-M33.no_dsp",
+                    "cortex-m33.dsp": "Cortex-M33.no_fp --fpu=SoftVFP",
+                    "cortex-m33.dsp-sp": "Cortex-M33",
+                    "cortex-m35p": "Cortex-M35P.no_dsp.no_fp --fpu=SoftVFP",
+                    "cortex-m35p-sp": "Cortex-M35P.no_dsp",
+                    "cortex-m35p.dsp": "Cortex-M35P.no_fp --fpu=SoftVFP",
+                    "cortex-m35p.dsp-sp": "Cortex-M35P",
+                    "cortex-m4": "Cortex-M4 --fpu=SoftVFP",
+                    "cortex-m4-sp": "Cortex-M4.fp",
+                    "cortex-m7": "Cortex-M7 --fpu=SoftVFP",
+                    "cortex-m7-sp": "Cortex-M7.fp.sp",
+                    "cortex-m7-dp": "Cortex-M7.fp.dp",
+                    "sc000": "SC000",
+                    "sc300": "SC300",
+                    "armv8-m.base": "8-M.Base",
+                    "armv8-m.main": "8-M.Main --fpu=SoftVFP",
+                    "armv8-m.main-dp": "8-M.Main --fpu=FPv5_D16",
+                    "armv8-m.main.dsp": "8-M.Main.dsp --fpu=SoftVFP",
+                    "armv8-m.main.dsp-dp": "8-M.Main.dsp --fpu=FPv5_D16",
+                    "armv8-m.main.dsp-sp": "8-M.Main.dsp --fpu=FPv5-SP",
+                    "armv8-m.main-sp": "8-M.Main --fpu=FPv5-SP"
+                }
+            },
+            "$path": "bin\\armlink.exe",
+            "$invoke": {
+                "useFile": true,
+                "body": "--Via ${value}"
+            },
+            "$output": "${in} -o ${out}",
+            "$default-tail": [
+                "--strict",
+                "--summary_stderr --info summarysizes --map --xref --callgraph --symbols",
+                "--info sizes --info totals --info unused --info veneers"
+            ],
+            "$matcher": [
+                "^\\s*total.*size"
+            ],
+            "$ramMatcher": "^\\s*Total RW  Size \\(RW Data \\+ ZI Data\\)\\s+(\\d+)",
+            "$romMatcher": "^\\s*Total ROM Size \\(Code \\+ RO Data \\+ RW Data\\)\\s+(\\d+)",
+            "$linkMap": {
+                "type": "value",
+                "command": "--list ${mapPath}"
+            },
+            "use-microLIB": {
+                "type": "selectable",
+                "command": {
+                    "true": "--library_type=microlib",
+                    "false": ""
+                }
+            },
+            "output-debug-info": {
+                "type": "selectable",
+                "command": {
+                    "enable": "",
+                    "disable": "--nodebug",
+                    "false": ""
+                }
+            },
+            "link-time-optimization": {
+                "type": "selectable",
+                "command": {
+                    "true": "--lto",
+                    "false": ""
+                }
+            },
+            "link-scatter": {
+                "type": "list",
+                "command": "--scatter "
+            },
+            "$outputBin": [
+                {
+                    "name": "output hex file",
+                    "toolPath": "bin\\fromelf.exe",
+                    "outputSuffix": ".hex",
+                    "command": "--i32combined --output ${output} ${linkerOutput}"
+                },
+                {
+                    "name": "output s19 file",
+                    "toolPath": "bin\\fromelf.exe",
+                    "outputSuffix": ".s19",
+                    "command": "--m32combined --output ${output} ${linkerOutput}"
+                },
+                {
+                    "name": "output bin file",
+                    "toolPath": "bin\\fromelf.exe",
+                    "outputSuffix": ".bin",
+                    "command": "--bincombined --output ${output} ${linkerOutput}"
+                }
+            ]
+        },
+        "linker-lib": {
+            "$path": "bin\\armar.exe",
+            "$invoke": {
+                "useFile": true,
+                "body": "--Via ${value}"
+            },
+            "$output": "-rcv ${out} ${in}",
+            "$outputSuffix": ".lib"
+        }
+    }
+}
