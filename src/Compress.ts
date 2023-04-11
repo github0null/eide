@@ -40,7 +40,6 @@ export type SevenZipUnzipExcludeList = { name: string, recurse?: boolean }[];
 export class SevenZipper {
 
     static readonly MaxStep = 18;
-    static readonly ExcludeCmdSep = platform.osType() == 'win32' ? '!' : '\\!';
 
     private _7za: File;
     private _event: events.EventEmitter;
@@ -155,7 +154,7 @@ export class SevenZipper {
 
             if (option.excludeList) {
                 for (let excludeReg of option.excludeList) {
-                    paramList.push('-xr' + SevenZipper.ExcludeCmdSep + excludeReg.trim());
+                    paramList.push('-xr!' + excludeReg.trim());
                 }
             }
 
