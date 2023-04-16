@@ -40,7 +40,7 @@ import * as os from 'os';
 import { ICompileOptions, ArmBaseBuilderConfigData } from "./EIDEProjectModules";
 
 export type ToolchainName =
-    'SDCC' | 'Keil_C51' | 'IAR_STM8' | 'GNU_SDCC_STM8' |
+    'SDCC' | 'Keil_C51' | 'IAR_STM8' | 'GNU_SDCC_STM8' | 'COSMIC_STM8' |
     'AC5' | 'AC6' | 'GCC' | 'IAR_ARM' |
     'RISCV_GCC' | 'ANY_GCC' | 'None';
 
@@ -132,6 +132,13 @@ export interface IToolchian {
      */
     updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void;
 
+    /**
+     * used to show .map.view
+    */
+    parseMapFile?: (mapFile: string) => string[] | Error;
+
+    // others
+
     getLibDirs(): string[];
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void;
@@ -150,7 +157,7 @@ interface ToolchainEnums {
 export class ToolchainManager {
 
     private readonly toolchainNames: ToolchainEnums = {
-        'C51': ['Keil_C51', 'SDCC', 'IAR_STM8'],
+        'C51': ['Keil_C51', 'SDCC', 'IAR_STM8', 'COSMIC_STM8'],
         'ARM': ['AC5', 'AC6', 'GCC', 'IAR_ARM'],
         'RISC-V': ['RISCV_GCC'],
         'ANY-GCC': ['ANY_GCC']
@@ -180,6 +187,7 @@ export class ToolchainManager {
         this.add(new AC6());
         this.add(new GCC());
         this.add(new IARSTM8());
+        this.add(new COSMIC_STM8());
         this.add(new RISCV_GCC());
         this.add(new AnyGcc());
         this.add(new IARARM());
@@ -283,6 +291,8 @@ export class ToolchainManager {
                 return 'GCC For RISC-V';
             case 'ANY_GCC':
                 return 'Any GNU Toolchain';
+            case 'COSMIC_STM8':
+                return 'COSMIC STM8 C Compiler';
             default:
                 return '';
         }
@@ -399,6 +409,8 @@ export class ToolchainManager {
                 return File.fromArray([settingManager.getIarForArmDir().path, 'bin']);
             case 'IAR_STM8':
                 return File.fromArray([settingManager.getIARForStm8Dir().path, 'stm8', 'bin']);
+            case 'COSMIC_STM8':
+                return settingManager.getCosmicStm8ToolsDir();
             case 'SDCC':
                 return File.fromArray([settingManager.getSdccDir().path, 'bin']);
             case 'RISCV_GCC':
@@ -1045,6 +1057,169 @@ class GnuStm8Sdcc implements IToolchian {
             linker: {
                 "output-format": "elf",
                 "remove-unused-sections": true
+            }
+        };
+    }
+}
+
+class COSMIC_STM8 implements IToolchian {
+
+    readonly version = 1;
+
+    readonly settingName: string = 'EIDE.STM8.COSMIC.InstallDirectory';
+
+    readonly categoryName: string = 'COSMIC';
+
+    readonly name: ToolchainName = 'COSMIC_STM8';
+
+    readonly modelName: string = 'stm8.cosmic.model.json';
+
+    readonly configName: string = 'options.stm8-cosmic.json';
+
+    readonly verifyFileName: string = 'stm8.cosmic.verify.json';
+
+    newInstance(): IToolchian {
+        return new COSMIC_STM8();
+    }
+
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
+        // not support
+        return undefined;
+    }
+
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+        cppToolsConfig.cStandard   = 'c99';
+        cppToolsConfig.cppStandard = 'c++98';
+    }
+
+    preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
+
+        /* init default */
+        if (options["global"] == undefined) { options["global"] = {} }
+        if (options["linker"] == undefined) { options["linker"] = {} }
+        if (options["asm-compiler"] == undefined) { options["asm-compiler"] = {} }
+
+        /* setup cxstm8 cfg */
+        options['global']['cxstm8-config'] = `"${ResManager.instance().GetAppDataDir().path + File.sep + 'cxstm8.cfg'}"`;
+
+        /* convert output format */
+        if (options['linker']['output-format'] === 'lib') {
+            options['linker']['$use'] = 'linker-lib';
+        }
+
+        // auto include std c libraries
+        if (options['linker']['auto-include-stdc-libraries']) {
+
+            let model_suffix = '';
+            let codes_suffix = '';
+            let model_option = options["global"]['model'] || 'small';
+
+            // for more informations, see CXSTM8_UsersGuide.pdf, page 303
+            switch (model_option) {
+                case 'small':
+                    model_suffix = '';
+                    codes_suffix = '';
+                    break;
+                case 'large':
+                    model_suffix = 'l';
+                    codes_suffix = '';
+                    break;
+                case 'small-0':
+                    model_suffix = '';
+                    codes_suffix = '0';
+                    break;
+                case 'large-0':
+                    model_suffix = 'l';
+                    codes_suffix = '0';
+                    break;
+                default:
+                    break;
+            }
+
+            // crt libraries
+            //  | Startup     | Initialize     | From Table in
+            //  | crtsi(0).s  | @near          | @near
+            //  | crtsx(0).s  | @near and @far | @near
+            //  | crtsif(0).s | @near          | @far
+            //  | crtsxf(0).s | @near and @far | @far
+
+            let machineLibs: string[] = [
+                // standard ANSI libraries
+                `libfs${model_suffix}${codes_suffix}.sm8`, // Float Library
+                `libis${model_suffix}${codes_suffix}.sm8`, // Integer Only Library
+                `libm${codes_suffix}.sm8`,                 // Machine Library
+            ];
+
+            if (options['linker']['LIB_FLAGS'] == undefined) {
+                options['linker']['LIB_FLAGS'] = "";
+            }
+
+            // append libs
+            options['linker']['LIB_FLAGS'] += ' ' + machineLibs.join(' ');
+        }
+    }
+
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
+
+        const mList: string[] = [
+            '__CSMC__=1'
+        ];
+
+        return mList;
+    }
+
+    getCustomDefines(): string[] | undefined {
+        return undefined;
+    }
+
+    getToolchainDir(): File {
+        return SettingManager.GetInstance().getCosmicStm8ToolsDir();
+    }
+
+    getSystemIncludeList(builderOpts: ICompileOptions): string[] {
+        const cxstm8Path = this.getToolchainDir().path;
+        return [
+            [cxstm8Path, 'Hstm8'].join(File.sep)
+        ];
+    }
+
+    getForceIncludeHeaders(): string[] | undefined {
+        return [];
+    }
+
+    getDefaultIncludeList(): string[] {
+        const cxstm8Path = this.getToolchainDir().path;
+        return [
+            [cxstm8Path, 'Hstm8'].join(File.sep)
+        ];
+    }
+
+    getLibDirs(): string[] {
+        return [
+            [this.getToolchainDir().path, 'Lib'].join(File.sep)
+        ];
+    }
+
+    getDefaultConfig(): ICompileOptions {
+        return <ICompileOptions>{
+            version: this.version,
+            beforeBuildTasks: [],
+            afterBuildTasks: [],
+            global: {
+                "model": "small",
+                "output-debug-info": "enable",
+                "output-list-file": true
+            },
+            'c/cpp-compiler': {
+                "c99-mode": true,
+                "optimization": "size",
+                "split-functions": true,
+                "warnings": "all"
+            },
+            'asm-compiler': {},
+            'linker': {
+                "output-format": 'elf',
+                "auto-include-stdc-libraries": true
             }
         };
     }

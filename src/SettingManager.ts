@@ -357,6 +357,33 @@ export class SettingManager {
             || 'null';
     }
 
+    //--------------------------COSMIC-----------------------------
+
+    getCosmicStm8ToolsDir(): File {
+
+        const p = this.getFullPathByPluginConfig('STM8.COSMIC.InstallDirectory');
+        if (p) {
+            return new File(p);
+        }
+
+        const execName = 'cxstm8';
+
+        if (this.envPathCache.has(execName)) {
+            return new File(<string>this.envPathCache.get(execName))
+        }
+
+        else {
+            const absPath = find(execName);
+            if (absPath) {
+                const dirName = NodePath.dirname(absPath);
+                this.envPathCache.set(execName, dirName);
+                return new File(dirName);
+            }
+        }
+
+        return new File('null');
+    }
+
     //-----------------------------IAR-------------------------------
 
     getIARForStm8Dir(): File {

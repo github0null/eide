@@ -1,0 +1,173 @@
+{
+    "name": "Keil C51 Compiler",
+    "id": "KEIL_C51",
+    "version": {
+        "args": "",
+        "matcher": "^(?<name>C51 COMPILER) V(?<version>\\d[\\d\\.]+)"
+    },
+    "ERR_LEVEL": 1,
+    "global": {
+        "misc-controls": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c/cpp",
+                "asm",
+                "linker"
+            ]
+        }
+    },
+    "groups": {
+        "c/cpp": {
+            "$path": "BIN\\C51.exe",
+            "$includes": {
+                "prefix": "INCDIR(",
+                "body": "${value}",
+                "sep": ";",
+                "noQuotes": true,
+                "suffix": ")"
+            },
+            "$defines": {
+                "prefix": "DEFINE(",
+                "body": "${key}=${value}",
+                "sep": ",",
+                "suffix": ")"
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$output": "OBJECT(${out})",
+            "$default": [
+                "OMF2",
+                "TABS(4)",
+                "CODE",
+                "NOCOND",
+                "SYMBOLS"
+            ],
+            "$listPath": {
+                "type": "value",
+                "prefix": "PRINT(",
+                "suffix": ")",
+                "command": "${listPath}"
+            },
+            "optimization": {
+                "type": "value",
+                "command": "",
+                "prefix": "OPTIMIZE(",
+                "suffix": ")"
+            },
+            "ram-mode": {
+                "type": "selectable",
+                "command": {
+                    "SMALL": "SMALL",
+                    "COMPACT": "COMPACT",
+                    "LARGE": "LARGE",
+                    "false": "SMALL"
+                }
+            },
+            "rom-mode": {
+                "type": "selectable",
+                "command": {
+                    "SMALL": "SMALL",
+                    "COMPACT": "COMPACT",
+                    "LARGE": "LARGE",
+                    "false": "LARGE"
+                },
+                "prefix": "ROM(",
+                "suffix": ")"
+            }
+        },
+        "asm": {
+            "$path": "BIN\\A51.exe",
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$includes": {
+                "prefix": "INCDIR(",
+                "body": "${value}",
+                "sep": ";",
+                "noQuotes": true,
+                "suffix": ")"
+            },
+            "$output": "OBJECT(${out}) EP",
+            "$quotePath": false,
+            "$listPath": {
+                "type": "value",
+                "prefix": "PRINT(",
+                "suffix": ")",
+                "command": "${listPath}"
+            },
+            "ram-mode": {
+                "type": "selectable",
+                "prefix": "SET(",
+                "suffix": ")",
+                "command": {
+                    "SMALL": "SMALL",
+                    "COMPACT": "COMPACT",
+                    "LARGE": "LARGE",
+                    "false": "LARGE"
+                }
+            }
+        },
+        "linker": {
+            "$path": "BIN\\LX51.exe",
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$output": "${in} TO ${out}",
+            "$outputSuffix": "",
+            "$objPathSep": ",",
+            "$commandLocation": "end",
+            "$linkMap": {
+                "type": "value",
+                "prefix": "PRINT(",
+                "command": "${mapPath}",
+                "suffix": ")"
+            },
+            "use-RTX": {
+                "type": "selectable",
+                "command": {
+                    "RTX-Full": "RTX51",
+                    "RTX-Tiny": "Rtx51Tiny",
+                    "None": "",
+                    "false": ""
+                }
+            },
+            "remove-unused": {
+                "type": "selectable",
+                "command": {
+                    "true": "REMOVEUNUSED",
+                    "false": ""
+                }
+            },
+            "disable-warnings": {
+                "type": "value",
+                "prefix": "DISABLEWARNING(",
+                "suffix": ")",
+                "command": ""
+            },
+            "$outputBin": [
+                {
+                    "name": "output hex file",
+                    "toolPath": "BIN\\Ohx51.exe",
+                    "outputSuffix": ".hex",
+                    "command": "${linkerOutput} HEXFILE(${output}) HEX"
+                }
+            ]
+        },
+        "linker-lib": {
+            "$path": "BIN\\LIBX51.exe",
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$output": "ADD ${in} TO ${out}",
+            "$objPathSep": ",",
+            "$outputSuffix": ".LIB",
+            "$commandLocation": "end"
+        }
+    }
+}

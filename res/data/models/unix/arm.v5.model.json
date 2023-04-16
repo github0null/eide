@@ -1,0 +1,467 @@
+{
+    "name": "ARMCC 5",
+    "id": "AC5",
+    "version": {
+        "args": "--help",
+        "matcher": "(?<name>ARM Compiler) (?<version>[\\d\\.]+)"
+    },
+    "global": {
+        "big-endian": {
+            "type": "selectable",
+            "command": {
+                "true": "--bi",
+                "false": "--li"
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm"
+            ],
+            "location": "first"
+        },
+        "microcontroller-cpu": {
+            "type": "keyValue",
+            "command": "--cpu ",
+            "enum": {
+                "arm7ej-s": "ARM7EJ-S",
+                "arm7tdmi": "ARM7TDMI",
+                "arm720t": "ARM720T",
+                "arm7tdmi-s": "ARM7TDMI-S",
+                "arm9tdmi": "ARM9TDMI",
+                "arm920t": "ARM920T",
+                "arm922t": "ARM922T",
+                "arm9e-s": "ARM9E-S",
+                "arm926ej-s": "ARM926EJ-S",
+                "arm946e-s": "ARM946E-S",
+                "arm966e-s": "ARM966E-S",
+                "cortex-m0": "Cortex-M0",
+                "cortex-m0+": "Cortex-M0+",
+                "cortex-m3": "Cortex-M3",
+                "cortex-m4": "Cortex-M4 --fpu=SoftVFP",
+                "cortex-m4-sp": "Cortex-M4.fp",
+                "cortex-m7": "Cortex-M7 --fpu=SoftVFP",
+                "cortex-m7-sp": "Cortex-M7.fp.sp",
+                "cortex-m7-dp": "Cortex-M7.fp.dp",
+                "sc000": "SC000",
+                "sc300": "SC300"
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ],
+            "location": "first"
+        },
+        "output-debug-info": {
+            "type": "selectable",
+            "command": {
+                "enable": "-g",
+                "disable": "",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm"
+            ]
+        },
+        "execute-only-code": {
+            "type": "selectable",
+            "command": {
+                "true": "--execute_only",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm"
+            ]
+        },
+        "read-only-position-independent": {
+            "type": "selectable",
+            "command": {
+                "true": "--apcs=/ropi",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm"
+            ]
+        },
+        "read-write-position-independent": {
+            "type": "selectable",
+            "command": {
+                "true": "--apcs=/rwpi",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm"
+            ]
+        },
+        "split-load-and-store-multiple": {
+            "type": "selectable",
+            "command": {
+                "true": "--split_ldm",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm"
+            ]
+        },
+        "misc-controls": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "asm",
+                "linker"
+            ]
+        }
+    },
+    "groups": {
+        "c": {
+            "$path": "bin/armcc",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "-D${key}=\"${value}\""
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "--Via ${value}"
+            },
+            "$output": "-o ${out} --no_depend_system_headers --depend ${refPath} ${in}",
+            "$default": [
+                "-c",
+                "--apcs=interwork"
+            ],
+            "$language-c": {
+                "type": "keyValue",
+                "command": "",
+                "enum": {
+                    "default": ""
+                }
+            },
+            "$language-cpp": {
+                "type": "keyValue",
+                "command": "--cpp",
+                "enum": {
+                    "default": ""
+                }
+            },
+            "c99-mode": {
+                "type": "selectable",
+                "command": {
+                    "true": "--c99",
+                    "false": ""
+                }
+            },
+            "use-microLIB": {
+                "type": "selectable",
+                "command": {
+                    "true": "-D__MICROLIB",
+                    "false": ""
+                }
+            },
+            "optimization": {
+                "type": "keyValue",
+                "command": "",
+                "enum": {
+                    "default": "-O0",
+                    "level-0": "-O0",
+                    "level-1": "-O1",
+                    "level-2": "-O2",
+                    "level-3": "-O3",
+                    "level-size": "-Ospace",
+                    "level-speed": "-Otime"
+                }
+            },
+            "optimize-for-time": {
+                "type": "selectable",
+                "command": {
+                    "true": "-Otime",
+                    "false": ""
+                }
+            },
+            "one-elf-section-per-function": {
+                "type": "selectable",
+                "command": {
+                    "true": "--split_sections",
+                    "false": ""
+                }
+            },
+            "strict-ANSI-C": {
+                "type": "selectable",
+                "command": {
+                    "true": "--strict",
+                    "false": ""
+                }
+            },
+            "enum-container-always-int": {
+                "type": "selectable",
+                "command": {
+                    "true": "--enum_is_int",
+                    "false": ""
+                }
+            },
+            "plain-char-is-signed": {
+                "type": "selectable",
+                "command": {
+                    "true": "--signed_chars",
+                    "false": ""
+                }
+            },
+            "gnu-extensions": {
+                "type": "selectable",
+                "command": {
+                    "true": "--gnu",
+                    "false": ""
+                }
+            },
+            "warnings": {
+                "type": "keyValue",
+                "command": "",
+                "enum": {
+                    "default": "",
+                    "unspecified": "",
+                    "no-warnings": "-W",
+                    "all-warnings": ""
+                }
+            },
+            "C_FLAGS": {
+                "type": "list",
+                "command": ""
+            }
+        },
+        "cpp": {
+            "$path": "bin/armcc",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "-D${key}=\"${value}\""
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "--Via ${value}"
+            },
+            "$output": "-o ${out} --no_depend_system_headers --depend ${refPath} ${in}",
+            "$default": [
+                "-c --cpp",
+                "--apcs=interwork"
+            ],
+            "$language-cpp": {
+                "type": "keyValue",
+                "command": "",
+                "enum": {
+                    "default": ""
+                }
+            },
+            "use-microLIB": {
+                "type": "selectable",
+                "command": {
+                    "true": "-D__MICROLIB",
+                    "false": ""
+                }
+            },
+            "optimization": {
+                "type": "keyValue",
+                "command": "",
+                "enum": {
+                    "default": "-O0",
+                    "level-0": "-O0",
+                    "level-1": "-O1",
+                    "level-2": "-O2",
+                    "level-3": "-O3",
+                    "level-size": "-Ospace",
+                    "level-speed": "-Otime"
+                }
+            },
+            "optimize-for-time": {
+                "type": "selectable",
+                "command": {
+                    "true": "-Otime",
+                    "false": ""
+                }
+            },
+            "one-elf-section-per-function": {
+                "type": "selectable",
+                "command": {
+                    "true": "--split_sections",
+                    "false": ""
+                }
+            },
+            "strict-ANSI-C": {
+                "type": "selectable",
+                "command": {
+                    "true": "--strict",
+                    "false": ""
+                }
+            },
+            "enum-container-always-int": {
+                "type": "selectable",
+                "command": {
+                    "true": "--enum_is_int",
+                    "false": ""
+                }
+            },
+            "plain-char-is-signed": {
+                "type": "selectable",
+                "command": {
+                    "true": "--signed_chars",
+                    "false": ""
+                }
+            },
+            "warnings": {
+                "type": "keyValue",
+                "command": "",
+                "enum": {
+                    "default": "",
+                    "unspecified": "",
+                    "no-warnings": "-W",
+                    "all-warnings": ""
+                }
+            },
+            "CXX_FLAGS": {
+                "type": "list",
+                "command": ""
+            }
+        },
+        "asm": {
+            "$path": "bin/armasm",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "--Via ${value}"
+            },
+            "$output": "-o ${out} --depend ${refPath} ${in}",
+            "$default": [
+                "--apcs=interwork"
+            ],
+            "defines": {
+                "type": "list",
+                "command": "--pd "
+            },
+            "use-microLIB": {
+                "type": "selectable",
+                "command": {
+                    "true": "--pd \"__MICROLIB SETA 1\"",
+                    "false": ""
+                }
+            },
+            "thumb-mode": {
+                "type": "selectable",
+                "command": {
+                    "true": "--16",
+                    "false": ""
+                }
+            },
+            "no-warnings": {
+                "type": "selectable",
+                "command": {
+                    "true": "--nowarn",
+                    "false": ""
+                }
+            }
+        },
+        "linker": {
+            "$path": "bin/armlink",
+            "$invoke": {
+                "useFile": true,
+                "body": "--Via ${value}"
+            },
+            "$output": "${in} -o ${out}",
+            "$default-tail": [
+                "--strict",
+                "--summary_stderr --info summarysizes --map --xref --callgraph --symbols",
+                "--info sizes --info totals --info unused --info veneers"
+            ],
+            "$matcher": [
+                "^\\s*total.*size"
+            ],
+            "$ramMatcher": "^\\s*Total RW  Size \\(RW Data \\+ ZI Data\\)\\s+(\\d+)",
+            "$romMatcher": "^\\s*Total ROM Size \\(Code \\+ RO Data \\+ RW Data\\)\\s+(\\d+)",
+            "$linkMap": {
+                "type": "value",
+                "command": "--list ${mapPath}"
+            },
+            "output-debug-info": {
+                "type": "selectable",
+                "command": {
+                    "enable": "",
+                    "disable": "--nodebug",
+                    "false": ""
+                }
+            },
+            "use-microLIB": {
+                "type": "selectable",
+                "command": {
+                    "true": "--library_type=microlib",
+                    "false": ""
+                }
+            },
+            "not-search-std-libs": {
+                "type": "selectable",
+                "command": {
+                    "true": "--noscanlib",
+                    "false": ""
+                }
+            },
+            "read-only-position-independent": {
+                "type": "selectable",
+                "command": {
+                    "true": "--ropi",
+                    "false": ""
+                }
+            },
+            "read-write-position-independent": {
+                "type": "selectable",
+                "command": {
+                    "true": "--rwpi",
+                    "false": ""
+                }
+            },
+            "link-scatter": {
+                "type": "list",
+                "command": "--scatter "
+            },
+            "$outputBin": [
+                {
+                    "name": "output hex file",
+                    "toolPath": "bin/fromelf",
+                    "outputSuffix": ".hex",
+                    "command": "--i32combined --output ${output} ${linkerOutput}"
+                },
+                {
+                    "name": "output s19 file",
+                    "toolPath": "bin/fromelf",
+                    "outputSuffix": ".s19",
+                    "command": "--m32combined --output ${output} ${linkerOutput}"
+                },
+                {
+                    "name": "output bin file",
+                    "toolPath": "bin/fromelf",
+                    "outputSuffix": ".bin",
+                    "command": "--bincombined --output ${output} ${linkerOutput}"
+                }
+            ]
+        },
+        "linker-lib": {
+            "$path": "bin/armar",
+            "$invoke": {
+                "useFile": true,
+                "body": "--Via ${value}"
+            },
+            "$output": "-rcv ${out} ${in}",
+            "$outputSuffix": ".lib"
+        }
+    }
+}

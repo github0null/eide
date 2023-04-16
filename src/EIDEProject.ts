@@ -789,7 +789,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     static readonly excludeDirFilter: RegExp = /^\./;
 
     // to show output files
-    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|a|lib|hex|ihx|bin|s19|s37|sct|icf|ld[s]?|map|map\.view|lst|lnp|params)$/i;
+    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|sm8|a|lib|hex|ihx|bin|s19|s37|sct|icf|ld[s]?|map|map\.view|lst|lnp|params)$/i;
 
     //-------
 
@@ -2974,8 +2974,12 @@ class EIDEProject extends AbstractProject {
             }
 
             if (settings['C_Cpp.errorSquiggles'] === undefined) {
-                settings['C_Cpp.errorSquiggles'] = "Disabled";
+                settings['C_Cpp.errorSquiggles'] = "disabled";
             }
+
+            // if (this.getToolchain().name == 'COSMIC_STM8') {
+            //     settings["C_Cpp.intelliSenseEngine"] = "Tag Parser";
+            // }
 
             // remove some c/c++ configs
             [

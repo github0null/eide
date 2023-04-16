@@ -281,8 +281,24 @@ class STM8DebugConfigProvider extends IDebugConfigProvider {
 
         const prjConfig = prj.GetConfiguration<any>().config;
         const toolchain_name = prj.getToolchain().name;
-        const elf_suffix = toolchain_name === 'IAR_STM8' ? '.out' : '.elf';
-        const require_ser_name = toolchain_name === 'IAR_STM8' ? 'st7' : 'openocd';
+
+        let elf_suffix: string;
+        let require_ser_name: string;
+
+        switch (toolchain_name) {
+            case 'IAR_STM8':
+                elf_suffix = '.out';
+                require_ser_name = 'st7';
+                break;
+            case 'COSMIC_STM8':
+                elf_suffix = '.elf';
+                require_ser_name = 'st7';
+                break;
+            default:
+                elf_suffix = '.elf';
+                require_ser_name = 'openocd';
+                break;
+        }
 
         let debugConfig: Configuration | undefined;
 

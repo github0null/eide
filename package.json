@@ -30,12 +30,13 @@
         "cmsis",
         "eclipse",
         "iar",
-        "msys"
+        "msys",
+        "cosmic"
     ],
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.11.3",
+    "version": "3.12.0",
     "preview": false,
     "engines": {
         "vscode": "^1.67.0"
@@ -344,6 +345,12 @@
                         "scope": "resource",
                         "markdownDescription": "gnu sdcc for stm8 installation path",
                         "default": "${userRoot}/.eide/tools/stm8_gnu_sdcc"
+                    },
+                    "EIDE.STM8.COSMIC.InstallDirectory": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "COSMIC CXSTM8 root folder path",
+                        "default": "${userRoot}/.eide/tools/cosmic_stm8"
                     },
                     "EIDE.ARM.ARMCC5.InstallDirectory": {
                         "type": "string",
@@ -1562,6 +1569,10 @@
             {
                 "fileMatch": "**/*.any.gcc.json",
                 "url": "./lang/any.gcc.verify.json"
+            },
+            {
+                "fileMatch": "**/*.options.stm8-cosmic.json",
+                "url": "./lang/stm8.cosmic.verify.json"
             }
         ],
         "grammars": [

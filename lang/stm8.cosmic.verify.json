@@ -1,11 +1,10 @@
 {
-    "title": "ARM GCC Options",
+    "title": "COSMIC For STM8 Options",
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "definitions": {
-        "FLAGS": {
+        "misc-controls": {
             "markdownDescription": "Other Options",
-            "description.zh-cn": "其他选项",
             "size": "huge",
             "type": [
                 "string",
@@ -14,7 +13,7 @@
             "items": {
                 "type": "string"
             },
-            "default": []
+            "default": ""
         }
     },
     "properties": {
@@ -128,45 +127,55 @@
             "description.zh-cn": "全局选项",
             "type": "object",
             "properties": {
+                "model": {
+                    "description": "Memory Models",
+                    "type": "string",
+                    "default": "small",
+                    "enum": [
+                        "small",
+                        "large",
+                        "small-0",
+                        "large-0"
+                    ],
+                    "enumDescriptions": [
+                        "Stack Short Model",
+                        "Stack Long Model",
+                        "Stack Short Model (Code < 64KB)",
+                        "Stack Long Model (Code < 64KB)"
+                    ]
+                },
+                "output-list-file": {
+                    "description": "Generate List Files",
+                    "type": "boolean",
+                    "default": false
+                },
                 "output-debug-info": {
-                    "markdownDescription": "Output debug information",
-                    "description.zh-cn": "输出调试信息",
+                    "description": "Output Debug Information",
                     "type": "string",
                     "default": "disable",
                     "enum": [
                         "disable",
-                        "enable",
-                        "dwarf-2",
-                        "dwarf-3"
+                        "enable"
                     ]
                 },
-                "arch": {
-                    "markdownDescription": "Arch",
-                    "description.zh-cn": "指令集（arch）",
-                    "size": "small",
-                    "type": "string",
-                    "auto_complete_ctx": "gcc.compiler.archs"
+                "no-bss": {
+                    "description": "Do Not Use '.bss' Section",
+                    "type": "boolean",
+                    "default": false
                 },
-                "abi": {
-                    "readable_name": "ABI",
-                    "readable_name.zh-cn": "调用约定（abi）",
-                    "markdownDescription": "Integer and floating-point calling convention",
-                    "description.zh-cn": "整数和浮点调用约定",
-                    "size": "small",
-                    "auto_complete_ctx": "gcc.compiler.abis"
+                "const-in-text": {
+                    "description": "Make Literals And Constants In '.text' Section",
+                    "type": "boolean",
+                    "default": false
                 },
-                "code-model": {
-                    "markdownDescription": "Code Model",
-                    "description.zh-cn": "代码模型（code-model）",
-                    "size": "small",
-                    "type": "string",
-                    "auto_complete_ctx": "gcc.compiler.riscv.code-models"
+                "verbose": {
+                    "description": "Verbose Mode",
+                    "type": "boolean",
+                    "default": false
                 },
-                "misc-control": {
-                    "markdownDescription": "Other Global Options",
-                    "description.zh-cn": "编译器附加选项（全局）",
-                    "$ref": "#/definitions/FLAGS",
-                    "default": ""
+                "misc-controls": {
+                    "markdownDescription": "Other Global Options (cxstm8)",
+                    "$ref": "#/definitions/misc-controls"
                 }
             }
         },
@@ -175,98 +184,66 @@
             "description.zh-cn": "C/C++ 编译器选项",
             "type": "object",
             "properties": {
-                "language-c": {
-                    "markdownDescription": "C Standard",
-                    "description.zh-cn": "C 标准",
-                    "type": "string",
-                    "default": "c11",
-                    "enum": [
-                        "c89",
-                        "c90",
-                        "c99",
-                        "c11",
-                        "c17",
-                        "gnu89",
-                        "gnu90",
-                        "gnu99",
-                        "gnu11",
-                        "gnu17"
-                    ]
-                },
-                "language-cpp": {
-                    "markdownDescription": "C++ Standard",
-                    "description.zh-cn": "C++ 标准",
-                    "type": "string",
-                    "default": "c++11",
-                    "enum": [
-                        "c++98",
-                        "gnu++98",
-                        "c++11",
-                        "gnu++11",
-                        "c++14",
-                        "gnu++14",
-                        "c++17",
-                        "gnu++17"
-                    ]
+                "c99-mode": {
+                    "description": "C99 Mode",
+                    "type": "boolean",
+                    "default": false
                 },
                 "optimization": {
-                    "markdownDescription": "Optimization Level",
-                    "description.zh-cn": "代码优化级别",
+                    "description": "Optimization Level",
                     "type": "string",
-                    "default": "level-0",
+                    "default": "none",
                     "enum": [
-                        "level-0",
-                        "level-1",
-                        "level-2",
-                        "level-3",
-                        "level-size",
-                        "level-fast",
-                        "level-debug"
+                        "none",
+                        "fast",
+                        "size"
                     ],
                     "enumDescriptions": [
-                        "-O0 (default)",
-                        "-O1",
-                        "-O2",
-                        "-O3",
-                        "-Os",
-                        "-Ofast",
-                        "-Og"
+                        "No Optimization",
+                        "Code Speed",
+                        "Code Size"
                     ]
+                },
+                "split-functions": {
+                    "description": "Split Functions In Different Sections",
+                    "type": "boolean",
+                    "default": false
+                },
+                "plain-char-is-unsigned": {
+                    "description": "Plain Char Is Unsigned",
+                    "type": "boolean",
+                    "default": false
+                },
+                "strict-mode": {
+                    "description": "Enforce A Stronger Type Checking",
+                    "type": "boolean",
+                    "default": false
+                },
+                "reverse-bits-order": {
+                    "description": "Reverse The Bitfield Filling Order",
+                    "type": "boolean",
+                    "default": false
                 },
                 "warnings": {
-                    "markdownDescription": "Warning Level",
-                    "description.zh-cn": "警告等级",
+                    "description": "Warning Level",
                     "type": "string",
-                    "default": "all-warnings",
+                    "default": "",
                     "enum": [
-                        "no-warnings",
-                        "all-warnings"
+                        "",
+                        "less",
+                        "normal",
+                        "all"
+                    ],
+                    "enumDescriptions": [
+                        "Default",
+                        "Less",
+                        "Normal",
+                        "All Warnings"
                     ]
                 },
-                "turn-warning-into-errors": {
-                    "markdownDescription": "Turn warnings into errors",
-                    "description.zh-cn": "将警告转化为错误",
-                    "type": "boolean"
-                },
-                "one-elf-section-per-function": {
-                    "markdownDescription": "One ELF Section per Function",
-                    "type": "boolean"
-                },
-                "one-elf-section-per-data": {
-                    "markdownDescription": "One ELF Section per Data",
-                    "type": "boolean"
-                },
-                "C_FLAGS": {
-                    "markdownDescription": "Other C Compiler Options",
-                    "description.zh-cn": "C 编译器附加选项",
-                    "$ref": "#/definitions/FLAGS",
-                    "default": ""
-                },
-                "CXX_FLAGS": {
-                    "markdownDescription": "Other C++ Compiler Options",
-                    "description.zh-cn": "C++ 编译器附加选项",
-                    "$ref": "#/definitions/FLAGS",
-                    "default": ""
+                "misc-controls": {
+                    "markdownDescription": "Other C Compiler Options (cxstm8)",
+                    "$ref": "#/definitions/misc-controls"
                 }
             }
         },
@@ -277,19 +254,15 @@
             "properties": {
                 "defines": {
                     "readable_name": "Preprocessor Definitions",
-                    "readable_name.zh-cn": "预处理器定义",
                     "markdownDescription": "Preprocessor Definitions",
-                    "description.zh-cn": "预处理器定义",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
-                "ASM_FLAGS": {
-                    "markdownDescription": "Other Assembler Options",
-                    "description.zh-cn": "汇编器附加选项",
-                    "$ref": "#/definitions/FLAGS",
-                    "default": ""
+                "misc-controls": {
+                    "markdownDescription": "Other Assembler Options (cxstm8)",
+                    "$ref": "#/definitions/misc-controls"
                 }
             }
         },
@@ -302,7 +275,6 @@
                     "type": "string",
                     "default": "elf",
                     "description": "Output Format",
-                    "description.zh-cn": "输出格式",
                     "enum": [
                         "elf",
                         "lib"
@@ -315,35 +287,20 @@
                 "$disableOutputTask": {
                     "type": "boolean",
                     "markdownDescription": "Not Output Hex/Bin File",
-                    "description.zh-cn": "不生成 Hex/Bin 文件",
-                    "enum": [
-                        true,
-                        false
-                    ]
+                    "default": false
                 },
-                "remove-unused-input-sections": {
-                    "markdownDescription": "Remove Unused Input Sections",
-                    "type": "boolean"
-                },
-                "not-print-mem-usage": {
-                    "markdownDescription": "Not Print Memory Usage (disable: -Wl,--print-memory-usage)",
-                    "type": "boolean"
+                "auto-include-stdc-libraries": {
+                    "description": "Auto Include Standard ANSI C Libraries",
+                    "type": "boolean",
+                    "default": false
                 },
                 "LD_FLAGS": {
-                    "readable_name": "Other Linker Options",
-                    "readable_name.zh-cn": "链接器附加选项",
-                    "markdownDescription": "Use '-Wl[,option]...' pass options to the linker",
-                    "description.zh-cn": "使用 '-Wl[,option]...' 传递链接器选项",
-                    "$ref": "#/definitions/FLAGS",
-                    "default": ""
+                    "markdownDescription": "Other Linker Options (clnk)",
+                    "$ref": "#/definitions/misc-controls"
                 },
                 "LIB_FLAGS": {
-                    "readable_name": "Lib Flags",
-                    "readable_name.zh-cn": "链接库选项",
-                    "markdownDescription": "Lib Flags, like: -lxxx",
-                    "description.zh-cn": "链接库选项，例如：-lxxx",
-                    "$ref": "#/definitions/FLAGS",
-                    "default": ""
+                    "markdownDescription": "C Libraries (*.sm8)",
+                    "$ref": "#/definitions/misc-controls"
                 },
                 "object-order": {
                     "type": "array",

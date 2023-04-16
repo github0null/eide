@@ -45,7 +45,8 @@ import {
     view_str$prompt$tool_install_mode_online, view_str$prompt$tool_install_mode_local, view_str$operation$empty_anygcc_prj, view_str$operation$setupUtilTools,
     view_str$prompt$setupToolchainPrefix,
     view_str$prompt$needReloadToUpdateEnv,
-    view_str$operation$create_prj_done
+    view_str$operation$create_prj_done,
+    view_str$prompt$requestAndActivateLicence
 } from './StringTable';
 import { CreateOptions, ImportOptions, ProjectType } from './EIDETypeDefine';
 import { File } from '../lib/node-utility/File';
@@ -56,6 +57,7 @@ import { ToolchainName, ToolchainManager } from './ToolchainManager';
 import { GitFileInfo } from './WebInterface/GithubInterface';
 import { TemplateIndexDef, TemplateInfo } from './WebInterface/WebInterface';
 import * as utility from './utility';
+import * as toolchainLicence from './ToolchainLicenceActivate';
 
 import * as events from 'events';
 import * as fs from 'fs';
@@ -361,6 +363,34 @@ export class OperationExplorer {
                     ];
 
                     templateItem = await vscode.window.showQuickPick(itemList);
+
+                    if (templateItem && templateItem.type == 'C51') {
+
+                        const itemList: ProjectTemplatePickItem[] = [
+                            {
+                                label: '8051 Empty Project (With Keil C51 Compiler)',
+                                detail: '8051 general project',
+                                templateName: 'mcs51',
+                                type: 'C51'
+                            },
+                            {
+                                label: 'STM8 Empty Project (With COSMIC Compiler)',
+                                detail: 'stm8 general project',
+                                templateName: 'cosmic_stm8',
+                                type: 'C51'
+                            },
+                            {
+                                label: 'Empty Project',
+                                detail: 'empty project for any 8bits toolchain',
+                                type: 'C51'
+                            },
+                        ];
+
+                        const subTyp = await vscode.window.showQuickPick(itemList);
+                        if (subTyp && subTyp.templateName) {
+                            templateItem = subTyp;
+                        }
+                    }
                 }
                 break;
 
@@ -390,6 +420,12 @@ export class OperationExplorer {
                             detail: 'avr atmega128 quickstart project (FreeRTOS) (WinAVR-GCC compiler)',
                             templateName: 'avr_atmega128_rtos',
                             type: 'ANY-GCC'
+                        },
+                        {
+                            label: 'STM8 Quickstart With COSMIC Compiler',
+                            detail: 'stm8 general quickstart project (COSMIC STM8 Compiler)',
+                            templateName: 'cosmic_stm8',
+                            type: 'C51'
                         },
                         {
                             label: 'STM8 Quickstart',
@@ -666,6 +702,19 @@ export class OperationExplorer {
                         + ` Loc: ${toolchainManager.getToolchainExecutableFolder('SDCC')?.path}`,
                     detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'SDCC')
                 },
+                {
+                    label: 'COSMIC STM8 C Compiler (cxstm8)',
+                    type: 'COSMIC_STM8',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('COSMIC_STM8'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('COSMIC_STM8')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'COSMIC_STM8'),
+                    buttons: [
+                        {
+                            iconPath: vscode.Uri.file(resManager.GetIconByName('Login_16x.svg').path),
+                            tooltip: view_str$prompt$requestAndActivateLicence
+                        }
+                    ]
+                },
                 /* {
                     label: 'SDCC With GNU Patch For STM8 (Only for stm8)',
                     type: 'GNU_SDCC_STM8',
@@ -797,6 +846,14 @@ export class OperationExplorer {
                         settingManager.setGccFamilyToolPrefix(toolchain.name, val, true);
                         utility.notifyReloadWindow(view_str$prompt$needReloadToUpdateEnv);
                     }
+                }
+
+                if (ctx.button.tooltip == view_str$prompt$requestAndActivateLicence) {
+
+                    picker.hide();
+                    picker.dispose();
+
+                    toolchainLicence.requestAndActivateLicence(ctx.item.type);
                 }
             });
 

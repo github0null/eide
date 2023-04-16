@@ -1,0 +1,196 @@
+﻿{
+    "name": "GNU Toolchain",
+    "id": "GCC",
+    "toolPrefix": "",
+    "useUnixPath": true,
+    "version": {
+        "args": "--version",
+        "matcher": "\\((?<name>.*?)\\) (?<version>[\\d\\.]+)"
+    },
+    "global": {
+        "misc-control": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c",
+                "cpp",
+                "asm"
+            ]
+        },
+        "C_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c"
+            ]
+        },
+        "CXX_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "cpp"
+            ]
+        },
+        "ASM_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "asm"
+            ]
+        },
+        "one-elf-section-per-function": {
+            "type": "selectable",
+            "command": {
+                "true": "-ffunction-sections",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "one-elf-section-per-data": {
+            "type": "selectable",
+            "command": {
+                "true": "-fdata-sections",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        }
+    },
+    "groups": {
+        "c": {
+            "$path": "bin\\${toolPrefix}gcc.exe",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "-D${key}=\"${value}\""
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$output": "-o ${out} -MMD ${in}"
+        },
+        "cpp": {
+            "$path": "bin\\${toolPrefix}gcc.exe",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "-D${key}=\"${value}\""
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$output": "-o ${out} -MMD ${in}"
+        },
+        "asm": {
+            "$path": "bin\\${toolPrefix}gcc.exe",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$output": "-o ${out} -MMD ${in}",
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "defines": {
+                "type": "list",
+                "command": "-D"
+            }
+        },
+        "linker": {
+            "$path": "bin\\${toolPrefix}gcc.exe",
+            "$libs": {
+                "body": "-L${value}"
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$output": "-o ${out} ${in} ${lib_flags}",
+            "$outputSuffix": ".elf",
+            "$linkMap": {
+                "type": "value",
+                "command": "-Wl,-Map=${mapPath}"
+            },
+            "$LIB_FLAGS": {
+                "type": "list",
+                "command": ""
+            },
+            "remove-unused-input-sections": {
+                "type": "selectable",
+                "command": {
+                    "true": "-Wl,--gc-sections",
+                    "false": ""
+                }
+            },
+            "linker-script": {
+                "type": "list",
+                "command": "-T "
+            },
+            "misc-control": {
+                "type": "list",
+                "command": ""
+            },
+            "LD_FLAGS": {
+                "type": "list",
+                "command": ""
+            }
+        },
+        "linker-ld": {
+            "$path": "bin\\${toolPrefix}ld.exe",
+            "$libs": {
+                "body": "-L${value}"
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$output": "-o ${out} ${in} ${lib_flags}",
+            "$outputSuffix": ".elf",
+            "$linkMap": {
+                "type": "value",
+                "command": "-Map=${mapPath}"
+            },
+            "$LIB_FLAGS": {
+                "type": "list",
+                "command": ""
+            },
+            "remove-unused-input-sections": {
+                "type": "selectable",
+                "command": {
+                    "true": "--gc-sections",
+                    "false": ""
+                }
+            },
+            "linker-script": {
+                "type": "list",
+                "command": "-T "
+            },
+            "misc-control": {
+                "type": "list",
+                "command": ""
+            },
+            "LD_FLAGS": {
+                "type": "list",
+                "command": ""
+            }
+        },
+        "linker-lib": {
+            "$path": "bin\\${toolPrefix}ar.exe",
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$output": "-rcv ${out} ${in}",
+            "$outputSuffix": ".a"
+        }
+    }
+}

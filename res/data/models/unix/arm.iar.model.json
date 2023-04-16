@@ -1,0 +1,531 @@
+{
+    "name": "IAR C/C++ Compiler For ARM",
+    "id": "IAR_ARM",
+    "version": {
+        "args": "--version",
+        "matcher": "^(?<name>.+? C/C\\+\\+ Compiler) V(?<version>[\\d\\.]+)"
+    },
+    "global": {
+        "endian-mode": {
+            "type": "selectable",
+            "command": {
+                "little": "--endian=little",
+                "big": "--endian=big",
+                "false": "--endian=little"
+            },
+            "group": [
+                "c",
+                "cpp"
+            ],
+            "location": "first"
+        },
+        "runtime-lib": {
+            "type": "selectable",
+            "command": {
+                "none": "",
+                "normal": "--dlib_config DLib_Config_Normal.h",
+                "full": "--dlib_config DLib_Config_Full.h",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ],
+            "location": "first"
+        },
+        "microcontroller-cpu": {
+            "type": "keyValue",
+            "command": "",
+            "enum": {
+                "arm7ej-s": "--cpu=ARM7EJ-S",
+                "arm7tdmi": "--cpu=ARM7TDMI",
+                "arm720t": "--cpu=ARM720T",
+                "arm7tdmi-s": "--cpu=ARM7TDMI-S",
+                "arm9tdmi": "--cpu=ARM9TDMI",
+                "arm920t": "--cpu=ARM920T",
+                "arm922t": "--cpu=ARM922T",
+                "arm9e-s": "--cpu=ARM9E-S",
+                "arm926ej-s": "--cpu=ARM926EJ-S",
+                "arm946e-s": "--cpu=ARM946E-S",
+                "arm966e-s": "--cpu=ARM966E-S",
+                "cortex-m0": "--cpu=Cortex-M0",
+                "cortex-m0+": "--cpu=Cortex-M0+",
+                "cortex-m3": "--cpu=Cortex-M3",
+                "cortex-m4": "--cpu=Cortex-M4 --fpu=None",
+                "cortex-m4-sp": "--cpu=Cortex-M4 --fpu=VFPv4_sp",
+                "cortex-m7": "--cpu=Cortex-M7 --fpu=None",
+                "cortex-m7-sp": "--cpu=Cortex-M7 --fpu=VFPv5_sp",
+                "cortex-m7-dp": "--cpu=Cortex-M7 --fpu=VFPv5_d16",
+                "sc000": "--cpu=SC000",
+                "sc300": "--cpu=SC300"
+            },
+            "group": [
+                "c",
+                "cpp"
+            ],
+            "location": "first"
+        },
+        "output-debug-info": {
+            "type": "selectable",
+            "command": {
+                "enable": "--debug",
+                "disable": "",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "printf-formatter": {
+            "type": "selectable",
+            "command": {
+                "auto": "",
+                "tiny": "--redirect _Printf=_PrintfTiny",
+                "small": "--redirect _Printf=_PrintfSmall",
+                "small-without-multibyte": "--redirect _Printf=_PrintfSmallNoMb",
+                "large": "--redirect _Printf=_PrintfLarge",
+                "large-without-multibyte": "--redirect _Printf=_PrintfLargeNoMb",
+                "full": "--redirect _Printf=_PrintfFull",
+                "full-without-multibyte": "--redirect _Printf=_PrintfFullNoMb",
+                "false": ""
+            },
+            "group": [
+                "linker"
+            ]
+        },
+        "scanf-formatter": {
+            "type": "selectable",
+            "command": {
+                "auto": "",
+                "small": "--redirect _Scanf=_ScanfSmall",
+                "small-without-multibyte": "--redirect _Scanf=_ScanfSmallNoMb",
+                "large": "--redirect _Scanf=_ScanfLarge",
+                "large-without-multibyte": "--redirect _Scanf=_ScanfLargeNoMb",
+                "full": "--redirect _Scanf=_ScanfFull",
+                "full-without-multibyte": "--redirect _Scanf=_ScanfFullNoMb",
+                "false": ""
+            },
+            "group": [
+                "linker"
+            ]
+        },
+        "math-functions": {
+            "type": "selectable",
+            "command": {
+                "smaller": "--redirect cos=__iar_cos_small --redirect cosf=__iar_cos_smallf --redirect cosl=__iar_cos_smalll --redirect exp=__iar_exp_small --redirect expf=__iar_exp_smallf --redirect expl=__iar_exp_smalll --redirect log10=__iar_log10_small --redirect log10f=__iar_log10_smallf --redirect log10l=__iar_log10_smalll --redirect log2=__iar_log2_small --redirect log2f=__iar_log2_smallf --redirect log2l=__iar_log2_smalll --redirect log=__iar_log_small --redirect logf=__iar_log_smallf --redirect logl=__iar_log_smalll --redirect pow=__iar_pow_small --redirect powf=__iar_pow_smallf --redirect powl=__iar_pow_smalll --redirect sin=__iar_sin_small --redirect sinf=__iar_sin_smallf --redirect sinl=__iar_sin_smalll --redirect tan=__iar_tan_small --redirect tanf=__iar_tan_smallf --redirect tanl=__iar_tan_smalll --redirect __iar_Sin=__iar_Sin_small --redirect __iar_Log=__iar_Log_small",
+                "default": "",
+                "false": ""
+            },
+            "group": [
+                "linker"
+            ]
+        },
+        "misc-controls": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ]
+        }
+    },
+    "groups": {
+        "c": {
+            "$path": "bin/iccarm",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "-D${key}=${value}"
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "-f ${value}"
+            },
+            "$output": "--dependencies=m + -o ${out} ${in}",
+            "$default": [
+                "--thumb",
+                "--silent"
+            ],
+            "$listPath": {
+                "type": "value",
+                "command": "-lCN ${listPath}"
+            },
+            "$language-c": {
+                "type": "selectable",
+                "command": {
+                    "false": "",
+                    "c99": "",
+                    "c89": "--c89"
+                }
+            },
+            "allow-VLA": {
+                "type": "selectable",
+                "command": {
+                    "true": "--vla",
+                    "false": ""
+                }
+            },
+            "allow-cpp-inline": {
+                "type": "selectable",
+                "command": {
+                    "true": "--use_c++_inline",
+                    "false": ""
+                }
+            },
+            "require-prototypes": {
+                "type": "selectable",
+                "command": {
+                    "true": "--require_prototypes",
+                    "false": ""
+                }
+            },
+            "language-conformance": {
+                "type": "selectable",
+                "command": {
+                    "strict": "--strict",
+                    "standard": "",
+                    "IAR-extensions": "-e",
+                    "false": "-e"
+                }
+            },
+            "plain-char-is-signed": {
+                "type": "selectable",
+                "command": {
+                    "true": "--char_is_signed",
+                    "false": ""
+                }
+            },
+            "floating-point": {
+                "type": "selectable",
+                "command": {
+                    "true": "--relaxed_fp",
+                    "false": ""
+                }
+            },
+            "multibyte-support": {
+                "type": "selectable",
+                "command": {
+                    "true": "--enable_multibytes",
+                    "false": ""
+                }
+            },
+            "optimization": {
+                "type": "selectable",
+                "command": {
+                    "no": "-On --no_cse --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering --no_scheduling",
+                    "low": "-Ol --no_cse --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering --no_scheduling",
+                    "medium": "-Om --no_unroll --no_inline --no_tbaa --no_scheduling",
+                    "high": "-Oh",
+                    "size": "-Ohz",
+                    "speed": "-Ohs",
+                    "speed-no-size-constraints": "-Ohs --no_size_constraints",
+                    "false": "-Ol --no_cse --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering --no_scheduling"
+                }
+            },
+            "turn-Warning-into-errors": {
+                "type": "selectable",
+                "command": {
+                    "true": "--warnings_are_errors",
+                    "false": ""
+                }
+            }
+        },
+        "cpp": {
+            "$path": "bin/iccarm",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "-D${key}=${value}"
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "-f ${value}"
+            },
+            "$output": "--dependencies=m + -o ${out} ${in}",
+            "$default": [
+                "--thumb",
+                "--silent"
+            ],
+            "$listPath": {
+                "type": "value",
+                "command": "-lCN ${listPath}"
+            },
+            "$language-cpp": {
+                "type": "selectable",
+                "command": {
+                    "C++": "--c++",
+                    "Embedded-C++": "--ec++",
+                    "Extended-EC++": "--eec++",
+                    "false": "--eec++"
+                }
+            },
+            "destroy-cpp-static-object": {
+                "type": "selectable",
+                "command": {
+                    "true": "",
+                    "false": "--no_static_destruction"
+                }
+            },
+            "require-prototypes": {
+                "type": "selectable",
+                "command": {
+                    "true": "--require_prototypes",
+                    "false": ""
+                }
+            },
+            "language-conformance": {
+                "type": "selectable",
+                "command": {
+                    "strict": "--strict",
+                    "standard": "",
+                    "IAR-extensions": "-e",
+                    "false": "-e"
+                }
+            },
+            "plain-char-is-signed": {
+                "type": "selectable",
+                "command": {
+                    "true": "--char_is_signed",
+                    "false": ""
+                }
+            },
+            "floating-point-semantics": {
+                "type": "selectable",
+                "command": {
+                    "strict": "",
+                    "relaxed": "--relaxed_fp",
+                    "false": ""
+                }
+            },
+            "multibyte-support": {
+                "type": "selectable",
+                "command": {
+                    "true": "--enable_multibytes",
+                    "false": ""
+                }
+            },
+            "optimization": {
+                "type": "selectable",
+                "command": {
+                    "no": "-On --no_cse --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering --no_scheduling",
+                    "low": "-Ol --no_cse --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering --no_scheduling",
+                    "medium": "-Om --no_unroll --no_inline --no_tbaa --no_scheduling",
+                    "high": "-Oh",
+                    "size": "-Ohz",
+                    "speed": "-Ohs",
+                    "speed-no-size-constraints": "-Ohs --no_size_constraints",
+                    "false": "-Ol --no_cse --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering --no_scheduling"
+                }
+            },
+            "turn-Warning-into-errors": {
+                "type": "selectable",
+                "command": {
+                    "true": "--warnings_are_errors",
+                    "false": ""
+                }
+            }
+        },
+        "asm": {
+            "$path": "bin/iasmarm",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "-f ${value}"
+            },
+            "$output": "-o ${out} ${in}",
+            "$default": [
+				"-S",
+                "--thumb",
+                "-w+"
+            ],
+            "$listPath": {
+                "type": "value",
+                "command": "-l ${listPath}"
+            },
+            "microcontroller-cpu": {
+                "type": "keyValue",
+                "command": "",
+                "enum": {
+                    "arm7ej-s": "--cpu ARM7EJ-S",
+                    "arm7tdmi": "--cpu ARM7TDMI",
+                    "arm720t": "--cpu ARM720T",
+                    "arm7tdmi-s": "--cpu ARM7TDMI-S",
+                    "arm9tdmi": "--cpu ARM9TDMI",
+                    "arm920t": "--cpu ARM920T",
+                    "arm922t": "--cpu ARM922T",
+                    "arm9e-s": "--cpu ARM9E-S",
+                    "arm926ej-s": "--cpu ARM926EJ-S",
+                    "arm946e-s": "--cpu ARM946E-S",
+                    "arm966e-s": "--cpu ARM966E-S",
+                    "cortex-m0": "--cpu Cortex-M0",
+                    "cortex-m0+": "--cpu Cortex-M0+",
+                    "cortex-m3": "--cpu Cortex-M3",
+                    "cortex-m4": "--cpu Cortex-M4 --fpu None",
+                    "cortex-m4-sp": "--cpu Cortex-M4 --fpu VFPv4_sp",
+                    "cortex-m7": "--cpu Cortex-M7 --fpu None",
+                    "cortex-m7-sp": "--cpu Cortex-M7 --fpu VFPv5_sp",
+                    "cortex-m7-dp": "--cpu Cortex-M7 --fpu VFPv5_d16",
+                    "sc000": "--cpu SC000",
+                    "sc300": "--cpu SC300"
+                }
+            },
+            "endian-mode": {
+                "type": "selectable",
+                "command": {
+                    "little": "--endian little",
+                    "big": "--endian big",
+                    "false": "--endian little"
+                }
+            },
+            "output-debug-info": {
+                "type": "selectable",
+                "command": {
+                    "enable": "-r",
+                    "disable": "",
+                    "false": ""
+                }
+            },
+            "defines": {
+                "type": "list",
+                "command": "-D"
+            },
+            "case-sensitive-user-symbols": {
+                "type": "selectable",
+                "command": {
+                    "true": "-s+",
+                    "false": "-s-"
+                }
+            },
+            "multibyte-support": {
+                "type": "selectable",
+                "command": {
+                    "true": "-n",
+                    "false": ""
+                }
+            }
+        },
+        "linker": {
+            "$path": "bin/ilinkarm",
+            "$invoke": {
+                "useFile": true,
+                "body": "-f ${value}"
+            },
+            "$default": [
+                "--silent"
+            ],
+            "$output": "${in} -o ${out} ${lib_flags}",
+            "$outputSuffix": ".elf",
+            "$linkMap": {
+                "type": "value",
+                "command": "--map ${mapPath}"
+            },
+            "microcontroller-cpu": {
+                "type": "keyValue",
+                "command": "",
+                "enum": {
+                    "arm7ej-s": "--cpu ARM7EJ-S",
+                    "arm7tdmi": "--cpu ARM7TDMI",
+                    "arm720t": "--cpu ARM720T",
+                    "arm7tdmi-s": "--cpu ARM7TDMI-S",
+                    "arm9tdmi": "--cpu ARM9TDMI",
+                    "arm920t": "--cpu ARM920T",
+                    "arm922t": "--cpu ARM922T",
+                    "arm9e-s": "--cpu ARM9E-S",
+                    "arm926ej-s": "--cpu ARM926EJ-S",
+                    "arm946e-s": "--cpu ARM946E-S",
+                    "arm966e-s": "--cpu ARM966E-S",
+                    "cortex-m0": "--cpu Cortex-M0",
+                    "cortex-m0+": "--cpu Cortex-M0+",
+                    "cortex-m3": "--cpu Cortex-M3",
+                    "cortex-m4": "--cpu Cortex-M4 --fpu None",
+                    "cortex-m4-sp": "--cpu Cortex-M4 --fpu VFPv4_sp",
+                    "cortex-m7": "--cpu Cortex-M7 --fpu None",
+                    "cortex-m7-sp": "--cpu Cortex-M7 --fpu VFPv5_sp",
+                    "cortex-m7-dp": "--cpu Cortex-M7 --fpu VFPv5_d16",
+                    "sc000": "--cpu SC000",
+                    "sc300": "--cpu SC300"
+                }
+            },
+            "$LIB_FLAGS": {
+                "type": "list",
+                "command": ""
+            },
+            "big-endian-type": {
+                "type": "selectable",
+                "command": {
+                    "BE32": "--BE32",
+                    "BE8": "--BE8",
+                    "None": "",
+                    "false": ""
+                }
+            },
+            "link-scatter": {
+                "type": "list",
+                "command": "--config "
+            },
+            "config-defines": {
+                "type": "list",
+                "command": "--config_def "
+            },
+            "program-entry": {
+                "type": "value",
+                "command": "--entry "
+            },
+            "merge-duplicate-sections": {
+                "type": "selectable",
+                "command": {
+                    "true": "--merge_duplicate_sections",
+                    "false": ""
+                }
+            },
+            "perform-cpp-virtual-func-elimination": {
+                "type": "selectable",
+                "command": {
+                    "none": "",
+                    "enable": "--vfe",
+                    "enable-forced": "--vfe=forced",
+                    "disable": "--no_vfe",
+                    "false": ""
+                }
+            },
+            "auto-search-runtime-lib": {
+                "type": "selectable",
+                "command": {
+                    "true": "",
+                    "false": "--no_library_search"
+                }
+            },
+            "$outputBin": [
+                {
+                    "name": "output hex file",
+                    "toolPath": "bin\\ielftool.exe",
+                    "outputSuffix": ".hex",
+                    "command": "--silent --ihex ${linkerOutput} ${output}"
+                },
+                {
+                    "name": "output bin file",
+                    "toolPath": "bin\\ielftool.exe",
+                    "outputSuffix": ".bin",
+                    "command": "--silent --bin ${linkerOutput} ${output}"
+                }
+            ]
+        },
+        "linker-lib": {
+            "$path": "bin/iarchive",
+            "$invoke": {
+                "useFile": true,
+                "body": "-f ${value}"
+            },
+            "$objPathSep": " ",
+            "$outputSuffix": ".a",
+            "$output": "--create ${in} -o ${out}"
+        }
+    }
+}

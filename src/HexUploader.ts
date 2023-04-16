@@ -68,7 +68,7 @@ export class HexUploaderManager {
         { type: 'pyOCD', description: 'for Cortex-M chips', filters: ['AC5', 'AC6', 'GCC', 'IAR_ARM', 'RISCV_GCC', 'ANY_GCC'] },
         { type: 'OpenOCD', description: 'for Cortex-M chips', filters: ['AC5', 'AC6', 'GCC', 'IAR_ARM', 'RISCV_GCC', 'ANY_GCC'] },
         { type: 'stcgal', description: 'for STC chips', filters: ['Keil_C51', 'SDCC'] },
-        { type: 'STVP', description: 'for STM8 chips, only STLink interface', filters: ['IAR_STM8', 'SDCC'] },
+        { type: 'STVP', description: 'for STM8 chips, only STLink interface', filters: ['IAR_STM8', 'SDCC', 'COSMIC_STM8'] },
         { type: 'Custom', label: 'Shell', description: 'download program by custom shell command' }
     ];
 

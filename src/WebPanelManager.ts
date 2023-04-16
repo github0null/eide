@@ -51,12 +51,20 @@ export class WebPanelManager {
         return _instance;
     }
 
-    showSimpleConfigUI(cfg: SimpleUIConfig, onSave: (newCfg: SimpleUIConfig) => void): Promise<void> {
+    showSimpleConfigUI(cfg: SimpleUIConfig, onSubmit: (newCfg: SimpleUIConfig) => void, onMsg?: (msg: string) => void): Promise<void> {
 
         const resManager = ResManager.GetInstance();
 
+        let ViewCol = cfg.viewColumn;
+
+        if (ViewCol == undefined || ViewCol == null) {
+            ViewCol = vscode.ViewColumn.One;
+        }
+
         const panel = vscode.window.createWebviewPanel('eide.simple-cfg-ui',
-            cfg.title, vscode.ViewColumn.One, { enableScripts: true, retainContextWhenHidden: true });
+            cfg.title, 
+            { viewColumn: ViewCol, preserveFocus: cfg.notTakeFocus }, 
+            { enableScripts: true, retainContextWhenHidden: true });
 
         panel.iconPath = vscode.Uri.file(resManager.GetIconByName(cfg.iconName || 'Property_16x.svg').path);
 
@@ -75,6 +83,7 @@ export class WebPanelManager {
                             panel.webview.postMessage(cfg);
                             break;
                         default:
+                            if (onMsg) onMsg(_data);
                             break;
                     }
                 }
@@ -82,7 +91,7 @@ export class WebPanelManager {
                 /* it's obj data */
                 else {
                     try {
-                        onSave(_data);
+                        onSubmit(_data);
                         panel.webview.postMessage('eide.simple-cfg-ui.status.done');
                     } catch (error) {
                         GlobalEvent.emit('error', error);

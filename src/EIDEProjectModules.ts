@@ -416,6 +416,8 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
                 return <any>new Keil51CompileConfigModel(prjConfigData);
             case 'IAR_STM8':
                 return <any>new Iarstm8CompileConfigModel(prjConfigData);
+            case 'COSMIC_STM8':
+                return <any>new CosmicStm8CompileConfigModel(prjConfigData);
             case 'IAR_ARM':
                 return <any>new IarArmCompileConfigModel(prjConfigData);
             case 'AC5':
@@ -1445,6 +1447,113 @@ class Iarstm8CompileConfigModel extends C51BaseCompileConfigModel {
 
     GetDefault(): C51BaseCompileData {
         return Iarstm8CompileConfigModel.getDefaultConfig();
+    }
+}
+
+class CosmicStm8CompileConfigModel extends C51BaseCompileConfigModel {
+
+    GetKeyDescription(key: string): string {
+        switch (key) {
+            case 'options':
+                return view_str$compile$options;
+            case 'linkerScript':
+                return view_str$compile$scatterFilePath;
+            default:
+                return view_str$compile$deprecated;
+        }
+    }
+
+    getKeyValue(key: string): string {
+        switch (key) {
+            case 'options':
+                return 'Object {...}';
+            default:
+                return (<any>this.data)[key] || 'null';
+        }
+    }
+
+    getKeyIcon(key: string): KeyIcon | undefined {
+        switch (key) {
+            case 'options':
+                return 'ConfigurationEditor_16x.svg';
+            default:
+                return 'Property_16x.svg';
+        }
+    }
+
+    isKeyEnable(key: string): boolean {
+        switch (key) {
+            case 'linkerScript':
+            case 'options':
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    protected IsOpenFileCanSelectMany(key: string): boolean {
+        switch (key) {
+            case 'linkerScript':
+                return true;
+            default:
+                return super.IsOpenFileCanSelectMany(key);
+        }
+    }
+
+    protected GetKeyType(key: string): FieldType {
+        switch (key) {
+            case 'options':
+                return 'EVENT';
+            case 'linkerScript':
+                return 'OPEN_FILE';
+            default:
+                return 'Disable';
+        }
+    }
+
+    protected getEventData(key: string): EventData | undefined {
+        switch (key) {
+            case 'options':
+                return {
+                    event: 'openCompileOptions'
+                };
+            default:
+                return undefined;
+        }
+    }
+
+    protected VerifyString(key: string, input: string): string | undefined {
+        return undefined;
+    }
+
+    protected GetOpenFileFilters(key: string): OpenFileFilter | undefined {
+        switch (key) {
+            case 'linkerScript':
+                return {
+                    'linker script': ['lkf', 'in'],
+                    'any files': ['*']
+                };
+            default:
+                return undefined;
+        }
+    }
+
+    protected GetSelectionList(key: string): CompileConfigPickItem[] {
+        switch (key) {
+            default:
+                return [];
+        }
+    }
+
+    static getDefaultConfig(): C51BaseCompileData {
+        return {
+            linkerScript: 'null',
+            options: 'null'
+        };
+    }
+
+    GetDefault(): C51BaseCompileData {
+        return CosmicStm8CompileConfigModel.getDefaultConfig();
     }
 }
 
