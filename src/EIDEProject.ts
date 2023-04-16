@@ -789,7 +789,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     static readonly excludeDirFilter: RegExp = /^\./;
 
     // to show output files
-    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|a|lib|hex|ihx|bin|s19|s37|sct|icf|ld[s]?|map|map\.view|lst|lnp|params)$/i;
+    static readonly buildOutputMatcher: RegExp = /\.(?:elf|axf|out|sm8|a|lib|hex|ihx|bin|s19|s37|sct|icf|ld[s]?|map|map\.view|lst|lnp|params)$/i;
 
     //-------
 

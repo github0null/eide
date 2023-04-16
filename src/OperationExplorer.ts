@@ -666,6 +666,13 @@ export class OperationExplorer {
                         + ` Loc: ${toolchainManager.getToolchainExecutableFolder('SDCC')?.path}`,
                     detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'SDCC')
                 },
+                {
+                    label: 'COSMIC STM8 C Compiler (cxstm8)',
+                    type: 'COSMIC_STM8',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('COSMIC_STM8'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('COSMIC_STM8')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'COSMIC_STM8')
+                },
                 /* {
                     label: 'SDCC With GNU Patch For STM8 (Only for stm8)',
                     type: 'GNU_SDCC_STM8',

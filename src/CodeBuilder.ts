@@ -51,7 +51,7 @@ import { WorkspaceManager } from "./WorkspaceManager";
 import { ToolchainName } from "./ToolchainManager";
 import { md5, sha256, copyObject } from "./utility";
 import { MakefileGen } from "./Makefile";
-import { exeSuffix } from "./Platform";
+import { exeSuffix, osType } from "./Platform";
 import { FileWatcher } from "../lib/node-utility/FileWatcher";
 import { STVPFlasherOptions } from './HexUploader';
 import * as ArmCpuUtils from './ArmCpuUtils';
@@ -382,6 +382,11 @@ export abstract class CodeBuilder {
         return false;
     }
 
+    private getBuilderModelsDir(): File {
+        const platDir = osType() == 'win32' ? 'win32' : 'unix';
+        return File.fromArray([ResManager.instance().GetAppDataDir().path, 'models', platDir]);
+    }
+
     private getCommands(): string[] {
 
         const config = this.project.GetConfiguration().config;
@@ -403,7 +408,7 @@ export abstract class CodeBuilder {
             target: this.project.getCurrentTarget(),
             toolchain: toolchain.name,
             toolchainLocation: toolchain.getToolchainDir().path,
-            toolchainCfgFile: File.normalize(`../cfg/${toolchain.modelName}`),
+            toolchainCfgFile: `${this.getBuilderModelsDir().path}/${toolchain.modelName}`,
             buildMode: 'fast|multhread',
             showRepathOnLog: settingManager.isPrintRelativePathWhenBuild(),
             threadNum: settingManager.getThreadNumber(),
@@ -1129,16 +1134,20 @@ class C51CodeBuilder extends CodeBuilder {
             config.compileConfig.linkerScript.split(',')
                 .filter(s => s.trim() != '')
                 .forEach((sctPath) => {
-                    ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
+                    ldFileList.push(this.project.ToAbsolutePath(sctPath));
                 });
 
             if (!options['linker']) {
                 options.linker = Object.create(null);
             }
 
-            // set linker script for stm8 gnu sdcc
-            if (toolchain.name == 'GNU_SDCC_STM8') {
-                options.linker['linker-script'] = ldFileList;
+            switch (toolchain.name) {
+                // cosmic
+                case 'COSMIC_STM8':
+                    options.linker['linker-script'] = ldFileList;
+                    break;
+                default:
+                    break;
             }
         }
     }

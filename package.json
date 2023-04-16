@@ -345,6 +345,12 @@
                         "markdownDescription": "gnu sdcc for stm8 installation path",
                         "default": "${userRoot}/.eide/tools/stm8_gnu_sdcc"
                     },
+                    "EIDE.STM8.COSMIC.InstallDirectory": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "COSMIC CXSTM8 root folder path",
+                        "default": "${userRoot}/.eide/tools/cosmic_stm8"
+                    },
                     "EIDE.ARM.ARMCC5.InstallDirectory": {
                         "type": "string",
                         "scope": "resource",
@@ -1562,6 +1568,10 @@
             {
                 "fileMatch": "**/*.any.gcc.json",
                 "url": "./lang/any.gcc.verify.json"
+            },
+            {
+                "fileMatch": "**/*.options.stm8-cosmic.json",
+                "url": "./lang/stm8.cosmic.verify.json"
             }
         ],
         "grammars": [

@@ -1,0 +1,330 @@
+{
+    "title": "COSMIC For STM8 Options",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "definitions": {
+        "misc-controls": {
+            "markdownDescription": "Other Options",
+            "size": "huge",
+            "type": [
+                "string",
+                "array"
+            ],
+            "items": {
+                "type": "string"
+            },
+            "default": ""
+        }
+    },
+    "properties": {
+        "beforeBuildTasks": {
+            "markdownDescription": "List of commands to execute before build",
+            "description.zh-cn": "构建前要执行的命令列表",
+            "type": "array",
+            "default": [
+                {
+                    "name": "clean",
+                    "command": "del /Q \"${OutDir}\\*.*\""
+                }
+            ],
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "command"
+                ],
+                "properties": {
+                    "name": {
+                        "markdownDescription": "A readable name for display",
+                        "description.zh-cn": "用于显示的可读名称",
+                        "type": "string"
+                    },
+                    "command": {
+                        "markdownDescription": "Shell command line",
+                        "description.zh-cn": "Shell 命令行",
+                        "type": "string"
+                    },
+                    "disable": {
+                        "markdownDescription": "Disable this command",
+                        "description.zh-cn": "禁用此命令",
+                        "type": "boolean",
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    },
+                    "abortAfterFailed": {
+                        "markdownDescription": "Whether to skip subsequent commands if this command failed",
+                        "description.zh-cn": "是否在此命令失败时，跳过后续的命令",
+                        "type": "boolean",
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    },
+                    "stopBuildAfterFailed": {
+                        "markdownDescription": "Whether to stop compiling directly when this command failed",
+                        "description.zh-cn": "是否在此命令失败时，直接停止编译",
+                        "type": "boolean",
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    }
+                }
+            }
+        },
+        "afterBuildTasks": {
+            "markdownDescription": "List of commands to execute after build",
+            "description.zh-cn": "构建结束后要执行的命令列表",
+            "type": "array",
+            "default": [
+                {
+                    "name": "clean",
+                    "command": "del \"${OutDir}\\*._*\""
+                }
+            ],
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "command"
+                ],
+                "properties": {
+                    "name": {
+                        "markdownDescription": "A readable name for display",
+                        "description.zh-cn": "用于显示的可读名称",
+                        "type": "string"
+                    },
+                    "command": {
+                        "markdownDescription": "Shell command line",
+                        "description.zh-cn": "Shell 命令行",
+                        "type": "string"
+                    },
+                    "disable": {
+                        "markdownDescription": "Disable this command",
+                        "description.zh-cn": "禁用此命令",
+                        "type": "boolean",
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    },
+                    "abortAfterFailed": {
+                        "markdownDescription": "Whether to skip subsequent commands if this command failed",
+                        "description.zh-cn": "是否在此命令失败时，跳过后续的命令",
+                        "type": "boolean",
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    }
+                }
+            }
+        },
+        "global": {
+            "markdownDescription": "Global Options",
+            "description.zh-cn": "全局选项",
+            "type": "object",
+            "properties": {
+                "model": {
+                    "description": "Memory Models",
+                    "type": "string",
+                    "default": "small",
+                    "enum": [
+                        "small",
+                        "large",
+                        "small-0",
+                        "large-0"
+                    ],
+                    "enumDescriptions": [
+                        "Stack Short Model",
+                        "Stack Long Model",
+                        "Stack Short Model (Code < 64KB)",
+                        "Stack Long Model (Code < 64KB)"
+                    ]
+                },
+                "output-list-file": {
+                    "description": "Generate List Files",
+                    "type": "boolean",
+                    "default": false
+                },
+                "output-debug-info": {
+                    "description": "Output Debug Information",
+                    "type": "string",
+                    "default": "disable",
+                    "enum": [
+                        "disable",
+                        "enable"
+                    ]
+                },
+                "no-bss": {
+                    "description": "Do Not Use '.bss' Section",
+                    "type": "boolean",
+                    "default": false
+                },
+                "const-in-text": {
+                    "description": "Make Literals And Constants In '.text' Section",
+                    "type": "boolean",
+                    "default": false
+                },
+                "verbose": {
+                    "description": "Verbose Mode",
+                    "type": "boolean",
+                    "default": false
+                },
+                "misc-controls": {
+                    "markdownDescription": "Other Global Options (cxstm8)",
+                    "$ref": "#/definitions/misc-controls"
+                }
+            }
+        },
+        "c/cpp-compiler": {
+            "markdownDescription": "C/C++ Compiler Options",
+            "description.zh-cn": "C/C++ 编译器选项",
+            "type": "object",
+            "properties": {
+                "c99-mode": {
+                    "description": "C99 Mode",
+                    "type": "boolean",
+                    "default": false
+                },
+                "optimization": {
+                    "description": "Optimization Level",
+                    "type": "string",
+                    "default": "none",
+                    "enum": [
+                        "none",
+                        "fast",
+                        "size"
+                    ],
+                    "enumDescriptions": [
+                        "No Optimization",
+                        "Code Speed",
+                        "Code Size"
+                    ]
+                },
+                "split-functions": {
+                    "description": "Split Functions In Different Sections",
+                    "type": "boolean",
+                    "default": false
+                },
+                "plain-char-is-unsigned": {
+                    "description": "Plain Char Is Unsigned",
+                    "type": "boolean",
+                    "default": false
+                },
+                "strict-mode": {
+                    "description": "Enforce A Stronger Type Checking",
+                    "type": "boolean",
+                    "default": false
+                },
+                "reverse-bits-order": {
+                    "description": "Reverse The Bitfield Filling Order",
+                    "type": "boolean",
+                    "default": false
+                },
+                "warnings": {
+                    "description": "Warning Level",
+                    "type": "string",
+                    "default": "",
+                    "enum": [
+                        "",
+                        "less",
+                        "normal",
+                        "all"
+                    ],
+                    "enumDescriptions": [
+                        "Default",
+                        "Less",
+                        "Normal",
+                        "All Warnings"
+                    ]
+                },
+                "misc-controls": {
+                    "markdownDescription": "Other C Compiler Options (cxstm8)",
+                    "$ref": "#/definitions/misc-controls"
+                }
+            }
+        },
+        "asm-compiler": {
+            "markdownDescription": "Assembler Options",
+            "description.zh-cn": "汇编器选项",
+            "type": "object",
+            "properties": {
+                "defines": {
+                    "readable_name": "Preprocessor Definitions",
+                    "markdownDescription": "Preprocessor Definitions",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "misc-controls": {
+                    "markdownDescription": "Other Assembler Options (cxstm8)",
+                    "$ref": "#/definitions/misc-controls"
+                }
+            }
+        },
+        "linker": {
+            "markdownDescription": "Linker Options",
+            "description.zh-cn": "链接器选项",
+            "type": "object",
+            "properties": {
+                "output-format": {
+                    "type": "string",
+                    "default": "elf",
+                    "description": "Output Format",
+                    "enum": [
+                        "elf",
+                        "lib"
+                    ],
+                    "enumDescriptions": [
+                        "ELF",
+                        "LIB"
+                    ]
+                },
+                "$disableOutputTask": {
+                    "type": "boolean",
+                    "markdownDescription": "Not Output Hex/Bin File",
+                    "default": false
+                },
+                "auto-include-stdc-libraries": {
+                    "description": "Auto Include Standard ANSI C Libraries",
+                    "type": "boolean",
+                    "default": false
+                },
+                "LD_FLAGS": {
+                    "markdownDescription": "Other Linker Options (clnk)",
+                    "$ref": "#/definitions/misc-controls"
+                },
+                "LIB_FLAGS": {
+                    "markdownDescription": "C Libraries (*.sm8)",
+                    "$ref": "#/definitions/misc-controls"
+                },
+                "object-order": {
+                    "type": "array",
+                    "readable_name": "Object Order",
+                    "readable_name.zh-cn": "Object Order",
+                    "markdownDescription": "Object Order (used to determine the order in which object files are linked)",
+                    "description.zh-cn": "Object Order（用于决定某些 obj 文件的链接顺序）",
+                    "default": [],
+                    "properties": {
+                        "pattern": {
+                            "type": "string",
+                            "readable_name": "Pattern",
+                            "description": "A glob pattern (https://github.com/dazinator/DotNet.Glob) to match a object (*.o) file",
+                            "default": "**/your/pattern/for/object/file/path/*.o"
+                        },
+                        "order": {
+                            "type": "number",
+                            "readable_name": "Order",
+                            "description": "An integer number (The smaller the value, the higher the priority)",
+                            "default": 0
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
