@@ -1365,6 +1365,9 @@ class EideTerminalProvider implements vscode.TerminalProfileProvider {
 ///////////////////////////////////////////////////
 
 import { FileWatcher } from '../lib/node-utility/FileWatcher';
+import { ToolchainManager, ToolchainName } from './ToolchainManager';
+
+type MapViewParserType = 'memap' | 'builtin';
 
 interface MapViewRef {
 
@@ -1374,7 +1377,9 @@ interface MapViewRef {
 
     title: string;
 
-    toolName: string;
+    parser: MapViewParserType;
+
+    toolchainId: string;
 
     treeDepth: number;
 
@@ -1418,24 +1423,40 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
             return;
         }
 
-        let toolName = 'ARM_MICRO';
+        let toolchainId = conf.tool;
         let fileDepth = SettingManager.GetInstance().getMapViewParserDepth();
 
         if (fileDepth < 0)
             fileDepth = 1;
 
-        switch (conf.tool) {
+        let parser: MapViewParserType = 'memap';
+
+        switch (toolchainId) {
             case 'AC5':
             case 'AC6':
-                toolName = 'ARM_MICRO';
-                break;
             case 'GCC':
-                toolName = 'GCC_ARM';
+                parser = 'memap';
                 break;
             default:
-                webviewPanel.webview.html = this.genHtmlCont(title,
+                parser = 'builtin';
+                break;
+        }
+
+        // check: do we have support a builtin parser ?
+        if (parser == 'builtin') {
+
+            let isSupported = false;
+
+            const toolchain = ToolchainManager.getInstance().getToolchainByName(<ToolchainName>toolchainId);
+            if (toolchain) {
+                isSupported = toolchain.parseMapFile != undefined;
+            }
+
+            if (!isSupported) {
+                webviewPanel.webview.html = this.genHtmlCont(title, 
                     `<span class="error">Error</span>: We don't support this toolchain type: '${conf.tool}' yet !`);
                 return;
+            }
         }
 
         // get map file
@@ -1462,7 +1483,8 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
                 uid: uid,
                 vscWebview: webviewPanel.webview,
                 title: title,
-                toolName: toolName,
+                parser: parser,
+                toolchainId: toolchainId,
                 treeDepth: fileDepth,
                 mapPath: mapFile.path
             });
@@ -1510,18 +1532,52 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
             for (const vInfo of mInfo.refList) {
                 try {
 
-                    let lines: string[];
+                    let lines: string[] = [];
 
-                    if (os.platform() == 'win32') {
-                        lines = ChildProcess
-                            .execSync(`memap -t ${vInfo.toolName} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`)
-                            .toString().split(/\r\n|\n/);
-                    } else {
-                        const memapRoot = ResManager.GetInstance().getBuilderDir().path + File.sep + 'utils';
-                        const command = `python memap -t ${vInfo.toolName} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`;
-                        lines = ChildProcess
-                            .execSync(command, { cwd: memapRoot })
-                            .toString().split(/\r\n|\n/);
+                    // use memap tools
+                    if (vInfo.parser == 'memap') {
+
+                        let memapTyp = 'ARM_MICRO';
+
+                        switch (vInfo.toolchainId) {
+                            case 'AC5':
+                            case 'AC6':
+                                memapTyp = 'ARM_MICRO';
+                                break;
+                            case 'GCC':
+                                memapTyp = 'GCC_ARM';
+                                break;
+                            default:
+                                throw new Error(`We don't support this toolchain type: '${vInfo.toolchainId}' yet !`);
+                        }
+
+                        if (os.platform() == 'win32') {
+                            lines = ChildProcess
+                                .execSync(`memap -t ${memapTyp} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`)
+                                .toString().split(/\r\n|\n/);
+                        } else {
+                            const memapRoot = ResManager.GetInstance().getBuilderDir().path + File.sep + 'utils';
+                            const command = `python memap -t ${memapTyp} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`;
+                            lines = ChildProcess
+                                .execSync(command, { cwd: memapRoot })
+                                .toString().split(/\r\n|\n/);
+                        }
+                    }
+                    // use built-in tools
+                    else {
+
+                        const toolchain = ToolchainManager.getInstance().getToolchainByName(<ToolchainName>vInfo.toolchainId);
+                        if (!toolchain) {
+                            throw new Error(`not have this toolchain: '${vInfo.toolchainId}'`);
+                        }
+
+                        if (toolchain.parseMapFile) {
+                            let ret = toolchain.parseMapFile(vInfo.mapPath);
+                            if (ret instanceof Error) 
+                                throw ret;
+                            else
+                                lines = ret;
+                        }
                     }
 
                     // append color

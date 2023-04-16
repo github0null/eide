@@ -132,6 +132,13 @@ export interface IToolchian {
      */
     updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void;
 
+    /**
+     * used to show .map.view
+    */
+    parseMapFile?: (mapFile: string) => string[] | Error;
+
+    // others
+
     getLibDirs(): string[];
 
     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void;
