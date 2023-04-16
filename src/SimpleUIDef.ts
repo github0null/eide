@@ -21,6 +21,8 @@ export interface SimpleUIBtnInfo {
 
     title: string; // title for button
 
+    hidden?: boolean; // hide this button
+
     disabled?: boolean; // button is disabled
 }
 
@@ -33,11 +35,11 @@ export interface SimpleUIConfigData {
 
 export interface SimpleUIConfigItem {
 
-    type: 'input' | 'options' | 'table' | 'text' | 'bool' | 'divider' | 'tag';
+    type: 'input' | 'options' | 'table' | 'text' | 'bool' | 'divider' | 'tag' | 'button';
 
     attrs: { [key: string]: string | boolean | number };
 
-    name: string; // readable name
+    name: string; // readable title
 
     description?: string; // a description for this item
 
@@ -48,7 +50,8 @@ export interface SimpleUIConfigItem {
           SimpleUIConfigData_text | 
           SimpleUIConfigData_boolean |
           SimpleUIConfigData_divider |
-          SimpleUIConfigData_tag;
+          SimpleUIConfigData_tag |
+          SimpleUIConfigData_button;
 };
 
 // input box
@@ -134,4 +137,15 @@ export interface SimpleUIConfigData_divider extends SimpleUIConfigData {
 export interface SimpleUIConfigData_tag extends SimpleUIConfigData {
 
     value: string;
+}
+
+// button
+//
+// all attrs:
+//  - 'disabled':   [bool]      Prevents the user from interacting with the button––it cannot be pressed or focused.
+//  - 'appearance': [string]    Determines the visual appearance (primary, secondary) of the button.
+//
+export interface SimpleUIConfigData_button extends SimpleUIConfigData {
+
+    clickEvent: string; // a message will be emit when button has been clicked
 }

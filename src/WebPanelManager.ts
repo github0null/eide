@@ -51,7 +51,7 @@ export class WebPanelManager {
         return _instance;
     }
 
-    showSimpleConfigUI(cfg: SimpleUIConfig, onSave: (newCfg: SimpleUIConfig) => void): Promise<void> {
+    showSimpleConfigUI(cfg: SimpleUIConfig, onSubmit: (newCfg: SimpleUIConfig) => void, onMsg?: (msg: string) => void): Promise<void> {
 
         const resManager = ResManager.GetInstance();
 
@@ -75,6 +75,7 @@ export class WebPanelManager {
                             panel.webview.postMessage(cfg);
                             break;
                         default:
+                            if (onMsg) onMsg(_data);
                             break;
                     }
                 }
@@ -82,7 +83,7 @@ export class WebPanelManager {
                 /* it's obj data */
                 else {
                     try {
-                        onSave(_data);
+                        onSubmit(_data);
                         panel.webview.postMessage('eide.simple-cfg-ui.status.done');
                     } catch (error) {
                         GlobalEvent.emit('error', error);
