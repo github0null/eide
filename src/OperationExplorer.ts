@@ -57,7 +57,7 @@ import { ToolchainName, ToolchainManager } from './ToolchainManager';
 import { GitFileInfo } from './WebInterface/GithubInterface';
 import { TemplateIndexDef, TemplateInfo } from './WebInterface/WebInterface';
 import * as utility from './utility';
-import * as toolchainLicence from './ToolchainLicenceActive';
+import * as toolchainLicence from './ToolchainLicenceActivate';
 
 import * as events from 'events';
 import * as fs from 'fs';
