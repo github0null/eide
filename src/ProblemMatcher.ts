@@ -355,3 +355,65 @@ export function parseIarCompilerLog(projApi: ProjectBaseApi, logfile: File): Com
 
     return result;
 }
+
+// #error cpstm8 acia.c:33(25) incompatible compare types
+// #error cpstm8 .\src\main.c:54(14+3) bad struct/union operand
+// #error clnk acia.lkf:1 symbol f_recept not defined (vector.o )
+// #error clnk acia.lkf:1 symbol f__stext not defined (vector.o )
+export function parseCosmicStm8CompilerLog(projApi: ProjectBaseApi, logfile: File): CompilerDiagnostics {
+
+    const pattern = {
+        "regexp": "^\\s*#(\\w+) (\\w+) (.+?):(\\d+)(\\(\\d+(?:\\+\\d+)?\\))? (.+)",
+        "severity": 1,
+        "toolname": 2,
+        "file": 3,
+        "line": 4,
+        "col": 5,
+        "message": 6
+    };
+
+    const matcher = new RegExp(pattern.regexp, 'i');
+    const result: { [path: string]: vscode.Diagnostic[] } = {};
+    const ccLogLines = parseLogLines(logfile);
+
+    for (let idx = 0; idx < ccLogLines.length; idx++) {
+        const line = ccLogLines[idx];
+        const m = matcher.exec(line);
+        if (m && m.length > 5) {
+
+            const fspath   = projApi.toAbsolutePath(m[pattern.file]);
+            const message  = m[pattern.message].trim();
+            const line     = parseInt(m[pattern.line]);
+            const severity = m[pattern.severity].trim();
+            const colStr   = m[pattern.col]?.trim();
+            const toolname = m[pattern.toolname].trim();
+
+            let column = 0;
+            let column_rng = 1;
+            if (colStr && colStr.length > 2) {
+                // .\src\main.c:54(14+3)
+                if (colStr.includes('+')) {
+                    const m_col = /(\d+)\+(\d+)/.exec(colStr);
+                    if (m_col && m_col.length > 2) {
+                        column = parseInt(m_col[1]);
+                        column_rng = parseInt(m_col[2]);
+                    }
+                } else {
+                    column = parseInt(colStr.substring(1, colStr.length - 1));
+                }
+            }
+
+            const diags = result[fspath] || [];
+            if (result[fspath] == undefined) result[fspath] = diags;
+
+            const pos_s = newVscFilePosition(projApi.toolchainName(), line, column);
+            const pos_e = newVscFilePosition(projApi.toolchainName(), line, column + column_rng);
+            const vscDiag = new vscode.Diagnostic(new vscode.Range(pos_s, pos_e), message, toVscServerity(severity));
+            vscDiag.source = toolname;
+
+            diags.push(vscDiag);
+        }
+    }
+
+    return result;
+}

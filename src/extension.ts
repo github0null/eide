@@ -1199,7 +1199,14 @@ class EideTerminalLinkProvider implements vscode.TerminalLinkProvider<EideTermin
             regexp: new RegExp("^\\s*\"([^\"]+)\",(\\d+)\\s+", 'i'),
             file: 1,
             line: 2
-        }
+        },
+
+        // cosmic stm8
+        {
+            regexp: new RegExp(String.raw`^#\w+ \w+stm8 (.+?):(\d+)`),
+            file: 1,
+            line: 2
+        },
     ];
 
     constructor() {

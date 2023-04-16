@@ -107,7 +107,7 @@ import {
 } from 'vscode-cpptools';
 import * as eclipseParser from './EclipseProjectParser';
 import { isArray } from 'util';
-import { parseIarCompilerLog, CompilerDiagnostics, parseGccCompilerLog, parseArmccCompilerLog, parseKeilc51CompilerLog, parseSdccCompilerLog } from './ProblemMatcher';
+import { parseIarCompilerLog, CompilerDiagnostics, parseGccCompilerLog, parseArmccCompilerLog, parseKeilc51CompilerLog, parseSdccCompilerLog, parseCosmicStm8CompilerLog } from './ProblemMatcher';
 import * as iarParser from './IarProjectParser';
 import * as ArmCpuUtils from './ArmCpuUtils';
 import { ShellFlasherIndexItem } from './WebInterface/WebInterface';
@@ -3992,6 +3992,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     break;
                 case 'SDCC':
                     diag_res = parseSdccCompilerLog(prj, logFile);
+                    break;
+                case 'COSMIC_STM8':
+                    diag_res = parseCosmicStm8CompilerLog(prj, logFile);
                     break;
                 default:
                     diag_res = parseGccCompilerLog(prj, logFile);
