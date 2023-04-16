@@ -1680,7 +1680,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         }
 
         if (dispType == undefined) {
-            dispType = 'hide_no_sized';
+            dispType = 'show_all';
         }
 
         return new Promise((resolve) => {
@@ -1757,6 +1757,18 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                         elfsort = true;
                         symMatcher = /^(?<addr>[0-9a-f]+)\s+(?<size>[0-9a-f]+\s+)?(?<type>\w)\s+(?<name>[^\s]+)\s+(?<loca>.*)/i;
                         symTypConv = (t) => this.convGnuSymbolType2ReadableString(t)
+                        break;
+                    case 'COSMIC_STM8':
+                        // cobj -s .\stm8-cosmic.sm8
+                        //  __memory:       0000001a section .bss defined public
+                        //  __stack:        000003ff section absolute defined public absolute
+                        //  c_y:            00000007 section .ubsct defined public zpage
+                        //  f_exit:         00008221 section .text defined public
+                        //  f_main:         00008165 section .text defined public
+                        elfpath = prj.getExecutablePathWithoutSuffix() + '.sm8';
+                        elftool = [toolchain.getToolchainDir().path, `cobj${exeSuffix()}`].join(File.sep);
+                        elfcmds = ['-s', elfpath];
+                        symMatcher = /^\s*(?<name>\w+):\s+(?<addr>[0-9a-f]+)\s+\w+\s+(?<type>[\w\.]+)/i;
                         break;
                     default:
                         throw new Error(`Not support symbol view for '${toolchain.name}' !`);

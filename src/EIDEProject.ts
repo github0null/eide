@@ -2977,9 +2977,9 @@ class EIDEProject extends AbstractProject {
                 settings['C_Cpp.errorSquiggles'] = "disabled";
             }
 
-            if (this.getToolchain().name == 'COSMIC_STM8') {
-                settings["C_Cpp.intelliSenseEngine"] = "Tag Parser";
-            }
+            // if (this.getToolchain().name == 'COSMIC_STM8') {
+            //     settings["C_Cpp.intelliSenseEngine"] = "Tag Parser";
+            // }
 
             // remove some c/c++ configs
             [
