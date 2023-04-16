@@ -45,7 +45,8 @@ import {
     view_str$prompt$tool_install_mode_online, view_str$prompt$tool_install_mode_local, view_str$operation$empty_anygcc_prj, view_str$operation$setupUtilTools,
     view_str$prompt$setupToolchainPrefix,
     view_str$prompt$needReloadToUpdateEnv,
-    view_str$operation$create_prj_done
+    view_str$operation$create_prj_done,
+    view_str$prompt$requestAndActivateLicence
 } from './StringTable';
 import { CreateOptions, ImportOptions, ProjectType } from './EIDETypeDefine';
 import { File } from '../lib/node-utility/File';
@@ -56,6 +57,7 @@ import { ToolchainName, ToolchainManager } from './ToolchainManager';
 import { GitFileInfo } from './WebInterface/GithubInterface';
 import { TemplateIndexDef, TemplateInfo } from './WebInterface/WebInterface';
 import * as utility from './utility';
+import * as toolchainLicence from './ToolchainLicenceActive';
 
 import * as events from 'events';
 import * as fs from 'fs';
@@ -671,7 +673,13 @@ export class OperationExplorer {
                     type: 'COSMIC_STM8',
                     description: this.getStatusTxt(toolchainManager.isToolchainPathReady('COSMIC_STM8'))
                         + ` Loc: ${toolchainManager.getToolchainExecutableFolder('COSMIC_STM8')?.path}`,
-                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'COSMIC_STM8')
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'COSMIC_STM8'),
+                    buttons: [
+                        {
+                            iconPath: vscode.Uri.file(resManager.GetIconByName('Login_16x.svg').path),
+                            tooltip: view_str$prompt$requestAndActivateLicence
+                        }
+                    ]
                 },
                 /* {
                     label: 'SDCC With GNU Patch For STM8 (Only for stm8)',
@@ -804,6 +812,14 @@ export class OperationExplorer {
                         settingManager.setGccFamilyToolPrefix(toolchain.name, val, true);
                         utility.notifyReloadWindow(view_str$prompt$needReloadToUpdateEnv);
                     }
+                }
+
+                if (ctx.button.tooltip == view_str$prompt$requestAndActivateLicence) {
+
+                    picker.hide();
+                    picker.dispose();
+
+                    toolchainLicence.requestAndActivateLicence(ctx.item.type);
                 }
             });
 

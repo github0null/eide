@@ -29,7 +29,7 @@ export enum LanguageIndexs {
     English
 }
 
-let langIndex: number = /zh-cn/.test(vscode.env.language)
+let langIndex: number = /zh-cn/i.test(vscode.env.language)
     ? LanguageIndexs.Chinese
     : LanguageIndexs.English;
 
@@ -427,6 +427,16 @@ export const view_str$prompt$needReloadToUpdateEnv = [
 export const view_str$prompt$setupToolchainPrefix = [
     `设置编译器前缀`,
     `Setup Compiler Prefix`
+][langIndex];
+
+export const view_str$prompt$requestAndActivateLicence = [
+    `获取并激活许可证`,
+    `Obtain And Active Licence`
+][langIndex];
+
+export const view_str$prompt$requestAndActivateLicence_warn_setupPath = [
+    `在开始之前激活之前，你必须先安装并设置编译器的路径！`,
+    `Before you start activating, you must install and set the path of the compiler !`
 ][langIndex];
 
 export const view_str$prompt$need_reload_project = [
