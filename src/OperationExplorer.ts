@@ -363,6 +363,34 @@ export class OperationExplorer {
                     ];
 
                     templateItem = await vscode.window.showQuickPick(itemList);
+
+                    if (templateItem && templateItem.type == 'C51') {
+
+                        const itemList: ProjectTemplatePickItem[] = [
+                            {
+                                label: '8051 Empty Project (With Keil C51 Compiler)',
+                                detail: '8051 general project',
+                                templateName: 'mcs51',
+                                type: 'C51'
+                            },
+                            {
+                                label: 'STM8 Empty Project (With COSMIC Compiler)',
+                                detail: 'stm8 general project',
+                                templateName: 'cosmic_stm8',
+                                type: 'C51'
+                            },
+                            {
+                                label: 'Empty Project',
+                                detail: 'empty project for any 8bits toolchain',
+                                type: 'C51'
+                            },
+                        ];
+
+                        const subTyp = await vscode.window.showQuickPick(itemList);
+                        if (subTyp && subTyp.templateName) {
+                            templateItem = subTyp;
+                        }
+                    }
                 }
                 break;
 
@@ -392,6 +420,12 @@ export class OperationExplorer {
                             detail: 'avr atmega128 quickstart project (FreeRTOS) (WinAVR-GCC compiler)',
                             templateName: 'avr_atmega128_rtos',
                             type: 'ANY-GCC'
+                        },
+                        {
+                            label: 'STM8 Quickstart With COSMIC Compiler',
+                            detail: 'stm8 general quickstart project (COSMIC STM8 Compiler)',
+                            templateName: 'cosmic_stm8',
+                            type: 'C51'
                         },
                         {
                             label: 'STM8 Quickstart',

@@ -6,6 +6,20 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.12.0] update
+
+**New**:
+  - `COSMIC STM8`: Support new toolchain: `COSMIC STM8` for stm8 series.
+
+**Fix**:
+  - `Export Template`: Zip project template 7za failed on linux.
+
+**Optimize**:
+  - `unify_builder`: Show commandline when build failed on source file.
+  - `Disassembly View`: Optimize disasm launguage syntax with visual jump
+
+***
+
 ### [v3.11.3] revision
 
 **Fix**:
