@@ -55,8 +55,16 @@ export class WebPanelManager {
 
         const resManager = ResManager.GetInstance();
 
+        let ViewCol = cfg.viewColumn;
+
+        if (ViewCol == undefined || ViewCol == null) {
+            ViewCol = vscode.ViewColumn.One;
+        }
+
         const panel = vscode.window.createWebviewPanel('eide.simple-cfg-ui',
-            cfg.title, vscode.ViewColumn.One, { enableScripts: true, retainContextWhenHidden: true });
+            cfg.title, 
+            { viewColumn: ViewCol, preserveFocus: cfg.notTakeFocus }, 
+            { enableScripts: true, retainContextWhenHidden: true });
 
         panel.iconPath = vscode.Uri.file(resManager.GetIconByName(cfg.iconName || 'Property_16x.svg').path);
 

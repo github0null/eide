@@ -1,3 +1,4 @@
+import * as vscode from 'vscode';
 
 export interface SimpleUIConfig {
 
@@ -6,6 +7,10 @@ export interface SimpleUIConfig {
     readonly?: boolean;
 
     iconName?: string;
+
+    viewColumn?: vscode.ViewColumn;
+
+    notTakeFocus?: boolean;
 
     btns?: {
         'submit'?: SimpleUIBtnInfo;
