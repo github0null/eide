@@ -431,7 +431,7 @@ export const view_str$prompt$setupToolchainPrefix = [
 
 export const view_str$prompt$requestAndActivateLicence = [
     `获取并激活许可证`,
-    `Obtain And Active Licence`
+    `Obtain And Activate Licence`
 ][langIndex];
 
 export const view_str$prompt$requestAndActivateLicence_warn_setupPath = [
