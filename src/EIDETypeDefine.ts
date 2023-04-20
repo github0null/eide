@@ -245,7 +245,21 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
     }
 
     Save(force?: boolean): void {
-        this.cfgFile.Write(this.ToJson());
+
+        let oldContent: string | undefined;
+        let newContent: string | undefined = this.ToJson();
+
+        try {
+            if (this.cfgFile.IsExist()) {
+                oldContent = this.cfgFile.Read();
+            }
+        } catch (error) {
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+        }
+
+        if (oldContent != newContent) {
+            this.cfgFile.Write(newContent);
+        }
     }
 
     protected afterInitConfigData() {
@@ -1221,10 +1235,25 @@ export class ProjectConfiguration<T extends BuilderConfigData>
     };
 
     setProjectUsrCtx(data: ProjectUserContextData) {
+
+        const usrCtxFile = this.getProjectUsrCtxFile();
+
+        let oldUsrCtxCont: string | undefined;
+        if (usrCtxFile.IsExist()) {
+            try {
+                oldUsrCtxCont = usrCtxFile.Read();
+            } catch (error) {
+                GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+            }
+        }
+
         try {
-            this.getProjectUsrCtxFile().Write(JSON.stringify(data, undefined, 4));
+            let newUsrCtxCont = JSON.stringify(data, undefined, 4);
+            if (oldUsrCtxCont != newUsrCtxCont) {
+                usrCtxFile.Write(newUsrCtxCont);
+            }
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
         }
     }
 
