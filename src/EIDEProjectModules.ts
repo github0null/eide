@@ -432,6 +432,8 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
                 return <any>new AnyGccCompileConfigModel(prjConfigData);
             case 'GNU_SDCC_STM8':
                 return <any>new SdccGnuStm8CompileConfigModel(prjConfigData);
+            case 'MTI_GCC':
+                return <any>new MipsCompileConfigModel(prjConfigData);
             default:
                 throw new Error('Unsupported toolchain: ' + prjConfigData.toolchain);
         }
@@ -1166,6 +1168,106 @@ export class RiscvCompileConfigModel extends CompileConfigModel<RiscvCompileData
 
     GetDefault(): RiscvCompileData {
         return RiscvCompileConfigModel.getDefaultConfig();
+    }
+}
+
+// -------- MTI-GCC ---------
+export interface MipsCompileData extends BuilderConfigData {
+    linkerScriptPath: string;
+    options: string;
+}
+
+export class MipsCompileConfigModel extends CompileConfigModel<MipsCompileData> {
+
+    GetKeyDescription(key: string): string {
+        switch (key) {
+            case 'linkerScriptPath':
+                return view_str$compile$scatterFilePath;
+            case 'options':
+                return view_str$compile$options;
+            default:
+                return view_str$compile$deprecated;
+        }
+    }
+
+    getKeyValue(key: string): string {
+        switch (key) {
+            case 'options':
+                return 'Object {...}';
+            default:
+                return (<any>this.data)[key] || 'null';
+        }
+    }
+
+    getKeyIcon(key: string): KeyIcon | undefined {
+        switch (key) {
+            case 'options':
+                return 'ConfigurationEditor_16x.svg';
+            default:
+                return 'Property_16x.svg';
+        }
+    }
+
+    protected GetKeyType(key: string): FieldType {
+        switch (key) {
+            case 'linkerScriptPath':
+                return 'INPUT';
+            case 'options':
+                return 'EVENT';
+            default:
+                return 'Disable';
+        }
+    }
+
+    protected IsOpenFileCanSelectMany(key: string): boolean {
+        switch (key) {
+            case 'linkerScriptPath':
+                return true;
+            default:
+                return super.IsOpenFileCanSelectMany(key);
+        }
+    }
+
+    protected GetOpenFileFilters(key: string): OpenFileFilter | undefined {
+        switch (key) {
+            case 'linkerScriptPath':
+                return {
+                    'linker script': ['ld', 'lds'],
+                    'any files': ['*']
+                };
+            default:
+                return undefined;
+        }
+    }
+
+    protected VerifyString(key: string, input: string): string | undefined {
+        return undefined;
+    }
+
+    protected GetSelectionList(key: string): CompileConfigPickItem[] | undefined {
+        return undefined;
+    }
+
+    protected getEventData(key: string): EventData | undefined {
+        switch (key) {
+            case 'options':
+                return {
+                    event: 'openCompileOptions'
+                };
+            default:
+                return undefined;
+        }
+    }
+
+    static getDefaultConfig(): MipsCompileData {
+        return {
+            linkerScriptPath: 'undefined.lds',
+            options: 'null'
+        };
+    }
+
+    GetDefault(): MipsCompileData {
+        return MipsCompileConfigModel.getDefaultConfig();
     }
 }
 

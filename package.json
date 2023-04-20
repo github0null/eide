@@ -442,6 +442,18 @@
                         "markdownDescription": "%settings.riscv.gcc.prefix%",
                         "default": "riscv-none-embed-"
                     },
+                    "EIDE.MIPS.InstallDirectory": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.mips.gcc.install.folder%",
+                        "default": "${userRoot}/.eide/tools/mips_mti"
+                    },
+                    "EIDE.MIPS.ToolPrefix": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.mips.gcc.prefix%",
+                        "default": "mips-mti-elf-"
+                    },
                     "EIDE.Toolchain.AnyGcc.InstallDirectory": {
                         "type": "string",
                         "scope": "resource",
@@ -1565,6 +1577,10 @@
             {
                 "fileMatch": "**/*riscv.gcc.options.json",
                 "url": "./lang/riscv.gcc.verify.json"
+            },
+            {
+                "fileMatch": "**/*mips.mti.gcc.options.json",
+                "url": "./lang/mips.mti.gcc.verify.json"
             },
             {
                 "fileMatch": "**/*.any.gcc.json",

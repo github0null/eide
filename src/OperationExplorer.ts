@@ -46,7 +46,8 @@ import {
     view_str$prompt$setupToolchainPrefix,
     view_str$prompt$needReloadToUpdateEnv,
     view_str$operation$create_prj_done,
-    view_str$prompt$requestAndActivateLicence
+    view_str$prompt$requestAndActivateLicence,
+    view_str$operation$empty_mips_prj
 } from './StringTable';
 import { CreateOptions, ImportOptions, ProjectType } from './EIDETypeDefine';
 import { File } from '../lib/node-utility/File';
@@ -354,6 +355,11 @@ export class OperationExplorer {
                             label: view_str$operation$empty_riscv_prj,
                             detail: 'for risc-v chips',
                             type: 'RISC-V'
+                        },
+                        {
+                            label: view_str$operation$empty_mips_prj,
+                            detail: 'for mips chips',
+                            type: 'MIPS'
                         },
                         {
                             label: view_str$operation$empty_anygcc_prj,
@@ -714,6 +720,13 @@ export class OperationExplorer {
                             tooltip: view_str$prompt$requestAndActivateLicence
                         }
                     ]
+                },
+                {
+                    label: 'MIPS MTI GCC Compiler',
+                    type: 'MTI_GCC',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('MTI_GCC'))
+                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('MTI_GCC')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'MTI_GCC'),
                 },
                 /* {
                     label: 'SDCC With GNU Patch For STM8 (Only for stm8)',
