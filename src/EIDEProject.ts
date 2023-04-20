@@ -1421,8 +1421,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             targets[targetName] = prjConfig.cloneCurrentTarget();
         }
 
-        const oldBuilderOptsFile = prjConfig.compileConfigModel
+        const prevBuilderOptsFile = prjConfig.compileConfigModel
             .getOptionsFile(this.getEideDir().path, prjConfig.config);
+        const prevSourcesOptsFile = this.getSourceExtraArgsCfgFile(true);
 
         // update current target name
         prjConfigData.mode = targetName;
@@ -1485,9 +1486,21 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             .getOptionsFile(this.getEideDir().path, prjConfig.config, true);
         if (!optsFile.IsFile()) {
             try {
-                fs.copyFileSync(oldBuilderOptsFile.path, optsFile.path);
+                fs.copyFileSync(prevBuilderOptsFile.path, optsFile.path);
             } catch (error) {
                 // nothing todo
+            }
+        }
+
+        // if source options file is not existed, copy it.
+        if (prevSourcesOptsFile.IsFile()) {
+            const srcOptsFile = File.fromArray([this.getEideDir().path, `${targetName.toLowerCase()}.files.options.yml`]);
+            if (!srcOptsFile.IsFile()) {
+                try {
+                    fs.copyFileSync(prevSourcesOptsFile.path, srcOptsFile.path);
+                } catch (error) {
+                    // nothing todo
+                }
             }
         }
 

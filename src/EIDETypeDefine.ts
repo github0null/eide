@@ -365,7 +365,7 @@ export interface ProjectConfigData<T extends BuilderConfigData> {
     type: ProjectType;
 
     // cur target info (virtual node)
-    mode: string; // target name
+    mode: string; // target name (And for historical reasons, that's what it's called)
     excludeList: string[];
     toolchain: ToolchainName;
     compileConfig: T;
