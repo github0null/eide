@@ -4716,9 +4716,14 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     async Virtual_removeFolder(item: ProjTreeItem) {
+
         const project = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
         const curFolder = <VirtualFolderInfo>item.val.obj;
-        project.getVirtualSourceManager().removeFolder(curFolder.path);
+
+        const answer = await vscode.window.showInformationMessage(view_str$prompt$removeSrcDir.replace('{}', curFolder.path), txt_yes, txt_no);
+        if (answer == txt_yes) {
+            project.getVirtualSourceManager().removeFolder(curFolder.path);
+        }
     }
 
     async Virtual_renameFolder(item: ProjTreeItem) {
