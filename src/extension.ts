@@ -932,7 +932,7 @@ async function checkAndInstallRuntime() {
             if (pkgReady && pkgFile.IsFile()) {
                 try {
                     ChildProcess.execFileSync(pkgFile.path);
-                    const sel = await vscode.window.showInformationMessage(`Ok ! Now you need relaunch VsCode !`, txt_yes);
+                    const sel = await vscode.window.showInformationMessage(`Ok ! Now you need to relaunch VsCode !`, txt_yes);
                     if (sel) {
                         vscode.commands.executeCommand('workbench.action.reloadWindow');
                     }
