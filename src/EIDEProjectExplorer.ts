@@ -3751,9 +3751,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             return;
         }
 
+        // close and reopen project
         this.dataProvider.Close(idx);
-
         this.dataProvider.OpenProject(workspaceFile.path, true);
+
+        // refresh explorer tree view
+        this.Refresh();
     }
 
     private async onProjectClosed(uid: string | undefined) {
