@@ -3100,37 +3100,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
             targetDir.CreateDir(true);
 
-            let templateShaStr: string | undefined;
-            let isVerified: boolean | undefined;
-
-            // get template sha str
-            const li = templateFile.noSuffixName.split('.');
-            if (li.length > 1) {
-                templateShaStr = li[li.length - 1];
-            }
-
-            // verify template zip
-            if (templateShaStr) {
-                const sha256 = compresser.sha256(templateFile);
-                if (sha256) {
-                    const sha = md5(sha256);
-                    isVerified = templateShaStr == sha;
-                }
-            }
-
-            // if verify failed, notify to user
-            if (templateShaStr && !isVerified) {
-                if (templateFile.suffix != '.ewt') { // it's eide template project
-                    const selTxt = await vscode.window.showWarningMessage(
-                        view_str$msg$err_ept_hash, 'Yes', 'No');
-                    if (selTxt !== 'Yes') {
-                        return; // user canceled
-                    }
-                } else { // it's eide template workspace
-                    vscode.window.showWarningMessage(view_str$msg$err_ewt_hash);
-                }
-            }
-
             const err = await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
                 title: `Creating project`
@@ -3162,17 +3131,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
                                     // convert .EIDE to .eide
                                     this.toLowercaseEIDEFolder(targetDir);
-
-                                    // if not verified, del *.sh
-                                    if (!isVerified) {
-                                        const eideFolder = File.fromArray([targetDir.path, AbstractProject.EIDE_DIR]);
-                                        if (eideFolder.IsDir()) {
-                                            eideFolder.GetList([/\-install\.sh$/i], File.EXCLUDE_ALL_FILTER)
-                                                .forEach((f) => {
-                                                    try { fs.unlinkSync(f.path); } catch (err) { }
-                                                });
-                                        }
-                                    }
 
                                     // init project
                                     {
@@ -4491,16 +4449,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     progress.report({ message: 'zipping ...' });
 
                     const err = await compresser.Zip(prjRootDir, option, distDir);
-                    if (!err) { // export done, set hash str
-                        const sha256 = compresser.sha256(tFile);
-                        if (sha256) {
-                            const hash = md5(sha256);
-                            const name = `${tFile.dir}/${tFile.noSuffixName}.${hash}${tFile.suffix}`;
-                            try { fs.renameSync(tFile.path, name); } catch (err) { }
-                        }
-                        progress.report({ message: 'export done !' });
-                    } else { // export failed
+                    if (err) {
                         GlobalEvent.emit('msg', ExceptionToMessage(err, 'Warning'));
+                    } else {
+                        progress.report({ message: 'export done !' });
                     }
 
                     setTimeout(() => resolve(err), 1500);
