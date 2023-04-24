@@ -2986,7 +2986,8 @@ class EIDEProject extends AbstractProject {
                 settings['C_Cpp.default.configurationProvider'] = this.extensionId;
             }
 
-            if (settings['C_Cpp.errorSquiggles'] === undefined) {
+            if (settings['C_Cpp.errorSquiggles'] == undefined ||
+                settings['C_Cpp.errorSquiggles'] == 'Disabled') {
                 settings['C_Cpp.errorSquiggles'] = "disabled";
             }
 
