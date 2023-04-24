@@ -163,9 +163,9 @@ export interface ShellFlasherIndexItem {
 			locationType: 'workspace' | 'global';
 
 			/**
-			 * if 'locationType' == 'workspace', this field means tool install path
+			 * if 'locationType' == 'workspace', Install Dir is '${workspaceFolder}/<location>'
 			 * 
-			 * if 'locationType' == 'global', this field means tool exe file dir path
+			 * if 'locationType' == 'global', Install Dir is '${userHome}/.eide/tools/<location>'
 			*/
 			location: string;
 

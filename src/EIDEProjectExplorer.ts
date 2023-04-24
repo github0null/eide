@@ -6516,13 +6516,22 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 let needReload = false;
                 if (tarFlasher.resources[osType()]) {
 
-                    if (cancel.isCancellationRequested) return;
+                    if (cancel.isCancellationRequested)
+                        return;
 
                     const res = tarFlasher.resources[osType()];
-                    let installDir = res.locationType == 'global' ? new File(resManager.getEideToolsInstallDir()) : project.getRootDir();
-                    if (res.locationType == 'workspace') installDir = File.fromArray([project.getRootDir().path, res.location]);
 
-                    if (res.zipType != 'none') {
+                    let installDir: File;
+                    let isFirstInstall: boolean = false;
+
+                    if (res.locationType == 'workspace')
+                        installDir = File.fromArray([project.getRootDir().path, res.location]);
+                    else // global
+                        installDir = File.fromArray([resManager.getEideToolsInstallDir(), res.location]);
+
+                    // if have a resource and not install, download it
+                    if (res.zipType != 'none' && installDir.IsDir() == false) {
+
                         reporter.report({ message: 'downloading resources' });
                         const buf = await downloadFile(redirectHost(res.url));
                         if (!(buf instanceof Buffer)) throw buf || new Error('Cannot download resource');
@@ -6534,6 +6543,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                         const szip = new SevenZipper();
                         const r = szip.UnzipSync(new File(tmpPath), installDir);
                         GlobalEvent.emit('globalLog', newMessage('Info', r));
+
+                        isFirstInstall = true;
                     }
 
                     if (res.setupCommand) {
@@ -6549,7 +6560,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                         }
                     }
 
-                    needReload = res.locationType == 'global';
+                    needReload = isFirstInstall && res.locationType == 'global';
                 }
 
                 if (cancel.isCancellationRequested) {
