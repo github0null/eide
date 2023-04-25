@@ -2259,6 +2259,14 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         this.registerBuiltinVar('ConfigName', () => this.GetConfiguration().config.mode);
         this.registerBuiltinVar('ProjectRoot', () => this.getRootDir().path);
         this.registerBuiltinVar('ExecutableName', () => this.getExecutablePathWithoutSuffix());
+
+        // system vars
+        this.registerBuiltinVar('SYS_Platform', () => platform.osType());
+        this.registerBuiltinVar('SYS_DirSep', () => File.sep);
+        this.registerBuiltinVar('SYS_DirSeparator', () => File.sep);
+        this.registerBuiltinVar('SYS_PathSep', () => platform.osType() != 'win32' ? ':' : ';');
+        this.registerBuiltinVar('SYS_PathSeparator', () => platform.osType() != 'win32' ? ':' : ';');
+        this.registerBuiltinVar('SYS_EOL', () => os.EOL);
     }
 
     private RegisterEvent(): void {
