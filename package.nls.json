@@ -136,7 +136,10 @@
 
     "settings.armcc.ini": "Keil MDK-ARM `UV4.exe` or `TOOLS.INI` file path [`example: C:\\Keil_v5\\UV4\\UV4.exe`]",
     "settings.armcc.convert.axf": "Convert `.axf` to `.elf` for ARMCC compiler",
-    
+
+    "settings.mips.gcc.install.folder": "MIPS toolchain install folder [`example: D:\\mips-mti-elf-mingw64`]",
+    "settings.mips.gcc.prefix": "MIPS toolchain prefix, like: `mips-mti-elf-`",
+
     "settings.riscv.gcc.install.folder": "RISC-V toolchain install folder [`example: D:\\xpack-riscv-none-embed-gcc-8.3.0-2.3`]",
     "settings.riscv.gcc.prefix": "RISC-V toolchain prefix, like: `riscv-none-embed-`",
 

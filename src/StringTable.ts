@@ -754,6 +754,11 @@ export const view_str$operation$empty_riscv_prj = [
     'RISC-V Project'
 ][langIndex];
 
+export const view_str$operation$empty_mips_prj = [
+    'MIPS 项目',
+    'MIPS Project'
+][langIndex];
+
 export const view_str$operation$empty_anygcc_prj = [
     '通用的 GCC 项目',
     'Universal GCC Project'

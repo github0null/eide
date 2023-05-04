@@ -577,6 +577,8 @@ export abstract class CodeBuilder {
                 return new AnyGccCodeBuilder(_project);
             case 'C51':
                 return new C51CodeBuilder(_project);
+            case 'MIPS':
+                return new MipsCodeBuilder(_project);
             default:
                 throw new Error(`not support this project type: '${_project.GetConfiguration().config.type}'`);
         }
@@ -1032,6 +1034,32 @@ export class ARMCodeBuilder extends CodeBuilder {
 }
 
 class RiscvCodeBuilder extends CodeBuilder {
+
+    protected getMcuMemorySize(): MemorySize | undefined {
+        return undefined;
+    }
+
+    protected preHandleOptions(options: ICompileOptions) {
+
+        const config = this.project.GetConfiguration<RiscvCompileData>().config;
+
+        const ldFileList: string[] = [];
+        config.compileConfig.linkerScriptPath.split(',')
+            .filter(s => s.trim() != '')
+            .forEach((sctPath) => {
+                ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
+            });
+
+        if (!options['linker']) {
+            options.linker = Object.create(null);
+        }
+
+        // set linker script
+        options.linker['linker-script'] = ldFileList;
+    }
+}
+
+class MipsCodeBuilder extends CodeBuilder {
 
     protected getMcuMemorySize(): MemorySize | undefined {
         return undefined;

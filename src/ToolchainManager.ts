@@ -42,7 +42,7 @@ import { ICompileOptions, ArmBaseBuilderConfigData } from "./EIDEProjectModules"
 export type ToolchainName =
     'SDCC' | 'Keil_C51' | 'IAR_STM8' | 'GNU_SDCC_STM8' | 'COSMIC_STM8' |
     'AC5' | 'AC6' | 'GCC' | 'IAR_ARM' |
-    'RISCV_GCC' | 'ANY_GCC' | 'None';
+    'RISCV_GCC' | 'ANY_GCC' | 'MTI_GCC' | 'None';
 
 export interface IProjectInfo {
 
@@ -160,6 +160,7 @@ export class ToolchainManager {
         'C51': ['Keil_C51', 'SDCC', 'IAR_STM8', 'COSMIC_STM8'],
         'ARM': ['AC5', 'AC6', 'GCC', 'IAR_ARM'],
         'RISC-V': ['RISCV_GCC'],
+        'MIPS': ['MTI_GCC'],
         'ANY-GCC': ['ANY_GCC']
     };
 
@@ -191,6 +192,7 @@ export class ToolchainManager {
         this.add(new RISCV_GCC());
         this.add(new AnyGcc());
         this.add(new IARARM());
+        this.add(new MTI_GCC());
     }
 
     on(event: 'onChanged', listener: (toolchainName: ToolchainName) => void): void;
@@ -250,6 +252,9 @@ export class ToolchainManager {
                         }
                 }
                 break;
+            case 'MIPS':
+                res = this.toolchainMap.get('MTI_GCC');
+                break;
             default:
                 throw new Error('Invalid project type \'' + prjType + '\'');
         }
@@ -293,6 +298,8 @@ export class ToolchainManager {
                 return 'Any GNU Toolchain';
             case 'COSMIC_STM8':
                 return 'COSMIC STM8 C Compiler';
+            case 'MTI_GCC':
+                return 'MIPS MTI GCC Compiler';
             default:
                 return '';
         }
@@ -415,6 +422,8 @@ export class ToolchainManager {
                 return File.fromArray([settingManager.getSdccDir().path, 'bin']);
             case 'RISCV_GCC':
                 return File.fromArray([settingManager.getRiscvToolFolder().path, 'bin']);
+            case 'MTI_GCC':
+                return File.fromArray([settingManager.getMipsToolFolder().path, 'bin']);
             case 'GNU_SDCC_STM8':
                 return File.fromArray([settingManager.getGnuSdccStm8Dir().path, 'bin']);
             case 'ANY_GCC':
@@ -1088,7 +1097,7 @@ class COSMIC_STM8 implements IToolchian {
     }
 
     updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
-        cppToolsConfig.cStandard   = 'c99';
+        cppToolsConfig.cStandard = 'c99';
         cppToolsConfig.cppStandard = 'c++98';
     }
 
@@ -2141,6 +2150,230 @@ class IARSTM8 implements IToolchian {
     }
 }
 
+class MTI_GCC implements IToolchian {
+    readonly version = 1;
+
+    readonly settingName: string = 'EIDE.MIPS.InstallDirectory';
+
+    readonly categoryName: string = 'GCC';
+
+    readonly name: ToolchainName = 'MTI_GCC';
+
+    readonly modelName: string = 'mips.mti.gcc.model.json';
+
+    readonly configName: string = 'mips.mti.gcc.options.json';
+
+    readonly verifyFileName: string = 'mips.mti.gcc.verify.json';
+
+    constructor() {
+        // nothing todo
+    }
+
+    private getToolPrefix(): string {
+        return SettingManager.GetInstance().getMipsToolPrefix();
+    }
+
+    //-----------
+
+    newInstance(): IToolchian {
+        return new MTI_GCC();
+    }
+
+    private __lastActivedTargetInfo: ToolchainTargetSupportedInfo | undefined;
+    getGccCompilerTargetInfo(): ToolchainTargetSupportedInfo | undefined {
+
+        if (this.__lastActivedTargetInfo)
+            return this.__lastActivedTargetInfo;
+
+        const compilerPath = this.getGccFamilyCompilerPathForCpptools();
+        if (!compilerPath)
+            return undefined;
+
+        try {
+            const machine = child_process.execFileSync(compilerPath, ['-dumpmachine']).toString().trim();
+            const sysroot = child_process.execFileSync(compilerPath, ['-print-sysroot']).toString().trim();
+            const libpath = `${sysroot}/lib`;
+
+            const archs: string[] = fs.readdirSync(libpath)
+                .filter(n => n.startsWith('micromipsel-r2') || n.startsWith('mips-r2') || n.startsWith('mipsel-r2'))
+                .map(n => n.toLowerCase());
+
+            const lines = child_process.execFileSync(compilerPath, ['-Q', '--help=target'])
+                .toString().trim().split(/\r\n|\n/);
+
+            let abis: string[] = [];
+            let mods: string[] = [];
+
+            for (let index = 0; index < lines.length; index++) {
+                const line = lines[index];
+                if (/^\s* Known MIPS ABIs/.test(line)) {
+                    abis = lines[index + 1].trim().split(/\s+/);
+                } else if (/^\s*Known code models/.test(line)) {
+                    mods = lines[index + 1].trim().split(/\s+/);
+                }
+            }
+
+            const targetInfo: ToolchainTargetSupportedInfo = {
+                machine: machine,
+                archs: archs,
+                abis: abis,
+                rv_codeModels: mods
+            };
+
+            this.__lastActivedTargetInfo = targetInfo;
+
+            return targetInfo;
+
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            return undefined;
+        }
+    }
+
+    getGccFamilyCompilerPathForCpptools(): string | undefined {
+        const gcc = File.fromArray([this.getToolchainDir().path, 'bin', this.getToolPrefix() + `gcc${platform.exeSuffix()}`]);
+        return gcc.path;
+    }
+
+    getToolchainPrefix(): string {
+        return this.getToolPrefix();
+    }
+
+    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+
+        cppToolsConfig.cStandard = 'c11';
+        cppToolsConfig.cppStandard = 'c++11';
+
+        cppToolsConfig.compilerArgs = ['-std=${c_cppStandard}'];
+
+        if (builderOpts.global) {
+
+            if (builderOpts.global['arch']) {
+                cppToolsConfig.compilerArgs.push(`-march=${builderOpts.global['arch']}`);
+            }
+
+            if (builderOpts.global['abi']) {
+                cppToolsConfig.compilerArgs.push(`-mabi=${builderOpts.global['abi']}`);
+            }
+
+            if (typeof builderOpts.global['$float-abi-type'] == 'string') {
+                const abiType = builderOpts.global['$float-abi-type'];
+                if (abiType === 'soft-float') {
+                    cppToolsConfig.compilerArgs.push("-msoft-float");
+                } else if (abiType === 'hard-float') {
+                    cppToolsConfig.compilerArgs.push("-mhard-float");
+                }
+            }
+
+
+            // pass global args for cpptools
+            if (typeof builderOpts.global['misc-control'] == 'string') {
+                const pList = builderOpts.global['misc-control'].trim().split(/\s+/);
+                pList.forEach((p) => cppToolsConfig.compilerArgs?.push(p));
+            }
+        }
+
+        if (builderOpts["c/cpp-compiler"]) {
+
+            if (builderOpts["c/cpp-compiler"]['language-c']) {
+                cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'];
+            }
+
+            if (builderOpts["c/cpp-compiler"]['language-cpp']) {
+                cppToolsConfig.cppStandard = builderOpts["c/cpp-compiler"]['language-cpp'];
+            }
+
+            if (typeof builderOpts["c/cpp-compiler"]['C_FLAGS'] == 'string') {
+                const pList = builderOpts['c/cpp-compiler']['C_FLAGS'].trim().split(/\s+/);
+                cppToolsConfig.cCompilerArgs = pList;
+            }
+
+            if (typeof builderOpts["c/cpp-compiler"]['CXX_FLAGS'] == 'string') {
+                const pList = builderOpts['c/cpp-compiler']['CXX_FLAGS'].trim().split(/\s+/);
+                cppToolsConfig.cppCompilerArgs = pList;
+            }
+        }
+    }
+
+    preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
+
+        // convert output lib commmand
+        if (options['linker'] && options['linker']['output-format'] === 'lib') {
+            options['linker']['$use'] = 'linker-lib';
+        }
+
+        // if region 'global' is not exist, create it
+        if (typeof options['global'] !== 'object') {
+            options['global'] = {};
+        }
+
+        // set tool prefix
+        options['global'].toolPrefix = this.getToolPrefix();
+    }
+
+    getToolchainDir(): File {
+        return SettingManager.GetInstance().getMipsToolFolder();
+    }
+
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
+        return [];
+    }
+
+    getCustomDefines(): string[] | undefined {
+        return undefined;
+    }
+
+    getSystemIncludeList(builderOpts: ICompileOptions): string[] {
+        return [];
+    }
+
+    getForceIncludeHeaders(): string[] | undefined {
+        return [
+            ResManager.GetInstance().getGccForceIncludeHeaders().path
+        ];
+    }
+
+    getDefaultIncludeList(): string[] {
+        return [];
+    }
+
+    getLibDirs(): string[] {
+        return [];
+    }
+
+    getDefaultConfig(): ICompileOptions {
+        return <ICompileOptions>{
+            version: this.version,
+            beforeBuildTasks: [],
+            afterBuildTasks: [],
+            global: {
+                "output-debug-info": 'enable',
+                "arch": "mips32r5",
+                "abi": "32"
+            },
+            'c/cpp-compiler': {
+                "language-c": "c11",
+                "language-cpp": "c++11",
+                "optimization": 'level-debug',
+                "warnings": "all-warnings",
+                "one-elf-section-per-function": false,
+                "one-elf-section-per-data": false,
+                "C_FLAGS": "",
+                "CXX_FLAGS": ""
+            },
+            'asm-compiler': {
+                "ASM_FLAGS": ""
+            },
+            linker: {
+                "output-format": "elf",
+                "remove-unused-input-sections": true,
+                "LD_FLAGS": "-nostdlib -Wcast-align=strict",
+                "LIB_FLAGS": "-lm -lgcc"
+            }
+        };
+    }
+}
+
 class RISCV_GCC implements IToolchian {
 
     readonly version = 1;
@@ -2160,6 +2393,7 @@ class RISCV_GCC implements IToolchian {
     constructor() {
         // nothing todo
     }
+
     /* 
         private getIncludeList(gccDir: string): string[] | undefined {
             try {
