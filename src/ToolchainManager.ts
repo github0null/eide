@@ -2358,7 +2358,7 @@ class MTI_GCC implements IToolchian {
                 "warnings": "all-warnings",
                 "one-elf-section-per-function": false,
                 "one-elf-section-per-data": false,
-                "C_FLAGS": "",
+                "C_FLAGS": "-EL",
                 "CXX_FLAGS": ""
             },
             'asm-compiler': {
@@ -2367,7 +2367,7 @@ class MTI_GCC implements IToolchian {
             linker: {
                 "output-format": "elf",
                 "remove-unused-input-sections": true,
-                "LD_FLAGS": "-nostdlib -Wcast-align=strict",
+                "LD_FLAGS": "-EL",
                 "LIB_FLAGS": "-lm -lgcc"
             }
         };
