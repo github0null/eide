@@ -1261,7 +1261,7 @@ export class MipsCompileConfigModel extends CompileConfigModel<MipsCompileData> 
 
     static getDefaultConfig(): MipsCompileData {
         return {
-            linkerScriptPath: 'undefined.lds',
+            linkerScriptPath: '',
             options: 'null'
         };
     }
