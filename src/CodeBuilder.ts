@@ -38,7 +38,7 @@ import { ProjectConfigData, ProjectConfiguration } from "./EIDETypeDefine";
 import {
     ArmBaseCompileData,
     Memory, ARMStorageLayout, ICompileOptions,
-    FloatingHardwareOption, C51BaseCompileData, RiscvCompileData, AnyGccCompileData
+    FloatingHardwareOption, C51BaseCompileData, RiscvCompileData, AnyGccCompileData, MipsCompileData
 } from './EIDEProjectModules';
 import { SettingManager } from "./SettingManager";
 import { GlobalEvent } from "./GlobalEvents";
@@ -1067,7 +1067,7 @@ class MipsCodeBuilder extends CodeBuilder {
 
     protected preHandleOptions(options: ICompileOptions) {
 
-        const config = this.project.GetConfiguration<RiscvCompileData>().config;
+        const config = this.project.GetConfiguration<MipsCompileData>().config;
 
         const ldFileList: string[] = [];
         config.compileConfig.linkerScriptPath.split(',')
