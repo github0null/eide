@@ -4,9 +4,9 @@
 
 ## 简述 📑
 
-一款适用于 8051/STM8/Cortex-M/RISC-V 的单片机开发环境。
+一款适用于 8051/STM8/Cortex-M/MIPS/RISC-V 的单片机开发环境。
 
-在 vscode 上提供 **8051**, **AVR**, **STM8**, **Cortex-M**, **RISC-V** ... 项目的 开发, 编译, 烧录 等功能。
+在 vscode 上提供 **8051**, **AVR**, **STM8**, **Cortex-M**, **MIPS MTI**, **RISC-V** ... 项目的 开发, 编译, 烧录 等功能。
 
 支持的平台: 
   - **Windows x64 (>= Windows 10)**
@@ -19,7 +19,7 @@
 
 ## 功能特性 🎉
 
-* 支持开发 8051，STM8，AVR，Cortex-M，RISC-V, AnyGcc 项目。
+* 支持开发 8051，STM8，AVR，Cortex-M，MIPS MTI, RISC-V, AnyGcc 项目。
 * 支持导入 KEIL5/IAR/Eclipse 项目，支持导入 `IAR-STM8, IAR-ARM, Segger Embedded Studio` 项目源文件资源树。
 * 支持安装标准的 KEIL 芯片支持包 (仅用于 Cortex-M 项目)。
 * 提供丰富的项目模板方便快速开始项目。
