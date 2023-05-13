@@ -400,6 +400,12 @@ export class ResInstaller {
                             progress.report({ message: `Canceling ...` });
                         });
 
+                        unzipper.on('progress', (progressNum, msg) => {
+                            if (msg) {
+                                progress.report({ message: `Unzipping '${msg}'` });
+                            }
+                        });
+
                         const unzipErr = await unzipper.Unzip(resourceFile, outDir);
                         if (unzipErr) {
                             GlobalEvent.emit('msg', ExceptionToMessage(unzipErr, 'Warning'));
