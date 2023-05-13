@@ -721,13 +721,6 @@ export class OperationExplorer {
                         }
                     ]
                 },
-                {
-                    label: 'MIPS MTI GCC Compiler',
-                    type: 'MTI_GCC',
-                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('MTI_GCC'))
-                    + ` Loc: ${toolchainManager.getToolchainExecutableFolder('MTI_GCC')?.path}`,
-                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'MTI_GCC'),
-                },
                 /* {
                     label: 'SDCC With GNU Patch For STM8 (Only for stm8)',
                     type: 'GNU_SDCC_STM8',
@@ -800,6 +793,13 @@ export class OperationExplorer {
                             tooltip: view_str$prompt$setupToolchainPrefix
                         }
                     ]
+                },
+                {
+                    label: 'MIPS MTI GCC Compiler',
+                    type: 'MTI_GCC',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('MTI_GCC'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('MTI_GCC')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'MTI_GCC'),
                 },
                 {
                     label: `Universal GCC Toolchain (${toolchainManager.getToolchainPrefix('ANY_GCC')}gcc)`,

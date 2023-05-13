@@ -1751,6 +1751,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     case 'GCC':
                     case 'RISCV_GCC':
                     case 'ANY_GCC':
+                    case 'MIPS_GCC':
+                    case 'MTI_GCC':
                         elfpath = prj.getExecutablePathWithoutSuffix() + '.elf';
                         elftool = [toolchain.getToolchainDir().path, 'bin', `${toolchainPrefix}nm${exeSuffix()}`].join(File.sep);
                         elfcmds = sortType == 'size' ? ['-l', '-S', '--size-sort', elfpath] : ['-ln', '-S', elfpath];

@@ -646,6 +646,9 @@ export class SettingManager {
                 return this.getRiscvToolPrefix();
             case 'ANY_GCC':
                 return this.getAnyGccToolPrefix();
+            case 'MIPS_GCC':
+            case 'MTI_GCC':
+                return this.getMipsToolPrefix();
             default:
                 return undefined;
         }

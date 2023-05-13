@@ -42,7 +42,7 @@ import { ICompileOptions, ArmBaseBuilderConfigData } from "./EIDEProjectModules"
 export type ToolchainName =
     'SDCC' | 'Keil_C51' | 'IAR_STM8' | 'GNU_SDCC_STM8' | 'COSMIC_STM8' |
     'AC5' | 'AC6' | 'GCC' | 'IAR_ARM' |
-    'RISCV_GCC' | 'ANY_GCC' | 'MTI_GCC' | 'None';
+    'RISCV_GCC' | 'ANY_GCC' | 'MIPS_GCC' | 'MTI_GCC' | 'None';
 
 export interface IProjectInfo {
 
