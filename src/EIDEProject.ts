@@ -29,6 +29,8 @@ import * as events from 'events';
 import * as ini from 'ini';
 import * as os from 'os';
 import * as yaml from 'yaml';
+import * as child_process from 'child_process';
+
 import {
     CppToolsApi, Version, CustomConfigurationProvider, getCppToolsApi,
     SourceFileConfigurationItem, WorkspaceBrowseConfiguration
@@ -69,6 +71,7 @@ import * as iconv from 'iconv-lite';
 import * as globmatch from 'micromatch'
 import { ICompileOptions, EventData, CurrentDevice, ArmBaseCompileConfigModel } from './EIDEProjectModules';
 import * as FileLock from '../lib/node-utility/FileLock';
+import { CompilerCommandsDatabaseItem } from './CodeBuilder';
 
 export class CheckError extends Error {
 }
@@ -2674,6 +2677,35 @@ class EIDEProject extends AbstractProject {
         /* check source references is enabled ? */
         if (!SettingManager.GetInstance().isDisplaySourceRefs()) return;
 
+        let compiler_cmd_db: CompilerCommandsDatabaseItem[] = [];
+        let generate_dep_file: ((cmd_db: CompilerCommandsDatabaseItem[], srcpath: string, deppath: string) => void) | undefined;
+
+        // for COSMIC STM8, we need manual generate .d files
+        if (this.getToolchain().name == 'COSMIC_STM8') {
+            const compilerDBFile = File.fromArray([this.getOutputFolder().path, 'compile_commands.json']);
+            if (compilerDBFile.IsFile()) {
+                try {
+                    compiler_cmd_db = jsonc.parse(compilerDBFile.Read());
+                    generate_dep_file = (cmd_db: CompilerCommandsDatabaseItem[], srcpath: string, deppath: string) => {
+                        let idx = cmd_db.findIndex((e) => e.file == srcpath);
+                        if (idx != -1) {
+                            try {
+                                let cmd_item = cmd_db[idx];
+                                let command = cmd_item.command.replace('-co', '-sm -co');
+                                const depcont = child_process.execSync(command, { cwd: cmd_item.directory }).toString();
+                                fs.writeFileSync(deppath, depcont);
+                            } catch (error) {
+                                GlobalEvent.emit('globalLog', newMessage('Warning', `Failed to make '${deppath}', msg: ${(<Error>error).message}`));
+                                try { fs.unlinkSync(deppath) } catch (error) { } // del old .d file
+                            }
+                        }
+                    };
+                } catch (error) {
+                    GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+                }
+            }
+        }
+
         const toolName = toolchain_ || this.getToolchain().name;
 
         const outFolder = this.getOutputFolder();
@@ -2684,6 +2716,7 @@ class EIDEProject extends AbstractProject {
             const refMap = JSON.parse(refListFile.Read());
             for (const srcpath in refMap) {
                 const refFile = new File((<string>refMap[srcpath]).replace(/\.[^\\\/\.]+$/, '.d'));
+                if (generate_dep_file) generate_dep_file(compiler_cmd_db, srcpath, refFile.path);
                 if (!refFile.IsFile()) continue;
                 const refs = this.parseRefFile(refFile, toolName).filter(p => p != srcpath);
                 this.srcRefMap.set(srcpath, refs.map((path) => new File(path)));

@@ -3921,7 +3921,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 if (this.compiler_diags.has(prj.getUid())) {
                     this.compiler_diags.get(prj.getUid())?.clear();
                 }
-            })
+            });
 
             // build finish event
             codeBuilder.on('finished', (done) => {

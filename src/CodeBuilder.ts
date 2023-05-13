@@ -93,6 +93,12 @@ export interface BuilderParams {
     env?: { [name: string]: any };
 }
 
+export interface CompilerCommandsDatabaseItem {
+    directory: string;
+    file: string;
+    command: string;
+}
+
 export abstract class CodeBuilder {
 
     protected readonly paramsFileName = 'builder.params';
