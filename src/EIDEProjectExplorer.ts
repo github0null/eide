@@ -113,6 +113,7 @@ import * as ArmCpuUtils from './ArmCpuUtils';
 import { ShellFlasherIndexItem } from './WebInterface/WebInterface';
 import { jsonc } from 'jsonc';
 import { SimpleUIConfig, SimpleUIConfigData_input, SimpleUIConfigData_options, SimpleUIConfigData_text, SimpleUIConfigData_table, SimpleUIConfigData_boolean } from "./SimpleUIDef";
+import { StatusBarManager } from './StatusBarManager';
 
 enum TreeItemType {
     SOLUTION,
@@ -907,7 +908,32 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
     }
 
     UpdateView(ele?: ProjTreeItem) {
+
+        // update treeview ui
         this.dataChangedEvent.fire(ele);
+
+        // whole treeview updated
+        if (ele == undefined) {
+            setTimeout(() => this.updateStatusBarForActiveProjects(), 500);
+        }
+    }
+
+    private updateStatusBarForActiveProjects() {
+
+        const statusbars = StatusBarManager.getInstance();
+
+        statusbars.foreach((bar, name) => {
+
+            const activeProj = this.getActiveProject();
+
+            if (name == 'current.project') {
+                bar.text = `EIDE Project: ${activeProj?.getProjectName() || 'unspecified'}`;
+            }
+
+            else if (name == 'current.target') {
+                bar.text = `Target: ${activeProj?.getCurrentTarget() || 'unspecified'}`;
+            }
+        });
     }
 
     clearTreeViewCache() {
@@ -1751,6 +1777,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     case 'GCC':
                     case 'RISCV_GCC':
                     case 'ANY_GCC':
+                    case 'MIPS_GCC':
+                    case 'MTI_GCC':
                         elfpath = prj.getExecutablePathWithoutSuffix() + '.elf';
                         elftool = [toolchain.getToolchainDir().path, 'bin', `${toolchainPrefix}nm${exeSuffix()}`].join(File.sep);
                         elfcmds = sortType == 'size' ? ['-l', '-S', '--size-sort', elfpath] : ['-ln', '-S', elfpath];
@@ -2097,6 +2125,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         if (this.activePrjPath !== wsPath) {
             this.activePrjPath = wsPath;
             this.UpdateView();
+            GlobalEvent.emit('project.activeStatusChanged', prj.getUid());
         }
     }
 
@@ -3100,37 +3129,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
             targetDir.CreateDir(true);
 
-            let templateShaStr: string | undefined;
-            let isVerified: boolean | undefined;
-
-            // get template sha str
-            const li = templateFile.noSuffixName.split('.');
-            if (li.length > 1) {
-                templateShaStr = li[li.length - 1];
-            }
-
-            // verify template zip
-            if (templateShaStr) {
-                const sha256 = compresser.sha256(templateFile);
-                if (sha256) {
-                    const sha = md5(sha256);
-                    isVerified = templateShaStr == sha;
-                }
-            }
-
-            // if verify failed, notify to user
-            if (templateShaStr && !isVerified) {
-                if (templateFile.suffix != '.ewt') { // it's eide template project
-                    const selTxt = await vscode.window.showWarningMessage(
-                        view_str$msg$err_ept_hash, 'Yes', 'No');
-                    if (selTxt !== 'Yes') {
-                        return; // user canceled
-                    }
-                } else { // it's eide template workspace
-                    vscode.window.showWarningMessage(view_str$msg$err_ewt_hash);
-                }
-            }
-
             const err = await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
                 title: `Creating project`
@@ -3162,17 +3160,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
                                     // convert .EIDE to .eide
                                     this.toLowercaseEIDEFolder(targetDir);
-
-                                    // if not verified, del *.sh
-                                    if (!isVerified) {
-                                        const eideFolder = File.fromArray([targetDir.path, AbstractProject.EIDE_DIR]);
-                                        if (eideFolder.IsDir()) {
-                                            eideFolder.GetList([/\-install\.sh$/i], File.EXCLUDE_ALL_FILTER)
-                                                .forEach((f) => {
-                                                    try { fs.unlinkSync(f.path); } catch (err) { }
-                                                });
-                                        }
-                                    }
 
                                     // init project
                                     {
@@ -3444,6 +3431,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         // register project hook
         GlobalEvent.on('project.opened', (prj) => this.onProjectOpened(prj));
         GlobalEvent.on('project.closed', (uid) => this.onProjectClosed(uid));
+        GlobalEvent.on('project.activeStatusChanged', (uid) => this.notifyCpptoolsRefresh());
 
         this.on('request_open_project', (fsPath: string) => this.dataProvider.OpenProject(fsPath));
         this.on('request_create_project', (option: CreateOptions) => this.dataProvider.CreateProject(option));
@@ -3568,31 +3556,79 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
     }
 
-    private _sourceWhereFroms: Map<string, AbstractProject> = new Map();
+    notifyCpptoolsRefresh() {
+
+        if (this.cppToolsApi) {
+            if (this.cppToolsApi.notifyReady) {
+                this.cppToolsApi.notifyReady(this);
+            } else {
+                this.cppToolsApi.didChangeCustomConfiguration(this);
+                this.cppToolsApi.didChangeCustomBrowseConfiguration(this);
+            }
+        }
+    }
+
+    // Map<sourePath, ProjectUid[]>
+    private _sourceWhereFroms: Map<string, string[]> = new Map();
 
     canProvideConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<boolean> {
 
         this.cppToolsOut.appendLine(`[source] cpptools request provideConfigurations for '${uri.fsPath}'`);
 
         return new Promise(async (resolve) => {
-            let result = false;
+
+            const providerList: string[] = [];
+
             await this.dataProvider.traverseProjectsAsync(async (prj) => {
-                result = await prj.canProvideConfiguration(uri, token);
-                if (result) this._sourceWhereFroms.set(uri.fsPath, prj);
-                return result;
+
+                const result = await prj.canProvideConfiguration(uri, token);
+                if (result) {
+                    providerList.push(prj.getUid());
+                }
+
+                return false; // don't break loop
             });
-            resolve(result);
+
+            if (providerList.length > 0) {
+                this._sourceWhereFroms.set(uri.fsPath, providerList);
+                resolve(true);
+            } else {
+                this._sourceWhereFroms.delete(uri.fsPath);
+                resolve(false);
+            }
         });
     }
 
     provideConfigurations(uris: vscode.Uri[], token?: vscode.CancellationToken | undefined): Thenable<SourceFileConfigurationItem[]> {
+
         return new Promise(async (resolve) => {
+
             let result: SourceFileConfigurationItem[] = [];
+
+            const activePrjUid = this.getActiveProject()?.getUid();
+
             for (const uri of uris) {
-                const prj = this._sourceWhereFroms.get(uri.fsPath);
-                if (prj) result = result.concat(await prj.provideConfigurations([uri], token));
+
+                const prjList = this._sourceWhereFroms.get(uri.fsPath);
+                if (prjList == undefined || prjList.length == 0) continue;
+
+                let proj: AbstractProject | undefined;
+                if (activePrjUid) {
+                    const pidx = prjList.findIndex(uid => uid == activePrjUid);
+                    if (pidx != -1) {
+                        proj = this.dataProvider.getProjectByUid(prjList[pidx]);
+                    }
+                } else {
+                    proj = this.dataProvider.getProjectByUid(prjList[0]);
+                }
+
+                if (proj) {
+                    result = result.concat(await proj.provideConfigurations([uri], token));
+                }
             }
+
             resolve(result);
+
             this.cppToolsOut.appendLine(`[source] provideConfigurations`);
             this.cppToolsOut.appendLine(yml.stringify(result));
         });
@@ -3751,9 +3787,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             return;
         }
 
+        // close and reopen project
         this.dataProvider.Close(idx);
-
         this.dataProvider.OpenProject(workspaceFile.path, true);
+
+        // refresh explorer tree view
+        this.Refresh();
     }
 
     private async onProjectClosed(uid: string | undefined) {
@@ -3876,6 +3915,58 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         pickBox.show();
     }
 
+    async showQuickPickAndSwitchActiveProject() {
+
+        const selections: vscode.QuickPickItem[] = [];
+
+        this.dataProvider.foreachProject((proj) => {
+            selections.push(<any>{
+                uid: proj.getUid(),
+                label: proj.getProjectName(),
+                description: `uid: ${proj.getUid()}`,
+                detail: `loc: ${proj.getWorkspaceFile().path}`
+            });
+        });
+
+        if (selections.length > 0) {
+
+            const result: any = await vscode.window.showQuickPick(selections, {
+                title: `Switch Active Project`,
+                canPickMany: false,
+            });
+
+            if (result) {
+                const idx = this.dataProvider.getIndexByProjectUid(result.uid);
+                if (idx != -1) {
+                    const acvtiveProj = this.dataProvider.getActiveProject();
+                    if (acvtiveProj && result.uid == acvtiveProj.getUid()) return;
+                    this.dataProvider.setActiveProject(idx);
+                }
+            }
+        }
+    }
+
+    async showQuickPickAndSwitchActiveTarget() {
+
+        const activeProj = this.getActiveProject();
+
+        if (activeProj) {
+
+            const selections = activeProj.getTargets().map<vscode.QuickPickItem>((name) => { return { label: name }; });
+
+            const result = await vscode.window.showQuickPick(selections, {
+                title: `Switch Active Target`,
+                canPickMany: false
+            });
+
+            if (result) {
+                if (result.label != activeProj.getCurrentTarget()) {
+                    activeProj.switchTarget(result.label);
+                }
+            }
+        }
+    }
+
     clearCppcheckDiagnostic(): void {
         this.cppcheck_diag.clear();
     }
@@ -3958,7 +4049,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 if (this.compiler_diags.has(prj.getUid())) {
                     this.compiler_diags.get(prj.getUid())?.clear();
                 }
-            })
+            });
 
             // build finish event
             codeBuilder.on('finished', (done) => {
@@ -4488,16 +4579,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     progress.report({ message: 'zipping ...' });
 
                     const err = await compresser.Zip(prjRootDir, option, distDir);
-                    if (!err) { // export done, set hash str
-                        const sha256 = compresser.sha256(tFile);
-                        if (sha256) {
-                            const hash = md5(sha256);
-                            const name = `${tFile.dir}/${tFile.noSuffixName}.${hash}${tFile.suffix}`;
-                            try { fs.renameSync(tFile.path, name); } catch (err) { }
-                        }
-                        progress.report({ message: 'export done !' });
-                    } else { // export failed
+                    if (err) {
                         GlobalEvent.emit('msg', ExceptionToMessage(err, 'Warning'));
+                    } else {
+                        progress.report({ message: 'export done !' });
                     }
 
                     setTimeout(() => resolve(err), 1500);
@@ -4713,9 +4798,14 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     async Virtual_removeFolder(item: ProjTreeItem) {
+
         const project = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
         const curFolder = <VirtualFolderInfo>item.val.obj;
-        project.getVirtualSourceManager().removeFolder(curFolder.path);
+
+        const answer = await vscode.window.showInformationMessage(view_str$prompt$removeSrcDir.replace('{}', curFolder.path), txt_yes, txt_no);
+        if (answer == txt_yes) {
+            project.getVirtualSourceManager().removeFolder(curFolder.path);
+        }
     }
 
     async Virtual_renameFolder(item: ProjTreeItem) {
@@ -6556,13 +6646,22 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 let needReload = false;
                 if (tarFlasher.resources[osType()]) {
 
-                    if (cancel.isCancellationRequested) return;
+                    if (cancel.isCancellationRequested)
+                        return;
 
                     const res = tarFlasher.resources[osType()];
-                    let installDir = res.locationType == 'global' ? new File(resManager.getEideToolsInstallDir()) : project.getRootDir();
-                    if (res.locationType == 'workspace') installDir = File.fromArray([project.getRootDir().path, res.location]);
 
-                    if (res.zipType != 'none') {
+                    let installDir: File;
+                    let isFirstInstall: boolean = false;
+
+                    if (res.locationType == 'workspace')
+                        installDir = File.fromArray([project.getRootDir().path, res.location]);
+                    else // global
+                        installDir = File.fromArray([resManager.getEideToolsInstallDir(), res.location]);
+
+                    // if have a resource and not install, download it
+                    if (res.zipType != 'none' && installDir.IsDir() == false) {
+
                         reporter.report({ message: 'downloading resources' });
                         const buf = await downloadFile(redirectHost(res.url));
                         if (!(buf instanceof Buffer)) throw buf || new Error('Cannot download resource');
@@ -6574,6 +6673,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                         const szip = new SevenZipper();
                         const r = szip.UnzipSync(new File(tmpPath), installDir);
                         GlobalEvent.emit('globalLog', newMessage('Info', r));
+
+                        isFirstInstall = true;
                     }
 
                     if (res.setupCommand) {
@@ -6589,7 +6690,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                         }
                     }
 
-                    needReload = res.locationType == 'global';
+                    needReload = isFirstInstall && res.locationType == 'global';
                 }
 
                 if (cancel.isCancellationRequested) {

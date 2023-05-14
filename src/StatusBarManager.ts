@@ -50,10 +50,16 @@ export class StatusBarManager {
             return bar;
         }
     }
-/* 
+
     get(name: string): vscode.StatusBarItem | undefined {
         return this.barMap.get(name);
-    } */
+    }
+
+    foreach(callbk: (bar: vscode.StatusBarItem, name: string) => void) {
+        this.barMap.forEach((v, k) => {
+            callbk(v, k);
+        });
+    }
 
     show(name: string) {
         if (this.barMap.has(name)) {

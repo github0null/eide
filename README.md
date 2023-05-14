@@ -6,9 +6,9 @@
 
 ## Summary 📑
 
-A mcu development environment for `8051/AVR/STM8/Cortex-M/RISC-V/Universal-Gcc` on VsCode. 
+A mcu development environment for `8051/AVR/STM8/Cortex-M/MIPS/RISC-V/Universal-Gcc` on VsCode. 
 
-Provide `8051/AVR/STM8/Cortex-M/RISC-V` project development, compilation, program flash and other functions.
+Provide `8051/AVR/STM8/Cortex-M/MIPS/RISC-V` project development, compilation, program flash and other functions.
 
 Supported Platforms: 
   - **Windows x64 (>= Windows 10)**
@@ -21,7 +21,7 @@ Supported Platforms:
 
 ## Features 🎉
 
-* Support 8051, AVR, STM8, Cortex-M, RISC-V, Universal-Gcc projects.
+* Support 8051, AVR, STM8, Cortex-M, MIPS MTI, RISC-V, Universal-Gcc projects.
 * Support to import KEIL5/IAR/Eclipse projects, support to import 'IAR-STM8, IAR-ARM, Segger Embedded Studio' project source file resource tree.
 * Support for installing standard KEIL chip support packs (only for Cortex-M projects).
 * Provides many project templates for quick start a project.

@@ -1,0 +1,305 @@
+{
+    "name": "MIPS GCC",
+    "id": "GCC",
+	"toolPrefix": "mips-mti-elf-",
+    "useUnixPath": true,
+    "version": {
+        "args": "--version",
+        "matcher": "\\((?<name>.*?)\\) (?<version>\\d+\\.\\d+\\.\\d+)"
+    },
+    "global": {
+        "arch": {
+            "type": "value",
+            "command": "-march=",
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ],
+            "location": "first"
+        },
+        "abi": {
+            "type": "value",
+            "command": "-mabi=",
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ],
+            "location": "first"
+        },
+        "optimization": {
+            "type": "selectable",
+            "command": {
+                "false": "-O0",
+                "level-0": "-O0",
+                "level-1": "-O1",
+                "level-2": "-O2",
+                "level-3": "-O3",
+                "level-size": "-Os",
+                "level-fast": "-Ofast",
+                "level-debug": "-Og"
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "turn-warning-into-errors": {
+            "type": "selectable",
+            "command": {
+                "true": "-Werror",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "warnings": {
+            "type": "selectable",
+            "command": {
+                "false": "",
+                "no-warnings": "-w",
+                "all-warnings": "-Wall"
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "output-debug-info": {
+            "type": "selectable",
+            "command": {
+                "enable": "-g",
+                "disable": "",
+                "dwarf-2": "-g -gdwarf-2",
+                "dwarf-3": "-g -gdwarf-3",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm"
+            ]
+        },
+        "C_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c"
+            ]
+        },
+        "CXX_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "cpp"
+            ]
+        },
+        "ASM_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "asm"
+            ]
+        },
+        "LD_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "linker"
+            ]
+        },
+        "misc-control": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ]
+        },
+        "one-elf-section-per-function": {
+            "type": "selectable",
+            "command": {
+                "true": "-ffunction-sections",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "one-elf-section-per-data": {
+            "type": "selectable",
+            "command": {
+                "true": "-fdata-sections",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "remove-unused-input-sections": {
+            "type": "selectable",
+            "command": {
+                "true": "-Wl,--gc-sections",
+                "false": ""
+            },
+            "group": [
+                "linker"
+            ]
+        }
+    },
+    "groups": {
+        "c": {
+            "$path": "bin/${toolPrefix}gcc",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "-D${key}=\"${value}\""
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$output": "-o ${out} -MMD ${in}",
+            "$default": [
+                "-c",
+                "-xc"
+            ],
+            "$language-c": {
+                "type": "keyValue",
+                "command": "-std=",
+                "enum": {
+                    "default": "c11",
+                    "c89": "c89",
+                    "c90": "c90",
+                    "c99": "c99",
+                    "c11": "c11",
+                    "c1x": "c1x",
+                    "c17": "c17",
+                    "gnu89": "gnu89",
+                    "gnu90": "gnu90",
+                    "gnu99": "gnu99",
+                    "gnu11": "gnu11",
+                    "gnu1x": "gnu1x",
+                    "gnu17": "gnu17"
+                }
+            }
+        },
+        "cpp": {
+            "$path": "bin/${toolPrefix}gcc",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "-D${key}=\"${value}\""
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$output": "-o ${out} -MMD ${in}",
+            "$default": [
+                "-c",
+                "-xc++"
+            ],
+            "$language-cpp": {
+                "type": "keyValue",
+                "command": "-std=",
+                "enum": {
+                    "default": "c++11",
+                    "c++98": "c++98",
+                    "gnu++98": "gnu++98",
+                    "c++11": "c++11",
+                    "gnu++11": "gnu++11",
+                    "c++14": "c++14",
+                    "gnu++14": "gnu++14",
+                    "c++17": "c++17",
+                    "gnu++17": "gnu++17"
+                }
+            }
+        },
+        "asm": {
+            "$path": "bin/${toolPrefix}gcc",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$output": "-o ${out} -MMD ${in}",
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$default": [
+                "-c",
+                "-x assembler-with-cpp"
+            ],
+            "defines": {
+                "type": "list",
+                "command": "-D"
+            }
+        },
+        "linker": {
+            "$path": "bin/${toolPrefix}gcc",
+            "$libs": {
+                "body": "-L${value}"
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$default": [],
+            "$output": "-o ${out} ${in} ${lib_flags}",
+            "$outputSuffix": ".elf",
+            "$linkMap": {
+                "type": "value",
+                "command": "-Wl,-Map=${mapPath}"
+            },
+            "$LIB_FLAGS": {
+                "type": "list",
+                "command": ""
+            },
+            "linker-script": {
+                "type": "list",
+                "command": "-T "
+            },
+            "not-print-mem-usage": {
+                "type": "selectable",
+                "command": {
+                    "true": "",
+                    "false": "-Wl,--print-memory-usage"
+                }
+            },
+            "$outputBin": [
+                {
+                    "name": "output hex file",
+                    "toolPath": "bin/${toolPrefix}objcopy",
+                    "outputSuffix": ".hex",
+                    "command": "-O ihex ${linkerOutput} ${output}"
+                },
+                {
+                    "name": "output bin file",
+                    "toolPath": "bin/${toolPrefix}objcopy",
+                    "outputSuffix": ".bin",
+                    "command": "-O binary ${linkerOutput} ${output}"
+                }
+            ]
+        },
+        "linker-lib": {
+            "$path": "bin/${toolPrefix}ar",
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$output": "-rcv ${out} ${in}",
+            "$outputSuffix": ".a"
+        }
+    }
+}

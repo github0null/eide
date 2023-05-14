@@ -31,12 +31,14 @@
         "eclipse",
         "iar",
         "msys",
-        "cosmic"
+        "cosmic",
+        "mips",
+        "mips-mti"
     ],
     "homepage": "https://em-ide.com",
     "license": "MIT",
-    "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/RISC-V",
-    "version": "3.12.0",
+    "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/MIPS/RISC-V",
+    "version": "3.12.2023051401",
     "preview": false,
     "engines": {
         "vscode": "^1.67.0"
@@ -441,6 +443,18 @@
                         "scope": "resource",
                         "markdownDescription": "%settings.riscv.gcc.prefix%",
                         "default": "riscv-none-embed-"
+                    },
+                    "EIDE.MIPS.InstallDirectory": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.mips.gcc.install.folder%",
+                        "default": ""
+                    },
+                    "EIDE.MIPS.ToolPrefix": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.mips.gcc.prefix%",
+                        "default": "mips-mti-elf-"
                     },
                     "EIDE.Toolchain.AnyGcc.InstallDirectory": {
                         "type": "string",
@@ -1565,6 +1579,10 @@
             {
                 "fileMatch": "**/*riscv.gcc.options.json",
                 "url": "./lang/riscv.gcc.verify.json"
+            },
+            {
+                "fileMatch": "**/*mips.mti.gcc.options.json",
+                "url": "./lang/mips.mti.gcc.verify.json"
             },
             {
                 "fileMatch": "**/*.any.gcc.json",

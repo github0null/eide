@@ -38,7 +38,7 @@ import { ProjectConfigData, ProjectConfiguration } from "./EIDETypeDefine";
 import {
     ArmBaseCompileData,
     Memory, ARMStorageLayout, ICompileOptions,
-    FloatingHardwareOption, C51BaseCompileData, RiscvCompileData, AnyGccCompileData
+    FloatingHardwareOption, C51BaseCompileData, RiscvCompileData, AnyGccCompileData, MipsCompileData
 } from './EIDEProjectModules';
 import { SettingManager } from "./SettingManager";
 import { GlobalEvent } from "./GlobalEvents";
@@ -91,6 +91,12 @@ export interface BuilderParams {
     options: ICompileOptions;
     sha?: { [options_name: string]: string };
     env?: { [name: string]: any };
+}
+
+export interface CompilerCommandsDatabaseItem {
+    directory: string;
+    file: string;
+    command: string;
 }
 
 export abstract class CodeBuilder {
@@ -577,6 +583,8 @@ export abstract class CodeBuilder {
                 return new AnyGccCodeBuilder(_project);
             case 'C51':
                 return new C51CodeBuilder(_project);
+            case 'MIPS':
+                return new MipsCodeBuilder(_project);
             default:
                 throw new Error(`not support this project type: '${_project.GetConfiguration().config.type}'`);
         }
@@ -1040,6 +1048,32 @@ class RiscvCodeBuilder extends CodeBuilder {
     protected preHandleOptions(options: ICompileOptions) {
 
         const config = this.project.GetConfiguration<RiscvCompileData>().config;
+
+        const ldFileList: string[] = [];
+        config.compileConfig.linkerScriptPath.split(',')
+            .filter(s => s.trim() != '')
+            .forEach((sctPath) => {
+                ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
+            });
+
+        if (!options['linker']) {
+            options.linker = Object.create(null);
+        }
+
+        // set linker script
+        options.linker['linker-script'] = ldFileList;
+    }
+}
+
+class MipsCodeBuilder extends CodeBuilder {
+
+    protected getMcuMemorySize(): MemorySize | undefined {
+        return undefined;
+    }
+
+    protected preHandleOptions(options: ICompileOptions) {
+
+        const config = this.project.GetConfiguration<MipsCompileData>().config;
 
         const ldFileList: string[] = [];
         config.compileConfig.linkerScriptPath.split(',')

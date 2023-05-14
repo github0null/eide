@@ -431,7 +431,7 @@ export const view_str$prompt$setupToolchainPrefix = [
 
 export const view_str$prompt$requestAndActivateLicence = [
     `获取并激活许可证`,
-    `Obtain And Active Licence`
+    `Obtain And Activate Licence`
 ][langIndex];
 
 export const view_str$prompt$requestAndActivateLicence_warn_setupPath = [
@@ -752,6 +752,11 @@ export const view_str$operation$empty_cortex_prj = [
 export const view_str$operation$empty_riscv_prj = [
     'RISC-V 项目',
     'RISC-V Project'
+][langIndex];
+
+export const view_str$operation$empty_mips_prj = [
+    'MIPS 项目',
+    'MIPS Project'
 ][langIndex];
 
 export const view_str$operation$empty_anygcc_prj = [

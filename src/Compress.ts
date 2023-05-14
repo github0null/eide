@@ -23,7 +23,7 @@
 */
 
 import { File } from "../lib/node-utility/File";
-import { ExeFile } from "../lib/node-utility/Executable";
+import { ExeFile, ExeCmd } from "../lib/node-utility/Executable";
 import * as events from 'events';
 import * as child_process from 'child_process';
 import * as platform from './Platform';
@@ -44,7 +44,7 @@ export class SevenZipper {
     private _7za: File;
     private _event: events.EventEmitter;
 
-    on(event: 'progress', listener: (currentProgress: number) => void): this;
+    on(event: 'progress', listener: (progress: number, msg?: string) => void): this;
     on(event: any, listener: (arg?: any) => void): this {
         this._event.on(event, listener);
         return this;
@@ -59,11 +59,54 @@ export class SevenZipper {
         }
     }
 
-    Unzip(zipFile: File, outDir?: File): Promise<Error | null> {
+    private _unzip_tar(zipFile: File, outDir?: File): Promise<Error | null> {
 
-        if (!zipFile.IsFile()) {
-            throw new Error('\'' + zipFile.path + '\' is not exist');
-        }
+        return new Promise((resolve) => {
+
+            let paramList: string[] = [
+                `-xvf`,
+                zipFile.path
+            ];
+
+            if (outDir) {
+                outDir.CreateDir(true);
+            }
+
+            paramList.push('-C', outDir ? outDir.path : zipFile.dir);
+
+            const process = new ExeFile();
+
+            let err: Error | undefined;
+
+            process.on('error', (e) => {
+                err = e;
+            });
+
+            process.on('close', (exitInfo) => {
+                if (err) {
+                    resolve(err);
+                } else {
+                    if (exitInfo.code === 0) {
+                        resolve();
+                    } else {
+                        resolve(new Error('unzip error, code: ' + exitInfo.code.toString() + ' !'));
+                    }
+                }
+            });
+
+            process.on('errLine', (line) => {
+                console.warn('[unzip] : ErrorLine : ' + line);
+            });
+
+            process.on('line', (line) => {
+                this._event.emit('progress', 20, line);
+            });
+
+            process.Run('tar', paramList);
+        });
+    }
+
+    private _unzip_zip_7z(zipFile: File, outDir?: File): Promise<Error | null> {
 
         return new Promise((resolve) => {
 
@@ -111,23 +154,50 @@ export class SevenZipper {
         });
     }
 
+    Unzip(zipFile: File, outDir?: File): Promise<Error | null> {
+
+        if (!zipFile.IsFile()) {
+            throw new Error('\'' + zipFile.path + '\' is not exist');
+        }
+
+        if (platform.osType() != 'win32' && zipFile.suffix.startsWith('tar')) {
+            return this._unzip_tar(zipFile, outDir);
+        } else {
+            return this._unzip_zip_7z(zipFile, outDir);
+        }
+    }
+
     UnzipSync(zipFile: File, outDir?: File): string {
 
         if (!zipFile.IsFile()) {
             throw new Error('\'' + zipFile.path + '\' is not exist');
         }
 
-        let paramList: string[] = [];
-        paramList.push('x');
-        paramList.push('-y');
-        paramList.push('-r');
-        paramList.push('-aoa');
-        paramList.push(zipFile.path);
+        // use tar
+        if (platform.osType() != 'win32' && zipFile.suffix.startsWith('tar')) {
 
-        const outPath = (outDir ? outDir.path : zipFile.dir);
-        paramList.push('-o' + outPath);
+            let paramList: string[] = [];
 
-        return child_process.execFileSync(this._7za.path, paramList, { windowsHide: true }).toString();
+            paramList.push('-xvf');
+            paramList.push(zipFile.path);
+            paramList.push('-C', outDir ? outDir.path : zipFile.dir);
+
+            return child_process.execFileSync('tar', paramList).toString();
+        }
+        // use 7z
+        else {
+
+            let paramList: string[] = [];
+
+            paramList.push('x');
+            paramList.push('-y');
+            paramList.push('-r');
+            paramList.push('-aoa');
+            paramList.push(zipFile.path);
+            paramList.push('-o' + (outDir ? outDir.path : zipFile.dir));
+
+            return child_process.execFileSync(this._7za.path, paramList, { windowsHide: true }).toString();
+        }
     }
 
     Zip(dirOrFile: File, option: CompressOption, outDir?: File): Promise<Error | null> {

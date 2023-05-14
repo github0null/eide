@@ -591,6 +591,20 @@ export class SettingManager {
         return this.getConfiguration().get<string>('RISCV.ToolPrefix') || '';
     }
 
+    //------------------------------- MTI GCC ----------------------------------
+
+    getMipsToolFolder(): File {
+        return new File(
+            this.getFullPathByPluginConfig('MIPS.InstallDirectory') ||
+            this.findGccCompilerRootInSystemEnv(`${this.getMipsToolPrefix()}gcc`) ||
+            'null'
+        );
+    }
+
+    getMipsToolPrefix(): string {
+        return this.getConfiguration().get<string>('MIPS.ToolPrefix') || '';
+    }
+
     //------------------------------- Any GCC ----------------------------------
 
     getAnyGccToolFolder(): File {
@@ -632,6 +646,9 @@ export class SettingManager {
                 return this.getRiscvToolPrefix();
             case 'ANY_GCC':
                 return this.getAnyGccToolPrefix();
+            case 'MIPS_GCC':
+            case 'MTI_GCC':
+                return this.getMipsToolPrefix();
             default:
                 return undefined;
         }

@@ -332,9 +332,6 @@
         },
         "asm": {
             "$path": "bin/iasmarm",
-            "$includes": {
-                "body": "-I${value}"
-            },
             "$invoke": {
                 "useFile": true,
                 "body": "-f ${value}"

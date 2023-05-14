@@ -1,25 +1,25 @@
 /*
-	MIT License
+    MIT License
 
-	Copyright (c) 2019 github0null
+    Copyright (c) 2019 github0null
 
-	Permission is hereby granted, free of charge, to any person obtaining a copy
-	of this software and associated documentation files (the "Software"), to deal
-	in the Software without restriction, including without limitation the rights
-	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-	copies of the Software, and to permit persons to whom the Software is
-	furnished to do so, subject to the following conditions:
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
 
-	The above copyright notice and this permission notice shall be included in all
-	copies or substantial portions of the Software.
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
 
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-	SOFTWARE.
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
 */
 
 import * as events from 'events';
@@ -42,7 +42,7 @@ import { ToolchainName } from './ToolchainManager';
 import { HexUploaderType } from "./HexUploader";
 import { VirtualSource } from "./EIDEProject";
 import * as utility from './utility';
-import { CompileConfigModel, UploadConfigModel, SdccCompileConfigModel, GccCompileConfigModel, RiscvCompileConfigModel, AnyGccCompileConfigModel } from './EIDEProjectModules';
+import { CompileConfigModel, UploadConfigModel, SdccCompileConfigModel, GccCompileConfigModel, RiscvCompileConfigModel, AnyGccCompileConfigModel, MipsCompileConfigModel } from './EIDEProjectModules';
 
 ////////////////////////////////////////////////////////
 
@@ -77,7 +77,7 @@ export interface ProjectFileGroup extends FileGroup {
 //  'RISC-V': RISCV Project
 //  'ANY-GCC': Any GCC Toolchain Project
 //
-export type ProjectType = 'C51' | 'ARM' | 'RISC-V' | 'ANY-GCC';
+export type ProjectType = 'C51' | 'ARM' | 'RISC-V' | 'ANY-GCC' | 'MIPS';
 
 export interface CreateOptions {
     name: string; // project folder name
@@ -245,7 +245,21 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
     }
 
     Save(force?: boolean): void {
-        this.cfgFile.Write(this.ToJson());
+
+        let oldContent: string | undefined;
+        let newContent: string | undefined = this.ToJson();
+
+        try {
+            if (this.cfgFile.IsExist()) {
+                oldContent = this.cfgFile.Read();
+            }
+        } catch (error) {
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+        }
+
+        if (oldContent != newContent) {
+            this.cfgFile.Write(newContent);
+        }
     }
 
     protected afterInitConfigData() {
@@ -351,7 +365,7 @@ export interface ProjectConfigData<T extends BuilderConfigData> {
     type: ProjectType;
 
     // cur target info (virtual node)
-    mode: string; // target name
+    mode: string; // target name (And for historical reasons, that's what it's called)
     excludeList: string[];
     toolchain: ToolchainName;
     compileConfig: T;
@@ -561,6 +575,27 @@ export class ProjectConfiguration<T extends BuilderConfigData>
                     dependenceList: [],
                     compileConfig: RiscvCompileConfigModel.getDefaultConfig(),
                     uploader: 'JLink',
+                    srcDirs: [],
+                    virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
+                    excludeList: [],
+                    outDir: 'build',
+                    deviceName: null,
+                    packDir: null,
+                    uploadConfig: null,
+                    uploadConfigMap: {},
+                    miscInfo: <any>{},
+                    targets: {},
+                    version: EIDE_CONF_VERSION
+                };
+            case 'MIPS':
+                return {
+                    name: 'undefined',
+                    type: type,
+                    mode: 'Debug',
+                    toolchain: 'MTI_GCC',
+                    dependenceList: [],
+                    compileConfig: MipsCompileConfigModel.getDefaultConfig(),
+                    uploader: 'Custom',
                     srcDirs: [],
                     virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
                     excludeList: [],
@@ -1221,10 +1256,25 @@ export class ProjectConfiguration<T extends BuilderConfigData>
     };
 
     setProjectUsrCtx(data: ProjectUserContextData) {
+
+        const usrCtxFile = this.getProjectUsrCtxFile();
+
+        let oldUsrCtxCont: string | undefined;
+        if (usrCtxFile.IsExist()) {
+            try {
+                oldUsrCtxCont = usrCtxFile.Read();
+            } catch (error) {
+                GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+            }
+        }
+
         try {
-            this.getProjectUsrCtxFile().Write(JSON.stringify(data, undefined, 4));
+            let newUsrCtxCont = JSON.stringify(data, undefined, 4);
+            if (oldUsrCtxCont != newUsrCtxCont) {
+                usrCtxFile.Write(newUsrCtxCont);
+            }
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
         }
     }
 

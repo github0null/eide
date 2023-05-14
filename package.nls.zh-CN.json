@@ -127,6 +127,9 @@
     "settings.armcc.ini": "Keil MDK-ARM `UV4.exe` 或 `TOOLS.INI` 文件路径 [`example: C:\\Keil_v5\\UV4\\UV4.exe`]",
     "settings.armcc.convert.axf": "编译完成后将 `.axf` 转换为 `.elf`",
     
+    "settings.mips.gcc.install.folder": "MIPS Toolchain 安装目录 [`example: D:\\mips-mti-elf-mingw64`]",
+    "settings.mips.gcc.prefix": "MIPS toolchain 编译器前缀，例如：`mips-mti-elf-`",
+
     "settings.riscv.gcc.install.folder": "RISC-V Toolchain 安装目录 [`example: D:\\xpack-riscv-none-embed-gcc-8.3.0-2.3`]",
     "settings.riscv.gcc.prefix": "RISC-V Toolchain 编译器前缀，例如：`riscv-none-embed-`",
 

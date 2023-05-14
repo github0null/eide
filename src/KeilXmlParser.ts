@@ -302,6 +302,8 @@ class C51Parser extends KeilParser<KeilC51Option> {
         cOptions['asm-compiler'] = Object.create(null);
         cOptions['linker'] = Object.create(null);
 
+        cOptions['linker']['misc-controls'] = "";
+
         try {
             if (target51.Target51Misc) {
                 switch (target51.Target51Misc.MemoryModel) {
@@ -336,6 +338,17 @@ class C51Parser extends KeilParser<KeilC51Option> {
                 cOptions['c/cpp-compiler']['optimization-type'] = target51.C51.SizeSpeed === '0' ? 'SIZE' : 'SPEED';
                 cOptions['c/cpp-compiler']['optimization-level'] = 'level-' + (target51.C51.Optimize || '8');
             }
+
+            // import Lx51.CClasses / UserClasses
+            if (target51.Lx51) {
+                if (target51.Lx51.CClasses) {
+                    cOptions['linker']['misc-controls'] += `CLASSES (${target51.Lx51.CClasses}) `;
+                }
+                if (target51.Lx51.UserClasses) {
+                    cOptions['linker']['misc-controls'] += `CLASSES (${target51.Lx51.UserClasses}) `;
+                }
+            }
+
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
             GlobalEvent.emit('msg', {
