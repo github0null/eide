@@ -254,6 +254,10 @@ export async function activate(context: vscode.ExtensionContext) {
     operationExplorer.on('request_create_from_template', (option) => projectExplorer.emit('request_create_from_template', option));
     operationExplorer.on('request_import_project', (option) => projectExplorer.emit('request_import_project', option));
 
+    // status bar
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.switch-project', () => projectExplorer.showQuickPickAndSwitchActiveProject()));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.switch-target', () => projectExplorer.showQuickPickAndSwitchActiveTarget()));
+
     // others
     vscode.workspace.registerTextDocumentContentProvider(VirtualDocument.scheme, VirtualDocument.instance());
     vscode.workspace.registerTaskProvider(EideTaskProvider.TASK_TYPE_MSYS, new EideTaskProvider());
@@ -1024,7 +1028,16 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
     {
         const statusBarManager = StatusBarManager.getInstance();
 
-        // TODO
+        const bar_cur_proj = statusBarManager.create('current.project');
+        const bar_cur_targ = statusBarManager.create('current.target');
+
+        bar_cur_proj.text    = `EIDE Project: unspecified`;
+        bar_cur_proj.command = `_cl.eide.statusbar.switch-project`;
+        bar_cur_proj.tooltip = `select active project`;
+
+        bar_cur_targ.text    = `Target: unspecified`;
+        bar_cur_targ.command = `_cl.eide.statusbar.switch-target`;
+        bar_cur_targ.tooltip = `select active target for eide project`;
     }
 
     // register msys bash profile for windows
@@ -1092,6 +1105,21 @@ function RegisterGlobalEvent() {
         prj_count--; // reduce cnt
         vscode.commands.executeCommand('setContext', 'cl.eide.projectActived', prj_count != 0);
         vscode.commands.executeCommand('setContext', 'cl.eide.enable.active', prj_count > 1);
+    });
+
+    // for status bar
+    GlobalEvent.on('project.opened', () => {
+        if (prj_count == 1) {
+            StatusBarManager.getInstance().get('current.project')?.show();
+            StatusBarManager.getInstance().get('current.target')?.show();
+        }
+    });
+
+    GlobalEvent.on('project.closed', () => {
+        if (prj_count == 0) {
+            StatusBarManager.getInstance().get('current.project')?.hide();
+            StatusBarManager.getInstance().get('current.target')?.hide();
+        }
     });
 }
 

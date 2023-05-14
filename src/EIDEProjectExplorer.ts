@@ -113,6 +113,7 @@ import * as ArmCpuUtils from './ArmCpuUtils';
 import { ShellFlasherIndexItem } from './WebInterface/WebInterface';
 import { jsonc } from 'jsonc';
 import { SimpleUIConfig, SimpleUIConfigData_input, SimpleUIConfigData_options, SimpleUIConfigData_text, SimpleUIConfigData_table, SimpleUIConfigData_boolean } from "./SimpleUIDef";
+import { StatusBarManager } from './StatusBarManager';
 
 enum TreeItemType {
     SOLUTION,
@@ -907,7 +908,32 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
     }
 
     UpdateView(ele?: ProjTreeItem) {
+
+        // update treeview ui
         this.dataChangedEvent.fire(ele);
+
+        // whole treeview updated
+        if (ele == undefined) {
+            setTimeout(() => this.updateStatusBarForActiveProjects(), 500);
+        }
+    }
+
+    private updateStatusBarForActiveProjects() {
+
+        const statusbars = StatusBarManager.getInstance();
+
+        statusbars.foreach((bar, name) => {
+
+            const activeProj = this.getActiveProject();
+
+            if (name == 'current.project') {
+                bar.text = `EIDE Project: ${activeProj?.getProjectName() || 'unspecified'}`;
+            }
+
+            else if (name == 'current.target') {
+                bar.text = `Target: ${activeProj?.getCurrentTarget() || 'unspecified'}`;
+            }
+        });
     }
 
     clearTreeViewCache() {
@@ -3837,6 +3863,60 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         });
 
         pickBox.show();
+    }
+
+    async showQuickPickAndSwitchActiveProject() {
+
+        const acvtiveProj = this.dataProvider.getActiveProject();
+
+        const selections: vscode.QuickPickItem[] = [];
+
+        this.dataProvider.foreachProject((proj) => {
+            if (acvtiveProj && proj.getUid() == acvtiveProj.getUid())
+                return;
+            selections.push(<any>{
+                uid: proj.getUid(),
+                label: proj.getProjectName(),
+                description: `uid: ${proj.getUid()}`,
+                detail: `loc: ${proj.getWorkspaceFile().path}`
+            });
+        });
+
+        if (selections.length > 0) {
+
+            const result: any = await vscode.window.showQuickPick(selections, {
+                title: `Switch Active Project`,
+                canPickMany: false,
+            });
+
+            if (result) {
+                const idx = this.dataProvider.getIndexByProjectUid(result.uid);
+                if (idx != -1) {
+                    this.dataProvider.setActiveProject(idx);
+                }
+            }
+        }
+    }
+
+    async showQuickPickAndSwitchActiveTarget() {
+
+        const activeProj = this.getActiveProject();
+
+        if (activeProj) {
+
+            const selections = activeProj.getTargets().map<vscode.QuickPickItem>((name) => { return { label: name }; });
+
+            const result = await vscode.window.showQuickPick(selections, {
+                title: `Switch Active Target`,
+                canPickMany: false
+            });
+
+            if (result) {
+                if (result.label != activeProj.getCurrentTarget()) {
+                    activeProj.switchTarget(result.label);
+                }
+            }
+        }
     }
 
     clearCppcheckDiagnostic(): void {
