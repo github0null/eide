@@ -3867,13 +3867,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     async showQuickPickAndSwitchActiveProject() {
 
-        const acvtiveProj = this.dataProvider.getActiveProject();
-
         const selections: vscode.QuickPickItem[] = [];
 
         this.dataProvider.foreachProject((proj) => {
-            if (acvtiveProj && proj.getUid() == acvtiveProj.getUid())
-                return;
             selections.push(<any>{
                 uid: proj.getUid(),
                 label: proj.getProjectName(),
@@ -3892,6 +3888,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             if (result) {
                 const idx = this.dataProvider.getIndexByProjectUid(result.uid);
                 if (idx != -1) {
+                    const acvtiveProj = this.dataProvider.getActiveProject();
+                    if (acvtiveProj && result.uid == acvtiveProj.getUid()) return;
                     this.dataProvider.setActiveProject(idx);
                 }
             }
