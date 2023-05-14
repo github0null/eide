@@ -3528,6 +3528,7 @@ class EIDEProject extends AbstractProject {
                     }
 
                     return {
+                        from_: `${this.getProjectName()}:${this.getCurrentTarget()} (${this.getUid()})`,
                         uri: uri,
                         configuration: {
                             standard: <any>this.cppToolsConfig.cStandard,
@@ -3549,6 +3550,7 @@ class EIDEProject extends AbstractProject {
                     }
 
                     return {
+                        from_: `${this.getProjectName()}:${this.getCurrentTarget()} (${this.getUid()})`,
                         uri: uri,
                         configuration: {
                             standard: <any>this.cppToolsConfig.cppStandard,

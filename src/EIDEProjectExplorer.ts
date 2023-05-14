@@ -2125,6 +2125,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         if (this.activePrjPath !== wsPath) {
             this.activePrjPath = wsPath;
             this.UpdateView();
+            GlobalEvent.emit('project.activeStatusChanged', prj.getUid());
         }
     }
 
@@ -3430,6 +3431,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         // register project hook
         GlobalEvent.on('project.opened', (prj) => this.onProjectOpened(prj));
         GlobalEvent.on('project.closed', (uid) => this.onProjectClosed(uid));
+        GlobalEvent.on('project.activeStatusChanged', (uid) => this.notifyCpptoolsRefresh());
 
         this.on('request_open_project', (fsPath: string) => this.dataProvider.OpenProject(fsPath));
         this.on('request_create_project', (option: CreateOptions) => this.dataProvider.CreateProject(option));
@@ -3554,31 +3556,79 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
     }
 
-    private _sourceWhereFroms: Map<string, AbstractProject> = new Map();
+    notifyCpptoolsRefresh() {
+
+        if (this.cppToolsApi) {
+            if (this.cppToolsApi.notifyReady) {
+                this.cppToolsApi.notifyReady(this);
+            } else {
+                this.cppToolsApi.didChangeCustomConfiguration(this);
+                this.cppToolsApi.didChangeCustomBrowseConfiguration(this);
+            }
+        }
+    }
+
+    // Map<sourePath, ProjectUid[]>
+    private _sourceWhereFroms: Map<string, string[]> = new Map();
 
     canProvideConfiguration(uri: vscode.Uri, token?: vscode.CancellationToken | undefined): Thenable<boolean> {
 
         this.cppToolsOut.appendLine(`[source] cpptools request provideConfigurations for '${uri.fsPath}'`);
 
         return new Promise(async (resolve) => {
-            let result = false;
+
+            const providerList: string[] = [];
+
             await this.dataProvider.traverseProjectsAsync(async (prj) => {
-                result = await prj.canProvideConfiguration(uri, token);
-                if (result) this._sourceWhereFroms.set(uri.fsPath, prj);
-                return result;
+
+                const result = await prj.canProvideConfiguration(uri, token);
+                if (result) {
+                    providerList.push(prj.getUid());
+                }
+
+                return false; // don't break loop
             });
-            resolve(result);
+
+            if (providerList.length > 0) {
+                this._sourceWhereFroms.set(uri.fsPath, providerList);
+                resolve(true);
+            } else {
+                this._sourceWhereFroms.delete(uri.fsPath);
+                resolve(false);
+            }
         });
     }
 
     provideConfigurations(uris: vscode.Uri[], token?: vscode.CancellationToken | undefined): Thenable<SourceFileConfigurationItem[]> {
+
         return new Promise(async (resolve) => {
+
             let result: SourceFileConfigurationItem[] = [];
+
+            const activePrjUid = this.getActiveProject()?.getUid();
+
             for (const uri of uris) {
-                const prj = this._sourceWhereFroms.get(uri.fsPath);
-                if (prj) result = result.concat(await prj.provideConfigurations([uri], token));
+
+                const prjList = this._sourceWhereFroms.get(uri.fsPath);
+                if (prjList == undefined || prjList.length == 0) continue;
+
+                let proj: AbstractProject | undefined;
+                if (activePrjUid) {
+                    const pidx = prjList.findIndex(uid => uid == activePrjUid);
+                    if (pidx != -1) {
+                        proj = this.dataProvider.getProjectByUid(prjList[pidx]);
+                    }
+                } else {
+                    proj = this.dataProvider.getProjectByUid(prjList[0]);
+                }
+
+                if (proj) {
+                    result = result.concat(await proj.provideConfigurations([uri], token));
+                }
             }
+
             resolve(result);
+
             this.cppToolsOut.appendLine(`[source] provideConfigurations`);
             this.cppToolsOut.appendLine(yml.stringify(result));
         });
