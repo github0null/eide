@@ -38,7 +38,7 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/MIPS/RISC-V",
-    "version": "3.12.0",
+    "version": "3.12.2023051401",
     "preview": false,
     "engines": {
         "vscode": "^1.67.0"
@@ -448,7 +448,7 @@
                         "type": "string",
                         "scope": "resource",
                         "markdownDescription": "%settings.mips.gcc.install.folder%",
-                        "default": "${userRoot}/.eide/tools/mips_mti"
+                        "default": ""
                     },
                     "EIDE.MIPS.ToolPrefix": {
                         "type": "string",
