@@ -913,9 +913,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         this.dataChangedEvent.fire(ele);
 
         // whole treeview updated
-        if (ele == undefined) {
-            setTimeout(() => this.updateStatusBarForActiveProjects(), 500);
-        }
+        this.updateStatusBarForActiveProjects();
     }
 
     private updateStatusBarForActiveProjects() {
@@ -955,9 +953,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             return this.prjList[0];
         }
 
-        const index = this.prjList.findIndex((prj) => {
-            return prj.getWsPath() == this.activePrjPath;
-        });
+        const index = this.prjList.findIndex((prj) => prj.getWsPath() == this.activePrjPath);
         if (index != -1) {
             return this.prjList[index];
         }
@@ -3765,7 +3761,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const msg = view_str$prompt$need_reload_project.replace('{}', prj.getProjectName());
         const ans = await vscode.window.showInformationMessage(msg, 'Yes', 'No');
         if (ans == 'Yes') {
-            this.reloadProject(uid, wsf);
+            await this.reloadProject(uid, wsf);
         }
 
         if (this.__autosaveDisableTimeoutTimer) {
@@ -3779,20 +3775,28 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         this.enableAutoSave(true);
     }
 
-    private reloadProject(uid: string, workspaceFile: File) {
+    private async reloadProject(uid: string, workspaceFile: File): Promise<boolean> {
 
         const idx = this.dataProvider.getIndexByProjectUid(uid);
         if (idx == -1) {
             GlobalEvent.emit('msg', newMessage('Error', `Project '${uid}' is not actived !`));
-            return;
+            return false;
         }
 
-        // close and reopen project
         this.dataProvider.Close(idx);
-        this.dataProvider.OpenProject(workspaceFile.path, true);
 
-        // refresh explorer tree view
-        this.Refresh();
+        return new Promise((resolve) => {
+            setTimeout(async () => {
+                try {
+                    await this.dataProvider.OpenProject(workspaceFile.path, true);
+                    this.Refresh();
+                    resolve(true);
+                } catch (error) {
+                    GlobalEvent.emit('error', error);
+                    resolve(false);
+                }
+            }, 500);
+        });
     }
 
     private async onProjectClosed(uid: string | undefined) {

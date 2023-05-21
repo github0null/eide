@@ -1146,8 +1146,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     }
 
     getFileGroups(): FileGroup[] {
-        return (<FileGroup[]>this.sourceRoots.getFileGroups())
-            .concat(this.virtualSource.getFileGroups());
+        return (<FileGroup[]>this.sourceRoots.getFileGroups()).concat(this.virtualSource.getFileGroups());
     }
 
     /**
