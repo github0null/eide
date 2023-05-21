@@ -28,7 +28,6 @@
     "eide.project.clean": "Clean",
     "eide.project.upload": "Program Flash",
     "eide.project.flash.erase.all": "Erase Chip",
-    "eide.project.gen.makefile": "Generate Makefile Template",
     "eide.project.modify.files.options": "Show Source Files Extra Compiler Options",
     "eide.project.import.ext.project.src.struct": "Import source tree from other projects",
     "eide.project.generate_builder_params": "Generate builder.params",
@@ -100,7 +99,6 @@
     "settings.enable.telemetry": "Enable telemetry for extension. We will collect information from the logs to help improve the functionality of this extension.",
 
     "settings.builder.jobs": "The number of threads when build",
-    "settings.builder.gen.makefile.params": "Generate the Makefile parameters file",
     
     "settings.option.show.toolbar.in.editer.title": "Displays some toolbars in the editor title",
     "settings.option.print.relative.path": "Print relative path when compile source file",

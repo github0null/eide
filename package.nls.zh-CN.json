@@ -28,7 +28,6 @@
     "eide.project.clean": "清理",
     "eide.project.upload": "烧录",
     "eide.project.flash.erase.all": "擦除芯片",
-    "eide.project.gen.makefile": "生成 Makefile 模板",
     "eide.project.modify.files.options": "查看所有的源文件附加编译参数",
     "eide.project.import.ext.project.src.struct": "从其他 IDE 的项目中导入源文件树",
     "eide.project.generate_builder_params": "生成 builder.params",
@@ -89,12 +88,11 @@
     "eide.deps.inclib.add": "添加库目录",
     "eide.deps.macro.show": "显示所有宏定义",
     "eide.deps.macro.add": "添加宏定义",
-    
+
     "settings.enable.telemetry": "启用遥测功能。我们将收集日志中的信息，帮助改进该扩展的功能",
 
     "settings.builder.jobs": "构建时使用的线程数",
-    "settings.builder.gen.makefile.params": "生成 Makefile 参数文件",
-    
+
     "settings.option.show.toolbar.in.editer.title": "在编辑器的标题栏显示小工具",
     "settings.option.print.relative.path": "编译时打印源文件的相对路径",
     "settings.option.create.batch.file": "生成脚本",
