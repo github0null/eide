@@ -247,8 +247,8 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
     private _json_equal(str1: string, str2: string): boolean {
 
         try {
-            const s1 = JSON.stringify(jsonc.parse(str1));
-            const s2 = JSON.stringify(jsonc.parse(str2));
+            const s1 = jsonc.uglify(str1);
+            const s2 = jsonc.uglify(str2);
             return s1 == s2;
         } catch (error) {
             // nothing todo
