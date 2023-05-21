@@ -67,7 +67,8 @@ export abstract class IDebugConfigGenerator {
             this.loadOk = true;
         } catch (error) {
             this.loadOk = false;
-            GlobalEvent.emit('msg', newMessage('Warning', 'parse \'launch.json\' error !'));
+            const msg = `launch.json('${_launchFile.path}') format error !, msg:${(<Error>error).message}`;
+            GlobalEvent.emit('msg', newMessage('Warning', msg));
         }
     }
 
