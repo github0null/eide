@@ -1146,8 +1146,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     }
 
     getFileGroups(): FileGroup[] {
-        return (<FileGroup[]>this.sourceRoots.getFileGroups())
-            .concat(this.virtualSource.getFileGroups());
+        return (<FileGroup[]>this.sourceRoots.getFileGroups()).concat(this.virtualSource.getFileGroups());
     }
 
     /**
@@ -2669,64 +2668,76 @@ class EIDEProject extends AbstractProject {
 
     private srcRefMap: Map<string, File[]> = new Map();
 
-    public async notifyUpdateSourceRefs(toolchain_: ToolchainName | undefined) {
+    public async notifyUpdateSourceRefs(toolchain_: ToolchainName | undefined): Promise<boolean> {
 
-        /* clear old */
-        this.srcRefMap.clear();
+        return new Promise((resolve) => {
 
-        /* check source references is enabled ? */
-        if (!SettingManager.GetInstance().isDisplaySourceRefs()) return;
+            /* clear old */
+            this.srcRefMap.clear();
 
-        let compiler_cmd_db: CompilerCommandsDatabaseItem[] = [];
-        let generate_dep_file: ((cmd_db: CompilerCommandsDatabaseItem[], srcpath: string, deppath: string) => void) | undefined;
+            /* check source references is enabled ? */
+            if (!SettingManager.GetInstance().isDisplaySourceRefs()) {
+                resolve(false);
+                return; /* no refs list file, exit */
+            }
 
-        // for COSMIC STM8, we need manual generate .d files
-        if (this.getToolchain().name == 'COSMIC_STM8') {
-            const compilerDBFile = File.fromArray([this.getOutputFolder().path, 'compile_commands.json']);
-            if (compilerDBFile.IsFile()) {
-                try {
-                    compiler_cmd_db = jsonc.parse(compilerDBFile.Read());
-                    generate_dep_file = (cmd_db: CompilerCommandsDatabaseItem[], srcpath: string, deppath: string) => {
-                        let idx = cmd_db.findIndex((e) => e.file == srcpath);
-                        if (idx != -1) {
-                            try {
-                                let cmd_item = cmd_db[idx];
-                                let command = cmd_item.command.replace('-co', '-sm -co');
-                                const depcont = child_process.execSync(command, { cwd: cmd_item.directory }).toString();
-                                fs.writeFileSync(deppath, depcont);
-                            } catch (error) {
-                                GlobalEvent.emit('globalLog', newMessage('Warning', `Failed to make '${deppath}', msg: ${(<Error>error).message}`));
-                                try { fs.unlinkSync(deppath) } catch (error) { } // del old .d file
+            let compiler_cmd_db: CompilerCommandsDatabaseItem[] = [];
+            let generate_dep_file: ((cmd_db: CompilerCommandsDatabaseItem[], srcpath: string, deppath: string) => void) | undefined;
+
+            // for COSMIC STM8, we need manual generate .d files
+            if (this.getToolchain().name == 'COSMIC_STM8') {
+                const compilerDBFile = File.fromArray([this.getOutputFolder().path, 'compile_commands.json']);
+                if (compilerDBFile.IsFile()) {
+                    try {
+                        compiler_cmd_db = jsonc.parse(compilerDBFile.Read());
+                        generate_dep_file = (cmd_db: CompilerCommandsDatabaseItem[], srcpath: string, deppath: string) => {
+                            let idx = cmd_db.findIndex((e) => e.file == srcpath);
+                            if (idx != -1) {
+                                try {
+                                    let cmd_item = cmd_db[idx];
+                                    let command = cmd_item.command.replace('-co', '-sm -co');
+                                    const depcont = child_process.execSync(command, { cwd: cmd_item.directory }).toString();
+                                    fs.writeFileSync(deppath, depcont);
+                                } catch (error) {
+                                    GlobalEvent.emit('globalLog', newMessage('Warning', `Failed to make '${deppath}', msg: ${(<Error>error).message}`));
+                                    try { fs.unlinkSync(deppath) } catch (error) { } // del old .d file
+                                }
                             }
-                        }
-                    };
-                } catch (error) {
-                    GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+                        };
+                    } catch (error) {
+                        GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+                    }
                 }
             }
-        }
 
-        const toolName = toolchain_ || this.getToolchain().name;
+            const toolName = toolchain_ || this.getToolchain().name;
 
-        const outFolder = this.getOutputFolder();
-        const refListFile = File.fromArray([outFolder.path, 'ref.json']);
-        if (!refListFile.IsFile()) return; /* no refs list file, exit */
+            const outFolder = this.getOutputFolder();
+            const refListFile = File.fromArray([outFolder.path, 'ref.json']);
 
-        try {
-            const refMap = JSON.parse(refListFile.Read());
-            for (const srcpath in refMap) {
-                const refFile = new File((<string>refMap[srcpath]).replace(/\.[^\\\/\.]+$/, '.d'));
-                if (generate_dep_file) generate_dep_file(compiler_cmd_db, srcpath, refFile.path);
-                if (!refFile.IsFile()) continue;
-                const refs = this.parseRefFile(refFile, toolName).filter(p => p != srcpath);
-                this.srcRefMap.set(srcpath, refs.map((path) => new File(path)));
+            if (!refListFile.IsFile()) {
+                resolve(false);
+                return; /* no refs list file, exit */
             }
-        } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
-        }
 
-        // notify update src view
-        this.emit('dataChanged', 'files');
+            try {
+                const refMap = JSON.parse(refListFile.Read());
+                for (const srcpath in refMap) {
+                    const refFile = new File((<string>refMap[srcpath]).replace(/\.[^\\\/\.]+$/, '.d'));
+                    if (generate_dep_file) generate_dep_file(compiler_cmd_db, srcpath, refFile.path);
+                    if (!refFile.IsFile()) continue;
+                    const refs = this.parseRefFile(refFile, toolName).filter(p => p != srcpath);
+                    this.srcRefMap.set(srcpath, refs.map((path) => new File(path)));
+                }
+            } catch (error) {
+                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            }
+
+            // notify update src view
+            this.emit('dataChanged', 'files');
+
+            resolve(true);
+        });
     }
 
     public getSourceRefs(file: File): File[] {

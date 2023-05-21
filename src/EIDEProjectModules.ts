@@ -1030,12 +1030,38 @@ class IarArmCompileConfigModel extends ArmBaseCompileConfigModel {
         'Cortex-M0+',
         'Cortex-M3',
         'Cortex-M4',
+        'Cortex-M4F',
         'Cortex-M7',
-        //'Cortex-R4',
-        //'Cortex-R4F',
         'SC000',
         'SC300'
     ];
+
+    protected cpuList_inline_fpu_suffix = [
+        'Cortex-M23',
+        'Cortex-M23.no_se',
+        'Cortex-M33',
+        'Cortex-M33.no_dsp',
+        'Cortex-M33.fp',
+        'Cortex-M33.fp.no_dsp',
+        'Cortex-M35P',
+        'Cortex-M35P.no_dsp',
+        'Cortex-M35P.fp',
+        'Cortex-M35P.fp.no_dsp',
+        'Cortex-R4',
+        'Cortex-R4.vfp',
+        'Cortex-R4F',
+        'Cortex-R5',
+        'Cortex-R5.vfp',
+        'Cortex-R5F',
+        'Cortex-R7',
+        'Cortex-R7.vfp',
+        'Cortex-R7F',
+    ];
+
+    constructor(config: ProjectConfigData<any>) {
+        super(config);
+        this.cpuTypeList = this.cpuTypeList.concat(this.cpuList_inline_fpu_suffix);
+    }
 
     protected GetKeyType(key: string): FieldType {
         switch (key) {
@@ -1048,6 +1074,24 @@ class IarArmCompileConfigModel extends ArmBaseCompileConfigModel {
                 return 'EVENT';
             default:
                 return 'Disable';
+        }
+    }
+
+    isKeyEnable(key: string): boolean {
+
+        switch (key) {
+            case 'cpuType':
+            case 'scatterFilePath':
+            case 'options':
+                return true;
+            case 'floatingPointHardware': {
+                if (this.cpuList_inline_fpu_suffix.includes(this.data.cpuType))
+                    return false;
+                else
+                    return ArmCpuUtils.hasFpu(this.data.cpuType);
+            }
+            default:
+                return false;
         }
     }
 

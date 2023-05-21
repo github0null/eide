@@ -6,7 +6,7 @@ All notable version changes will be recorded in this file.
 
 ***
 
-### [v3.12.2023051401] update
+### [v3.12.2023052101] revision
 
 **New**:
   - `MIPS Project`: Support new project type `MIPS` and new toolchain `MTI GCC`, thanks [@eatradish](https://github.com/eatradish).
@@ -25,6 +25,7 @@ All notable version changes will be recorded in this file.
   - `System Variables`: Add some system variables, like: `${SYS_Platform}, ${SYS_DirSep} ...`
   - `Auto Save`: Compare content before save project.
   - `Source Folder`: Need to confirm before remove src folder.
+  - `IAR Toolchain`: Add more cpu list for selection.
 
 ***
 

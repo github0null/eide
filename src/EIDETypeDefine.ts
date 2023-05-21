@@ -244,20 +244,31 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
         this._event.emit('dataChanged');
     }
 
+    private _json_equal(str1: string, str2: string): boolean {
+
+        try {
+            const s1 = jsonc.uglify(str1);
+            const s2 = jsonc.uglify(str2);
+            return s1 == s2;
+        } catch (error) {
+            // nothing todo
+        }
+
+        return str1 == str2;
+    }
+
     Save(force?: boolean): void {
 
         let oldContent: string | undefined;
-        let newContent: string | undefined = this.ToJson();
+        let newContent: string = this.ToJson();
 
         try {
-            if (this.cfgFile.IsExist()) {
-                oldContent = this.cfgFile.Read();
-            }
+            if (this.cfgFile.IsExist()) oldContent = this.cfgFile.Read();
         } catch (error) {
             GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
         }
 
-        if (oldContent != newContent) {
+        if (oldContent == undefined || !this._json_equal(oldContent, newContent)) {
             this.cfgFile.Write(newContent);
         }
     }
