@@ -2668,76 +2668,74 @@ class EIDEProject extends AbstractProject {
 
     private srcRefMap: Map<string, File[]> = new Map();
 
-    public async notifyUpdateSourceRefs(toolchain_: ToolchainName | undefined): Promise<boolean> {
+    public async notifyUpdateSourceRefs(toolchain_: ToolchainName | undefined) {
 
-        return new Promise((resolve) => {
+        /* clear old */
+        this.srcRefMap.clear();
 
-            /* clear old */
-            this.srcRefMap.clear();
+        /* check source references is enabled ? */
+        if (!SettingManager.GetInstance().isDisplaySourceRefs()) {
+            return;
+        }
 
-            /* check source references is enabled ? */
-            if (!SettingManager.GetInstance().isDisplaySourceRefs()) {
-                resolve(false);
-                return; /* no refs list file, exit */
-            }
+        let compiler_cmd_db: CompilerCommandsDatabaseItem[] = [];
+        let generate_dep_file: ((cmd_db: CompilerCommandsDatabaseItem[], srcpath: string, deppath: string) => Promise<void>) | undefined;
 
-            let compiler_cmd_db: CompilerCommandsDatabaseItem[] = [];
-            let generate_dep_file: ((cmd_db: CompilerCommandsDatabaseItem[], srcpath: string, deppath: string) => void) | undefined;
-
-            // for COSMIC STM8, we need manual generate .d files
+        // for COSMIC STM8, we need manual generate .d files
+        try {
             if (this.getToolchain().name == 'COSMIC_STM8') {
                 const compilerDBFile = File.fromArray([this.getOutputFolder().path, 'compile_commands.json']);
                 if (compilerDBFile.IsFile()) {
-                    try {
-                        compiler_cmd_db = jsonc.parse(compilerDBFile.Read());
-                        generate_dep_file = (cmd_db: CompilerCommandsDatabaseItem[], srcpath: string, deppath: string) => {
+                    compiler_cmd_db = jsonc.parse(compilerDBFile.Read());
+                    generate_dep_file = (cmd_db: CompilerCommandsDatabaseItem[], srcpath: string, deppath: string): Promise<void> => {
+                        return new Promise((resolve) => {
                             let idx = cmd_db.findIndex((e) => e.file == srcpath);
-                            if (idx != -1) {
-                                try {
-                                    let cmd_item = cmd_db[idx];
-                                    let command = cmd_item.command.replace('-co', '-sm -co');
-                                    const depcont = child_process.execSync(command, { cwd: cmd_item.directory }).toString();
-                                    fs.writeFileSync(deppath, depcont);
-                                } catch (error) {
-                                    GlobalEvent.emit('globalLog', newMessage('Warning', `Failed to make '${deppath}', msg: ${(<Error>error).message}`));
+                            if (idx == -1) { resolve(); return; }
+                            let cmd_item = cmd_db[idx];
+                            let command = cmd_item.command.replace('-co', '-sm -co');
+                            child_process.exec(command, { cwd: cmd_item.directory }, (error: child_process.ExecException | null, stdout: string, stderr: string) => {
+                                if (error) {
+                                    const msg = `Failed to make '${deppath}', msg: ${(<Error>error).message}`;
+                                    GlobalEvent.emit('globalLog', newMessage('Warning', msg));
                                     try { fs.unlinkSync(deppath) } catch (error) { } // del old .d file
+                                    resolve();
+                                } else {
+                                    fs.writeFileSync(deppath, stdout);
+                                    resolve();
                                 }
-                            }
-                        };
-                    } catch (error) {
-                        GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
-                    }
+                            });
+                        });
+                    };
                 }
             }
+        } catch (error) {
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+        }
 
-            const toolName = toolchain_ || this.getToolchain().name;
+        const toolName = toolchain_ || this.getToolchain().name;
 
-            const outFolder = this.getOutputFolder();
-            const refListFile = File.fromArray([outFolder.path, 'ref.json']);
+        const outFolder = this.getOutputFolder();
+        const refListFile = File.fromArray([outFolder.path, 'ref.json']);
 
-            if (!refListFile.IsFile()) {
-                resolve(false);
-                return; /* no refs list file, exit */
+        if (!refListFile.IsFile()) {
+            return; /* no refs list file, exit */
+        }
+
+        try {
+            const refMap = JSON.parse(refListFile.Read());
+            for (const srcpath in refMap) {
+                const refFile = new File((<string>refMap[srcpath]).replace(/\.[^\\\/\.]+$/, '.d'));
+                if (generate_dep_file) await generate_dep_file(compiler_cmd_db, srcpath, refFile.path);
+                if (!refFile.IsFile()) continue;
+                const refs = this.parseRefFile(refFile, toolName).filter(p => p != srcpath);
+                this.srcRefMap.set(srcpath, refs.map((path) => new File(path)));
             }
+        } catch (error) {
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+        }
 
-            try {
-                const refMap = JSON.parse(refListFile.Read());
-                for (const srcpath in refMap) {
-                    const refFile = new File((<string>refMap[srcpath]).replace(/\.[^\\\/\.]+$/, '.d'));
-                    if (generate_dep_file) generate_dep_file(compiler_cmd_db, srcpath, refFile.path);
-                    if (!refFile.IsFile()) continue;
-                    const refs = this.parseRefFile(refFile, toolName).filter(p => p != srcpath);
-                    this.srcRefMap.set(srcpath, refs.map((path) => new File(path)));
-                }
-            } catch (error) {
-                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
-            }
-
-            // notify update src view
-            this.emit('dataChanged', 'files');
-
-            resolve(true);
-        });
+        // notify update src view
+        this.emit('dataChanged', 'files');
     }
 
     public getSourceRefs(file: File): File[] {
