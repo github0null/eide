@@ -38,6 +38,7 @@ import * as events from 'events';
 import * as NodePath from 'path';
 import * as os from 'os';
 import { ICompileOptions, ArmBaseBuilderConfigData } from "./EIDEProjectModules";
+import * as utility from "./utility";
 
 export type ToolchainName =
     'SDCC' | 'Keil_C51' | 'IAR_STM8' | 'GNU_SDCC_STM8' | 'COSMIC_STM8' |
@@ -1166,6 +1167,158 @@ class COSMIC_STM8 implements IToolchian {
             // append libs
             options['linker']['LIB_FLAGS'] += ' ' + machineLibs.join(' ');
         }
+    }
+
+    // start 0000054b end 00000613 length   200 section .info.
+    // start ******** end ******** length     0 section .text *** removed ***
+    // start 000080f9 end 0000814a length    81 section .text
+    private _mapPattern__objSec = /start [^\s]+ end [^\s]+ length \s*(?<size>[^\s]+) section (?<sec>[^\s]+)/;
+    private _parseMap(mapPath: string): any {
+
+        const lines = fs.readFileSync(mapPath).toString().split(/\r\n|\n/);
+
+        const objDic: any = {};
+        const secList: string[] = [];
+
+        let headerFound = false;
+        let currentFile: string | undefined;
+        for (let idx = 0; idx < lines.length; idx++) {
+
+            const trimedLine = lines[idx].trim();
+
+            if (headerFound == false && trimedLine == 'Modules') {
+                headerFound = true;
+                idx++; // skip next line
+                continue;
+            }
+
+            if (headerFound) {
+
+                if (/^\-+$/.test(trimedLine))
+                    break; // end of content
+
+                if (/\.\w+:$/.test(trimedLine)) {
+                    currentFile = trimedLine.substr(0, trimedLine.length - 1);
+                    objDic[currentFile] = {};
+                    continue; // go next line
+                }
+
+                if (currentFile) {
+                    const m = this._mapPattern__objSec.exec(trimedLine);
+                    if (m && m.groups) {
+                        const name = m.groups['sec'];
+                        const size = parseInt(m.groups['size']);
+                        if (['.info.', '.debug'].includes(name)) continue; // skip some unused section
+                        if (!secList.includes(name)) secList.push(name);
+                        if (objDic[currentFile][name] != undefined) {
+                            objDic[currentFile][name] += size;
+                        } else {
+                            objDic[currentFile][name] = size;
+                        }
+                    }
+                }
+            }
+        }
+
+        return {
+            sections: secList,
+            objDic: objDic
+        };
+    };
+
+    parseMapFile(mapPath: string): string[] | Error {
+
+        if (!File.IsFile(mapPath))
+            return new Error(`No such file: ${mapPath}`);
+
+        const mapInfo = this._parseMap(mapPath);
+        const secList = mapInfo.sections;
+        const objDic = mapInfo.objDic;
+
+        let oldObjDic: any = {};
+        if (File.IsFile(mapPath + '.old')) {
+            const inf = this._parseMap(mapPath + '.old');
+            oldObjDic = inf.objDic;
+        }
+
+        const tableRows: string[][] = [];
+
+        // push header
+        let header: string[] = [];
+        header.push('Module');
+        header.push('Size');
+        header = header.concat(secList);
+        tableRows.push(header);
+
+        let objTotalSize: any = { new: 0, old: 0 };
+        let secTotalSize: any = {};
+        for (const objpath in objDic) {
+
+            const objInfo = objDic[objpath];
+            const row: string[] = [objpath];
+
+            let totalSize = 0;
+            for (const key in objInfo) {
+                totalSize += objInfo[key];
+            }
+
+            let oldInfo: any = {};
+            if (oldObjDic[objpath]) {
+                oldInfo = oldObjDic[objpath];
+            }
+
+            let oldTotalSize = 0;
+            for (const key in oldInfo) {
+                oldTotalSize += oldInfo[key];
+            }
+
+            objTotalSize.new += totalSize;
+            objTotalSize.old += oldTotalSize;
+
+            const diffSize = totalSize - oldTotalSize;
+            row.push(totalSize.toString() + `(${diffSize > 0 ? '+' : ''}${diffSize.toString()})`);
+
+            for (const sec of secList) {
+
+                const oldSecSize = oldInfo[sec] ? oldInfo[sec] : 0;
+                const nowSecSize = objInfo[sec] ? objInfo[sec] : 0;
+                const diffSize = nowSecSize - oldSecSize;
+                row.push(nowSecSize.toString() + `(${diffSize > 0 ? '+' : ''}${diffSize.toString()})`);
+
+                if (secTotalSize[sec] == undefined) {
+                    secTotalSize[sec] = {
+                        new: 0,
+                        old: 0
+                    };
+                };
+
+                secTotalSize[sec].new += nowSecSize;
+                secTotalSize[sec].old += oldSecSize;
+            }
+
+            tableRows.push(row);
+        }
+
+        const row_total: string[] = ['Subtotals'];
+        {
+            const diffSize = objTotalSize.new - objTotalSize.old;
+            row_total.push(objTotalSize.new.toString() + `(${diffSize > 0 ? '+' : ''}${diffSize.toString()})`);
+
+            for (const sec of secList) {
+                const oldSecSize = secTotalSize[sec].old ? secTotalSize[sec].old : 0;
+                const newSecSize = secTotalSize[sec].new ? secTotalSize[sec].new : 0;
+                const diffSize = newSecSize - oldSecSize;
+                row_total.push(newSecSize.toString() + `(${diffSize > 0 ? '+' : ''}${diffSize.toString()})`);
+            }
+        }
+        tableRows.push(row_total);
+
+        const tableLines = utility.makeTextTable(tableRows);
+        if (tableLines == undefined) {
+            return new Error(`Nothing for this map: ${mapPath} !`);
+        }
+
+        return tableLines;
     }
 
     getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {

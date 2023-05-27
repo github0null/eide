@@ -42,6 +42,50 @@ import { ExeCmd } from '../lib/node-utility/Executable';
 import { GlobalEvent } from './GlobalEvents';
 import { SettingManager } from './SettingManager';
 
+export function makeTextTable(rows: string[][], headerLines?: string[]): string[] | undefined {
+
+    if (rows.length == 0)
+        return undefined;
+
+    // init column len
+    const colMaxLenList: number[] = [];
+    rows[0].forEach(colHeader => colMaxLenList.push(colHeader.length));
+    const colSize = colMaxLenList.length;
+
+    // calcu all cols max len
+    for (let index = 1; index < rows.length; index++) {
+        const row = rows[index];
+        for (let colIdx = 0; colIdx < colSize; colIdx++) {
+            let maxLen = colMaxLenList[colIdx];
+            colMaxLenList[colIdx] = row[colIdx].length > maxLen ? row[colIdx].length : maxLen;
+        }
+    }
+
+    let outputLines: string[] = headerLines || [];
+
+    // make header
+    {
+        const tableHeader = rows[0];
+    
+        let header_str: string = '';
+        tableHeader.forEach((headerName, idx) => header_str += `| ${headerName.padEnd(colMaxLenList[idx])} `);
+
+        outputLines.push(''.padEnd(header_str.length, '-'));
+        outputLines.push(header_str);
+        outputLines.push(''.padEnd(header_str.length, '-'));
+    }
+
+    // make rows
+    for (let index = 1; index < rows.length; index++) {
+        const row = rows[index];
+        let line_str: string = '';
+        row.forEach((cellStr, colIdx) => line_str += `| ${cellStr.padEnd(colMaxLenList[colIdx])} `);
+        outputLines.push(line_str);
+    }
+
+    return outputLines;
+}
+
 export function getGccBinutilsVersion(gccBinDirPath: string, toolprefix?: string, toolname?: string): string | undefined {
 
     // example output:
