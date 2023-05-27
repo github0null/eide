@@ -6,6 +6,30 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.13.0] update
+
+**New**:
+  - `MIPS Project`: Support new project type `MIPS` and new toolchain `MTI GCC`, thanks [@eatradish](https://github.com/eatradish).
+  - `Status Bar`: Add status bar for project target switch.
+  - `STM8 MapView`: Support MapView for COSMIC-STM8 Compiler.
+
+**Fix**:
+  - `Switch Target`: Not copy source options file if it's not existed when switch target.
+  - `Cpptools Intellisense`: Notify cpptools update source config after active project changed.
+
+**Change**:
+  - `IAR Arm Toolchain`: Remove auto-gen '-I' include options for iar arm assembler.
+
+**Optimize**:
+  - `COSMIC_STM8`: Auto generate `.d` files for COSMIC_STM8.
+  - `KeilC51 Importer`: Setup 'CClasses, UserClasses' when import a keilc51 project.
+  - `System Variables`: Add some system variables, like: `${SYS_Platform}, ${SYS_DirSep} ...`
+  - `Auto Save`: Compare content before save project.
+  - `Source Folder`: Need to confirm before remove src folder.
+  - `IAR Toolchain`: Add more cpu list for selection.
+
+***
+
 ### [v3.12.2023052101] revision
 
 **New**:

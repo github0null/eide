@@ -50,7 +50,6 @@ import { DependenceManager } from "./DependenceManager";
 import { WorkspaceManager } from "./WorkspaceManager";
 import { ToolchainName } from "./ToolchainManager";
 import { md5, sha256, copyObject } from "./utility";
-import { MakefileGen } from "./Makefile";
 import { exeSuffix, osType } from "./Platform";
 import { FileWatcher } from "../lib/node-utility/FileWatcher";
 import { STVPFlasherOptions } from './HexUploader';
@@ -534,16 +533,6 @@ export abstract class CodeBuilder {
 
         // write project build params
         fs.writeFileSync(paramsPath, JSON.stringify(builderOptions, undefined, 4));
-
-        // generate makefile params
-        if (settingManager.isGenerateMakefileParams()) {
-            try {
-                const gen = new MakefileGen();
-                gen.generateParamsToFile(builderOptions, this.project.ToAbsolutePath(config.outDir));
-            } catch (error) {
-                GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
-            }
-        }
 
         let cmds = [
             '-p', paramsPath,
