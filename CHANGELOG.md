@@ -6,6 +6,14 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.13.2023060101] revision
+
+**Optimize**:
+  - `Source Exclude List`: Allow use Env Variables in exclude path string.
+  - `Eclipse Project Importer`: Optimize eclipse project parser, allow resolve virtual folder and folder link.
+
+***
+
 ### [v3.13.0] update
 
 **New**:
