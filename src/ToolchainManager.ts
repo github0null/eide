@@ -1770,7 +1770,7 @@ class AC6 implements IToolchian {
                 "optimization": "level-0",
                 "language-c": "c99",
                 "language-cpp": "c++11",
-                "link-time-optimization": true
+                "link-time-optimization": false
             },
             'asm-compiler': {
                 "$use": "asm-auto"
