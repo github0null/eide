@@ -200,7 +200,7 @@
                     ]
                 },
                 "link-time-optimization": {
-                    "markdownDescription": "Link Time Optimization",
+                    "markdownDescription": "Link Time Optimization (LTO)",
                     "type": "boolean"
                 },
                 "one-elf-section-per-function": {
