@@ -311,85 +311,73 @@ export class ToolchainManager {
             // if exist
             if (configFile.IsFile()) {
 
-                const optionObj: ICompileOptions = JSON.parse(configFile.Read());
-                const oldVersion: number = optionObj.version || 0;
+                const curOption: ICompileOptions = JSON.parse(configFile.Read());
+                const oldVersion: number = curOption.version || 0;
 
                 // if obsoleted, update it
                 if (toolchain.version > oldVersion) {
+
                     const defOptions: ICompileOptions = toolchain.getDefaultConfig();
 
                     // update version
-                    optionObj.version = defOptions.version;
-
-                    const updateList = ['global', 'c/cpp-compiler', 'asm-compiler', 'linker'];
-                    const properFile = File.fromArray([ResManager.GetInstance().getLangDir().path, toolchain.verifyFileName]);
-                    const properties = JSON.parse(properFile.Read())['properties'];
+                    curOption.version = defOptions.version;
 
                     // compatible some linker old params
-                    if (optionObj.linker) {
-                        // sdcc
-                        if (toolchain.name === 'SDCC' && optionObj.linker['executable-format']) {
-                            defOptions.linker['output-format'] = optionObj.linker['executable-format'];
+                    if (curOption.linker) {
+                        // sdcc: rename 'executable-format'
+                        if (toolchain.name === 'SDCC' && curOption.linker['executable-format']) {
+                            curOption.linker['output-format'] = curOption.linker['executable-format'];
+                            curOption.linker['executable-format'] = undefined;
                         }
-                        // all
-                        if (optionObj.linker['output-lib']) {
-                            defOptions.linker['output-format'] = 'lib';
+                        // all: rename 'output-lib'
+                        if (curOption.linker['output-lib']) {
+                            curOption.linker['output-format'] = 'lib';
+                            curOption.linker['output-lib'] = undefined;
                         }
                     }
 
                     // compatible some c/cpp-compiler old params
-                    if (optionObj['c/cpp-compiler']) {
-                        // armcc5
-                        if (toolchain.name === 'AC5' && optionObj['c/cpp-compiler']['misc-control']) {
-                            if (optionObj['c/cpp-compiler']['C_FLAGS']) {
-                                optionObj['c/cpp-compiler']['C_FLAGS'] =
-                                    optionObj['c/cpp-compiler']['misc-control'] + ' ' + optionObj['c/cpp-compiler']['C_FLAGS'];
-                            } else {
-                                optionObj['c/cpp-compiler']['C_FLAGS'] = optionObj['c/cpp-compiler']['misc-control'];
-                            }
+                    if (curOption['c/cpp-compiler']) {
+                        // armcc5, rename 'c/cpp-compiler'.'misc-control' -> 'c/cpp-compiler'.'C_FLAGS'
+                        if (toolchain.name === 'AC5' && curOption['c/cpp-compiler']['misc-control']) {
+                            const existedFlags = curOption['c/cpp-compiler']['C_FLAGS'] || '';
+                            curOption['c/cpp-compiler']['C_FLAGS'] = curOption['c/cpp-compiler']['misc-control'] + ' ' + existedFlags;
+                            curOption['c/cpp-compiler']['misc-control'] = undefined;
                         }
                     }
 
-                    // iar stm8 code-mode, data-mode
-                    if (optionObj["c/cpp-compiler"] && toolchain.name === 'IAR_STM8') {
-                        defOptions.global['code-mode'] = optionObj["c/cpp-compiler"]['code-mode'] || defOptions.global['code-mode'];
-                        defOptions.global['data-mode'] = optionObj["c/cpp-compiler"]['data-mode'] || defOptions.global['data-mode'];
+                    // iar stm8 'code-mode', 'data-mode' has been moved to 'global' from 'c/cpp-compiler'
+                    if (curOption["c/cpp-compiler"] && toolchain.name === 'IAR_STM8') {
+                        curOption.global['code-mode'] = curOption["c/cpp-compiler"]['code-mode'] || defOptions.global['code-mode'];
+                        curOption.global['data-mode'] = curOption["c/cpp-compiler"]['data-mode'] || defOptions.global['data-mode'];
+                        curOption["c/cpp-compiler"]['code-mode'] = undefined;
+                        curOption["c/cpp-compiler"]['data-mode'] = undefined;
                     }
 
-                    // clear invalid properties
-                    for (const name of updateList) {
-                        if (properties[name]) {
-                            const propertyFields = properties[name]['properties'];
-                            const currentObj = (<any>optionObj)[name];
-                            if (currentObj) {
-                                for (const field in currentObj) {
-                                    if (propertyFields[field] === undefined) { // if not have this property, clear it
-                                        currentObj[field] = undefined;
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // update null properties
-                    for (const name of updateList) {
-                        const currentObj = (<any>optionObj)[name];
-                        const defObj = (<any>defOptions)[name];
-                        if (defObj) { // if default object is valid
-                            if (currentObj) {
-                                for (const key in defObj) {
-                                    if (currentObj[key] === undefined) {
-                                        currentObj[key] = defObj[key];
-                                    }
-                                }
+                    // for gcc, '--specs=xxx' should be global options
+                    // ref: https://github.com/github0null/eide/issues/259
+                    if (/GCC/.test(toolchain.name) && curOption.linker && typeof curOption.linker['LD_FLAGS'] == 'string') {
+                        const specsOpts = curOption.linker['LD_FLAGS'].match(/--specs=[^\s]+/g);
+                        if (specsOpts && specsOpts.length > 0) {
+                            let optstr = specsOpts.join(' ');
+                            // move to global region
+                            if (curOption.global == undefined) curOption.global = {};
+                            if (curOption.global['misc-control']) {
+                                curOption.global['misc-control'] = curOption.global['misc-control'] + ' ' + optstr;
                             } else {
-                                (<any>optionObj)[name] = defObj;
+                                curOption.global['misc-control'] = optstr;
                             }
+                            // clear them in linker
+                            let ldflags = curOption.linker['LD_FLAGS'];
+                            specsOpts.forEach(opt => {
+                                ldflags = ldflags.replace(opt, '');
+                            });
+                            curOption.linker['LD_FLAGS'] = ldflags;
                         }
                     }
 
                     // write to file
-                    configFile.Write(JSON.stringify(optionObj, undefined, 4));
+                    configFile.Write(JSON.stringify(curOption, undefined, 4));
                 }
             } else {
                 // write default config to file
@@ -1797,7 +1785,7 @@ class AC6 implements IToolchian {
 
 class GCC implements IToolchian {
 
-    readonly version = 4;
+    readonly version = 5;
 
     readonly settingName: string = 'EIDE.ARM.GCC.InstallDirectory';
 
@@ -1990,7 +1978,8 @@ class GCC implements IToolchian {
             afterBuildTasks: [],
             global: {
                 "$float-abi-type": 'softfp',
-                "output-debug-info": 'enable'
+                "output-debug-info": 'enable',
+                "misc-control": "--specs=nosys.specs --specs=nano.specs"
             },
             'c/cpp-compiler': {
                 "language-c": "c11",
@@ -2008,7 +1997,7 @@ class GCC implements IToolchian {
             linker: {
                 "output-format": "elf",
                 "remove-unused-input-sections": true,
-                "LD_FLAGS": "--specs=nosys.specs --specs=nano.specs",
+                "LD_FLAGS": "",
                 "LIB_FLAGS": "-lm"
             }
         };
@@ -2304,6 +2293,7 @@ class IARSTM8 implements IToolchian {
 }
 
 class MTI_GCC implements IToolchian {
+
     readonly version = 1;
 
     readonly settingName: string = 'EIDE.MIPS.InstallDirectory';
@@ -2529,7 +2519,7 @@ class MTI_GCC implements IToolchian {
 
 class RISCV_GCC implements IToolchian {
 
-    readonly version = 1;
+    readonly version = 2;
 
     readonly settingName: string = 'EIDE.RISCV.InstallDirectory';
 
@@ -2763,7 +2753,8 @@ class RISCV_GCC implements IToolchian {
                 "output-debug-info": 'enable',
                 "arch": "rv32imac",
                 "abi": "ilp32",
-                "code-model": "medlow"
+                "code-model": "medlow",
+                "misc-control": "--specs=nosys.specs --specs=nano.specs"
             },
             'c/cpp-compiler': {
                 "language-c": "c11",
@@ -2781,7 +2772,7 @@ class RISCV_GCC implements IToolchian {
             linker: {
                 "output-format": "elf",
                 "remove-unused-input-sections": true,
-                "LD_FLAGS": "-Wl,--cref -Wl,--no-relax --specs=nosys.specs --specs=nano.specs -nostartfiles",
+                "LD_FLAGS": "-Wl,--cref -Wl,--no-relax -nostartfiles",
                 "LIB_FLAGS": ""
             }
         };
