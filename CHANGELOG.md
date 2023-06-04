@@ -6,6 +6,18 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.13.2023060401] revision
+
+**Fix**:
+  - `Incorrect GCC Options`: Move gcc '--specs=xxx' options to 'global' region. [issue](https://github.com/github0null/eide/issues/259)
+
+**Optimize**:
+  - `Source Exclude List`: Allow use Env Variables in exclude path string.
+  - `Eclipse Project Importer`: Optimize eclipse project parser, allow resolve virtual folder and folder link.
+  - `Armcc Options`: Remove duplicate option 'optimize-for-time' for AC5
+
+***
+
 ### [v3.13.2023060101] revision
 
 **Optimize**:
