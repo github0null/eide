@@ -3,9 +3,10 @@ import * as NodePath from 'path';
 import * as os from 'os';
 import * as xml2js from 'xml2js';
 import { VirtualFolder } from './EIDETypeDefine';
-import { VirtualSource } from './EIDEProject';
+import { VirtualSource, AbstractProject } from './EIDEProject';
 import { isArray } from 'util';
 import { ArrayDelRepetition } from '../lib/node-utility/Utility';
+import { File } from '../lib/node-utility/File';
 
 export type EclipseProjectType = 'arm' | 'sdcc' | 'riscv' | 'gcc';
 
@@ -104,6 +105,10 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
     let cprjDom = (await xml2js.parseStringPromise(
         fs.readFileSync(cprojectPath).toString()))['cproject'];
 
+    const cprojectDir = new File(NodePath.dirname(cprojectPath));
+
+    const SRC_FILE_FILTER = AbstractProject.getSourceFileFilterWithoutObj().concat(AbstractProject.headerFilter);
+
     const PROJ_INFO: EclipseProjectInfo = {
         name: _prjDom.name[0].replace(/\s+/g, '_'),
         type: 'gcc',
@@ -121,6 +126,10 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
     let node = getChild(toArray(cprjDom.storageModule), m => m.$['moduleId'] == "org.eclipse.cdt.core.settings");
     if (!node) throw new Error(`not found: '<storageModule moduleId="org.eclipse.cdt.core.settings">'`);
     cprjDom = node;
+
+    const root_virtualsrcs: string[] = [];
+    const root_srcdirs: string[] = [];
+    const eclipseTargetList: string[] = [];
 
     // parse all project targets
     for (const ccfg of toArray(cprjDom['cconfiguration'])) {
@@ -146,6 +155,8 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
             throw new Error(`eclipse project cdt version must >= 4.x.x, but your project is '${cdtVer}' !`);
 
         cTarget = cTarget['configuration'][0];
+
+        eclipseTargetList.push(cTarget.$['name']);
 
         const tInfo: EclipseProjectTarget = {
             name: cTarget.$['name'].replace(/\s+/g, '_'),
@@ -252,11 +263,24 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
         }
 
         if (cTarget.sourceEntries) {
+
             toArray(cTarget.sourceEntries[0].entry).forEach(e => {
 
                 //<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="src" />
                 if (<string>e.$['kind'] == 'sourcePath') {
-                    PROJ_INFO.sourceEntries.push(formatFilePath(e.$['name']));
+                    const srcdir = formatFilePath(e.$['name']);
+                    if (srcdir == '.' || srcdir == '') {
+                        const srcs = cprojectDir.GetList(SRC_FILE_FILTER, [/^[^\.].+/]);
+                        srcs.forEach(src => {
+                            if (src.IsFile()) {
+                                root_virtualsrcs.push(src.name);
+                            } else {
+                                root_srcdirs.push(src.name);
+                            }
+                        });
+                    } else {
+                        root_srcdirs.push(srcdir);
+                    }
                 }
 
                 (<string>e.$['excluding'] || '')
@@ -268,10 +292,24 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
         }
     }
 
+    // setup root sources
+    ArrayDelRepetition(root_virtualsrcs).forEach(srcpath => {
+        PROJ_INFO.virtualSource.files.push({ path: srcpath });
+    });
+    ArrayDelRepetition(root_srcdirs).forEach(srcdir => {
+        if (eclipseTargetList.includes(srcdir)) return; // skip eclipse build dir
+        PROJ_INFO.sourceEntries.push(srcdir);
+    });
+
     const getVirtualFolder = (rePath: string) => {
 
-        rePath = rePath.trim().replace(/^\//, '').replace(/^\.\/?/, '');
-        if (rePath == '') return PROJ_INFO.virtualSource;
+        rePath = rePath.trim()
+            .replace(/^\//, '')
+            .replace(/\/+$/, '')
+            .replace(/^\.\/?/, '');
+
+        if (rePath == '' || rePath == '.')
+            return PROJ_INFO.virtualSource;
 
         let curFolder = PROJ_INFO.virtualSource;
         let pathList = rePath.split(/\\|\//).reverse();
@@ -296,23 +334,76 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
         return curFolder;
     };
 
+    const virtualRootList: string[] = [];
+    const virtualRootMap: { [vpath: string]: string } = {};
+
     // parse external source
     if (_prjDom.linkedResources) {
         toArray(_prjDom.linkedResources[0].link).forEach(link => {
-            if (link.type[0] != '1') return; // skip folder
-            const vPath = link.name[0].trim();
-            if (vPath == '') return;
-            const vFolder = getVirtualFolder(NodePath.dirname(vPath));
-            const locations = link.locationURI || link.location;
-            if (!Array.isArray(locations)) return;
-            vFolder.files.push({ path: formatFilePath(locations[0]) });
+            if (link.type[0] == '1') { // virtual file
+                const vPath = link.name[0].trim();
+                if (vPath == '') return;
+                const vFolder = getVirtualFolder(NodePath.dirname(vPath));
+                const locations = link.locationURI || link.location;
+                if (!Array.isArray(locations)) return;
+                vFolder.files.push({ path: formatFilePath(locations[0]) });
+            } else if (link.type[0] == '2') { // virtual folder
+                const vpath = link.name[0].trim();
+                const locations: string = link.locationURI || link.location;
+                if (!Array.isArray(locations)) return;
+                const location: string = locations[0];
+                if (typeof location != 'string') return;
+                virtualRootList.push(vpath);
+                const rootdirpath_ = formatFilePath(location);
+                let rootdirfullpath = rootdirpath_;
+                if (!File.isAbsolute(rootdirpath_)) rootdirfullpath = `${cprojectDir.path}/${rootdirpath_}`;
+                let vFolder = getVirtualFolder(vpath); // add this folder
+                if (File.IsDir(rootdirfullpath)) {
+                    virtualRootMap[vpath] = File.ToUnixPath(rootdirpath_);
+                    const files = new File(rootdirfullpath).GetAll(SRC_FILE_FILTER, File.EXCLUDE_ALL_FILTER);
+                    const srcRootDir = new File(rootdirfullpath);
+                    files.forEach(f => {
+                        let subvpath = vpath;
+                        const dirname = srcRootDir.ToRelativePath(f.dir);
+                        if (dirname && dirname != '.') subvpath += '/' + dirname;
+                        vFolder = getVirtualFolder(subvpath);
+                        vFolder.files.push({ path: cprojectDir.ToRelativePath(f.path) || f.path });
+                    });
+                }
+            }
         });
     }
+
+    const completeVirtualPaths = (pathlist: string[]): string[] => {
+        return pathlist.map(p => {
+            if (virtualRootList.includes(p) || virtualRootList.some(e => p.startsWith(e + '/'))) {
+                return `${VirtualSource.rootName}/${p}`;
+            } else {
+                return p;
+            }
+        });
+    };
+
+    const resolveVirtualPaths = (pathlist: string[]): string[] => {
+        return pathlist.map(p => {
+            for (const rootpath of virtualRootList) {
+                if ((rootpath == p || p.startsWith(rootpath + '/')) && virtualRootMap[rootpath]) {
+                    return p.replace(rootpath, virtualRootMap[rootpath]);
+                }
+            }
+            return p;
+        });
+    };
 
     // del repeat args for every targets
     for (const target of PROJ_INFO.targets) {
 
-        target.excList = ArrayDelRepetition(target.excList);
+        // add prefix for virtual exclude paths
+        target.excList = completeVirtualPaths(ArrayDelRepetition(target.excList));
+
+        // resolve virtual include paths
+        target.globalArgs.cIncDirs = resolveVirtualPaths(target.globalArgs.cIncDirs);
+        target.globalArgs.sIncDirs = resolveVirtualPaths(target.globalArgs.sIncDirs);
 
         for (const key in target.globalArgs) {
             const obj: any = target.globalArgs;
@@ -336,9 +427,6 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
 
 function parseToolOption(optionObj: any): { type: string, val: string[] } | undefined {
 
-    if (optionObj.$['valueType'] == undefined)
-        return;
-
     if (optionObj.$['id']) {
         // skip output args
         if (['.converthex', '.convertbin', '.convert']
@@ -351,13 +439,13 @@ function parseToolOption(optionObj: any): { type: string, val: string[] } | unde
 
     const VALUE_NAME: string = optionObj.$['name'] || '';
     const VALUE_VAL: string = optionObj.$['value'] || '';
-    const VALUE_TYPE: string = optionObj.$['valueType'];
+    const VALUE_TYPE: string | undefined = optionObj.$['valueType'];
 
-    let makeResult = (value: string | string[]): { type: string, val: string[] } | undefined => {
+    let makeResult = (value: string | string[], typ?: string): { type: string, val: string[] } | undefined => {
         if (value == '') return undefined;
         if (isArray(value) && value.length == 0) return undefined;
         return {
-            type: VALUE_TYPE,
+            type: typ || VALUE_TYPE || '',
             val: isArray(value) ? value : [value]
         };
     };
@@ -370,6 +458,43 @@ function parseToolOption(optionObj: any): { type: string, val: string[] } | unde
 
         return fmt + arg;
     }
+
+    //
+    // match by name
+    //
+
+    // <Language Standard> = option.std.gnu99
+    if (/Language Standard/i.test(VALUE_NAME)) {
+        const m = /std\.(\w+)/.exec(VALUE_VAL);
+        if (m && m.length > 1) {
+            const langStd = m[1];
+            return makeResult(`-std=${langStd}`, 'string');
+        }
+    }
+
+    if (VALUE_NAME.includes('(-D)')) {
+        const li: string[] = [];
+        toArray(optionObj.listOptionValue).forEach(item => li.push(item.$['value']));
+        return makeResult(li, 'definedSymbols');
+    }
+
+    if (VALUE_NAME.includes('(-I)')) {
+        const li: string[] = [];
+        toArray(optionObj.listOptionValue).forEach(item => {
+            let p = formatFilePath(item.$['value']);
+            if (p == '..') p = '.';
+            if (p.startsWith('../')) p = p.substr(3); // for eclipse, include path is base 'Debug' folder
+            li.push(p);
+        });
+        return makeResult(li, 'includePath');
+    }
+
+    //
+    // match by type
+    //
+
+    if (VALUE_TYPE == undefined)
+        return;
 
     if (VALUE_TYPE == 'boolean') {
         if (VALUE_VAL == 'true') {

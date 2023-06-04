@@ -1542,7 +1542,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     //--
 
     isExcluded(path: string): boolean {
-        const excList = this.GetConfiguration().config.excludeList;
+        const excList = this.GetConfiguration().config.excludeList.map((excpath) => this.resolveEnvVar(excpath));
         const rePath = this.toRelativePath(path);
         return excList.findIndex(excluded => rePath === excluded || rePath.startsWith(`${excluded}/`)) !== -1;
     }

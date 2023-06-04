@@ -182,13 +182,6 @@
                     "level-speed": "-Otime"
                 }
             },
-            "optimize-for-time": {
-                "type": "selectable",
-                "command": {
-                    "true": "-Otime",
-                    "false": ""
-                }
-            },
             "one-elf-section-per-function": {
                 "type": "selectable",
                 "command": {
@@ -281,13 +274,6 @@
                     "level-3": "-O3",
                     "level-size": "-Ospace",
                     "level-speed": "-Otime"
-                }
-            },
-            "optimize-for-time": {
-                "type": "selectable",
-                "command": {
-                    "true": "-Otime",
-                    "false": ""
                 }
             },
             "one-elf-section-per-function": {

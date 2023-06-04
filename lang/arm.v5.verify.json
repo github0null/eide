@@ -170,15 +170,6 @@
                         "-Otime (for code time)"
                     ]
                 },
-                "optimize-for-time": {
-                    "markdownDescription": "Optimize for time",
-                    "description.zh-cn": "Optimize for time",
-                    "type": "boolean",
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
                 "one-elf-section-per-function": {
                     "markdownDescription": "One ELF Section per Function",
                     "type": "boolean",
