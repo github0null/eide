@@ -5668,10 +5668,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     private install_lock: boolean = false;
-    async installCmsisSourcePack(item: ProjTreeItem, type: 'header' | 'lib') {
+    async installCmsisSourcePack(item: ProjTreeItem, type: 'header' | 'lib' | 'idrv') {
 
         if (this.install_lock) {
-            GlobalEvent.emit('msg', newMessage('Warning', 'Operation is busy !'));
+            GlobalEvent.emit('msg', newMessage('Warning', 'Operation is in pending !'));
             return;
         }
 
@@ -5681,10 +5681,34 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
             const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
             if (prj) {
-                if (type == 'header') {
-                    prj.installCMSISHeaders();
-                } else if (type == 'lib') {
-                    prj.installCmsisLibs();
+                switch (type) {
+                    case 'header':
+                        prj.installCmsisSourceCodePack(
+                            ResManager.GetInstance().getCMSISHeaderPacks().map(f => {
+                                return {
+                                    name: f.noSuffixName,
+                                    zippath: f.path,
+                                    exportIncs: ['.']
+                                }
+                            }));
+                        break;
+                    case 'lib':
+                        prj.installCmsisLibs();
+                        break;
+                    case 'idrv':
+                        prj.installCmsisSourceCodePack([
+                            {
+                                name: 'driver',
+                                zippath: [ResManager.instance().GetAppDataDir().path, 'cmsis_driver_interface_v5_9_0.7z'].join(File.sep),
+                                exportIncs: [
+                                    'Include',
+                                    'VIO/Include'
+                                ]
+                            }
+                        ]);
+                        break;
+                    default:
+                        break;
                 }
             }
 

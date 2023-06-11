@@ -209,12 +209,14 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.modify.path', (item) => projectExplorer.openYamlConfig(item, 'src-path-cfg')));
 
     // package
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.installCMSISHeaders', (item) => projectExplorer.installCmsisSourcePack(item, 'header')));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.installCmsisLibs', (item) => projectExplorer.installCmsisSourcePack(item, 'lib')));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.removePackage', (item) => projectExplorer.UninstallKeilPackage(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.addPackage', (item) => projectExplorer.InstallKeilPackage(item.val.projectIndex)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.exportXml', (item) => projectExplorer.ExportKeilXml(item.val.projectIndex)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.setDevice', (item) => projectExplorer.SetDevice(item.val.projectIndex)));
+    // - cmsis core packages
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.installCMSISHeaders', (item) => projectExplorer.installCmsisSourcePack(item, 'header')));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.installCmsisLibs', (item) => projectExplorer.installCmsisSourcePack(item, 'lib')));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.installCmsisDriverInterface', (item) => projectExplorer.installCmsisSourcePack(item, 'idrv')));
 
     // builder
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.modifyCompileConfig', (item) => projectExplorer.ModifyCompileConfig(item)));
