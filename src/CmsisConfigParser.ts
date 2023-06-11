@@ -104,7 +104,7 @@ export function parse(lines: string[]): CmsisConfiguration | undefined {
     {
         // The Configuration Wizard section must begin within the first 100 lines of code and must start with the following comment line:
         //  '// <<< Use Configuration Wizard in Context Menu >>>'
-        for (let idx = 0; idx < 200; idx++) {
+        for (let idx = 0; idx < Math.min(200, lines.length); idx++) {
             const line = lines[idx].toLowerCase();
             if (line.indexOf('<<< use configuration wizard in context menu >>>') != -1) {
                 startIdx = idx;
