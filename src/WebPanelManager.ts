@@ -36,7 +36,7 @@ import * as platform from './Platform';
 import * as fs from 'fs';
 import { EncodingConverter } from "./EncodingConverter";
 import { SimpleUIConfig } from "./SimpleUIDef";
-import { newMessage } from "./Message";
+import { newMessage, ExceptionToMessage } from "./Message";
 
 let _instance: WebPanelManager;
 
@@ -326,7 +326,7 @@ export class WebPanelManager {
         try {
             cmsisConfig = CmsisConfigParser.parse(lines);
         } catch (error) {
-            GlobalEvent.emit('error', error);
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
             return; // parse error
         }
 
