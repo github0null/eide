@@ -90,17 +90,8 @@ export interface CmsisConfigItem {
     children: CmsisConfigItem[];
 };
 
-export interface CmsisConfigGroup {
-
-    name: string;
-
-    type: string;
-
-    children: CmsisConfigItem[];
-};
-
 export interface CmsisConfiguration {
-    group: CmsisConfigGroup[];
+    items: CmsisConfigItem[];
 };
 
 const macroMatcher = /^\s*#define\s+(?<key>\w+)\s*(?<value>.+)?/;
@@ -139,107 +130,108 @@ export function parse(lines: string[]): CmsisConfiguration | undefined {
         return undefined; // not found config
     }
 
-    const cmsisConfig: CmsisConfiguration = { group: [] };
+    const cmsisConfig: CmsisConfiguration = { items: [] };
 
     // parser start
 
     const context: ParserContext = {
         grp_stack: [],
         last_ele: undefined,
-        cont_idx: 0
+        cur_ele_lines_cnt: 0
     };
 
     for (let index = startIdx + 1; index < endIdx; index++) {
 
-        const cur_grp: any = getCurGroup(context);
+        const cur_grp: CmsisConfigItem | undefined = getCurGroup(context);
         const cur_line = lines[index];
         const cur_ele = context.last_ele;
 
-        // have no element, found first element group
-        if (cur_grp == undefined) {
-            if (isLikeTag(cur_line) && fieldMatcher['group'].start.test(cur_line)) {
+        // is a cmsis header start ? 
+        if (isCmsisTag(cur_line)) {
+
+            // is a group start ?
+            if (fieldMatcher['group'].start.test(cur_line)) {
                 const match = fieldMatcher['group'].start.exec(cur_line);
                 if (match && match.length > 1) {
-                    const nGrp = newDefGroup();
+                    const nGrp = newItemsGroup();
                     nGrp.name = match[1];
                     context.grp_stack.push(nGrp);
-                    cmsisConfig.group.push(nGrp);
-                    context.cont_idx = 0;
+                    cur_grp ? cur_grp.children.push(nGrp) : cmsisConfig.items.push(nGrp);
+                    context.cur_ele_lines_cnt = 0;
+                    continue; // go next line
                 }
+            }
+            // is group end tag ?
+            else if (cur_grp && fieldMatcher[cur_grp.type] && fieldMatcher[cur_grp.type].end?.test(cur_line)) {
+                context.grp_stack.pop();
+                context.cur_ele_lines_cnt = 0;
+                context.last_ele = undefined;
+                continue; // go next line
+            }
+
+            // is a new element (skip parse '//' comment for code type)
+            if (cur_ele?.type != 'code') {
+
+                let validElement = false;
+
+                for (const fieldType in fieldMatcher) {
+                    const match = fieldMatcher[fieldType].start.exec(cur_line);
+                    if (match && match.length > 1) {
+                        if (fieldType == 'group') { // this node is a group
+                            const nGrp = newItemsGroup();
+                            nGrp.name = match[1];
+                            context.grp_stack.push(nGrp);
+                            cur_grp ? cur_grp.children.push(nGrp) : cmsisConfig.items.push(nGrp);
+                            context.cur_ele_lines_cnt = 0;
+                            validElement = true;
+                            break;
+                        } else { // this node is a element
+                            const newItem = parseElement(cur_line, fieldType, match, context);
+                            if (newItem) {
+                                context.last_ele = newItem;
+                                cur_grp ? cur_grp.children.push(newItem) : cmsisConfig.items.push(newItem);
+                                context.cur_ele_lines_cnt = 0;
+                                validElement = true;
+                                // if this element is not end, push it to stack
+                                if (fieldMatcher[fieldType].end) context.grp_stack.push(newItem);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (validElement)
+                    continue; // go next line
             }
         }
 
-        // have an element
-        else {
+        // parse element content
+        if (cur_ele) {
 
-            if (cur_grp.type == undefined) throw Error('error element type !');
+            context.cur_ele_lines_cnt++;
 
-            // is a new element or ele end ? 
-            if (isLikeTag(cur_line)) {
+            // skip some lines
+            if (cur_ele.var_skip_val && cur_ele.var_skip_val >= context.cur_ele_lines_cnt)
+                continue;
 
-                // is element end tag
-                if (fieldMatcher[cur_grp.type].end?.test(cur_line)) {
-                    context.grp_stack.pop();
-                    context.cont_idx = 0;
-                    context.last_ele = undefined;
-                    continue; // go next loop
-                }
-
-                // is a new element (skip parse '//' comment for code type)
-                else if (cur_ele?.type != 'code') {
-
-                    for (const fieldType in fieldMatcher) {
-                        const match = fieldMatcher[fieldType].start.exec(cur_line);
-                        if (match && match.length > 1) {
-                            if (fieldType == 'group') { // this node is a group
-                                const nGrp = newDefGroup();
-                                nGrp.name = match[1];
-                                context.grp_stack.push(nGrp);
-                                cur_grp.children.push(nGrp);
-                            } else { // this node is a element
-                                const newItem = parseElement(cur_line, fieldType, match, context);
-                                if (newItem) {
-                                    context.last_ele = newItem;
-                                    cur_grp.children.push(newItem);
-                                    if (fieldMatcher[fieldType].end) context.grp_stack.push(newItem)
-                                }
-                            }
-                            context.cont_idx = 0;
-                            break;
-                        }
-                    }
-
-                    continue; // go next loop
-                }
+            // content is code
+            if (cur_ele.type == 'code') {
+                if (cur_ele.location == undefined) { cur_ele.location = { start: index }; }
+                cur_ele.location.end = index;
+                cur_ele.var_value = cur_line.trimStart().startsWith('//') ? '!' : '' // update code value
             }
 
-            // parse element content
-            if (cur_ele) {
-
-                context.cont_idx++;
-
-                // skip line
-                if (cur_ele.var_skip_val && cur_ele.var_skip_val >= context.cont_idx) { continue; }
-
-                // content is code
-                if (cur_ele.type == 'code') {
-                    if (cur_ele.location == undefined) { cur_ele.location = { start: index }; }
-                    cur_ele.location.end = index;
-                    cur_ele.var_value = cur_line.trimStart().startsWith('//') ? '!' : '' // update code value
-                }
-
-                // content is macro
-                else {
-                    const match = macroMatcher.exec(cur_line);
-                    if (match == null || match.groups == undefined) continue;
-                    const keyVal = match.groups;
-                    if (cur_ele.var_name && cur_ele.var_name != keyVal['key']) continue;
-                    if (keyVal['value'] == undefined) continue;
-                    // set value
-                    cur_ele.var_value = keyVal['value'].trim();
-                    cur_ele.location = { start: index };
-                    updateElementDispVal(cur_ele);
-                }
+            // content is macro
+            else {
+                const match = macroMatcher.exec(cur_line);
+                if (match == null || match.groups == undefined) continue;
+                const keyVal = match.groups;
+                if (cur_ele.var_name && cur_ele.var_name != keyVal['key']) continue;
+                if (keyVal['value'] == undefined) continue;
+                // set value
+                cur_ele.var_value = keyVal['value'].trim();
+                cur_ele.location = { start: index };
+                updateElementDispVal(cur_ele);
             }
         }
     }
@@ -258,7 +250,7 @@ interface TagMatcher {
 interface ParserContext {
     grp_stack: any[];
     last_ele: CmsisConfigItem | undefined;
-    cont_idx: number;
+    cur_ele_lines_cnt: number;
 };
 
 // ---
@@ -277,7 +269,7 @@ const fieldMatcher: TagMatcher = {
 };
 
 const likeTagMatcher = /^\/\/\s*</;
-function isLikeTag(str: string): boolean {
+function isCmsisTag(str: string): boolean {
     return likeTagMatcher.test(str);
 }
 
@@ -293,14 +285,15 @@ interface NumberValueInfo {
     fmtStr?: string;
 }
 
-const numberMatcher = /(0x[0-9a-f]+|\d+)/i;
+const numberMatcher = /(0x[0-9a-f]+|[\d\.]+)/i;
 function parseNumber(str: string): NumberValueInfo {
     const m = numberMatcher.exec(str);
     if (m && m.length > 1) {
         const numVal = m[1];
         const isHex = numVal.toLowerCase().startsWith('0x');
+        const isFloat = !isHex && numVal.includes('.');
         return {
-            num: parseInt(numVal, isHex ? 16 : 10),
+            num: isFloat ? parseFloat(numVal) : parseInt(numVal, isHex ? 16 : 10),
             isHex: isHex,
             fmtStr: str.replace(numberMatcher, '<num>') // in UI, '<num>' will be replace to real value
         };
@@ -333,7 +326,7 @@ function getCurGroup(context: ParserContext) {
     return context.grp_stack[context.grp_stack.length - 1];
 }
 
-function newDefItem(): CmsisConfigItem {
+function newConfigItem(): CmsisConfigItem {
     return {
         name: '',
         type: '',
@@ -345,12 +338,10 @@ function newDefItem(): CmsisConfigItem {
     };
 }
 
-function newDefGroup(): CmsisConfigGroup {
-    return {
-        name: '',
-        type: 'group',
-        children: []
-    };
+function newItemsGroup(): CmsisConfigItem {
+    const item = newConfigItem();
+    item.type = 'group';
+    return item;
 }
 
 // ---
@@ -370,7 +361,7 @@ function parseElement(line: string, type: string, match: RegExpExecArray, contex
         item = context.last_ele;
         if (item == undefined) return;
     } else {
-        item = newDefItem();
+        item = newConfigItem();
         item.type = type;
     }
 
@@ -509,7 +500,7 @@ function updateElementDispVal(item: CmsisConfigItem) {
 
         // raw value
         {
-            item.var_disp_value = isHex ? `0x${num.toString(16)}` : num.toString();
+            item.var_disp_value = num.toString(); // section is a bool value
             item.var_fmt_value = fmtStr;
         }
 

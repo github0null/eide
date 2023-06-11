@@ -36,6 +36,7 @@ import * as platform from './Platform';
 import * as fs from 'fs';
 import { EncodingConverter } from "./EncodingConverter";
 import { SimpleUIConfig } from "./SimpleUIDef";
+import { newMessage } from "./Message";
 
 let _instance: WebPanelManager;
 
@@ -325,12 +326,15 @@ export class WebPanelManager {
         try {
             cmsisConfig = CmsisConfigParser.parse(lines);
         } catch (error) {
-            throw error
+            GlobalEvent.emit('error', error);
+            return; // parse error
         }
 
         if (cmsisConfig == undefined ||
-            cmsisConfig.group.length == 0)
+            cmsisConfig.items.length == 0) {
+            GlobalEvent.emit('msg', newMessage('Info', 'Not found any CMSIS Configurations in this header !'));
             return; // no data
+        }
 
         const resManager = ResManager.GetInstance();
         const htmlFolder = File.fromArray([resManager.GetHTMLDir().path, 'cmsis_wizard_view']);
