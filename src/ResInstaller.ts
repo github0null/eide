@@ -77,7 +77,6 @@ export class ResInstaller {
     private builtin_tool_list: string[] = [];
 
     private downloadSites: string[] = [
-        'https://raw-github.github0null.io/github0null/eide-resource/master/packages',
         'https://raw.githubusercontent.com/github0null/eide-resource/master/packages'
     ];
 

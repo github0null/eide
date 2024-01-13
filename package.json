@@ -4,8 +4,8 @@
     "publisher": "cl",
     "author": {
         "name": "cl",
-        "url": "https://github0null.io",
-        "email": "me@github0null.io"
+        "url": "https://github.com/github0null",
+        "email": "github0null@outlook.com"
     },
     "keywords": [
         "mcu",
@@ -66,7 +66,7 @@
     "readme": "https://github.com/github0null/eide/blob/master/README.md",
     "bugs": {
         "url": "https://github.com/github0null/eide/issues",
-        "email": "me@github0null.io"
+        "email": "github0null@outlook.com"
     },
     "repository": {
         "url": "https://github.com/github0null/eide.git",
