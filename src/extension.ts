@@ -143,20 +143,20 @@ export async function activate(context: vscode.ExtensionContext) {
     // project user cmds
     subscriptions.push(vscode.commands.registerCommand('eide.project.save', (item) => projectExplorer.saveProject(item)));
     subscriptions.push(vscode.commands.registerCommand('eide.project.rebuild', (item) => projectExplorer.BuildSolution(item)));
-    subscriptions.push(vscode.commands.registerCommand('eide.project.build', (item) => projectExplorer.BuildSolution(item, { useFastMode: true })));
+    subscriptions.push(vscode.commands.registerCommand('eide.project.build', (item) => projectExplorer.BuildSolution(item, { not_rebuild: true })));
     subscriptions.push(vscode.commands.registerCommand('eide.project.clean', (item) => projectExplorer.BuildClean(item)));
     subscriptions.push(vscode.commands.registerCommand('eide.project.uploadToDevice', (item) => projectExplorer.UploadToDevice(item)));
     subscriptions.push(vscode.commands.registerCommand('eide.reinstall.binaries', () => checkAndInstallBinaries(true)));
     subscriptions.push(vscode.commands.registerCommand('eide.project.flash.erase.all', (item) => projectExplorer.UploadToDevice(item, true)));
-    subscriptions.push(vscode.commands.registerCommand('eide.project.buildAndFlash', (item) => projectExplorer.BuildSolution(item, { useFastMode: true, flashAfterBuild: true })));
-    subscriptions.push(vscode.commands.registerCommand('eide.project.genBuilderParams', (item) => projectExplorer.BuildSolution(item, { useFastMode: true, onlyGenParams: true })));
+    subscriptions.push(vscode.commands.registerCommand('eide.project.buildAndFlash', (item) => projectExplorer.BuildSolution(item, { not_rebuild: true, flashAfterBuild: true })));
+    subscriptions.push(vscode.commands.registerCommand('eide.project.genBuilderParams', (item) => projectExplorer.BuildSolution(item, { not_rebuild: true, onlyGenParams: true })));
 
     // operations bar
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.historyRecord', () => projectExplorer.openHistoryRecords()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.clearHistoryRecord', () => projectExplorer.clearAllHistoryRecords()));
 
     // project
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.showBuildParams', (item) => projectExplorer.BuildSolution(item, { useDebug: true })));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.showBuildParams', (item) => projectExplorer.BuildSolution(item, { dry_run: true })));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.setActive', (item) => projectExplorer.setActiveProject(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.close', (item) => projectExplorer.Close(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.saveAll', () => projectExplorer.SaveAll()));
@@ -257,8 +257,10 @@ export async function activate(context: vscode.ExtensionContext) {
     operationExplorer.on('request_import_project', (option) => projectExplorer.emit('request_import_project', option));
 
     // status bar
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.switch-project', () => projectExplorer.showQuickPickAndSwitchActiveProject()));
+    //subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.switch-project', () => projectExplorer.showQuickPickAndSwitchActiveProject()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.switch-target', () => projectExplorer.showQuickPickAndSwitchActiveTarget()));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.build', () => projectExplorer.BuildSolution(undefined, { not_rebuild: true })));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.flash', () => projectExplorer.UploadToDevice(undefined)));
 
     // others
     vscode.workspace.registerTextDocumentContentProvider(VirtualDocument.scheme, VirtualDocument.instance());
@@ -1029,16 +1031,21 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
     {
         const statusBarManager = StatusBarManager.getInstance();
 
-        const bar_cur_proj = statusBarManager.create('current.project');
-        const bar_cur_targ = statusBarManager.create('current.target');
+        const bar_proj = statusBarManager.create('project');
+        const bar_make = statusBarManager.create('build');
+        const bar_flash = statusBarManager.create('flash');
 
-        bar_cur_proj.text    = `EIDE Project: unspecified`;
-        bar_cur_proj.command = `_cl.eide.statusbar.switch-project`;
-        bar_cur_proj.tooltip = `select active project`;
+        bar_proj.text    = `EIDE Project: unspecified`;
+        bar_proj.command = `_cl.eide.statusbar.switch-target`;
+        bar_proj.tooltip = `Switch target for eide project`;
 
-        bar_cur_targ.text    = `Target: unspecified`;
-        bar_cur_targ.command = `_cl.eide.statusbar.switch-target`;
-        bar_cur_targ.tooltip = `select active target for eide project`;
+        bar_make.text    = `$(tools) Build`;
+        bar_make.command = `_cl.eide.statusbar.build`;
+        bar_make.tooltip = `Build eide project`;
+
+        bar_flash.text    = `$(arrow-down) Flash`;
+        bar_flash.command = `_cl.eide.statusbar.flash`;
+        bar_flash.tooltip = `Program flash eide project`;
     }
 
     // register msys bash profile for windows
@@ -1111,15 +1118,17 @@ function RegisterGlobalEvent() {
     // for status bar
     GlobalEvent.on('project.opened', () => {
         if (prj_count == 1) {
-            StatusBarManager.getInstance().get('current.project')?.show();
-            StatusBarManager.getInstance().get('current.target')?.show();
+            StatusBarManager.getInstance().foreach((bar, name) => {
+                bar.show();
+            })
         }
     });
 
     GlobalEvent.on('project.closed', () => {
         if (prj_count == 0) {
-            StatusBarManager.getInstance().get('current.project')?.hide();
-            StatusBarManager.getInstance().get('current.target')?.hide();
+            StatusBarManager.getInstance().foreach((bar, name) => {
+                bar.hide();
+            })
         }
     });
 }

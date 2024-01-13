@@ -141,6 +141,7 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
     protected watcher: FileWatcher;
 
     protected isDelUnknownKeysWhenLoad: boolean = true;
+    protected lastSaveTime: number = 0;
 
     constructor(configFile: File, type?: ProjectType) {
         this._event = new events.EventEmitter();
@@ -155,6 +156,13 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
     }
 
     public load(): Configuration<ConfigType, EventType> {
+
+        try {
+            const meta = fs.statSync(this.cfgFile.path);
+            this.lastSaveTime = meta.mtime.getTime();
+        } catch (err) {
+            // nothing todo
+        }
 
         if (this.cfgFile.IsFile()) {
             this.InitConfig(this.cfgFile.Read());
@@ -269,6 +277,7 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
         }
 
         if (oldContent == undefined || !this._json_equal(oldContent, newContent)) {
+            this.lastSaveTime = Date.now();
             this.cfgFile.Write(newContent);
         }
     }
@@ -442,8 +451,19 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             resolveEnvVar: (p) => p
         };
 
-        this.watcher.OnChanged = () => this.onProjectFileChanged();
-        this.watcher.OnRename = () => this.onProjectFileChanged();
+        const _cb = () => {
+            try {
+                const meta = fs.statSync(this.cfgFile.path);
+                if (meta.mtime.getTime() > this.lastSaveTime + 3000) {
+                    this.onProjectFileChanged();
+                }
+            } catch (err) {
+                // nothing todo
+            }
+        };
+
+        this.watcher.OnChanged = _cb
+        this.watcher.OnRename = _cb;
     }
 
     private __fileChgEvtEmitDelayTimer: NodeJS.Timeout | undefined;
@@ -1388,28 +1408,11 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         return utility.ToJsonStringExclude(eidePrjObj, ProjectConfiguration.EXCL_KEYS_IN_EIDE_JSON, 2);
     }
 
-    private __watcherReloadDelayTimer: NodeJS.Timeout | undefined;
     Save(force?: boolean) {
-
-        this.watcher.Close();
-
         const usrCtx = this.getProjectUsrCtx();
-
-        // save current target
-        usrCtx.target = this.config.mode;
-
+        usrCtx.target = this.config.mode; // save current target
         this.setProjectUsrCtx(usrCtx);
-
         super.Save();
-
-        if (this.__watcherReloadDelayTimer) {
-            this.__watcherReloadDelayTimer.refresh();
-        } else {
-            this.__watcherReloadDelayTimer = setTimeout((_this: ProjectConfiguration<any>) => {
-                _this.__watcherReloadDelayTimer = undefined;
-                _this.Watch();
-            }, 3000, this);
-        }
     }
 }
 

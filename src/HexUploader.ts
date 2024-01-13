@@ -132,7 +132,7 @@ interface UploaderPreData<T> {
     params?: T;
 }
 
-interface FlashProgramFile {
+export interface FlashProgramFile {
 
     path: string;
 
@@ -200,6 +200,10 @@ export abstract class HexUploader<InvokeParamsType> {
         });
 
         return result;
+    }
+
+    getAllProgramFiles(): FlashProgramFile[] {
+        return this.parseProgramFiles(this.getUploadOptions<any>());
     }
 
     protected toAbsolute(_path: string): File | undefined {

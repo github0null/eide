@@ -57,9 +57,9 @@ import * as ArmCpuUtils from './ArmCpuUtils';
 
 export interface BuildOptions {
 
-    useDebug?: boolean;
+    dry_run?: boolean; // true: 仅输出编译命令及版本信息
 
-    useFastMode?: boolean;
+    not_rebuild?: boolean; // true: 增量编译，false: 重新编译所有
 
     flashAfterBuild?: boolean;
 
@@ -259,7 +259,7 @@ export abstract class CodeBuilder {
         let commandLine = this.genBuildCommand(options);
         if (!commandLine) return;
 
-        const title = (options?.useDebug ? 'compiler params' : 'build') + `:${this.project.getCurrentTarget()}`;
+        const title = (options?.dry_run ? 'compiler params' : 'build') + `:${this.project.getCurrentTarget()}`;
 
         // watch log, to emit done event
         try {
@@ -328,8 +328,8 @@ export abstract class CodeBuilder {
     genBuildCommand(options?: BuildOptions, disPowershell?: boolean): string | undefined {
 
         // reinit build mode
-        this.useFastCompile = options?.useFastMode;
-        this.useShowParamsMode = options?.useDebug;
+        this.useFastCompile = options?.not_rebuild;
+        this.useShowParamsMode = options?.dry_run;
 
         /* if not found toolchain, exit ! */
         if (!this.project.checkAndNotifyInstallToolchain()) { return; }
@@ -387,11 +387,6 @@ export abstract class CodeBuilder {
         return false;
     }
 
-    private getBuilderModelsDir(): File {
-        const platDir = osType() == 'win32' ? 'win32' : 'unix';
-        return File.fromArray([ResManager.instance().GetAppDataDir().path, 'models', platDir]);
-    }
-
     private getCommands(): string[] {
 
         const config = this.project.GetConfiguration().config;
@@ -413,7 +408,7 @@ export abstract class CodeBuilder {
             target: this.project.getCurrentTarget(),
             toolchain: toolchain.name,
             toolchainLocation: toolchain.getToolchainDir().path,
-            toolchainCfgFile: `${this.getBuilderModelsDir().path}/${toolchain.modelName}`,
+            toolchainCfgFile: `${ResManager.GetInstance().getBuilderModelsDir().path}/${toolchain.modelName}`,
             buildMode: 'fast|multhread',
             showRepathOnLog: settingManager.isPrintRelativePathWhenBuild(),
             threadNum: settingManager.getThreadNumber(),

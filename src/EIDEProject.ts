@@ -849,6 +849,28 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         return [this.getRootDir().path, this.getOutputDir(), this.getProjectName()].join(File.sep);
     }
 
+    /**
+     * get build output elf executable file path
+     * @note not hex, bin file path
+    */
+    public getExecutablePath(): string {
+        return this.getExecutablePathWithoutSuffix() + this.getToolchain().elfSuffix;
+        // @discard parse from file
+        // ------------------------------
+        // let suffix = '.axf';
+        // try {
+        //     let fpath = `${ResManager.GetInstance().getBuilderModelsDir().path}/${this.getToolchain().modelName}`;
+        //     let model = JSON.parse(fs.readFileSync(fpath).toString());
+        //     if (model['groups']['linker'] &&
+        //         model['groups']['linker']['$outputSuffix'] != undefined) {
+        //         suffix = model['groups']['linker']['$outputSuffix'];
+        //     }
+        // } catch (error) {
+        //     GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+        // }
+        // return this.getExecutablePathWithoutSuffix() + suffix;
+    }
+
     public getUid(): string {
         const miscInfo = this.GetConfiguration().config.miscInfo;
         if (miscInfo.uid == undefined) miscInfo.uid = md5(`${this.getEideDir().path}-${Date.now()}`);
@@ -907,6 +929,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     public getProjectFile(): File {
         return File.fromArray([this.getEideDir().path, AbstractProject.prjConfigName]);
+    }
+
+    public getProjectRoot(): File {
+        return this.getRootDir();
     }
 
     ////////////////////////////////// Abstract Project ///////////////////////////////////

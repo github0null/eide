@@ -1126,7 +1126,7 @@
                 {
                     "command": "_cl.eide.project.source.show_disassembly",
                     "group": "commands",
-                    "when": "resourceExtname =~ /\\.c$|\\.cpp$|\\.c\\+\\+$|\\.cc$|\\.cxx$|\\.info$|\\.axf$|\\.elf$/ && cl.eide.projectActived && !config.EIDE.Option.DisableEditorContextMenu"
+                    "when": "resourceExtname =~ /\\.c$|\\.cpp$|\\.c\\+\\+$|\\.cc$|\\.cxx$|\\.info$|\\.axf$|\\.elf$|\\.out$/ && cl.eide.projectActived && !config.EIDE.Option.DisableEditorContextMenu"
                 },
                 {
                     "command": "_cl.eide.project.source.show_cmsis_config_wizard",
@@ -1156,14 +1156,9 @@
             ],
             "explorer/context": [
                 {
-                    "command": "eide.c51ToSdcc",
-                    "group": "commands",
-                    "when": "resourceLangId =~ /^c$|^cpp$/ && cl.eide.projectActived && !config.EIDE.Option.DisableExplorerContextMenu"
-                },
-                {
                     "command": "_cl.eide.project.source.show_disassembly",
                     "group": "commands",
-                    "when": "resourceExtname =~ /\\.c$|\\.cpp$|\\.c\\+\\+$|\\.cc$|\\.cxx$|\\.axf$|\\.elf$/ && cl.eide.projectActived && !config.EIDE.Option.DisableExplorerContextMenu"
+                    "when": "resourceExtname =~ /\\.c$|\\.cpp$|\\.c\\+\\+$|\\.cc$|\\.cxx$|\\.axf$|\\.elf$|\\.out$/ && cl.eide.projectActived && !config.EIDE.Option.DisableExplorerContextMenu"
                 },
                 {
                     "command": "_cl.eide.project.source.show_cmsis_config_wizard",
@@ -1660,6 +1655,15 @@
                     }
                 }
             }
-        ]
+        ],
+        "icons": {
+            "eide-hammer": {
+                "description": "fa-hammer",
+                "default": {
+                    "fontPath": "./res/icon/fa-solid-900.woff",
+                    "fontCharacter": "\\f6e3"
+                }
+            }
+        }
     }
 }

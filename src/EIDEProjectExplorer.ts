@@ -431,6 +431,7 @@ export class ProjTreeItem extends vscode.TreeItem {
             case '.elf':
             case '.bin':
             case '.out':
+            case '.sm8':
                 name = 'file_type_binary.svg';
                 break;
             case '.map':
@@ -924,12 +925,44 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
             const activeProj = this.getActiveProject();
 
-            if (name == 'current.project') {
-                bar.text = `EIDE Project: ${activeProj?.getProjectName() || 'unspecified'}`;
+            if (name == 'project') {
+                bar.text = `EIDE Project: ${activeProj?.getCurrentTarget() || 'unspecified'}`;
+                if (activeProj) {
+                    let txt = `Switch target for eide project:`;
+                    txt += `${os.EOL}  - path: \`${activeProj.getProjectRoot().path}\``;
+                    bar.tooltip = new vscode.MarkdownString(txt);
+                } else {
+                    bar.tooltip = `Switch target for eide project`;
+                }
             }
 
-            else if (name == 'current.target') {
-                bar.text = `Target: ${activeProj?.getCurrentTarget() || 'unspecified'}`;
+            else if (name == 'build') {
+                if (activeProj) {
+                    let txt = `Build eide project:`;
+                    let repath = activeProj.ToRelativePath(activeProj.getExecutablePath());
+                    txt += `${os.EOL}  - output: \`${repath}\``;
+                    bar.tooltip = new vscode.MarkdownString(txt);
+                } else {
+                    bar.tooltip = `Build eide project`;
+                }
+            }
+
+            else if (name == 'flash') {
+                if (activeProj) {
+                    try {
+                        const flasher = HexUploaderManager.getInstance().createUploader(activeProj);
+                        let txt = `Program flash eide project:`;
+                        flasher.getAllProgramFiles().forEach(f => {
+                            let repath = activeProj.ToRelativePath(f.path) || f.path;
+                            txt += `${os.EOL}  - \`${repath}\``
+                        });
+                        bar.tooltip = new vscode.MarkdownString(txt);
+                    } catch (error) {
+                        GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+                    }
+                } else {
+                    bar.tooltip = `Program flash eide project`;
+                }
             }
         });
     }
@@ -1743,7 +1776,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     //   #  Symbol Name                Value      Bind  Sec  Type  Vis  Size
                     case 'AC5':
                     case 'AC6':
-                        elfpath = prj.getExecutablePathWithoutSuffix() + '.axf';
+                        elfpath = prj.getExecutablePath();
                         elftool = [toolchain.getToolchainDir().path, 'bin', `fromelf${exeSuffix()}`].join(File.sep);
                         elfcmds = ['--text', '-s', elfpath];
                         staMatcher = /\(SHT_SYMTAB\)/
@@ -1755,7 +1788,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     // iar fmt:
                     //   # Name                                Value      Sec Type Bd Size   Group Other
                     case 'IAR_ARM':
-                        elfpath = prj.getExecutablePathWithoutSuffix() + '.elf';
+                        elfpath = prj.getExecutablePath();
                         elftool = [toolchain.getToolchainDir().path, 'bin', `ielfdumparm${exeSuffix()}`].join(File.sep);
                         elfcmds = ['-s', '.symtab', elfpath];
                         symMatcher = /^\s*\d+:\s+(?<name>[^\s]+)\s+(?<addr>0x[0-9a-f]+)\s+(?:[^\s]+)\s+(?<type>[^\s]+\s+[^\s]+)(?<size>\s+0x[0-9a-f]+)?/i;
@@ -1763,7 +1796,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                         truncatEndMatcher = /^\s*0x[0-9a-f]+\s+/i
                         break;
                     case 'IAR_STM8':
-                        elfpath = prj.getExecutablePathWithoutSuffix() + '.out';
+                        elfpath = prj.getExecutablePath();
                         elftool = [toolchain.getToolchainDir().path, 'stm8', 'bin', `ielfdumpstm8${exeSuffix()}`].join(File.sep);
                         elfcmds = ['-s', '.symtab', elfpath];
                         symMatcher = /^\s*\d+:\s+(?<name>[^\s]+)\s+(?<addr>0x[0-9a-f]+)\s+(?:[^\s]+)\s+(?<type>[^\s]+\s+[^\s]+)(?<size>\s+0x[0-9a-f]+)?/i;
@@ -1775,7 +1808,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     case 'ANY_GCC':
                     case 'MIPS_GCC':
                     case 'MTI_GCC':
-                        elfpath = prj.getExecutablePathWithoutSuffix() + '.elf';
+                        elfpath = prj.getExecutablePath();
                         elftool = [toolchain.getToolchainDir().path, 'bin', `${toolchainPrefix}nm${exeSuffix()}`].join(File.sep);
                         elfcmds = sortType == 'size' ? ['-l', '-S', '--size-sort', elfpath] : ['-ln', '-S', elfpath];
                         elfsort = true;
@@ -1789,7 +1822,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                         //  c_y:            00000007 section .ubsct defined public zpage
                         //  f_exit:         00008221 section .text defined public
                         //  f_main:         00008165 section .text defined public
-                        elfpath = prj.getExecutablePathWithoutSuffix() + '.sm8';
+                        elfpath = prj.getExecutablePath();
                         elftool = [toolchain.getToolchainDir().path, `cobj${exeSuffix()}`].join(File.sep);
                         elfcmds = ['-s', elfpath];
                         symMatcher = /^\s*(?<name>\w+):\s+(?<addr>[0-9a-f]+)\s+\w+\s+(?<type>[\w\.]+)/i;
@@ -4189,7 +4222,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
             /* gen command */
             const builder = CodeBuilder.NewBuilder(project);
-            const cmdLine = builder.genBuildCommand({ useFastMode: !rebuild }, true);
+            const cmdLine = builder.genBuildCommand({ not_rebuild: !rebuild }, true);
             if (cmdLine) {
                 buildCfg.command = cmdLine || '';
                 cmdList.push(buildCfg);
