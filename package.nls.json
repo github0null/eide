@@ -101,6 +101,7 @@
     "settings.builder.jobs": "The number of threads when build",
     
     "settings.option.show.toolbar.in.editer.title": "Displays some toolbars in the editor title",
+    "settings.option.show.statusbar": "Displays toolbar icons in the status bar",
     "settings.option.print.relative.path": "Print relative path when compile source file",
     "settings.option.create.batch.file": "Create batch file after build",
     "settings.option.use.task.to.build": "Use Task to build project instead of Terminal",

@@ -412,12 +412,10 @@ export function compareVersion(v1: string, v2: string): number {
 
 const PROXY_HOST_MAP: { [host: string]: string[] } = {
     'api.github.com': [
-        'api-github.em-ide.com',
-        'api-github.github0null.io'
+        'api-github.em-ide.com'
     ],
     'raw.githubusercontent.com': [
-        'raw-github.em-ide.com',
-        'raw-github.github0null.io'
+        'raw-github.em-ide.com'
     ]
 };
 

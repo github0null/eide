@@ -849,6 +849,28 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         return [this.getRootDir().path, this.getOutputDir(), this.getProjectName()].join(File.sep);
     }
 
+    /**
+     * get build output elf executable file path
+     * @note not hex, bin file path
+    */
+    public getExecutablePath(): string {
+        return this.getExecutablePathWithoutSuffix() + this.getToolchain().elfSuffix;
+        // @discard parse from file
+        // ------------------------------
+        // let suffix = '.axf';
+        // try {
+        //     let fpath = `${ResManager.GetInstance().getBuilderModelsDir().path}/${this.getToolchain().modelName}`;
+        //     let model = JSON.parse(fs.readFileSync(fpath).toString());
+        //     if (model['groups']['linker'] &&
+        //         model['groups']['linker']['$outputSuffix'] != undefined) {
+        //         suffix = model['groups']['linker']['$outputSuffix'];
+        //     }
+        // } catch (error) {
+        //     GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+        // }
+        // return this.getExecutablePathWithoutSuffix() + suffix;
+    }
+
     public getUid(): string {
         const miscInfo = this.GetConfiguration().config.miscInfo;
         if (miscInfo.uid == undefined) miscInfo.uid = md5(`${this.getEideDir().path}-${Date.now()}`);
@@ -907,6 +929,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     public getProjectFile(): File {
         return File.fromArray([this.getEideDir().path, AbstractProject.prjConfigName]);
+    }
+
+    public getProjectRoot(): File {
+        return this.getRootDir();
     }
 
     ////////////////////////////////// Abstract Project ///////////////////////////////////
@@ -1627,32 +1653,37 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         return dupList;
     }
 
-    installCMSISHeaders() {
+    installCmsisSourceCodePack(pList: { name: string; zippath: string; exportIncs?: string[] } []) {
 
-        const packList = ResManager.GetInstance().getCMSISHeaderPacks();
-        if (packList.length === 0) {
-            GlobalEvent.emit('msg', newMessage('Info', 'Not found available libraries !'));
+        if (pList.length == 0) {
             return;
         }
 
         const doneList: string[] = [];
 
-        for (const packZipFile of packList) {
+        for (const packInfo of pList) {
 
-            const outDir = File.fromArray([this.GetRootDir().path, '.cmsis', packZipFile.noSuffixName]);
+            const outDir = File.fromArray([this.GetRootDir().path, '.cmsis', packInfo.name]);
             const rePath = this.ToRelativePath(outDir.path) || outDir.path;
 
             if (outDir.IsDir()) {
-                GlobalEvent.emit('msg', newMessage('Warning', `'${rePath}' directory is already exists !, Aborted !`));
-                return;
+                GlobalEvent.emit('globalLog', newMessage('Warning', `'${rePath}' directory is already exists !, Aborted !`));
+                continue;
             }
 
             outDir.CreateDir(true);
             const compresser = new SevenZipper(ResManager.GetInstance().Get7zDir());
-            compresser.UnzipSync(packZipFile, outDir);
+            compresser.UnzipSync(new File(packInfo.zippath), outDir);
 
             // add to include folder
-            this.addIncludePaths([outDir.path]);
+            if (packInfo.exportIncs) {
+                const incLi = packInfo.exportIncs.map(p => {
+                    let path = p.trim();
+                    if (path == '.') path = '';
+                    return path ? (outDir.path + File.sep + path) : outDir.path;
+                });
+                this.addIncludePaths(incLi);
+            }
 
             doneList.push(rePath);
         }

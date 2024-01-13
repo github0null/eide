@@ -83,6 +83,8 @@ export interface IToolchian {
 
     readonly version: number;
 
+    readonly elfSuffix: string; // executable file suffix
+
     /**
      * get toolchain install folder
      */
@@ -479,6 +481,8 @@ class KeilC51 implements IToolchian {
 
     readonly configName: string = '8051.options.keil.json';
 
+    readonly elfSuffix = '';
+
     getForceIncludeHeaders(): string[] | undefined {
         return [
             ResManager.GetInstance().getC51ForceIncludeHeaders().path
@@ -613,6 +617,8 @@ class SDCC implements IToolchian {
     readonly configName: string = 'options.sdcc.json';
 
     readonly verifyFileName: string = 'sdcc.verify.json';
+
+    readonly elfSuffix = '.elf';
 
     private readonly asmMapper: any = {
         "mcs51": "8051",
@@ -870,6 +876,8 @@ class GnuStm8Sdcc implements IToolchian {
 
     readonly verifyFileName: string = 'stm8.gnu-sdcc.verify.json';
 
+    readonly elfSuffix = '.elf';
+
     newInstance(): IToolchian {
         return new SDCC();
     }
@@ -1075,6 +1083,8 @@ class COSMIC_STM8 implements IToolchian {
     readonly configName: string = 'options.stm8-cosmic.json';
 
     readonly verifyFileName: string = 'stm8.cosmic.verify.json';
+
+    readonly elfSuffix = '.sm8';
 
     newInstance(): IToolchian {
         return new COSMIC_STM8();
@@ -1391,6 +1401,8 @@ class AC5 implements IToolchian {
 
     readonly verifyFileName: string = 'arm.v5.verify.json';
 
+    readonly elfSuffix = '.axf';
+
     newInstance(): IToolchian {
         return new AC5();
     }
@@ -1587,6 +1599,8 @@ class AC6 implements IToolchian {
     readonly configName: string = 'arm.options.v6.json';
 
     readonly verifyFileName: string = 'arm.v6.verify.json';
+
+    readonly elfSuffix = '.axf';
 
     /*
     private readonly defMacroList: string[];
@@ -1798,6 +1812,8 @@ class GCC implements IToolchian {
     readonly configName: string = 'arm.options.gcc.json';
 
     readonly verifyFileName: string = 'arm.gcc.verify.json';
+
+    readonly elfSuffix = '.elf';
 
     constructor() {
         // nothing todo
@@ -2020,6 +2036,8 @@ class IARARM implements IToolchian {
 
     readonly verifyFileName: string = 'arm.iar.verify.json';
 
+    readonly elfSuffix = '.elf';
+
     newInstance(): IToolchian {
         return new IARARM();
     }
@@ -2155,6 +2173,8 @@ class IARSTM8 implements IToolchian {
     readonly settingName: string = 'EIDE.IAR.STM8.InstallDirectory';
 
     readonly verifyFileName: string = 'stm8.iar.verify.json';
+
+    readonly elfSuffix = '.out';
 
     newInstance(): IToolchian {
         return new IARSTM8();
@@ -2307,6 +2327,8 @@ class MTI_GCC implements IToolchian {
     readonly configName: string = 'mips.mti.gcc.options.json';
 
     readonly verifyFileName: string = 'mips.mti.gcc.verify.json';
+
+    readonly elfSuffix = '.elf';
 
     constructor() {
         // nothing todo
@@ -2532,6 +2554,8 @@ class RISCV_GCC implements IToolchian {
     readonly configName: string = 'riscv.gcc.options.json';
 
     readonly verifyFileName: string = 'riscv.gcc.verify.json';
+
+    readonly elfSuffix = '.elf';
 
     constructor() {
         // nothing todo
@@ -2794,6 +2818,8 @@ class AnyGcc implements IToolchian {
     readonly configName: string = 'options.any.gcc.json';
 
     readonly verifyFileName: string = 'any.gcc.verify.json';
+
+    readonly elfSuffix = '.elf';
 
     constructor() {
         // nothing todo

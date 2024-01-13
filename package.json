@@ -4,8 +4,8 @@
     "publisher": "cl",
     "author": {
         "name": "cl",
-        "url": "https://github0null.io",
-        "email": "me@github0null.io"
+        "url": "https://github.com/github0null",
+        "email": "github0null@outlook.com"
     },
     "keywords": [
         "mcu",
@@ -38,7 +38,7 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/MIPS/RISC-V",
-    "version": "3.13.2023060401",
+    "version": "3.14.0",
     "preview": false,
     "engines": {
         "vscode": "^1.67.0"
@@ -66,7 +66,7 @@
     "readme": "https://github.com/github0null/eide/blob/master/README.md",
     "bugs": {
         "url": "https://github.com/github0null/eide/issues",
-        "email": "me@github0null.io"
+        "email": "github0null@outlook.com"
     },
     "repository": {
         "url": "https://github.com/github0null/eide.git",
@@ -764,6 +764,11 @@
                 "title": "Install CMSIS Core Libs"
             },
             {
+                "command": "_cl.eide.project.installCmsisDriverInterface",
+                "category": "eide",
+                "title": "Install CMSIS Common Driver Interface"
+            },
+            {
                 "command": "_cl.eide.project.addSrcDir",
                 "title": "%eide.explorer.root.add.folder%",
                 "icon": {
@@ -1121,7 +1126,7 @@
                 {
                     "command": "_cl.eide.project.source.show_disassembly",
                     "group": "commands",
-                    "when": "resourceExtname =~ /\\.c$|\\.cpp$|\\.c\\+\\+$|\\.cc$|\\.cxx$|\\.info$|\\.axf$|\\.elf$/ && cl.eide.projectActived && !config.EIDE.Option.DisableEditorContextMenu"
+                    "when": "resourceExtname =~ /\\.c$|\\.cpp$|\\.c\\+\\+$|\\.cc$|\\.cxx$|\\.info$|\\.axf$|\\.elf$|\\.out$/ && cl.eide.projectActived && !config.EIDE.Option.DisableEditorContextMenu"
                 },
                 {
                     "command": "_cl.eide.project.source.show_cmsis_config_wizard",
@@ -1151,14 +1156,9 @@
             ],
             "explorer/context": [
                 {
-                    "command": "eide.c51ToSdcc",
-                    "group": "commands",
-                    "when": "resourceLangId =~ /^c$|^cpp$/ && cl.eide.projectActived && !config.EIDE.Option.DisableExplorerContextMenu"
-                },
-                {
                     "command": "_cl.eide.project.source.show_disassembly",
                     "group": "commands",
-                    "when": "resourceExtname =~ /\\.c$|\\.cpp$|\\.c\\+\\+$|\\.cc$|\\.cxx$|\\.axf$|\\.elf$/ && cl.eide.projectActived && !config.EIDE.Option.DisableExplorerContextMenu"
+                    "when": "resourceExtname =~ /\\.c$|\\.cpp$|\\.c\\+\\+$|\\.cc$|\\.cxx$|\\.axf$|\\.elf$|\\.out$/ && cl.eide.projectActived && !config.EIDE.Option.DisableExplorerContextMenu"
                 },
                 {
                     "command": "_cl.eide.project.source.show_cmsis_config_wizard",
@@ -1248,6 +1248,10 @@
                 },
                 {
                     "command": "_cl.eide.project.installCmsisLibs",
+                    "when": "viewItem == PACK && view == cl.eide.view.projects"
+                },
+                {
+                    "command": "_cl.eide.project.installCmsisDriverInterface",
                     "when": "viewItem == PACK && view == cl.eide.view.projects"
                 },
                 {
@@ -1651,6 +1655,15 @@
                     }
                 }
             }
-        ]
+        ],
+        "icons": {
+            "eide-hammer": {
+                "description": "fa-hammer",
+                "default": {
+                    "fontPath": "./res/icon/fa-solid-900.woff",
+                    "fontCharacter": "\\f6e3"
+                }
+            }
+        }
     }
 }

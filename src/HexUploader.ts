@@ -41,7 +41,7 @@ import * as fs from 'fs';
 import * as ini from 'ini';
 import { ResInstaller } from "./ResInstaller";
 import { newMessage } from "./Message";
-import { concatSystemEnvPath, exeSuffix, prependToSysEnv } from "./Platform";
+import { concatSystemEnvPath, exeSuffix, prependToSysEnv, osType } from "./Platform";
 
 let _mInstance: HexUploaderManager | undefined;
 
@@ -132,7 +132,7 @@ interface UploaderPreData<T> {
     params?: T;
 }
 
-interface FlashProgramFile {
+export interface FlashProgramFile {
 
     path: string;
 
@@ -200,6 +200,10 @@ export abstract class HexUploader<InvokeParamsType> {
         });
 
         return result;
+    }
+
+    getAllProgramFiles(): FlashProgramFile[] {
+        return this.parseProgramFiles(this.getUploadOptions<any>());
     }
 
     protected toAbsolute(_path: string): File | undefined {
@@ -1016,6 +1020,13 @@ class CustomUploader extends HexUploader<string> {
             return {
                 isOk: new Error('flash command can not be empty !')
             };
+        }
+
+        // if use `bash` in win32, convert to unix dir sep
+        if (osType() == 'win32' && /(^bash\b|\bbash\.exe)/i.test(option.commandLine.trim())) {
+            for (const prog of programs) {
+                prog.path = File.ToUnixPath(prog.path);
+            }
         }
 
         const portList = ResManager.GetInstance().enumSerialPort();

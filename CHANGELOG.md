@@ -6,6 +6,21 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.14.0] update
+
+**New**:
+  - `Status Bar`: Add status bar 'Build' and 'Flash'
+
+**Change**:
+  - `Proxy Site`: Discard domain: github0null.io
+  - `unify_builder`: Move obj files to '.obj' dir when build
+
+**Optimize**:
+  - `Model files`: Remove model file's UTF8-BOM header
+  - `Project auto reload`: Optimize auto save/reload project when you modified 'eide.json'
+
+***
+
 ### [v3.13.2023060401] revision
 
 **Fix**:
