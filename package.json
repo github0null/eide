@@ -500,6 +500,91 @@
         ],
         "commands": [
             {
+                "command": "eide.open.makelibs.cfg",
+                "category": "eide",
+                "title": "%eide.function.open_libs.yml%"
+            },
+            {
+                "command": "eide.reinstall.binaries",
+                "category": "eide",
+                "title": "%eide.function.reinstall.binaries%"
+            },
+            {
+                "command": "eide.create.clang-format.file",
+                "category": "eide",
+                "title": "%eide.function.gen_clang_format%"
+            },
+            {
+                "command": "eide.project.buildAndFlash",
+                "category": "eide",
+                "title": "%eide.project.buildAndFlash%"
+            },
+            {
+                "command": "eide.project.build",
+                "category": "eide",
+                "title": "%eide.project.build%",
+                "icon": {
+                    "dark": "./res/icon/BuildSelection_16x.svg",
+                    "light": "./res/icon/BuildSelection_16x.svg"
+                }
+            },
+            {
+                "command": "eide.project.rebuild",
+                "category": "eide",
+                "title": "%eide.project.rebuild%",
+                "icon": {
+                    "dark": "./res/icon/BuildSolution_16x.svg",
+                    "light": "./res/icon/BuildSolution_16x.svg"
+                }
+            },
+            {
+                "command": "eide.project.clean",
+                "category": "eide",
+                "title": "%eide.project.clean%",
+                "icon": {
+                    "dark": "./res/icon/clean_dark_16x.svg",
+                    "light": "./res/icon/clean_light_16x.svg"
+                }
+            },
+            {
+                "command": "eide.project.uploadToDevice",
+                "title": "%eide.project.upload%",
+                "category": "eide",
+                "icon": {
+                    "dark": "./res/icon/TransferDownload_16x.svg",
+                    "light": "./res/icon/TransferDownload_16x.svg"
+                }
+            },
+            {
+                "command": "eide.project.flash.erase.all",
+                "title": "%eide.project.flash.erase.all%",
+                "category": "eide",
+                "icon": {
+                    "dark": "./res/icon/TransferDownload_16x.svg",
+                    "light": "./res/icon/TransferDownload_16x.svg"
+                }
+            },
+            {
+                "command": "eide.ShowUUID",
+                "category": "eide",
+                "title": "%eide.function.show.uuid%"
+            },
+            {
+                "command": "eide.c51ToSdcc",
+                "category": "eide",
+                "title": "%eide.function.convert.keil.to.sdcc%"
+            },
+            {
+                "command": "eide.ReloadJlinkDevs",
+                "category": "eide",
+                "title": "%eide.function.reload.jlink.dev.list%"
+            },
+            {
+                "command": "eide.ReloadStm8Devs",
+                "category": "eide",
+                "title": "%eide.function.reload.stm8.dev.list%"
+            },
+            {
                 "command": "eide.project.save",
                 "title": "%eide.project.save%"
             },
@@ -522,16 +607,6 @@
             {
                 "command": "eide.operation.open_project",
                 "title": "Open an eide project"
-            },
-            {
-                "command": "eide.reinstall.binaries",
-                "category": "eide",
-                "title": "%eide.function.reinstall.binaries%"
-            },
-            {
-                "command": "eide.create.clang-format.file",
-                "category": "eide",
-                "title": "Create a new .clang-format template file"
             },
             {
                 "command": "_cl.eide.project.show_proj_vars",
@@ -702,65 +777,17 @@
                 "title": "%eide.project.active%"
             },
             {
-                "command": "eide.project.buildAndFlash",
-                "category": "eide",
-                "title": "%eide.project.buildAndFlash%"
-            },
-            {
-                "command": "eide.project.build",
-                "category": "eide",
-                "title": "%eide.project.build%",
-                "icon": {
-                    "dark": "./res/icon/BuildSelection_16x.svg",
-                    "light": "./res/icon/BuildSelection_16x.svg"
-                }
-            },
-            {
-                "command": "eide.project.rebuild",
-                "category": "eide",
-                "title": "%eide.project.rebuild%",
-                "icon": {
-                    "dark": "./res/icon/BuildSolution_16x.svg",
-                    "light": "./res/icon/BuildSolution_16x.svg"
-                }
-            },
-            {
-                "command": "eide.project.clean",
-                "category": "eide",
-                "title": "%eide.project.clean%",
-                "icon": {
-                    "dark": "./res/icon/clean_dark_16x.svg",
-                    "light": "./res/icon/clean_light_16x.svg"
-                }
-            },
-            {
-                "command": "eide.project.uploadToDevice",
-                "title": "%eide.project.upload%",
-                "category": "eide",
-                "icon": {
-                    "dark": "./res/icon/TransferDownload_16x.svg",
-                    "light": "./res/icon/TransferDownload_16x.svg"
-                }
-            },
-            {
-                "command": "eide.project.flash.erase.all",
-                "title": "%eide.project.flash.erase.all%",
-                "category": "eide",
-                "icon": {
-                    "dark": "./res/icon/TransferDownload_16x.svg",
-                    "light": "./res/icon/TransferDownload_16x.svg"
-                }
-            },
-            {
                 "command": "_cl.eide.project.showBuildParams",
                 "title": "%eide.project.show.commands%"
             },
             {
                 "command": "_cl.eide.project.installCMSISHeaders",
+                "category": "eide",
                 "title": "Install CMSIS Core Headers"
             },
             {
                 "command": "_cl.eide.project.installCmsisLibs",
+                "category": "eide",
                 "title": "Install CMSIS Core Libs"
             },
             {
@@ -1019,26 +1046,6 @@
                     "dark": "./res/icon/TableToFile_16x.svg",
                     "light": "./res/icon/TableToFile_16x.svg"
                 }
-            },
-            {
-                "command": "eide.ShowUUID",
-                "category": "eide",
-                "title": "%eide.function.show.uuid%"
-            },
-            {
-                "command": "eide.c51ToSdcc",
-                "category": "eide",
-                "title": "%eide.function.convert.keil.to.sdcc%"
-            },
-            {
-                "command": "eide.ReloadJlinkDevs",
-                "category": "eide",
-                "title": "%eide.function.reload.jlink.dev.list%"
-            },
-            {
-                "command": "eide.ReloadStm8Devs",
-                "category": "eide",
-                "title": "%eide.function.reload.stm8.dev.list%"
             }
         ],
         "keybindings": [
@@ -1328,6 +1335,10 @@
                 },
                 {
                     "command": "_cl.eide.project.show_proj_vars",
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
+                },
+                {
+                    "command": "eide.open.makelibs.cfg",
                     "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {

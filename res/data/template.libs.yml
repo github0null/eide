@@ -1,0 +1,26 @@
+##########################################################################################
+#                        Generate libs for your project
+# syntax:
+# ---
+#  <your lib name>:
+#     - <obj file 1>
+#     - <obj file 2>
+#
+# For more syntax, please refer to: https://www.npmjs.com/package/micromatch
+#
+##########################################################################################
+
+## ----------------------------
+## examples
+##  This examples will generate 2 libs after build done, 
+##  they are: 'app.lib', 'test.lib'
+## ----------------------------
+#app:
+#  - '**/src/app.o'
+#  - '**/src/a.o'
+#  - '**/src/a/*.o'
+#
+#test:
+#  - '**/test/app.o'
+#  - '**/test/c.o'
+#  - '**/test/c/*.o'

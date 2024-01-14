@@ -1175,6 +1175,29 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         return (<FileGroup[]>this.sourceRoots.getFileGroups()).concat(this.virtualSource.getFileGroups());
     }
 
+    getAllSources(): { path: string, virtualPath?: string; }[] {
+
+        const srcList: { path: string, virtualPath?: string; }[] = [];
+        const fGoups = this.getFileGroups();
+        const filter = AbstractProject.getSourceFileFilter();
+
+        for (const group of fGoups) {
+            if (group.disabled) continue; // skip disabled group
+            for (const source of group.files) {
+                if (source.disabled) continue; // skip disabled file
+                if (!filter.some((reg) => reg.test(source.file.path))) continue; // skip non-source
+                const rePath = this.ToRelativePath(source.file.path);
+                const fInfo: any = { path: rePath || source.file.path }
+                if (AbstractProject.isVirtualSourceGroup(group)) {
+                    fInfo.virtualPath = `${group.name}/${source.file.name}`;
+                }
+                srcList.push(fInfo);
+            }
+        }
+
+        return srcList;
+    }
+
     /**
      * get project root folder
     */
@@ -1788,6 +1811,189 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     }
 
     //-------------------- other ------------------
+
+    getLibsGeneratorCfgFile(notCreate: boolean = false): File {
+
+        const target = this.getCurrentTarget().toLowerCase();
+        const optFile = File.fromArray([this.getEideDir().path, `${target}.libs.yml`]);
+
+        if (!optFile.IsFile() && !notCreate) {
+            const templateFile = File.fromArray([
+                ResManager.GetInstance().GetAppDataDir().path, 'template.libs.yml'
+            ]);
+            optFile.Write(templateFile.Read());
+        }
+
+        return optFile;
+    }
+
+    genLibsMakefileContent(makefileName: string): string | undefined {
+
+        const fcfg = this.getLibsGeneratorCfgFile();
+        if (!fcfg.IsFile())
+            return undefined;
+
+        let cfg: any;
+        try {
+            cfg = yaml.parse(fcfg.Read());
+        } catch (error) {
+            GlobalEvent.emit('msg', newMessage('Warning', `Parse '${fcfg.name}' failed !`));
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            GlobalEvent.emit('globalLog.show');
+            return undefined;
+        }
+
+        if (cfg == undefined || Object.keys(cfg).length == 0)
+            return undefined;
+
+        // --------------------------
+        // - get compiler params
+        // --------------------------
+
+        let AR_PATH: string;
+        let AR_PARAMS: string;
+        let AR_OBJ_SEP: string;
+        let AR_OUT_SUFFIX: string;
+        let CC_OBJ_SUFFIX: string;
+        try {
+            const compiler = this.getToolchain();
+            let mname = compiler.modelName;
+            let fpath = `${ResManager.GetInstance().getBuilderModelsDir('unix').path}/${mname}`;
+            let model = JSON.parse(fs.readFileSync(fpath).toString());
+            // linker
+            let mlink = model['groups']['linker-lib'];
+            if (mlink == undefined) {
+                throw new Error(`${mname}: model['groups']['linker-lib'] is undefined !`);
+            }
+            AR_PATH = File.ToUnixPath(compiler.getToolchainDir().path + '/' + mlink['$path']);
+            if (compiler.getToolchainPrefix)
+                AR_PATH = AR_PATH.replace('${toolPrefix}', compiler.getToolchainPrefix());
+            if (AR_PATH.includes(' '))
+                AR_PATH = `"${AR_PATH}"`;
+            AR_PARAMS = mlink['$output'];
+            if (AR_PARAMS == undefined) {
+                throw new Error(`${mname}: model['groups']['linker-lib']['$output'] is undefined !`);
+            }
+            AR_OBJ_SEP = mlink['$objPathSep'] || ' ';
+            AR_OUT_SUFFIX = mlink['$outputSuffix'] || '';
+            // cc
+            let mcc = model['groups']['c'] || model['groups']['c/cpp'];
+            if (mcc == undefined) {
+                throw new Error(`${mname}: model['groups']['c/cpp'] is undefined !`);
+            }
+            CC_OBJ_SUFFIX = mcc['$outputSuffix'] || '.o';
+        } catch (error) {
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            return undefined;
+        }
+
+        // --------------------------
+        // - match objs
+        // --------------------------
+
+        const libs: { [name: string]: string[] } = {};
+        const allobjs: string[] = [];
+        const objroot = '.obj';
+        const objsuffix = CC_OBJ_SUFFIX;
+
+        this.getAllSources().forEach((src) => {
+            let path = File.ToUnixPath(src.path);
+            let nam = NodePath.basename(path, NodePath.extname(path));
+            let dir = NodePath.dirname(path);
+            path = dir + '/' + nam + objsuffix;
+            allobjs.push(path);
+        });
+
+        for (const name in cfg) {
+
+            let exprs: string[] = cfg[name];
+            if (!Array.isArray(exprs)) continue;
+
+            let libobjs: string[] = [];
+            for (const expr of exprs) {
+                allobjs.forEach(p => {
+                    const searchPath = this.toRelativePath(p)
+                        .replace(/\.\.\//g, '')
+                        .replace(/\.\//g, ''); // globmatch bug ? it can't parse path which have '.' or '..'
+                    if (globmatch.isMatch(searchPath, expr)) {
+                        libobjs.push(p);
+                    }
+                });
+            }
+            libobjs = ArrayDelRepetition(libobjs);
+            if (libobjs.length > 0) {
+                libs[name] = libobjs.map(path => {
+                    if (File.isAbsolute(path))
+                        return path;
+                    else
+                        return objroot + '/' + path.replace(/\.\.\//g, '__/');
+                });
+            }
+        }
+
+        // --------------------------
+        // - gen makefile
+        // --------------------------
+
+        let lib_rules: string[] = [];
+
+        for (const libname in libs) {
+            let objs = libs[libname];
+            let outname = `$(OUT_DIR)/${libname + AR_OUT_SUFFIX}`;
+            let AR_CMD = AR_PARAMS
+                .replace('${in}', `$(lib${libname}_OBJS)`)
+                .replace('${out}', outname);
+            let rule_tmp = `# ${libname}
+lib${libname}_OBJS += ${objs.join(AR_OBJ_SEP)}
+lib${libname}: $(lib${libname}_OBJS) ${makefileName}
+\t@echo -e $(COLOR_BLUE)-------------------------$(COLOR_END)
+\t@echo -e $(COLOR_BLUE)AR "${outname}"$(COLOR_END)
+\t@echo -e $(COLOR_BLUE)-------------------------$(COLOR_END)
+\t${AR_PATH} ${AR_CMD}
+OUT_LIBS += lib${libname}
+`;
+            lib_rules.push(rule_tmp);
+        }
+
+        let mk_tmp = `
+# --------------------------------------------
+#  !!! DON'T EDIT THESE, IT'S AUTO CREATED !!!
+# --------------------------------------------
+
+OUT_DIR = <LIB_OUT_DIR>
+
+# colors
+COLOR_END  = "\\e[0m"
+COLOR_WARN = "\\e[33;1m"
+COLOR_DONE = "\\e[32;1m"
+COLOR_ERR  = "\\e[31;1m"
+COLOR_BLUE = "\\e[34;1m"
+
+# --------------------------------------------
+#  libs targets
+# --------------------------------------------
+
+<LIB_TARGETS>
+
+# --------------------------------------------
+#  all target
+# --------------------------------------------
+
+all: $(OUT_LIBS) | $(OUT_DIR)
+\t@echo -e $(COLOR_DONE)"-------------------------"$(COLOR_END)
+\t@echo -e $(COLOR_DONE)"all done"$(COLOR_END)
+\t@echo -e $(COLOR_DONE)"-------------------------"$(COLOR_END)
+
+$(OUT_DIR):
+\t@mkdir -p $@
+`;
+
+        mk_tmp = mk_tmp
+            .replace('<LIB_TARGETS>', lib_rules.join('\n'))
+            .replace('<LIB_OUT_DIR>', '.libs');
+
+        return mk_tmp;
+    }
 
     isAutoSearchObjectFile(): boolean {
         return this.sourceRoots.isAutoSearchObjectFile();

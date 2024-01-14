@@ -3565,7 +3565,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (!this.cppToolsApi) {
             this.cppToolsApi = await getCppToolsApi(Version.v5);
             if (!this.cppToolsApi) {
-                const msg = `Can't get cpptools api, please active c/c++ extension, otherwise, the c/++ intellisence config cannot be provided !`;
+                const msg = `Can't get cpptools api, please active c/c++ extension, otherwise, the c/c++ intellisence config cannot be provided !`;
                 this.cppToolsOut.appendLine(`[error] ${msg}`);
                 return;
             }
@@ -3756,6 +3756,20 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     SaveAll() {
         this.dataProvider.SaveAll();
+    }
+
+    // -------
+
+    openLibsGeneratorConfig(prjItem?: ProjTreeItem) {
+
+        const proj = this.getProjectByTreeItem(prjItem);
+        if (proj == undefined) {
+            GlobalEvent.emit('msg', newMessage('Warning', 'No activated project !'));
+            return;
+        }
+
+        const optFile = proj.getLibsGeneratorCfgFile();
+        vscode.window.showTextDocument(vscode.Uri.parse(optFile.ToUri()), { preview: true });
     }
 
     private async onProjectOpened(prj: AbstractProject) {

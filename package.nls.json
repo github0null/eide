@@ -11,6 +11,8 @@
     "eide.function.reload.jlink.dev.list": "Reload JLink Devices List",
     "eide.function.reload.stm8.dev.list": "Reload STM8 Devices List",
     "eide.function.reinstall.binaries": "Reinstall eide binaries",
+    "eide.function.gen_clang_format": "Create new .clang-format template file",
+    "eide.function.open_libs.yml": "Open Libs Generator Configuration",
 
     "eide.project.show_project_vars": "Show All Project Variables",
     "eide.project.save": "Save Project",
@@ -29,7 +31,7 @@
     "eide.project.upload": "Program Flash",
     "eide.project.flash.erase.all": "Erase Chip",
     "eide.project.modify.files.options": "Show Source Files Extra Compiler Options",
-    "eide.project.import.ext.project.src.struct": "Import source tree from other projects",
+    "eide.project.import.ext.project.src.struct": "Import SourceFile Tree From Other Project",
     "eide.project.generate_builder_params": "Generate builder.params",
 
     "eide.prj.menus.main.cppcheck": "Static Check",

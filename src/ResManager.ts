@@ -447,8 +447,8 @@ export class ResManager extends events.EventEmitter {
         return File.fromArray([this.getBuilderDir().path, 'bin', `serial_monitor${exeSuffix()}`]);
     }
 
-    getBuilderModelsDir(): File {
-        const platDir = osType() == 'win32' ? 'win32' : 'unix';
+    getBuilderModelsDir(plat?: 'win32' | 'unix'): File {
+        const platDir = plat || (osType() == 'win32' ? 'win32' : 'unix');
         return File.fromArray([this.GetAppDataDir().path, 'models', platDir]);
     }
 
