@@ -90,7 +90,8 @@ import {
     copyAndMakeObjectKeysToLowerCase,
     sortPaths,
     getGccBinutilsVersion,
-    compareVersion
+    compareVersion,
+    getGccSystemSearchList
 } from './utility';
 import { concatSystemEnvPath, DeleteDir, exeSuffix, kill, osType, DeleteAllChildren } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
@@ -3521,7 +3522,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         };
     }
 
-    ////////////////////////////////// cpptools intellisense provider ///////////////////////////////////
+    // -----------------------------------------
+    //  cpptools intellisense provider
+    // -----------------------------------------
 
     name: string = 'eide';
 
@@ -3712,7 +3715,61 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         });
     }
 
-    ////////////////////////////////// Project Explorer ///////////////////////////////////
+    // ----------------------------------------
+    //  clangd config provider
+    // ----------------------------------------
+
+    private async registerClangdProvider(prj: AbstractProject) {
+
+        if (this.cppToolsApi) {
+            // 如果 cpptools 激活了，则禁用 clangd，防止两个冲突
+            return;
+        }
+
+        prj.on('cppConfigChanged', () => {
+            // todo
+        });
+
+        // ----------------------
+        // setup clangd config
+        // ----------------------
+        try {
+            let cfg: any = {};
+            const fclangd = File.fromArray([prj.getProjectRoot().path, '.clangd']);
+            if (fclangd.IsFile()) {
+                cfg = yaml.parse(fclangd.Read());
+            }
+            if (!cfg['CompileFlags']) cfg['CompileFlags'] = {};
+            if (!cfg['CompileFlags']['Add']) cfg['CompileFlags']['Add'] = []
+            //
+            cfg['CompileFlags']['CompilationDatabase'] = './' + File.ToUnixPath(prj.getOutputDir());
+            const toolchain = prj.getToolchain();
+            const gccLikePath = toolchain.getGccFamilyCompilerPathForCpptools();
+            if (gccLikePath) { // 仅兼容gcc的编译器
+                cfg['CompileFlags']['Compiler'] = gccLikePath;
+                let args: string[] = cfg['CompileFlags']['Add'];
+                if (/GCC/.test(toolchain.name)) {
+                    let li = getGccSystemSearchList(File.ToLocalPath(gccLikePath));
+                    if (li) {
+                        li.forEach(p => {
+                            args.push(`-I${File.normalize(p)}`);
+                        });
+                    }
+                } else {
+                    args.push(`-I${toolchain.getToolchainDir().path}/include`);
+                    args.push(`-I${toolchain.getToolchainDir().path}/include/libcxx`);
+                }
+                cfg['CompileFlags']['Add'] = ArrayDelRepetition(args);
+            }
+            fclangd.Write(yaml.stringify(cfg));
+        } catch (error) {
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+        }
+    }
+
+    // -----------------------------------------
+    //  Project Explorer 
+    // -----------------------------------------
 
     private on(event: 'request_open_project', listener: (fsPath: string) => void): void;
     private on(event: 'request_create_project', listener: (option: CreateOptions) => void): void;
@@ -3775,6 +3832,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     private async onProjectOpened(prj: AbstractProject) {
 
         await this.registerCpptoolsProvider(prj);
+
+        await this.registerClangdProvider(prj);
 
         this.updateCompilerDiagsAfterBuild(prj);
 
