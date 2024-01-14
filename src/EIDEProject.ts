@@ -1829,7 +1829,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     genLibsMakefileContent(makefileName: string): string | undefined {
 
-        const fcfg = this.getLibsGeneratorCfgFile();
+        const fcfg = this.getLibsGeneratorCfgFile(true);
         if (!fcfg.IsFile())
             return undefined;
 
