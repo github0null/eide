@@ -1979,13 +1979,13 @@ COLOR_BLUE = "\\e[34;1m"
 #  all target
 # --------------------------------------------
 
-all: $(OUT_LIBS) | $(OUT_DIR)
+all: $(OUT_DIR) $(OUT_LIBS)
 \t@echo -e $(COLOR_DONE)"-------------------------"$(COLOR_END)
 \t@echo -e $(COLOR_DONE)"all done"$(COLOR_END)
 \t@echo -e $(COLOR_DONE)"-------------------------"$(COLOR_END)
 
 $(OUT_DIR):
-\t@mkdir -p $@
+\tmkdir -p $@
 `;
 
         mk_tmp = mk_tmp
