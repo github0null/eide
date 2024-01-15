@@ -6,11 +6,14 @@ All notable version changes will be recorded in this file.
 
 ***
 
-### [v3.14.20240115] revision
+### [v3.14.20240116] revision
 
 **New**:
   - `Clangd Support`: Auto generate `.clangd` config for your project. (Only for gcc/clang compiler !)
   - `Library Generator Support`: Add libs generator, support archive your obj files after build done.
+
+**Optimize**:
+  - `OpenOCD Flasher`: Allow select 'None' config.
 
 ***
 
