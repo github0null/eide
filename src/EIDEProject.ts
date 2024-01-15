@@ -1990,7 +1990,7 @@ $(OUT_DIR):
 
         mk_tmp = mk_tmp
             .replace('<LIB_TARGETS>', lib_rules.join('\n'))
-            .replace('<LIB_OUT_DIR>', '.libs');
+            .replace('<LIB_OUT_DIR>', '.lib');
 
         return mk_tmp;
     }
