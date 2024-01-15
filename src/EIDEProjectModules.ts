@@ -2638,7 +2638,9 @@ class OpenOCDUploadModel extends UploadConfigModel<OpenOCDFlashOptions> {
     private getConfigList(configClass: string): { name: string, isInWorkspace?: boolean; }[] | undefined {
 
         const openocdExe = new File(SettingManager.GetInstance().getOpenOCDExePath());
-        const resultList: { name: string, isInWorkspace?: boolean; }[] = [];
+        const resultList: { name: string, isInWorkspace?: boolean; }[] = [
+            { name: '' } // None
+        ];
 
         // find in workspace
         const wsFolder = WorkspaceManager.getInstance().getWorkspaceRoot();
@@ -2679,11 +2681,18 @@ class OpenOCDUploadModel extends UploadConfigModel<OpenOCDFlashOptions> {
             case 'target':
             case 'interface':
                 return this.getConfigList(key)?.map((item) => {
-                    return {
-                        label: `${item.name}.cfg`,
-                        val: item.isInWorkspace ? `\${workspaceFolder}/${item.name}` : item.name,
-                        description: item.isInWorkspace ? 'in workspace' : undefined
-                    };
+                    if (item.name.trim() == '') {
+                        return {
+                            label: 'None',
+                            val: item.name
+                        };
+                    } else {
+                        return {
+                            label: `${item.name}.cfg`,
+                            val: item.isInWorkspace ? `\${workspaceFolder}/${item.name}` : item.name,
+                            description: item.isInWorkspace ? 'in workspace' : undefined
+                        };
+                    }
                 });
             default:
                 return super.GetSelectionList(key);
