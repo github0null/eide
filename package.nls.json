@@ -19,7 +19,7 @@
     "eide.project.refresh": "Refresh",
     "eide.project.save.all": "Save All Projects",
     "eide.project.active": "Active Project",
-    "eide.project.close": "Close",
+    "eide.project.close": "Close Project",
     "eide.project.export.template": "Export Eide Project Template",
     "eide.project.export.keil": "Export Keil Project",
     "eide.project.show.commands": "Show Compiler CommandLine",
