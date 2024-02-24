@@ -1151,7 +1151,22 @@ class COSMIC_STM8 implements IToolchian {
             //  | crtsif(0).s | @near          | @far
             //  | crtsxf(0).s | @near and @far | @far
 
+            let crts_name = 'crtsi';
+            if (options['linker']['crts-initialize']) {
+                crts_name = options['linker']['crts-initialize'];
+            }
+            if (model_option.startsWith('small')) {
+                if (model_option == 'small-0') {
+                    crts_name += '0';
+                }
+            } else {
+                // crtsif or crtsxf
+                crts_name += 'f';
+            }
+
             let machineLibs: string[] = [
+                // CRT library
+                `${crts_name}.sm8`,
                 // standard ANSI libraries
                 `libfs${model_suffix}${codes_suffix}.sm8`, // Float Library
                 `libis${model_suffix}${codes_suffix}.sm8`, // Integer Only Library

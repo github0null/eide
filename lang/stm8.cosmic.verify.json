@@ -294,6 +294,19 @@
                     "type": "boolean",
                     "default": false
                 },
+                "crts-initialize": {
+                    "description": "Range Of Variables To Be Initialized",
+                    "type": "string",
+                    "default": "crtsi",
+                    "enum": [
+                        "crtsi",
+                        "crtsx"
+                    ],
+                    "enumDescriptions": [
+                        "@near",
+                        "@near and @far"
+                    ]
+                },
                 "LD_FLAGS": {
                     "markdownDescription": "Other Linker Options (clnk)",
                     "$ref": "#/definitions/misc-controls"
