@@ -6,6 +6,16 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.15.0] update
+
+**New**:
+  - `RightClick Menu`: Add groups for menu
+
+**Optimize**:
+  - `COSMIC STM8`: Auto select crts*.stm8 library 
+
+***
+
 ### [v3.14.20240116] revision
 
 **New**:
