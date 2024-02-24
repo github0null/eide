@@ -27,6 +27,7 @@ import * as crypto from 'crypto';
 import * as child_process from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
+import * as NodePath from "path";
 
 import { WorkspaceManager } from "./WorkspaceManager";
 import { CmdLineHandler } from "./CmdLineHandler";
@@ -41,6 +42,25 @@ import { isArray } from 'util';
 import { ExeCmd } from '../lib/node-utility/Executable';
 import { GlobalEvent } from './GlobalEvents';
 import { SettingManager } from './SettingManager';
+
+export function getGccSystemSearchList(gccPath: string): string[] | undefined {
+    try {
+        const gccName = NodePath.basename(gccPath);
+        const gccDir = NodePath.dirname(gccPath);
+        const cmdLine = `${gccName} ` + ['-xc++', '-E', '-v', '-', `<${platform.osGetNullDev()}`, '2>&1'].join(' ');
+        const lines = child_process.execSync(cmdLine, { cwd: gccDir }).toString().split(/\r\n|\n/);
+        const iStart = lines.findIndex((line) => { return line.startsWith('#include <...>'); });
+        const iEnd = lines.indexOf('End of search list.', iStart);
+        return lines.slice(iStart + 1, iEnd)
+            .map((line) => { return new File(File.ToLocalPath(line.trim())); })
+            .filter((file) => { return file.IsDir(); })
+            .map((f) => {
+                return f.path;
+            });
+    } catch (error) {
+        // do nothing
+    }
+}
 
 export function makeTextTable(rows: string[][], headerLines?: string[]): string[] | undefined {
 

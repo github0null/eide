@@ -439,6 +439,14 @@ export class ResManager extends events.EventEmitter {
         }
     }
 
+    getMsysBinToolPath(toolname: string): string {
+        if (os.platform() == 'win32') {
+            return File.fromArray([this.getBuilderDir().path, 'msys', 'bin', `${toolname}${exeSuffix()}`]).path;
+        } else {
+            return `${toolname}${exeSuffix()}`;
+        }
+    }
+
     getBuilder(): File {
         return File.fromArray([this.getBuilderDir().path, 'bin', `unify_builder${exeSuffix()}`]);
     }
@@ -447,8 +455,8 @@ export class ResManager extends events.EventEmitter {
         return File.fromArray([this.getBuilderDir().path, 'bin', `serial_monitor${exeSuffix()}`]);
     }
 
-    getBuilderModelsDir(): File {
-        const platDir = osType() == 'win32' ? 'win32' : 'unix';
+    getBuilderModelsDir(plat?: 'win32' | 'unix'): File {
+        const platDir = plat || (osType() == 'win32' ? 'win32' : 'unix');
         return File.fromArray([this.GetAppDataDir().path, 'models', platDir]);
     }
 

@@ -6,6 +6,27 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.15.0] update
+
+**New**:
+  - `RightClick Menu`: Add groups for menu
+
+**Optimize**:
+  - `COSMIC STM8`: Auto select crts*.stm8 library 
+
+***
+
+### [v3.14.20240116] revision
+
+**New**:
+  - `Clangd Support`: Auto generate `.clangd` config for your project. (Only for gcc/clang compiler !)
+  - `Library Generator Support`: Add libs generator, support archive your obj files after build done.
+
+**Optimize**:
+  - `OpenOCD Flasher`: Allow select 'None' config.
+
+***
+
 ### [v3.14.0] update
 
 **New**:

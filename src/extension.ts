@@ -150,6 +150,7 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('eide.project.flash.erase.all', (item) => projectExplorer.UploadToDevice(item, true)));
     subscriptions.push(vscode.commands.registerCommand('eide.project.buildAndFlash', (item) => projectExplorer.BuildSolution(item, { not_rebuild: true, flashAfterBuild: true })));
     subscriptions.push(vscode.commands.registerCommand('eide.project.genBuilderParams', (item) => projectExplorer.BuildSolution(item, { not_rebuild: true, onlyGenParams: true })));
+    subscriptions.push(vscode.commands.registerCommand('eide.open.makelibs.cfg', (item) => projectExplorer.openLibsGeneratorConfig(item)));
 
     // operations bar
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.historyRecord', () => projectExplorer.openHistoryRecords()));

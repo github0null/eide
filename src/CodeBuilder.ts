@@ -131,25 +131,8 @@ export abstract class CodeBuilder {
         paramsModTime?: number;
     } {
 
-        const srcList: { path: string, virtualPath?: string; }[] = [];
         const srcParams: { [name: string]: string; } = {};
-        const fGoups = this.project.getFileGroups();
-        const filter = AbstractProject.getSourceFileFilter();
-
-        // filter source files
-        for (const group of fGoups) {
-            if (group.disabled) continue; // skip disabled group
-            for (const source of group.files) {
-                if (source.disabled) continue; // skip disabled file
-                if (!filter.some((reg) => reg.test(source.file.path))) continue; // skip non-source
-                const rePath = this.project.ToRelativePath(source.file.path);
-                const fInfo: any = { path: rePath || source.file.path }
-                if (AbstractProject.isVirtualSourceGroup(group)) {
-                    fInfo.virtualPath = `${group.name}/${source.file.name}`;
-                }
-                srcList.push(fInfo);
-            }
-        }
+        const srcList: { path: string, virtualPath?: string; }[] = this.project.getAllSources();
 
         // append user options for files
         try {
@@ -482,6 +465,25 @@ export abstract class CodeBuilder {
 
         // handle options
         this.preHandleOptions(builderOptions.options);
+
+        // gen libs.makefile
+        const mkfile = File.fromArray([this.project.ToAbsolutePath(outDir), 'libs.makefile']);
+        const mk_txt = this.project.genLibsMakefileContent(mkfile.name);
+        if (mk_txt) {
+            try {
+                mkfile.Write(mk_txt);
+                let command: any =  {
+                    name: 'make libs',
+                    command: `make --directory=./${outDir} --makefile=./${mkfile.name} all`
+                };
+                if (builderOptions.options.afterBuildTasks == undefined)
+                    builderOptions.options.afterBuildTasks = [];
+                builderOptions.options.afterBuildTasks = [command].concat(builderOptions.options.afterBuildTasks);
+            } catch (error) {
+                GlobalEvent.emit('msg', newMessage('Warning', `Generating '${mkfile.name}' failed !`));
+                GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            }
+        }
 
         // generate hash for compiler options
         builderOptions.sha = this.genHashFromCompilerOptions(builderOptions);

@@ -11,6 +11,8 @@
     "eide.function.reload.jlink.dev.list": "重新加载 JLink 芯片信息列表",
     "eide.function.reload.stm8.dev.list": "重新加载 STM8 芯片信息列表",
     "eide.function.reinstall.binaries": "重新安装 eide binaries",
+    "eide.function.gen_clang_format": "新建 .clang-format 代码格式化配置模板",
+    "eide.function.open_libs.yml": "打开lib生成器配置",
 
     "eide.project.show_project_vars": "显示所有可用的项目变量",
     "eide.project.save": "保存项目",

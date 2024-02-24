@@ -947,12 +947,6 @@ class OpenOCDUploader extends HexUploader<string[]> {
 
         const commands: string[] = [];
 
-        const interfaceFileName = option.interface.startsWith('${workspaceFolder}/')
-            ? option.interface.replace('${workspaceFolder}/', '') : `interface/${option.interface}`;
-
-        const targetFileName = option.target.startsWith('${workspaceFolder}/')
-            ? option.target.replace('${workspaceFolder}/', '') : `target/${option.target}`;
-
         const wsFolder = WorkspaceManager.getInstance().getWorkspaceRoot();
         if (wsFolder) {
             commands.push(
@@ -960,10 +954,19 @@ class OpenOCDUploader extends HexUploader<string[]> {
             );
         }
 
-        commands.push(
-            `-f ${interfaceFileName}.cfg`,
-            `-f ${targetFileName}.cfg`,
-        );
+        const addConfig = (typ: 'interface' | 'target', fname: string) => {
+            if (fname.trim() != '') {
+                let fpath: string = fname.startsWith('${workspaceFolder}/')
+                    ? fname.replace('${workspaceFolder}/', '')
+                    : `${typ}/${fname}`;
+                let cfg = `-f ${fpath}.cfg`;
+                if (!commands.includes(cfg))
+                    commands.push(cfg);
+            }
+        };
+
+        addConfig('interface', option.interface);
+        addConfig('target', option.target);
 
         programs.forEach(file => {
             if (/\.bin$/i.test(file.path)) {
