@@ -439,6 +439,14 @@ export class ResManager extends events.EventEmitter {
         }
     }
 
+    getMsysBinToolPath(toolname: string): string {
+        if (os.platform() == 'win32') {
+            return File.fromArray([this.getBuilderDir().path, 'msys', 'bin', `${toolname}${exeSuffix()}`]).path;
+        } else {
+            return `${toolname}${exeSuffix()}`;
+        }
+    }
+
     getBuilder(): File {
         return File.fromArray([this.getBuilderDir().path, 'bin', `unify_builder${exeSuffix()}`]);
     }

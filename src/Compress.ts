@@ -102,7 +102,7 @@ export class SevenZipper {
                 this._event.emit('progress', 20, line);
             });
 
-            process.Run('tar', paramList);
+            process.Run(this._tar_path(), paramList);
         });
     }
 
@@ -154,13 +154,25 @@ export class SevenZipper {
         });
     }
 
+    private _is_tar(path: string) {
+        return /\.tar$|\.tar\./.test(path);
+    }
+
+    private _tar_path(): string {
+        if (platform.osType() == 'win32') {
+            return ResManager.instance().getMsysBinToolPath('tar');
+        } else {
+            return 'tar';
+        }
+    }
+
     Unzip(zipFile: File, outDir?: File): Promise<Error | null> {
 
         if (!zipFile.IsFile()) {
             throw new Error('\'' + zipFile.path + '\' is not exist');
         }
 
-        if (platform.osType() != 'win32' && zipFile.suffix.startsWith('tar')) {
+        if (this._is_tar(zipFile.name)) {
             return this._unzip_tar(zipFile, outDir);
         } else {
             return this._unzip_zip_7z(zipFile, outDir);
@@ -174,7 +186,7 @@ export class SevenZipper {
         }
 
         // use tar
-        if (platform.osType() != 'win32' && zipFile.suffix.startsWith('tar')) {
+        if (this._is_tar(zipFile.name)) {
 
             let paramList: string[] = [];
 
@@ -182,7 +194,7 @@ export class SevenZipper {
             paramList.push(zipFile.path);
             paramList.push('-C', outDir ? outDir.path : zipFile.dir);
 
-            return child_process.execFileSync('tar', paramList).toString();
+            return child_process.execFileSync(this._tar_path(), paramList).toString();
         }
         // use 7z
         else {
