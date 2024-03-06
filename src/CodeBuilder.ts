@@ -456,6 +456,20 @@ export abstract class CodeBuilder {
                 builderOptions.rom = undefined;
         }
 
+        // select linker driver for gcc family toolchain
+        if (toolchain.categoryName.toLowerCase() == 'gcc' && 
+            toolchain.name != 'ANY_GCC') {
+            let tool = builderOptions.options?.linker['linker-driver'];
+            // we need to detect source files type ?
+            if (tool == 'auto' || tool == undefined || tool == null) {
+                let hascpp = builderOptions.sourceList
+                    .some((path) => /\.(?:cpp|c\+\+|cc|cxx)$/i.test(path));
+                tool = hascpp ? 'g++' : 'gcc';
+            }
+            // setup tool name
+            builderOptions.options.linker['$toolName'] = tool;
+        }
+
         // handle options by toolchain
         toolchain.preHandleOptions({
             targetName: config.name,
@@ -472,7 +486,7 @@ export abstract class CodeBuilder {
         if (mk_txt) {
             try {
                 mkfile.Write(mk_txt);
-                let command: any =  {
+                let command: any = {
                     name: 'make libs',
                     command: `make --directory=./${outDir} --makefile=./${mkfile.name} all`
                 };

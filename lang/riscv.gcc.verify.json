@@ -298,6 +298,17 @@
             "description.zh-cn": "链接器选项",
             "type": "object",
             "properties": {
+                "linker-driver": {
+                    "type": "string",
+                    "default": "auto",
+                    "description": "Linker Driver",
+                    "description.zh-cn": "链接器驱动程序",
+                    "enum": [
+                        "auto",
+                        "gcc",
+                        "g++"
+                    ]
+                },
                 "output-format": {
                     "type": "string",
                     "default": "elf",

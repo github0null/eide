@@ -198,6 +198,7 @@
                     "description.zh-cn": "链接器类型",
                     "enum": [
                         "gcc",
+                        "g++",
                         "ld"
                     ]
                 },
