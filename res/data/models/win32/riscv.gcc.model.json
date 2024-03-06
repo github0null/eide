@@ -206,7 +206,7 @@
             }
         },
         "cpp": {
-            "$path": "bin\\${toolPrefix}gcc.exe",
+            "$path": "bin\\${toolPrefix}g++.exe",
             "$includes": {
                 "body": "-I${value}"
             },
@@ -219,8 +219,7 @@
             },
             "$output": "-o ${out} -MMD ${in}",
             "$default": [
-                "-c",
-                "-xc++"
+                "-c"
             ],
             "$language-cpp": {
                 "type": "keyValue",
@@ -258,7 +257,8 @@
             }
         },
         "linker": {
-            "$path": "bin\\${toolPrefix}gcc.exe",
+            "$path": "bin\\${toolPrefix}${toolName}.exe",
+            "$defToolName": "gcc",
             "$libs": {
                 "body": "-L${value}"
             },

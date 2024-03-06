@@ -2941,9 +2941,20 @@ class AnyGcc implements IToolchian {
 
         // convert output lib commmand
         if (options['linker']) {
-            if (options['linker']['linker-type'] == "ld") {
-                options['linker']['$use'] = 'linker-ld';
+            // driver type
+            switch (options['linker']['linker-type']) {
+                case 'ld':
+                    options['linker']['$use'] = 'linker-ld';
+                    break;
+                case 'g++':
+                    options['linker']['$use'] = 'linker-g++';
+                    break;
+                // gcc is default
+                case 'gcc':
+                default:
+                    break;
             }
+            // out format
             if (options['linker']['output-format'] == 'lib') {
                 options['linker']['$use'] = 'linker-lib';
             }

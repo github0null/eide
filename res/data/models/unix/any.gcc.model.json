@@ -77,7 +77,7 @@
             "$output": "-o ${out} -MMD ${in}"
         },
         "cpp": {
-            "$path": "bin/${toolPrefix}gcc",
+            "$path": "bin/${toolPrefix}g++",
             "$includes": {
                 "body": "-I${value}"
             },
@@ -107,6 +107,45 @@
         },
         "linker": {
             "$path": "bin/${toolPrefix}gcc",
+            "$libs": {
+                "body": "-L${value}"
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$output": "-o ${out} ${in} ${lib_flags}",
+            "$outputSuffix": ".elf",
+            "$linkMap": {
+                "type": "value",
+                "command": "-Wl,-Map=${mapPath}"
+            },
+            "$LIB_FLAGS": {
+                "type": "list",
+                "command": ""
+            },
+            "linker-script": {
+                "type": "list",
+                "command": "-T "
+            },
+            "remove-unused-input-sections": {
+                "type": "selectable",
+                "command": {
+                    "true": "-Wl,--gc-sections",
+                    "false": ""
+                }
+            },
+            "misc-control": {
+                "type": "list",
+                "command": ""
+            },
+            "LD_FLAGS": {
+                "type": "list",
+                "command": ""
+            }
+        },
+        "linker-g++": {
+            "$path": "bin/${toolPrefix}g++",
             "$libs": {
                 "body": "-L${value}"
             },

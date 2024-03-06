@@ -318,7 +318,7 @@
             }
         },
         "cpp": {
-            "$path": "bin/${toolPrefix}gcc",
+            "$path": "bin/${toolPrefix}g++",
             "$includes": {
                 "body": "-I${value}"
             },
@@ -332,7 +332,6 @@
             "$output": "-o ${out} -MMD ${in}",
             "$default": [
                 "-c",
-                "-xc++",
                 "-mthumb"
             ],
             "$language-cpp": {
@@ -400,7 +399,8 @@
             }
         },
         "linker": {
-            "$path": "bin/${toolPrefix}gcc",
+            "$path": "bin/${toolPrefix}${toolName}",
+            "$defToolName": "gcc",
             "$libs": {
                 "body": "-L${value}"
             },
