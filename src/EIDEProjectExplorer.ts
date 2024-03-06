@@ -3045,6 +3045,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             return baseOpts;
         }
 
+        const replaceUserTaskTmpVar = (t: any) => {
+            const reKeilPrjDir = baseInfo.rootFolder.ToRelativeLocalPath(keilPrjFile.dir) || keilPrjFile.dir;
+            t.command = t.command.replace('$<cd:mdk-proj-dir>', `cd .\\${reKeilPrjDir}`);
+        }
+
         // init all targets
         for (const keilTarget of targets) {
 
@@ -3072,7 +3077,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     defIncList.push(baseInfo.rootFolder.ToRelativePath(absPath) || absPath);
                 }
                 // import builder options
-                const opts = mergeBuilderOpts(toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
+                const opts: ICompileOptions = mergeBuilderOpts(toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
+                // write to file
                 const cfgFile = File.fromArray([baseInfo.rootFolder.path, AbstractProject.EIDE_DIR, `${keilTarget.name.toLowerCase()}.${toolchain.configName}`]);
                 cfgFile.Write(JSON.stringify(opts, undefined, 4));
             }
@@ -3097,7 +3103,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
                 // import builder options
                 const toolchain = ToolchainManager.getInstance().getToolchain('ARM', keilCompileConf.toolchain);
-                const opts = mergeBuilderOpts(toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
+                const opts: ICompileOptions = mergeBuilderOpts(toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
+                opts.beforeBuildTasks?.forEach((t) => replaceUserTaskTmpVar(t));
+                opts.afterBuildTasks?.forEach((t) => replaceUserTaskTmpVar(t));
+
+                // write to file
                 const cfgFile = File.fromArray([baseInfo.rootFolder.path, AbstractProject.EIDE_DIR, `${keilTarget.name.toLowerCase()}.${toolchain.configName}`]);
                 cfgFile.Write(JSON.stringify(opts, undefined, 4));
             }

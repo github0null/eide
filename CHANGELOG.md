@@ -6,6 +6,15 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.15.1] update
+
+**Optimize**:
+  - `GCC Compiler Driver`: Auto select gcc/g++ for c/c++ source files; Support new linker option `Linker Driver`.
+  - `MDK Project Import`: Support import keil project's User Commands (BeforeMake and AfterMake commands).
+  - `RightClick Menu`: Optimize menu item order.
+
+***
+
 ### [v3.15.0] update
 
 **New**:

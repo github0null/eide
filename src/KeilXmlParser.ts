@@ -699,6 +699,60 @@ class ARMParser extends KeilParser<KeilARMOption> {
                 }
             }
 
+            // parse builder tasks
+            {
+                const commonOption = targetOptionObj.TargetCommonOption;
+                const eideOption = option.optionsGroup[option.toolchain];
+
+                if (eideOption.beforeBuildTasks == undefined)
+                    eideOption.beforeBuildTasks = [];
+                if (eideOption.afterBuildTasks == undefined)
+                    eideOption.afterBuildTasks = [];
+
+                // (%|#|@|\!|\$)
+                const replaceMdkEnv = (cmd: string) => cmd
+                    .replace(/\$(H|L)\b/g, '${OutDir}\\')
+                    .replace(/@(H|L)\b/g, '${ProjectName}')
+                    .replace(/#H\b/g, '${ExecutableName}.hex')
+                    .replace(/%H\b/g, '${ProjectName}.hex')
+                    .replace(/\!H\b/g, '.\\${OutDirBase}\\${ProjectName}.hex')
+                    .replace(/#L\b/g, '${ExecutableName}.axf')
+                    .replace(/%L\b/g, '${ProjectName}.axf')
+                    .replace(/\!L\b/g, '.\\${OutDirBase}\\${ProjectName}.axf');
+
+                // BeforeMake
+                const beforeMake = commonOption.BeforeMake;
+                if (beforeMake) {
+                    for (let idx = 1; idx < 3; idx++) {
+                        let cmd = beforeMake[`UserProg${idx}Name`];
+                        if (cmd) {
+                            eideOption.beforeBuildTasks.push({
+                                "name": cmd,
+                                "command": `$<cd:mdk-proj-dir> && ${replaceMdkEnv(cmd)}`,
+                                "disable": beforeMake[`RunUserProg${idx}`] != '1',
+                                "abortAfterFailed": true,
+                                "stopBuildAfterFailed": true
+                            });
+                        }
+                    }
+                }
+                // AfterMake
+                const afterMake = commonOption.AfterMake;
+                if (afterMake) {
+                    for (let idx = 1; idx < 3; idx++) {
+                        let cmd = afterMake[`UserProg${idx}Name`];
+                        if (cmd) {
+                            eideOption.afterBuildTasks.push({
+                                "name": cmd,
+                                "command": `$<cd:mdk-proj-dir> && ${replaceMdkEnv(cmd)}`,
+                                "disable": afterMake[`RunUserProg${idx}`] != '1',
+                                "abortAfterFailed": true
+                            });
+                        }
+                    }
+                }
+            }
+
             // parse misc options
             {
                 const ccMiscOpts = armAdsObj.Cads.VariousControls.MiscControls;

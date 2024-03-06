@@ -286,7 +286,7 @@
             "description.zh-cn": "链接器选项",
             "type": "object",
             "properties": {
-                "linker-driver": {
+                "$toolName": {
                     "type": "string",
                     "default": "auto",
                     "description": "Linker Driver",
