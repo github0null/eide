@@ -154,7 +154,7 @@
                     "name": "output hex file",
                     "toolPath": "BIN/Ohx51",
                     "outputSuffix": ".hex",
-                    "command": "${linkerOutput} HEXFILE(${output}) HEX"
+                    "command": "${linkerOutput} HEXFILE\\(${output}\\) HEX"
                 }
             ]
         },
