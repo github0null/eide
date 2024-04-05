@@ -164,17 +164,19 @@ export abstract class KeilParser<T> {
     }
 
     protected JudgeFileType(f: File): number {
-        switch (f.suffix.toLowerCase()) {
-            case '.c':
+
+        if (AbstractProject.cppfileFilter.test(f.name)) {
+            if (f.suffix.toLowerCase() == '.c')
                 return 1;
-            case '.s':
-            case '.a51':
-                return 2;
-            case '.cpp':
+            else
                 return 8;
-            default:
-                return 5;
         }
+
+        else if (AbstractProject.asmfileFilter.test(f.name)) {
+            return 2;
+        }
+
+        return 5;
     }
 
     // example: file: 'c:\aa\bb', path: '../cc/f.txt', result: 'c:\aa\cc\f.txt'
