@@ -888,6 +888,10 @@
                 }
             },
             {
+                "command": "_cl.eide.project.genDebugConfigTemplate",
+                "title": "%eide.flash.gen.dbgconf%"
+            },
+            {
                 "command": "_cl.eide.project.fetchShellFlasher",
                 "title": "%eide.flash.fetch-shell-flasher%",
                 "icon": {
@@ -1451,6 +1455,11 @@
                     "command": "_cl.eide.project.switchUploader",
                     "group": "inline",
                     "when": "viewItem == UPLOAD_OPTION || viewItem == UPLOAD_OPTION_Shell && view == cl.eide.view.projects"
+                },
+                {
+                    "command": "_cl.eide.project.genDebugConfigTemplate",
+                    "when": "viewItem == SOLUTION || viewItem == UPLOAD_OPTION || viewItem == UPLOAD_OPTION_Shell && view == cl.eide.view.projects",
+                    "group": "5_group@3"
                 },
                 {
                     "command": "_cl.eide.project.fetchShellFlasher",

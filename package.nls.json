@@ -80,15 +80,16 @@
     "eide.package.install": "Install CMSIS Chip Package",
     "eide.package.install.cmsis": "Install CMSIS Header Files",
     "eide.package.remove": "Uninstall Chip Support Package",
-    "eide.package.select.device": "Choose Device",
+    "eide.package.select.device": "Select Device",
     "eide.package.comp.install": "Install Component",
     "eide.package.comp.uninstall": "Uninstall Component",
 
-    "eide.builder.switch": "Choose Toolchain",
+    "eide.builder.switch": "Select Toolchain",
     "eide.builder.config": "Configure Toolchain",
     "eide.builder.setup-toolchain-prefix": "Setup Compiler Prefix",
 
-    "eide.flash.switch": "Choose Flasher",
+    "eide.flash.switch": "Select Flasher",
+    "eide.flash.gen.dbgconf": "Generate Cortex-Debug Configuration",
     "eide.flash.fetch-shell-flasher": "Install Shell Flasher Script From Remote Repository",
 
     "eide.deps.include.show": "Display All Include Paths",

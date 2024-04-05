@@ -2545,9 +2545,6 @@ $(OUT_DIR):
                         return; // exit, because this event will trigger 'update debug config' operations
                     }
                 }
-
-                // update debug config after uploader changed
-                this.updateDebugConfig();
             }
         });
     }
@@ -2667,7 +2664,7 @@ $(OUT_DIR):
     }
 
     protected onUploaderChanged() {
-        this.updateDebugConfig(); // update debug config after uploader changed
+        //TODO
     }
 
     protected abstract onComponentUpdate(updateList: ComponentUpdateItem[]): void;

@@ -4182,9 +4182,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             // start build
             codeBuilder.build(options);
 
-            // update debug configuration
-            prj.updateDebugConfig();
-
             setTimeout(() => {
                 this._buildLock = false;
             }, 500);
@@ -6860,6 +6857,11 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (err) {
             GlobalEvent.emit('msg', ExceptionToMessage(err, 'Warning'));
         }
+    }
+
+    async genDebugConfigTemplate(item: ProjTreeItem) {
+        const project = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        project.updateDebugConfig();
     }
 
     private prev_click_info: ItemClickInfo | undefined = undefined;
