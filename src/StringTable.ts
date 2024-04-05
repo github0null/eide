@@ -209,13 +209,17 @@ export const view_str$compile$storageLayout = [
 ][langIndex];
 
 export const view_str$compile$useCustomScatterFile = [
-    '使用自定义的链接脚本',
-    'Use Custom Linker Script File'
+    '使用自定义的 Scatter File',
+    'Use Custom Scatter File'
 ][langIndex];
 
 export const view_str$compile$scatterFilePath = [
     '链接脚本路径',
     'Linker Script File Path'
+][langIndex];
+export const view_str$compile$scatterFilePath_mdk = [
+    'Scatter File 路径',
+    'Scatter File Path'
 ][langIndex];
 
 export const view_str$compile$floatingPointHardware = [
