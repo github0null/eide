@@ -6,6 +6,21 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.16.0] update
+
+**Change**:
+  - `Cortex-Debug Config`: Auto generate debug config now has been **Removed**. Use the right-click menu function instead. 
+
+**Fix**:
+  - `Keil Project Export`: Source file type error for '*.asm'.
+
+**Optimize**:
+  - `GUI Prompt String`: Change some prompt string.
+  - `JLink Flasher Template`: Allow use '${hexFile}, ${binFile}...' variables in `jlink.flasher.cmd.template` file.
+  - `STLink Flasher`: Use codepage `437` when exec STM32_Program_CLI.exe in win32 system.
+
+***
+
 ### [v3.15.1] update
 
 **Optimize**:
