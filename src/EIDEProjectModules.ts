@@ -10,7 +10,8 @@ import * as child_process from 'child_process';
 
 import { File } from "../lib/node-utility/File";
 import {
-    view_str$compile$storageLayout, view_str$compile$useCustomScatterFile, view_str$compile$scatterFilePath,
+    view_str$compile$storageLayout,
+    view_str$compile$useCustomScatterFile, view_str$compile$scatterFilePath, view_str$compile$scatterFilePath_mdk,
     view_str$compile$floatingPointHardware, view_str$compile$cpuType, view_str$compile$deprecated,
     view_str$compile$options,
     view_str$flasher$binPath,
@@ -570,6 +571,9 @@ export abstract class ArmBaseCompileConfigModel
     }
 
     GetKeyDescription(key: string): string {
+
+        const toolchain = this.prjConfigData.toolchain;
+
         switch (key) {
             case 'cpuType':
                 return view_str$compile$cpuType;
@@ -578,7 +582,9 @@ export abstract class ArmBaseCompileConfigModel
             case 'useCustomScatterFile':
                 return view_str$compile$useCustomScatterFile;
             case 'scatterFilePath':
-                return view_str$compile$scatterFilePath;
+                return (toolchain == 'AC5' || toolchain == 'AC6')
+                    ? view_str$compile$scatterFilePath_mdk
+                    : view_str$compile$scatterFilePath;
             case 'floatingPointHardware':
                 return view_str$compile$floatingPointHardware;
             case 'options':

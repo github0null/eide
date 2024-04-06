@@ -202,6 +202,31 @@ export abstract class HexUploader<InvokeParamsType> {
         return result;
     }
 
+    resolveHexFilePathEnvs(input: string, programs: FlashProgramFile[]): string {
+
+        const portList = ResManager.GetInstance().enumSerialPort();
+
+        let commandLine = input
+            .replace(/\$\{hexFile\}|\$\{binFile\}|\$\{programFile\}/ig, programs[0].path)
+            .replace(/\$\{port\}/ig, portList[0] || '')
+            .replace(/\$\{portList\}/ig, portList.join(' '));
+
+        programs.forEach((file, index) => {
+
+            commandLine = commandLine
+                .replace(new RegExp(String.raw`\$\{hexFile\[${index}\]\}`, 'ig'), file.path)
+                .replace(new RegExp(String.raw`\$\{binFile\[${index}\]\}`, 'ig'), file.path)
+                .replace(new RegExp(String.raw`\$\{programFile\[${index}\]\}`, 'ig'), file.path);
+
+            if (file.addr) {
+                commandLine = commandLine
+                    .replace(new RegExp(String.raw`\$\{binAddr\[${index}\]\}`, 'ig'), file.addr || '0x00000000')
+            }
+        });
+
+        return commandLine
+    }
+
     getAllProgramFiles(): FlashProgramFile[] {
         return this.parseProgramFiles(this.getUploadOptions<any>());
     }
@@ -313,6 +338,7 @@ class JLinkUploader extends HexUploader<any> {
 
         // replace vars
         jlinkCommandtemplate = jlinkCommandtemplate.replace(/\$\{EIDE_JLINK_FLASHER_CMD\}/g, flasherCmds.join(os.EOL));
+        jlinkCommandtemplate = this.resolveHexFilePathEnvs(jlinkCommandtemplate, files);
         jlinkCommandtemplate = this.project.resolveEnvVar(jlinkCommandtemplate);
         jlinkCommandtemplate = jlinkCommandtemplate + os.EOL + 'exit'; // append 'exit' command
 
@@ -686,14 +712,16 @@ class STLinkUploader extends HexUploader<string[]> {
 
     protected _launch(commands: string[]): void {
 
-        const commandLine = CmdLineHandler.getCommandLine(
-            SettingManager.GetInstance().getSTLinkExePath(), commands
-        );
-
+        const exe = new File(SettingManager.GetInstance().getSTLinkExePath());
+        const commandLine = CmdLineHandler.getCommandLine(exe.path, commands);
         const options = this.getUploadOptions<STLinkOptions>();
 
         // run
-        runShellCommand(this.toolType, `${commandLine} ${options.otherCmds || ''}`.trimEnd());
+        let cmd = `${commandLine} ${options.otherCmds || ''}`.trimEnd();
+        if (osType() == 'win32' && exe.noSuffixName.toLowerCase().startsWith('stm32_programmer_cli')) {
+            cmd = 'chcp 437 && ' + cmd;
+        }
+        runShellCommand(this.toolType, cmd);
     }
 }
 
@@ -1032,25 +1060,7 @@ class CustomUploader extends HexUploader<string> {
             }
         }
 
-        const portList = ResManager.GetInstance().enumSerialPort();
-
-        let commandLine = option.commandLine
-            .replace(/\$\{hexFile\}|\$\{binFile\}|\$\{programFile\}/ig, programs[0].path)
-            .replace(/\$\{port\}/ig, portList[0] || '')
-            .replace(/\$\{portList\}/ig, portList.join(' '));
-
-        programs.forEach((file, index) => {
-
-            commandLine = commandLine
-                .replace(new RegExp(String.raw`\$\{hexFile\[${index}\]\}`, 'ig'), file.path)
-                .replace(new RegExp(String.raw`\$\{binFile\[${index}\]\}`, 'ig'), file.path)
-                .replace(new RegExp(String.raw`\$\{programFile\[${index}\]\}`, 'ig'), file.path);
-
-            if (file.addr) {
-                commandLine = commandLine
-                    .replace(new RegExp(String.raw`\$\{binAddr\[${index}\]\}`, 'ig'), file.addr || '0x00000000')
-            }
-        });
+        let commandLine = this.resolveHexFilePathEnvs(option.commandLine, programs);
 
         // replace env
         commandLine = this.project.replacePathEnv(commandLine);
