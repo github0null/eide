@@ -821,7 +821,7 @@ function exportEnvToSysPath(context?: vscode.ExtensionContext) {
     process.env['DOTNET_CLI_TELEMETRY_OPTOUT'] = '1'; // disable telemetry
 }
 
-async function checkAndInstallRuntime() {
+async function checkAndInstallRuntime() : Promise<number> {
 
     const dotnet_chk_cmd = `dotnet --list-runtimes`;
 
@@ -850,20 +850,29 @@ async function checkAndInstallRuntime() {
         GlobalEvent.emit('globalLog.append', dotnetInfo + os.EOL);
         // check dotnet version
         let dotnetVerLine: string | undefined;
+        let dotnetVer = -1;
         const lines = dotnetInfo.trim().split(/\r\n|\n/);
         for (const line_ of lines) {
             const line = line_.trim();
+            // use .net8 first
+            if (line.toLowerCase().startsWith('Microsoft.NETCore.App 8.'.toLowerCase())) {
+                dotnetVerLine = line;
+                dotnetVer = 8;
+                break;
+            }
             if (line.toLowerCase().startsWith('Microsoft.NETCore.App 6.'.toLowerCase())) {
                 dotnetVerLine = line;
-                GlobalEvent.emit('globalLog', newMessage('Info', `.NET6 runtime: '${dotnetVerLine}' found !`));
-                break;
+                dotnetVer = 6;
             }
         }
         if (!dotnetVerLine) {
-            throw new Error(`Can not match .NET6 runtime`);
+            throw new Error(`Can not find .NET runtime`);
+        }
+        else {
+            GlobalEvent.emit('globalLog', newMessage('Info', `.NET runtime: '${dotnetVerLine}' found !`));
+            return dotnetVer;
         }
     } catch (error) {
-
         GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
 
         GlobalEvent.emit('globalLog.show'); // show error log for user
@@ -879,7 +888,7 @@ async function checkAndInstallRuntime() {
             const msg = `Not found [.NET6 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) on your pc, please install it !`;
             vscode.window.showWarningMessage(msg);
             // https://dotnet.microsoft.com/en-us/download/dotnet/scripts
-            utility.openUrl(`https://dotnet.microsoft.com/en-us/download/dotnet/scripts`);
+            // utility.openUrl(`https://dotnet.microsoft.com/en-us/download/dotnet/scripts`);
         }
 
         // win32, we can auto install it
@@ -945,6 +954,7 @@ async function checkAndInstallRuntime() {
                     if (sel) {
                         vscode.commands.executeCommand('workbench.action.reloadWindow');
                     }
+                    return 6;
                 } catch (error) {
                     GlobalEvent.emit('msg', newMessage('Error', `Install [.NET6 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) failed, you need install it manually !`));
                 }
@@ -956,6 +966,7 @@ async function checkAndInstallRuntime() {
             }
         }
     }
+    return -1;
 }
 
 function initBinariesExecutablePermission() {
@@ -1009,12 +1020,13 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
         }
     }
 
-    /* check binaries, if not found, install it ! */
-    const done = await checkAndInstallBinaries();
-    if (!done) { return false; } /* exit if failed */
-
     // check and install .NET6 runtime
-    await checkAndInstallRuntime();
+    const dotnetver = await checkAndInstallRuntime();
+    if (dotnetver > 0) {
+        /* check binaries, if not found, install it ! */
+        const done = await checkAndInstallBinaries();
+        if (!done) { return false; } /* exit if failed */
+    }
 
     // register telemetry hook if user enabled
     try {
