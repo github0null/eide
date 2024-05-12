@@ -86,13 +86,15 @@ function toVscServerity(str_: string): vscode.DiagnosticSeverity {
     }
 }
 
-function newVscFilePosition(toolchain: ToolchainName, line: number, col?: number): vscode.Position {
-    if (col != undefined && col < 0)
-        col = 0;
-    switch (toolchain) {
-        default:
-            return new vscode.Position(line > 0 ? (line - 1) : 0, col || 0);
-    }
+function newVscFileRange(line: number, start: number, len: number): vscode.Range {
+    if (start < 0)
+        start = 0;
+    if (len < 0)
+        len = 0;
+    const _line = line > 0 ? (line - 1) : 0;
+    return new vscode.Range(
+        new vscode.Position(_line, start),
+        new vscode.Position(_line, start + len));
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -128,8 +130,8 @@ export function parseArmccCompilerLog(projApi: ProjectBaseApi, logFile: File): C
             const diags = result[fspath] || [];
             if (result[fspath] == undefined) result[fspath] = diags;
 
-            const pos = newVscFilePosition(projApi.toolchainName(), line, 0);
-            const vscDiag = new vscode.Diagnostic(new vscode.Range(pos, pos), message, toVscServerity(severity));
+            const vscDiag = new vscode.Diagnostic(
+                newVscFileRange(line, 0, 10), message, toVscServerity(severity));
             vscDiag.code = errCode;
             vscDiag.source = 'armcc';
             diags.push(vscDiag);
@@ -185,9 +187,8 @@ export function parseSdccCompilerLog(projApi: ProjectBaseApi, logfile: File): Co
             const diags = result[fspath] || [];
             if (result[fspath] == undefined) result[fspath] = diags;
 
-            const pos = newVscFilePosition(projApi.toolchainName(), line, col);
             const vscDiag = new vscode.Diagnostic(
-                new vscode.Range(pos, pos), `${severity}: ${message}`, toVscServerity(severity));
+                newVscFileRange(line, col || 0, 10), `${severity}: ${message}`, toVscServerity(severity));
             vscDiag.source = 'sdcc';
             vscDiag.code = errCode;
             diags.push(vscDiag);
@@ -255,8 +256,8 @@ export function parseGccCompilerLog(projApi: ProjectBaseApi, logfile: File): Com
             const diags = result[fspath] || [];
             if (result[fspath] == undefined) result[fspath] = diags;
 
-            const pos = newVscFilePosition(projApi.toolchainName(), line, col);
-            const vscDiag = new vscode.Diagnostic(new vscode.Range(pos, pos), message, toVscServerity(severity));
+            const vscDiag = new vscode.Diagnostic(
+                newVscFileRange(line, col, 10), message, toVscServerity(severity));
             vscDiag.source = problemSource;
             vscDiag.code = errCode;
             diags.push(vscDiag);
@@ -296,8 +297,8 @@ export function parseKeilc51CompilerLog(projApi: ProjectBaseApi, logfile: File):
             const diags = result[fspath] || [];
             if (result[fspath] == undefined) result[fspath] = diags;
 
-            const pos = newVscFilePosition(projApi.toolchainName(), line, 0);
-            const vscDiag = new vscode.Diagnostic(new vscode.Range(pos, pos), message, toVscServerity(severity));
+            const vscDiag = new vscode.Diagnostic(
+                newVscFileRange(line, 0, 10), message, toVscServerity(severity));
             vscDiag.source = 'Keil_C51';
             vscDiag.code = code;
             diags.push(vscDiag);
@@ -347,8 +348,8 @@ export function parseIarCompilerLog(projApi: ProjectBaseApi, logfile: File): Com
             const diags = result[fspath] || [];
             if (result[fspath] == undefined) result[fspath] = diags;
 
-            const pos = newVscFilePosition(projApi.toolchainName(), line, 0);
-            const vscDiag = new vscode.Diagnostic(new vscode.Range(pos, pos), message, toVscServerity(severity));
+            const vscDiag = new vscode.Diagnostic(
+                newVscFileRange(line, 0, 10), message, toVscServerity(severity));
             vscDiag.code = errCode;
             vscDiag.source = projApi.toolchainName() == 'IAR_STM8' ? 'iccstm8' : 'iccarm';
             diags.push(vscDiag);
@@ -408,9 +409,8 @@ export function parseCosmicStm8CompilerLog(projApi: ProjectBaseApi, logfile: Fil
             const diags = result[fspath] || [];
             if (result[fspath] == undefined) result[fspath] = diags;
 
-            const pos_s = newVscFilePosition(projApi.toolchainName(), line, column);
-            const pos_e = newVscFilePosition(projApi.toolchainName(), line, column + column_rng);
-            const vscDiag = new vscode.Diagnostic(new vscode.Range(pos_s, pos_e), message, toVscServerity(severity));
+            const vscDiag = new vscode.Diagnostic(
+                newVscFileRange(line, column, column_rng), message, toVscServerity(severity));
             vscDiag.source = toolname;
 
             diags.push(vscDiag);
