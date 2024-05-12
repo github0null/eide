@@ -5530,6 +5530,13 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             return;
         }
 
+        const cppcheck_has_platform = (plat: string): boolean => {
+            return File.IsFile(`${exeFile.dir}/platforms/${plat}.xml`);
+        };
+        const cppcheck_has_cfg = (cfgname: string): boolean => {
+            return File.IsFile(`${exeFile.dir}/cfg/${cfgname}.cfg`);
+        };
+
         const prj = this.getProjectByTreeItem(item);
         if (!prj) {
             GlobalEvent.emit('msg', newMessage('Warning', 'Not found project by this item !'));
@@ -5597,18 +5604,13 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
 
         if (os.platform() == 'win32') {
-            switch (toolchain.name) {
-                case 'GCC':
-                    cfgList.push('armgcc');
-                    break;
-                case 'RISCV_GCC':
-                    cfgList.push('riscv');
-                    break;
-                default:
-                    defList = defList.concat(
-                        toolchain.getInternalDefines(<any>prjConfig.config.compileConfig, builderOpts));
-                    break;
-            }
+            if (toolchain.name == 'GCC' && cppcheck_has_cfg('armgcc'))
+                cfgList.push('armgcc');
+            else if (toolchain.name == 'RISCV_GCC' && cppcheck_has_cfg('riscv'))
+                cfgList.push('riscv');
+            else
+                defList = defList.concat(
+                    toolchain.getInternalDefines(<any>prjConfig.config.compileConfig, builderOpts));
         } else {
             defList = defList.concat(
                 toolchain.getInternalDefines(<any>prjConfig.config.compileConfig, builderOpts));
@@ -5625,9 +5627,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         const fixedDefList = defList.map((str) => str.replace(/"/g, '&quot;'));
 
-        let cppcheck_plat: string = 'arm32-wchar_t2';
+        let cppcheck_plat: string = 'unix32';
         if (is8bit) {
-            cppcheck_plat = os.platform() == 'win32' ? 'mcs51' : 'avr8';
+            if (os.platform() == 'win32' && cppcheck_has_platform('mcs51'))
+                cppcheck_plat = 'mcs51';
+            else
+                cppcheck_plat = 'avr8';
         }
 
         cppcheckConf = cppcheckConf
