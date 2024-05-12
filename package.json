@@ -673,12 +673,12 @@
                 "title": "Show All Symbols"
             },
             {
-                "command": "_cl.eide.project.cppcheck.check_all",
-                "title": "%eide.project.run.cppcheck%"
+                "command": "_cl.eide.project.static-check.cppcheck",
+                "title": "%eide.prj.menus.sub.static-check.cppcheck%"
             },
             {
-                "command": "_cl.eide.project.cppcheck.clear_all",
-                "title": "%eide.project.clear.cppcheck%"
+                "command": "_cl.eide.project.static-check.clear",
+                "title": "%eide.prj.menus.sub.static-check.clear%"
             },
             {
                 "command": "_cl.eide.project.source.modify.exclude_list",
@@ -1074,9 +1074,19 @@
                 "when": "cl.eide.projectActived && !isInDiffEditor"
             },
             {
-                "command": "_cl.eide.project.cppcheck.check_all",
+                "command": "_cl.eide.project.static-check.cppcheck",
                 "key": "ctrl+alt+c",
                 "when": "cl.eide.projectActived"
+            }
+        ],
+        "submenus": [
+            {
+                "id": "_cl.eide.menu/ui/project/static-check",
+                "label": "%eide.prj.menus.main.static-check%"
+            },
+            {
+                "id": "_cl.eide.menu/ui/project/export",
+                "label": "%eide.prj.menus.main.export%"
             }
         ],
         "menus": {
@@ -1264,24 +1274,12 @@
                     "group": "6_group"
                 },
                 {
-                    "command": "_cl.eide.project.exportAsTemplate",
-                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
+                    "submenu": "_cl.eide.menu/ui/project/export",
                     "group": "9_group"
                 },
                 {
-                    "command": "_cl.eide.project.exportXml",
-                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
-                    "group": "9_group"
-                },
-                {
-                    "command": "_cl.eide.project.cppcheck.check_all",
-                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
+                    "submenu": "_cl.eide.menu/ui/project/static-check",
                     "group": "z_group0@0"
-                },
-                {
-                    "command": "_cl.eide.project.cppcheck.clear_all",
-                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
-                    "group": "z_group0@1"
                 },
 
 
@@ -1539,6 +1537,30 @@
                     "command": "_cl.eide.project.removeDependenceFromPack",
                     "group": "inline",
                     "when": "viewItem == ACTIVED_GROUP && view == cl.eide.view.projects"
+                }
+            ],
+            "_cl.eide.menu/ui/project/export": [
+                {
+                    "command": "_cl.eide.project.exportAsTemplate",
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
+                    "group": "9_group"
+                },
+                {
+                    "command": "_cl.eide.project.exportXml",
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
+                    "group": "9_group"
+                }
+            ],
+            "_cl.eide.menu/ui/project/static-check": [
+                {
+                    "command": "_cl.eide.project.static-check.cppcheck",
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
+                    "group": "z_group0@0"
+                },
+                {
+                    "command": "_cl.eide.project.static-check.clear",
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
+                    "group": "z_group1@1"
                 }
             ]
         },

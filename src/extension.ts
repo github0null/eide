@@ -249,8 +249,8 @@ export async function activate(context: vscode.ExtensionContext) {
     // other project tools
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.show_disassembly', (url) => projectExplorer.showDisassembly(url)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.show_cmsis_config_wizard', (url) => projectExplorer.showCmsisConfigWizard(url)));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.cppcheck.check_all', (item) => projectExplorer.cppcheckProject(item)));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.cppcheck.clear_all', (item) => projectExplorer.clearCppcheckDiagnostic()));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.static-check.cppcheck', (item) => projectExplorer.cppcheckProject(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.static-check.clear', (item) => projectExplorer.clearCppcheckDiagnostic()));
     //subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.cppcheck.check_file', (url) => projectExplorer.cppcheckFile(url)));
 
     operationExplorer.on('request_open_project', (fsPath) => projectExplorer.emit('request_open_project', fsPath));

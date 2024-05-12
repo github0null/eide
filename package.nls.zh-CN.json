@@ -20,8 +20,8 @@
     "eide.project.save.all": "保存所有项目",
     "eide.project.active": "设为活动",
     "eide.project.close": "关闭项目",
-    "eide.project.export.template": "导出 EIDE 模板",
-    "eide.project.export.keil": "导出 Keil 项目",
+    "eide.project.export.template": "EIDE 模板",
+    "eide.project.export.keil": "Keil 项目",
     "eide.project.show.commands": "查看生成的编译器命令行",
     "eide.project.switch.target": "切换目标",
     "eide.project.build": "构建",
@@ -33,6 +33,12 @@
     "eide.project.modify.files.options": "查看所有的源文件附加编译参数",
     "eide.project.import.ext.project.src.struct": "从其他 IDE 的项目中导入源文件树",
     "eide.project.generate_builder_params": "生成 builder.params",
+
+    "eide.prj.menus.main.static-check": "静态检查",
+    "eide.prj.menus.sub.static-check.cppcheck": "执行 Cppcheck",
+    "eide.prj.menus.sub.static-check.clear": "清除诊断结果",
+
+    "eide.prj.menus.main.export": "导出为 ...",
 
     "eide.workspace.build": "构建所有项目",
     "eide.workspace.rebuild": "重新构建所有项目",
@@ -66,9 +72,6 @@
 
     "eide.source.show_cmsis_config_wizard": "CMSIS Configuration Wizard",
     "eide.source.show.disassembly": "查看反汇编",
-    "eide.source.run.cppcheck": "使用 Cppcheck 进行检查",
-    "eide.project.run.cppcheck": "使用 Cppcheck 检查项目",
-    "eide.project.clear.cppcheck": "清除 Cppcheck 诊断信息",
 
     "eide.package.install": "安装 CMSIS 芯片支持包",
     "eide.package.install.cmsis": "安装 CMSIS 头文件",
