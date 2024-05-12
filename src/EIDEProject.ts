@@ -1827,7 +1827,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         return optFile;
     }
 
-    genLibsMakefileContent(makefileName: string): string | undefined {
+    /**
+     * @param makefile_repath a path relative from build output dir, like: '.lib/Makefile'
+    */
+    genLibsMakefileContent(makefile_repath: string): string | undefined {
 
         const fcfg = this.getLibsGeneratorCfgFile(true);
         if (!fcfg.IsFile())
@@ -1906,6 +1909,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
         for (const name in cfg) {
 
+            if (name.startsWith('$'))
+                continue; // skip internal vars
+
             let exprs: string[] = cfg[name];
             if (!Array.isArray(exprs)) continue;
 
@@ -1931,6 +1937,11 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             }
         }
 
+        if (cfg['$AR_PATH'])
+            AR_PATH   = File.ToUnixPath(this.toAbsolutePath(cfg['$AR_PATH']));
+        if (cfg['$AR_CMD'])
+            AR_PARAMS = cfg['$AR_CMD'];
+
         // --------------------------
         // - gen makefile
         // --------------------------
@@ -1945,7 +1956,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
                 .replace('${out}', outname);
             let rule_tmp = `# ${libname}
 lib${libname}_OBJS += ${objs.join(AR_OBJ_SEP)}
-lib${libname}: $(lib${libname}_OBJS) ${makefileName}
+lib${libname}: $(lib${libname}_OBJS) ${makefile_repath}
 \t@echo -e $(COLOR_BLUE)-------------------------$(COLOR_END)
 \t@echo -e $(COLOR_BLUE)AR "${outname}"$(COLOR_END)
 \t@echo -e $(COLOR_BLUE)-------------------------$(COLOR_END)
@@ -1990,7 +2001,7 @@ $(OUT_DIR):
 
         mk_tmp = mk_tmp
             .replace('<LIB_TARGETS>', lib_rules.join('\n'))
-            .replace('<LIB_OUT_DIR>', '.lib');
+            .replace('<LIB_OUT_DIR>', NodePath.dirname(makefile_repath));
 
         return mk_tmp;
     }

@@ -10,6 +10,12 @@
 #
 ##########################################################################################
 
+# -----------
+# Config
+# -----------
+# $AR_PATH: '/Your/AR/Executable/Path'
+# $AR_CMD : '-rcv ${out} ${in}'
+
 ## ----------------------------
 ## examples
 ##  This examples will generate 2 libs after build done, 
