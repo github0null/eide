@@ -87,6 +87,8 @@ function toVscServerity(str_: string): vscode.DiagnosticSeverity {
 }
 
 function newVscFilePosition(toolchain: ToolchainName, line: number, col?: number): vscode.Position {
+    if (col != undefined && col < 0)
+        col = 0;
     switch (toolchain) {
         default:
             return new vscode.Position(line > 0 ? (line - 1) : 0, col || 0);

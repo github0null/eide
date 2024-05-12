@@ -3440,7 +3440,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         context.subscriptions.push(vscode.commands.registerCommand(ProjTreeItem.ITEM_CLICK_EVENT, (item) => this.OnTreeItemClick(item)));
 
         // create vsc output channel
-        this.cppcheck_out = vscode.window.createOutputChannel('eide-cppcheck');
+        this.cppcheck_out = vscode.window.createOutputChannel('eide-static-check-log');
         this.cppToolsOut = vscode.window.createOutputChannel('eide-cpptools-log');
 
         // register doc event
@@ -5754,8 +5754,11 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                         const diags = Array.from(this.cppcheck_diag.get(uri) || []);
                         const line = parseInt(mRes[pattern.line]);
                         const col = parseInt(mRes[pattern.column]);
-                        const pos = new vscode.Position(line - 1, col - 1);
-                        const diag = new vscode.Diagnostic(new vscode.Range(pos, pos), mRes[pattern.message], toVscServerity(mRes[pattern.severity]));
+                        const col_s = col > 0 ? (col - 1) : 0;
+                        const range = new vscode.Range(
+                            new vscode.Position(line - 1, col_s),
+                            new vscode.Position(line - 1, col_s + 10));
+                        const diag = new vscode.Diagnostic(range, mRes[pattern.message], toVscServerity(mRes[pattern.severity]));
                         diag.source = 'cppcheck';
                         diags.push(diag);
                         this.cppcheck_diag.set(uri, diags);
@@ -5780,6 +5783,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     GlobalEvent.emit('msg', ExceptionToMessage(err));
                 });
 
+                this.cppcheck_out.append(`>>> Exec cppcheck\n -> ${exeFile.name} ${cmds.join(' ')}\n\n`);
                 process.Run(exeFile.name, cmds, opts);
             });
         });
