@@ -5635,20 +5635,25 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 cppcheck_plat = 'avr8';
         }
 
+        const sourceList = getSourceList(prj);
         cppcheckConf = cppcheckConf
             .replace('${cppcheck_build_folder}', File.normalize(prj.getOutputRoot()))
             .replace('${platform}', cppcheck_plat)
             .replace('${lib_list}', cfgList.map((str) => `<library>${escapeXml(str)}</library>`).join(os.EOL + '\t\t'))
             .replace('${include_list}', includeList.map((str) => `<dir name="${escapeXml(str)}/"/>`).join(os.EOL + '\t\t'))
             .replace('${macro_list}', fixedDefList.map((str) => `<define name="${escapeXml(str)}"/>`).join(os.EOL + '\t\t'))
-            .replace('${source_list}', getSourceList(prj).map((str) => `<dir name="${escapeXml(str)}"/>`).join(os.EOL + '\t\t'));
+            .replace('${source_list}', sourceList.map((str) => `<dir name="${escapeXml(str)}"/>`).join(os.EOL + '\t\t'));
 
         confFile.Write(cppcheckConf);
 
         /* make command */
 
+        let max_cpus = os.cpus().length;
+        if (max_cpus > sourceList.length * 2) max_cpus = sourceList.length;
+        if (max_cpus < 4) max_cpus = 4;
+        if (max_cpus > 12) max_cpus = 12;
         cmds.push(
-            '-j', '4',
+            '-j', max_cpus.toString(),
             `--error-exitcode=0`,
             `--report-progress`,
             `--enable=warning`,

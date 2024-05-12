@@ -37,7 +37,7 @@ import * as fs from 'fs';
 import * as events from 'events';
 import * as NodePath from 'path';
 import * as os from 'os';
-import { ICompileOptions, ArmBaseBuilderConfigData } from "./EIDEProjectModules";
+import { ICompileOptions, ArmBaseBuilderConfigData, ArmBaseCompileData } from "./EIDEProjectModules";
 import * as utility from "./utility";
 
 export type ToolchainName =
@@ -101,7 +101,7 @@ export interface IToolchian {
     getGccFamilyCompilerPathForCpptools(): string | undefined;
 
     /**
-     * get compiler internal defines (for cpptools)
+     * get compiler internal defines (for static check)
      */
     getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[];
 
@@ -439,27 +439,6 @@ export class ToolchainManager {
 
     private add(toolchain: IToolchian) {
         this.toolchainMap.set(toolchain.name, toolchain);
-    }
-}
-
-class MacroHandler {
-
-    private regMatchers = {
-        'normal_macro': /^#define (\w+) (.*)$/,
-        'func_macro': /^#define (\w+\([^\)]*\)) (.*)$/
-    };
-
-    toExpression(macro: string): string | undefined {
-
-        let mList = this.regMatchers['normal_macro'].exec(macro);
-        if (mList && mList.length > 2) {
-            return `${mList[1]}=${mList[2]}`;
-        }
-
-        mList = this.regMatchers['func_macro'].exec(macro);
-        if (mList && mList.length > 2) {
-            return `${mList[1]}=`;
-        }
     }
 }
 
@@ -1499,7 +1478,7 @@ class AC5 implements IToolchian {
             if (cpuMap[cpuKey]) {
 
                 const result: string[] = [];
-                const macroParser = new MacroHandler();
+                const macroParser = new utility.CppMacroDefinesConv();
                 const armccDir = File.fromArray([this.getToolchainDir().path, 'bin']).path;
                 const cmdList = [`--cpu ${cpuMap[cpuKey]}`, '--apcs=interwork'];
 
@@ -1973,7 +1952,57 @@ class GCC implements IToolchian {
     }
 
     getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
-        return [];
+
+        return [
+            '__GNUC__=10',
+            '__GNUC_MINOR__=2',
+            '__GNUC_PATCHLEVEL__=1',
+            '__GNUC_STDC_INLINE__=1',
+            '__thumb__=1',
+            '__thumb2__=1'
+        ];
+
+        // const cfg: ArmBaseBuilderConfigData = <any>builderCfg;
+
+        // const cpu = cfg.cpuType.toLowerCase()
+        //     .replace('cortex-m0+', 'cortex-m0plus');
+        // const fpu = cfg.floatingPointHardware.toLowerCase()
+        //     .replace('single', 'sp').replace('double', 'dp');
+
+        // const compilerArgs: string[] = ['-mthumb'];
+
+        // // setup cpu
+        // compilerArgs.push(`-mcpu=${cpu}`);
+
+        // // setup fpu
+        // switch (fpu) {
+        //     case 'sp':
+        //         compilerArgs.push(`-mfpu=fpv5-sp-d16`);
+        //         break;
+        //     case 'dp':
+        //         compilerArgs.push(`-mfpu=fpv5-d16`);
+        //         break;
+        //     default:
+        //         break;
+        // }
+        // if (['sp', 'dp'].includes(fpu)) {
+        //     if (typeof builderOpts.global['$float-abi-type'] == 'string') {
+        //         const abiType = builderOpts.global['$float-abi-type'];
+        //         compilerArgs.push(`-mfloat-abi=${abiType}`);
+        //     }
+        // }
+
+        // const r = utility.getGccInternalDefines(
+        //     this.getToolchainDir().path + '/bin', this.getToolPrefix(), compilerArgs);
+
+        // if (!r)
+        //     return [];
+
+        // const result: string[] = r
+        //     .filter(d => d.type != 'func')
+        //     .map(d => `${d.name}=${(d.value == undefined || d.value == '') ? '1' : d.value}`);
+
+        // return result;
     }
 
     getCustomDefines(): string[] | undefined {
@@ -2496,7 +2525,12 @@ class MTI_GCC implements IToolchian {
     }
 
     getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
-        return [];
+        return [
+            '__GNUC__=10',
+            '__GNUC_MINOR__=2',
+            '__GNUC_PATCHLEVEL__=1',
+            '__GNUC_STDC_INLINE__=1',
+        ];
     }
 
     getCustomDefines(): string[] | undefined {
@@ -2758,7 +2792,12 @@ class RISCV_GCC implements IToolchian {
     }
 
     getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
-        return [];
+        return [
+            '__GNUC__=10',
+            '__GNUC_MINOR__=2',
+            '__GNUC_PATCHLEVEL__=1',
+            '__GNUC_STDC_INLINE__=1',
+        ];
     }
 
     getCustomDefines(): string[] | undefined {
@@ -2970,7 +3009,12 @@ class AnyGcc implements IToolchian {
     }
 
     getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
-        return [];
+        return [
+            '__GNUC__=10',
+            '__GNUC_MINOR__=2',
+            '__GNUC_PATCHLEVEL__=1',
+            '__GNUC_STDC_INLINE__=1',
+        ];
     }
 
     getCustomDefines(): string[] | undefined {

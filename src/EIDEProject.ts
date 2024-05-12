@@ -45,7 +45,7 @@ import {
     ConfigMap, FileGroup,
     ProjectConfiguration, ProjectConfigData, WorkspaceConfiguration,
     CreateOptions,
-    ProjectConfigEvent, ProjectFileGroup, FileItem, EIDE_CONF_VERSION, ProjectTargetInfo, VirtualFolder, VirtualFile, CppConfigItem, ProjectBaseApi, ProjectType
+    ProjectConfigEvent, ProjectFileGroup, FileItem, EIDE_CONF_VERSION, ProjectTargetInfo, VirtualFolder, VirtualFile, CppConfigItem, ProjectBaseApi, ProjectType, BuilderConfigData
 } from './EIDETypeDefine';
 import { ToolchainName, IToolchian, ToolchainManager } from './ToolchainManager';
 import { GlobalEvent } from './GlobalEvents';
@@ -57,7 +57,7 @@ import { WebPanelManager } from './WebPanelManager';
 import { DependenceManager } from './DependenceManager';
 import * as platform from './Platform';
 import { IDebugConfigGenerator } from './DebugConfigGenerator';
-import { md5, copyObject, compareVersion } from './utility';
+import { md5, copyObject, compareVersion, isGccFamilyToolchain } from './utility';
 import { ResInstaller } from './ResInstaller';
 import {
     view_str$prompt$not_found_compiler, view_str$operation$name_can_not_be_blank,
@@ -3568,6 +3568,18 @@ class EIDEProject extends AbstractProject {
         }
     }
 
+    private _getCompilerIntrDefsForCpptools<T extends BuilderConfigData>(
+        toolchain: IToolchian, builderCfg: T, builderOpts: ICompileOptions): string[] {
+
+        if (['AC5', 'AC6'].includes(toolchain.name) || isGccFamilyToolchain(toolchain.name)) {
+            // we have provide a xxx-intr.h for cpptools,
+            // so return empty list.
+            return [];
+        } else {
+            return toolchain.getInternalDefines(builderCfg, builderOpts);
+        }
+    }
+
     private doUpdateCpptoolsConfig() {
 
         const builderOpts = this.getBuilderOptions();
@@ -3577,7 +3589,7 @@ class EIDEProject extends AbstractProject {
         // get project includes and defines
         const depMerge = prjConfig.GetAllMergeDep();
         const defMacros: string[] = ['__VSCODE_CPPTOOL']; // it's for internal force include header
-        const intrDefs = toolchain.getInternalDefines(<any>prjConfig.config.compileConfig, builderOpts);
+        const intrDefs = this._getCompilerIntrDefsForCpptools(toolchain, <any>prjConfig.config.compileConfig, builderOpts);
         const defLi = defMacros.concat(depMerge.defineList, intrDefs);
         depMerge.incList = depMerge.incList.concat(this.getSourceIncludeList()).map(p => this.ToAbsolutePath(p));
 
