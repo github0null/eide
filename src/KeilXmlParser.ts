@@ -1183,6 +1183,28 @@ class ARMParser extends KeilParser<KeilARMOption> {
             if (family.vendor) {
                 vendor = family.vendor.replace(/:.+$/i, '');
             }
+        } else {
+            const buildOpts = prj.GetConfiguration<ArmBaseCompileData>().config;
+            const cpuname = buildOpts.compileConfig.cpuType.toLowerCase();
+            const valMap = [
+                ['Cortex-M35P.Dsp', 'ARMCM35P_DSP_FP'],
+                ['Cortex-M33.Dsp', 'ARMCM33_DSP_FP'],
+                ['Cortex-M35P', 'ARMCM35P'],
+                ['Cortex-M33', 'ARMCM33'],
+                ['Cortex-M23', 'ARMCM23'],
+                ['Cortex-M0+', 'ARMCM0P'],
+                ['Cortex-M0', 'ARMCM0'],
+                ['Cortex-M3', 'ARMCM3'],
+                ['Cortex-M4', 'ARMCM4'],
+                ['Cortex-M7', 'ARMCM7'],
+            ];
+            for (const kv of valMap) {
+                if (cpuname.includes(kv[0].toLowerCase())) {
+                    devName = kv[1];
+                    vendor  = 'ARM';
+                    break;
+                }
+            }
         }
 
         target.TargetName = prjConfig.config.name;
