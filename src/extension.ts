@@ -819,6 +819,9 @@ function exportEnvToSysPath(context?: vscode.ExtensionContext) {
     // 你可通过使用喜欢的 shell 将 DOTNET_CLI_TELEMETRY_OPTOUT 环境变量设置为 "1" 或 "true" 来选择退出遥测。
     // 阅读有关 .NET CLI 工具遥测的更多信息: https://aka.ms/dotnet-cli-telemetry
     process.env['DOTNET_CLI_TELEMETRY_OPTOUT'] = '1'; // disable telemetry
+    // 支持运行时回滚
+    // https://learn.microsoft.com/zh-cn/dotnet/core/whats-new/dotnet-core-3-0#major-version-runtime-roll-forward
+    process.env['DOTNET_ROLL_FORWARD'] = 'Major';
 }
 
 async function checkAndInstallRuntime() {
@@ -844,7 +847,7 @@ async function checkAndInstallRuntime() {
     // check/install .NET
     //
     try {
-        GlobalEvent.emit('globalLog', newMessage('Info', 'Checking .NET6 runtime ...'));
+        GlobalEvent.emit('globalLog', newMessage('Info', 'Checking .NET runtime ...'));
         GlobalEvent.emit('globalLog', newMessage('Info', `Exec cmd: '${dotnet_chk_cmd}'`));
         const dotnetInfo = ChildProcess.execSync(dotnet_chk_cmd).toString().trim();
         GlobalEvent.emit('globalLog.append', dotnetInfo + os.EOL);
@@ -853,14 +856,18 @@ async function checkAndInstallRuntime() {
         const lines = dotnetInfo.trim().split(/\r\n|\n/);
         for (const line_ of lines) {
             const line = line_.trim();
-            if (line.toLowerCase().startsWith('Microsoft.NETCore.App 6.'.toLowerCase())) {
-                dotnetVerLine = line;
-                GlobalEvent.emit('globalLog', newMessage('Info', `.NET6 runtime: '${dotnetVerLine}' found !`));
-                break;
+            const m = /Microsoft\.NETCore\.App (\d+)\./i.exec(line);
+            if (m && m.length > 1) {
+                const rt_ver = parseInt(m[1]);
+                if (rt_ver >= 6) {
+                    dotnetVerLine = line;
+                    GlobalEvent.emit('globalLog', newMessage('Info', `.NET runtime: '${dotnetVerLine}' found !`));
+                    break;
+                }
             }
         }
         if (!dotnetVerLine) {
-            throw new Error(`Can not match .NET6 runtime`);
+            throw new Error(`Not found available .NET Core runtime`);
         }
     } catch (error) {
 
@@ -879,7 +886,7 @@ async function checkAndInstallRuntime() {
             const msg = `Not found [.NET6 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) on your pc, please install it !`;
             vscode.window.showWarningMessage(msg);
             // https://dotnet.microsoft.com/en-us/download/dotnet/scripts
-            utility.openUrl(`https://dotnet.microsoft.com/en-us/download/dotnet/scripts`);
+            // utility.openUrl(`https://dotnet.microsoft.com/en-us/download/dotnet/scripts`);
         }
 
         // win32, we can auto install it
