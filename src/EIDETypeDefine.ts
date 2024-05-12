@@ -1235,7 +1235,10 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
     private recoverTarget(targetName?: string) {
 
-        targetName = targetName || utility.getFirstKey(this.config.targets);
+        if (!targetName || !this.config.targets[targetName]) {
+            // roll back to default target
+            targetName = utility.getFirstKey(this.config.targets);
+        }
 
         if (!targetName) {
             if (this.config.mode == undefined)
