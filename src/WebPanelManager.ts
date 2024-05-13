@@ -388,8 +388,9 @@ export class WebPanelManager {
                 switch (data.cmd) {
                     case 'open-config':
                         {
-                            const pos = new vscode.Position(data.arg, data.arg);
-                            vscode.window.showTextDocument(uri, { preview: true, selection: new vscode.Range(pos, pos) });
+                            const pos_s = new vscode.Position(data.arg, 0);
+                            const pos_e = new vscode.Position(data.arg, 300);
+                            vscode.window.showTextDocument(uri, { preview: true, selection: new vscode.Range(pos_s, pos_e) });
                         }
                         break;
                     default:

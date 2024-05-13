@@ -42,6 +42,82 @@ import { isArray } from 'util';
 import { ExeCmd } from '../lib/node-utility/Executable';
 import { GlobalEvent } from './GlobalEvents';
 import { SettingManager } from './SettingManager';
+import { ToolchainName } from './ToolchainManager';
+
+export interface CppMacroDefine {
+    type: 'var' | 'func';
+    name: string;
+    value: string;
+};
+
+export class CppMacroDefinesConv {
+
+    private regMatchers = {
+        'var' : /^#define (\w+) (.*)$/,
+        'func': /^#define (\w+\([^\)]*\)) (.*)$/
+    };
+
+    toExpression(line: string): string | undefined {
+
+        let mList = this.regMatchers['var'].exec(line);
+        if (mList && mList.length > 2) {
+            return `${mList[1]}=${mList[2]}`;
+        }
+
+        mList = this.regMatchers['func'].exec(line);
+        if (mList && mList.length > 2) {
+            return `${mList[1]}=`;
+        }
+    }
+
+    parse(line: string): CppMacroDefine | undefined {
+
+        let mList = this.regMatchers['var'].exec(line);
+        if (mList && mList.length > 2) {
+            return {
+                type: 'var',
+                name: mList[1],
+                value: mList[2],
+            };
+        }
+
+        mList = this.regMatchers['func'].exec(line);
+        if (mList && mList.length > 2) {
+            return {
+                type: 'func',
+                name: mList[1],
+                value: mList[2],
+            };
+        }
+    }
+}
+
+export function getGccInternalDefines(gcc_dir: string, gcc_prefix: string, cmds: string[] | undefined): CppMacroDefine[] | undefined {
+    try {
+        const gccName = gcc_prefix + 'gcc';
+        const cmdArgs = (cmds || []).concat(['-E', '-dM', '-', `<${platform.osGetNullDev()}`]);
+        const cmdLine = `${gccName} ` + cmdArgs.join(' ');
+        const outputs = child_process.execSync(cmdLine, { cwd: gcc_dir }).toString().split(/\r\n|\n/);
+        const results: CppMacroDefine[] = [];
+        const mHandler = new CppMacroDefinesConv();
+
+        outputs.filter((line) => { return line.trim() !== ''; })
+            .forEach((line) => {
+                const value = mHandler.parse(line);
+                if (value) {
+                    results.push(value);
+                }
+            });
+
+        return results;
+    } catch (error) {
+        GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+    }
+}
+
+export function isGccFamilyToolchain(name: ToolchainName): boolean {
+    return name.includes('GCC');
+}
 
 export function getGccSystemSearchList(gccPath: string): string[] | undefined {
     try {
@@ -58,7 +134,7 @@ export function getGccSystemSearchList(gccPath: string): string[] | undefined {
                 return f.path;
             });
     } catch (error) {
-        // do nothing
+        GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
     }
 }
 

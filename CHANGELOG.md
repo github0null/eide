@@ -6,6 +6,20 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.16.1] update
+
+**Fix**:
+  - `Open Project`: fix cannot open project if a error target in usr.ctx.json.
+  - `Project Floatpoint Selection`: fix function hasFpu() not match 'm33.dsp'.
+  - `Diagnostic Bugs`: fix diagnostic information generator bugs.
+  - `Others`: fix other miscellaneous bugs.
+
+**Optimize**:
+  - `.NET Runtime`: compatible with version > 6.0 of the .NET runtime.
+  - `Static Check`: optimize cppcheck params generator.
+
+***
+
 ### [v3.16.0] update
 
 **Change**:

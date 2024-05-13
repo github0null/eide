@@ -91,10 +91,10 @@ const armvx_sp_archs: string[] = armvx_dp_archs;
 export function hasFpu(cpu: string, hasDp?: boolean) {
     cpu = cpu.toLowerCase();
     if (hasDp) { // check dp
-        return cortex_dp_mcus.some(n => cpu.endsWith(n))
-            || armvx_dp_archs.some(a => cpu.startsWith(a));
+        return cortex_dp_mcus.some(a => cpu.includes(a))
+            || armvx_dp_archs.some(a => cpu.includes(a));
     } else { // check sp
-        return cortex_sp_mcus.some(n => cpu.endsWith(n))
-            || armvx_sp_archs.some(a => cpu.startsWith(a));
+        return cortex_sp_mcus.some(a => cpu.includes(a))
+            || armvx_sp_archs.some(a => cpu.includes(a));
     }
 }

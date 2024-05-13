@@ -481,20 +481,22 @@ export abstract class CodeBuilder {
         this.preHandleOptions(builderOptions.options);
 
         // gen libs.makefile
-        const mkfile = File.fromArray([this.project.ToAbsolutePath(outDir), 'libs.makefile']);
-        const mk_txt = this.project.genLibsMakefileContent(mkfile.name);
-        if (mk_txt) {
+        const mkfile_dir  = new File(this.project.ToAbsolutePath(outDir + '/.lib'));
+        const mkfile_path = `${mkfile_dir.name}/Makefile`;
+        const mkfile_cont = this.project.genLibsMakefileContent(mkfile_path);
+        if (mkfile_cont) {
             try {
-                mkfile.Write(mk_txt);
+                if (!mkfile_dir.IsDir()) mkfile_dir.CreateDir(true);
+                fs.writeFileSync(`${this.project.ToAbsolutePath(outDir)}/${mkfile_path}`, mkfile_cont);
                 let command: any = {
-                    name: 'make libs',
-                    command: `make --directory=./${outDir} --makefile=./${mkfile.name} all`
+                    name: 'make libraries',
+                    command: `make --directory=./${outDir} --makefile=./${mkfile_path} all`
                 };
                 if (builderOptions.options.afterBuildTasks == undefined)
                     builderOptions.options.afterBuildTasks = [];
                 builderOptions.options.afterBuildTasks = [command].concat(builderOptions.options.afterBuildTasks);
             } catch (error) {
-                GlobalEvent.emit('msg', newMessage('Warning', `Generating '${mkfile.name}' failed !`));
+                GlobalEvent.emit('msg', newMessage('Warning', `Generating '${mkfile_path}' failed !`));
                 GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
             }
         }

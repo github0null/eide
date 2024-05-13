@@ -3440,7 +3440,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         context.subscriptions.push(vscode.commands.registerCommand(ProjTreeItem.ITEM_CLICK_EVENT, (item) => this.OnTreeItemClick(item)));
 
         // create vsc output channel
-        this.cppcheck_out = vscode.window.createOutputChannel('eide-cppcheck');
+        this.cppcheck_out = vscode.window.createOutputChannel('eide-static-check-log');
         this.cppToolsOut = vscode.window.createOutputChannel('eide-cpptools-log');
 
         // register doc event
@@ -5530,6 +5530,13 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             return;
         }
 
+        const cppcheck_has_platform = (plat: string): boolean => {
+            return File.IsFile(`${exeFile.dir}/platforms/${plat}.xml`);
+        };
+        const cppcheck_has_cfg = (cfgname: string): boolean => {
+            return File.IsFile(`${exeFile.dir}/cfg/${cfgname}.cfg`);
+        };
+
         const prj = this.getProjectByTreeItem(item);
         if (!prj) {
             GlobalEvent.emit('msg', newMessage('Warning', 'Not found project by this item !'));
@@ -5597,18 +5604,13 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
 
         if (os.platform() == 'win32') {
-            switch (toolchain.name) {
-                case 'GCC':
-                    cfgList.push('armgcc');
-                    break;
-                case 'RISCV_GCC':
-                    cfgList.push('riscv');
-                    break;
-                default:
-                    defList = defList.concat(
-                        toolchain.getInternalDefines(<any>prjConfig.config.compileConfig, builderOpts));
-                    break;
-            }
+            if (toolchain.name == 'GCC' && cppcheck_has_cfg('armgcc'))
+                cfgList.push('armgcc');
+            else if (toolchain.name == 'RISCV_GCC' && cppcheck_has_cfg('riscv'))
+                cfgList.push('riscv');
+            else
+                defList = defList.concat(
+                    toolchain.getInternalDefines(<any>prjConfig.config.compileConfig, builderOpts));
         } else {
             defList = defList.concat(
                 toolchain.getInternalDefines(<any>prjConfig.config.compileConfig, builderOpts));
@@ -5625,25 +5627,33 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         const fixedDefList = defList.map((str) => str.replace(/"/g, '&quot;'));
 
-        let cppcheck_plat: string = 'arm32-wchar_t2';
+        let cppcheck_plat: string = 'unix32';
         if (is8bit) {
-            cppcheck_plat = os.platform() == 'win32' ? 'mcs51' : 'avr8';
+            if (os.platform() == 'win32' && cppcheck_has_platform('mcs51'))
+                cppcheck_plat = 'mcs51';
+            else
+                cppcheck_plat = 'avr8';
         }
 
+        const sourceList = getSourceList(prj);
         cppcheckConf = cppcheckConf
             .replace('${cppcheck_build_folder}', File.normalize(prj.getOutputRoot()))
             .replace('${platform}', cppcheck_plat)
             .replace('${lib_list}', cfgList.map((str) => `<library>${escapeXml(str)}</library>`).join(os.EOL + '\t\t'))
             .replace('${include_list}', includeList.map((str) => `<dir name="${escapeXml(str)}/"/>`).join(os.EOL + '\t\t'))
             .replace('${macro_list}', fixedDefList.map((str) => `<define name="${escapeXml(str)}"/>`).join(os.EOL + '\t\t'))
-            .replace('${source_list}', getSourceList(prj).map((str) => `<dir name="${escapeXml(str)}"/>`).join(os.EOL + '\t\t'));
+            .replace('${source_list}', sourceList.map((str) => `<dir name="${escapeXml(str)}"/>`).join(os.EOL + '\t\t'));
 
         confFile.Write(cppcheckConf);
 
         /* make command */
 
+        let max_cpus = os.cpus().length;
+        if (max_cpus > sourceList.length * 2) max_cpus = sourceList.length;
+        if (max_cpus < 4) max_cpus = 4;
+        if (max_cpus > 12) max_cpus = 12;
         cmds.push(
-            '-j', '4',
+            '-j', max_cpus.toString(),
             `--error-exitcode=0`,
             `--report-progress`,
             `--enable=warning`,
@@ -5749,8 +5759,11 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                         const diags = Array.from(this.cppcheck_diag.get(uri) || []);
                         const line = parseInt(mRes[pattern.line]);
                         const col = parseInt(mRes[pattern.column]);
-                        const pos = new vscode.Position(line - 1, col - 1);
-                        const diag = new vscode.Diagnostic(new vscode.Range(pos, pos), mRes[pattern.message], toVscServerity(mRes[pattern.severity]));
+                        const col_s = col > 0 ? (col - 1) : 0;
+                        const range = new vscode.Range(
+                            new vscode.Position(line - 1, col_s),
+                            new vscode.Position(line - 1, col_s + 10));
+                        const diag = new vscode.Diagnostic(range, mRes[pattern.message], toVscServerity(mRes[pattern.severity]));
                         diag.source = 'cppcheck';
                         diags.push(diag);
                         this.cppcheck_diag.set(uri, diags);
@@ -5775,6 +5788,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     GlobalEvent.emit('msg', ExceptionToMessage(err));
                 });
 
+                this.cppcheck_out.append(`>>> Exec cppcheck\n -> ${exeFile.name} ${cmds.join(' ')}\n\n`);
                 process.Run(exeFile.name, cmds, opts);
             });
         });
