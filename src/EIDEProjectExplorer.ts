@@ -5788,8 +5788,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     GlobalEvent.emit('msg', ExceptionToMessage(err));
                 });
 
-                this.cppcheck_out.append(`>>> Exec cppcheck\n -> ${exeFile.name} ${cmds.join(' ')}\n\n`);
-                process.Run(exeFile.name, cmds, opts);
+                const _args: string[] = cmds.map(s => (s.includes(' ') && !s.trimStart().startsWith('"')) ? `"${s}"` : s);
+                this.cppcheck_out.append(`>>> Exec cppcheck\n -> ${exeFile.name} ${_args.join(' ')}\n\n`);
+                process.Run(exeFile.name, _args, opts);
             });
         });
     }
