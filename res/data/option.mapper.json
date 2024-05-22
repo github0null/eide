@@ -35,6 +35,13 @@
                             "level-3": "4"
                         }
                     },
+                    "optimize-for-time": {
+                        "keilName": "oTime",
+                        "enum": {
+                            "true": "1",
+                            "false": "0"
+                        }
+                    },
                     "split-load-and-store-multiple": {
                         "keilName": "SplitLS",
                         "enum": {

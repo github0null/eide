@@ -157,17 +157,21 @@
                         "level-0",
                         "level-1",
                         "level-2",
-                        "level-3",
-                        "level-size",
-                        "level-speed"
+                        "level-3"
                     ],
                     "enumDescriptions": [
                         "-O0",
                         "-O1",
                         "-O2",
-                        "-O3",
-                        "-Ospace (for code size)",
-                        "-Otime (for code time)"
+                        "-O3"
+                    ]
+                },
+                "optimize-for-time": {
+                    "markdownDescription": "Optimize For Time",
+                    "type": "boolean",
+                    "enum": [
+                        true,
+                        false
                     ]
                 },
                 "one-elf-section-per-function": {
