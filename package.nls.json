@@ -98,6 +98,8 @@
     "settings.enable.telemetry": "Enable telemetry for extension. We will collect information from the logs to help improve the functionality of this extension.",
 
     "settings.builder.jobs": "The number of threads when build",
+    "settings.builder.extraCommandLine": "Append additional commandline when invoke unify_builder",
+    "settings.builder.presetEnvVars": "Preset Global Environment Variables when build project",
     
     "settings.option.show.toolbar.in.editer.title": "Displays some toolbars in the editor title",
     "settings.option.show.statusbar": "Displays toolbar icons in the status bar",

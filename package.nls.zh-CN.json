@@ -98,6 +98,8 @@
     "settings.enable.telemetry": "启用遥测功能。我们将收集日志中的信息，帮助改进该扩展的功能",
 
     "settings.builder.jobs": "构建时使用的线程数",
+    "settings.builder.extraCommandLine": "构建时 unify_builder 的附加命令行参数",
+    "settings.builder.presetEnvVars": "构建时预设的全局环境变量",
 
     "settings.option.show.toolbar.in.editer.title": "在编辑器的标题栏显示工具栏图标",
     "settings.option.show.statusbar": "在状态栏显示工具栏图标",

@@ -218,6 +218,9 @@
                     },
                     "EIDE.Cpptools.ForceInclude": {
                         "type": "array",
+                        "items": {
+							"type": "string"
+						},
                         "scope": "resource",
                         "markdownDescription": "Force include file path list for c/c++ plug-in intellisence",
                         "default": []
@@ -285,8 +288,19 @@
                     "EIDE.Builder.AdditionalCommandLine": {
                         "type": "string",
                         "scope": "resource",
-                        "markdownDescription": "Append additional commandline when invoke unify_builder",
+                        "markdownDescription": "%settings.builder.extraCommandLine%",
                         "default": ""
+                    },
+                    "EIDE.Builder.EnvironmentVariables": {
+                        "type": "array",
+                        "items": {
+							"type": "string"
+						},
+                        "scope": "resource",
+                        "markdownDescription": "%settings.builder.presetEnvVars%",
+                        "default": [
+                            "# Name=Value"
+                        ]
                     },
                     "EIDE.Option.ShowToolbarInEditerTitle": {
                         "type": "boolean",
