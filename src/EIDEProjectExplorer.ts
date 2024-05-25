@@ -4314,7 +4314,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         paramsFile.Write(JSON.stringify(cmdList));
 
         /* launch */
-        const exeName = ResManager.GetInstance().getBuilder().noSuffixName;
+        const exeName = ResManager.GetInstance().getUnifyBuilderExe().noSuffixName;
         const commandLine = CmdLineHandler.getCommandLine(exeName, ['-r', paramsFile.path]);
         runShellCommand('build workspace', commandLine);
     }

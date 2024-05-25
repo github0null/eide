@@ -25,7 +25,7 @@
 import { File } from "../lib/node-utility/File";
 import { WorkspaceManager } from "./WorkspaceManager";
 import { GlobalEvent } from "./GlobalEvents";
-import { exeSuffix, GetLocalCodePage, osType } from "./Platform";
+import { exeSuffix, GetLocalCodePage, osType, getArchId } from "./Platform";
 import { ExceptionToMessage } from "./Message";
 
 import * as ChildProcess from 'child_process';
@@ -429,30 +429,33 @@ export class ResManager extends events.EventEmitter {
 
     /* ------------------ builder and runtime ----------------- */
 
-    getBuilderDir(): File {
+    getLegacyBuilderDir(): File {
         return <File>this.GetDir('builder');
     }
 
     getMsysBash(): File | undefined {
         if (os.platform() == 'win32') {
-            return File.fromArray([this.getBuilderDir().path, 'msys', 'bin', `bash${exeSuffix()}`]);
+            return File.fromArray([this.getLegacyBuilderDir().path, 'msys', 'bin', `bash${exeSuffix()}`]);
         }
     }
 
     getMsysBinToolPath(toolname: string): string {
         if (os.platform() == 'win32') {
-            return File.fromArray([this.getBuilderDir().path, 'msys', 'bin', `${toolname}${exeSuffix()}`]).path;
+            return File.fromArray([this.getLegacyBuilderDir().path, 'msys', 'bin', `${toolname}${exeSuffix()}`]).path;
         } else {
             return `${toolname}${exeSuffix()}`;
         }
     }
 
-    getBuilder(): File {
-        return File.fromArray([this.getBuilderDir().path, 'bin', `unify_builder${exeSuffix()}`]);
+    getUnifyBuilderExe(): File {
+        let dirname = 'unify_builder';
+        if (osType() == 'darwin')
+            dirname += File.sep + getArchId();
+        return File.fromArray([this.getBuiltInToolsDir().path, dirname, `unify_builder${exeSuffix()}`]);
     }
 
     getSerialPortExe(): File {
-        return File.fromArray([this.getBuilderDir().path, 'bin', `serial_monitor${exeSuffix()}`]);
+        return File.fromArray([this.getUnifyBuilderExe().dir, `serial_monitor${exeSuffix()}`]);
     }
 
     getBuilderModelsDir(plat?: 'win32' | 'unix'): File {

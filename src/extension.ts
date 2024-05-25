@@ -378,7 +378,7 @@ async function newClangFormatFile() {
 
 function checkBinFolder(binFolder: File): boolean {
     return binFolder.IsDir() &&
-        File.fromArray([binFolder.path, File.ToLocalPath(`builder/bin/unify_builder${platform.exeSuffix()}`)]).IsFile();
+        File.fromArray([binFolder.path, 'VERSION']).IsFile();
 }
 
 async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean> {
@@ -678,12 +678,55 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
         platform.DeleteDir(binFolder);
     }
 
-    // chmod executable's permission
     if (installedDone) {
-        initBinariesExecutablePermission();
+        onBinariesInstallDone();
     }
 
     return installedDone;
+}
+
+function onBinariesInstallDone() {
+
+    const resManager = ResManager.GetInstance();
+
+    // chmod +x for other executable files
+    if (os.platform() != 'win32') {
+
+        const exeLi: string[] = [];
+
+        // get exe file list from folders
+        for (const dir of [
+            File.fromArray([resManager.GetBinDir().path, 'scripts']),
+            File.fromArray([resManager.getLegacyBuilderDir().path, 'utils']),
+            File.fromArray([resManager.getUnifyBuilderExe().dir])
+        ]) {
+            dir.GetList(undefined, File.EXCLUDE_ALL_FILTER)
+                .forEach((f) => {
+                    if (!f.suffix) { // nosuffix file is an exe file
+                        exeLi.push(f.path);
+                    }
+                });
+        }
+
+        for (const path of exeLi) {
+            try {
+                ChildProcess.execSync(`chmod +x "${path}"`);
+                GlobalEvent.emit('globalLog', newMessage('Info', `chmod +x "${path}"`));
+            } catch (error) {
+                GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            }
+        }
+    }
+
+    // delete legacy builder dir
+    const legacyDir = File.fromArray([resManager.getLegacyBuilderDir().path, 'bin']);
+    if (legacyDir.IsDir()) {
+        platform.DeleteAllChildren(legacyDir);
+        fs.writeFileSync(legacyDir.path + '/' + 'NOTICE.TXT',
+            [`unify_builder has been moved to '${resManager.getUnifyBuilderExe().dir}, this folder is deprecated'`,
+             `---`,
+             `unify_builder 的位置已被转移到 '${resManager.getUnifyBuilderExe().dir}'，该位置已被弃用`].join(os.EOL));
+    }
 }
 
 //////////////////////////////////////////////////
@@ -696,13 +739,13 @@ function exportEnvToSysPath(context?: vscode.ExtensionContext) {
 
     const settingManager = SettingManager.GetInstance();
     const resManager = ResManager.GetInstance();
-    const builderFolder = resManager.getBuilderDir();
+    const legacyBuilderDir = resManager.getLegacyBuilderDir();
 
     // export some eide binaries path to system env path
     const systemEnvPaths: string[] = [
-        File.normalize(`${builderFolder.path}/bin`), // builder bin folder
-        File.normalize(`${builderFolder.path}/utils`), // utils tool folder
-        File.normalize(`${builderFolder.dir}/scripts`),
+        File.normalize(`${resManager.getUnifyBuilderExe().dir}`),
+        File.normalize(`${legacyBuilderDir.path}/utils`), // utils tool folder
+        File.normalize(`${legacyBuilderDir.dir}/scripts`),
         File.normalize(`${resManager.Get7zDir().path}`), // export built-in 7za tool
         File.normalize(`${resManager.getBuiltInToolsDir().path}/utils`) // builtin utils tool folder
     ];
@@ -780,7 +823,7 @@ function exportEnvToSysPath(context?: vscode.ExtensionContext) {
     });
 
     // search built-in tools and export path to system env
-    builderFolder.GetList(File.EXCLUDE_ALL_FILTER).forEach((subDir) => {
+    legacyBuilderDir.GetList(File.EXCLUDE_ALL_FILTER).forEach((subDir) => {
         const binFolder = File.normalize(`${subDir.path}/bin`);
         if (File.IsDir(binFolder)) {
             pathList.push({
@@ -960,40 +1003,6 @@ async function checkAndInstallRuntime() {
                 // https://dotnet.microsoft.com/en-us/download/dotnet/scripts
                 // https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-6.0.5-windows-x64-installer
                 utility.openUrl(`https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-6.0.5-windows-x64-installer`);
-            }
-        }
-    }
-}
-
-function initBinariesExecutablePermission() {
-
-    const resManager = ResManager.GetInstance();
-
-    // chmod +x for other executable files
-    if (os.platform() != 'win32') {
-
-        const exeLi: string[] = [];
-
-        // get exe file list from folders
-        for (const dir of [
-            File.fromArray([resManager.GetBinDir().path, 'scripts']),
-            File.fromArray([resManager.getBuilderDir().path, 'utils']),
-            File.fromArray([resManager.getBuilderDir().path, 'bin'])
-        ]) {
-            dir.GetList(undefined, File.EXCLUDE_ALL_FILTER)
-                .forEach((f) => {
-                    if (!f.suffix) { // nosuffix file is an exe file
-                        exeLi.push(f.path);
-                    }
-                });
-        }
-
-        for (const path of exeLi) {
-            try {
-                ChildProcess.execSync(`chmod +x "${path}"`);
-                GlobalEvent.emit('globalLog', newMessage('Info', `chmod +x "${path}"`));
-            } catch (error) {
-                GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
             }
         }
     }
@@ -1610,7 +1619,7 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
                                 .execSync(`memap -t ${memapTyp} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`)
                                 .toString().split(/\r\n|\n/);
                         } else {
-                            const memapRoot = ResManager.GetInstance().getBuilderDir().path + File.sep + 'utils';
+                            const memapRoot = ResManager.GetInstance().getLegacyBuilderDir().path + File.sep + 'utils';
                             const command = `python memap -t ${memapTyp} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`;
                             lines = ChildProcess
                                 .execSync(command, { cwd: memapRoot })
