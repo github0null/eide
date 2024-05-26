@@ -38,7 +38,7 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/MIPS/RISC-V",
-    "version": "3.16.1",
+    "version": "3.17.0",
     "preview": false,
     "engines": {
         "vscode": "^1.67.0"
@@ -218,6 +218,9 @@
                     },
                     "EIDE.Cpptools.ForceInclude": {
                         "type": "array",
+                        "items": {
+							"type": "string"
+						},
                         "scope": "resource",
                         "markdownDescription": "Force include file path list for c/c++ plug-in intellisence",
                         "default": []
@@ -285,8 +288,19 @@
                     "EIDE.Builder.AdditionalCommandLine": {
                         "type": "string",
                         "scope": "resource",
-                        "markdownDescription": "Append additional commandline when invoke unify_builder",
+                        "markdownDescription": "%settings.builder.extraCommandLine%",
                         "default": ""
+                    },
+                    "EIDE.Builder.EnvironmentVariables": {
+                        "type": "array",
+                        "items": {
+							"type": "string"
+						},
+                        "scope": "resource",
+                        "markdownDescription": "%settings.builder.presetEnvVars%",
+                        "default": [
+                            "# Name=Value"
+                        ]
                     },
                     "EIDE.Option.ShowToolbarInEditerTitle": {
                         "type": "boolean",

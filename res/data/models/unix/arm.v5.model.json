@@ -173,13 +173,18 @@
                 "type": "keyValue",
                 "command": "",
                 "enum": {
-                    "default": "-O0",
+                    "default": "",
                     "level-0": "-O0",
                     "level-1": "-O1",
                     "level-2": "-O2",
-                    "level-3": "-O3",
-                    "level-size": "-Ospace",
-                    "level-speed": "-Otime"
+                    "level-3": "-O3"
+                }
+            },
+            "optimize-for-time": {
+                "type": "selectable",
+                "command": {
+                    "true": "-Otime",
+                    "false": ""
                 }
             },
             "one-elf-section-per-function": {
@@ -267,13 +272,18 @@
                 "type": "keyValue",
                 "command": "",
                 "enum": {
-                    "default": "-O0",
+                    "default": "",
                     "level-0": "-O0",
                     "level-1": "-O1",
                     "level-2": "-O2",
-                    "level-3": "-O3",
-                    "level-size": "-Ospace",
-                    "level-speed": "-Otime"
+                    "level-3": "-O3"
+                }
+            },
+            "optimize-for-time": {
+                "type": "selectable",
+                "command": {
+                    "true": "-Otime",
+                    "false": ""
                 }
             },
             "one-elf-section-per-function": {

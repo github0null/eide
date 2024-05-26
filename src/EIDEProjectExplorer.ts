@@ -4314,7 +4314,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         paramsFile.Write(JSON.stringify(cmdList));
 
         /* launch */
-        const exeName = ResManager.GetInstance().getBuilder().noSuffixName;
+        const exeName = ResManager.GetInstance().getUnifyBuilderExe().noSuffixName;
         const commandLine = CmdLineHandler.getCommandLine(exeName, ['-r', paramsFile.path]);
         runShellCommand('build workspace', commandLine);
     }
@@ -5788,8 +5788,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     GlobalEvent.emit('msg', ExceptionToMessage(err));
                 });
 
-                this.cppcheck_out.append(`>>> Exec cppcheck\n -> ${exeFile.name} ${cmds.join(' ')}\n\n`);
-                process.Run(exeFile.name, cmds, opts);
+                const _args: string[] = cmds.map(s => (s.includes(' ') && !s.trimStart().startsWith('"')) ? `"${s}"` : s);
+                this.cppcheck_out.append(`>>> Exec cppcheck\n -> ${exeFile.name} ${_args.join(' ')}\n\n`);
+                process.Run(exeFile.name, _args, opts);
             });
         });
     }
@@ -6944,7 +6945,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     if (!fromelf.IsFile())
                         throw new Error(`Not found '${fromelf.path}' !`);
                     cont = child_process
-                        .execFileSync(fromelf.path, ['--text', '-v', binFile.path])
+                        .execFileSync(fromelf.path, ['--text', '-v', binFile.path], { maxBuffer: 50 * 1024 * 1024 })
                         .toString();
                 } catch (error) {
                     const err = <Error>error;
@@ -6980,7 +6981,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
                 try {
                     cont = child_process
-                        .execFileSync(`${readelf}${exeSuffix()}`, ['-e', binFile.path])
+                        .execFileSync(`${readelf}${exeSuffix()}`, ['-e', binFile.path], { maxBuffer: 50 * 1024 * 1024 })
                         .toString();
                 } catch (error) {
                     const err = <Error>error;

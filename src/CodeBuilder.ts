@@ -323,7 +323,7 @@ export abstract class CodeBuilder {
 
         // generate command line
         const commandLine = CmdLineHandler.getCommandLine(
-            this.getBuilderExe().noSuffixName,
+            ResManager.instance().getUnifyBuilderExe().noSuffixName,
             this.getCommands()
         );
 
@@ -565,10 +565,6 @@ export abstract class CodeBuilder {
         }
 
         return cmds;
-    }
-
-    private getBuilderExe(): File {
-        return ResManager.GetInstance().getBuilder();
     }
 
     protected abstract getMcuMemorySize(): MemorySize | undefined;

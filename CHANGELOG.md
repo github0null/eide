@@ -6,6 +6,19 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.17.0] update
+
+**New**:
+  - `unify_builder`: Print 'Section Memory Usage' for AC5 / AC6 Compiler.
+  - `Global Environment Variables`: A new plug-in settings: 'EIDE.Builder.EnvironmentVariables' for preset some global `Environment Variables`.
+
+**Change**:
+  - `unify_builder`: Bundle unify_builder executable files in plug-in package.
+
+Merge `v3.16.2-prerelease` bugs fix.
+
+***
+
 ### [v3.16.1] update
 
 **Fix**:

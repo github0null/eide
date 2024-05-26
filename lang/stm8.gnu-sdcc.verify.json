@@ -344,7 +344,7 @@
                 },
                 "$disableOutputTask": {
                     "type": "boolean",
-                    "markdownDescription": "Not Output Hex/Bin File",
+                    "markdownDescription": "Don't Output Hex/Bin File",
                     "description.zh-cn": "不生成 Hex/Bin 文件",
                     "enum": [
                         true,

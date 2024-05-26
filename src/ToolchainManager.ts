@@ -1560,7 +1560,7 @@ class AC5 implements IToolchian {
             beforeBuildTasks: [],
             afterBuildTasks: [],
             global: {
-                "use-microLIB": true,
+                "use-microLIB": false,
                 "output-debug-info": "enable"
             },
             'c/cpp-compiler': {
@@ -1771,7 +1771,7 @@ class AC6 implements IToolchian {
             beforeBuildTasks: [],
             afterBuildTasks: [],
             global: {
-                "use-microLIB": true,
+                "use-microLIB": false,
                 "output-debug-info": "enable"
             },
             'c/cpp-compiler': {

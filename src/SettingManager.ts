@@ -112,6 +112,10 @@ export class SettingManager {
                         this.refreshC51Status();
                     }
 
+                    if (e.affectsConfiguration('EIDE.Builder.EnvironmentVariables')) {
+                        this.syncGlobalEnvVariablesToNodeEnv();
+                    }
+
                 } catch (error) {
                     GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Hidden'));
                 }
@@ -251,6 +255,34 @@ export class SettingManager {
     }
 
     //--------------------- Global Option ------------------------
+
+    syncGlobalEnvVariablesToNodeEnv() {
+        const envs = this.getGlobalEnvVariables();
+        for (const key in envs) {
+            process.env[key] = envs[key];
+        }
+    }
+
+    getGlobalEnvVariables(): { [key: string]: string } {
+        const lines = this.getConfiguration().get<string[]>('Builder.EnvironmentVariables') || [];
+        const result: { [key: string]: string } = {};
+        for (const _line of lines) {
+            const str = _line.trim();
+            if (str.startsWith('#'))
+                continue;
+            const sep_idx = str.indexOf('=');
+            if (sep_idx == -1)
+                continue;
+            const k = str.substring(0, sep_idx).trim();
+            if (!/^\w+$/.test(k))
+                continue;
+            const v = str.substring(sep_idx + 1).trim();
+            if (v) {
+                result[k] = v;
+            }
+        }
+        return result;
+    }
 
     getForceIncludeList(): string[] {
         return this.getConfiguration().get<string[]>('Cpptools.ForceInclude') || [];

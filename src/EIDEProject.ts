@@ -917,7 +917,11 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     }
 
     public getProjectVariables(): { [key: string]: string } {
-        const _env: { [key: string]: string } = this.getProjectUserEnv() || {};
+        const _env: { [key: string]: string } = SettingManager.GetInstance().getGlobalEnvVariables() || {};
+        /* set user env */
+        const _uenv = this.getProjectUserEnv();
+        for (const key in _uenv) _env[key] = _uenv[key];
+        /* set built-in env */
         const _ienv = this.getBuiltinVarKvMap();
         for (const key in _ienv) _env[key] = _ienv[key];
         return _env;
@@ -1265,11 +1269,14 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             if (!File.isEnvPath(path))
                 break; // not have any env var, end
 
-            // replace stable env
+            // replace built-in env
             path = this._replaceProjEnv(path);
 
             // replace user env
             path = this._replaceUserEnv(path, true);
+
+            // replace global envs
+            path = this._replaceGlobalEnv(path, true);
         }
 
         return path;
@@ -1296,6 +1303,20 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
                 if (ignore_case_sensitivity) flag += 'i';
                 const reg = new RegExp(String.raw`\$\(${key}\)|\$\{${key}\}`, flag);
                 str = str.replace(reg, prjEnv[key]);
+            }
+        }
+        return str;
+    }
+
+    // plug-in global env vars
+    private _replaceGlobalEnv(str: string, ignore_case_sensitivity: boolean = false): string {
+        const globEnv = SettingManager.GetInstance().getGlobalEnvVariables();
+        if (globEnv) {
+            for (const key in globEnv) {
+                let flag = 'g';
+                if (ignore_case_sensitivity) flag += 'i';
+                const reg = new RegExp(String.raw`\$\(${key}\)|\$\{${key}\}`, flag);
+                str = str.replace(reg, globEnv[key]);
             }
         }
         return str;
@@ -3403,7 +3424,8 @@ class EIDEProject extends AbstractProject {
                     "redhat.vscode-yaml",
                     "IBM.output-colorizer",
                     "cschlosser.doxdocgen",
-                    "ms-vscode.vscode-serial-monitor"
+                    "ms-vscode.vscode-serial-monitor",
+                    "alefragnani.project-manager"
                 ];
 
                 const prjInfo = this.GetConfiguration().config;
