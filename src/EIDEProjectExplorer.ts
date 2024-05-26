@@ -6945,7 +6945,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     if (!fromelf.IsFile())
                         throw new Error(`Not found '${fromelf.path}' !`);
                     cont = child_process
-                        .execFileSync(fromelf.path, ['--text', '-v', binFile.path])
+                        .execFileSync(fromelf.path, ['--text', '-v', binFile.path], { maxBuffer: 50 * 1024 * 1024 })
                         .toString();
                 } catch (error) {
                     const err = <Error>error;
@@ -6981,7 +6981,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
                 try {
                     cont = child_process
-                        .execFileSync(`${readelf}${exeSuffix()}`, ['-e', binFile.path])
+                        .execFileSync(`${readelf}${exeSuffix()}`, ['-e', binFile.path], { maxBuffer: 50 * 1024 * 1024 })
                         .toString();
                 } catch (error) {
                     const err = <Error>error;
