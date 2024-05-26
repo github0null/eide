@@ -865,6 +865,8 @@ function exportEnvToSysPath(context?: vscode.ExtensionContext) {
     // 支持运行时回滚
     // https://learn.microsoft.com/zh-cn/dotnet/core/whats-new/dotnet-core-3-0#major-version-runtime-roll-forward
     process.env['DOTNET_ROLL_FORWARD'] = 'Major';
+
+    SettingManager.GetInstance().syncGlobalEnvVariablesToNodeEnv();
 }
 
 async function checkAndInstallRuntime() {

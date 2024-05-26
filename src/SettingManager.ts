@@ -112,6 +112,10 @@ export class SettingManager {
                         this.refreshC51Status();
                     }
 
+                    if (e.affectsConfiguration('EIDE.Builder.EnvironmentVariables')) {
+                        this.syncGlobalEnvVariablesToNodeEnv();
+                    }
+
                 } catch (error) {
                     GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Hidden'));
                 }
@@ -251,6 +255,13 @@ export class SettingManager {
     }
 
     //--------------------- Global Option ------------------------
+
+    syncGlobalEnvVariablesToNodeEnv() {
+        const envs = this.getGlobalEnvVariables();
+        for (const key in envs) {
+            process.env[key] = envs[key];
+        }
+    }
 
     getGlobalEnvVariables(): { [key: string]: string } {
         const lines = this.getConfiguration().get<string[]>('Builder.EnvironmentVariables') || [];
