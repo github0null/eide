@@ -6,6 +6,16 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.17.1] revision
+
+**Fix**:
+  - `Permission Error`: Fix Permission Denied when execute unify_builder on Unix-like system. 
+
+**Optimize**
+  - `Armcc Memory Print`: Optimize ARMCC map memory information print.
+
+***
+
 ### [v3.17.0] update
 
 **New**:
