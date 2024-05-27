@@ -697,8 +697,7 @@ function onBinariesInstallDone() {
         // get exe file list from folders
         for (const dir of [
             File.fromArray([resManager.GetBinDir().path, 'scripts']),
-            File.fromArray([resManager.getLegacyBuilderDir().path, 'utils']),
-            File.fromArray([resManager.getUnifyBuilderExe().dir])
+            File.fromArray([resManager.getLegacyBuilderDir().path, 'utils'])
         ]) {
             dir.GetList(undefined, File.EXCLUDE_ALL_FILTER)
                 .forEach((f) => {
@@ -708,12 +707,17 @@ function onBinariesInstallDone() {
                 });
         }
 
+        if (exeLi.length > 0)
+            GlobalEvent.emit('globalLog.append', 'Setup binaries permissions -> ' + os.EOL);
+
         for (const path of exeLi) {
             try {
-                ChildProcess.execSync(`chmod +x "${path}"`);
-                GlobalEvent.emit('globalLog', newMessage('Info', `chmod +x "${path}"`));
+                const cmd = `chmod +x "${path}"`;
+                GlobalEvent.emit('globalLog.append', cmd + os.EOL);
+                ChildProcess.execSync(cmd);
             } catch (error) {
                 GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+                GlobalEvent.emit('globalLog.show');
             }
         }
     }
@@ -1039,7 +1043,7 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
                     fs.accessSync(exePath, fs.constants.R_OK | fs.constants.X_OK);
                 } catch (error) {
                     const cmd = `chmod +x "${exePath}"`;
-                    GlobalEvent.emit('globalLog.append', cmd);
+                    GlobalEvent.emit('globalLog.append', cmd + os.EOL);
                     ChildProcess.execSync(cmd);
                 }
             }
