@@ -1018,12 +1018,34 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
 
     LogDumper.getInstance();
 
-    // chmod +x for 7za 
+    // set exec permission for built-in tools
     if (os.platform() != 'win32') {
+
+        const exelist: string[] = [
+            resManager.Get7za().path,
+        ];
+
+        new File(resManager.getUnifyBuilderExe().dir)
+            .GetList(undefined, File.EXCLUDE_ALL_FILTER)
+            .forEach((f) => {
+                if (!f.suffix) { // nosuffix file is an exe file
+                    exelist.push(f.path);
+                }
+            });
+
         try {
-            ChildProcess.execSync(`chmod +x "${resManager.Get7za().path}"`);
+            for (const exePath of exelist) {
+                try {
+                    fs.accessSync(exePath, fs.constants.R_OK | fs.constants.X_OK);
+                } catch (error) {
+                    const cmd = `chmod +x "${exePath}"`;
+                    GlobalEvent.emit('globalLog.append', cmd);
+                    ChildProcess.execSync(cmd);
+                }
+            }
         } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Error'));
+            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            GlobalEvent.emit('globalLog.show');
         }
     }
 
