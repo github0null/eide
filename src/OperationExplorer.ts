@@ -1054,11 +1054,19 @@ export class OperationExplorer {
             if (curTempGroup.children.length > 0) {
 
                 let category_sel_list: CategoryPickItem[] = curTempGroup.children.map((group) => {
-                    return <CategoryPickItem>{
-                        name: group.name,
-                        label: group.dispName || group.name,
-                        description: group.desc || ""
-                    };
+                    if (curTempGroup.name == '/') {
+                        return <CategoryPickItem>{
+                            name: group.name,
+                            label: group.dispName || group.name,
+                            detail: group.desc || group.dispName || ""
+                        };
+                    } else {
+                        return <CategoryPickItem>{
+                            name: group.name,
+                            label: group.dispName || group.name,
+                            description: group.desc || ""
+                        };
+                    }
                 }).sort((a, b) => { return a.label.localeCompare(b.label); });
 
                 if (prevGroupStack.length > 0) {
