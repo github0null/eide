@@ -610,8 +610,56 @@ class SDCC implements IToolchian {
         "ez80_z80": "z80"
     };
 
+    private readonly defaultProcessors = [
+        "mcs51",
+        "z80",
+        "z180",
+        "stm8"
+    ];
+
     newInstance(): IToolchian {
         return new SDCC();
+    }
+
+    private __lastActivedTargetInfo: ToolchainTargetSupportedInfo | undefined;
+    getGccCompilerTargetInfo(): ToolchainTargetSupportedInfo | undefined {
+
+        if (this.__lastActivedTargetInfo)
+            return this.__lastActivedTargetInfo;
+
+        try {
+            // SDCC : mcs51/z80/z180/r2k/r2ka/r3ka/sm83/tlcs90/ez80_z80/z80n/ds390/pic16/pic14/TININative/ds400\
+            // /hc08/s08/stm8/pdk13/pdk14/pdk15/mos6502 4.2.0 #13081 (MINGW64)
+            const sdccPath = NodePath.join(this.getToolchainDir().path, 'bin', `sdcc${platform.exeSuffix()}`);
+            const lines = child_process.execFileSync(sdccPath, ['-v']).toString().trim().split(/\r\n|\n/);
+
+            let cpus: string[] = [];
+            for (const _line of lines) {
+                const m = /^SDCC\s*:\s*([^\s]+)\s+/.exec(_line.trim());
+                if (m && m.length > 1) {
+                    cpus = m[1].trim().split('/');
+                    break;
+                }
+            }
+
+            this.__lastActivedTargetInfo = <ToolchainTargetSupportedInfo>{
+                machine: 'sdcc',
+                archs: cpus,
+                abis: [],
+                rv_codeModels: []
+            };
+
+            return this.__lastActivedTargetInfo;
+
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            return <ToolchainTargetSupportedInfo>{
+                machine: 'sdcc',
+                archs: this.defaultProcessors,
+                abis: [],
+                rv_codeModels: []
+            };
+        }
     }
 
     getGccFamilyCompilerPathForCpptools(): string | undefined {
