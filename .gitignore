@@ -12,7 +12,6 @@ pack.js
 test.js
 *.js.map
 *.cpuprofile
-package-lock.json
 
 # private
 /src/Telemetry
