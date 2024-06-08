@@ -29,6 +29,7 @@ import * as NodePath from 'path';
 import * as child_process from 'child_process';
 import * as os from 'os';
 import * as yaml from 'yaml';
+import * as ini from 'ini';
 
 import { File } from '../lib/node-utility/File';
 import { ResManager } from './ResManager';
@@ -3047,8 +3048,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
         const replaceUserTaskTmpVar = (t: any) => {
             const reKeilPrjDir = baseInfo.rootFolder.ToRelativeLocalPath(keilPrjFile.dir) || keilPrjFile.dir;
-            t.command = t.command.replace('$<cd:mdk-proj-dir>', `cd .\\${reKeilPrjDir}`);
+            if (reKeilPrjDir === '.')
+                t.command = t.command.replace('$<cd:mdk-proj-dir> && ', '');
+            else
+                t.command = t.command.replace('$<cd:mdk-proj-dir>', `cd .\\${reKeilPrjDir}`);
         }
+
+        // project env
+        const prjenv: any = {};
 
         // init all targets
         for (const keilTarget of targets) {
@@ -3130,6 +3137,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 }
             }
 
+            // env
+            if (keilTarget.env && Object.keys(keilTarget.env).length > 0) {
+                prjenv[`${keilTarget.name}`] = copyObject(keilTarget.env);
+            }
+
             projectInfo.targets[keilTarget.name] = newTarget;
         }
 
@@ -3148,6 +3160,12 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
         // save all config
         baseInfo.prjConfig.Save();
+
+        // save env
+        if (Object.keys(prjenv).length > 0) {
+            File.fromArray([baseInfo.rootFolder.path, AbstractProject.EIDE_DIR, 'env.ini'])
+                .Write(ini.stringify(prjenv));
+        }
 
         // switch project
         const selection = await vscode.window.showInformationMessage(
