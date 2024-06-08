@@ -341,3 +341,10 @@ export function getWindowsMainVersion(): number | undefined {
     }
 }
  */
+
+export function userhome(): string {
+    if (process.env['VSCODE_PORTABLE'])
+        return NodePath.join(process.env['VSCODE_PORTABLE'], 'user-data');
+    else
+        return os.homedir();
+}

@@ -755,7 +755,7 @@ function exportEnvToSysPath(context?: vscode.ExtensionContext) {
     ];
 
     //
-    const eideToolsFolder = new File(File.normalize(`${os.homedir()}/.eide/tools`));
+    const eideToolsFolder = new File(File.normalize(`${platform.userhome()}/.eide/tools`));
     if (!eideToolsFolder.IsDir()) {
         try {
             new File(eideToolsFolder.path).CreateDir(true);
@@ -1369,7 +1369,7 @@ class EideTerminalProvider implements vscode.TerminalProfileProvider {
 
     private cwd(allowUseLocActiveFolder?: boolean): string {
 
-        let cwd = os.homedir();
+        let cwd = platform.userhome();
 
         const workspace = WorkspaceManager.getInstance().getWorkspaceRoot();
         if (workspace && workspace.IsDir()) {

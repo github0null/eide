@@ -63,7 +63,7 @@ function requestAndActivate_COSMIC_STM8(toolchain: IToolchian) {
                     name: '输入用户名（系统的当前账户名）',
                     attrs: { 'singleLine': true },
                     data: <SimpleUIConfigData_input>{
-                        value: path.basename(os.homedir())
+                        value: process.env.USERNAME || 'administrator'
                     }
                 },
                 'hostId': {
@@ -115,7 +115,7 @@ function requestAndActivate_COSMIC_STM8(toolchain: IToolchian) {
                     name: 'User Name For This PC',
                     attrs: { 'singleLine': true },
                     data: <SimpleUIConfigData_input>{
-                        value: path.basename(os.homedir())
+                        value: process.env.USERNAME || 'administrator'
                     }
                 },
                 'hostId': {
