@@ -862,6 +862,8 @@ export interface PyOCDFlashOptions extends UploadOption {
     speed?: string;
 
     baseAddr?: string;
+
+    otherCmds: string;
 }
 
 class PyOCDUploader extends HexUploader<string[]> {
@@ -928,9 +930,14 @@ class PyOCDUploader extends HexUploader<string[]> {
 
     protected _launch(commands: string[]): void {
 
-        const commandLine: string = 'pyocd ' + commands.map((line) => {
-            return CmdLineHandler.quoteString(line, '"');
-        }).join(' ');
+        let commandLine: string = 'pyocd ' +
+            commands.map((line) => CmdLineHandler.quoteString(line, '"')).join(' ');
+
+        // add user cmds
+        const options = this.getUploadOptions<STLinkOptions>();
+        if (options.otherCmds) {
+            commandLine = commandLine.replace(/^pyocd\s+(\w+)/, `pyocd $1 ` + options.otherCmds);
+        }
 
         // run
         runShellCommand(this.toolType, commandLine);

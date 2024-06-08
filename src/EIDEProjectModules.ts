@@ -2392,6 +2392,8 @@ class PyOCDUploadModel extends UploadConfigModel<PyOCDFlashOptions> {
                 return view_str$flasher$baseAddr;
             case 'config':
                 return view_str$flasher$options;
+            case 'otherCmds':
+                return view_str$flasher$other_cmds;
             default:
                 return super.GetKeyDescription(key);
         }
@@ -2425,6 +2427,8 @@ class PyOCDUploadModel extends UploadConfigModel<PyOCDFlashOptions> {
                 return 'Property_16x.svg';
             case 'config':
                 return 'ConfigurationEditor_16x.svg';
+            case 'otherCmds':
+                return 'ImmediateWindow_16x.svg';
             default:
                 return super.getKeyIcon(key);
         }
@@ -2440,6 +2444,8 @@ class PyOCDUploadModel extends UploadConfigModel<PyOCDFlashOptions> {
                 return 'INPUT';
             case 'config':
                 return 'EVENT';
+            case 'otherCmds':
+                return 'INPUT';
             default:
                 return super.GetKeyType(key);
         }
@@ -2547,7 +2553,8 @@ class PyOCDUploadModel extends UploadConfigModel<PyOCDFlashOptions> {
             targetName: 'cortex_m',
             baseAddr: '0x08000000',
             speed: '4M',
-            config: `${AbstractProject.EIDE_DIR}/pyocd.yaml`
+            config: `${AbstractProject.EIDE_DIR}/pyocd.yaml`,
+            otherCmds: ''
         };
     }
 }
