@@ -80,6 +80,9 @@
         "test": "npm run compile && node ./node_modules/vscode/bin/test"
     },
     "devDependencies": {
+        "@babel/core": "^7.24.7",
+        "@babel/plugin-proposal-nullish-coalescing-operator": "^7.18.6",
+        "@babel/preset-env": "^7.24.7",
         "@types/ftp": "^0.3.31",
         "@types/iconv-lite": "0.0.1",
         "@types/ini": "^1.3.30",
@@ -90,6 +93,7 @@
         "@types/vscode": "1.67.0",
         "@types/x2js": "^3.1.0",
         "@types/xml2js": "^0.4.11",
+        "babel-loader": "^8.3.0",
         "ts-loader": "^6.2.1",
         "tslint": "^5.20.1",
         "typescript": "^3.7.3",
@@ -100,6 +104,7 @@
         "iconv-lite": "^0.5.0",
         "ini": "^2.0.0",
         "jsonc": "^2.0.0",
+        "jsonc-parser": "^3.2.1",
         "mathjs": "^11.5.0",
         "micromatch": "^4.0.4",
         "node-7z": "^3.0.0",
@@ -219,8 +224,8 @@
                     "EIDE.Cpptools.ForceInclude": {
                         "type": "array",
                         "items": {
-							"type": "string"
-						},
+                            "type": "string"
+                        },
                         "scope": "resource",
                         "markdownDescription": "Force include file path list for c/c++ plug-in intellisence",
                         "default": []
@@ -294,8 +299,8 @@
                     "EIDE.Builder.EnvironmentVariables": {
                         "type": "array",
                         "items": {
-							"type": "string"
-						},
+                            "type": "string"
+                        },
                         "scope": "resource",
                         "markdownDescription": "%settings.builder.presetEnvVars%",
                         "default": [
@@ -902,8 +907,16 @@
                 }
             },
             {
-                "command": "_cl.eide.project.genDebugConfigTemplate",
-                "title": "%eide.flash.gen.dbgconf%"
+                "command": "_cl.eide.project.genDebugConfigTemplate.jlink",
+                "title": "JLink"
+            },
+            {
+                "command": "_cl.eide.project.genDebugConfigTemplate.openocd",
+                "title": "OpenOCD (stlink,daplink...)"
+            },
+            {
+                "command": "_cl.eide.project.genDebugConfigTemplate.pyocd",
+                "title": "pyOCD (daplink,stlink...)"
             },
             {
                 "command": "_cl.eide.project.fetchShellFlasher",
@@ -1101,6 +1114,10 @@
             {
                 "id": "_cl.eide.menu/ui/project/export",
                 "label": "%eide.prj.menus.main.export%"
+            },
+            {
+                "id": "_cl.eide.menu/ui/project/gen-debug-cfg",
+                "label": "%eide.flash.gen.dbgconf%"
             }
         ],
         "menus": {
@@ -1278,6 +1295,11 @@
                     "group": "5_group@3"
                 },
                 {
+                    "submenu": "_cl.eide.menu/ui/project/gen-debug-cfg",
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
+                    "group": "5_group@3"
+                },
+                {
                     "command": "_cl.eide.project.showBuildParams",
                     "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
                     "group": "6_group"
@@ -1295,8 +1317,6 @@
                     "submenu": "_cl.eide.menu/ui/project/static-check",
                     "group": "z_group0@0"
                 },
-
-
                 {
                     "command": "_cl.eide.project.addSrcDir",
                     "group": "inline",
@@ -1332,8 +1352,6 @@
                     "when": "viewItem == PROJECT && view == cl.eide.view.projects",
                     "group": "z_group0@1"
                 },
-
-
                 {
                     "command": "_cl.eide.project.sourceRoot.refresh",
                     "group": "inline@0",
@@ -1419,8 +1437,6 @@
                     "when": "viewItem == OUTPUT_FILE_ITEM || viewItem == FILE_ITEM || viewItem == EXCFILE_ITEM || viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM && view == cl.eide.view.projects",
                     "group": "z_group1@1"
                 },
-
-
                 {
                     "command": "_cl.eide.project.addPackage",
                     "group": "inline",
@@ -1452,8 +1468,6 @@
                     "command": "_cl.eide.project.installCmsisDriverInterface",
                     "when": "viewItem == PACK && view == cl.eide.view.projects"
                 },
-
-
                 {
                     "command": "_cl.eide.project.switchToolchain",
                     "group": "inline",
@@ -1467,11 +1481,6 @@
                     "command": "_cl.eide.project.switchUploader",
                     "group": "inline",
                     "when": "viewItem == UPLOAD_OPTION || viewItem == UPLOAD_OPTION_Shell && view == cl.eide.view.projects"
-                },
-                {
-                    "command": "_cl.eide.project.genDebugConfigTemplate",
-                    "when": "viewItem == SOLUTION || viewItem == UPLOAD_OPTION || viewItem == UPLOAD_OPTION_Shell && view == cl.eide.view.projects",
-                    "group": "5_group@3"
                 },
                 {
                     "command": "_cl.eide.project.fetchShellFlasher",
@@ -1575,6 +1584,23 @@
                     "command": "_cl.eide.project.static-check.clear",
                     "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
                     "group": "z_group1@1"
+                }
+            ],
+            "_cl.eide.menu/ui/project/gen-debug-cfg": [
+                {
+                    "command": "_cl.eide.project.genDebugConfigTemplate.jlink",
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
+                    "group": "z_group0@0"
+                },
+                {
+                    "command": "_cl.eide.project.genDebugConfigTemplate.openocd",
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
+                    "group": "z_group0@1"
+                },
+                {
+                    "command": "_cl.eide.project.genDebugConfigTemplate.pyocd",
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
+                    "group": "z_group0@2"
                 }
             ]
         },

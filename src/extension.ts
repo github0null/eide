@@ -228,7 +228,14 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.modifyUploadConfig', (item) => projectExplorer.ModifyUploadConfig(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.switchUploader', (item) => projectExplorer.switchUploader(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.fetchShellFlasher', (item) => projectExplorer.fetchShellFlasher(item)));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.genDebugConfigTemplate', (item) => projectExplorer.genDebugConfigTemplate(item)));
+
+    // debug cfg gen
+    subscriptions.push(vscode.commands.registerCommand(
+        '_cl.eide.project.genDebugConfigTemplate.jlink', (item) => projectExplorer.genDebugConfigTemplate(item, 'jlink')));
+    subscriptions.push(vscode.commands.registerCommand(
+        '_cl.eide.project.genDebugConfigTemplate.openocd', (item) => projectExplorer.genDebugConfigTemplate(item, 'openocd')));
+    subscriptions.push(vscode.commands.registerCommand(
+        '_cl.eide.project.genDebugConfigTemplate.pyocd', (item) => projectExplorer.genDebugConfigTemplate(item, 'pyocd')));
 
     // project deps
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.addIncludeDir', (item) => projectExplorer.AddIncludeDir(item.val.projectIndex)));
