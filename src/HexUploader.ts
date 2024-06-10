@@ -246,7 +246,7 @@ export abstract class HexUploader<InvokeParamsType> {
 /**
  * jlink programer
 */
-export enum ProtocolType {
+export enum JLinkProtocolType {
     JTAG = 0,
     SWD = 1,
     FINE = 3,
@@ -264,7 +264,7 @@ export interface JLinkOptions extends UploadOption {
 
     cpuInfo: CPUInfo;
 
-    proType: ProtocolType;
+    proType: JLinkProtocolType;
 
     speed?: number;
 
@@ -356,12 +356,12 @@ class JLinkUploader extends HexUploader<any> {
             '-ExitOnError', '1',
             '-AutoConnect', '1',
             '-Device', option.cpuInfo.cpuName,
-            '-If', ProtocolType[option.proType],
+            '-If', JLinkProtocolType[option.proType],
             '-Speed', `${option.speed || 4000}`,
             '-CommandFile', jlinkCommandsFile.path
         ];
 
-        if ([ProtocolType.JTAG, ProtocolType.cJTAG].includes(option.proType)) {
+        if ([JLinkProtocolType.JTAG, JLinkProtocolType.cJTAG].includes(option.proType)) {
             cmdList.push('-JTAGConf', '-1,-1');
         }
 

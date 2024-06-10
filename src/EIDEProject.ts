@@ -2481,14 +2481,14 @@ $(OUT_DIR):
         this.onSourceRootChanged('dataChanged');
     }
 
-    public updateDebugConfig() {
-        const debugConfigGenerator = IDebugConfigGenerator.newInstance(this);
-        if (debugConfigGenerator) {
-            const launchConfig = File.fromArray([this.GetWorkspaceConfig().GetFile().dir, AbstractProject.vsCodeDir, 'launch.json']);
-            debugConfigGenerator.load(launchConfig);
-            debugConfigGenerator.update();
-        }
-    }
+    // public updateDebugConfig() {
+    //     const debugConfigGenerator = IDebugConfigGenerator.newInstance(this);
+    //     if (debugConfigGenerator) {
+    //         const launchConfig = File.fromArray([this.GetWorkspaceConfig().GetFile().dir, AbstractProject.vsCodeDir, 'launch.json']);
+    //         debugConfigGenerator.load(launchConfig);
+    //         debugConfigGenerator.update();
+    //     }
+    // }
 
     protected ThrowIf(checkRes: CheckResult) {
         if (!checkRes.success) {

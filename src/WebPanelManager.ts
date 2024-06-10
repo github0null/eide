@@ -52,8 +52,8 @@ export class WebPanelManager {
         return _instance;
     }
 
-    showSimpleConfigUI(cfg: SimpleUIConfig, 
-        onSubmit: (newCfg: SimpleUIConfig, thisPanel: vscode.WebviewPanel) => void, 
+    showSimpleConfigUI(cfg: SimpleUIConfig,
+        onSubmit: (newCfg: SimpleUIConfig, thisPanel: vscode.WebviewPanel) => Promise<void | 'canceled'>,
         onMsg?: (msg: string, thisPanel: vscode.WebviewPanel) => void): vscode.WebviewPanel {
 
         const resManager = ResManager.GetInstance();
@@ -71,8 +71,7 @@ export class WebPanelManager {
 
         panel.iconPath = vscode.Uri.file(resManager.GetIconByName(cfg.iconName || 'Property_16x.svg').path);
 
-        panel.webview.onDidReceiveMessage((_data: any) => {
-
+        panel.webview.onDidReceiveMessage(async (_data: any) => {
             /* it's a message */
             if (typeof _data == 'string') {
                 switch (_data) {
@@ -88,8 +87,9 @@ export class WebPanelManager {
             /* it's obj data */
             else {
                 try {
-                    onSubmit(_data, panel);
-                    panel.webview.postMessage('eide.simple-cfg-ui.status.done');
+                    const ret = await onSubmit(_data, panel);
+                    if (ret != 'canceled')
+                        panel.webview.postMessage('eide.simple-cfg-ui.status.done');
                 } catch (error) {
                     GlobalEvent.emit('error', error);
                     panel.webview.postMessage('eide.simple-cfg-ui.status.fail');

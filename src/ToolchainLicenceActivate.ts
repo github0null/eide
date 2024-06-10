@@ -149,7 +149,7 @@ function requestAndActivate_COSMIC_STM8(toolchain: IToolchian) {
     WebPanelManager.instance().showSimpleConfigUI(ui_1,
 
         // on submited
-        (data) => {
+        async (data) => {
 
             // http://vps362893.ovh.net/registerAuto.php?name={1}&hostid={2}&mail={3}&product=LXSTM8FSE_2023
             // 其中：
@@ -268,7 +268,7 @@ function requestAndActivate_COSMIC_STM8(toolchain: IToolchian) {
         WebPanelManager.instance().showSimpleConfigUI(ui_2,
 
             // on submited
-            (data) => {
+            async (data) => {
 
                 const licenceCont: string = data.items['licence'].data.value;
 

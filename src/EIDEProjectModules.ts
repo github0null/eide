@@ -39,7 +39,7 @@ import { ArrayDelRepetition } from "../lib/node-utility/Utility";
 import { GlobalEvent } from "./GlobalEvents";
 import { ExceptionToMessage, newMessage } from "./Message";
 import { ToolchainName, IToolchian, ToolchainManager } from './ToolchainManager';
-import { HexUploaderType, STLinkOptions, STVPFlasherOptions, StcgalFlashOption, JLinkOptions, ProtocolType, PyOCDFlashOptions, OpenOCDFlashOptions, STLinkProtocolType, CustomFlashOptions } from "./HexUploader";
+import { HexUploaderType, STLinkOptions, STVPFlasherOptions, StcgalFlashOption, JLinkOptions, JLinkProtocolType, PyOCDFlashOptions, OpenOCDFlashOptions, STLinkProtocolType, CustomFlashOptions } from "./HexUploader";
 import { AbstractProject } from "./EIDEProject";
 import { SettingManager } from "./SettingManager";
 import { WorkspaceManager } from "./WorkspaceManager";
@@ -1912,10 +1912,10 @@ class JLinkUploadModel extends UploadConfigModel<JLinkOptions> {
     uploader: HexUploaderType = 'JLink';
 
     readonly protocolList = [
-        ProtocolType.SWD,
-        ProtocolType.JTAG,
-        ProtocolType.FINE,
-        ProtocolType.cJTAG
+        JLinkProtocolType.SWD,
+        JLinkProtocolType.JTAG,
+        JLinkProtocolType.FINE,
+        JLinkProtocolType.cJTAG
     ];
 
     GetKeyDescription(key: string): string {
@@ -1966,7 +1966,7 @@ class JLinkUploadModel extends UploadConfigModel<JLinkOptions> {
     getKeyValue(key: string): string {
         switch (key) {
             case 'proType':
-                return ProtocolType[this.data.proType];
+                return JLinkProtocolType[this.data.proType];
             case 'speed':
                 return (this.data.speed ? this.data.speed.toString() : '4000') + ' kHz';
             case 'cpuInfo':
@@ -2018,7 +2018,7 @@ class JLinkUploadModel extends UploadConfigModel<JLinkOptions> {
             case 'proType':
                 return this.protocolList.map<CompileConfigPickItem>((protocol) => {
                     return {
-                        label: ProtocolType[protocol],
+                        label: JLinkProtocolType[protocol],
                         val: protocol
                     };
                 });
@@ -2043,7 +2043,7 @@ class JLinkUploadModel extends UploadConfigModel<JLinkOptions> {
                 vendor: 'null',
                 cpuName: 'null'
             },
-            proType: ProtocolType.SWD,
+            proType: JLinkProtocolType.SWD,
             speed: 8000,
             otherCmds: ''
         };
@@ -2484,44 +2484,16 @@ class PyOCDUploadModel extends UploadConfigModel<PyOCDFlashOptions> {
         switch (key) {
             case 'targetName':
                 {
-                    /* examples:
-                        {
-                            "name": "rp2040_core1",
-                            "vendor": "Raspberry Pi",
-                            "part_families": [],
-                            "part_number": "RP2040Core1",
-                            "source": "builtin"
-                        }
-                    */
-
-                    const cmdList: string[] = ['pyocd', 'json'];
-                    const cwd = this.api.getRootDir().path;
-
-                    cmdList.push('-j', `"${cwd}"`);
-
-                    if (this.data.config) {
-                        const absPath = this.api.toAbsolutePath(this.data.config);
-                        if (File.IsFile(absPath)) {
-                            cmdList.push('--config', `"${this.data.config}"`);
-                        }
-                    }
-
-                    cmdList.push('-t');
-
                     try {
-                        const command = cmdList.join(' ');
-                        const result = JSON.parse(child_process.execSync(command).toString());
-                        if (!Array.isArray(result['targets'])) {
-                            throw new Error(`Wrong pyocd targets format, 'targets' must be an array !`);
-                        }
-
-                        return result['targets'].map((target) => {
-                            return {
-                                label: target['name'],
-                                val: target['name'],
-                                description: `${target['vendor']} (${target['source']})`
-                            };
-                        });
+                        const pyocdCfgPath = this.data.config ? this.api.toAbsolutePath(this.data.config) : undefined;
+                        return utility.pyocd_getTargetList(this.api.getRootDir(), pyocdCfgPath)
+                            .map((target) => {
+                                return {
+                                    label: target['name'],
+                                    val: target['name'],
+                                    description: `${target['vendor']} (${target['source']})`
+                                };
+                            });
                     } catch (error) {
                         GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
                     }
@@ -2562,13 +2534,6 @@ class PyOCDUploadModel extends UploadConfigModel<PyOCDFlashOptions> {
 class OpenOCDUploadModel extends UploadConfigModel<OpenOCDFlashOptions> {
 
     uploader: HexUploaderType = 'OpenOCD';
-
-    configSearchList: { [name: string]: string[] } = {
-        'build-in': [
-            'scripts',
-            'share/openocd/scripts'
-        ]
-    };
 
     GetKeyDescription(key: string): string {
         switch (key) {
@@ -2648,65 +2613,23 @@ class OpenOCDUploadModel extends UploadConfigModel<OpenOCDFlashOptions> {
         }
     }
 
-    private getConfigList(configClass: string): { name: string, isInWorkspace?: boolean; }[] | undefined {
-
-        const openocdExe = new File(SettingManager.GetInstance().getOpenOCDExePath());
-        const resultList: { name: string, isInWorkspace?: boolean; }[] = [
-            { name: '' } // None
-        ];
-
-        // find in workspace
-        const wsFolder = WorkspaceManager.getInstance().getWorkspaceRoot();
-        if (wsFolder) {
-            for (const path of ['.', '.eide', 'tools']) {
-                const cfgFolder = File.fromArray([wsFolder.path, path]);
-                if (cfgFolder.IsDir()) {
-                    cfgFolder.GetList([/\.cfg$/i], File.EXCLUDE_ALL_FILTER).forEach((file) => {
-                        const rePath = (wsFolder.ToRelativePath(file.path) || file.name);
-                        resultList.push({
-                            name: File.ToUnixPath(rePath).replace('.cfg', ''),
-                            isInWorkspace: true
-                        });
-                    });
-                }
-            }
-        }
-
-        // find in build-in path
-        for (const path of this.configSearchList['build-in']) {
-            const cfgFolder = new File(File.normalize(`${NodePath.dirname(openocdExe.dir)}/${path}/${configClass}`));
-            if (cfgFolder.IsDir()) {
-                cfgFolder.GetAll([/\.cfg$/i], File.EXCLUDE_ALL_FILTER).forEach((file) => {
-                    const rePath = (cfgFolder.ToRelativePath(file.path) || file.name);
-                    resultList.push({
-                        name: File.ToUnixPath(rePath).replace('.cfg', '')
-                    });
-                });
-                break;
-            }
-        }
-
-        return resultList;
-    }
-
     protected GetSelectionList(key: string): CompileConfigPickItem[] | undefined {
         switch (key) {
             case 'target':
-            case 'interface':
-                return this.getConfigList(key)?.map((item) => {
-                    if (item.name.trim() == '') {
-                        return {
-                            label: 'None',
-                            val: item.name
-                        };
-                    } else {
-                        return {
-                            label: `${item.name}.cfg`,
-                            val: item.isInWorkspace ? `\${workspaceFolder}/${item.name}` : item.name,
-                            description: item.isInWorkspace ? 'in workspace' : undefined
-                        };
-                    }
+            case 'interface': {
+                const r: CompileConfigPickItem[] = [{
+                    label: 'None',
+                    val: ''
+                }];
+                utility.openocd_getConfigList(key, this.api.getRootDir()).forEach((item) => {
+                    r.push({
+                        label: `${item.name}.cfg`,
+                        val: item.name,
+                        description: item.isInWorkspace ? 'in workspace' : undefined
+                    });
                 });
+                return r;
+            }
             default:
                 return super.GetSelectionList(key);
         }
