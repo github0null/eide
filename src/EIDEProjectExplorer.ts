@@ -7215,7 +7215,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     const idx = old_cfgs.findIndex(cfg => cfg.name == debugConfig.name);
                     if (idx != -1) {
                         const item = await vscode.window.showWarningMessage(
-                            `${WARNING}: Debug Configuration '${debugConfig.name}' is already existed ! override it ?`, 'Yes', 'No');
+                            isChinese
+                                ? `${WARNING}: 名称为 '${debugConfig.name}' 的调试配置已经存在，需要覆盖它吗？`
+                                : `${WARNING}: Debugger Configuration '${debugConfig.name}' is already existed ! Override It ?`,
+                            'Yes', 'No');
                         if (item === undefined || item === 'No') {
                             return 'canceled';
                         }
@@ -7253,6 +7256,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     version: '0.2.0',
                     configurations: [result.debug_config]
                 }, undefined, 4));
+                vscode.window.showTextDocument(vscode.Uri.file(cfgfile.path), { preview: true });
                 return;
             }
 
