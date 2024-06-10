@@ -6,6 +6,21 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.17.2] preview
+
+**New**:
+  - `Cortex-Debug Configuration Generator`: A new Debugger Configuration Generator with a simple GUI.
+  - `pyOCD Flasher UI`: Support append additional cli command when program flash.
+  - `VSCODE_PORTABLE`: Support `VSCODE_PORTABLE` environment variables.
+
+**Change**:
+  - `Builder Configuration UI (SDCC)`: Automatic get processors list by execute command: `sdcc -v`
+
+**Optimize**
+  - `MDK Project Import`: Optimize import `Keil User Command`.
+
+***
+
 ### [v3.17.1] revision
 
 **Fix**:
@@ -423,7 +438,7 @@ Merge `v3.16.2-prerelease` bugs fix.
 
 **Optimize**:
   - Export built-in env variables to unify_builder
-  - Export more env variables to builder process envirnoment
+  - Export more env variables to builder process environment
   - Resolve recursive vars when parse iar eww file
   - When import a iar project, create new folder if iar project not have independent folder
   - Reload jlink device list after install a cmsis device package
