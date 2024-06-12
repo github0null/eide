@@ -2129,19 +2129,13 @@ $(OUT_DIR):
             env = JSON.parse(JSON.stringify(rawEnv));
 
             // override target env var
-            const targetName = this.getCurrentTarget().toLowerCase();
+            const targetName = this.getCurrentTarget();
             for (const key in env) {
-                if (typeof env[key] == 'object' &&
-                    Array.isArray(env[key]) == false &&
-                    key === targetName) {
-                    try {
-                        const targetObj = env[key];
-                        for (const var_name in targetObj) {
-                            env[var_name] = targetObj[var_name];
-                        }
-                    } catch (error) {
-                        // nothing todo
-                    }
+                if (typeof env[key] == 'object' && !Array.isArray(env[key]) &&
+                    key.toLowerCase() === targetName.toLowerCase()) {
+                    const targetEnv = env[key];
+                    for (const k in targetEnv)
+                        env[k] = targetEnv[k];
                 }
             }
 
