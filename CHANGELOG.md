@@ -6,12 +6,15 @@ All notable version changes will be recorded in this file.
 
 ***
 
-### [v3.17.2] preview
+### [v3.17.3] preview
 
 **New**:
   - `Cortex-Debug Configuration Generator`: A new Debugger Configuration Generator with a simple GUI.
   - `pyOCD Flasher UI`: Support append additional cli command when program flash.
   - `VSCODE_PORTABLE`: Support `VSCODE_PORTABLE` environment variables.
+
+**Fix**:
+  - `Project Environment`: Project environment variables missed.
 
 **Change**:
   - `Builder Configuration UI (SDCC)`: Automatic get processors list by execute command: `sdcc -v`
