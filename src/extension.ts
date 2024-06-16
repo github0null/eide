@@ -40,7 +40,7 @@ import { ResInstaller } from './ResInstaller';
 import {
     ERROR, WARNING, INFORMATION,
     view_str$operation$serialport, view_str$operation$baudrate, view_str$operation$serialport_name,
-    txt_install_now, txt_yes, view_str$prompt$feedback, rating_text, later_text
+    txt_install_now, txt_yes, view_str$prompt$feedback, rating_text, later_text, sponsor_author_text
 } from './StringTable';
 import { LogDumper } from './LogDumper';
 import { StatusBarManager } from './StatusBarManager';
@@ -324,9 +324,13 @@ function postLaunchHook(extensionCtx: vscode.ExtensionContext) {
             Date.now() - appUsrData['InstallTime'] > some_days) {
             resManager.setAppUsrData('Feedbacked', true);
             const msg = view_str$prompt$feedback;
-            vscode.window.showInformationMessage(msg, rating_text).then((ans) => {
+            vscode.window.showInformationMessage(msg, rating_text, sponsor_author_text).then((ans) => {
                 if (ans == rating_text) {
                     utility.openUrl(`https://marketplace.visualstudio.com/items?itemName=CL.eide&ssr=false#review-details`);
+                }
+                if (ans == sponsor_author_text) {
+                    // https://em-ide.com/sponsor
+                    utility.openUrl(`https://em-ide.com/sponsor`);
                 }
             });
         }

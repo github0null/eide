@@ -640,6 +640,11 @@ export const view_str$prompt$feedback = [
 
 //---------------Select string------------------
 
+export const sponsor_author_text = [
+    `赞助作者`,
+    `Sponsor The Author`
+][langIndex];
+
 export const rating_text = [
     '打分',
     'Rating'
