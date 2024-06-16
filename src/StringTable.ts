@@ -324,9 +324,9 @@ export const lib_desc = [
     'Library Search Directories'
 ][langIndex];
 
-export const source_dir_desc = [
-    '源文件目录',
-    'Source File Directories'
+export const source_list_desc = [
+    '源文件列表',
+    'Source Files List'
 ][langIndex];
 
 export const definition_list_desc = [
@@ -417,6 +417,16 @@ export const view_str$env_desc$compiler_folder = [
 ][langIndex];
 
 //---------------Other---------------
+
+export const view_str$prompt$userCanceledOperation = [
+    `用户取消了操作。`,
+    `The user canceled the operation.`
+][langIndex];
+
+export const view_str$prompt$chipPkgNotCompateThisVersion = [
+    `不兼容的项目，'芯片支持包' 功能在新版本的 eide 中发生了变化，点击 '继续' 将强制打开项目并移除不兼容的数据，点击 '取消' 则退出。`,
+    `Incompatible project, the 'Chip Support Package' function has changed in the new version of eide, clicking 'Continue' will force the project to open, and clicking 'Cancel' will cancel the opening.`
+][langIndex];
 
 export const view_str$prompt$removeSrcDir = [
     `从项目中移除源文件夹 '{}' ?`,

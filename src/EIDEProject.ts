@@ -63,6 +63,11 @@ import {
     view_str$prompt$not_found_compiler, view_str$operation$name_can_not_be_blank,
     view_str$operation$name_can_not_have_invalid_char,
     view_str$prompt$project_is_opened_by_another,
+    WARNING,
+    view_str$prompt$chipPkgNotCompateThisVersion,
+    view_str$prompt$userCanceledOperation,
+    continue_text,
+    cancel_text,
 } from './StringTable';
 import { SettingManager } from './SettingManager';
 import { ExeCmd } from '../lib/node-utility/Executable';
@@ -137,6 +142,11 @@ export class VirtualSource implements SourceProvider {
 
     public static isVirtualPath(path: string): boolean {
         return path.startsWith(VirtualSource.rootName);
+    }
+
+    public static toAbsPath(...paths: string[]): string {
+        if (paths.length == 0) return VirtualSource.rootName;
+        return VirtualSource.rootName + '/' + paths.join('/');
     }
 
     public getRoot(): VirtualFolder {
@@ -786,7 +796,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     static readonly asmfileFilter: RegExp = /\.(?:s|asm|a51)$/i;
 
     // this folder list will be excluded when search include path
-    static readonly excludeIncSearchList: string[] = [DependenceManager.DEPENDENCE_DIR];
+    static readonly excludeIncSearchList: string[] = [];
 
     // this folder will be excluded when search source path
     static readonly excludeDirFilter: RegExp = /^\./;
@@ -1021,40 +1031,15 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         // compat old project
         if (this.isOldVersionProject) {
 
-            // rename old 'deps' folder name for old eide version
-            const depsFolder = File.fromArray([this.GetRootDir().path, File.normalize(DependenceManager.DEPENDENCE_DIR)]);
-            if (!depsFolder.IsDir()) { // if 'deps' folder is not exist
-
-                // these folder is for old eide version
-                const oldDepsFolders = [
-                    new File(this.GetRootDir().path + File.sep + 'deps'),
-                    new File(this.GetRootDir().path + File.sep + 'dependence')
-                ];
-
-                // create new 'deps' folder
-                // fs.mkdirSync(depsFolder.path);
-
-                // copy dependence data from old version deps folder
-                for (const folder of oldDepsFolders) {
-                    if (folder.IsDir()) {
-
-                        // copy dependence data
-                        fs.renameSync(folder.path, depsFolder.path);
-
-                        // reset exclude info
-                        const excludeList = this.GetConfiguration().config.excludeList;
-                        const pathMatcher = `.${File.sep}${folder.name}${File.sep}`;
-                        const pathReplacer = `${DependenceManager.DEPENDENCE_DIR}/`;
-                        for (let index = 0; index < excludeList.length; index++) {
-                            const element = excludeList[index];
-                            if (element.startsWith(pathMatcher)) {
-                                excludeList[index] = element.replace(pathMatcher, pathReplacer);
-                            }
-                        }
-
-                        break; // exit, when copy done
-                    }
-                }
+            // these folder is for old eide version
+            // we will delete them
+            const oldDepsFolders = [
+                new File(this.getEideDir().path + File.sep + 'deps'),
+                new File(this.GetRootDir().path + File.sep + 'deps'),
+                new File(this.GetRootDir().path + File.sep + 'dependence')
+            ];
+            for (const folder of oldDepsFolders) {
+                platform.DeleteDir(folder);
             }
 
             // merge old 'env.ini' files for v2.15.3^
@@ -1144,14 +1129,16 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         // auto add deps folder to project
         if (this.isNewProject) {
             if (prjConfig.config.type === 'ARM') { // force add `dependence` folder to project and include list
-                this.dependenceManager.getDependenceRootFolder().CreateDir(false);
-                prjConfig.addSrcDirAtFirst(this.dependenceManager.getDependenceRootFolder().path);
-                prjConfig.CustomDep_AddIncDir(this.dependenceManager.getDependenceRootFolder());
+                // nothing todo
             } else { // remove these folders for other mcu project
-                platform.DeleteDir(this.dependenceManager.getDependenceRootFolder());
-                prjConfig.RemoveSrcDir(this.dependenceManager.getDependenceRootFolder().path);
-                prjConfig.CustomDep_RemoveIncDir(this.dependenceManager.getDependenceRootFolder().path);
+                // nothing todo
             }
+        }
+
+        // remove old deps folder
+        if (this.isOldVersionProject) {
+            prjConfig.RemoveSrcDir(NodePath.join(this.getRootDir().path, AbstractProject.EIDE_DIR, 'deps'));
+            prjConfig.CustomDep_RemoveIncDir(this.toAbsolutePath('.eide/deps'));
         }
     }
 
@@ -1347,20 +1334,27 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             throw new Error(view_str$prompt$project_is_opened_by_another.replace('{path}', wsFile.path));
         }
 
-        await this.BeforeLoad(wsFile);
-        this.LoadConfigurations(wsFile);
-        this.loadProjectDirectory();
-        this.initProjectConfig();
-        this.loadToolchain();
-        this.loadUploader();
-        this.initProjectComponents();
-        this.RegisterEvent();
-        this.LoadSourceRootFolders();
-        await this.AfterLoad();
+        try {
+            await this.BeforeLoad(wsFile);
+            this.LoadConfigurations(wsFile);
+            this.loadProjectDirectory();
+            this.initProjectConfig();
+            this.loadToolchain();
+            this.loadUploader();
+            this.initProjectComponents();
+            this.RegisterEvent();
+            this.LoadSourceRootFolders();
+            await this.AfterLoad();
+        } catch (error) {
+            if (this.lock_handle)
+                FileLock.unlock(this.lock_handle);
+            throw error;
+        }
     }
 
     Close() {
-        if (this.lock_handle) FileLock.unlock(this.lock_handle);
+        if (this.lock_handle)
+            FileLock.unlock(this.lock_handle);
         this.sourceRoots.DisposeAll();
         this.configMap.Dispose();
         this.eideDirWatcher?.Close();
@@ -1518,7 +1512,6 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
                 // convert to abs path
                 curDep.incList = curDep.incList.map(path => this.ToAbsolutePath(path, false));
                 curDep.libList = curDep.libList.map(path => this.ToAbsolutePath(path, false));
-                curDep.sourceDirList = curDep.sourceDirList.map(path => this.ToAbsolutePath(path, false));
                 continue;
             }
 
@@ -2592,9 +2585,7 @@ $(OUT_DIR):
             const prjv_vs_eidev = compareVersion(prj_version, eide_conf_v);
             if (prjv_vs_eidev > 0) { // prj version > eide, error
                 throw Error(`The project config version is '${conf.version}', but eide is '${EIDE_CONF_VERSION}'. Please update 'eide' to the latest version !`);
-            } else if (prjv_vs_eidev < 0) { // prj version < eide, update it
-                conf.version = EIDE_CONF_VERSION;
-                eideFile.Write(JSON.stringify(conf));
+            } else if (prjv_vs_eidev < 0) { // prj version < eide
                 this.isOldVersionProject = true;
                 this.oldProjectVersion = prj_version;
             }
@@ -2604,6 +2595,27 @@ $(OUT_DIR):
         if (conf.miscInfo == undefined ||
             conf.miscInfo.uid == undefined) {
             this.isNewProject = true;
+        }
+
+        // compatibility note
+        if (this.isOldVersionProject) {
+            /* check this project have a package dependence ? */
+            const dep_idx = conf.dependenceList.findIndex(dep =>
+                dep.groupName != ProjectConfiguration.BUILD_IN_GROUP_NAME &&
+                dep.groupName != ProjectConfiguration.CUSTOM_GROUP_NAME);
+            if (conf.packDir && dep_idx != -1) {
+                const sel = await vscode.window.showWarningMessage(
+                    `${WARNING}: ${view_str$prompt$chipPkgNotCompateThisVersion}`, continue_text, cancel_text);
+                if (sel !== continue_text) {
+                    throw Error(view_str$prompt$userCanceledOperation);
+                }
+            }
+        }
+
+        /* udpate project version to lastest */
+        if (this.isOldVersionProject) {
+            conf.version = EIDE_CONF_VERSION;
+            eideFile.Write(JSON.stringify(conf));
         }
     }
 
@@ -3167,7 +3179,7 @@ class EIDEProject extends AbstractProject {
                 const group = <ProjectFileGroup>_group;
                 const rePath = this.ToRelativePath(group.dir.path);
                 // combine HAL folder
-                if (rePath && rePath.startsWith(DependenceManager.DEPENDENCE_DIR)) {
+                if (rePath && rePath.startsWith(PackageManager.PACK_DIR)) {
                     halFiles = halFiles.concat(group.files);
                 } else {
                     fileGroups.push(<FileGroup>{
@@ -3507,6 +3519,18 @@ class EIDEProject extends AbstractProject {
                     }
                 } catch (error) {
                     //
+                }
+            }
+        }
+
+        // delete '.eide/log' folder
+        if (this.isNewProject || this.isOldVersionProject) {
+            const _d = File.from(this.getRootDir().path, '.eide', 'log');
+            if (_d.IsDir()) {
+                try {
+                    platform.DeleteDir(_d);
+                } catch (error) {
+                    GlobalEvent.emit('globalLog', ExceptionToMessage(error));
                 }
             }
         }

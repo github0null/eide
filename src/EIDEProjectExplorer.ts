@@ -227,9 +227,9 @@ class ModifiableDepInfo {
                 case 'libList':
                     this.type = 'LIB_GROUP';
                     break;
-                case 'sourceDirList':
-                    this.type = 'SOURCE_GROUP';
-                    break;
+                // case 'sourceList':
+                //     this.type = 'SOURCE_GROUP';
+                //     break;
                 default:
                     this.type = 'None';
                     break;
@@ -1095,18 +1095,41 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     break;
                 case TreeItemType.PROJECT:
                     {
+                        // add some specific folder to first
+                        const _depsFolder = project
+                            .getVirtualSourceManager()
+                            .getFolder(`${VirtualSource.rootName}/${DependenceManager.DEPS_VFOLDER_NAME}`);
+                        if (_depsFolder && (_depsFolder.files.length +_depsFolder.folders.length) > 0) {
+                            const folderDispName = view_str$project$cmsis_components;
+                            const itemType = TreeItemType.V_FOLDER_ROOT;
+                            const vFolderPath = `${VirtualSource.rootName}/${_depsFolder.name}`;
+                            const hasExtraArgs = project.hasExtraArgsForFolder(vFolderPath, prjExtraArgs, true);
+                            iList.push(new ProjTreeItem(itemType, {
+                                value: folderDispName,
+                                obj: <VirtualFolderInfo>{ path: vFolderPath, vFolder: _depsFolder },
+                                projectIndex: element.val.projectIndex,
+                                otherCtx: { hasExtraArgs: hasExtraArgs },
+                                contextVal: 'FOLDER_ROOT_DEPS',
+                                icon: 'DependencyGraph_16x.svg',
+                                tooltip: newFileTooltipString({
+                                    name: folderDispName,
+                                    path: vFolderPath,
+                                    desc: undefined,
+                                    attr: {
+                                        'SubFiles': _depsFolder.files.length.toString(),
+                                        'SubFolders': _depsFolder.folders.length.toString()
+                                    }
+                                })
+                            }));
+                        }
+
                         // push filesystem source folder
                         project.getSourceRootFolders()
-                            .sort((info_1, info_2) => {
-                                const isComponent = File.ToUnixPath(info_1.displayName) === DependenceManager.DEPENDENCE_DIR;
-                                return isComponent ? -1 : info_1.displayName.localeCompare(info_2.displayName);
-                            })
+                            .sort((folder_1, folder_2) => { return folder_1.displayName.localeCompare(folder_2.displayName); })
                             .forEach((rootInfo) => {
-                                const isComponent = File.ToUnixPath(rootInfo.displayName) === DependenceManager.DEPENDENCE_DIR;
-                                const folderDispName = isComponent ? view_str$project$cmsis_components : rootInfo.displayName;
+                                const folderDispName = rootInfo.displayName;
                                 const isExisted = rootInfo.fileWatcher.file.IsDir();
                                 let dirIcon: string | undefined;
-                                if (isComponent) dirIcon = 'DependencyGraph_16x.svg';
                                 if (rootInfo.needUpdate || !isExisted) dirIcon = 'StatusWarning_16x.svg';
                                 let dirDesc: string | undefined;
                                 if (rootInfo.needUpdate) dirDesc = view_str$project$needRefresh;
@@ -1116,7 +1139,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                     value: folderDispName,
                                     obj: rootInfo.fileWatcher.file,
                                     projectIndex: element.val.projectIndex,
-                                    contextVal: isComponent ? 'FOLDER_ROOT_DEPS' : undefined,
                                     icon: dirIcon,
                                     otherCtx: { hasExtraArgs: hasExtraArgs },
                                     tooltip: newFileTooltipString({
@@ -1132,6 +1154,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                         project.getVirtualSourceRoot().folders
                             .sort((folder1, folder2) => { return folder1.name.localeCompare(folder2.name); })
                             .forEach((vFolder) => {
+                                if (vFolder.name == DependenceManager.DEPS_VFOLDER_NAME) return; // skip <deps> folder
                                 const vFolderPath = `${VirtualSource.rootName}/${vFolder.name}`;
                                 const isExcluded = project.isExcluded(vFolderPath);
                                 const itemType = isExcluded ? TreeItemType.V_EXCFOLDER : TreeItemType.V_FOLDER_ROOT;
@@ -2366,7 +2389,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     name: 'default',
                     incList: [],
                     defineList: [],
-                    sourceDirList: [],
                     libList: []
                 };
 
@@ -2598,7 +2620,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 name: 'default',
                 incList: [],
                 defineList: [],
-                sourceDirList: [],
                 libList: []
             };
 
@@ -3123,7 +3144,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             }
 
             // init custom dependence after specific configs done
-            newTarget.custom_dep = <any>{ name: 'default', sourceDirList: [], libList: [] };
+            newTarget.custom_dep = <any>{ name: 'default', libList: [] };
             const incList = keilTarget.incList.map((path) => baseInfo.rootFolder.ToRelativePath(path) || path);
             newTarget.custom_dep.incList = defIncList.concat(incList);
             newTarget.custom_dep.defineList = keilTarget.defineList;
