@@ -6,6 +6,29 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.18.0] update
+
+**Incompatible Changes**:
+  - `Chip Support Package`: 
+    - Remove folder: `.eide/deps` and use VirtualFolder `<virtual_root>/<deps>` instead it.
+    - The Chip Support Package in older projects will become invalid. And you need to reinstall chip-package and reinstall all CMSIS components.
+
+**New**:
+  - `Cortex-Debug Configuration Generator`: A new Debugger Configuration Generator with a simple GUI.
+  - `pyOCD Flasher UI`: Support append additional cli command when program flash.
+  - `VSCODE_PORTABLE`: Support `VSCODE_PORTABLE` environment variables.
+
+**Fix**:
+  - `Project Environment`: Project environment variables missed.
+
+**Change**:
+  - `Builder Configuration UI (SDCC)`: Automatic get processors list by execute command: `sdcc -v`
+
+**Optimize**
+  - `MDK Project Import`: Optimize import `Keil User Command`.
+
+***
+
 ### [v3.17.3] preview
 
 **New**:

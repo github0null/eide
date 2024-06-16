@@ -424,8 +424,8 @@ export const view_str$prompt$userCanceledOperation = [
 ][langIndex];
 
 export const view_str$prompt$chipPkgNotCompateThisVersion = [
-    `不兼容的项目，'芯片支持包' 功能在新版本的 eide 中发生了变化，点击 '继续' 将强制打开项目并移除不兼容的数据，点击 '取消' 则退出。`,
-    `Incompatible project, the 'Chip Support Package' function has changed in the new version of eide, clicking 'Continue' will force the project to open, and clicking 'Cancel' will cancel the opening.`
+    `不兼容的项目，'芯片支持包' 功能在 v3.18.0 版本的 eide 中发生了变化（[更新日志](https://marketplace.visualstudio.com/items/CL.eide/changelog)），点击 '继续' 将强制打开项目并移除不兼容的数据，点击 '取消' 则退出。`,
+    `Incompatible project, the 'Chip Support Package' function has changed in the version v3.18.0 of eide ([ChangeLog](https://marketplace.visualstudio.com/items/CL.eide/changelog)), clicking 'Continue' will force the project to open, and clicking 'Cancel' will cancel the opening.`
 ][langIndex];
 
 export const view_str$prompt$removeSrcDir = [
