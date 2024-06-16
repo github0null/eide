@@ -98,6 +98,7 @@ export interface Condition {
     Dname?: RegExp;
     compiler?: string;
     compilerOption?: string;
+    component?: string;
 }
 
 export interface ConditionGroup {

@@ -1369,7 +1369,11 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         if (device) {
             const component = this.packManager.FindComponent(name);
             if (component) {
-                this.dependenceManager.InstallComponent(device.packInfo.name, component);
+                try {
+                    this.dependenceManager.InstallComponent(device.packInfo.name, component);
+                } catch (error) {
+                    GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+                }
             }
         }
     }
@@ -2765,7 +2769,11 @@ class EIDEProject extends AbstractProject {
                         if (compItem.state === ComponentUpdateType.Expired) { // if need reinstalled
                             const comp = this.packManager.FindComponent(compItem.name);
                             if (comp) {
-                                this.dependenceManager.InstallComponent(packInfo.name, comp);
+                                try {
+                                    this.dependenceManager.InstallComponent(packInfo.name, comp);
+                                } catch (error) {
+                                    GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+                                }
                             }
                         }
 

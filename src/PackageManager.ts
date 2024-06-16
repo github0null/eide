@@ -40,6 +40,7 @@ import { AbstractProject } from './EIDEProject';
 import { ExceptionToMessage, newMessage } from './Message';
 import { ResManager } from './ResManager';
 import { ExeCmd } from '../lib/node-utility/Executable';
+import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 
 export enum ComponentUpdateType {
     Disabled = 1,
@@ -326,7 +327,7 @@ export class PackageManager {
     }
 
     private _checkConditionGroup(gMap: ConditionMap,
-        cGroup: ConditionGroup, cDev: CurrentDevice, toolchain?: IToolchian): boolean {
+        cGroup: ConditionGroup, cDev: CurrentDevice, comp_requires: string[], toolchain?: IToolchian): boolean {
 
         const familyInfo = cDev.packInfo.familyList[cDev.familyIndex];
         const devInfo = this.getCurrentDevInfo(cDev);
@@ -356,11 +357,15 @@ export class PackageManager {
                 return false;
             }
 
+            if (con.component) {
+                comp_requires.push(con.component);
+            }
+
             if (con.condition && !this._recurseList.includes(con.condition)) {
                 const _group = gMap.get(con.condition);
                 if (_group) {
                     this._recurseList.push(con.condition);
-                    if (!this._checkConditionGroup(gMap, _group, cDev, toolchain)) {
+                    if (!this._checkConditionGroup(gMap, _group, cDev, comp_requires, toolchain)) {
                         return false;
                     }
                 }
@@ -413,7 +418,7 @@ export class PackageManager {
                 const _group = gMap.get(con.condition);
                 if (_group) {
                     this._recurseList.push(con.condition);
-                    if (this._checkConditionGroup(gMap, _group, cDev, toolchain)) {
+                    if (this._checkConditionGroup(gMap, _group, cDev, comp_requires, toolchain)) {
                         passCount++;
                     }
                 } else {
@@ -438,11 +443,34 @@ export class PackageManager {
             const cGroup = cMap.get(conditionName);
             if (cGroup) {
                 this._recurseList = [conditionName];
-                return this._checkConditionGroup(cMap, cGroup, this.currentDevice, toolchain);
+                return this._checkConditionGroup(cMap, cGroup, this.currentDevice, [], toolchain);
             }
         }
 
         return true;
+    }
+
+    CheckConditionRequire(conditionName: string, toolchain: IToolchian): string[] | boolean {
+
+        if (this.currentDevice) {
+            const cMap = this.currentDevice.packInfo.conditionMap;
+            const cGroup = cMap.get(conditionName);
+            if (cGroup) {
+                this._recurseList = [conditionName];
+                const components: string[] = [];
+                const pass = this._checkConditionGroup(cMap, cGroup, this.currentDevice, components, toolchain);
+                return pass ? ArrayDelRepetition(components) : false;
+            }
+        }
+
+        return true;
+    }
+
+    makeComponentGroupName(...names: string[]): string {
+        return names
+            .filter(n => n !== undefined)
+            .join('.')
+            .replace(/\s+/g, '');
     }
 
     private _preHandleSubfamily(family: any) {
@@ -957,7 +985,7 @@ export class PackageManager {
         for (let component of componentList) {
 
             const item: Component = {
-                groupName: component.$Cgroup + (component.$Csub ? ('.' + component.$Csub) : ''),
+                groupName: this.makeComponentGroupName(component.$Cgroup, component.$Csub),
                 enable: false,
                 description: component.description,
                 incDirList: [],
@@ -968,8 +996,6 @@ export class PackageManager {
                 RTE_define: component.RTE_Components_h,
                 condition: component.$condition
             };
-
-            item.groupName = item.groupName.replace(/\s+/g, '');
 
             /* category component's files */
 
@@ -984,14 +1010,15 @@ export class PackageManager {
 
                     switch (f.$category) {
                         case 'include':
-                            if (/\.(?:h|hpp|hxx|inc)$/.test(f.$name)) {
+                            if (AbstractProject.headerFilter.test(f.$name)) {
                                 item.headerList.push(comp_item);
                             } else {
                                 item.incDirList.push(comp_item);
                             }
                             break;
                         case 'header':
-                            item.headerList.push(comp_item);
+                            if (AbstractProject.headerFilter.test(f.$name))
+                                item.headerList.push(comp_item);
                             break;
                         case 'source':
                         case 'library':
@@ -1074,6 +1101,9 @@ export class PackageManager {
                                 condition.Dname = new RegExp(require.$Dname
                                     .replace(/\?/g, '.')
                                     .replace(/\*/g, '.*?'), 'i');
+                            }
+                            if (require.$Cclass && require.$Cgroup) {
+                                condition.component = this.makeComponentGroupName(require.$Cclass, require.$Cgroup, require.$Csub);
                             }
 
                             if (Object.keys(condition).length > 0) {

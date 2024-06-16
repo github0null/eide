@@ -6288,6 +6288,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             for (const dep of group.depList) {
                 for (const incPath of dep.incList) {
                     const repath = prj.toRelativePath(incPath);
+                    if (includes.includes(repath))
+                        continue; // skip it existed
                     includes.push(repath);
                     includesMap.set(repath, group.groupName);
                 }

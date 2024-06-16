@@ -65,11 +65,41 @@ export class DependenceManager implements ManagerInterface {
     }
 
     InstallComponent(packName: string, component: Component) {
+        this._installComponent(packName, component, [component.groupName]);
+    }
+
+    private _installComponent(packName: string, component: Component, pendingList: string[]) {
 
         const config         = this.project.GetConfiguration();
         const toolchain      = this.project.getToolchain();
         const packageManager = this.project.GetPackManager();
         const vSource        = this.project.getVirtualSourceManager();
+
+        /* 安装此组件的依赖项 */
+        if (component.condition) {
+            const r = packageManager.CheckConditionRequire(component.condition, toolchain);
+            if (r == false)
+                throw new Error(`This condition '${component.condition}' is not met for component: '${component.groupName}'`);
+            if (Array.isArray(r)) {
+                for (const comp of r) {
+                    const compName = comp.replace('Device.', '');
+                    if (!comp.startsWith('Device.'))
+                        continue; /* 排除非 Device 类型的组件 */
+                    if (this.isInstalled(packName, compName))
+                        continue; /* 排除已安装的 */
+                    if (pendingList.includes(compName))
+                        continue; /* 排除队列中已存在的 */ 
+                    const t = packageManager.FindComponent(compName);
+                    if (t) {
+                        pendingList.push(compName);
+                        this._installComponent(packName, t, pendingList);
+                        pendingList.pop();
+                    } else {
+                        throw new Error(`Not found required sub component: '${comp}'`);
+                    }
+                }
+            }
+        }
 
         const item_filter = function (item: ComponentFileItem): boolean {
             return (item.attr != 'template')
@@ -83,6 +113,7 @@ export class DependenceManager implements ManagerInterface {
         const linkerList = component.linkerList?.filter(item_filter);
 
         const conditionList: Set<string> = new Set();
+        const includeList: string[] = component.incDirList.map(item => item.path);
 
         // copy file
         asmList.forEach((item) => {
@@ -96,6 +127,8 @@ export class DependenceManager implements ManagerInterface {
             }
         });
         headerList.forEach((item) => {
+            if (includeList.findIndex(p => File.isSubPathOf(p, item.path)) == -1)
+                includeList.push(NodePath.dirname(item.path));
             if (item.condition) {
                 conditionList.add(item.condition);
             }
@@ -115,10 +148,9 @@ export class DependenceManager implements ManagerInterface {
         // add condiions to cache
         this.addComponentCache(packName, component.groupName, Array.from(conditionList));
 
-        const incList = component.incDirList.map(item => item.path);
         const dep: Dependence = {
             name: component.groupName,
-            incList: incList,
+            incList: includeList,
             libList: component.libList ? component.libList.map<string>((item) => { return item.path; }) : [],
             defineList: component.defineList || []
         };
