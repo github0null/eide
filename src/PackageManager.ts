@@ -220,6 +220,20 @@ export class PackageManager {
         }
     }
 
+    getDeviceFamily(device?: CurrentDevice): SubFamily | DeviceFamily | undefined {
+        const curDevInfo = device || this.currentDevice;
+        if (curDevInfo) {
+            if (curDevInfo.subFamilyIndex >= 0) {
+                return curDevInfo.packInfo
+                    .familyList[curDevInfo.familyIndex]
+                    .subFamilyList[curDevInfo.subFamilyIndex];
+            } else {
+                return curDevInfo.packInfo
+                    .familyList[curDevInfo.familyIndex];
+            }
+        }
+    }
+
     GetDeviceList(): DeviceInfo[] {
 
         const list: DeviceInfo[] = [];
@@ -659,6 +673,10 @@ export class PackageManager {
                 subFamilyList: []
             };
 
+            if (typeof family.description == 'string') {
+                _famliy.description = family.description;
+            }
+
             if (family.subFamily) {
 
                 this._preHandleSubfamily(family);
@@ -685,6 +703,9 @@ export class PackageManager {
                         core: subFamily.processor ? subFamily.processor.$Dcore : undefined,
                         deviceList: []
                     };
+
+                    if (typeof subFamily.description == 'string')
+                        _subFamily.description = subFamily.description;
 
                     // Series specific rom/ram
                     let ramList: ARMRamItem[] = [];

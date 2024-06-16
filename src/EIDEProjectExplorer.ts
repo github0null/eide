@@ -1584,10 +1584,17 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                         projectIndex: element.val.projectIndex
                                     }));
 
+                                    const devFamily = project.GetPackManager().getDeviceFamily();
+                                    let description: vscode.MarkdownString | string | undefined;
+                                    if (devFamily && devFamily.description) {
+                                        description = devFamily.description; // newMarkdownString(devFamily.description);
+                                    }
+
                                     iList.push(new ProjTreeItem(TreeItemType.ITEM, {
                                         key: 'DeviceName',
                                         value: device.name,
-                                        projectIndex: element.val.projectIndex
+                                        projectIndex: element.val.projectIndex,
+                                        tooltip: description
                                     }));
 
                                     iList.push(new ProjTreeItem(TreeItemType.ITEM, {

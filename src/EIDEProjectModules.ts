@@ -135,6 +135,7 @@ export interface DeviceInfo {
 export interface SubFamily {
     name: string;
     core?: string;
+    description?: string;
     deviceList: DeviceInfo[];
 }
 
@@ -143,6 +144,7 @@ export interface DeviceFamily {
     vendor: string;
     core?: string;
     series: string;
+    description?: string;
     deviceList: DeviceInfo[];
     subFamilyList: SubFamily[];
 }
