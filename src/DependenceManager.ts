@@ -36,18 +36,17 @@ import { Component, ComponentFileItem } from './EIDEProjectModules';
 import { GlobalEvent } from './GlobalEvents';
 import { SettingManager } from './SettingManager';
 import { ExceptionToMessage } from './Message';
-import { AbstractProject } from './EIDEProject';
+import { AbstractProject, VirtualSource } from './EIDEProject';
 import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 
 export class DependenceManager implements ManagerInterface {
 
-    static readonly DEPENDENCE_DIR = `.eide/deps`;
+    static readonly DEPS_VFOLDER_NAME = '<deps>';
     static readonly RTE_FILE_NAME = 'RTE_Components.h';
     static readonly toolchainDepName = 'toolchain';
 
     private project: AbstractProject;
     private prjType: ProjectType | undefined;
-    private depDir: File | undefined;
 
     private componentDefines: Map<string, string>;
 
@@ -61,27 +60,46 @@ export class DependenceManager implements ManagerInterface {
     }
 
     Init() {
-        const rootDir = this.project.GetRootDir();
         this.prjType = this.project.GetConfiguration().config.type;
-        this.depDir = File.fromArray([rootDir.path, File.normalize(DependenceManager.DEPENDENCE_DIR)]);
         this.LoadComponents();
     }
 
-    InstallComponent(packName: string, component: Component, clearDir: boolean = true) {
+    InstallComponent(packName: string, component: Component) {
+        this._installComponent(packName, component, [component.groupName]);
+    }
 
-        // try add dep root to project before install a component
-        this.tryAddCompRootDirToProject();
+    private _installComponent(packName: string, component: Component, pendingList: string[]) {
 
-        const config = this.project.GetConfiguration();
-        const toolchain = this.project.getToolchain();
-
-        const groupDir = File.fromArray([this.getDepDir().path, packName]);
-        const componentDir = File.fromArray([groupDir.path, component.groupName]);
-
-        componentDir.CreateDir(true);
-        if (clearDir) { DeleteAllChildren(componentDir); }
-
+        const config         = this.project.GetConfiguration();
+        const toolchain      = this.project.getToolchain();
         const packageManager = this.project.GetPackManager();
+        const vSource        = this.project.getVirtualSourceManager();
+
+        /* 安装此组件的依赖项 */
+        if (component.condition) {
+            const r = packageManager.CheckConditionRequire(component.condition, toolchain);
+            if (r == false)
+                throw new Error(`This condition '${component.condition}' is not met for component: '${component.groupName}'`);
+            if (Array.isArray(r)) {
+                for (const comp of r) {
+                    const compName = comp.replace('Device.', '');
+                    if (!comp.startsWith('Device.'))
+                        continue; /* 排除非 Device 类型的组件 */
+                    if (this.isInstalled(packName, compName))
+                        continue; /* 排除已安装的 */
+                    if (pendingList.includes(compName))
+                        continue; /* 排除队列中已存在的 */ 
+                    const t = packageManager.FindComponent(compName);
+                    if (t) {
+                        pendingList.push(compName);
+                        this._installComponent(packName, t, pendingList);
+                        pendingList.pop();
+                    } else {
+                        throw new Error(`Not found required sub component: '${comp}'`);
+                    }
+                }
+            }
+        }
 
         const item_filter = function (item: ComponentFileItem): boolean {
             return (item.attr != 'template')
@@ -89,51 +107,50 @@ export class DependenceManager implements ManagerInterface {
         }
 
         /* filter files */
-        const asmList = component.asmList.filter(item_filter);
-        const cFileList = component.cFileList.filter(item_filter);
+        const asmList    = component.asmList.filter(item_filter);
+        const cFileList  = component.cFileList.filter(item_filter);
         const headerList = component.headerList.filter(item_filter);
         const linkerList = component.linkerList?.filter(item_filter);
 
         const conditionList: Set<string> = new Set();
+        const includeList: string[] = component.incDirList.map(item => item.path);
 
         // copy file
         asmList.forEach((item) => {
-            componentDir.CopyFile(new File(item.path));
             if (item.condition) {
                 conditionList.add(item.condition);
             }
         });
         cFileList.forEach((item) => {
-            componentDir.CopyFile(new File(item.path));
             if (item.condition) {
                 conditionList.add(item.condition);
             }
         });
         headerList.forEach((item) => {
-            componentDir.CopyFile(new File(item.path));
+            if (includeList.findIndex(p => File.isSubPathOf(p, item.path)) == -1)
+                includeList.push(NodePath.dirname(item.path));
             if (item.condition) {
                 conditionList.add(item.condition);
             }
         });
         linkerList?.forEach((item) => {
-            componentDir.CopyFile(new File(item.path));
             if (item.condition) {
                 conditionList.add(item.condition);
             }
         });
 
+        // add source files
+        const _srcfiles = ArrayDelRepetition(headerList.concat(cFileList, asmList).map(f => f.path));
+        this.createComponentDir(packName, component.groupName);
+        vSource.addFiles(
+            VirtualSource.toAbsPath(DependenceManager.DEPS_VFOLDER_NAME, packName, component.groupName), _srcfiles);
+
         // add condiions to cache
         this.addComponentCache(packName, component.groupName, Array.from(conditionList));
 
-        const incList = component.incDirList.map(item => item.path);
-
-        // add dependence dir
-        incList.push(componentDir.path);
-
         const dep: Dependence = {
             name: component.groupName,
-            incList: incList,
-            sourceDirList: [componentDir.path],
+            incList: includeList,
             libList: component.libList ? component.libList.map<string>((item) => { return item.path; }) : [],
             defineList: component.defineList || []
         };
@@ -149,12 +166,16 @@ export class DependenceManager implements ManagerInterface {
 
     private InstallBuildInComponent(packName: string, component: Component) {
 
-        const config = this.project.GetConfiguration();
+        const config  = this.project.GetConfiguration();
+        const sources = ArrayDelRepetition(component.cFileList.concat(component.asmList).map(f => f.path));
+
+        if (sources.length > 0) {
+            this.createComponentDir(packName, component.groupName);
+        }
 
         const dep: Dependence = {
             name: component.groupName,
             incList: component.incDirList.map(item => item.path),
-            sourceDirList: [],
             libList: component.libList ? component.libList.map<string>((item) => { return item.path; }) : [],
             defineList: component.defineList || []
         };
@@ -172,20 +193,13 @@ export class DependenceManager implements ManagerInterface {
 
         const config = this.project.GetConfiguration();
 
-        const componentDir = File.fromArray([this.getDependenceRootFolder().path, packName, componentName]);
-        if (componentDir.IsDir()) {
-            DeleteDir(componentDir);
-        }
+        this.deleteComponentDir(packName, componentName);
 
         if (config.IsExisted(packName, componentName)) {
             config.RemoveDependence(packName, componentName);
         }
 
-        // force delete build-in folder
-        const depRootFoler = new File(componentDir.dir);
-        if (depRootFoler.IsDir()) {
-            DeleteDir(depRootFoler);
-        }
+        this.deletePackageDir(packName);
 
         // remove from cache
         this.removeComponentCache(packName, componentName);
@@ -197,17 +211,14 @@ export class DependenceManager implements ManagerInterface {
 
         const config = this.project.GetConfiguration();
 
-        const componentDir = File.fromArray([this.getDepDir().path, packName, componentName]);
-        if (componentDir.IsDir()) {
-            DeleteDir(componentDir);
-        }
+        this.deleteComponentDir(packName, componentName);
 
         if (config.IsExisted(packName, componentName)) {
             config.RemoveDependence(packName, componentName);
         }
 
         if (config.IsDependenceEmpty(packName)) { // delete folder if no deps
-            DeleteDir(new File(componentDir.dir));
+            this.deletePackageDir(packName);
         }
 
         // remove from cache
@@ -240,13 +251,6 @@ export class DependenceManager implements ManagerInterface {
         }
 
         this.ClearObsoleteComponentDependence(); // clear invalid dependencies
-    }
-
-    getDependenceRootFolder(): File {
-        if (this.depDir === undefined) {
-            throw new Error('eide depDir is undefined');
-        }
-        return this.depDir;
     }
 
     // force flush toolchain dependence
@@ -323,17 +327,43 @@ export class DependenceManager implements ManagerInterface {
 
     //--
 
-    private tryAddCompRootDirToProject() {
-        const depRoot = this.getDependenceRootFolder();
-        if (!depRoot.IsDir()) depRoot.CreateDir(false);
-        const prjConfig = this.project.GetConfiguration();
-        prjConfig.addSrcDirAtFirst(depRoot.path);
-        prjConfig.CustomDep_AddIncDir(depRoot);
+    private createDepsRootFolder() {
+        const vSource = this.project.getVirtualSourceManager();
+        vSource.addFolder(DependenceManager.DEPS_VFOLDER_NAME);
     }
 
-    private getDepDir(): File {
-        this.depDir?.CreateDir(false);
-        return <File>this.depDir;
+    private createComponentDir(pkg_name: string, component_name: string) {
+        this.createDepsRootFolder();
+        const vSource = this.project.getVirtualSourceManager();
+        vSource.addFolder(pkg_name, VirtualSource.toAbsPath(DependenceManager.DEPS_VFOLDER_NAME));
+        vSource.addFolder(component_name, VirtualSource.toAbsPath(DependenceManager.DEPS_VFOLDER_NAME, pkg_name));
+    }
+
+    private deleteComponentDir(pkg_name: string, component_name: string) {
+        const vSource = this.project.getVirtualSourceManager();
+        vSource.removeFolder(
+            VirtualSource.toAbsPath(DependenceManager.DEPS_VFOLDER_NAME, pkg_name, component_name));
+    }
+
+    private deleteDepsRootFolder() {
+        const vSource = this.project.getVirtualSourceManager();
+        vSource.removeFolder(
+            VirtualSource.toAbsPath(DependenceManager.DEPS_VFOLDER_NAME));
+    }
+
+    private deletePackageDir(pkg_name: string) {
+        const vSource = this.project.getVirtualSourceManager();
+        vSource.removeFolder(
+            VirtualSource.toAbsPath(DependenceManager.DEPS_VFOLDER_NAME, pkg_name));
+        /* remove deps root folder if it's empty */
+        const folder = vSource.getFolder(VirtualSource.toAbsPath(DependenceManager.DEPS_VFOLDER_NAME));
+        if (folder && folder.folders.length == 0) {
+            if (folder.files.length == 0)
+                this.deleteDepsRootFolder();
+            else if (folder.files.length == 1 &&
+                     NodePath.basename(folder.files[0].path) == DependenceManager.RTE_FILE_NAME)
+                this.deleteDepsRootFolder();
+        }
     }
 
     private isAutoGenRTEHeader(): boolean {
@@ -353,17 +383,10 @@ export class DependenceManager implements ManagerInterface {
 
             if (prjConfig.IsExisted(packInfo.name, component.groupName)) {
 
-                const componentDirPath = this.getDepDir().path + File.sep
-                    + packInfo.name + File.sep
-                    + component.groupName;
-
                 const incList = component.incDirList.map((item): string => { return item.path; });
-                incList.push(componentDirPath);
-
                 const dep: Dependence = {
                     name: component.groupName,
                     incList: incList,
-                    sourceDirList: [componentDirPath],
                     libList: component.libList?.map<string>((item) => { return item.path; }) || [],
                     defineList: []
                 };
@@ -381,6 +404,7 @@ export class DependenceManager implements ManagerInterface {
 
         if (isAutoGenerate) {
             this.GenerateRTEComponentsFile(Array.from(this.componentDefines.values()));
+            prjConfig.CustomDep_AddIncDirAtFirst(this.project.getRootDir());
         }
     }
 
@@ -388,6 +412,14 @@ export class DependenceManager implements ManagerInterface {
         if (this.isAutoGenRTEHeader() && !this.componentDefines.has(component.groupName)) {
             this.componentDefines.set(component.groupName, component.RTE_define || '');
             this.GenerateRTEComponentsFile(Array.from(this.componentDefines.values()));
+            /* add RTE header to resource manager */
+            const vSource = this.project.getVirtualSourceManager();
+            const vFile = vSource.getFile(VirtualSource.toAbsPath(DependenceManager.DEPS_VFOLDER_NAME, DependenceManager.RTE_FILE_NAME));
+            if (!vFile) {
+                vSource.addFile(VirtualSource.toAbsPath(DependenceManager.DEPS_VFOLDER_NAME),
+                    File.from(this.project.getRootDir().path, DependenceManager.RTE_FILE_NAME).path);
+                this.project.GetConfiguration().CustomDep_AddIncDirAtFirst(this.project.getRootDir());
+            }
         }
     }
 
@@ -422,13 +454,13 @@ export class DependenceManager implements ManagerInterface {
 
         content = content.concat(lines, contentTail);
 
-        const rteFile = File.fromArray([this.getDepDir().path, DependenceManager.RTE_FILE_NAME]);
+        const rteFile = File.from(this.project.getRootDir().path, DependenceManager.RTE_FILE_NAME);
         rteFile.Write(content.join(os.EOL));
     }
 
     private DeleteRTEComponentsHeader() {
         try {
-            const rte_header = File.fromArray([this.getDepDir().path, DependenceManager.RTE_FILE_NAME]);
+            const rte_header = File.from(this.project.getRootDir().path, DependenceManager.RTE_FILE_NAME);
             if (rte_header.IsFile()) { fs.unlinkSync(rte_header.path); }
         } catch (error) {
             // do nothing

@@ -1014,8 +1014,11 @@ export class ARMCodeBuilder extends CodeBuilder {
 
             const extraCommands: any[] = [];
 
-            // convert elf
-            if (['AC5', 'AC6'].includes(config.toolchain) && settingManager.IsConvertAxf2Elf()) {
+            // convert axf to elf
+            // why we need this ? see: https://stackoverflow.com/questions/49508277/warning-loadable-section-my-section-outside-of-elf-segments
+            if (['AC5', 'AC6'].includes(config.toolchain) &&
+                settingManager.IsConvertAxf2Elf() &&
+                options['linker']['$disableOutputTask'] != true) {
 
                 const tool_root_folder = toolchain.getToolchainDir().path;
                 const ouput_path = `\${outDir}${File.sep}${config.name}`;
@@ -1023,7 +1026,7 @@ export class ARMCodeBuilder extends CodeBuilder {
 
                 extraCommands.push({
                     name: 'axf to elf',
-                    command: `axf2elf -d "${tool_root_folder}" -b "${ouput_path}.bin" -i "${ouput_path}.axf" -o "${ouput_path}.elf" > "${axf2elf_log}"`
+                    command: `axf2elf -d "${tool_root_folder}" -i "${ouput_path}.axf" -o "${ouput_path}.elf" > "${axf2elf_log}"`
                 });
             }
 

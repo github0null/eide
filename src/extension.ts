@@ -40,7 +40,7 @@ import { ResInstaller } from './ResInstaller';
 import {
     ERROR, WARNING, INFORMATION,
     view_str$operation$serialport, view_str$operation$baudrate, view_str$operation$serialport_name,
-    txt_install_now, txt_yes, view_str$prompt$feedback, rating_text, later_text
+    txt_install_now, txt_yes, view_str$prompt$feedback, rating_text, later_text, sponsor_author_text
 } from './StringTable';
 import { LogDumper } from './LogDumper';
 import { StatusBarManager } from './StatusBarManager';
@@ -228,7 +228,14 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.modifyUploadConfig', (item) => projectExplorer.ModifyUploadConfig(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.switchUploader', (item) => projectExplorer.switchUploader(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.fetchShellFlasher', (item) => projectExplorer.fetchShellFlasher(item)));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.genDebugConfigTemplate', (item) => projectExplorer.genDebugConfigTemplate(item)));
+
+    // debug cfg gen
+    subscriptions.push(vscode.commands.registerCommand(
+        '_cl.eide.project.genDebugConfigTemplate.jlink', (item) => projectExplorer.genDebugConfigTemplate(item, 'jlink')));
+    subscriptions.push(vscode.commands.registerCommand(
+        '_cl.eide.project.genDebugConfigTemplate.openocd', (item) => projectExplorer.genDebugConfigTemplate(item, 'openocd')));
+    subscriptions.push(vscode.commands.registerCommand(
+        '_cl.eide.project.genDebugConfigTemplate.pyocd', (item) => projectExplorer.genDebugConfigTemplate(item, 'pyocd')));
 
     // project deps
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.addIncludeDir', (item) => projectExplorer.AddIncludeDir(item.val.projectIndex)));
@@ -317,9 +324,13 @@ function postLaunchHook(extensionCtx: vscode.ExtensionContext) {
             Date.now() - appUsrData['InstallTime'] > some_days) {
             resManager.setAppUsrData('Feedbacked', true);
             const msg = view_str$prompt$feedback;
-            vscode.window.showInformationMessage(msg, rating_text).then((ans) => {
+            vscode.window.showInformationMessage(msg, rating_text, sponsor_author_text).then((ans) => {
                 if (ans == rating_text) {
                     utility.openUrl(`https://marketplace.visualstudio.com/items?itemName=CL.eide&ssr=false#review-details`);
+                }
+                if (ans == sponsor_author_text) {
+                    // https://em-ide.com/sponsor
+                    utility.openUrl(`https://em-ide.com/sponsor`);
                 }
             });
         }
@@ -755,7 +766,7 @@ function exportEnvToSysPath(context?: vscode.ExtensionContext) {
     ];
 
     //
-    const eideToolsFolder = new File(File.normalize(`${os.homedir()}/.eide/tools`));
+    const eideToolsFolder = new File(File.normalize(`${platform.userhome()}/.eide/tools`));
     if (!eideToolsFolder.IsDir()) {
         try {
             new File(eideToolsFolder.path).CreateDir(true);
@@ -1369,7 +1380,7 @@ class EideTerminalProvider implements vscode.TerminalProfileProvider {
 
     private cwd(allowUseLocActiveFolder?: boolean): string {
 
-        let cwd = os.homedir();
+        let cwd = platform.userhome();
 
         const workspace = WorkspaceManager.getInstance().getWorkspaceRoot();
         if (workspace && workspace.IsDir()) {

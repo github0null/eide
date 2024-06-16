@@ -25,7 +25,7 @@
 import { File } from "../lib/node-utility/File";
 import { WorkspaceManager } from "./WorkspaceManager";
 import { GlobalEvent } from "./GlobalEvents";
-import { exeSuffix, GetLocalCodePage, osType, getArchId } from "./Platform";
+import { exeSuffix, GetLocalCodePage, osType, getArchId, userhome } from "./Platform";
 import { ExceptionToMessage } from "./Message";
 
 import * as ChildProcess from 'child_process';
@@ -337,7 +337,7 @@ export class ResManager extends events.EventEmitter {
     }
 
     getEideHomeFolder(): File {
-        return File.fromArray([os.homedir(), '.eide']);
+        return File.fromArray([userhome(), '.eide']);
     }
 
     getBuiltInToolsDir(): File {
@@ -345,7 +345,7 @@ export class ResManager extends events.EventEmitter {
     }
 
     getEideToolsInstallDir(): string {
-        return [os.homedir(), '.eide', 'tools'].join(File.sep);
+        return [userhome(), '.eide', 'tools'].join(File.sep);
     }
 
     GetLogDir(): File {
@@ -682,7 +682,7 @@ export class ResManager extends events.EventEmitter {
             this.dirMap.set(key, dir);
         }
 
-        const eideHome = File.fromArray([os.homedir(), '.eide']);
+        const eideHome = File.fromArray([userhome(), '.eide']);
         eideHome.CreateDir(); // create if not existed
         for (const key in eideBinariesDirs) {
             const dir = File.fromArray([eideHome.path, eideBinariesDirs[key]]);

@@ -33,7 +33,7 @@ import * as child_process from 'child_process';
 import { File } from "../lib/node-utility/File";
 import { FileWatcher } from "../lib/node-utility/FileWatcher";
 import {
-    include_desc, lib_desc, source_dir_desc, definition_list_desc,
+    include_desc, lib_desc, source_list_desc, definition_list_desc,
 } from "./StringTable";
 import { ArrayDelRepetition } from "../lib/node-utility/Utility";
 import { GlobalEvent } from "./GlobalEvents";
@@ -47,7 +47,7 @@ import { CompileConfigModel, UploadConfigModel, SdccCompileConfigModel, GccCompi
 ////////////////////////////////////////////////////////
 
 // eide project config file version
-export const EIDE_CONF_VERSION = '3.3';
+export const EIDE_CONF_VERSION = '3.4';
 
 ////////////////////////////////////////////////////////
 
@@ -342,7 +342,6 @@ export interface Dependence {
     name: string;
     incList: string[];          // absolute path with env variables
     libList: string[];          // absolute path with env variables
-    sourceDirList: string[];    // absolute path with env variables
     defineList: string[];
 }
 
@@ -523,19 +522,16 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             incList: [],
             libList: [],
             defineList: [],
-            sourceDirList: []
         };
 
         depList.forEach(dep => {
             merge.defineList = merge.defineList.concat(dep.defineList);
-            merge.sourceDirList = merge.sourceDirList.concat(dep.sourceDirList);
             merge.libList = merge.libList.concat(dep.libList);
             merge.incList = merge.incList.concat(dep.incList);
         });
 
         // clear duplicate
         merge.defineList = ArrayDelRepetition(merge.defineList);
-        merge.sourceDirList = ArrayDelRepetition(merge.sourceDirList);
         merge.libList = ArrayDelRepetition(merge.libList);
         merge.incList = ArrayDelRepetition(merge.incList);
 
@@ -727,8 +723,8 @@ export class ProjectConfiguration<T extends BuilderConfigData>
                 return include_desc + (withRawName ? ` (IncludePaths)` : '');
             case 'libList':
                 return lib_desc + (withRawName ? ` (StaticLibrarySearchDirs)` : '');
-            case 'sourceDirList':
-                return source_dir_desc + (withRawName ? ` (SourceDirs)` : '');
+            // case 'sourceList':
+            //     return source_list_desc + (withRawName ? ` (SourceFiles)` : '');
             case 'defineList':
                 return definition_list_desc + (withRawName ? ` (C/C++ Macros)` : '');
             default:
@@ -892,7 +888,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
     addSrcDirAtFirst(absPath: string) {
         if (!this.config.srcDirs.includes(absPath)) {
-            this.config.srcDirs = [absPath].concat(this.config.srcDirs);
+            this.config.srcDirs.unshift(absPath);
             this.emit('dataChanged', { type: 'srcRootAdd', data: absPath });
         }
     }
@@ -919,7 +915,6 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             name: 'default',
             incList: [],
             libList: [],
-            sourceDirList: [],
             defineList: []
         };
     }
@@ -1016,7 +1011,6 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             name: 'default',
             incList: [],
             libList: [],
-            sourceDirList: [],
             defineList: []
         };
     }
@@ -1057,6 +1051,14 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         const dep = this.CustomDep_getDependence();
         if (!dep.incList.includes(dir.path)) {
             dep.incList.push(dir.path);
+            this.emit('dataChanged', { type: 'dependence' });
+        }
+    }
+
+    CustomDep_AddIncDirAtFirst(dir: File) {
+        const dep = this.CustomDep_getDependence();
+        if (!dep.incList.includes(dir.path)) {
+            dep.incList.unshift(dir.path);
             this.emit('dataChanged', { type: 'dependence' });
         }
     }
@@ -1220,7 +1222,6 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         const custom_dep = <Dependence>utility.deepCloneObject(this.CustomDep_getDependence());
         custom_dep.incList = custom_dep.incList.map((path) => this.toRelativePath(path));
         custom_dep.libList = custom_dep.libList.map((path) => this.toRelativePath(path));
-        custom_dep.sourceDirList = custom_dep.sourceDirList.map((path) => this.toRelativePath(path));
 
         return {
             excludeList: Array.from(target.excludeList),
@@ -1265,7 +1266,6 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         const custom_dep = this.CustomDep_getDependence();
         custom_dep.incList = Array.from(target.custom_dep.incList);
         custom_dep.libList = Array.from(target.custom_dep.libList);
-        custom_dep.sourceDirList = Array.from(target.custom_dep.sourceDirList);
         custom_dep.defineList = Array.from(target.custom_dep.defineList);
     }
 
@@ -1373,7 +1373,6 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             for (const dep of depGroup.depList) {
                 dep.incList = ArrayDelRepetition(dep.incList.map((path) => { return this.toAbsolutePath(path); }));
                 dep.libList = ArrayDelRepetition(dep.libList.map((path) => { return this.toAbsolutePath(path); }));
-                dep.sourceDirList = ArrayDelRepetition(dep.sourceDirList.map((path) => { return this.toAbsolutePath(path); }));
             }
         }
     }
@@ -1404,7 +1403,6 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             for (const dep of depGroup.depList) {
                 dep.incList = dep.incList.map((path) => this.toRelativePath(path));
                 dep.libList = dep.libList.map((path) => this.toRelativePath(path));
-                dep.sourceDirList = dep.sourceDirList.map((path) => this.toRelativePath(path));
             }
         }
 

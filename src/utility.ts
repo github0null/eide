@@ -44,6 +44,86 @@ import { GlobalEvent } from './GlobalEvents';
 import { SettingManager } from './SettingManager';
 import { ToolchainName } from './ToolchainManager';
 
+/**
+ * @return: example
+    [
+      {
+        "name": "rp2040_core1",
+        "vendor": "Raspberry Pi",
+        "part_families": [],
+        "part_number": "RP2040Core1",
+        "source": "builtin"
+       }
+    ]
+*/
+export function pyocd_getTargetList(projectRootDir: File | undefined, pyocdConfigPath: string | undefined): any[] {
+
+    const cmdList: string[] = ['pyocd', 'json'];
+
+    if (projectRootDir) {
+        const cwd = projectRootDir.path;
+        cmdList.push('-j', `"${cwd}"`);
+    }
+
+    if (pyocdConfigPath) {
+        if (File.IsFile(pyocdConfigPath)) {
+            if (projectRootDir)
+                cmdList.push('--config', `"${projectRootDir.ToRelativePath(pyocdConfigPath) || pyocdConfigPath}"`);
+            else
+                cmdList.push('--config', `"${pyocdConfigPath}"`);
+        }
+    }
+
+    cmdList.push('-t');
+
+    const command = cmdList.join(' ');
+    const result = JSON.parse(child_process.execSync(command).toString());
+    if (!Array.isArray(result['targets'])) {
+        throw new Error(`Wrong pyocd targets format, 'targets' must be an array !`);
+    }
+
+    return result['targets'].map(t => t);
+}
+
+export function openocd_getConfigList(category: 'interface' | 'target', projectRootDir: File | undefined): { name: string, isInWorkspace?: boolean; }[] {
+
+    const openocdExe = new File(SettingManager.GetInstance().getOpenOCDExePath());
+    const resultList: { name: string, isInWorkspace?: boolean; }[] = [];
+
+    // find in workspace
+    const wsFolder = projectRootDir;
+    if (wsFolder) {
+        for (const path of ['.', '.eide', 'tools']) {
+            const cfgFolder = File.fromArray([wsFolder.path, path]);
+            if (cfgFolder.IsDir()) {
+                cfgFolder.GetList([/\.cfg$/i], File.EXCLUDE_ALL_FILTER).forEach((file) => {
+                    const rePath = (wsFolder.ToRelativePath(file.path) || file.name);
+                    resultList.push({
+                        name: '${workspaceFolder}/' + File.ToUnixPath(rePath).replace('.cfg', ''),
+                        isInWorkspace: true
+                    });
+                });
+            }
+        }
+    }
+
+    // find in build-in path
+    for (const path of ['scripts', 'share/openocd/scripts']) {
+        const cfgFolder = File.from(openocdExe.dir, '..', path, category);
+        if (cfgFolder.IsDir()) {
+            cfgFolder.GetAll([/\.cfg$/i], File.EXCLUDE_ALL_FILTER).forEach((file) => {
+                const rePath = (cfgFolder.ToRelativePath(file.path) || file.name);
+                resultList.push({
+                    name: File.ToUnixPath(rePath).replace('.cfg', '')
+                });
+            });
+            break; // break it if we found
+        }
+    }
+
+    return resultList;
+}
+
 export interface CppMacroDefine {
     type: 'var' | 'func';
     name: string;

@@ -85,7 +85,7 @@
     "eide.builder.setup-toolchain-prefix": "Setup Compiler Prefix",
 
     "eide.flash.switch": "Select Flasher",
-    "eide.flash.gen.dbgconf": "Generate Cortex-Debug Configuration",
+    "eide.flash.gen.dbgconf": "Generate Debugger Configuration",
     "eide.flash.fetch-shell-flasher": "Install Shell Flasher Script From Remote Repository",
 
     "eide.deps.include.show": "Display All Include Paths",

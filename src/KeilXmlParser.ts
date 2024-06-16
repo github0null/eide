@@ -53,6 +53,7 @@ export interface KeilParserResult<CompileOption> {
     fileGroups: FileGroup[];
     compileOption: CompileOption;
     rte_deps?: KeilRteDependence[];
+    env?: { [key: string]: string };
 }
 
 export interface ICompileOptionsGroup {
@@ -667,7 +668,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
         super(f);
     }
 
-    private getOption(targetOptionObj: any, option: KeilARMOption) {
+    private getOption(targetOptionObj: any, option: KeilARMOption, env: { [n: string]: string }) {
 
         const armAdsObj = targetOptionObj.TargetArmAds;
         try {
@@ -711,16 +712,35 @@ class ARMParser extends KeilParser<KeilARMOption> {
                 if (eideOption.afterBuildTasks == undefined)
                     eideOption.afterBuildTasks = [];
 
-                // (%|#|@|\!|\$)
+                // --------------------------------------------
+                // KEIL Key Code: % # @ ! $
+                // % File name with extension (PROJECT1.UVPROJ) 
+                // # File name with extension and complete path specification (C:\MYPROJECT\PROJECT1.UVPROJ) 
+                // @ File name without extension or path specification (PROJECT1) 
+                // $ Path name of a file. Path names get extended with a backslash. For example, $P could generate C:\MYPROJECT\. 
+                // ! File name with extension and relative path specification to the current folder (.\SRC\TEST.C) 
+                // --------------------------------------------
+                // KEIL File Code: H L K J P
+                // H: Application HEX file name (PROJECT1.H86).
+                // L: Linker output file. Typically the executable file used for debugging (PROJECT1).
+                // K: Absolute root folder of the development toolchain, regardless of the Key Code used. (#K -> D:\Keil\)
+                // $J: Absolute compiler system include folder. Compiler base folders are listed in the field  
+                // P: Current project file name. 
+                const OUTNAME_KEY = env['KEIL_OUTPUT_NAME'] ? 'KEIL_OUTPUT_NAME' : 'ProjectName';
                 const replaceMdkEnv = (cmd: string) => cmd
+                    .replace(/%H\b/g, '${KEIL_OUTPUT_NAME}.hex')
+                    .replace(/%L\b/g, '${KEIL_OUTPUT_NAME}.axf')
+                    .replace(/%P\b/g, this._file.name)
+                    .replace(/#H\b/g, '${OutDir}\\${KEIL_OUTPUT_NAME}.hex')
+                    .replace(/#L\b/g, '${OutDir}\\${KEIL_OUTPUT_NAME}.axf')
+                    .replace(/#P\b/g, this._file.path)
+                    .replace(/@(H|L)\b/g, '${KEIL_OUTPUT_NAME}')
                     .replace(/\$(H|L)\b/g, '${OutDir}\\')
-                    .replace(/@(H|L)\b/g, '${ProjectName}')
-                    .replace(/#H\b/g, '${ExecutableName}.hex')
-                    .replace(/%H\b/g, '${ProjectName}.hex')
-                    .replace(/\!H\b/g, '.\\${OutDirBase}\\${ProjectName}.hex')
-                    .replace(/#L\b/g, '${ExecutableName}.axf')
-                    .replace(/%L\b/g, '${ProjectName}.axf')
-                    .replace(/\!L\b/g, '.\\${OutDirBase}\\${ProjectName}.axf');
+                    .replace(/\$J\b/g, '${ToolchainRoot}\\include\\')
+                    .replace(/\$K\b/g, '${ToolchainRoot}\\')
+                    .replace(/\!H\b/g, '.\\${OutDirBase}\\${KEIL_OUTPUT_NAME}.hex')
+                    .replace(/\!L\b/g, '.\\${OutDirBase}\\${KEIL_OUTPUT_NAME}.axf')
+                    .replace(/\bKEIL_OUTPUT_NAME\b/g, OUTNAME_KEY);
 
                 // BeforeMake
                 const beforeMake = commonOption.BeforeMake;
@@ -741,6 +761,15 @@ class ARMParser extends KeilParser<KeilARMOption> {
                 // AfterMake
                 const afterMake = commonOption.AfterMake;
                 if (afterMake) {
+                    // Copy files to compate Keil User Commands
+                    if (env['KEIL_OUTPUT_NAME']) {
+                        eideOption.afterBuildTasks.push({
+                            "name": 'Copy linker output for Keil User Commands',
+                            "command": '$<cd:mdk-proj-dir> && copy ".\\${OutDirBase}\\${ProjectName}.axf" ".\\${OutDirBase}\\${KEIL_OUTPUT_NAME}.axf"',
+                            "disable": false,
+                            "abortAfterFailed": true
+                        });
+                    }
                     for (let idx = 1; idx < 3; idx++) {
                         let cmd = afterMake[`UserProg${idx}Name`];
                         if (cmd) {
@@ -752,6 +781,10 @@ class ARMParser extends KeilParser<KeilARMOption> {
                             });
                         }
                     }
+                    // Make eide Don't output hex/bin
+                    if (eideOption.linker == undefined)
+                        eideOption.linker = {};
+                    eideOption.linker['$disableOutputTask'] = true;
                 }
             }
 
@@ -927,9 +960,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
             const obj = <KeilParserResult<KeilARMOption>>Object.create(null);
 
             obj.name = target.TargetName;
-
             obj.type = this.TYPE_TAG;
-
             obj.device = target.TargetOption.TargetCommonOption.Device;
 
             obj.incList = this.SplitPathSeparator(
@@ -938,9 +969,15 @@ class ARMParser extends KeilParser<KeilARMOption> {
 
             obj.defineList = this.parseMacroString(target.TargetOption.TargetArmAds.Cads.VariousControls.Define);
 
+            obj.env = {};
+            const keil_out_name = target.TargetOption.TargetCommonOption.OutputName;
+            if (keil_out_name && keil_out_name != this._file.noSuffixName) {
+                obj.env['KEIL_OUTPUT_NAME'] = keil_out_name;
+            }
+
             obj.compileOption = Object.create(null);
             obj.compileOption.toolchain = target.uAC6 === '1' ? 'AC6' : 'AC5';
-            this.getOption(target.TargetOption, obj.compileOption);
+            this.getOption(target.TargetOption, obj.compileOption, obj.env);
 
             const groups = target.Groups;
             obj.fileGroups = [];

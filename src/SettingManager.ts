@@ -32,7 +32,7 @@ import { File } from '../lib/node-utility/File';
 import { GlobalEvent } from './GlobalEvents';
 import { ExceptionToMessage } from './Message';
 import * as Utility from './utility';
-import { find, exeSuffix } from './Platform';
+import { find, exeSuffix, userhome } from './Platform';
 import { WorkspaceManager } from './WorkspaceManager';
 import { ToolchainName } from './ToolchainManager';
 
@@ -89,7 +89,8 @@ export class SettingManager {
 
         /* add env */
         this.eideEnv.set('${eideRoot}', context.extensionPath);
-        this.eideEnv.set('${userRoot}', os.homedir());
+        this.eideEnv.set('${userRoot}', userhome());
+        this.eideEnv.set('${userHome}', userhome());
 
         try {
             this.refreshMDKStatus();

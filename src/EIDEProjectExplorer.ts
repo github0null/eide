@@ -29,6 +29,8 @@ import * as NodePath from 'path';
 import * as child_process from 'child_process';
 import * as os from 'os';
 import * as yaml from 'yaml';
+import * as ini from 'ini';
+import * as jsonc_parser from 'jsonc-parser';
 
 import { File } from '../lib/node-utility/File';
 import { ResManager } from './ResManager';
@@ -78,7 +80,7 @@ import {
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
 import { SettingManager } from './SettingManager';
-import { HexUploaderManager, HexUploaderType } from './HexUploader';
+import { HexUploaderManager, HexUploaderType, JLinkOptions, JLinkProtocolType, OpenOCDFlashOptions, PyOCDFlashOptions } from './HexUploader';
 import { SevenZipper, CompressOption } from './Compress';
 import { DependenceManager } from './DependenceManager';
 import { ArrayDelRepetition } from '../lib/node-utility/Utility';
@@ -91,7 +93,9 @@ import {
     sortPaths,
     getGccBinutilsVersion,
     compareVersion,
-    getGccSystemSearchList
+    getGccSystemSearchList,
+    openocd_getConfigList,
+    pyocd_getTargetList
 } from './utility';
 import { concatSystemEnvPath, DeleteDir, exeSuffix, kill, osType, DeleteAllChildren } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
@@ -223,9 +227,9 @@ class ModifiableDepInfo {
                 case 'libList':
                     this.type = 'LIB_GROUP';
                     break;
-                case 'sourceDirList':
-                    this.type = 'SOURCE_GROUP';
-                    break;
+                // case 'sourceList':
+                //     this.type = 'SOURCE_GROUP';
+                //     break;
                 default:
                     this.type = 'None';
                     break;
@@ -1091,18 +1095,41 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     break;
                 case TreeItemType.PROJECT:
                     {
+                        // add some specific folder to first
+                        const _depsFolder = project
+                            .getVirtualSourceManager()
+                            .getFolder(`${VirtualSource.rootName}/${DependenceManager.DEPS_VFOLDER_NAME}`);
+                        if (_depsFolder && (_depsFolder.files.length +_depsFolder.folders.length) > 0) {
+                            const folderDispName = view_str$project$cmsis_components;
+                            const itemType = TreeItemType.V_FOLDER_ROOT;
+                            const vFolderPath = `${VirtualSource.rootName}/${_depsFolder.name}`;
+                            const hasExtraArgs = project.hasExtraArgsForFolder(vFolderPath, prjExtraArgs, true);
+                            iList.push(new ProjTreeItem(itemType, {
+                                value: folderDispName,
+                                obj: <VirtualFolderInfo>{ path: vFolderPath, vFolder: _depsFolder },
+                                projectIndex: element.val.projectIndex,
+                                otherCtx: { hasExtraArgs: hasExtraArgs },
+                                contextVal: 'FOLDER_ROOT_DEPS',
+                                icon: 'DependencyGraph_16x.svg',
+                                tooltip: newFileTooltipString({
+                                    name: folderDispName,
+                                    path: vFolderPath,
+                                    desc: undefined,
+                                    attr: {
+                                        'SubFiles': _depsFolder.files.length.toString(),
+                                        'SubFolders': _depsFolder.folders.length.toString()
+                                    }
+                                })
+                            }));
+                        }
+
                         // push filesystem source folder
                         project.getSourceRootFolders()
-                            .sort((info_1, info_2) => {
-                                const isComponent = File.ToUnixPath(info_1.displayName) === DependenceManager.DEPENDENCE_DIR;
-                                return isComponent ? -1 : info_1.displayName.localeCompare(info_2.displayName);
-                            })
+                            .sort((folder_1, folder_2) => { return folder_1.displayName.localeCompare(folder_2.displayName); })
                             .forEach((rootInfo) => {
-                                const isComponent = File.ToUnixPath(rootInfo.displayName) === DependenceManager.DEPENDENCE_DIR;
-                                const folderDispName = isComponent ? view_str$project$cmsis_components : rootInfo.displayName;
+                                const folderDispName = rootInfo.displayName;
                                 const isExisted = rootInfo.fileWatcher.file.IsDir();
                                 let dirIcon: string | undefined;
-                                if (isComponent) dirIcon = 'DependencyGraph_16x.svg';
                                 if (rootInfo.needUpdate || !isExisted) dirIcon = 'StatusWarning_16x.svg';
                                 let dirDesc: string | undefined;
                                 if (rootInfo.needUpdate) dirDesc = view_str$project$needRefresh;
@@ -1112,7 +1139,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                     value: folderDispName,
                                     obj: rootInfo.fileWatcher.file,
                                     projectIndex: element.val.projectIndex,
-                                    contextVal: isComponent ? 'FOLDER_ROOT_DEPS' : undefined,
                                     icon: dirIcon,
                                     otherCtx: { hasExtraArgs: hasExtraArgs },
                                     tooltip: newFileTooltipString({
@@ -1128,6 +1154,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                         project.getVirtualSourceRoot().folders
                             .sort((folder1, folder2) => { return folder1.name.localeCompare(folder2.name); })
                             .forEach((vFolder) => {
+                                if (vFolder.name == DependenceManager.DEPS_VFOLDER_NAME) return; // skip <deps> folder
                                 const vFolderPath = `${VirtualSource.rootName}/${vFolder.name}`;
                                 const isExcluded = project.isExcluded(vFolderPath);
                                 const itemType = isExcluded ? TreeItemType.V_EXCFOLDER : TreeItemType.V_FOLDER_ROOT;
@@ -1557,10 +1584,17 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                         projectIndex: element.val.projectIndex
                                     }));
 
+                                    const devFamily = project.GetPackManager().getDeviceFamily();
+                                    let description: vscode.MarkdownString | string | undefined;
+                                    if (devFamily && devFamily.description) {
+                                        description = devFamily.description; // newMarkdownString(devFamily.description);
+                                    }
+
                                     iList.push(new ProjTreeItem(TreeItemType.ITEM, {
                                         key: 'DeviceName',
                                         value: device.name,
-                                        projectIndex: element.val.projectIndex
+                                        projectIndex: element.val.projectIndex,
+                                        tooltip: description
                                     }));
 
                                     iList.push(new ProjTreeItem(TreeItemType.ITEM, {
@@ -2362,7 +2396,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     name: 'default',
                     incList: [],
                     defineList: [],
-                    sourceDirList: [],
                     libList: []
                 };
 
@@ -2594,7 +2627,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 name: 'default',
                 incList: [],
                 defineList: [],
-                sourceDirList: [],
                 libList: []
             };
 
@@ -3047,8 +3079,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
         const replaceUserTaskTmpVar = (t: any) => {
             const reKeilPrjDir = baseInfo.rootFolder.ToRelativeLocalPath(keilPrjFile.dir) || keilPrjFile.dir;
-            t.command = t.command.replace('$<cd:mdk-proj-dir>', `cd .\\${reKeilPrjDir}`);
+            if (reKeilPrjDir === '.')
+                t.command = t.command.replace('$<cd:mdk-proj-dir> && ', '');
+            else
+                t.command = t.command.replace('$<cd:mdk-proj-dir>', `cd .\\${reKeilPrjDir}`);
         }
+
+        // project env
+        const prjenv: any = {};
 
         // init all targets
         for (const keilTarget of targets) {
@@ -3113,7 +3151,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             }
 
             // init custom dependence after specific configs done
-            newTarget.custom_dep = <any>{ name: 'default', sourceDirList: [], libList: [] };
+            newTarget.custom_dep = <any>{ name: 'default', libList: [] };
             const incList = keilTarget.incList.map((path) => baseInfo.rootFolder.ToRelativePath(path) || path);
             newTarget.custom_dep.incList = defIncList.concat(incList);
             newTarget.custom_dep.defineList = keilTarget.defineList;
@@ -3128,6 +3166,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                         newTarget.excludeList.push(`${vFolderPath}/${file.file.name}`);
                     }
                 }
+            }
+
+            // env
+            if (keilTarget.env && Object.keys(keilTarget.env).length > 0) {
+                prjenv[`${keilTarget.name}`] = copyObject(keilTarget.env);
             }
 
             projectInfo.targets[keilTarget.name] = newTarget;
@@ -3148,6 +3191,12 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
         // save all config
         baseInfo.prjConfig.Save();
+
+        // save env
+        if (Object.keys(prjenv).length > 0) {
+            File.fromArray([baseInfo.rootFolder.path, AbstractProject.EIDE_DIR, 'env.ini'])
+                .Write(ini.stringify(prjenv));
+        }
 
         // switch project
         const selection = await vscode.window.showInformationMessage(
@@ -4727,6 +4776,16 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const cfg: SimpleUIConfig = {
             title: 'Project Variables',
             readonly: true,
+            btns: {
+                submit: {
+                    title: '',
+                    hidden: true
+                },
+                reset: {
+                    title: '',
+                    hidden: true
+                }
+            },
             items: {
                 vars: {
                     type: 'table',
@@ -4747,7 +4806,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             });
         }
 
-        WebPanelManager.instance().showSimpleConfigUI(cfg, () => {
+        WebPanelManager.instance().showSimpleConfigUI(cfg, async () => {
             // nothing todo
         });
     }
@@ -5052,7 +5111,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             },
         };
 
-        WebPanelManager.instance().showSimpleConfigUI(ui_cfg, (new_cfg) => {
+        WebPanelManager.instance().showSimpleConfigUI(ui_cfg, async (new_cfg) => {
 
             const nArgs = (<SimpleUIConfigData_input>new_cfg.items['args'].data).value.replace(/\r\n|\n/g, ' ').trim();
 
@@ -5170,7 +5229,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             },
         };
 
-        WebPanelManager.instance().showSimpleConfigUI(ui_cfg, (new_cfg) => {
+        WebPanelManager.instance().showSimpleConfigUI(ui_cfg, async (new_cfg) => {
 
             const nArgs = (<SimpleUIConfigData_input>new_cfg.items['args'].data).value.replace(/\r\n|\n/g, ' ').trim();
             const isRecursive = (<SimpleUIConfigData_boolean>new_cfg.items['recursive'].data).value;
@@ -6229,6 +6288,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             for (const dep of group.depList) {
                 for (const incPath of dep.incList) {
                     const repath = prj.toRelativePath(incPath);
+                    if (includes.includes(repath))
+                        continue; // skip it existed
                     includes.push(repath);
                     includesMap.set(repath, group.groupName);
                 }
@@ -6674,7 +6735,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             };
         }
 
-        WebPanelManager.instance().showSimpleConfigUI(cfg, (newCfg) => {
+        WebPanelManager.instance().showSimpleConfigUI(cfg, async (newCfg) => {
 
             // update toolchain path
             setting.getConfiguration().update(
@@ -6874,9 +6935,383 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
     }
 
-    async genDebugConfigTemplate(item: ProjTreeItem) {
+    private async genDebugConfig_internal(
+        type: 'jlink' | 'openocd' | 'pyocd', 
+        prj: AbstractProject, old_cfgs: any[]): Promise<{ debug_config: any, override_idx: number } | undefined> {
+
+        const _elfPath = File.ToUnixPath(prj.getOutputDir()) + '/' + `${prj.getProjectName()}.elf`;
+        const _debugConfigTemplates = {
+            'jlink': {
+                cwd: '${workspaceRoot}',
+                type: 'cortex-debug',
+                request: 'launch',
+                name: `${prj.getProjectCurrentTargetName()}: JLINK`,
+                servertype: 'jlink',
+                interface: 'swd',
+                executable: _elfPath,
+                runToEntryPoint: "main",
+                device: ''
+            },
+            'openocd': {
+                cwd: '${workspaceRoot}',
+                type: 'cortex-debug',
+                request: 'launch',
+                name: `${prj.getProjectCurrentTargetName()}: OpenOCD`,
+                servertype: 'openocd',
+                executable: _elfPath,
+                runToEntryPoint: "main",
+                configFiles: [
+                ]
+            },
+            'pyocd': {
+                cwd: '${workspaceRoot}',
+                type: 'cortex-debug',
+                request: 'launch',
+                name: `${prj.getProjectCurrentTargetName()}: pyOCD`,
+                servertype: 'pyocd',
+                executable: _elfPath,
+                runToEntryPoint: "main",
+                targetId: '<mcu-name>',
+                serverArgs: []
+            }
+        };
+
+        const debugConfig: any = _debugConfigTemplates[type];
+
+        /* set gdb toolchain */
+        const toolchain = prj.getToolchain();
+        if (toolchain.getToolchainPrefix) {
+            debugConfig.toolchainPrefix = toolchain.getToolchainPrefix().trim().replace(/-$/, '');
+        } else if (debugConfig.toolchainPrefix) {
+            debugConfig.toolchainPrefix = undefined;
+        }
+
+        /* set svd file */
+        const device = prj.GetPackManager().getCurrentDevInfo();
+        if (device && device.svdPath && debugConfig.svdFile == undefined) {
+            debugConfig.svdFile = prj.ToRelativePath(device.svdPath) || device.svdPath;
+        }
+
+        const isChinese = getLocalLanguageType() == LanguageIndexs.Chinese;
+        const ui: SimpleUIConfig = {
+            title: (isChinese ? '创建 Cortex-Debug ({}) 调试配置模板' : 'Create Cortex-Debug ({}) Configuration Template').replace('{}', type.toUpperCase()),
+            viewColumn: vscode.ViewColumn.One,
+            notTakeFocus: false,
+            btns: {
+                'submit': {
+                    title: isChinese ? '新建' : 'Create',
+                    hidden: false
+                },
+                'reset': {
+                    title: '',
+                    hidden: true
+                }
+            },
+            items: {
+                'name': {
+                    type: 'input',
+                    name: isChinese ? '名称' : 'Name',
+                    attrs: { 'singleLine': true, 'size': 60 },
+                    data: <SimpleUIConfigData_input>{
+                        value: debugConfig.name
+                    }
+                },
+                'request': {
+                    type: 'options',
+                    name: isChinese ? '调试模式' : 'Request',
+                    attrs: {},
+                    data: <SimpleUIConfigData_options>{
+                        value: 0,
+                        default: 0,
+                        enum: ['launch', 'attach'],
+                        enumDescriptions: isChinese ? ['启动', '附加'] : ['launch', 'attach'],
+                    }
+                }
+            }
+        };
+
+        let uiResultConv: (data: SimpleUIConfig, debugConfig: any) => void = (a, b) => {
+            throw new Error('uiResultConv NOT IMPLEMENT !');
+        };
+
+        /* For JLink */
+        if (type == 'jlink') {
+
+            if (prj.getUploaderType() == 'JLink') {
+                const jlinkUploadConf = <JLinkOptions>prj.GetConfiguration().config.uploadConfig;
+                debugConfig.interface = JLinkProtocolType[jlinkUploadConf.proType].toLowerCase();
+                debugConfig.device    = jlinkUploadConf.cpuInfo.cpuName;
+            }
+
+            /* setup ui */
+            ui.items['interface'] = {
+                type: 'options',
+                name: isChinese ? '接口类型' : 'Interface',
+                attrs: {},
+                data: <SimpleUIConfigData_options>{
+                    value: debugConfig.interface == 'swd' ? 0 : 1,
+                    default: 0,
+                    enum: ['swd', 'jtag'],
+                    enumDescriptions: ['SWD', 'JTAG'],
+                }
+            };
+            ui.items['device'] = {
+                type: 'input',
+                name: isChinese ? '芯片型号' : 'Device Name',
+                attrs: { 'singleLine': true, size: 30 },
+                data: <SimpleUIConfigData_input>{
+                    value: debugConfig.device,
+                    placeHolder: 'STM32F103C8'
+                },
+            };
+            uiResultConv = (data, outConfig) => {
+                outConfig.interface = ['swd', 'jtag'][data.items['interface'].data.value];
+                outConfig.device = data.items['device'].data.value;
+            };
+        }
+
+        /* For OPENOCD */
+        else if (type == 'openocd') {
+
+            const toCfgPath = (typ: 'interface' | 'target', cfgname: string): string => {
+                if (cfgname.trim() != '') {
+                    let fpath: string = cfgname.startsWith('${workspaceFolder}/')
+                        ? cfgname.replace('${workspaceFolder}/', '')
+                        : `${typ}/${cfgname}`;
+                    if (!fpath.endsWith('.cfg'))
+                        fpath += '.cfg';
+                    return fpath;
+                }
+                return '';
+            };
+
+            const interface_enums = [''].concat(openocd_getConfigList('interface', prj.getRootDir()).map(c => c.name));
+            const target_enums = [''].concat(openocd_getConfigList('target', prj.getRootDir()).map(c => c.name));
+
+            let inferface_default = 0;
+            let target_default = 0;
+
+            if (prj.getUploaderType() == 'OpenOCD') {
+                const flasherConf = <OpenOCDFlashOptions>prj.GetConfiguration().config.uploadConfig;
+                if (flasherConf.interface) {
+                    (<any[]>debugConfig.configFiles).push(toCfgPath('interface', flasherConf.interface));
+                    let idx = interface_enums.findIndex(n => n == flasherConf.interface);
+                    if (idx != -1)
+                        inferface_default = idx;
+                }
+                if (flasherConf.target) {
+                    (<any[]>debugConfig.configFiles).push(toCfgPath('target', flasherConf.target));
+                    let idx = target_enums.findIndex(n => n == flasherConf.target);
+                    if (idx != -1)
+                        target_default = idx;
+                }
+            }
+
+            /* setup ui */
+            ui.items['interface'] = {
+                type: 'options',
+                name: isChinese ? '接口' : 'Interface',
+                attrs: {},
+                data: <SimpleUIConfigData_options>{
+                    value: inferface_default,
+                    default: inferface_default,
+                    enum: interface_enums,
+                    enumDescriptions: interface_enums.map(n => n == '' ? 'None' : n),
+                }
+            };
+            ui.items['target'] = {
+                type: 'options',
+                name: isChinese ? '目标' : 'Target',
+                attrs: {},
+                data: <SimpleUIConfigData_options>{
+                    value: target_default,
+                    default: target_default,
+                    enum: target_enums,
+                    enumDescriptions: target_enums.map(n => n == '' ? 'None' : n),
+                }
+            };
+            uiResultConv = (data, outConfig) => {
+                const cfgFiles: string[] = [];
+                const i_idx = (<SimpleUIConfigData_options>data.items['interface'].data).value;
+                const i_path = interface_enums[i_idx];
+                if (i_path)
+                    cfgFiles.push(toCfgPath('interface', i_path));
+                const t_idx = (<SimpleUIConfigData_options>data.items['target'].data).value;
+                const t_path = target_enums[t_idx];
+                if (t_path)
+                    cfgFiles.push(toCfgPath('target', t_path));
+                outConfig.configFiles = cfgFiles;
+            };
+        }
+
+        /* For PYOCD */
+        else if (type == 'pyocd') {
+
+            let target_idx_default = 0;
+            let pyocd_config_path: string | undefined;
+
+            if (prj.getUploaderType() == 'pyOCD') {
+                const flasherConf = <PyOCDFlashOptions>prj.GetConfiguration().config.uploadConfig;
+                debugConfig.targetId = flasherConf.targetName;
+                if (flasherConf.config) {
+                    pyocd_config_path = prj.toAbsolutePath(flasherConf.config);
+                    if (File.IsFile(pyocd_config_path)) {
+                        debugConfig.serverArgs = [
+                            '--config', pyocd_config_path
+                        ];
+                    }
+                }
+            }
+
+            const target_enums = await vscode.window.withProgress<string[] | Error>({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Get pyOCD Targets List'
+            }, () => {
+                return new Promise((resolve) => {
+                    try {
+                        const r = pyocd_getTargetList(prj.getRootDir(), pyocd_config_path).map(t => <string>t['name']);
+                        resolve(r);
+                    } catch (error) {
+                        resolve(error);
+                    }
+                });
+            });
+
+            if (target_enums instanceof Error)
+                throw target_enums;
+            if (target_enums == undefined)
+                throw new Error(`pyocd_getTargetList -> target_enums is undefined`);
+
+            const idx = target_enums.findIndex(t => t == debugConfig.targetId);
+            if (idx != -1)
+                target_idx_default = idx;
+
+            /* setup ui */
+            ui.items['target'] = {
+                type: 'options',
+                name: isChinese ? '目标' : 'Target',
+                attrs: {},
+                data: <SimpleUIConfigData_options>{
+                    value: target_idx_default,
+                    default: target_idx_default,
+                    enum: target_enums,
+                    enumDescriptions: target_enums,
+                }
+            };
+            if (prj.getUploaderType() != 'pyOCD') {
+                ui.items['config'] = {
+                    type: 'input',
+                    name: isChinese ? 'pyocd.yml 配置文件路径' : 'pyocd.yml Path',
+                    attrs: { 'singleLine': true },
+                    data: <SimpleUIConfigData_input>{
+                        value: '',
+                        placeHolder: './pyocd.yml'
+                    },
+                };
+            }
+            uiResultConv = (data, outConfig) => {
+                const t_idx = (<SimpleUIConfigData_options>data.items['target'].data).value;
+                const targetId = target_enums[t_idx];
+                if (targetId)
+                    outConfig.targetId = targetId;
+                else
+                    throw new Error(`targetId is null ! idx=${t_idx}`);
+                if (data.items['config']) {
+                    const _cfgPath = (<SimpleUIConfigData_input>data.items['config'].data).value;
+                    if (_cfgPath) {
+                        const absPath = prj.toAbsolutePath(_cfgPath);
+                        outConfig.serverArgs = [
+                            '--config', absPath
+                        ];
+                    }
+                }
+            };
+        }
+
+        return new Promise((resolve) => {
+
+            WebPanelManager.instance().showSimpleConfigUI(ui,
+                // on submited
+                async (data, panel) => {
+
+                    /* update configs */
+                    debugConfig.name = data.items['name'].data.value;
+                    debugConfig.request = ['launch', 'attach'][data.items['request'].data.value];
+                    if (debugConfig.request == 'attach')
+                        debugConfig.runToEntryPoint = undefined;
+                    uiResultConv(data, debugConfig);
+
+                    /* check override ? */
+                    const idx = old_cfgs.findIndex(cfg => cfg.name == debugConfig.name);
+                    if (idx != -1) {
+                        const item = await vscode.window.showWarningMessage(
+                            isChinese
+                                ? `${WARNING}: 名称为 '${debugConfig.name}' 的调试配置已经存在，需要覆盖它吗？`
+                                : `${WARNING}: Debugger Configuration '${debugConfig.name}' is already existed ! Override It ?`,
+                            'Yes', 'No');
+                        if (item === undefined || item === 'No') {
+                            return 'canceled';
+                        }
+                    }
+
+                    resolve({ debug_config: debugConfig, override_idx: idx });
+                    setTimeout(() => panel.dispose(), 100);
+                },
+                // on msg
+                (msg) => {
+                });
+        });
+    }
+
+    async genDebugConfigTemplate(item: ProjTreeItem, type: 'jlink' | 'openocd' | 'pyocd') {
+
         const project = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
-        project.updateDebugConfig();
+        const cfgfile = File.from(project.GetWorkspaceConfig().GetFile().dir, AbstractProject.vsCodeDir, 'launch.json');
+
+        try {
+
+            let cur_cfgs;
+            if (cfgfile.IsFile())
+                cur_cfgs = <any[]>jsonc_parser.parse(cfgfile.Read(), undefined, { allowTrailingComma: true }).configurations;
+            else
+                cur_cfgs = [];
+
+            const result = await this.genDebugConfig_internal(type, project, cur_cfgs);
+            if (!result) {
+                return; // skip if user canceled
+            }
+
+            if (!cfgfile.IsFile()) {
+                cfgfile.Write(JSON.stringify({
+                    version: '0.2.0',
+                    configurations: [result.debug_config]
+                }, undefined, 4));
+                vscode.window.showTextDocument(vscode.Uri.file(cfgfile.path), { preview: true });
+                return;
+            }
+
+            /* merge debugConfig and write into launch.json */
+            let edits: jsonc_parser.EditResult;
+            let fmtOpts = <jsonc_parser.FormattingOptions>{ tabSize: 4, insertSpaces: true };
+            let raw_cont = cfgfile.Read();
+            if (result.override_idx != -1)
+                edits = jsonc_parser.modify(raw_cont, ['configurations', result.override_idx], result.debug_config, { formattingOptions: fmtOpts });
+            else
+                edits = jsonc_parser.modify(raw_cont, ['configurations', 0], result.debug_config, { formattingOptions: fmtOpts, isArrayInsertion: true });
+            cfgfile.Write(jsonc_parser.applyEdits(raw_cont, edits));
+
+            /* show launch.json */
+            const document = await vscode.workspace.openTextDocument(vscode.Uri.file(cfgfile.path));
+            let cursorSel: vscode.Range | undefined;
+            if (edits.length > 0) {
+                const s = document.positionAt(edits[0].offset);
+                const e = document.positionAt(edits[0].offset + edits[0].length);
+                cursorSel = new vscode.Range(s, e);
+            }
+            vscode.window.showTextDocument(document, { preview: true, selection: cursorSel });
+        } catch (error) {
+            GlobalEvent.emit('error', error);
+        }
     }
 
     private prev_click_info: ItemClickInfo | undefined = undefined;

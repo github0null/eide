@@ -324,9 +324,9 @@ export const lib_desc = [
     'Library Search Directories'
 ][langIndex];
 
-export const source_dir_desc = [
-    '源文件目录',
-    'Source File Directories'
+export const source_list_desc = [
+    '源文件列表',
+    'Source Files List'
 ][langIndex];
 
 export const definition_list_desc = [
@@ -417,6 +417,16 @@ export const view_str$env_desc$compiler_folder = [
 ][langIndex];
 
 //---------------Other---------------
+
+export const view_str$prompt$userCanceledOperation = [
+    `用户取消了操作。`,
+    `The user canceled the operation.`
+][langIndex];
+
+export const view_str$prompt$chipPkgNotCompateThisVersion = [
+    `不兼容的项目，'芯片支持包' 功能在 v3.18.0 版本的 eide 中发生了变化（[更新日志](https://marketplace.visualstudio.com/items/CL.eide/changelog)），点击 '继续' 将强制打开项目并移除不兼容的数据，点击 '取消' 则退出。`,
+    `Incompatible project, the 'Chip Support Package' function has changed in the version v3.18.0 of eide ([ChangeLog](https://marketplace.visualstudio.com/items/CL.eide/changelog)), clicking 'Continue' will force the project to open, and clicking 'Cancel' will cancel the opening.`
+][langIndex];
 
 export const view_str$prompt$removeSrcDir = [
     `从项目中移除源文件夹 '{}' ?`,
@@ -629,6 +639,11 @@ export const view_str$prompt$feedback = [
 ][langIndex];
 
 //---------------Select string------------------
+
+export const sponsor_author_text = [
+    `赞助作者`,
+    `Sponsor The Author`
+][langIndex];
 
 export const rating_text = [
     '打分',

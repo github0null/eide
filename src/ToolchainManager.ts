@@ -610,8 +610,56 @@ class SDCC implements IToolchian {
         "ez80_z80": "z80"
     };
 
+    private readonly defaultProcessors = [
+        "mcs51",
+        "z80",
+        "z180",
+        "stm8"
+    ];
+
     newInstance(): IToolchian {
         return new SDCC();
+    }
+
+    private __lastActivedTargetInfo: ToolchainTargetSupportedInfo | undefined;
+    getGccCompilerTargetInfo(): ToolchainTargetSupportedInfo | undefined {
+
+        if (this.__lastActivedTargetInfo)
+            return this.__lastActivedTargetInfo;
+
+        try {
+            // SDCC : mcs51/z80/z180/r2k/r2ka/r3ka/sm83/tlcs90/ez80_z80/z80n/ds390/pic16/pic14/TININative/ds400\
+            // /hc08/s08/stm8/pdk13/pdk14/pdk15/mos6502 4.2.0 #13081 (MINGW64)
+            const sdccPath = NodePath.join(this.getToolchainDir().path, 'bin', `sdcc${platform.exeSuffix()}`);
+            const lines = child_process.execFileSync(sdccPath, ['-v']).toString().trim().split(/\r\n|\n/);
+
+            let cpus: string[] = [];
+            for (const _line of lines) {
+                const m = /^SDCC\s*:\s*([^\s]+)\s+/.exec(_line.trim());
+                if (m && m.length > 1) {
+                    cpus = m[1].trim().split('/');
+                    break;
+                }
+            }
+
+            this.__lastActivedTargetInfo = <ToolchainTargetSupportedInfo>{
+                machine: 'sdcc',
+                archs: cpus,
+                abis: [],
+                rv_codeModels: []
+            };
+
+            return this.__lastActivedTargetInfo;
+
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            return <ToolchainTargetSupportedInfo>{
+                machine: 'sdcc',
+                archs: this.defaultProcessors,
+                abis: [],
+                rv_codeModels: []
+            };
+        }
     }
 
     getGccFamilyCompilerPathForCpptools(): string | undefined {
@@ -839,213 +887,213 @@ class SDCC implements IToolchian {
     }
 }
 
-class GnuStm8Sdcc implements IToolchian {
+// class GnuStm8Sdcc implements IToolchian {
 
-    readonly version = 1;
+//     readonly version = 1;
 
-    readonly settingName: string = 'EIDE.STM8.GNU-SDCC.InstallDirectory';
+//     readonly settingName: string = 'EIDE.STM8.GNU-SDCC.InstallDirectory';
 
-    readonly categoryName: string = 'SDCC';
+//     readonly categoryName: string = 'SDCC';
 
-    readonly name: ToolchainName = 'GNU_SDCC_STM8';
+//     readonly name: ToolchainName = 'GNU_SDCC_STM8';
 
-    readonly modelName: string = 'stm8.gnu-sdcc.model.json';
+//     readonly modelName: string = 'stm8.gnu-sdcc.model.json';
 
-    readonly configName: string = 'options.stm8.gnu-sdcc.json';
+//     readonly configName: string = 'options.stm8.gnu-sdcc.json';
 
-    readonly verifyFileName: string = 'stm8.gnu-sdcc.verify.json';
+//     readonly verifyFileName: string = 'stm8.gnu-sdcc.verify.json';
 
-    readonly elfSuffix = '.elf';
+//     readonly elfSuffix = '.elf';
 
-    newInstance(): IToolchian {
-        return new SDCC();
-    }
+//     newInstance(): IToolchian {
+//         return new SDCC();
+//     }
 
-    getGccFamilyCompilerPathForCpptools(): string | undefined {
-        //const gcc = File.fromArray([this.getToolchainDir().path, 'bin', `sdcc${platform.exeSuffix()}`]);
-        //return gcc.path;
-        return undefined;
-    }
+//     getGccFamilyCompilerPathForCpptools(): string | undefined {
+//         //const gcc = File.fromArray([this.getToolchainDir().path, 'bin', `sdcc${platform.exeSuffix()}`]);
+//         //return gcc.path;
+//         return undefined;
+//     }
 
-    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+//     updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
 
-        cppToolsConfig.cStandard = 'c99';
-        cppToolsConfig.cppStandard = 'c++98';
+//         cppToolsConfig.cStandard = 'c99';
+//         cppToolsConfig.cppStandard = 'c++98';
 
-        if (builderOpts["c/cpp-compiler"]) {
-            cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'] || 'c99';
-        }
-    }
+//         if (builderOpts["c/cpp-compiler"]) {
+//             cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'] || 'c99';
+//         }
+//     }
 
-    preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
+//     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
 
-        if (options['linker'] == undefined) {
-            options['linker'] = {};
-        }
+//         if (options['linker'] == undefined) {
+//             options['linker'] = {};
+//         }
 
-        // convert output lib commmand
-        if (options['linker']['output-format'] === 'lib') {
-            options['linker']['$use'] = 'linker-lib';
-        }
+//         // convert output lib commmand
+//         if (options['linker']['output-format'] === 'lib') {
+//             options['linker']['$use'] = 'linker-lib';
+//         }
 
-        // get code model
-        let codeModel: string = 'medium';
-        if (options["c/cpp-compiler"]) {
-            const conf = options["c/cpp-compiler"];
-            if (conf['misc-controls']) { // get model type
-                codeModel = this.parseCodeModel(conf['misc-controls']) || codeModel;
-            }
-        }
+//         // get code model
+//         let codeModel: string = 'medium';
+//         if (options["c/cpp-compiler"]) {
+//             const conf = options["c/cpp-compiler"];
+//             if (conf['misc-controls']) { // get model type
+//                 codeModel = this.parseCodeModel(conf['misc-controls']) || codeModel;
+//             }
+//         }
 
-        /* append def linker params */
-        {
-            const ldFlags: string[] = [];
-            const libFlags: string[] = [];
+//         /* append def linker params */
+//         {
+//             const ldFlags: string[] = [];
+//             const libFlags: string[] = [];
 
-            if (options['linker']['misc-controls']) {
-                ldFlags.push(options['linker']['misc-controls']);
-            }
+//             if (options['linker']['misc-controls']) {
+//                 ldFlags.push(options['linker']['misc-controls']);
+//             }
 
-            if (options['linker']['LIB_FLAGS']) {
-                libFlags.push(options['linker']['LIB_FLAGS']);
-            }
+//             if (options['linker']['LIB_FLAGS']) {
+//                 libFlags.push(options['linker']['LIB_FLAGS']);
+//             }
 
-            // append default lib search path
-            const libDir = File.ToUnixPath(this.getToolchainDir().path + File.sep + `lib-${codeModel}`);
-            ldFlags.push(`-L"${libDir}"`);
+//             // append default lib search path
+//             const libDir = File.ToUnixPath(this.getToolchainDir().path + File.sep + `lib-${codeModel}`);
+//             ldFlags.push(`-L"${libDir}"`);
 
-            // append default system lib
-            libFlags.push('-lstm8');
+//             // append default system lib
+//             libFlags.push('-lstm8');
 
-            // set flags
-            options['linker']['misc-controls'] = ldFlags.join(' ');
-            options['linker']['LIB_FLAGS'] = libFlags.join(' ');
-        }
-    }
+//             // set flags
+//             options['linker']['misc-controls'] = ldFlags.join(' ');
+//             options['linker']['LIB_FLAGS'] = libFlags.join(' ');
+//         }
+//     }
 
-    private parseCodeModel(conf: string): string | undefined {
-        const mType = /\s*--model-(\w+)\s*/i.exec(conf);
-        if (mType && mType.length > 1) {
-            return mType[1];
-        }
-    }
+//     private parseCodeModel(conf: string): string | undefined {
+//         const mType = /\s*--model-(\w+)\s*/i.exec(conf);
+//         if (mType && mType.length > 1) {
+//             return mType[1];
+//         }
+//     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
+//     getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
 
-        const mList: string[] = [
-            '__SDCC',
-            `__SDCC_VERSION_MAJOR=3`,
-            `__SDCC_VERSION_MINOR=9`,
-            `__SDCC_VERSION_PATCH=3`
-        ];
+//         const mList: string[] = [
+//             '__SDCC',
+//             `__SDCC_VERSION_MAJOR=3`,
+//             `__SDCC_VERSION_MINOR=9`,
+//             `__SDCC_VERSION_PATCH=3`
+//         ];
 
-        // code model
-        let devName: string = 'stm8';
-        let codeModel: string = 'medium';
+//         // code model
+//         let devName: string = 'stm8';
+//         let codeModel: string = 'medium';
 
-        // fix device name: stm8
-        mList.push(`__SDCC_${devName}`);
+//         // fix device name: stm8
+//         mList.push(`__SDCC_${devName}`);
 
-        // global config
-        if (builderOpts["c/cpp-compiler"]) {
+//         // global config
+//         if (builderOpts["c/cpp-compiler"]) {
 
-            const conf = builderOpts["c/cpp-compiler"];
+//             const conf = builderOpts["c/cpp-compiler"];
 
-            // get model type
-            if (conf['misc-controls']) {
-                codeModel = this.parseCodeModel(conf['misc-controls']) || codeModel;
-            }
+//             // get model type
+//             if (conf['misc-controls']) {
+//                 codeModel = this.parseCodeModel(conf['misc-controls']) || codeModel;
+//             }
 
-            // is use stack auto 
-            if (conf['stack-auto']) {
-                mList.push(`__SDCC_STACK_AUTO`);
-            }
+//             // is use stack auto 
+//             if (conf['stack-auto']) {
+//                 mList.push(`__SDCC_STACK_AUTO`);
+//             }
 
-            // is use xstack 
-            if (conf['use-external-stack']) {
-                mList.push(`__SDCC_USE_XSTACK`);
-            }
+//             // is use xstack 
+//             if (conf['use-external-stack']) {
+//                 mList.push(`__SDCC_USE_XSTACK`);
+//             }
 
-            // int long reent
-            if (conf['int-long-reent']) {
-                mList.push(`__SDCC_INT_LONG_REENT`);
-            }
+//             // int long reent
+//             if (conf['int-long-reent']) {
+//                 mList.push(`__SDCC_INT_LONG_REENT`);
+//             }
 
-            // float reent
-            if (conf['float-reent']) {
-                mList.push(`__SDCC_FLOAT_REENT`);
-            }
-        }
+//             // float reent
+//             if (conf['float-reent']) {
+//                 mList.push(`__SDCC_FLOAT_REENT`);
+//             }
+//         }
 
-        if (codeModel) { // set code model
-            mList.push(`__SDCC_MODEL_${codeModel.toUpperCase()}`);
-        }
+//         if (codeModel) { // set code model
+//             mList.push(`__SDCC_MODEL_${codeModel.toUpperCase()}`);
+//         }
 
-        return mList;
-    }
+//         return mList;
+//     }
 
-    getCustomDefines(): string[] | undefined {
-        return undefined;
-    }
+//     getCustomDefines(): string[] | undefined {
+//         return undefined;
+//     }
 
-    getToolchainDir(): File {
-        return SettingManager.GetInstance().getGnuSdccStm8Dir();
-    }
+//     getToolchainDir(): File {
+//         return SettingManager.GetInstance().getGnuSdccStm8Dir();
+//     }
 
-    getSystemIncludeList(builderOpts: ICompileOptions): string[] {
+//     getSystemIncludeList(builderOpts: ICompileOptions): string[] {
 
-        let toolSearchLoc: string = this.getToolchainDir().path;
-        if (platform.osType() != 'win32') {
-            toolSearchLoc = `${toolSearchLoc}/share/sdcc`;
-        }
+//         let toolSearchLoc: string = this.getToolchainDir().path;
+//         if (platform.osType() != 'win32') {
+//             toolSearchLoc = `${toolSearchLoc}/share/sdcc`;
+//         }
 
-        const incList: string[] = [File.fromArray([toolSearchLoc, 'include']).path];
+//         const incList: string[] = [File.fromArray([toolSearchLoc, 'include']).path];
 
-        // get device name include
-        const devInc = File.fromArray([toolSearchLoc, 'include', 'stm8']);
-        if (devInc.IsDir()) {
-            incList.push(devInc.path);
-        }
+//         // get device name include
+//         const devInc = File.fromArray([toolSearchLoc, 'include', 'stm8']);
+//         if (devInc.IsDir()) {
+//             incList.push(devInc.path);
+//         }
 
-        return incList;
-    }
+//         return incList;
+//     }
 
-    getForceIncludeHeaders(): string[] | undefined {
-        return [
-            ResManager.GetInstance().getC51ForceIncludeHeaders().path
-        ];
-    }
+//     getForceIncludeHeaders(): string[] | undefined {
+//         return [
+//             ResManager.GetInstance().getC51ForceIncludeHeaders().path
+//         ];
+//     }
 
-    getDefaultIncludeList(): string[] {
-        return [];
-    }
+//     getDefaultIncludeList(): string[] {
+//         return [];
+//     }
 
-    getLibDirs(): string[] {
-        return [];
-    }
+//     getLibDirs(): string[] {
+//         return [];
+//     }
 
-    getDefaultConfig(): ICompileOptions {
-        return <ICompileOptions>{
-            version: this.version,
-            beforeBuildTasks: [],
-            afterBuildTasks: [],
-            global: {
-                "out-debug-info": false
-            },
-            'c/cpp-compiler': {
-                "language-c": "c99",
-                "optimize-type": "speed",
-                "one-elf-section-per-function": true,
-                "one-elf-section-per-data": false
-            },
-            'asm-compiler': {},
-            linker: {
-                "output-format": "elf",
-                "remove-unused-sections": true
-            }
-        };
-    }
-}
+//     getDefaultConfig(): ICompileOptions {
+//         return <ICompileOptions>{
+//             version: this.version,
+//             beforeBuildTasks: [],
+//             afterBuildTasks: [],
+//             global: {
+//                 "out-debug-info": false
+//             },
+//             'c/cpp-compiler': {
+//                 "language-c": "c99",
+//                 "optimize-type": "speed",
+//                 "one-elf-section-per-function": true,
+//                 "one-elf-section-per-data": false
+//             },
+//             'asm-compiler': {},
+//             linker: {
+//                 "output-format": "elf",
+//                 "remove-unused-sections": true
+//             }
+//         };
+//     }
+// }
 
 class COSMIC_STM8 implements IToolchian {
 

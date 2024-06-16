@@ -85,7 +85,7 @@
     "eide.builder.setup-toolchain-prefix": "设置编译器前缀",
 
     "eide.flash.switch": "切换烧录器",
-    "eide.flash.gen.dbgconf": "生成 Cortex-Debug 配置模板",
+    "eide.flash.gen.dbgconf": "生成调试器配置模板",
     "eide.flash.fetch-shell-flasher": "从云端安装 Shell 烧录脚本",
 
     "eide.deps.include.show": "显示所有包含路径",

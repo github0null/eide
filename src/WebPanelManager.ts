@@ -52,7 +52,9 @@ export class WebPanelManager {
         return _instance;
     }
 
-    showSimpleConfigUI(cfg: SimpleUIConfig, onSubmit: (newCfg: SimpleUIConfig) => void, onMsg?: (msg: string) => void): Promise<void> {
+    showSimpleConfigUI(cfg: SimpleUIConfig,
+        onSubmit: (newCfg: SimpleUIConfig, thisPanel: vscode.WebviewPanel) => Promise<void | 'canceled'>,
+        onMsg?: (msg: string, thisPanel: vscode.WebviewPanel) => void): vscode.WebviewPanel {
 
         const resManager = ResManager.GetInstance();
 
@@ -69,50 +71,45 @@ export class WebPanelManager {
 
         panel.iconPath = vscode.Uri.file(resManager.GetIconByName(cfg.iconName || 'Property_16x.svg').path);
 
-        return new Promise((resolve_) => {
-
-            panel.onDidDispose(() => {
-                resolve_();
-            });
-
-            panel.webview.onDidReceiveMessage((_data: any) => {
-
-                /* it's a message */
-                if (typeof _data == 'string') {
-                    switch (_data) {
-                        case 'eide.simple-cfg-ui.launched': /* webview launched */
-                            panel.webview.postMessage(cfg);
-                            break;
-                        default:
-                            if (onMsg) onMsg(_data);
-                            break;
-                    }
+        panel.webview.onDidReceiveMessage(async (_data: any) => {
+            /* it's a message */
+            if (typeof _data == 'string') {
+                switch (_data) {
+                    case 'eide.simple-cfg-ui.launched': /* webview launched */
+                        panel.webview.postMessage(cfg);
+                        break;
+                    default:
+                        if (onMsg) onMsg(_data, panel);
+                        break;
                 }
+            }
 
-                /* it's obj data */
-                else {
-                    try {
-                        onSubmit(_data);
+            /* it's obj data */
+            else {
+                try {
+                    const ret = await onSubmit(_data, panel);
+                    if (ret != 'canceled')
                         panel.webview.postMessage('eide.simple-cfg-ui.status.done');
-                    } catch (error) {
-                        GlobalEvent.emit('error', error);
-                        panel.webview.postMessage('eide.simple-cfg-ui.status.fail');
-                    }
+                } catch (error) {
+                    GlobalEvent.emit('error', error);
+                    panel.webview.postMessage('eide.simple-cfg-ui.status.fail');
                 }
+            }
+        });
+
+        const htmlFolder = File.fromArray([resManager.GetHTMLDir().path, 'simple_config_ui']);
+        const htmlFile = File.fromArray([htmlFolder.path, 'index.html']);
+
+        panel.webview.html = htmlFile.Read()
+            .replace(/"[\w\-\.\/]+?\.(?:css|js)"/ig, (str) => {
+                const fileName = str.substr(1, str.length - 2); // remove '"'
+                const absPath = File.normalize(htmlFolder.path + NodePath.sep + fileName);
+                return `"${panel.webview.asWebviewUri(vscode.Uri.file(absPath)).toString()}"`;
             });
 
-            const htmlFolder = File.fromArray([resManager.GetHTMLDir().path, 'simple_config_ui']);
-            const htmlFile = File.fromArray([htmlFolder.path, 'index.html']);
+        panel.reveal();
 
-            panel.webview.html = htmlFile.Read()
-                .replace(/"[\w\-\.\/]+?\.(?:css|js)"/ig, (str) => {
-                    const fileName = str.substr(1, str.length - 2); // remove '"'
-                    const absPath = File.normalize(htmlFolder.path + NodePath.sep + fileName);
-                    return `"${panel.webview.asWebviewUri(vscode.Uri.file(absPath)).toString()}"`;
-                });
-
-            panel.reveal();
-        });
+        return panel;
     }
 
     showStorageLayoutView(project: AbstractProject): void {

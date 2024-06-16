@@ -28,7 +28,7 @@ import { ArmBaseCompileData } from "./EIDEProjectModules";
 import { ResManager } from "./ResManager";
 import { GlobalEvent } from "./GlobalEvents";
 import { newMessage } from "./Message";
-import { HexUploaderType, JLinkOptions, STVPFlasherOptions, ProtocolType, PyOCDFlashOptions, OpenOCDFlashOptions } from "./HexUploader";
+import { HexUploaderType, JLinkOptions, STVPFlasherOptions, JLinkProtocolType, PyOCDFlashOptions, OpenOCDFlashOptions } from "./HexUploader";
 import { jsonc } from 'jsonc';
 import * as YAML from 'yaml';
 
@@ -43,6 +43,9 @@ interface LaunchConfig {
     configurations: Configuration[];
 }
 
+/**
+ * @deprecated
+*/
 export abstract class IDebugConfigGenerator {
 
     protected launchFile: File | undefined;
@@ -216,7 +219,7 @@ class CortexDebugConfigProvider extends IDebugConfigProvider {
 
                 else if ('jlink' == debugConfig.servertype) {
                     const jlinkUploadConf = <JLinkOptions>prjConfig.uploadConfig;
-                    debugConfig.interface = ProtocolType[jlinkUploadConf.proType].toLowerCase();
+                    debugConfig.interface = JLinkProtocolType[jlinkUploadConf.proType].toLowerCase();
                     debugConfig.device = jlinkUploadConf.cpuInfo.cpuName;
                 }
             }

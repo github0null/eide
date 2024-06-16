@@ -84,3 +84,6 @@
 
    - 使用 `build vsix` 构建并打包成 VSIX
 
+## 赞助 👍
+
+[请作者喝咖啡](https://em-ide.com/sponsor)

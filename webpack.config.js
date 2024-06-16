@@ -21,7 +21,8 @@ const config = {
         jsonc: 'jsonc',
         ini: 'ini',
         yaml: 'yaml',
-        unzipper: 'unzipper'
+        unzipper: 'unzipper',
+        jsonc_parser: 'jsonc-parser'
     },
     resolve: {
         // support reading TypeScript and JavaScript files, 📖 -> https://github.com/TypeStrong/ts-loader
@@ -29,6 +30,22 @@ const config = {
     },
     module: {
         rules: [
+            {
+                test: /\.m?js$/,
+                include: [
+                    path.resolve(__dirname, 'node_modules/jsonc-parser/lib')
+                ],
+                use: {
+                    loader: 'babel-loader',
+                    options: {
+                        presets: ['@babel/preset-env'],
+                        plugins: [
+                            //'@babel/plugin-proposal-object-rest-spread',
+                            '@babel/plugin-proposal-nullish-coalescing-operator'
+                        ],
+                    },
+                },
+            },
             {
                 test: /\.ts$/,
                 exclude: /node_modules/,
