@@ -9,7 +9,7 @@ All notable version changes will be recorded in this file.
 ### [v3.18.1] revision
 
 **Fix**:
-  - `Project Resources`: When user unfold an unsorted vritual sources folder, the 'eide.json' will be changed.
+  - `Project Resources`: When user unfold an unsorted vritual sources folder, the 'eide.json' will be changed by mistake.
 
 ***
 
