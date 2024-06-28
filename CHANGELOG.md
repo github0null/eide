@@ -6,6 +6,13 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.18.1] revision
+
+**Fix**:
+  - `Project Resources`: When user unfold an unsorted vritual sources folder, the 'eide.json' will be changed.
+
+***
+
 ### [v3.18.0] update
 
 **Incompatible Changes**:
