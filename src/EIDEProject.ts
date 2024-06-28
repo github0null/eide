@@ -57,7 +57,7 @@ import { WebPanelManager } from './WebPanelManager';
 import { DependenceManager } from './DependenceManager';
 import * as platform from './Platform';
 import { IDebugConfigGenerator } from './DebugConfigGenerator';
-import { md5, copyObject, compareVersion, isGccFamilyToolchain } from './utility';
+import { md5, copyObject, compareVersion, isGccFamilyToolchain, deepCloneObject } from './utility';
 import { ResInstaller } from './ResInstaller';
 import {
     view_str$prompt$not_found_compiler, view_str$operation$name_can_not_be_blank,
@@ -1201,7 +1201,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     }
 
     getVirtualSourceRoot(): VirtualFolder {
-        return this.virtualSource.getRoot();
+        return deepCloneObject(this.virtualSource.getRoot());
     }
 
     getVirtualSourceManager(): VirtualSource {
