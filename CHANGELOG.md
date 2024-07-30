@@ -6,6 +6,13 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.18.2] revision
+
+**Fix**:
+  - `unify_builder`: Fix makefile dependence parser bugs. Update unify_builder to `v3.7.4`
+
+***
+
 ### [v3.18.1] revision
 
 **Fix**:
