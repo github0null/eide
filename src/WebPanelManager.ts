@@ -37,6 +37,7 @@ import * as fs from 'fs';
 import { EncodingConverter } from "./EncodingConverter";
 import { SimpleUIConfig } from "./SimpleUIDef";
 import { newMessage, ExceptionToMessage } from "./Message";
+import * as jsonc_parser from 'jsonc-parser';
 
 let _instance: WebPanelManager;
 
@@ -193,20 +194,17 @@ export class WebPanelManager {
         // init panel data
         panel.iconPath = vscode.Uri.parse(resManager.GetIconByName('Property_16x.svg').ToUri());
 
-        const optionsDataFile = projectConfig.compileConfigModel
-            .getOptionsFile(project.getEideDir().path, projectConfig.config);
-
-        const getModelFile = (dataFilePath: string): File => {
+        const getModelFile = (verifyFileName: string): File => {
             const packageJson = resManager.getPackageJson();
             const jsonValidations = packageJson['contributes']['jsonValidation'];
             for (const validationObj of jsonValidations) {
-                const fileSuffix = validationObj.fileMatch.replace('**/*', '');
-                if (dataFilePath.endsWith(fileSuffix)) {
+                const fname = NodePath.basename(validationObj.url);
+                if (fname == verifyFileName) {
                     const path = resManager.getAppRootFolder().path + File.sep + validationObj.url;
                     return new File(File.normalize(path));
                 }
             }
-            throw new Error(`not found model file for '${dataFilePath}'`)
+            throw new Error(`not found model file for '${verifyFileName}'`)
         }
 
         const envList: any[] = [
@@ -226,8 +224,8 @@ export class WebPanelManager {
 
         /* prepare page-init event data */
         const initMsg = <any>{
-            model: JSON.parse(getModelFile(optionsDataFile.path).Read()),
-            data: JSON.parse(optionsDataFile.Read()),
+            model: JSON.parse(getModelFile(project.getToolchain().verifyFileName).Read()),
+            data: projectConfig.compileConfigModel.getOptions(),
             info: {
                 lang: vscode.env.language,
                 envList: envList,
@@ -250,18 +248,32 @@ export class WebPanelManager {
             // TODO
         });
 
-        panel.webview.onDidReceiveMessage((data) => {
+        panel.webview.onDidReceiveMessage(async (data) => {
 
             // it's a event from web view
             if (typeof data === 'string') {
                 switch (data) {
                     // require open config file
-                    case 'open-config':
-                        vscode.window.showTextDocument(
-                            vscode.Uri.parse(optionsDataFile.ToUri()),
-                            { preview: true }
-                        );
+                    case 'open-config': {
+                        const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(project.getEideProjectFile().path));
+                        // get builder options location in file
+                        let docSelection: vscode.Range | undefined;
+                        const rootNode = jsonc_parser.parseTree(project.getEideProjectFile().Read());
+                        if (rootNode) {
+                            const targetName = project.getCurrentTarget();
+                            const toolchainName = project.getToolchain().name;
+                            const node = jsonc_parser.findNodeAtLocation(rootNode, 
+                                ['targets', targetName, 'builderOptions', toolchainName]);
+                            if (node) {
+                                let s = doc.positionAt(node.offset);
+                                let e = doc.positionAt(node.offset + node.length);
+                                docSelection = new vscode.Range(s, e);
+                            }
+                        }
+                        // open document
+                        vscode.window.showTextDocument(doc, { preview: true, selection: docSelection });
                         break;
+                    }
                     /* post page-init event */
                     case 'eide.options_view.launched':
                         panel.webview.postMessage(initMsg);
@@ -279,10 +291,10 @@ export class WebPanelManager {
                 };
 
                 try {
-                    optionsDataFile.Write(JSON.stringify(data, undefined, 4))
+                    projectConfig.compileConfigModel.setOptions(data);
                     status.success = true;
                     status.msg = view_str$operation$done;
-                    project.NotifyBuilderConfigUpdate(optionsDataFile.name);
+                    project.NotifyBuilderConfigUpdate();
                 } catch (error) {
                     status.success = false;
                     status.msg = (<Error>error).message;

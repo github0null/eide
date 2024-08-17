@@ -49,7 +49,7 @@ import { CompileConfigModel, UploadConfigModel, SdccCompileConfigModel, GccCompi
 // ----------------------------------------------------------
 
 // !! eide project config file version !!
-export const EIDE_CONF_VERSION = '3.4';
+export const EIDE_CONF_VERSION = '3.5';
 
 //
 //  'C51': 8BIT MCU Project (like: mcs51, stm8, ...)
@@ -105,11 +105,12 @@ export interface BuilderOptions {
 export interface ProjectTargetInfo {
     excludeList: string[];
     toolchain: ToolchainName;
-    compileConfig: any;
+    compileConfig: any; //【历史遗留属性】用于储存一些 公共的 编译相关的 属性
     uploader: HexUploaderType;
     uploadConfig: any | null;
     uploadConfigMap: { [uploader: string]: any };
     custom_dep: Dependence;
+    builderOptions: { [toolchain: string]: BuilderOptions };
 }
 
 export interface VirtualFile {
@@ -135,7 +136,7 @@ export interface ProjectConfigData<T extends BuilderConfigData> {
     mode: string; // target name (And for historical reasons, that's what it's called)
     excludeList: string[];
     toolchain: ToolchainName;
-    compileConfig: T;
+    compileConfig: T; //【历史遗留属性】用于储存一些 公共的 编译相关的 属性
     uploader: HexUploaderType;
     uploadConfig: any | null;
     uploadConfigMap: { [uploader: string]: any };
@@ -1248,7 +1249,8 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             uploader: target.uploader,
             uploadConfig: utility.deepCloneObject(target.uploadConfig),
             uploadConfigMap: utility.deepCloneObject(target.uploadConfigMap),
-            custom_dep: custom_dep
+            custom_dep: custom_dep,
+            builderOptions: utility.deepCloneObject(target.targets[target.mode].builderOptions)
         };
     }
 

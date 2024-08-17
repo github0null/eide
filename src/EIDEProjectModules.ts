@@ -197,13 +197,14 @@ export abstract class ConfigModel<DataType> {
         this.data = this.GetDefault();
     }
 
-    on(event: 'dataChanged', listener: () => void): void;
-    on(event: 'event', listener: (event: EventData) => void): void;
+    on(event: 'dataChanged', listener: () => void): void; // 当对象本身的属性发生改变后，会产生该事件
+    on(event: 'event', listener: (event: EventData) => void): void; // 需要打开自定义的GUI界面给用户进行操作时，会产生该事件
     on(event: 'NotifyUpdate', listener: (prjConfig: ProjectConfiguration<any>) => void): void;
     on(event: any, listener: (arg?: any) => void): void {
         this._event.on(event, listener);
     }
 
+    // 当其他对象更新时，发送该事件通知该对象需要更新自身的相关属性
     emit(event: 'NotifyUpdate', prjConfig: ProjectConfiguration<any>): void;
     emit(event: any, arg?: any): void {
         this._event.emit(event, arg);
@@ -437,38 +438,27 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
         }
     }
 
-    getOptions(eideFolderPath: string, prjConfig: ProjectConfigData<T>): BuilderOptions {
-        try {
-            const options = JSON.parse(this.getOptionsFile(eideFolderPath, prjConfig).Read());
-            return options;
-        } catch (error) {
-            GlobalEvent.emit('msg', newMessage('Warning', 'Builder options file format error !, use default options !'));
-            const toolchain = ToolchainManager.getInstance().getToolchain(prjConfig.type, prjConfig.toolchain);
-            const options = toolchain.getDefaultConfig();
-            return options;
+    getOptions(targetName?: string, toolchainName?: ToolchainName): BuilderOptions {
+
+        const _targetName = targetName || this.prjConfigData.mode;
+        const _toolchain  = toolchainName || this.prjConfigData.toolchain;
+
+        const allOptions = this.prjConfigData.targets[_targetName].builderOptions;
+        if (allOptions[_toolchain] == undefined) {
+            const toolchain = ToolchainManager.getInstance().getToolchain(this.prjConfigData.type, _toolchain);
+            allOptions[_toolchain] = toolchain.getDefaultConfig();
+            this._event.emit('dataChanged');
         }
+
+        return utility.deepCloneObject(allOptions[_toolchain]);
     }
 
-    getOptionsFile(eideFolderPath: string, prjConfig: ProjectConfigData<T>, noCreate?: boolean): File {
-
-        const toolchain = ToolchainManager.getInstance().getToolchain(prjConfig.type, prjConfig.toolchain);
-
-        const configName = toolchain.configName;
-        const targetName = prjConfig.mode.toLowerCase();
-        const cfgFile = File.fromArray([eideFolderPath, `${targetName}.${configName}`]);
-
-        // compat old project, add prefix for 'release' target
-        if (targetName == 'release' && !cfgFile.IsFile() &&        // it's release target but not found 'release.xxx.json' cfg
-            File.IsFile(eideFolderPath + File.sep + configName)) { // and found 'xxx.json' cfg
-            fs.renameSync(eideFolderPath + File.sep + configName, cfgFile.path);
-            return cfgFile;
-        }
-
-        if (!noCreate && !cfgFile.IsFile()) {
-            cfgFile.Write(JSON.stringify(toolchain.getDefaultConfig(), undefined, 4));
-        }
-
-        return cfgFile;
+    setOptions(newBuilderOptions: BuilderOptions, targetName?: string, toolchainName?: ToolchainName) {
+        const _targetName = targetName || this.prjConfigData.mode;
+        const _toolchain  = toolchainName || this.prjConfigData.toolchain;
+        const allOptions  = this.prjConfigData.targets[_targetName].builderOptions;
+        allOptions[_toolchain] = newBuilderOptions;
+        this._event.emit('dataChanged');
     }
 
     copyCommonCompileConfigFrom(model: CompileConfigModel<T>) {

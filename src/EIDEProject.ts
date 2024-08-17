@@ -943,7 +943,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     }
 
     public getProjectFile(): File {
-        return File.fromArray([this.getEideDir().path, AbstractProject.prjConfigName]);
+        return File.from(this.getEideDir().path, AbstractProject.prjConfigName);
+    }
+    public getEideProjectFile(): File {
+        return this.getProjectFile();
     }
 
     public getProjectRoot(): File {
@@ -1492,8 +1495,6 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             targets[targetName] = prjConfig.cloneCurrentTarget();
         }
 
-        const prevBuilderOptsFile = prjConfig.compileConfigModel
-            .getOptionsFile(this.getEideDir().path, prjConfig.config);
         const prevSourcesOptsFile = this.getSourceExtraArgsCfgFile(true);
 
         // update current target name
@@ -1549,17 +1550,6 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             }
 
             curTarget[name] = copyObject(oldTarget[name]);
-        }
-
-        // if builder options file is not existed, copy it.
-        const optsFile = prjConfig.compileConfigModel
-            .getOptionsFile(this.getEideDir().path, prjConfig.config, true);
-        if (!optsFile.IsFile()) {
-            try {
-                fs.copyFileSync(prevBuilderOptsFile.path, optsFile.path);
-            } catch (error) {
-                // nothing todo
-            }
         }
 
         // if source options file is not existed, copy it.
@@ -2427,8 +2417,7 @@ $(OUT_DIR):
     }
 
     getBuilderOptions(): BuilderOptions {
-        const cfg = this.GetConfiguration();
-        return cfg.compileConfigModel.getOptions(this.getEideDir().path, cfg.config);
+        return this.GetConfiguration().compileConfigModel.getOptions();
     }
 
     //---
@@ -2442,8 +2431,11 @@ $(OUT_DIR):
         let toolchainRoot = this.toolchain.getToolchainDir().path;
         this.registerBuiltinVar('ToolchainRoot', () => toolchainRoot);
 
-        const opFile = prjConfig.compileConfigModel.getOptionsFile(this.getEideDir().path, prjConfig.config);
-        toolManager.updateToolchainConfig(opFile, this.toolchain);
+        const curOptions = prjConfig.compileConfigModel.getOptions();
+        const newOptions = toolManager.upgradeBuilderOptions(curOptions, this.toolchain);
+        if (newOptions) {
+            prjConfig.compileConfigModel.setOptions(newOptions, undefined, this.toolchain.name);
+        }
     }
 
     protected reloadToolchain() {
@@ -2617,6 +2609,58 @@ $(OUT_DIR):
             }
         }
 
+        // move old builder config files into eide.json
+        if (this.isOldVersionProject) {
+            const eideDir = File.from(eideFile.dir);
+            const toolchainManager = ToolchainManager.getInstance();
+
+            const toolchainInfos: any[] = [];
+            for (const n of toolchainManager.getToolchainNameList(conf.type)) {
+                const toolchain = toolchainManager.getToolchainByName(n);
+                if (toolchain) {
+                    toolchainInfos.push({
+                        name: n,
+                        configFileName: toolchain.configName
+                    });
+                }
+            }
+
+            // get all builder options
+            const allOptions: { target_l: string, toolchain: string, options: BuilderOptions }[] = [];
+            for (const file of eideDir.GetList(undefined, File.EXCLUDE_ALL_FILTER)) {
+                const tidx = toolchainInfos.findIndex(info => file.name.endsWith(info.configFileName));
+                if (tidx != -1) {
+                    const toolInfo = toolchainInfos[tidx];
+                    // get lower case target name
+                    let targetName_l: string = file.name.replace(toolInfo.configFileName, '');
+                    if (targetName_l == '') targetName_l = 'release';
+                    else targetName_l = targetName_l.substr(0, targetName_l.length - 1);
+                    // append in list
+                    const options = jsonc.parse(file.Read());
+                    allOptions.push({
+                        target_l: targetName_l,
+                        toolchain: toolInfo.name,
+                        options: options,
+                    });
+                    // delete old builder options file, we don't need it anymore.
+                    try { fs.unlinkSync(file.path); } catch {};
+                }
+            }
+
+            // copy all builder options into eide.json
+            const allTargetNames = Object.keys(conf.targets);
+            for (const optionsInfo of allOptions) {
+                const idx = allTargetNames.findIndex(
+                    name => optionsInfo.target_l == name.toLowerCase());
+                if (idx != -1) {
+                    const targetName = allTargetNames[idx];
+                    const target = conf.targets[targetName];
+                    if (target.builderOptions == undefined) target.builderOptions = {};
+                    target.builderOptions[optionsInfo.toolchain] = optionsInfo.options;
+                }
+            }
+        }
+
         /* udpate project version to lastest */
         if (this.isOldVersionProject) {
             conf.version = EIDE_CONF_VERSION;
@@ -2724,7 +2768,7 @@ $(OUT_DIR):
 
     protected abstract onEideDirChanged(evt: 'changed' | 'renamed', file: File): void;
 
-    abstract NotifyBuilderConfigUpdate(fileName: string): void;
+    abstract NotifyBuilderConfigUpdate(): void;
 
     //-----------------------------------------------------------
 
@@ -2917,7 +2961,7 @@ class EIDEProject extends AbstractProject {
         }
     }
 
-    NotifyBuilderConfigUpdate(fileName: string): void {
+    NotifyBuilderConfigUpdate(): void {
         this.dependenceManager.flushToolchainDep();
     }
 

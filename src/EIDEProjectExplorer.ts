@@ -5632,7 +5632,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const toolchain = prj.getToolchain();
         const prjConfig = prj.GetConfiguration();
         const depMerge = prjConfig.GetAllMergeDep();
-        const builderOpts = prjConfig.compileConfigModel.getOptions(prj.getEideDir().path, prjConfig.config);
+        const builderOpts = prjConfig.compileConfigModel.getOptions();
         const defMacros: string[] = ['__VSCODE_CPPTOOL']; /* it's for internal force include header */
         let defList: string[] = defMacros.concat(depMerge.defineList);
         depMerge.incList = ArrayDelRepetition(depMerge.incList.concat(prj.getSourceIncludeList()));

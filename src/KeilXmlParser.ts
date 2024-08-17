@@ -429,8 +429,7 @@ class C51Parser extends KeilParser<KeilC51Option> {
     private setOption(targetOptionObj: any, prj: AbstractProject) {
 
         const target51 = targetOptionObj.Target51;
-        const options = prj.GetConfiguration().compileConfigModel
-            .getOptions(prj.getEideDir().path, prj.GetConfiguration().config);
+        const options = prj.GetConfiguration().compileConfigModel.getOptions();
 
         if (target51.Target51Misc) {
             switch (options.global['ram-mode']) {
@@ -1068,7 +1067,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
                 if (toolName !== prj.getToolchain().name) {
                     const mapper = new KeilSettingMapper(toolName);
                     const toolchain = ToolchainManager.getInstance().getToolchain('ARM', toolName);
-                    const options: any = compileModel.getOptions(eidePath, prjConfig.config);
+                    const options: any = compileModel.getOptions();
                     for (const groupName of mapper.getGroupList()) {
                         for (const opKey in options[groupName]) {
                             mapper.toKeil(targetOptionObj, groupName, opKey, options[groupName][opKey]);
@@ -1080,7 +1079,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
             // set current
             const toolchain = prj.getToolchain();
             const mapper = new KeilSettingMapper(toolchain.name);
-            const options: any = compileModel.getOptions(eidePath, prjConfig.config);
+            const options: any = compileModel.getOptions();
             for (const groupName of mapper.getGroupList()) {
                 for (const opKey in options[groupName]) {
                     mapper.toKeil(targetOptionObj, groupName, opKey, options[groupName][opKey]);

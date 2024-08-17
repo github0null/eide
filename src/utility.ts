@@ -525,6 +525,9 @@ export function copyObject(src: any): any {
         return src;
     }
 }
+export function deepCloneObject(obj: any): any {
+    return copyObject(obj);
+}
 
 export function wrapCommand(cmds: string[]): string {
     return cmds.map((cmd) => {
@@ -939,13 +942,4 @@ export function getFirstKey(obj: any): string | undefined {
             return key;
         }
     }
-}
-
-export function deepCloneObject(obj: any): any {
-
-    if (typeof obj != 'object') {
-        return obj;
-    }
-
-    return JSON.parse(JSON.stringify(obj));
 }

@@ -308,16 +308,14 @@ export class ToolchainManager {
         }
     }
 
-    updateToolchainConfig(configFile: File, toolchain: IToolchian): void {
+    // 在 builder options 版本升级后，通过该函数对旧配置进行更新
+    // @return 返回升级后配置，如果为空，则无需升级
+    upgradeBuilderOptions(curOption: BuilderOptions, toolchain: IToolchian): BuilderOptions | undefined {
         try {
             // if exist
-            if (configFile.IsFile()) {
-
-                const curOption: BuilderOptions = JSON.parse(configFile.Read());
-                const oldVersion: number = curOption.version || 0;
-
-                // if obsoleted, update it
-                if (toolchain.version > oldVersion) {
+            if (curOption.version != undefined) {
+                const curVersion: number = curOption.version || 0;
+                if (toolchain.version > curVersion) {
 
                     const defOptions: BuilderOptions = toolchain.getDefaultConfig();
 
@@ -378,12 +376,11 @@ export class ToolchainManager {
                         }
                     }
 
-                    // write to file
-                    configFile.Write(JSON.stringify(curOption, undefined, 4));
+                    return curOption;
                 }
+                return undefined;
             } else {
-                // write default config to file
-                configFile.Write(JSON.stringify(toolchain.getDefaultConfig(), undefined, 4));
+                return toolchain.getDefaultConfig();
             }
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));

@@ -378,8 +378,7 @@ export abstract class CodeBuilder {
 
         const outDir = File.ToUnixPath(this.project.getOutputDir());
         const paramsPath = this.project.ToAbsolutePath(outDir + File.sep + this.paramsFileName);
-        const compileOptions: BuilderOptions = this.project.GetConfiguration()
-            .compileConfigModel.getOptions(this.project.getEideDir().path, config);
+        const compileOptions: BuilderOptions = this.project.GetConfiguration().compileConfigModel.getOptions();
         const memMaxSize = this.getMcuMemorySize();
         const oldParamsPath = `${paramsPath}.old`;
         const prevParams: BuilderParams | undefined = File.IsFile(oldParamsPath) ? JSON.parse(fs.readFileSync(oldParamsPath, 'utf8')) : undefined;
