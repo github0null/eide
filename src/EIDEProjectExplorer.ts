@@ -597,6 +597,13 @@ class ProjectItemCache {
         this.itemCache.clear();
     }
 
+    getRootTreeItem(prj: AbstractProject): ProjTreeItem | undefined {
+        const cache = this.itemCache.get(prj.getWsPath());
+        if (cache) {
+            return cache.root;
+        }
+    }
+
     getTreeItem(prj: AbstractProject, itemType: TreeItemType): ProjTreeItem | undefined {
         const cache = this.itemCache.get(prj.getWsPath());
         if (cache) {
@@ -637,6 +644,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
     private static readonly recName = 'sln.record';
     private static readonly RecMaxNum = 50;
 
+    private event: events.EventEmitter;
     private prjList: AbstractProject[] = [];
     private slnRecord: string[] = [];
     private recFile: File;
@@ -651,6 +659,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
     constructor(_context: vscode.ExtensionContext) {
 
+        this.event = new events.EventEmitter();
         this.context = _context;
         this.dataChangedEvent = new vscode.EventEmitter<ProjTreeItem>();
         this.context.subscriptions.push(this.dataChangedEvent);
@@ -664,6 +673,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         });
 
         this.loadRecord();
+    }
+
+    public on(event: 'rootItems_inited', listener: () => void): void;
+    public on(event: any, listener: (arg?: any) => void): void {
+        this.event.on(event, listener);
     }
 
     //---------------------------------------
@@ -1005,6 +1019,18 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         }
     }
 
+    getParent(element: ProjTreeItem): vscode.ProviderResult<ProjTreeItem> {
+
+        if (element.type == TreeItemType.SOLUTION)
+            return undefined;
+
+        if (ProjTreeItem.PROJ_ROOT_ITEM_TYPES.includes(element.type))
+            return this.treeCache.getRootTreeItem(this.GetProjectByIndex(element.val.projectIndex));
+
+        /* 除了几个根节点之外，其他的忽略，getParent 主要用于 {@link TreeView.reveal reveal} API. */
+        return undefined;
+    }
+
     getTreeItem(element: ProjTreeItem): vscode.TreeItem | Thenable<vscode.TreeItem> {
         return element;
     }
@@ -1015,90 +1041,111 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
         if (element === undefined) {
 
-            this.prjList.forEach((sln, index) => {
+            this.prjList.forEach((project, projectIndex) => {
 
-                const isActived = this.activePrjPath === sln.getWsPath();
+                // --- init root Treeitem
 
+                const isActived = this.activePrjPath === project.getWsPath();
                 const cItem = new ProjTreeItem(TreeItemType.SOLUTION, {
-                    value: sln.getProjectName() + ' : ' + sln.getProjectCurrentTargetName(),
-                    projectIndex: index,
+                    value: project.getProjectName() + ' : ' + project.getProjectCurrentTargetName(),
+                    projectIndex: projectIndex,
                     icon: this.prjList.length > 1 ? (isActived ? 'active.svg' : 'idle.svg') : undefined,
                     tooltip: new vscode.MarkdownString([
-                        `**Name:** \`${sln.getProjectName()}\``,
-                        `- **Uid:** \`${sln.getUid()}\``,
-                        `- **Config:** \`${sln.getProjectCurrentTargetName()}\``,
-                        `- **Path:** \`${sln.GetRootDir().path}\``
+                        `**Name:** \`${project.getProjectName()}\``,
+                        `- **Uid:** \`${project.getUid()}\``,
+                        `- **Config:** \`${project.getProjectCurrentTargetName()}\``,
+                        `- **Path:** \`${project.GetRootDir().path}\``
                     ].join(os.EOL)),
-                }, sln.getUid());
+                }, project.getUid());
 
                 iList.push(cItem);
-
                 // cache project root item
-                this.treeCache.setTreeItem(sln, cItem, true);
+                this.treeCache.setTreeItem(project, cItem, true);
+
+                // --- pre-init primary TreeItems
+
+                const primaryItems: ProjTreeItem[] = [];
+
+                primaryItems.push(new ProjTreeItem(TreeItemType.PROJECT, {
+                    value: view_str$project$title,
+                    projectIndex: projectIndex,
+                    tooltip: view_str$project$title,
+                    obj: <VirtualFolderInfo>{ path: VirtualSource.rootName, vFolder: project.getVirtualSourceRoot() }
+                }, project.getUid()));
+
+                if (project.getProjectType() === 'ARM') { // only display for ARM project 
+                    primaryItems.push(new ProjTreeItem(TreeItemType.PACK, {
+                        value: pack_info,
+                        projectIndex: projectIndex,
+                        tooltip: pack_info
+                    }, project.getUid()));
+                }
+
+                const toolchain = project.getToolchain();
+                const toolprefix = toolchain.getToolchainPrefix ? toolchain.getToolchainPrefix() : undefined;
+                primaryItems.push(new ProjTreeItem(TreeItemType.COMPILE_CONFIGURATION, {
+                    value: `${compile_config} : ${toolchain.name}`,
+                    projectIndex: projectIndex,
+                    tooltip: newMarkdownString([
+                        `${compile_config} : ${toolchain.name}`,
+                        ` - **Id:** \`${toolchain.name}\``,
+                        ` - **Prefix:** ` + (toolprefix ? `\`${toolprefix}\`` : ''),
+                        ` - **Family:** \`${toolchain.categoryName}\``,
+                        ` - **Description:** \`${ToolchainManager.getInstance().getToolchainDesc(toolchain.name)}\``,
+                    ])
+                }, project.getUid()));
+
+                const curUploader = project.GetConfiguration().uploadConfigModel.uploader;
+                const uploaderLabel = HexUploaderManager.getInstance().getUploaderLabelByName(curUploader);
+                primaryItems.push(new ProjTreeItem(TreeItemType.UPLOAD_OPTION, {
+                    value: `${uploadConfig_desc} : ${uploaderLabel}`,
+                    projectIndex: projectIndex,
+                    contextVal: curUploader == 'Custom' ? `${getTreeItemTypeName(TreeItemType.UPLOAD_OPTION)}_Shell` : undefined,
+                    tooltip: `${uploadConfig_desc} : ${uploaderLabel}`
+                }, project.getUid()));
+
+                primaryItems.push(new ProjTreeItem(TreeItemType.DEPENDENCE, {
+                    value: project_dependence,
+                    projectIndex: projectIndex,
+                    tooltip: project_dependence
+                }, project.getUid()));
+
+                primaryItems.push(new ProjTreeItem(TreeItemType.SETTINGS, {
+                    value: view_str$project$other_settings,
+                    projectIndex: projectIndex,
+                    tooltip: view_str$project$other_settings
+                }, project.getUid()));
+
+                // cache primary views
+                primaryItems.forEach(item => this.treeCache.setTreeItem(project, item));
             });
+
+            // --- notify primary items all inited
+            setTimeout(() => this.event.emit('rootItems_inited'), 100);
+
         } else {
 
             const project = this.prjList[element.val.projectIndex];
-            const prjType = project.GetConfiguration().config.type;
             const prjExtraArgs = project.getSourceExtraArgsCfg();
 
             switch (element.type) {
                 case TreeItemType.SOLUTION:
                     {
-                        iList.push(new ProjTreeItem(TreeItemType.PROJECT, {
-                            value: view_str$project$title,
-                            projectIndex: element.val.projectIndex,
-                            tooltip: view_str$project$title,
-                            obj: <VirtualFolderInfo>{ path: VirtualSource.rootName, vFolder: project.getVirtualSourceRoot() }
-                        }, project.getUid()));
+                        const itemTypes: TreeItemType[] = [
+                            TreeItemType.PROJECT,
+                            TreeItemType.PACK,
+                            TreeItemType.COMPILE_CONFIGURATION,
+                            TreeItemType.UPLOAD_OPTION,
+                            TreeItemType.DEPENDENCE,
+                            TreeItemType.SETTINGS,
+                        ];
 
-                        if (prjType === 'ARM') { // only display for ARM project 
-                            iList.push(new ProjTreeItem(TreeItemType.PACK, {
-                                value: pack_info,
-                                projectIndex: element.val.projectIndex,
-                                tooltip: pack_info
-                            }, project.getUid()));
+                        for (const itemType of itemTypes) {
+                            const item = this.treeCache.getTreeItem(project, itemType);
+                            if (item) {
+                                iList.push(item);
+                            }
                         }
-
-                        const toolchain = project.getToolchain();
-                        const toolprefix = toolchain.getToolchainPrefix ? toolchain.getToolchainPrefix() : undefined;
-                        iList.push(new ProjTreeItem(TreeItemType.COMPILE_CONFIGURATION, {
-                            value: `${compile_config} : ${toolchain.name}`,
-                            projectIndex: element.val.projectIndex,
-                            tooltip: newMarkdownString([
-                                `${compile_config} : ${toolchain.name}`,
-                                ` - **Id:** \`${toolchain.name}\``,
-                                ` - **Prefix:** ` + (toolprefix ? `\`${toolprefix}\`` : ''),
-                                ` - **Family:** \`${toolchain.categoryName}\``,
-                                ` - **Description:** \`${ToolchainManager.getInstance().getToolchainDesc(toolchain.name)}\``,
-                            ])
-                        }, project.getUid()));
-
-                        const curUploader = project.GetConfiguration().uploadConfigModel.uploader;
-                        const uploaderLabel = HexUploaderManager.getInstance().getUploaderLabelByName(curUploader);
-                        iList.push(new ProjTreeItem(TreeItemType.UPLOAD_OPTION, {
-                            value: `${uploadConfig_desc} : ${uploaderLabel}`,
-                            projectIndex: element.val.projectIndex,
-                            contextVal: curUploader == 'Custom' ? `${getTreeItemTypeName(TreeItemType.UPLOAD_OPTION)}_Shell` : undefined,
-                            tooltip: `${uploadConfig_desc} : ${uploaderLabel}`
-                        }, project.getUid()));
-
-                        iList.push(new ProjTreeItem(TreeItemType.DEPENDENCE, {
-                            value: project_dependence,
-                            projectIndex: element.val.projectIndex,
-                            tooltip: project_dependence
-                        }, project.getUid()));
-
-                        iList.push(new ProjTreeItem(TreeItemType.SETTINGS, {
-                            value: view_str$project$other_settings,
-                            projectIndex: element.val.projectIndex,
-                            tooltip: view_str$project$other_settings
-                        }, project.getUid()));
-
-                        // cache sub root view
-                        iList.forEach((item) => {
-                            this.treeCache.setTreeItem(project, item);
-                        });
                     }
                     break;
                 case TreeItemType.PROJECT:
@@ -3477,6 +3524,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     private autosaveTimer: NodeJS.Timeout | undefined;
 
+    private isRevealed: boolean = false; // 用于标记，初始化后是否已触发了展开首个树视图的操作
+
     constructor(context: vscode.ExtensionContext) {
 
         this._event = new events.EventEmitter();
@@ -3490,8 +3539,25 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             dragAndDropController: this.dataProvider,
             canSelectMany: true,
         });
-
         context.subscriptions.push(this.view);
+
+        // 当主要的几个根视图初始化后，触发展开树视图
+        this.dataProvider.on('rootItems_inited', () => {
+            if (this.isRevealed == false) {
+                this.isRevealed = true;
+                const proj = this.dataProvider.getActiveProject();
+                if (proj) {
+                    const item = this.dataProvider.treeCache.getTreeItem(proj, TreeItemType.PROJECT);
+                    if (item) {
+                        this.view.reveal(item, {
+                            select: false,
+                            focus: false,
+                            expand: true
+                        });
+                    }
+                }
+            }
+        });
 
         // item click event
         context.subscriptions.push(vscode.commands.registerCommand(ProjTreeItem.ITEM_CLICK_EVENT, (item) => this.OnTreeItemClick(item)));
