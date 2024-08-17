@@ -405,6 +405,8 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
             GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
         }
 
+        // ! 注意这里比较两个 json 字符串是否相等，需要去除空白字符，不要直接比较字符串，
+        // ! 不同平台上项目文件中的 \n 可能不同，会导致 git 提示有更改
         if (oldContent == undefined || !this._json_equal(oldContent, newContent)) {
             this.lastSaveTime = Date.now();
             this.cfgFile.Write(newContent);
