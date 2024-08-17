@@ -44,32 +44,12 @@ import { VirtualSource } from "./EIDEProject";
 import * as utility from './utility';
 import { CompileConfigModel, UploadConfigModel, SdccCompileConfigModel, GccCompileConfigModel, RiscvCompileConfigModel, AnyGccCompileConfigModel, MipsCompileConfigModel } from './EIDEProjectModules';
 
-////////////////////////////////////////////////////////
+// ----------------------------------------------------------
+// - project struct define
+// ----------------------------------------------------------
 
-// eide project config file version
+// !! eide project config file version !!
 export const EIDE_CONF_VERSION = '3.4';
-
-////////////////////////////////////////////////////////
-
-export interface ManagerInterface {
-    Init(): void;
-}
-
-export interface FileItem {
-    file: File;
-    disabled?: boolean; // for mdk file info
-}
-
-export interface FileGroup {
-    name: string;       // dir name if it's system folder, else it's a virtual path (with '<virtual_root>/' header)
-    files: FileItem[];
-    disabled?: boolean; // for mdk group info
-}
-
-export interface ProjectFileGroup extends FileGroup {
-    dir: File;
-    isRoot: boolean;
-}
 
 //
 //  'C51': 8BIT MCU Project (like: mcs51, stm8, ...)
@@ -96,6 +76,126 @@ export interface ImportOptions {
     createNewFolder?: boolean;
 }
 
+export interface Dependence {
+    name: string;
+    incList: string[];          // absolute path with env variables
+    libList: string[];          // absolute path with env variables
+    defineList: string[];
+}
+
+export interface DependenceGroup {
+    groupName: string;
+    depList: Dependence[];
+}
+
+export interface ProjectMiscInfo {
+    uid: string | undefined;
+}
+
+export interface ProjectTargetInfo {
+    excludeList: string[];
+    toolchain: ToolchainName;
+    compileConfig: any;
+    uploader: HexUploaderType;
+    uploadConfig: any | null;
+    uploadConfigMap: { [uploader: string]: any };
+    custom_dep: Dependence;
+}
+
+export interface VirtualFile {
+    // this must be an relative path
+    // because virtual file path may be outside the project root directory
+    path: string;
+}
+
+export interface VirtualFolder {
+    name: string;
+    files: VirtualFile[];
+    folders: VirtualFolder[];
+}
+
+export interface BuilderConfigData { }
+
+export interface ProjectConfigData<T extends BuilderConfigData> {
+
+    name: string;
+    type: ProjectType;
+
+    // cur target info (virtual node)
+    mode: string; // target name (And for historical reasons, that's what it's called)
+    excludeList: string[];
+    toolchain: ToolchainName;
+    compileConfig: T;
+    uploader: HexUploaderType;
+    uploadConfig: any | null;
+    uploadConfigMap: { [uploader: string]: any };
+
+    // dependences (virtual node: 'custom', 'built-in')
+    dependenceList: DependenceGroup[];
+
+    // all targets
+    targets: { [target: string]: ProjectTargetInfo };
+
+    // source
+    srcDirs: string[];
+    virtualFolder: VirtualFolder;
+
+    outDir: string;
+    deviceName: string | null;
+    packDir: string | null;
+    miscInfo: ProjectMiscInfo;
+    version: string;
+}
+
+export interface ProjectUserContextData {
+
+    target?: string;
+}
+
+export type ProjectConfigEventType =
+    'dependence' | 'srcRootAdd' | 'srcRootRemoved' | 'compiler' | 'uploader' | 'projectFileChanged';
+
+export interface ProjectConfigEvent {
+    type: ProjectConfigEventType;
+    data?: any;
+}
+
+export interface ProjectBaseApi {
+    getRootDir: () => File;
+    toolchainName: () => ToolchainName;
+    toAbsolutePath: (path: string) => string;
+    toRelativePath: (path: string) => string;
+    resolveEnvVar: (path: string) => string;
+}
+
+// -------------------------------------------------
+// - other utils types
+// -------------------------------------------------
+
+export interface ManagerInterface {
+    Init(): void;
+}
+
+export interface FileItem {
+    file: File;
+    disabled?: boolean; // for mdk file info
+}
+
+export interface FileGroup {
+    name: string;       // dir name if it's system folder, else it's a virtual path (with '<virtual_root>/' header)
+    files: FileItem[];
+    disabled?: boolean; // for mdk group info
+}
+
+export interface ProjectFileGroup extends FileGroup {
+    dir: File;
+    isRoot: boolean;
+}
+
+// ----------------------------------------------------------
+// - class
+// ----------------------------------------------------------
+
 class EventItem {
 
     readonly name: string;
@@ -117,14 +217,6 @@ class EventItem {
     getArgs(): string[] {
         return this.args;
     }
-}
-
-export interface ProjectBaseApi {
-    getRootDir: () => File;
-    toolchainName: () => ToolchainName;
-    toAbsolutePath: (path: string) => string;
-    toRelativePath: (path: string) => string;
-    resolveEnvVar: (path: string) => string;
 }
 
 export abstract class Configuration<ConfigType = any, EventType = any> {
@@ -336,90 +428,6 @@ export class ConfigMap {
             val.Save();
         });
     }
-}
-
-export interface Dependence {
-    name: string;
-    incList: string[];          // absolute path with env variables
-    libList: string[];          // absolute path with env variables
-    defineList: string[];
-}
-
-export interface DependenceGroup {
-    groupName: string;
-    depList: Dependence[];
-}
-
-export interface ProjectMiscInfo {
-    uid: string | undefined;
-}
-
-export interface ProjectTargetInfo {
-    excludeList: string[];
-    toolchain: ToolchainName;
-    compileConfig: any;
-    uploader: HexUploaderType;
-    uploadConfig: any | null;
-    uploadConfigMap: { [uploader: string]: any };
-    custom_dep: Dependence;
-}
-
-export interface VirtualFile {
-    // this must be an relative path
-    // because virtual file path may be outside the project root directory
-    path: string;
-}
-
-export interface VirtualFolder {
-    name: string;
-    files: VirtualFile[];
-    folders: VirtualFolder[];
-}
-
-export interface BuilderConfigData { }
-
-export interface ProjectConfigData<T extends BuilderConfigData> {
-
-    name: string;
-    type: ProjectType;
-
-    // cur target info (virtual node)
-    mode: string; // target name (And for historical reasons, that's what it's called)
-    excludeList: string[];
-    toolchain: ToolchainName;
-    compileConfig: T;
-    uploader: HexUploaderType;
-    uploadConfig: any | null;
-    uploadConfigMap: { [uploader: string]: any };
-
-    // dependences (virtual node: 'custom', 'built-in')
-    dependenceList: DependenceGroup[];
-
-    // all targets
-    targets: { [target: string]: ProjectTargetInfo };
-
-    // source
-    srcDirs: string[];
-    virtualFolder: VirtualFolder;
-
-    outDir: string;
-    deviceName: string | null;
-    packDir: string | null;
-    miscInfo: ProjectMiscInfo;
-    version: string;
-}
-
-export interface ProjectUserContextData {
-
-    target?: string;
-}
-
-export type ProjectConfigEventType =
-    'dependence' | 'srcRootAdd' | 'srcRootRemoved' | 'compiler' | 'uploader' | 'projectFileChanged';
-
-export interface ProjectConfigEvent {
-    type: ProjectConfigEventType;
-    data?: any;
 }
 
 export class ProjectConfiguration<T extends BuilderConfigData>
