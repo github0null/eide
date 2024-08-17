@@ -1121,7 +1121,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             });
 
             // --- notify primary items all inited
-            setTimeout(() => this.event.emit('rootItems_inited'), 100);
+            setTimeout(() => this.event.emit('rootItems_inited'), 300);
 
         } else {
 
@@ -3546,7 +3546,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             if (this.isRevealed == false) {
                 this.isRevealed = true;
                 const proj = this.dataProvider.getActiveProject();
-                if (proj) {
+                // 当工作区有多个项目的时候，不进行展开操作
+                if (proj && this.dataProvider.getProjectCount() == 1) {
                     const item = this.dataProvider.treeCache.getTreeItem(proj, TreeItemType.PROJECT);
                     if (item) {
                         this.view.reveal(item, {
