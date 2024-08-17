@@ -102,10 +102,23 @@ export interface BuilderOptions {
     linker?: any;
 }
 
+// 备注：由于历史原因，插件运行时会将 eide.json 直接转成json对象作为 项目的数据结构 使用；
+// 但插件运行时的数据结构和eide.json文件的内容是不一样的，有一些键仅在插件内部使用；
+// 需要保证一些键位于json对象的根下，因此需要将这些键从 targets 复制到上一层，
+// 对比 ProjectTargetInfo 与 ProjectConfigData 相同的键，这些键如下：
+export const MAPPED_KEYS_IN_TARGET_INFO = [
+    'excludeList',
+    'toolchain',
+    'compileConfig',
+    'uploader',
+    'uploadConfig',
+    'uploadConfigMap',
+    'custom_dep',
+];
 export interface ProjectTargetInfo {
     excludeList: string[];
     toolchain: ToolchainName;
-    compileConfig: any; //【历史遗留属性】用于储存一些 公共的 编译相关的 属性
+    compileConfig: any;
     uploader: HexUploaderType;
     uploadConfig: any | null;
     uploadConfigMap: { [uploader: string]: any };
@@ -127,6 +140,18 @@ export interface VirtualFolder {
 
 export interface BuilderConfigData { }
 
+// 备注：由于历史原因，插件运行时会将 eide.json 直接转成json对象作为 项目的数据结构 使用；
+// 但插件运行时的数据结构和eide.json文件的内容是不一样的，有一些键仅在插件内部使用；
+// 是不需要保存到 eide.json 文件中去，因此在保存项目数据结构时，需要排除这些键，如下：
+const EXCL_KEYS_IN_EIDE_JSON = [
+    'mode',
+    'excludeList',
+    'toolchain',
+    'compileConfig',
+    'uploader',
+    'uploadConfig',
+    'uploadConfigMap'
+];
 export interface ProjectConfigData<T extends BuilderConfigData> {
 
     name: string;
@@ -235,6 +260,7 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
     readonly FILE_NAME: string;
 
     config: ConfigType;
+    needReloadProject = false;
 
     private _eventMergeFlag: boolean;
     private _eventCache: EventItem[];
@@ -1334,16 +1360,6 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
     //---
 
-    private static EXCL_KEYS_IN_EIDE_JSON: string[] = [
-        'mode',
-        'excludeList',
-        'toolchain',
-        'compileConfig',
-        'uploader',
-        'uploadConfig',
-        'uploadConfigMap'
-    ];
-
     protected afterInitConfigData() {
 
         //
@@ -1355,7 +1371,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         let curCfg = <any>this.config;
         for (const key in defCfg) {
             if (curCfg[key] == undefined &&
-                ProjectConfiguration.EXCL_KEYS_IN_EIDE_JSON.includes(key) == false) {
+                EXCL_KEYS_IN_EIDE_JSON.includes(key) == false) {
                 curCfg[key] = defCfg[key];
             }
         }
@@ -1374,6 +1390,9 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         if (this.config.mode == undefined) {
             const usrCtx = this.getProjectUsrCtx();
             this.recoverTarget(usrCtx.target);
+        } else {
+            // 如果是很旧的项目，则需要重新加载一次以更新项目数据
+            this.needReloadProject = true;
         }
 
         // fill missing field after target recovered
@@ -1426,7 +1445,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             }
         }
 
-        return utility.ToJsonStringExclude(eidePrjObj, ProjectConfiguration.EXCL_KEYS_IN_EIDE_JSON, 2);
+        return utility.ToJsonStringExclude(eidePrjObj, EXCL_KEYS_IN_EIDE_JSON, 2);
     }
 
     Save(force?: boolean) {

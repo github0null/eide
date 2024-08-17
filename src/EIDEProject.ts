@@ -46,7 +46,7 @@ import {
     ConfigMap, FileGroup,
     ProjectConfiguration, ProjectConfigData, WorkspaceConfiguration,
     CreateOptions,
-    ProjectConfigEvent, ProjectFileGroup, FileItem, EIDE_CONF_VERSION, ProjectTargetInfo, VirtualFolder, VirtualFile, CppConfigItem, ProjectBaseApi, ProjectType, BuilderConfigData
+    ProjectConfigEvent, ProjectFileGroup, FileItem, EIDE_CONF_VERSION, ProjectTargetInfo, VirtualFolder, VirtualFile, CppConfigItem, ProjectBaseApi, ProjectType, BuilderConfigData, MAPPED_KEYS_IN_TARGET_INFO
 } from './EIDETypeDefine';
 import { ToolchainName, IToolchian, ToolchainManager } from './ToolchainManager';
 import { GlobalEvent } from './GlobalEvents';
@@ -58,9 +58,10 @@ import { WebPanelManager } from './WebPanelManager';
 import { DependenceManager } from './DependenceManager';
 import * as platform from './Platform';
 import { IDebugConfigGenerator } from './DebugConfigGenerator';
-import { md5, copyObject, compareVersion, isGccFamilyToolchain, deepCloneObject } from './utility';
+import { md5, copyObject, compareVersion, isGccFamilyToolchain, deepCloneObject, notifyReloadWindow } from './utility';
 import { ResInstaller } from './ResInstaller';
 import {
+    view_str$prompt$reloadForOldProject,
     view_str$prompt$not_found_compiler, view_str$operation$name_can_not_be_blank,
     view_str$operation$name_can_not_have_invalid_char,
     view_str$prompt$project_is_opened_by_another,
@@ -1549,6 +1550,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
                 continue;
             }
 
+            if (!MAPPED_KEYS_IN_TARGET_INFO.includes(name))
+                continue;
+
             curTarget[name] = copyObject(oldTarget[name]);
         }
 
@@ -2661,6 +2665,18 @@ $(OUT_DIR):
             }
         }
 
+        // remove 'sourceDirList' of custom_dep
+        if (this.isOldVersionProject) {
+            for (const name in conf.targets) {
+                const target = conf.targets[name];
+                if (target.custom_dep) {
+                    if ((<any>target.custom_dep)['sourceDirList'] != undefined) {
+                        (<any>target.custom_dep)['sourceDirList'] = undefined;
+                    }
+                }
+            }
+        }
+
         /* udpate project version to lastest */
         if (this.isOldVersionProject) {
             conf.version = EIDE_CONF_VERSION;
@@ -3613,9 +3629,11 @@ class EIDEProject extends AbstractProject {
                 });
         }
 
-        // for old project, save now
-        if (this.isOldVersionProject) {
-            this.Save();
+        // save now
+        this.Save(false, 100);
+
+        if (this.GetConfiguration().needReloadProject) {
+            notifyReloadWindow(view_str$prompt$reloadForOldProject);
         }
     }
 
