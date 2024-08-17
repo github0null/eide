@@ -92,6 +92,16 @@ export interface ProjectMiscInfo {
     uid: string | undefined;
 }
 
+export interface BuilderOptions {
+    version: number;
+    beforeBuildTasks?: any[];
+    afterBuildTasks?: any[];
+    global?: any;
+    ['c/cpp-compiler']?: any;
+    ['asm-compiler']?: any;
+    linker?: any;
+}
+
 export interface ProjectTargetInfo {
     excludeList: string[];
     toolchain: ToolchainName;

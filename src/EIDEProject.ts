@@ -42,6 +42,7 @@ import { KeilParser } from './KeilXmlParser';
 import { ResManager } from './ResManager';
 import { SevenZipper, SevenZipUnzipExcludeList } from './Compress';
 import {
+    BuilderOptions,
     ConfigMap, FileGroup,
     ProjectConfiguration, ProjectConfigData, WorkspaceConfiguration,
     CreateOptions,
@@ -74,7 +75,7 @@ import { ExeCmd } from '../lib/node-utility/Executable';
 import { jsonc } from 'jsonc';
 import * as iconv from 'iconv-lite';
 import * as globmatch from 'micromatch'
-import { ICompileOptions, EventData, CurrentDevice, ArmBaseCompileConfigModel } from './EIDEProjectModules';
+import { EventData, CurrentDevice, ArmBaseCompileConfigModel } from './EIDEProjectModules';
 import * as FileLock from '../lib/node-utility/FileLock';
 import { CompilerCommandsDatabaseItem } from './CodeBuilder';
 
@@ -2425,7 +2426,7 @@ $(OUT_DIR):
         return undefined;
     }
 
-    getBuilderOptions(): ICompileOptions {
+    getBuilderOptions(): BuilderOptions {
         const cfg = this.GetConfiguration();
         return cfg.compileConfigModel.getOptions(this.getEideDir().path, cfg.config);
     }
@@ -3617,7 +3618,7 @@ class EIDEProject extends AbstractProject {
     }
 
     private _getCompilerIntrDefsForCpptools<T extends BuilderConfigData>(
-        toolchain: IToolchian, builderCfg: T, builderOpts: ICompileOptions): string[] {
+        toolchain: IToolchian, builderCfg: T, builderOpts: BuilderOptions): string[] {
 
         if (['AC5', 'AC6'].includes(toolchain.name) || isGccFamilyToolchain(toolchain.name)) {
             // we have provide a xxx-intr.h for cpptools,

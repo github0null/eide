@@ -37,8 +37,16 @@ import { ResManager } from './ResManager';
 import { GlobalEvent } from './GlobalEvents';
 import { AbstractProject, CheckError, DataChangeType, VirtualSource } from './EIDEProject';
 import { ToolchainName, ToolchainManager } from './ToolchainManager';
-import { CreateOptions, VirtualFolder, VirtualFile, ImportOptions, ProjectTargetInfo, ProjectConfigData, ProjectType, ProjectConfiguration, ProjectBaseApi } from './EIDETypeDefine';
-import { PackInfo, ComponentFileItem, DeviceInfo, getComponentKeyDescription, ArmBaseCompileData, ArmBaseCompileConfigModel, RiscvCompileData, AnyGccCompileData, ICompileOptions } from "./EIDEProjectModules";
+import {
+    BuilderOptions,
+    CreateOptions, VirtualFolder, VirtualFile, ImportOptions,
+    ProjectTargetInfo, ProjectConfigData, ProjectType, ProjectConfiguration, ProjectBaseApi
+} from './EIDETypeDefine';
+import {
+    PackInfo, ComponentFileItem, DeviceInfo,
+    getComponentKeyDescription, ArmBaseCompileData, ArmBaseCompileConfigModel,
+    RiscvCompileData, AnyGccCompileData
+} from "./EIDEProjectModules";
 import { WorkspaceManager } from './WorkspaceManager';
 import {
     can_not_close_project, project_is_opened, project_load_failed,
@@ -3115,7 +3123,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     defIncList.push(baseInfo.rootFolder.ToRelativePath(absPath) || absPath);
                 }
                 // import builder options
-                const opts: ICompileOptions = mergeBuilderOpts(toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
+                const opts: BuilderOptions = mergeBuilderOpts(toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
                 // write to file
                 const cfgFile = File.fromArray([baseInfo.rootFolder.path, AbstractProject.EIDE_DIR, `${keilTarget.name.toLowerCase()}.${toolchain.configName}`]);
                 cfgFile.Write(JSON.stringify(opts, undefined, 4));
@@ -3141,7 +3149,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
                 // import builder options
                 const toolchain = ToolchainManager.getInstance().getToolchain('ARM', keilCompileConf.toolchain);
-                const opts: ICompileOptions = mergeBuilderOpts(toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
+                const opts: BuilderOptions = mergeBuilderOpts(toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
                 opts.beforeBuildTasks?.forEach((t) => replaceUserTaskTmpVar(t));
                 opts.afterBuildTasks?.forEach((t) => replaceUserTaskTmpVar(t));
 

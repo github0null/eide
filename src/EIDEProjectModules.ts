@@ -45,7 +45,11 @@ import { SettingManager } from "./SettingManager";
 import { WorkspaceManager } from "./WorkspaceManager";
 import * as utility from './utility';
 import * as ArmCpuUtils from './ArmCpuUtils';
-import { ProjectConfiguration, ProjectConfigData, BuilderConfigData, ProjectBaseApi } from './EIDETypeDefine';
+import {
+    BuilderOptions,
+    ProjectConfiguration,
+    ProjectConfigData, BuilderConfigData, ProjectBaseApi
+} from './EIDETypeDefine';
 
 export interface Memory {
     startAddr: string;
@@ -393,16 +397,6 @@ export abstract class ConfigModel<DataType> {
 //                           Compiler Models
 //////////////////////////////////////////////////////////////////////////////////
 
-export interface ICompileOptions {
-    version: number;
-    beforeBuildTasks?: any[];
-    afterBuildTasks?: any[];
-    global?: any;
-    ['c/cpp-compiler']?: any;
-    ['asm-compiler']?: any;
-    linker?: any;
-}
-
 export abstract class CompileConfigModel<T> extends ConfigModel<T> {
 
     protected prjConfigData: ProjectConfigData<any>;
@@ -443,7 +437,7 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
         }
     }
 
-    getOptions(eideFolderPath: string, prjConfig: ProjectConfigData<T>): ICompileOptions {
+    getOptions(eideFolderPath: string, prjConfig: ProjectConfigData<T>): BuilderOptions {
         try {
             const options = JSON.parse(this.getOptionsFile(eideFolderPath, prjConfig).Read());
             return options;

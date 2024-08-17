@@ -24,7 +24,7 @@
 
 import * as xml2js from 'x2js';
 import { File } from '../lib/node-utility/File';
-import { ProjectType, FileGroup, ProjectConfiguration } from './EIDETypeDefine';
+import { BuilderOptions, ProjectType, FileGroup, ProjectConfiguration } from './EIDETypeDefine';
 import { ToolchainName, ToolchainManager } from './ToolchainManager';
 import { AbstractProject } from './EIDEProject';
 import { GlobalEvent } from './GlobalEvents';
@@ -33,7 +33,7 @@ import { ResManager } from './ResManager';
 import * as NodePath from 'path';
 import { DependenceManager } from './DependenceManager';
 import { ArrayDelRepetition } from '../lib/node-utility/Utility';
-import { ICompileOptions, CurrentDevice, C51BaseCompileData, ArmBaseCompileData, ARMStorageLayout, ArmBaseCompileConfigModel } from './EIDEProjectModules';
+import { CurrentDevice, C51BaseCompileData, ArmBaseCompileData, ARMStorageLayout, ArmBaseCompileConfigModel } from './EIDEProjectModules';
 import * as utility from './utility';
 
 export interface KeilRteDependence {
@@ -57,7 +57,7 @@ export interface KeilParserResult<CompileOption> {
 }
 
 export interface ICompileOptionsGroup {
-    [tag: string]: ICompileOptions;
+    [tag: string]: BuilderOptions;
 }
 
 export interface ICommonOptions {
@@ -298,7 +298,7 @@ class C51Parser extends KeilParser<KeilC51Option> {
         const target51 = targetOptionObj.Target51;
 
         option.optionsGroup = Object.create(null);
-        const cOptions: ICompileOptions = option.optionsGroup['Keil_C51'] = Object.create(null);
+        const cOptions: BuilderOptions = option.optionsGroup['Keil_C51'] = Object.create(null);
 
         cOptions['global'] = Object.create(null);
         cOptions['c/cpp-compiler'] = Object.create(null);

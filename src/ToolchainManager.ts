@@ -22,7 +22,7 @@
     SOFTWARE.
 */
 
-import { ProjectType, CppConfigItem, BuilderConfigData } from "./EIDETypeDefine";
+import { BuilderOptions, ProjectType, CppConfigItem, BuilderConfigData } from "./EIDETypeDefine";
 import { File } from "../lib/node-utility/File";
 import { SettingManager } from "./SettingManager";
 import { ResManager } from "./ResManager";
@@ -37,7 +37,7 @@ import * as fs from 'fs';
 import * as events from 'events';
 import * as NodePath from 'path';
 import * as os from 'os';
-import { ICompileOptions, ArmBaseBuilderConfigData, ArmBaseCompileData } from "./EIDEProjectModules";
+import { ArmBaseBuilderConfigData, ArmBaseCompileData } from "./EIDEProjectModules";
 import * as utility from "./utility";
 
 export type ToolchainName =
@@ -103,7 +103,7 @@ export interface IToolchian {
     /**
      * get compiler internal defines (for static check)
      */
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[];
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[];
 
     /**
      * force append some custom macro
@@ -113,7 +113,7 @@ export interface IToolchian {
     /**
      * the system header include path (not be added to compiler params)
      */
-    getSystemIncludeList(builderOpts: ICompileOptions): string[];
+    getSystemIncludeList(builderOpts: BuilderOptions): string[];
 
     /**
      * the default source file include path which will be added in compiler params.
@@ -133,7 +133,7 @@ export interface IToolchian {
     /**
      * update cpptools intellisence config
      */
-    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void;
+    updateCppIntellisenceCfg(builderOpts: BuilderOptions, cppToolsConfig: CppConfigItem): void;
 
     /**
      * used to show .map.view
@@ -144,9 +144,9 @@ export interface IToolchian {
 
     getLibDirs(): string[];
 
-    preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void;
+    preHandleOptions(prjInfo: IProjectInfo, options: BuilderOptions): void;
 
-    getDefaultConfig(): ICompileOptions;
+    getDefaultConfig(): BuilderOptions;
 
     newInstance(): IToolchian;
 }
@@ -313,13 +313,13 @@ export class ToolchainManager {
             // if exist
             if (configFile.IsFile()) {
 
-                const curOption: ICompileOptions = JSON.parse(configFile.Read());
+                const curOption: BuilderOptions = JSON.parse(configFile.Read());
                 const oldVersion: number = curOption.version || 0;
 
                 // if obsoleted, update it
                 if (toolchain.version > oldVersion) {
 
-                    const defOptions: ICompileOptions = toolchain.getDefaultConfig();
+                    const defOptions: BuilderOptions = toolchain.getDefaultConfig();
 
                     // update version
                     curOption.version = defOptions.version;
@@ -478,12 +478,12 @@ class KeilC51 implements IToolchian {
         return undefined;
     }
 
-    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+    updateCppIntellisenceCfg(builderOpts: BuilderOptions, cppToolsConfig: CppConfigItem): void {
         cppToolsConfig.cStandard = 'c89';
         cppToolsConfig.cppStandard = 'c++98';
     }
 
-    preHandleOptions(prjInfo: IProjectInfo, c51Options: ICompileOptions): void {
+    preHandleOptions(prjInfo: IProjectInfo, c51Options: BuilderOptions): void {
 
         // convert optimization
         if (c51Options["c/cpp-compiler"]) {
@@ -531,7 +531,7 @@ class KeilC51 implements IToolchian {
         }
     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
         return [];
     }
 
@@ -545,7 +545,7 @@ class KeilC51 implements IToolchian {
         return SettingManager.GetInstance().GetC51Dir();
     }
 
-    getSystemIncludeList(builderOpts: ICompileOptions): string[] {
+    getSystemIncludeList(builderOpts: BuilderOptions): string[] {
         return [];
     }
 
@@ -559,8 +559,8 @@ class KeilC51 implements IToolchian {
         return [File.fromArray([this.getToolchainDir().path, 'LIB']).path];
     }
 
-    getDefaultConfig(): ICompileOptions {
-        return <ICompileOptions>{
+    getDefaultConfig(): BuilderOptions {
+        return <BuilderOptions>{
             version: this.version,
             beforeBuildTasks: [],
             afterBuildTasks: [],
@@ -668,7 +668,7 @@ class SDCC implements IToolchian {
         return undefined;
     }
 
-    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+    updateCppIntellisenceCfg(builderOpts: BuilderOptions, cppToolsConfig: CppConfigItem): void {
 
         cppToolsConfig.cStandard = 'c99';
         cppToolsConfig.cppStandard = 'c++98';
@@ -678,7 +678,7 @@ class SDCC implements IToolchian {
         }
     }
 
-    preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
+    preHandleOptions(prjInfo: IProjectInfo, options: BuilderOptions): void {
 
         /* init default */
         if (options["linker"] == undefined) { options["linker"] = {} }
@@ -719,7 +719,7 @@ class SDCC implements IToolchian {
         }
     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
 
         const mList: string[] = [
             '__SDCC',
@@ -804,7 +804,7 @@ class SDCC implements IToolchian {
         return SettingManager.GetInstance().getSdccDir();
     }
 
-    getSystemIncludeList(builderOpts: ICompileOptions): string[] {
+    getSystemIncludeList(builderOpts: BuilderOptions): string[] {
 
         /**
          * This will install sdcc binaries into: /usr/local/bin/
@@ -865,8 +865,8 @@ class SDCC implements IToolchian {
         return [File.fromArray([this.getToolchainDir().path, 'lib']).path];
     }
 
-    getDefaultConfig(): ICompileOptions {
-        return <ICompileOptions>{
+    getDefaultConfig(): BuilderOptions {
+        return <BuilderOptions>{
             version: this.version,
             beforeBuildTasks: [],
             afterBuildTasks: [],
@@ -915,7 +915,7 @@ class SDCC implements IToolchian {
 //         return undefined;
 //     }
 
-//     updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+//     updateCppIntellisenceCfg(builderOpts: BuilderOptions, cppToolsConfig: CppConfigItem): void {
 
 //         cppToolsConfig.cStandard = 'c99';
 //         cppToolsConfig.cppStandard = 'c++98';
@@ -925,7 +925,7 @@ class SDCC implements IToolchian {
 //         }
 //     }
 
-//     preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
+//     preHandleOptions(prjInfo: IProjectInfo, options: BuilderOptions): void {
 
 //         if (options['linker'] == undefined) {
 //             options['linker'] = {};
@@ -978,7 +978,7 @@ class SDCC implements IToolchian {
 //         }
 //     }
 
-//     getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
+//     getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
 
 //         const mList: string[] = [
 //             '__SDCC',
@@ -1040,7 +1040,7 @@ class SDCC implements IToolchian {
 //         return SettingManager.GetInstance().getGnuSdccStm8Dir();
 //     }
 
-//     getSystemIncludeList(builderOpts: ICompileOptions): string[] {
+//     getSystemIncludeList(builderOpts: BuilderOptions): string[] {
 
 //         let toolSearchLoc: string = this.getToolchainDir().path;
 //         if (platform.osType() != 'win32') {
@@ -1072,8 +1072,8 @@ class SDCC implements IToolchian {
 //         return [];
 //     }
 
-//     getDefaultConfig(): ICompileOptions {
-//         return <ICompileOptions>{
+//     getDefaultConfig(): BuilderOptions {
+//         return <BuilderOptions>{
 //             version: this.version,
 //             beforeBuildTasks: [],
 //             afterBuildTasks: [],
@@ -1122,12 +1122,12 @@ class COSMIC_STM8 implements IToolchian {
         return undefined;
     }
 
-    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+    updateCppIntellisenceCfg(builderOpts: BuilderOptions, cppToolsConfig: CppConfigItem): void {
         cppToolsConfig.cStandard = 'c99';
         cppToolsConfig.cppStandard = 'c++98';
     }
 
-    preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
+    preHandleOptions(prjInfo: IProjectInfo, options: BuilderOptions): void {
 
         /* init default */
         if (options["global"] == undefined) { options["global"] = {} }
@@ -1361,7 +1361,7 @@ class COSMIC_STM8 implements IToolchian {
         return tableLines;
     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
 
         const mList: string[] = [
             '__CSMC__=1'
@@ -1378,7 +1378,7 @@ class COSMIC_STM8 implements IToolchian {
         return SettingManager.GetInstance().getCosmicStm8ToolsDir();
     }
 
-    getSystemIncludeList(builderOpts: ICompileOptions): string[] {
+    getSystemIncludeList(builderOpts: BuilderOptions): string[] {
         const cxstm8Path = this.getToolchainDir().path;
         return [
             [cxstm8Path, 'Hstm8'].join(File.sep)
@@ -1402,8 +1402,8 @@ class COSMIC_STM8 implements IToolchian {
         ];
     }
 
-    getDefaultConfig(): ICompileOptions {
-        return <ICompileOptions>{
+    getDefaultConfig(): BuilderOptions {
+        return <BuilderOptions>{
             version: this.version,
             beforeBuildTasks: [],
             afterBuildTasks: [],
@@ -1455,7 +1455,7 @@ class AC5 implements IToolchian {
         return undefined;
     }
 
-    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+    updateCppIntellisenceCfg(builderOpts: BuilderOptions, cppToolsConfig: CppConfigItem): void {
 
         cppToolsConfig.cStandard = 'c89';
         cppToolsConfig.cppStandard = 'c++11';
@@ -1476,7 +1476,7 @@ class AC5 implements IToolchian {
         }
     }
 
-    preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
+    preHandleOptions(prjInfo: IProjectInfo, options: BuilderOptions): void {
         // convert output lib commmand
         if (options['linker'] && options['linker']['output-format'] === 'lib') {
             options['linker']['$use'] = 'linker-lib';
@@ -1497,7 +1497,7 @@ class AC5 implements IToolchian {
     // armcc list macros command: 
     //      armcc xxx --list_macros -E - <nul
     //
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
 
         return [];
 
@@ -1579,7 +1579,7 @@ class AC5 implements IToolchian {
         return undefined;
     }
 
-    getSystemIncludeList(builderOpts: ICompileOptions): string[] {
+    getSystemIncludeList(builderOpts: BuilderOptions): string[] {
 
         let toolSearchLoc = this.getToolchainDir().path;
         if (platform.osType() != 'win32') {
@@ -1602,8 +1602,8 @@ class AC5 implements IToolchian {
         return [File.fromArray([this.getToolchainDir().path, 'lib']).path];
     }
 
-    getDefaultConfig(): ICompileOptions {
-        return <ICompileOptions>{
+    getDefaultConfig(): BuilderOptions {
+        return <BuilderOptions>{
             version: this.version,
             beforeBuildTasks: [],
             afterBuildTasks: [],
@@ -1686,7 +1686,7 @@ class AC6 implements IToolchian {
         return armclang.path;
     }
 
-    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+    updateCppIntellisenceCfg(builderOpts: BuilderOptions, cppToolsConfig: CppConfigItem): void {
 
         cppToolsConfig.cStandard = 'gnu11';
         cppToolsConfig.cppStandard = 'gnu++98';
@@ -1757,7 +1757,7 @@ class AC6 implements IToolchian {
         }
     }
 
-    preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
+    preHandleOptions(prjInfo: IProjectInfo, options: BuilderOptions): void {
 
         if (options['linker'] === undefined) {
             options['linker'] = Object.create(null);
@@ -1778,7 +1778,7 @@ class AC6 implements IToolchian {
         return SettingManager.GetInstance().getArmcc6Dir();
     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
         return [];
     }
 
@@ -1786,7 +1786,7 @@ class AC6 implements IToolchian {
         return undefined;
     }
 
-    getSystemIncludeList(builderOpts: ICompileOptions): string[] {
+    getSystemIncludeList(builderOpts: BuilderOptions): string[] {
 
         let toolSearchLoc = this.getToolchainDir().path;
         if (platform.osType() != 'win32') {
@@ -1813,8 +1813,8 @@ class AC6 implements IToolchian {
         return [File.fromArray([this.getToolchainDir().path, 'lib']).path];
     }
 
-    getDefaultConfig(): ICompileOptions {
-        return <ICompileOptions>{
+    getDefaultConfig(): BuilderOptions {
+        return <BuilderOptions>{
             version: this.version,
             beforeBuildTasks: [],
             afterBuildTasks: [],
@@ -1920,7 +1920,7 @@ class GCC implements IToolchian {
         return this.getToolPrefix();
     }
 
-    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+    updateCppIntellisenceCfg(builderOpts: BuilderOptions, cppToolsConfig: CppConfigItem): void {
 
         cppToolsConfig.cStandard = 'c11';
         cppToolsConfig.cppStandard = 'c++11';
@@ -1983,7 +1983,7 @@ class GCC implements IToolchian {
         }
     }
 
-    preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
+    preHandleOptions(prjInfo: IProjectInfo, options: BuilderOptions): void {
 
         // convert output lib commmand
         if (options['linker'] && options['linker']['output-format'] === 'lib') {
@@ -1999,7 +1999,7 @@ class GCC implements IToolchian {
         options['global'].toolPrefix = SettingManager.GetInstance().getGCCPrefix();
     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
 
         return [
             '__GNUC__=10',
@@ -2061,7 +2061,7 @@ class GCC implements IToolchian {
         return SettingManager.GetInstance().getGCCDir();
     }
 
-    getSystemIncludeList(builderOpts: ICompileOptions): string[] {
+    getSystemIncludeList(builderOpts: BuilderOptions): string[] {
         return [];
     }
 
@@ -2079,8 +2079,8 @@ class GCC implements IToolchian {
         return [];
     }
 
-    getDefaultConfig(): ICompileOptions {
-        return <ICompileOptions>{
+    getDefaultConfig(): BuilderOptions {
+        return <BuilderOptions>{
             version: this.version,
             beforeBuildTasks: [],
             afterBuildTasks: [],
@@ -2138,7 +2138,7 @@ class IARARM implements IToolchian {
         return undefined;
     }
 
-    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+    updateCppIntellisenceCfg(builderOpts: BuilderOptions, cppToolsConfig: CppConfigItem): void {
 
         cppToolsConfig.cStandard = 'c99';
         cppToolsConfig.cppStandard = 'c++11';
@@ -2150,7 +2150,7 @@ class IARARM implements IToolchian {
         }
     }
 
-    preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
+    preHandleOptions(prjInfo: IProjectInfo, options: BuilderOptions): void {
 
         // init null options
         for (const key of ['linker', 'c/cpp-compiler']) {
@@ -2169,7 +2169,7 @@ class IARARM implements IToolchian {
         return SettingManager.GetInstance().getIarForArmDir();
     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
         return [
             '__ICCARM__=1'
         ];
@@ -2179,7 +2179,7 @@ class IARARM implements IToolchian {
         return undefined;
     }
 
-    getSystemIncludeList(builderOpts: ICompileOptions): string[] {
+    getSystemIncludeList(builderOpts: BuilderOptions): string[] {
 
         const iarPath = this.getToolchainDir().path;
 
@@ -2220,8 +2220,8 @@ class IARARM implements IToolchian {
         ];
     }
 
-    getDefaultConfig(): ICompileOptions {
-        return <ICompileOptions>{
+    getDefaultConfig(): BuilderOptions {
+        return <BuilderOptions>{
             version: this.version,
             beforeBuildTasks: [],
             afterBuildTasks: [],
@@ -2278,7 +2278,7 @@ class IARSTM8 implements IToolchian {
         return undefined;
     }
 
-    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+    updateCppIntellisenceCfg(builderOpts: BuilderOptions, cppToolsConfig: CppConfigItem): void {
 
         cppToolsConfig.cStandard = 'c99';
         cppToolsConfig.cppStandard = 'c++11';
@@ -2290,7 +2290,7 @@ class IARSTM8 implements IToolchian {
         }
     }
 
-    preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
+    preHandleOptions(prjInfo: IProjectInfo, options: BuilderOptions): void {
 
         // init null options
         for (const key of ['linker', 'c/cpp-compiler']) {
@@ -2331,7 +2331,7 @@ class IARSTM8 implements IToolchian {
         return SettingManager.GetInstance().getIARForStm8Dir();
     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
         return [];
     }
 
@@ -2339,7 +2339,7 @@ class IARSTM8 implements IToolchian {
         return undefined;
     }
 
-    getSystemIncludeList(builderOpts: ICompileOptions): string[] {
+    getSystemIncludeList(builderOpts: BuilderOptions): string[] {
         const iarPath = this.getToolchainDir().path;
         return [
             File.fromArray([iarPath, 'stm8', 'inc']).path,
@@ -2369,8 +2369,8 @@ class IARSTM8 implements IToolchian {
         ];
     }
 
-    getDefaultConfig(): ICompileOptions {
-        return <ICompileOptions>{
+    getDefaultConfig(): BuilderOptions {
+        return <BuilderOptions>{
             version: this.version,
             beforeBuildTasks: [],
             afterBuildTasks: [],
@@ -2496,7 +2496,7 @@ class MTI_GCC implements IToolchian {
         return this.getToolPrefix();
     }
 
-    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+    updateCppIntellisenceCfg(builderOpts: BuilderOptions, cppToolsConfig: CppConfigItem): void {
 
         cppToolsConfig.cStandard = 'c11';
         cppToolsConfig.cppStandard = 'c++11';
@@ -2552,7 +2552,7 @@ class MTI_GCC implements IToolchian {
         }
     }
 
-    preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
+    preHandleOptions(prjInfo: IProjectInfo, options: BuilderOptions): void {
 
         // convert output lib commmand
         if (options['linker'] && options['linker']['output-format'] === 'lib') {
@@ -2572,7 +2572,7 @@ class MTI_GCC implements IToolchian {
         return SettingManager.GetInstance().getMipsToolFolder();
     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
         return [
             '__GNUC__=10',
             '__GNUC_MINOR__=2',
@@ -2585,7 +2585,7 @@ class MTI_GCC implements IToolchian {
         return undefined;
     }
 
-    getSystemIncludeList(builderOpts: ICompileOptions): string[] {
+    getSystemIncludeList(builderOpts: BuilderOptions): string[] {
         return [];
     }
 
@@ -2603,8 +2603,8 @@ class MTI_GCC implements IToolchian {
         return [];
     }
 
-    getDefaultConfig(): ICompileOptions {
-        return <ICompileOptions>{
+    getDefaultConfig(): BuilderOptions {
+        return <BuilderOptions>{
             version: this.version,
             beforeBuildTasks: [],
             afterBuildTasks: [],
@@ -2769,7 +2769,7 @@ class RISCV_GCC implements IToolchian {
         return this.getToolPrefix();
     }
 
-    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+    updateCppIntellisenceCfg(builderOpts: BuilderOptions, cppToolsConfig: CppConfigItem): void {
 
         cppToolsConfig.cStandard = 'c11';
         cppToolsConfig.cppStandard = 'c++11';
@@ -2819,7 +2819,7 @@ class RISCV_GCC implements IToolchian {
         }
     }
 
-    preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
+    preHandleOptions(prjInfo: IProjectInfo, options: BuilderOptions): void {
 
         // convert output lib commmand
         if (options['linker'] && options['linker']['output-format'] === 'lib') {
@@ -2839,7 +2839,7 @@ class RISCV_GCC implements IToolchian {
         return SettingManager.GetInstance().getRiscvToolFolder();
     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
         return [
             '__GNUC__=10',
             '__GNUC_MINOR__=2',
@@ -2852,7 +2852,7 @@ class RISCV_GCC implements IToolchian {
         return undefined;
     }
 
-    getSystemIncludeList(builderOpts: ICompileOptions): string[] {
+    getSystemIncludeList(builderOpts: BuilderOptions): string[] {
         return [];
     }
 
@@ -2870,8 +2870,8 @@ class RISCV_GCC implements IToolchian {
         return [];
     }
 
-    getDefaultConfig(): ICompileOptions {
-        return <ICompileOptions>{
+    getDefaultConfig(): BuilderOptions {
+        return <BuilderOptions>{
             version: this.version,
             beforeBuildTasks: [],
             afterBuildTasks: [],
@@ -2986,7 +2986,7 @@ class AnyGcc implements IToolchian {
         return this.getToolPrefix();
     }
 
-    updateCppIntellisenceCfg(builderOpts: ICompileOptions, cppToolsConfig: CppConfigItem): void {
+    updateCppIntellisenceCfg(builderOpts: BuilderOptions, cppToolsConfig: CppConfigItem): void {
 
         const parseLangStd = function (keyName: 'cStandard' | 'cppStandard', pList: string[]) {
             pList.forEach((params) => {
@@ -3024,7 +3024,7 @@ class AnyGcc implements IToolchian {
         cppToolsConfig.cppStandard = cppToolsConfig.cppStandard || 'c++98';
     }
 
-    preHandleOptions(prjInfo: IProjectInfo, options: ICompileOptions): void {
+    preHandleOptions(prjInfo: IProjectInfo, options: BuilderOptions): void {
 
         // convert output lib commmand
         if (options['linker']) {
@@ -3056,7 +3056,7 @@ class AnyGcc implements IToolchian {
         options['global'].toolPrefix = this.getToolPrefix();
     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: ICompileOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
         return [
             '__GNUC__=10',
             '__GNUC_MINOR__=2',
@@ -3073,7 +3073,7 @@ class AnyGcc implements IToolchian {
         return SettingManager.GetInstance().getAnyGccToolFolder();
     }
 
-    getSystemIncludeList(builderOpts: ICompileOptions): string[] {
+    getSystemIncludeList(builderOpts: BuilderOptions): string[] {
         return [];
     }
 
@@ -3091,8 +3091,8 @@ class AnyGcc implements IToolchian {
         return [];
     }
 
-    getDefaultConfig(): ICompileOptions {
-        return <ICompileOptions>{
+    getDefaultConfig(): BuilderOptions {
+        return <BuilderOptions>{
             version: this.version,
             beforeBuildTasks: [],
             afterBuildTasks: [
