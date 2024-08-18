@@ -760,30 +760,39 @@ class ARMParser extends KeilParser<KeilARMOption> {
                 // AfterMake
                 const afterMake = commonOption.AfterMake;
                 if (afterMake) {
-                    // Copy files to compate Keil User Commands
-                    if (env['KEIL_OUTPUT_NAME']) {
-                        eideOption.afterBuildTasks.push({
-                            "name": 'Copy linker output for Keil User Commands',
-                            "command": '$<cd:mdk-proj-dir> && copy ".\\${OutDirBase}\\${ProjectName}.axf" ".\\${OutDirBase}\\${KEIL_OUTPUT_NAME}.axf"',
-                            "disable": false,
-                            "abortAfterFailed": true
-                        });
-                    }
+                    let total_cnt = 0;
+                    let actived_cnt = 0;
                     for (let idx = 1; idx < 3; idx++) {
                         let cmd = afterMake[`UserProg${idx}Name`];
                         if (cmd) {
+                            total_cnt++;
+                            const actived = afterMake[`RunUserProg${idx}`] == '1';
+                            if (actived) actived_cnt++;
                             eideOption.afterBuildTasks.push({
                                 "name": cmd,
                                 "command": `$<cd:mdk-proj-dir> && ${replaceMdkEnv(cmd)}`,
-                                "disable": afterMake[`RunUserProg${idx}`] != '1',
+                                "disable": !actived,
                                 "abortAfterFailed": true
                             });
                         }
                     }
-                    // Make eide Don't output hex/bin
-                    if (eideOption.linker == undefined)
-                        eideOption.linker = {};
-                    eideOption.linker['$disableOutputTask'] = true;
+                    if (total_cnt > 0) {
+                        // Copy files to compate Keil User Commands
+                        if (env['KEIL_OUTPUT_NAME']) {
+                            eideOption.afterBuildTasks.splice(0, 0, {
+                                "name": '[Copy linker output for Keil User Commands]',
+                                "command": '$<cd:mdk-proj-dir> && copy ".\\${OutDirBase}\\${ProjectName}.axf" ".\\${OutDirBase}\\${KEIL_OUTPUT_NAME}.axf"',
+                                "disable": actived_cnt == 0,
+                                "abortAfterFailed": true
+                            });
+                        }
+                    }
+                    if (actived_cnt > 0) {
+                        // Make eide Don't output hex/bin
+                        if (eideOption.linker == undefined)
+                            eideOption.linker = {};
+                        eideOption.linker['$disableOutputTask'] = true;
+                    }
                 }
             }
 
