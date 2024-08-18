@@ -30,7 +30,7 @@
     "eide.project.clean": "Clean",
     "eide.project.upload": "Program Flash",
     "eide.project.flash.erase.all": "Erase Chip",
-    "eide.project.modify.files.options": "Show Source Files Extra Compiler Options",
+    "eide.project.modify.files.options": "Show Extra Options For All Source Files",
     "eide.project.import.ext.project.src.struct": "Import SourceFile Tree From Other Project",
     "eide.project.generate_builder_params": "Generate builder.params",
 
