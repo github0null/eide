@@ -2149,22 +2149,10 @@ $(OUT_DIR):
 
         const optFile = File.fromArray([this.getEideDir().path, `files.options.yml`]);
         if (!optFile.IsFile() && !notCreate) {
-            const tmp = `$<template-header>
-version: '2.0'
-
-options:
-    # target name
-    '$<targetName>':
-        # for source files with filesystem paths
-        files:
-        #   './test/**/*.c': --c99
-
-        # for source files with virtual paths
-        virtualPathFiles:
-        #   'virtual_folder/**/*.c': --c99`;
-            optFile.Write(tmp
-                .replace('$<template-header>', view_str$prompt$filesOptionsComment)
-                .replace('$<targetName>', this.getCurrentTarget()));
+            const optsObj = <SourceFileOptions>{ version: '2.0', options: {} };
+            optsObj.version = '2.0';
+            optsObj.options[this.getCurrentTarget()] = { files: {}, virtualPathFiles: {} };
+            optFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(optsObj, { indent: 4 }));
         }
 
         return optFile;
