@@ -741,6 +741,9 @@ class ARMParser extends KeilParser<KeilARMOption> {
                     .replace(/\!L\b/g, '.\\${OutDirBase}\\${KEIL_OUTPUT_NAME}.axf')
                     .replace(/\bKEIL_OUTPUT_NAME\b/g, OUTNAME_KEY);
 
+                // keil props
+                const mdk_OutputDirectory: string = File.normalize(commonOption.OutputDirectory || '.');
+
                 // BeforeMake
                 const beforeMake = commonOption.BeforeMake;
                 if (beforeMake) {
@@ -781,7 +784,14 @@ class ARMParser extends KeilParser<KeilARMOption> {
                         if (env['KEIL_OUTPUT_NAME']) {
                             eideOption.afterBuildTasks.splice(0, 0, {
                                 "name": '[Copy linker output for Keil User Commands]',
-                                "command": '$<cd:mdk-proj-dir> && copy ".\\${OutDirBase}\\${ProjectName}.axf" ".\\${OutDirBase}\\${KEIL_OUTPUT_NAME}.axf"',
+                                "command": `$<cd:mdk-proj-dir> && copy "\${OutDir}\\\${ProjectName}.axf" "${mdk_OutputDirectory}\\\${KEIL_OUTPUT_NAME}.axf"`,
+                                "disable": actived_cnt == 0,
+                                "abortAfterFailed": true
+                            });
+                        } else {
+                            eideOption.afterBuildTasks.splice(0, 0, {
+                                "name": '[Copy linker output for Keil User Commands]',
+                                "command": `$<cd:mdk-proj-dir> && copy "\${OutDir}\\\${ProjectName}.axf" "${mdk_OutputDirectory}\\\${ProjectName}.axf"`,
                                 "disable": actived_cnt == 0,
                                 "abortAfterFailed": true
                             });
