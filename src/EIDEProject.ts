@@ -61,6 +61,7 @@ import { IDebugConfigGenerator } from './DebugConfigGenerator';
 import { md5, copyObject, compareVersion, isGccFamilyToolchain, deepCloneObject, notifyReloadWindow } from './utility';
 import { ResInstaller } from './ResInstaller';
 import {
+    view_str$prompt$filesOptionsComment,
     view_str$prompt$reloadForOldProject,
     view_str$prompt$not_found_compiler, view_str$operation$name_can_not_be_blank,
     view_str$operation$name_can_not_have_invalid_char,
@@ -773,10 +774,14 @@ export interface BaseProjectInfo {
 }
 
 export interface SourceExtraCompilerOptionsCfg {
-    version: string;
     files?: { [key: string]: string };
     virtualPathFiles?: { [key: string]: string };
 }
+
+export interface SourceFileOptions {
+    version: string;
+    options: { [target: string]: SourceExtraCompilerOptionsCfg };
+};
 
 export type DataChangeType = 'pack' | 'dependence' | 'compiler' | 'uploader' | 'files';
 
@@ -1481,6 +1486,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     private _switchTarget(targetName: string): { name: string, isNew?: boolean; } {
 
+        const prevTargetName = this.getCurrentTarget();
         const prjConfig = this.GetConfiguration();
         const prjConfigData = prjConfig.config;
         const targets = prjConfigData.targets;
@@ -1495,8 +1501,6 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             isNewTarget = true;
             targets[targetName] = prjConfig.cloneCurrentTarget();
         }
-
-        const prevSourcesOptsFile = this.getSourceExtraArgsCfgFile(true);
 
         // update current target name
         prjConfigData.mode = targetName;
@@ -1556,16 +1560,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             curTarget[name] = copyObject(oldTarget[name]);
         }
 
-        // if source options file is not existed, copy it.
-        if (prevSourcesOptsFile.IsFile()) {
-            const srcOptsFile = File.fromArray([this.getEideDir().path, `${targetName.toLowerCase()}.files.options.yml`]);
-            if (!srcOptsFile.IsFile()) {
-                try {
-                    fs.copyFileSync(prevSourcesOptsFile.path, srcOptsFile.path);
-                } catch (error) {
-                    // nothing todo
-                }
-            }
+        // copy source options if not exist
+        const opts = this.getSourceExtraArgsCfg(prevTargetName);
+        if (opts) {
+            this.setSourceExtraArgsCfg(opts, targetName);
         }
 
         this.sourceRoots.forceUpdateAllFolders();
@@ -2149,54 +2147,50 @@ $(OUT_DIR):
 
     getSourceExtraArgsCfgFile(notCreate: boolean = false): File {
 
-        const target = this.getCurrentTarget().toLowerCase();
-        const optFile = File.fromArray([this.getEideDir().path, `${target}.files.options.yml`]);
-
+        const optFile = File.fromArray([this.getEideDir().path, `files.options.yml`]);
         if (!optFile.IsFile() && !notCreate) {
-            const templateFile = File.fromArray([
-                ResManager.GetInstance().GetAppDataDir().path, 'template.files.options.yml'
-            ]);
-            optFile.Write(templateFile.Read());
+            const tmp = `$<template-header>
+version: '2.0'
+
+options:
+    # target name
+    '$<targetName>':
+        # for source files with filesystem paths
+        files:
+        #   './test/**/*.c': --c99
+
+        # for source files with virtual paths
+        virtualPathFiles:
+        #   'virtual_folder/**/*.c': --c99`;
+            optFile.Write(tmp
+                .replace('$<template-header>', view_str$prompt$filesOptionsComment)
+                .replace('$<targetName>', this.getCurrentTarget()));
         }
 
         return optFile;
     }
 
-    getSourceExtraArgsCfg(): SourceExtraCompilerOptionsCfg | undefined {
+    getSourceExtraArgsCfg(targetName?: string): SourceExtraCompilerOptionsCfg | undefined {
         try {
             const optFile = this.getSourceExtraArgsCfgFile();
-            return yaml.parse(optFile.Read());
+            const optsObj = <SourceFileOptions>yaml.parse(optFile.Read());
+            if (targetName == undefined)
+                targetName = this.getCurrentTarget();
+            if (optsObj.options == undefined) optsObj.options = {};
+            if (optsObj.options[targetName] == undefined) optsObj.options[targetName] = {};
+            return optsObj.options[targetName];
         } catch (error) {
             GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
         }
     }
 
-    setSourceExtraArgsCfg(cfg: SourceExtraCompilerOptionsCfg) {
-
-        const header: string[] = [
-            `##########################################################################################`,
-            `#                        Append Compiler Options For Source Files`,
-            `#`,
-            `# syntax:`,
-            `#   <your matcher expr>: <your compiler command>`,
-            `#`,
-            `# examples:`,
-            `#   'main.cpp':           --cpp11 -Og ...`,
-            `#   'src/*.c':            -gnu -O2 ...`,
-            `#   'src/lib/**/*.cpp':   --cpp11 -Os ...`,
-            `#   '!Application/*.c':   -O0`,
-            `#   '**/*.c':             -O2 -gnu ...`,
-            `#`,
-            `# For more syntax, please refer to: https://www.npmjs.com/package/micromatch`,
-            `#`,
-            `##########################################################################################`,
-            '',
-            ''
-        ];
-
+    setSourceExtraArgsCfg(cfg: SourceExtraCompilerOptionsCfg, targetName?: string) {
         try {
             const optFile = this.getSourceExtraArgsCfgFile();
-            optFile.Write(header.join(os.EOL) + yaml.stringify(cfg));
+            const optsObj = <SourceFileOptions>yaml.parse(optFile.Read());
+            optsObj.version = '2.0';
+            optsObj.options[targetName || this.getCurrentTarget()] = cfg;
+            optFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(optsObj, { indent: 4 }));
         } catch (error) {
             GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
         }
@@ -2674,6 +2668,47 @@ $(OUT_DIR):
                         (<any>target.custom_dep)['sourceDirList'] = undefined;
                     }
                 }
+            }
+        }
+
+        // merge *.files.options.yml
+        const optionsFile = File.from(eideFile.dir, 'files.options.yml');
+        if (!optionsFile.IsFile()) {
+            const eideDir = File.from(eideFile.dir);
+            const allFileOptions: { targetName: string, fileOptions: any }[] = [];
+            // get all options
+            for (const file of eideDir.GetList([/\.files\.options\.yml$/i], File.EXCLUDE_ALL_FILTER)) {
+                const target_l = file.name.replace('.files.options.yml', '');
+                if (target_l) {
+                    const allTargets = Object.keys(conf.targets);
+                    if (conf.mode)
+                        allTargets.push(conf.mode);
+                    const idx = allTargets.findIndex(t => t.toLowerCase() == target_l);
+                    if (idx != -1) {
+                        const fileOptions = yaml.parse(file.Read());
+                        allFileOptions.push({ targetName: allTargets[idx], fileOptions: fileOptions });
+                    } else {
+                        GlobalEvent.emit('globalLog.append',
+                            `This options file ".eide/${file.name}" not match any target. remove it !`);
+                    }
+                    try { fs.unlinkSync(file.path) } catch {} // delete file
+                }
+            }
+            // merge all files options
+            if (allFileOptions.length > 0) {
+                const optionsObj: SourceFileOptions = { 'version': '2.0', options: {} };
+                allFileOptions.forEach(opts => {
+                    const obj = opts.fileOptions;
+                    obj.version = undefined;
+                    Object.keys(obj).forEach(k => {
+                        if (obj[k] === undefined || obj[k] === null)
+                            delete obj[k];
+                    });
+                    if (Object.keys(obj).length > 0)
+                        optionsObj.options[opts.targetName] = obj;
+                });
+                // write to file
+                optionsFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(optionsObj, { indent: 4 }));
             }
         }
 

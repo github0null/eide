@@ -23,6 +23,7 @@
 */
 
 import * as vscode from 'vscode';
+import * as os from 'os';
 
 export enum LanguageIndexs {
     Chinese = 0,
@@ -417,6 +418,25 @@ export const view_str$env_desc$compiler_folder = [
 ][langIndex];
 
 //---------------Other---------------
+
+export const view_str$prompt$filesOptionsComment = [
+    `##########################################################################################`,
+    `#                        Append Compiler Options For Source Files`,
+    `##########################################################################################`,
+    ``,
+    `# syntax:`,
+    `#   <your pattern>: <compiler options>`,
+    `# For get pattern syntax, please refer to: https://www.npmjs.com/package/micromatch`,
+    `#`,
+    `# examples:`,
+    `#   'main.cpp':           --cpp11 -Og ...`,
+    `#   'src/*.c':            -gnu -O2 ...`,
+    `#   'src/lib/**/*.cpp':   --cpp11 -Os ...`,
+    `#   '!Application/*.c':   -O0`,
+    `#   '**/*.c':             -O2 -gnu ...`,
+    '',
+    ''
+].join(os.EOL);
 
 export const view_str$prompt$userCanceledOperation = [
     `用户取消了操作。`,

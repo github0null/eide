@@ -5167,7 +5167,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             ui_cfg.items['inherit'] = {
                 type: 'input',
                 attrs: { readonly: true },
-                name: `Inherited Options (from other pattern, check your '*.files.options.yml' file for details !)`,
+                name: `Inherited Options (from other pattern, check your 'files.options.yml' file for details !)`,
                 data: <SimpleUIConfigData_input>{
                     value: inheritedArgs,
                     default: inheritedArgs
@@ -5273,7 +5273,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             ui_cfg.items['inherit'] = {
                 type: 'input',
                 attrs: { readonly: true },
-                name: `Inherited Options (from other args pattern, check your '*.files.options.yml' file for details !)`,
+                name: `Inherited Options (from other args pattern, check your 'files.options.yml' file for details !)`,
                 data: <SimpleUIConfigData_input>{
                     value: inheritedOptions,
                     default: inheritedOptions
