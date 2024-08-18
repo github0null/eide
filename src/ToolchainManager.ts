@@ -73,6 +73,9 @@ export interface IToolchian {
 
     readonly modelName: string;
 
+    /**
+     * @deprecated 这个字段在 eide.json v3.5 及之后的版本，已不再使用
+    */
     readonly configName: string;
 
     readonly settingName: string;

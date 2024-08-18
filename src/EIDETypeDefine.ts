@@ -1270,6 +1270,12 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         custom_dep.incList = custom_dep.incList.map((path) => this.toRelativePath(path));
         custom_dep.libList = custom_dep.libList.map((path) => this.toRelativePath(path));
 
+        let builderOpts: any = {};
+        if (target.targets[target.mode] &&
+            target.targets[target.mode].builderOptions !== undefined) {
+            builderOpts = utility.deepCloneObject(target.targets[target.mode].builderOptions);
+        }
+
         return {
             excludeList: Array.from(target.excludeList),
             toolchain: target.toolchain,
@@ -1278,7 +1284,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             uploadConfig: utility.deepCloneObject(target.uploadConfig),
             uploadConfigMap: utility.deepCloneObject(target.uploadConfigMap),
             custom_dep: custom_dep,
-            builderOptions: utility.deepCloneObject(target.targets[target.mode].builderOptions)
+            builderOptions: builderOpts
         };
     }
 

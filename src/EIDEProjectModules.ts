@@ -443,6 +443,12 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
         const _targetName = targetName || this.prjConfigData.mode;
         const _toolchain  = toolchainName || this.prjConfigData.toolchain;
 
+        if (this.prjConfigData.targets[_targetName] == undefined) {
+            return ToolchainManager.getInstance()
+                .getToolchain(this.prjConfigData.type, _toolchain)
+                .getDefaultConfig();
+        }
+
         const allOptions = this.prjConfigData.targets[_targetName].builderOptions;
         if (allOptions[_toolchain] == undefined) {
             const toolchain = ToolchainManager.getInstance().getToolchain(this.prjConfigData.type, _toolchain);
@@ -455,8 +461,13 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
 
     setOptions(newBuilderOptions: BuilderOptions, targetName?: string, toolchainName?: ToolchainName) {
         const _targetName = targetName || this.prjConfigData.mode;
-        const _toolchain  = toolchainName || this.prjConfigData.toolchain;
-        const allOptions  = this.prjConfigData.targets[_targetName].builderOptions;
+        const _toolchain = toolchainName || this.prjConfigData.toolchain;
+        if (this.prjConfigData.targets[_targetName] == undefined) {
+            GlobalEvent.emit('globalLog.append', `target '${_targetName}' not exist !`);
+            GlobalEvent.emit('globalLog.show');
+            return;
+        }
+        const allOptions = this.prjConfigData.targets[_targetName].builderOptions;
         allOptions[_toolchain] = newBuilderOptions;
         this._event.emit('dataChanged');
     }

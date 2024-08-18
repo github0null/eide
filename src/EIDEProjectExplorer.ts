@@ -40,7 +40,7 @@ import { ToolchainName, ToolchainManager } from './ToolchainManager';
 import {
     BuilderOptions,
     CreateOptions, VirtualFolder, VirtualFile, ImportOptions,
-    ProjectTargetInfo, ProjectConfigData, ProjectType, ProjectConfiguration, ProjectBaseApi
+    ProjectTargetInfo, ProjectConfigData, ProjectType, ProjectConfiguration, ProjectBaseApi, MAPPED_KEYS_IN_TARGET_INFO
 } from './EIDETypeDefine';
 import {
     PackInfo, ComponentFileItem, DeviceInfo,
@@ -2436,23 +2436,22 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 const targetName = tname;
                 const iarTarget = iarproj.targets[tname];
 
-                const nEideTarget: ProjectTargetInfo = <any>{
+                const nEideTarget: ProjectTargetInfo = {
                     excludeList: iarTarget.excludeList,
                     toolchain: eidePrjCfg.toolchain,
                     compileConfig: copyObject(eidePrjCfg.compileConfig),
                     uploader: eidePrjCfg.uploader,
                     uploadConfig: copyObject(eidePrjCfg.uploadConfig),
-                    uploadConfigMap: copyObject(eidePrjCfg.uploadConfigMap)
+                    uploadConfigMap: copyObject(eidePrjCfg.uploadConfigMap),
+                    custom_dep: {
+                        name: 'default',
+                        incList: [],
+                        defineList: [],
+                        libList: []
+                    },
+                    builderOptions: {},
                 };
-
                 eidePrjCfg.targets[targetName] = nEideTarget;
-
-                nEideTarget.custom_dep = {
-                    name: 'default',
-                    incList: [],
-                    defineList: [],
-                    libList: []
-                };
 
                 nEideTarget.custom_dep.defineList = toArray(iarTarget.settings['ICCARM.CCDefines']);
                 nEideTarget.custom_dep.incList = toArray(iarTarget.settings['ICCARM.CCIncludePath2']);
@@ -2486,7 +2485,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 //
                 const toolchain = ToolchainManager.getInstance().getToolchain(eidePrjCfg.type, eidePrjCfg.toolchain);
                 const builderConfig = toolchain.getDefaultConfig();
-                const builderConfigFile = File.fromArray([eideFolder.path, `${targetName.toLowerCase()}.${toolchain.configName}`]);
 
                 const iar2eideOptsMap = iarParser.IAR2EIDE_OPTS_MAP;
 
@@ -2590,7 +2588,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     }
                 }
 
-                builderConfigFile.Write(JSON.stringify(builderConfig, undefined, 4));
+                nEideTarget.builderOptions[toolchainType] = builderConfig;
             }
 
             // init current target
@@ -2604,6 +2602,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                         [{ groupName: 'custom', depList: [curTarget[key]] }];
                     continue;
                 }
+                if (!MAPPED_KEYS_IN_TARGET_INFO.includes(key))
+                    continue;
                 (<any>eidePrjCfg)[key] = curTarget[key];
             }
 
@@ -2669,20 +2669,20 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         // init all target
         for (const eTarget of ePrjInfo.targets) {
 
-            const nEideTarget: ProjectTargetInfo = <any>{
+            const nEideTarget: ProjectTargetInfo = {
                 excludeList: eTarget.excList,
                 toolchain: nPrjConfig.toolchain,
                 compileConfig: copyObject(nPrjConfig.compileConfig),
                 uploader: nPrjConfig.uploader,
                 uploadConfig: copyObject(nPrjConfig.uploadConfig),
-                uploadConfigMap: copyObject(nPrjConfig.uploadConfigMap)
-            };
-
-            nEideTarget.custom_dep = {
-                name: 'default',
-                incList: [],
-                defineList: [],
-                libList: []
+                uploadConfigMap: copyObject(nPrjConfig.uploadConfigMap),
+                builderOptions: {},
+                custom_dep: {
+                    name: 'default',
+                    incList: [],
+                    defineList: [],
+                    libList: []
+                }
             };
 
             nEideTarget.custom_dep.defineList = eTarget.globalArgs.cMacros;
@@ -2793,7 +2793,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             {
                 const toolchain = ToolchainManager.getInstance().getToolchain(nPrjConfig.type, nPrjConfig.toolchain);
                 const toolchainDefConf = toolchain.getDefaultConfig();
-                const toolchainCfgFile = File.fromArray([eideFolder.path, `${eTarget.name.toLowerCase()}.${toolchain.configName}`]);
 
                 // glob
                 toolchainDefConf.global['misc-control'] = eTarget.globalArgs.globalArgs.filter(a => a.trim() != '');
@@ -2856,7 +2855,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     }
                 }
 
-                toolchainCfgFile.Write(JSON.stringify(toolchainDefConf, undefined, 4));
+                nEideTarget.builderOptions[toolchain.name] = toolchainDefConf;
             }
 
             nPrjConfig.targets[eTarget.name] = nEideTarget;
@@ -2872,6 +2871,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 }];
                 continue;
             }
+            if (!MAPPED_KEYS_IN_TARGET_INFO.includes(name))
+                continue;
             (<any>nPrjConfig)[name] = curTarget[name];
         }
 
@@ -3154,6 +3155,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             newTarget.uploader = projectInfo.uploader;
             newTarget.uploadConfig = copyObject(projectInfo.uploadConfig);
             newTarget.uploadConfigMap = copyObject(projectInfo.uploadConfigMap);
+            newTarget.builderOptions = {};
 
             //
             // import specific configs
@@ -3170,10 +3172,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     defIncList.push(baseInfo.rootFolder.ToRelativePath(absPath) || absPath);
                 }
                 // import builder options
-                const opts: BuilderOptions = mergeBuilderOpts(toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
-                // write to file
-                const cfgFile = File.fromArray([baseInfo.rootFolder.path, AbstractProject.EIDE_DIR, `${keilTarget.name.toLowerCase()}.${toolchain.configName}`]);
-                cfgFile.Write(JSON.stringify(opts, undefined, 4));
+                const opts: BuilderOptions = mergeBuilderOpts(
+                    toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
+                newTarget.builderOptions[toolchain.name] = opts;
             }
 
             // ARM project
@@ -3196,20 +3197,19 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
                 // import builder options
                 const toolchain = ToolchainManager.getInstance().getToolchain('ARM', keilCompileConf.toolchain);
-                const opts: BuilderOptions = mergeBuilderOpts(toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
+                const opts: BuilderOptions = mergeBuilderOpts(
+                    toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
                 opts.beforeBuildTasks?.forEach((t) => replaceUserTaskTmpVar(t));
                 opts.afterBuildTasks?.forEach((t) => replaceUserTaskTmpVar(t));
-
-                // write to file
-                const cfgFile = File.fromArray([baseInfo.rootFolder.path, AbstractProject.EIDE_DIR, `${keilTarget.name.toLowerCase()}.${toolchain.configName}`]);
-                cfgFile.Write(JSON.stringify(opts, undefined, 4));
+                newTarget.builderOptions[toolchain.name] = opts;
             }
 
             // init custom dependence after specific configs done
-            newTarget.custom_dep = <any>{ name: 'default', libList: [] };
+            newTarget.custom_dep = <any>{ name: 'default' };
             const incList = keilTarget.incList.map((path) => baseInfo.rootFolder.ToRelativePath(path) || path);
             newTarget.custom_dep.incList = defIncList.concat(incList);
             newTarget.custom_dep.defineList = keilTarget.defineList;
+            newTarget.custom_dep.libList = [];
 
             // fill exclude list
             newTarget.excludeList = [];
@@ -3241,6 +3241,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 }];
                 continue;
             }
+            if (!MAPPED_KEYS_IN_TARGET_INFO.includes(name))
+                continue;
             (<any>projectInfo)[name] = curTarget[name];
         }
 
