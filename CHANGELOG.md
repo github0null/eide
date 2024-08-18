@@ -6,7 +6,7 @@ All notable version changes will be recorded in this file.
 
 ***
 
-### [v3.19.0] update
+### [v3.19.1] update
 
 **Change**:
   - `Builder Options`: Combine all builder options (`*.options.json`) into `eide.json`.
