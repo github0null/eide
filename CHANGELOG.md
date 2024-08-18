@@ -6,6 +6,17 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.19.0] update
+
+**Change**:
+  - `Builder Options`: Combine all builder options (`*.options.json`) into `eide.json`.
+  - `Files Options`: Combine all file's options (`*.files.options.yml`) into single file: `files.options.yml`.
+
+**Optimize**:
+  - `Project TreeView`: Expand Project TreeView's root node when you open a project.
+
+***
+
 ### [v3.18.2] revision
 
 **Fix**:
