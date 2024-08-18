@@ -3553,7 +3553,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                         this.view.reveal(item, {
                             select: false,
                             focus: false,
-                            expand: true
+                            expand: false
                         });
                     }
                 }
