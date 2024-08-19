@@ -3316,7 +3316,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                             const prjConf: ProjectConfigData<any> = JSON.parse(prjFile.Read());
                                             prjConf.name = option.name; // set project name
                                             if (prjConf.miscInfo) prjConf.miscInfo.uid = undefined; // reset uid
-                                            prjFile.Write(JSON.stringify(prjConf));
+                                            prjFile.Write(JSON.stringify(prjConf, undefined, 2));
                                         } catch (error) {
                                             throw Error(`Init project failed !, msg: ${error.message}`);
                                         }

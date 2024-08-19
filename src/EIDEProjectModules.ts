@@ -463,7 +463,7 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
         const _targetName = targetName || this.prjConfigData.mode;
         const _toolchain = toolchainName || this.prjConfigData.toolchain;
         if (this.prjConfigData.targets[_targetName] == undefined) {
-            GlobalEvent.emit('globalLog.append', `target '${_targetName}' not exist !`);
+            GlobalEvent.emit('globalLog.append', `[Warn] target '${_targetName}' not exist !\n`);
             GlobalEvent.emit('globalLog.show');
             return;
         }

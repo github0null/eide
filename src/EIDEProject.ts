@@ -2500,6 +2500,8 @@ $(OUT_DIR):
         this.registerBuiltinVar('ConfigName', () => this.GetConfiguration().config.mode);
         this.registerBuiltinVar('ProjectRoot', () => this.getRootDir().path);
         this.registerBuiltinVar('ExecutableName', () => this.getExecutablePathWithoutSuffix());
+        this.registerBuiltinVar('ChipPackDir', () => this.GetConfiguration().config.packDir || '');
+        this.registerBuiltinVar('ChipName', () => this.GetConfiguration().config.deviceName || '');
 
         // system vars
         this.registerBuiltinVar('SYS_Platform', () => platform.osType());
@@ -2677,7 +2679,7 @@ $(OUT_DIR):
                         allFileOptions.push({ targetName: allTargets[idx], fileOptions: fileOptions });
                     } else {
                         GlobalEvent.emit('globalLog.append',
-                            `This options file ".eide/${file.name}" not match any target. remove it !`);
+                            `[Warn] This options file ".eide/${file.name}" not match any target. remove it !\n`);
                     }
                     try { fs.unlinkSync(file.path) } catch {} // delete file
                 }
@@ -2703,7 +2705,7 @@ $(OUT_DIR):
         /* udpate project version to lastest */
         if (this.isOldVersionProject) {
             conf.version = EIDE_CONF_VERSION;
-            eideFile.Write(JSON.stringify(conf));
+            eideFile.Write(JSON.stringify(conf, undefined, 2));
         }
     }
 
