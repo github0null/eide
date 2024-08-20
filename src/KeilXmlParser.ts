@@ -743,6 +743,8 @@ class ARMParser extends KeilParser<KeilARMOption> {
 
                 // keil props
                 const mdk_OutputDirectory: string = File.normalize(commonOption.OutputDirectory || '.');
+                const mdk_CreateHexFile: boolean  = commonOption.CreateHexFile == '1';
+                const mdk_CreateLib: boolean      = commonOption.CreateLib == '1';
 
                 // BeforeMake
                 const beforeMake = commonOption.BeforeMake;
@@ -784,23 +786,27 @@ class ARMParser extends KeilParser<KeilARMOption> {
                         if (env['KEIL_OUTPUT_NAME']) {
                             eideOption.afterBuildTasks.splice(0, 0, {
                                 "name": '[Copy linker output for Keil User Commands]',
-                                "command": `$<cd:mdk-proj-dir> && copy "\${OutDir}\\\${ProjectName}.axf" "${mdk_OutputDirectory}\\\${KEIL_OUTPUT_NAME}.axf"`,
+                                "command": `$<cd:mdk-proj-dir> && mkdir ${mdk_OutputDirectory} & copy "\${OutDir}\\\${ProjectName}.axf" "${mdk_OutputDirectory}\\\${KEIL_OUTPUT_NAME}.axf"`,
                                 "disable": actived_cnt == 0,
                                 "abortAfterFailed": true
                             });
                         } else {
                             eideOption.afterBuildTasks.splice(0, 0, {
                                 "name": '[Copy linker output for Keil User Commands]',
-                                "command": `$<cd:mdk-proj-dir> && copy "\${OutDir}\\\${ProjectName}.axf" "${mdk_OutputDirectory}\\\${ProjectName}.axf"`,
+                                "command": `$<cd:mdk-proj-dir> && mkdir ${mdk_OutputDirectory} & copy "\${OutDir}\\\${ProjectName}.axf" "${mdk_OutputDirectory}\\\${ProjectName}.axf"`,
                                 "disable": actived_cnt == 0,
                                 "abortAfterFailed": true
                             });
                         }
                     }
-                    if (actived_cnt > 0) {
+                    if (mdk_CreateLib) {
+                        // Make eide output lib instead of elf
+                        if (eideOption.linker == undefined) eideOption.linker = {};
+                        eideOption.linker['output-format'] = 'lib';
+                    }
+                    if (!mdk_CreateHexFile) {
                         // Make eide Don't output hex/bin
-                        if (eideOption.linker == undefined)
-                            eideOption.linker = {};
+                        if (eideOption.linker == undefined) eideOption.linker = {};
                         eideOption.linker['$disableOutputTask'] = true;
                     }
                 }

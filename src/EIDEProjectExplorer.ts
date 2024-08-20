@@ -1154,7 +1154,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                         const _depsFolder = project
                             .getVirtualSourceManager()
                             .getFolder(`${VirtualSource.rootName}/${DependenceManager.DEPS_VFOLDER_NAME}`);
-                        if (_depsFolder && (_depsFolder.files.length +_depsFolder.folders.length) > 0) {
+                        if (_depsFolder && (_depsFolder.files.length + _depsFolder.folders.length) > 0) {
                             const folderDispName = view_str$project$cmsis_components;
                             const itemType = TreeItemType.V_FOLDER_ROOT;
                             const vFolderPath = `${VirtualSource.rootName}/${_depsFolder.name}`;
@@ -3135,10 +3135,15 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
         const replaceUserTaskTmpVar = (t: any) => {
             const reKeilPrjDir = baseInfo.rootFolder.ToRelativeLocalPath(keilPrjFile.dir) || keilPrjFile.dir;
-            if (reKeilPrjDir === '.')
+            if (reKeilPrjDir === '.') {
                 t.command = t.command.replace('$<cd:mdk-proj-dir> && ', '');
-            else
-                t.command = t.command.replace('$<cd:mdk-proj-dir>', `cd .\\${reKeilPrjDir}`);
+            } else {
+                if (t.command.startsWith('bash')) {
+                    t.command = t.command.replace('$<cd:mdk-proj-dir>', `cd ${File.ToUnixPath(reKeilPrjDir)}`);
+                } else {
+                    t.command = t.command.replace('$<cd:mdk-proj-dir>', `cd .\\${reKeilPrjDir}`);
+                }
+            }
         }
 
         // project env
@@ -7013,7 +7018,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     private async genDebugConfig_internal(
-        type: 'jlink' | 'openocd' | 'pyocd', 
+        type: 'jlink' | 'openocd' | 'pyocd',
         prj: AbstractProject, old_cfgs: any[]): Promise<{ debug_config: any, override_idx: number } | undefined> {
 
         const _elfPath = File.ToUnixPath(prj.getOutputDir()) + '/' + `${prj.getProjectName()}.elf`;
