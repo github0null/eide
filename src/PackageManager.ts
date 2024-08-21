@@ -58,7 +58,6 @@ export class PackageManager {
 
     private packList: PackInfo[];
 
-    private packRootDir: File | undefined;
     private currentPackDir: File | undefined;
     private project: AbstractProject;
 
@@ -134,27 +133,30 @@ export class PackageManager {
     }
 
     Init() {
-        /* set default pack root */
-        this.packRootDir = new File(this.project.ToAbsolutePath(PackageManager.PACK_DIR));
 
         /* if we have installed a pack, load and override old pack root */
         const prjConfig = this.project.GetConfiguration<ArmBaseCompileData>().config;
         if (prjConfig.packDir) {
             const packDir = new File(this.project.ToAbsolutePath(prjConfig.packDir));
             if (packDir.IsDir()) {
-                this.packRootDir = packDir;
                 const packManager = this.project.GetPackManager();
-                packManager.LoadPackage(this.packRootDir);
-                const devName = prjConfig.deviceName;
-                if (devName) {
-                    packManager.SetDeviceInfo(devName, prjConfig.compileConfig.cpuType);
+                try {
+                    packManager.LoadPackage(packDir);
+                    const devName = prjConfig.deviceName;
+                    if (devName) {
+                        packManager.SetDeviceInfo(devName, prjConfig.compileConfig.cpuType);
+                    }
+                } catch (error) {
+                    GlobalEvent.emit('msg', newMessage('Error', 'Fail to load chip package for this project !'));
+                    GlobalEvent.log_error(error);
+                    GlobalEvent.log_show();
                 }
             }
         }
     }
 
-    GetPackRootDir(): File | undefined {
-        return this.packRootDir;
+    private packRootDir(): File {
+        return File.from(this.project.ToAbsolutePath(PackageManager.PACK_DIR));
     }
 
     GetPackDir(): File | undefined {
@@ -317,13 +319,9 @@ export class PackageManager {
     }
 
     private ClearAll() {
-
-        if (this.packRootDir && this.packRootDir.IsDir()) {
-            DeleteDir(this.packRootDir);
+        if (this.packRootDir().IsDir()) {
+            DeleteDir(this.packRootDir());
         }
-
-        /* set default pack root */
-        this.packRootDir = new File(this.project.ToAbsolutePath(PackageManager.PACK_DIR));
     }
 
     private _checkConditionGroup(gMap: ConditionMap, 
@@ -1188,7 +1186,7 @@ export class PackageManager {
 
     async Install(pack: File, reporter?: (progress?: number, message?: string) => void): Promise<void> {
 
-        const packDir: File = (<File>this.packRootDir);
+        const packDir: File = this.packRootDir();
 
         this.ClearAll();
         packDir.CreateDir(true);

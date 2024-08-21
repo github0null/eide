@@ -103,6 +103,10 @@ export class GlobalEvent {
             GlobalEvent.GetInstance()._emitter.emit('globalLog', ExceptionToMessage(msg, 'Error'));
         }
     }
+    // 向用户显示eide输出面板日志
+    static log_show() {
+        GlobalEvent.GetInstance()._emitter.emit('globalLog.show');
+    }
 }
 
 GlobalEvent.on('error', (err) => {
