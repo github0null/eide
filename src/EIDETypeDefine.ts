@@ -402,7 +402,7 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
         try {
             if (this.cfgFile.IsExist()) oldContent = this.cfgFile.Read();
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+            GlobalEvent.log_error(error);
         }
 
         // ! 注意这里比较两个 json 字符串是否相等，需要去除空白字符，不要直接比较字符串，
@@ -1335,7 +1335,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             try {
                 return JSON.parse(f.Read());
             } catch (error) {
-                GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+                GlobalEvent.log_error(error);
                 return {}; // empty obj
             }
         }
@@ -1352,7 +1352,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             try {
                 oldUsrCtxCont = usrCtxFile.Read();
             } catch (error) {
-                GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+                GlobalEvent.log_error(error);
             }
         }
 
@@ -1362,7 +1362,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
                 usrCtxFile.Write(newUsrCtxCont);
             }
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            GlobalEvent.log_error(error);
         }
     }
 

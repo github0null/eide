@@ -65,9 +65,9 @@ export class DependenceManager implements ManagerInterface {
     }
 
     InstallComponent(packName: string, component: Component) {
-        GlobalEvent.emit('globalLog.append', `[Info] Install CMSIS Component: ${component.groupName}\n`);
+        GlobalEvent.log_info(`Install CMSIS Component: ${component.groupName} ...`);
         this._installComponent(packName, component, [component.groupName]);
-        GlobalEvent.emit('globalLog.append', `[Info] Done.\n`);
+        GlobalEvent.log_info(`Done.`);
     }
 
     private _installComponent(packName: string, component: Component, pendingList: string[]) {
@@ -84,13 +84,13 @@ export class DependenceManager implements ManagerInterface {
             try {
                 depList= packageManager.checkComponentRequirement(component.condition, toolchain);
             } catch (error) {
-                GlobalEvent.emit('globalLog.append', `[Warn] ${(<Error>error).message}\n`);
+                GlobalEvent.log_warn(`${(<Error>error).message}`);
                 throw new Error(`Condition '${component.condition}' is not fit for this component: '${component.groupName}'`);
             }
             // try install dependences
             for (const fullname of depList) {
                 if (!fullname.startsWith('Device.')) {
-                    GlobalEvent.emit('globalLog.append', `[Warn] ${' '.repeat(pendingList.length)}Skip component: '${fullname}'\n`);
+                    GlobalEvent.log_warn(`${' '.repeat(pendingList.length)}-> ignore component: '${fullname}'`);
                     continue; /* 排除非 Device 类型的组件 */
                 }
                 const reqName  = fullname.replace('Device.', '');
@@ -102,7 +102,7 @@ export class DependenceManager implements ManagerInterface {
                         if (pendingList.includes(item.groupName))
                             continue; /* 排除队列中已存在的 */
                         pendingList.push(item.groupName);
-                        GlobalEvent.emit('globalLog.append', `[Info] ${' '.repeat(pendingList.length)}-> install dependence component: ${item.groupName}\n`);
+                        GlobalEvent.log_info(`${' '.repeat(pendingList.length)}-> install dependence component: ${item.groupName}`);
                         this._installComponent(packName, item, pendingList);
                         pendingList.pop();
                     }

@@ -443,7 +443,7 @@ class SourceRootList implements SourceProvider {
     private _add(dir: File): SourceRootInfo {
         const key: string = this.project.toRelativePath(dir.path);
         const watcher = platform.createSafetyFileWatcher(dir, true);
-        watcher.on('error', (err) => GlobalEvent.emit('globalLog', ExceptionToMessage(err, 'Warning')));
+        watcher.on('error', (err) => GlobalEvent.log_warn(err));
         const sourceInfo = this.newSourceInfo(key, watcher);
         this.srcFolderMaps.set(key, sourceInfo);
         return sourceInfo;
@@ -760,7 +760,7 @@ class SourceRootList implements SourceProvider {
 
         } catch (error) {
             rootFolderInfo.needUpdate = true; // set need update flag
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+            GlobalEvent.log_warn(error);
         }
     }
 }
@@ -883,7 +883,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         //         suffix = model['groups']['linker']['$outputSuffix'];
         //     }
         // } catch (error) {
-        //     GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+        //     GlobalEvent.log_error(error);
         // }
         // return this.getExecutablePathWithoutSuffix() + suffix;
     }
@@ -1701,7 +1701,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             const rePath = this.ToRelativePath(outDir.path) || outDir.path;
 
             if (outDir.IsDir()) {
-                GlobalEvent.emit('globalLog', newMessage('Warning', `'${rePath}' directory is already exists !, Aborted !`));
+                GlobalEvent.log_warn(`'${rePath}' directory is already exists !, Aborted !`);
                 continue;
             }
 
@@ -1852,7 +1852,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             cfg = yaml.parse(fcfg.Read());
         } catch (error) {
             GlobalEvent.emit('msg', newMessage('Warning', `Parse '${fcfg.name}' failed !`));
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            GlobalEvent.log_error(error);
             GlobalEvent.emit('globalLog.show');
             return undefined;
         }
@@ -1897,7 +1897,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             }
             CC_OBJ_SUFFIX = mcc['$outputSuffix'] || '.o';
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            GlobalEvent.log_error(error);
             return undefined;
         }
 
@@ -2168,7 +2168,7 @@ $(OUT_DIR):
             if (optsObj.options[targetName] == undefined) optsObj.options[targetName] = {};
             return optsObj.options[targetName];
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            GlobalEvent.log_error(error);
         }
     }
 
@@ -2180,7 +2180,7 @@ $(OUT_DIR):
             optsObj.options[targetName || this.getCurrentTarget()] = cfg;
             optFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(optsObj, { indent: 4 }));
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            GlobalEvent.log_error(error);
         }
     }
 
@@ -2678,8 +2678,7 @@ $(OUT_DIR):
                         const fileOptions = yaml.parse(file.Read());
                         allFileOptions.push({ targetName: allTargets[idx], fileOptions: fileOptions });
                     } else {
-                        GlobalEvent.emit('globalLog.append',
-                            `[Warn] This options file ".eide/${file.name}" not match any target. remove it !\n`);
+                        GlobalEvent.log_warn(`This options file ".eide/${file.name}" not match any target. remove it !`);
                     }
                     try { fs.unlinkSync(file.path) } catch {} // delete file
                 }
@@ -2858,7 +2857,7 @@ class EIDEProject extends AbstractProject {
                                 try {
                                     this.dependenceManager.InstallComponent(packInfo.name, comp);
                                 } catch (error) {
-                                    GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+                                    GlobalEvent.log_warn(error);
                                 }
                             }
                         }
@@ -3061,8 +3060,7 @@ class EIDEProject extends AbstractProject {
                             let command = cmd_item.command.replace('-co', '-sm -co');
                             child_process.exec(command, { cwd: cmd_item.directory }, (error: child_process.ExecException | null, stdout: string, stderr: string) => {
                                 if (error) {
-                                    const msg = `Failed to make '${deppath}', msg: ${(<Error>error).message}`;
-                                    GlobalEvent.emit('globalLog', newMessage('Warning', msg));
+                                    GlobalEvent.log_warn(`Failed to make '${deppath}', msg: ${(<Error>error).message}`);
                                     try { fs.unlinkSync(deppath) } catch (error) { } // del old .d file
                                     resolve();
                                 } else {
@@ -3075,7 +3073,7 @@ class EIDEProject extends AbstractProject {
                 }
             }
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+            GlobalEvent.log_warn(error);
         }
 
         const toolName = toolchain_ || this.getToolchain().name;
@@ -3097,7 +3095,7 @@ class EIDEProject extends AbstractProject {
                 this.srcRefMap.set(srcpath, refs.map((path) => new File(path)));
             }
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+            GlobalEvent.log_warn(error);
         }
 
         // notify update src view
@@ -3344,7 +3342,7 @@ class EIDEProject extends AbstractProject {
 
                     proc.on('line', (line) => GlobalEvent.emit('globalLog.append', line + os.EOL));
                     proc.on('errLine', (line) => GlobalEvent.emit('globalLog.append', line + os.EOL));
-                    proc.on('error', (err) => GlobalEvent.emit('globalLog', ExceptionToMessage(err)));
+                    proc.on('error', (err) => GlobalEvent.log_error(err));
 
                     proc.on('close', (exitInf) => {
                         GlobalEvent.emit('globalLog.append', os.EOL + `process exited, exitCode: ${exitInf.code}` + os.EOL)
@@ -3356,7 +3354,7 @@ class EIDEProject extends AbstractProject {
             });
 
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error));
+            GlobalEvent.log_error(error)
             GlobalEvent.emit('globalLog.show');
         }
 
@@ -3624,7 +3622,7 @@ class EIDEProject extends AbstractProject {
                 try {
                     platform.DeleteDir(_d);
                 } catch (error) {
-                    GlobalEvent.emit('globalLog', ExceptionToMessage(error));
+                    GlobalEvent.log_error(error);
                 }
             }
         }

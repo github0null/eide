@@ -43,16 +43,11 @@ type MessageCategory = MessageType | 'Log';
 export class LogAnalyzer {
 
     private _event: EventEmitter;
-    private _hostInfoReg: RegExp;
 
     private constructor() {
         this._event = new EventEmitter();
         this._event.on('msg', (msg) => this.DispatchMessage(msg));
-        this._hostInfoReg = /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\s*:\s*\d{1,5}/g;
-
-        GlobalEvent.on('msg', (msg: Message) => {
-            LogAnalyzer.emit('msg', msg);
-        });
+        GlobalEvent.on('msg', (msg) => LogAnalyzer.emit('msg', msg));
     }
 
     static GetInstance(): LogAnalyzer {
@@ -130,7 +125,6 @@ export class LogAnalyzer {
 
         if (result.msg.contentType === 'exception') {
             try {
-                result.msg.content = result.msg.content.replace(this._hostInfoReg, '<eide remote log server>');
                 let eMsg: ExceptionMessage = JSON.parse(result.msg.content);
                 result.displayable = {
                     title: eMsg.name,

@@ -496,7 +496,7 @@ export abstract class CodeBuilder {
                 builderOptions.options.afterBuildTasks = [command].concat(builderOptions.options.afterBuildTasks);
             } catch (error) {
                 GlobalEvent.emit('msg', newMessage('Warning', `Generating '${mkfile_path}' failed !`));
-                GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+                GlobalEvent.log_error(error);
             }
         }
 

@@ -25,11 +25,12 @@
 import { LogAnalyzer } from "./LogAnalyzer";
 import { File } from "../lib/node-utility/File";
 import { ResManager } from "./ResManager";
-import { Message, ExceptionMessage } from "./Message";
+import { Message, ExceptionMessage, MessageType } from "./Message";
 import * as fs from 'fs';
 import { EOL } from "os";
 import { Time } from "../lib/node-utility/Time";
 import { GlobalEvent } from "./GlobalEvents";
+import * as utility from "./utility";
 
 let _instance: LogDumper | undefined;
 
@@ -81,9 +82,20 @@ export class LogDumper {
         return _instance;
     }
 
+    static _toShortMsgType(t: MessageType): string {
+        switch (t) {
+            case 'Hidden':
+                return 'Debug';
+            case 'Warning':
+                return 'Warn';
+            default:
+                return t;
+        }
+    }
+
     static Msg2String(log: Message): string {
 
-        let res = '[' + log.type + '] : ';
+        let res = `[${this._toShortMsgType(log.type)}] [${utility.timeStamp()}] `;
 
         switch (log.contentType) {
             case 'exception':

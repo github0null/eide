@@ -293,7 +293,7 @@ function tryGetIarChipInfo(iarToolRoot: File, rawChipNameStr: string): { [key: s
                 try {
                     return ini.parse(fli[idx].Read());
                 } catch (error) {
-                    GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+                    GlobalEvent.log_warn(error);
                 }
             }
         }

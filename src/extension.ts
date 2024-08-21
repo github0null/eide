@@ -69,7 +69,7 @@ export async function activate(context: vscode.ExtensionContext) {
     RegisterGlobalEvent();
     RegisterMsgListener();
 
-    GlobalEvent.emit('globalLog', newMessage('Info', 'Embedded IDE launch begin'));
+    GlobalEvent.log_info('Embedded IDE launch begin');
 
     // init platform
     try {
@@ -77,7 +77,7 @@ export async function activate(context: vscode.ExtensionContext) {
     } catch (error) {
         const msg = (<Error>error).message;
         vscode.window.showErrorMessage(msg);
-        GlobalEvent.emit('globalLog', newMessage('Error', msg));
+        GlobalEvent.log_error(msg);
         return;
     }
 
@@ -87,14 +87,14 @@ export async function activate(context: vscode.ExtensionContext) {
         if (extension) {
             if (!extension.isActive) {
                 try {
-                    GlobalEvent.emit('globalLog', newMessage('Info', `Active extension: '${name}'`));
+                    GlobalEvent.log_info(`Active extension: '${name}'`);
                     await extension.activate();
                 } catch (error) {
-                    GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+                    GlobalEvent.log_warn(error);
                 }
             }
         } else {
-            GlobalEvent.emit('globalLog', newMessage('Warning', `The extension '${name}' is not enabled or installed !`));
+            GlobalEvent.log_warn(`The extension '${name}' is not enabled or installed !`);
         }
     }
 
@@ -286,7 +286,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // launch done
     GlobalEvent.emit('extension_launch_done');
-    GlobalEvent.emit('globalLog', newMessage('Info', 'Embedded IDE launch done'));
+    GlobalEvent.log_info('Embedded IDE launch done');
 }
 
 // this method is called when your extension is deactivated
@@ -337,9 +337,9 @@ function postLaunchHook(extensionCtx: vscode.ExtensionContext) {
     }
 
     // refresh external tools now
-    ResInstaller.instance().refreshExternalToolsIndex().catch(err => {
-        GlobalEvent.emit('globalLog', ExceptionToMessage(err, 'Warning'));
-    });
+    ResInstaller.instance()
+        .refreshExternalToolsIndex()
+        .catch(err => GlobalEvent.log_warn(err));
 }
 
 //////////////////////////////////////////////////
@@ -727,7 +727,7 @@ function onBinariesInstallDone() {
                 GlobalEvent.emit('globalLog.append', cmd + os.EOL);
                 ChildProcess.execSync(cmd);
             } catch (error) {
-                GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+                GlobalEvent.log_error(error);
                 GlobalEvent.emit('globalLog.show');
             }
         }
@@ -806,7 +806,7 @@ function exportEnvToSysPath(context?: vscode.ExtensionContext) {
                     .map(s => s.trim())
                     .filter(s => s != '');
             } catch (error) {
-                GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+                GlobalEvent.log_warn(error);
             }
 
             binDirs.forEach(dir => {
@@ -907,8 +907,8 @@ async function checkAndInstallRuntime() {
     // check/install .NET
     //
     try {
-        GlobalEvent.emit('globalLog', newMessage('Info', 'Checking .NET runtime ...'));
-        GlobalEvent.emit('globalLog', newMessage('Info', `Exec cmd: '${dotnet_chk_cmd}'`));
+        GlobalEvent.log_info('Checking .NET runtime ...');
+        GlobalEvent.log_info(`Exec cmd: '${dotnet_chk_cmd}'`);
         const dotnetInfo = ChildProcess.execSync(dotnet_chk_cmd).toString().trim();
         GlobalEvent.emit('globalLog.append', dotnetInfo + os.EOL);
         // check dotnet version
@@ -921,7 +921,7 @@ async function checkAndInstallRuntime() {
                 const rt_ver = parseInt(m[1]);
                 if (rt_ver >= 6) {
                     dotnetVerLine = line;
-                    GlobalEvent.emit('globalLog', newMessage('Info', `.NET runtime: '${dotnetVerLine}' found !`));
+                    GlobalEvent.log_info(`.NET runtime: '${dotnetVerLine}' found !`);
                     break;
                 }
             }
@@ -931,10 +931,10 @@ async function checkAndInstallRuntime() {
         }
     } catch (error) {
 
-        GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+        GlobalEvent.log_error(error);
 
         GlobalEvent.emit('globalLog.show'); // show error log for user
-        GlobalEvent.emit('globalLog', newMessage('Info', 'Not found [.NET6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) !'));
+        GlobalEvent.log_info('Not found [.NET6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) !');
 
         /* @deprecated
         const msg = `Not found [.NET6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0), please install it !`;
@@ -1059,7 +1059,7 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
                 }
             }
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            GlobalEvent.log_error(error);
             GlobalEvent.emit('globalLog.show');
         }
     }

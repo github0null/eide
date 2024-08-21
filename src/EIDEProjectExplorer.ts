@@ -2215,7 +2215,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             eideProjInfo = jsonc.parse(eideConfigFile.Read());
         } catch (error) {
             GlobalEvent.emit('msg', newMessage('Warning', `Load '${eideConfigFile.path}' failed !`));
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            GlobalEvent.log_error(error);
         }
 
         const existedPrjIdx = this.prjList.findIndex((prj) => prj.getWsPath() == workspaceFilePath || prj.getUid() == eideProjInfo.miscInfo.uid);
@@ -2232,7 +2232,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             return prj;
         } catch (err) {
             GlobalEvent.emit('msg', newMessage('Warning', project_load_failed));
-            GlobalEvent.emit('globalLog', ExceptionToMessage(err, 'Error'));
+            GlobalEvent.log_error(err);
             GlobalEvent.emit('globalLog.show');
             return undefined;
         }
@@ -3694,14 +3694,14 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             if (extension) {
                 if (!extension.isActive) {
                     try {
-                        GlobalEvent.emit('globalLog', newMessage('Info', `Active extension: '${cpptoolsId}'`));
+                        GlobalEvent.log_info(`Active extension: '${cpptoolsId}'`);
                         await extension.activate();
                     } catch (error) {
-                        GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+                        GlobalEvent.log_warn(error);
                     }
                 }
             } else {
-                GlobalEvent.emit('globalLog', newMessage('Warning', `The extension '${cpptoolsId}' is not enabled or installed !`));
+                GlobalEvent.log_warn(`The extension '${cpptoolsId}' is not enabled or installed !`);
             }
         }
 
@@ -3904,7 +3904,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
             fclangd.Write(yaml.stringify(cfg));
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            GlobalEvent.log_error(error);
         }
     }
 
@@ -4353,7 +4353,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
 
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+            GlobalEvent.log_warn(error);
         }
 
         if (diag_res) {
@@ -6971,7 +6971,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                         installDir.CreateDir(true);
                         const szip = new SevenZipper();
                         const r = szip.UnzipSync(new File(tmpPath), installDir);
-                        GlobalEvent.emit('globalLog', newMessage('Info', r));
+                        GlobalEvent.log_info(r);
 
                         isFirstInstall = true;
                     }

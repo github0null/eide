@@ -335,7 +335,7 @@ export class WebPanelManager {
         try {
             cmsisConfig = CmsisConfigParser.parse(lines);
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            GlobalEvent.log_error(error);
             return; // parse error
         }
 
