@@ -89,8 +89,10 @@ export class DependenceManager implements ManagerInterface {
             }
             // try install dependences
             for (const fullname of depList) {
-                if (!fullname.startsWith('Device.'))
+                if (!fullname.startsWith('Device.')) {
+                    GlobalEvent.emit('globalLog.append', `[Warn] ${' '.repeat(pendingList.length)}Skip component: '${fullname}'\n`);
                     continue; /* 排除非 Device 类型的组件 */
+                }
                 const reqName  = fullname.replace('Device.', '');
                 const compList = packageManager.FindAllComponents(reqName);
                 if (compList) {
@@ -104,10 +106,6 @@ export class DependenceManager implements ManagerInterface {
                         this._installComponent(packName, item, pendingList);
                         pendingList.pop();
                     }
-                } else {
-                    //throw new Error(`Not found required sub component: '${comp}'`);
-                    GlobalEvent.emit('globalLog.append',
-                        `[Warn] ${' '.repeat(pendingList.length)}Not found required sub component: '${reqName}'\n`);
                 }
             }
         }
