@@ -102,7 +102,7 @@ export class DependenceManager implements ManagerInterface {
                     } else {
                         //throw new Error(`Not found required sub component: '${comp}'`);
                         GlobalEvent.emit('globalLog.append',
-                            `[Warn] ${' '.repeat(pendingList.length)}Not found required sub component: '${comp}'\n`);
+                            `[Warn] ${' '.repeat(pendingList.length)}Not found required sub component: '${requiredName}'\n`);
                     }
                 }
             }
