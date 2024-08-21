@@ -62,8 +62,18 @@ export interface ComponentFileItem {
     path: string;
 }
 
+// XML define example:
+// ---
+//   <component Cgroup="Drivers" Csub="Touch Screen" condition="STM32F746G-Discovery BSP TS">
+//     <description>Touch Screen for STMicroelectronics STM32F746G-Discovery Kit</description>
+//     <files>
+//         <file category="header" name="Drivers/BSP/STM32746G-Discovery/stm32746g_discovery_ts.h"/>
+//         <file category="source" name="Drivers/BSP/STM32746G-Discovery/stm32746g_discovery_ts.c"/>
+//         <file category="source" name="Drivers/BSP/Components/ft5336/ft5336.c"/>
+//     </files>
+//   </component>
 export interface Component {
-    groupName: string;
+    groupName: string; // value is: ${Cgroup} + '.' + ${Csub}, and remove whitespace
     description?: string;
     enable: boolean;
     RTE_define?: string;

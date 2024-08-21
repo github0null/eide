@@ -65,7 +65,9 @@ export class DependenceManager implements ManagerInterface {
     }
 
     InstallComponent(packName: string, component: Component) {
+        GlobalEvent.emit('globalLog.append', `[Info] Install CMSIS Component: ${component.groupName}\n`);
         this._installComponent(packName, component, [component.groupName]);
+        GlobalEvent.emit('globalLog.append', `[Info] Done.\n`);
     }
 
     private _installComponent(packName: string, component: Component, pendingList: string[]) {
@@ -77,25 +79,30 @@ export class DependenceManager implements ManagerInterface {
 
         /* 安装此组件的依赖项 */
         if (component.condition) {
-            const r = packageManager.CheckConditionRequire(component.condition, toolchain);
-            if (r == false)
-                throw new Error(`This condition '${component.condition}' is not met for component: '${component.groupName}'`);
-            if (Array.isArray(r)) {
-                for (const comp of r) {
-                    const compName = comp.replace('Device.', '');
-                    if (!comp.startsWith('Device.'))
+            const result = packageManager.CheckConditionRequire(component.condition, toolchain);
+            if (result == false)
+                throw new Error(`Condition '${component.condition}' is not fit for this component: '${component.groupName}'`);
+            if (Array.isArray(result)) {
+                for (const fullname of result) {
+                    if (!fullname.startsWith('Device.'))
                         continue; /* 排除非 Device 类型的组件 */
-                    if (this.isInstalled(packName, compName))
+                    const requiredName = fullname.replace('Device.', '');
+                    if (this.isInstalled(packName, requiredName))
                         continue; /* 排除已安装的 */
-                    if (pendingList.includes(compName))
+                    if (pendingList.includes(requiredName))
                         continue; /* 排除队列中已存在的 */ 
-                    const t = packageManager.FindComponent(compName);
-                    if (t) {
-                        pendingList.push(compName);
-                        this._installComponent(packName, t, pendingList);
-                        pendingList.pop();
+                    const compList = packageManager.FindAllComponents(requiredName);
+                    if (compList) {
+                        for (const item of compList) {
+                            pendingList.push(item.groupName);
+                            GlobalEvent.emit('globalLog.append', `[Info] ${' '.repeat(pendingList.length)}-> install dependence component: ${item.groupName}\n`);
+                            this._installComponent(packName, item, pendingList);
+                            pendingList.pop();
+                        }
                     } else {
-                        throw new Error(`Not found required sub component: '${comp}'`);
+                        //throw new Error(`Not found required sub component: '${comp}'`);
+                        GlobalEvent.emit('globalLog.append',
+                            `[Warn] ${' '.repeat(pendingList.length)}Not found required sub component: '${comp}'\n`);
                     }
                 }
             }

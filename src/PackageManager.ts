@@ -1145,10 +1145,18 @@ export class PackageManager {
         return undefined;
     }
 
-    findComponents(groupName: string): Component[] | undefined {
+    FindAllComponents(matchName: string): Component[] | undefined {
         if (this.packList.length > 0) {
             return this.packList[0].components.filter((comp) => {
-                return comp.enable && comp.groupName === groupName;
+                if (!comp.enable)
+                    return false
+                // case 1: matchName == 'A' and comp.groupName == 'A'
+                if (comp.groupName === matchName)
+                    return true
+                // case 2: matchName == 'A' and comp.groupName == 'A.B.C'
+                if (comp.groupName.startsWith(matchName + '.'))
+                    return true;
+                return false
             });
         }
         return undefined;
