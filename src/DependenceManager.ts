@@ -86,14 +86,14 @@ export class DependenceManager implements ManagerInterface {
                 for (const fullname of result) {
                     if (!fullname.startsWith('Device.'))
                         continue; /* 排除非 Device 类型的组件 */
-                    const requiredName = fullname.replace('Device.', '');
-                    if (this.isInstalled(packName, requiredName))
-                        continue; /* 排除已安装的 */
-                    if (pendingList.includes(requiredName))
-                        continue; /* 排除队列中已存在的 */ 
-                    const compList = packageManager.FindAllComponents(requiredName);
+                    const reqName  = fullname.replace('Device.', '');
+                    const compList = packageManager.FindAllComponents(reqName);
                     if (compList) {
                         for (const item of compList) {
+                            if (this.isInstalled(packName, item.groupName))
+                                continue; /* 排除已安装的 */
+                            if (pendingList.includes(item.groupName))
+                                continue; /* 排除队列中已存在的 */
                             pendingList.push(item.groupName);
                             GlobalEvent.emit('globalLog.append', `[Info] ${' '.repeat(pendingList.length)}-> install dependence component: ${item.groupName}\n`);
                             this._installComponent(packName, item, pendingList);
@@ -102,7 +102,7 @@ export class DependenceManager implements ManagerInterface {
                     } else {
                         //throw new Error(`Not found required sub component: '${comp}'`);
                         GlobalEvent.emit('globalLog.append',
-                            `[Warn] ${' '.repeat(pendingList.length)}Not found required sub component: '${requiredName}'\n`);
+                            `[Warn] ${' '.repeat(pendingList.length)}Not found required sub component: '${reqName}'\n`);
                     }
                 }
             }
