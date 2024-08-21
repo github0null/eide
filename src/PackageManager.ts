@@ -326,14 +326,15 @@ export class PackageManager {
         this.packRootDir = new File(this.project.ToAbsolutePath(PackageManager.PACK_DIR));
     }
 
-    private _checkConditionGroup(gMap: ConditionMap,
-        cGroup: ConditionGroup, cDev: CurrentDevice, comp_requires: string[], toolchain?: IToolchian): boolean {
+    private _checkConditionGroup(gMap: ConditionMap, 
+        cGroup: ConditionGroup, cDev: CurrentDevice, 
+        comp_requires: string[], toolchain?: IToolchian): void {
 
         const familyInfo = cDev.packInfo.familyList[cDev.familyIndex];
         const devInfo = this.getCurrentDevInfo(cDev);
 
         if (devInfo == undefined) {
-            return false;
+            throw new Error(`No such device info: deviceIndex=${cDev.deviceIndex}`);
         }
 
         for (const con of cGroup.requireList) {
@@ -341,20 +342,20 @@ export class PackageManager {
             if (toolchain) {
 
                 if (con.compiler && con.compiler !== toolchain.categoryName) {
-                    return false;
+                    throw new Error(`Compiler category '${toolchain.categoryName}' not match, expect: ${con.compiler}`);
                 }
 
                 if (con.compilerOption && con.compilerOption !== toolchain.name) {
-                    return false;
+                    throw new Error(`Compiler name '${toolchain.name}' not match, expect: ${con.compilerOption}`);
                 }
             }
 
             if (con.Dvendor && con.Dvendor !== familyInfo.vendor) {
-                return false;
+                throw new Error(`Family vendor '${familyInfo.vendor}' not match, expect: ${con.Dvendor}`);
             }
 
             if (con.Dname && !con.Dname.test(devInfo.name)) {
-                return false;
+                throw new Error(`Device name '${devInfo.name}' not match, expect: ${con.Dname}`);
             }
 
             if (con.component) {
@@ -365,18 +366,16 @@ export class PackageManager {
                 const _group = gMap.get(con.condition);
                 if (_group) {
                     this._recurseList.push(con.condition);
-                    if (!this._checkConditionGroup(gMap, _group, cDev, comp_requires, toolchain)) {
-                        return false;
-                    }
+                    this._checkConditionGroup(gMap, _group, cDev, comp_requires, toolchain);
                 }
             }
         }
 
         if (cGroup.acceptList.length === 0) {
-            return true;
+            return;
         }
 
-        // return true, if one passed
+        // return, if one passed
         let passCount = 0;
         for (const con of cGroup.acceptList) {
 
@@ -418,8 +417,11 @@ export class PackageManager {
                 const _group = gMap.get(con.condition);
                 if (_group) {
                     this._recurseList.push(con.condition);
-                    if (this._checkConditionGroup(gMap, _group, cDev, comp_requires, toolchain)) {
+                    try {
+                        this._checkConditionGroup(gMap, _group, cDev, comp_requires, toolchain);
                         passCount++;
+                    } catch (error) {
+                        // nothing todo for accept condition
                     }
                 } else {
                     passCount++;
@@ -429,11 +431,11 @@ export class PackageManager {
             }
 
             if (passCount === 5) {
-                return true;
+                return;
             }
         }
 
-        return false;
+        throw new Error(`Not match any 'accept' conditions !`);
     }
 
     CheckCondition(conditionName: string, toolchain: IToolchian): boolean {
@@ -443,27 +445,32 @@ export class PackageManager {
             const cGroup = cMap.get(conditionName);
             if (cGroup) {
                 this._recurseList = [conditionName];
-                return this._checkConditionGroup(cMap, cGroup, this.currentDevice, [], toolchain);
+                try {
+                    this._checkConditionGroup(cMap, cGroup, this.currentDevice, [], toolchain);
+                    return true;
+                } catch (error) {
+                    return false;
+                }
             }
         }
 
         return true;
     }
 
-    CheckConditionRequire(conditionName: string, toolchain: IToolchian): string[] | boolean {
+    checkComponentRequirement(conditionName: string, toolchain: IToolchian): string[] {
 
         if (this.currentDevice) {
             const cMap = this.currentDevice.packInfo.conditionMap;
             const cGroup = cMap.get(conditionName);
             if (cGroup) {
-                this._recurseList = [conditionName];
                 const components: string[] = [];
-                const pass = this._checkConditionGroup(cMap, cGroup, this.currentDevice, components, toolchain);
-                return pass ? ArrayDelRepetition(components) : false;
+                this._recurseList = [conditionName];
+                this._checkConditionGroup(cMap, cGroup, this.currentDevice, components, toolchain);
+                return ArrayDelRepetition(components);
             }
         }
 
-        return true;
+        return [];
     }
 
     makeComponentGroupName(...names: string[]): string {

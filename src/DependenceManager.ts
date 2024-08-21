@@ -79,31 +79,35 @@ export class DependenceManager implements ManagerInterface {
 
         /* 安装此组件的依赖项 */
         if (component.condition) {
-            const result = packageManager.CheckConditionRequire(component.condition, toolchain);
-            if (result == false)
+            // check and get dependences
+            let depList: string[] = [];
+            try {
+                depList= packageManager.checkComponentRequirement(component.condition, toolchain);
+            } catch (error) {
+                GlobalEvent.emit('globalLog.append', `[Warn] ${(<Error>error).message}\n`);
                 throw new Error(`Condition '${component.condition}' is not fit for this component: '${component.groupName}'`);
-            if (Array.isArray(result)) {
-                for (const fullname of result) {
-                    if (!fullname.startsWith('Device.'))
-                        continue; /* 排除非 Device 类型的组件 */
-                    const reqName  = fullname.replace('Device.', '');
-                    const compList = packageManager.FindAllComponents(reqName);
-                    if (compList) {
-                        for (const item of compList) {
-                            if (this.isInstalled(packName, item.groupName))
-                                continue; /* 排除已安装的 */
-                            if (pendingList.includes(item.groupName))
-                                continue; /* 排除队列中已存在的 */
-                            pendingList.push(item.groupName);
-                            GlobalEvent.emit('globalLog.append', `[Info] ${' '.repeat(pendingList.length)}-> install dependence component: ${item.groupName}\n`);
-                            this._installComponent(packName, item, pendingList);
-                            pendingList.pop();
-                        }
-                    } else {
-                        //throw new Error(`Not found required sub component: '${comp}'`);
-                        GlobalEvent.emit('globalLog.append',
-                            `[Warn] ${' '.repeat(pendingList.length)}Not found required sub component: '${reqName}'\n`);
+            }
+            // try install dependences
+            for (const fullname of depList) {
+                if (!fullname.startsWith('Device.'))
+                    continue; /* 排除非 Device 类型的组件 */
+                const reqName  = fullname.replace('Device.', '');
+                const compList = packageManager.FindAllComponents(reqName);
+                if (compList) {
+                    for (const item of compList) {
+                        if (this.isInstalled(packName, item.groupName))
+                            continue; /* 排除已安装的 */
+                        if (pendingList.includes(item.groupName))
+                            continue; /* 排除队列中已存在的 */
+                        pendingList.push(item.groupName);
+                        GlobalEvent.emit('globalLog.append', `[Info] ${' '.repeat(pendingList.length)}-> install dependence component: ${item.groupName}\n`);
+                        this._installComponent(packName, item, pendingList);
+                        pendingList.pop();
                     }
+                } else {
+                    //throw new Error(`Not found required sub component: '${comp}'`);
+                    GlobalEvent.emit('globalLog.append',
+                        `[Warn] ${' '.repeat(pendingList.length)}Not found required sub component: '${reqName}'\n`);
                 }
             }
         }
