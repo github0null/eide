@@ -789,21 +789,16 @@ class ARMParser extends KeilParser<KeilARMOption> {
                     }
                     if (total_cnt > 0) {
                         // Copy files to compate Keil User Commands
-                        if (env['KEIL_OUTPUT_NAME']) {
-                            eideOption.afterBuildTasks.splice(0, 0, {
-                                "name": '[Copy linker output for Keil User Commands]',
-                                "command": `$<cd:mdk-proj-dir> && mkdir \${KEIL_OUTPUT_DIR} & copy "\${OutDir}\\\${ProjectName}.axf" "\${KEIL_OUTPUT_DIR}\\\${KEIL_OUTPUT_NAME}.axf"`,
-                                "disable": actived_cnt == 0,
-                                "abortAfterFailed": true
-                            });
-                        } else {
-                            eideOption.afterBuildTasks.splice(0, 0, {
-                                "name": '[Copy linker output for Keil User Commands]',
-                                "command": `$<cd:mdk-proj-dir> && mkdir \${KEIL_OUTPUT_DIR} & copy "\${OutDir}\\\${ProjectName}.axf" "\${KEIL_OUTPUT_DIR}\\\${ProjectName}.axf"`,
-                                "disable": actived_cnt == 0,
-                                "abortAfterFailed": true
-                            });
+                        const copyFilesCmd = {
+                            "name": '[Copy linker output for Keil User Commands]',
+                            "command": `$<cd:mdk-proj-dir> && mkdir \${KEIL_OUTPUT_DIR} & copy "\${OutDir}\\\${ProjectName}.axf" "\${KEIL_OUTPUT_DIR}\\\${KEIL_OUTPUT_NAME}.axf"`,
+                            "disable": actived_cnt == 0,
+                            "abortAfterFailed": true
+                        };
+                        if (!env['KEIL_OUTPUT_NAME']) {
+                            copyFilesCmd['command'] = copyFilesCmd['command'].replace('${KEIL_OUTPUT_NAME}', '${ProjectName}');
                         }
+                        eideOption.afterBuildTasks.splice(0, 0, copyFilesCmd);
                     }
                     if (mdk_CreateLib) {
                         // Make eide output lib instead of elf
