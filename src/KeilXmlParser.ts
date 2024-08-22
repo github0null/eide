@@ -718,10 +718,9 @@ class ARMParser extends KeilParser<KeilARMOption> {
                 const mdk_CreateLib: boolean      = commonOption.CreateLib == '1';
 
                 // setup env
+                env['KEIL_OUTPUT_DIR'] = mdk_OutputDirectory;
                 if (mdk_OutputName && mdk_OutputName != this._file.noSuffixName)
                     env['KEIL_OUTPUT_NAME'] = mdk_OutputName;
-                if (mdk_OutputDirectory)
-                    env['KEIL_OUTPUT_DIR'] = mdk_OutputDirectory
 
                 // --------------------------------------------
                 // KEIL Key Code: % # @ ! $
@@ -793,14 +792,14 @@ class ARMParser extends KeilParser<KeilARMOption> {
                         if (env['KEIL_OUTPUT_NAME']) {
                             eideOption.afterBuildTasks.splice(0, 0, {
                                 "name": '[Copy linker output for Keil User Commands]',
-                                "command": `$<cd:mdk-proj-dir> && mkdir ${mdk_OutputDirectory} & copy "\${OutDir}\\\${ProjectName}.axf" "${mdk_OutputDirectory}\\\${KEIL_OUTPUT_NAME}.axf"`,
+                                "command": `$<cd:mdk-proj-dir> && mkdir \${KEIL_OUTPUT_DIR} & copy "\${OutDir}\\\${ProjectName}.axf" "\${KEIL_OUTPUT_DIR}\\\${KEIL_OUTPUT_NAME}.axf"`,
                                 "disable": actived_cnt == 0,
                                 "abortAfterFailed": true
                             });
                         } else {
                             eideOption.afterBuildTasks.splice(0, 0, {
                                 "name": '[Copy linker output for Keil User Commands]',
-                                "command": `$<cd:mdk-proj-dir> && mkdir ${mdk_OutputDirectory} & copy "\${OutDir}\\\${ProjectName}.axf" "${mdk_OutputDirectory}\\\${ProjectName}.axf"`,
+                                "command": `$<cd:mdk-proj-dir> && mkdir \${KEIL_OUTPUT_DIR} & copy "\${OutDir}\\\${ProjectName}.axf" "\${KEIL_OUTPUT_DIR}\\\${ProjectName}.axf"`,
                                 "disable": actived_cnt == 0,
                                 "abortAfterFailed": true
                             });
