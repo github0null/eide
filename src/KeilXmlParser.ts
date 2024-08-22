@@ -711,6 +711,18 @@ class ARMParser extends KeilParser<KeilARMOption> {
                 if (eideOption.afterBuildTasks == undefined)
                     eideOption.afterBuildTasks = [];
 
+                // keil props
+                const mdk_OutputName: string      = commonOption.OutputName;
+                const mdk_OutputDirectory: string = File.normalize(commonOption.OutputDirectory || 'Objects');
+                const mdk_CreateHexFile: boolean  = commonOption.CreateHexFile == '1';
+                const mdk_CreateLib: boolean      = commonOption.CreateLib == '1';
+
+                // setup env
+                if (mdk_OutputName && mdk_OutputName != this._file.noSuffixName)
+                    env['KEIL_OUTPUT_NAME'] = mdk_OutputName;
+                if (mdk_OutputDirectory)
+                    env['KEIL_OUTPUT_DIR'] = mdk_OutputDirectory
+
                 // --------------------------------------------
                 // KEIL Key Code: % # @ ! $
                 // % File name with extension (PROJECT1.UVPROJ) 
@@ -730,21 +742,16 @@ class ARMParser extends KeilParser<KeilARMOption> {
                     .replace(/%H\b/g, '${KEIL_OUTPUT_NAME}.hex')
                     .replace(/%L\b/g, '${KEIL_OUTPUT_NAME}.axf')
                     .replace(/%P\b/g, this._file.name)
-                    .replace(/#H\b/g, '${OutDir}\\${KEIL_OUTPUT_NAME}.hex')
-                    .replace(/#L\b/g, '${OutDir}\\${KEIL_OUTPUT_NAME}.axf')
+                    .replace(/#H\b/g, '${KEIL_OUTPUT_DIR}\\${KEIL_OUTPUT_NAME}.hex')
+                    .replace(/#L\b/g, '${KEIL_OUTPUT_DIR}\\${KEIL_OUTPUT_NAME}.axf')
                     .replace(/#P\b/g, this._file.path)
                     .replace(/@(H|L)\b/g, '${KEIL_OUTPUT_NAME}')
-                    .replace(/\$(H|L)\b/g, '${OutDir}\\')
+                    .replace(/\$(H|L)\b/g, '${KEIL_OUTPUT_DIR}\\')
                     .replace(/\$J\b/g, '${ToolchainRoot}\\include\\')
                     .replace(/\$K\b/g, '${ToolchainRoot}\\')
-                    .replace(/\!H\b/g, '.\\${OutDirBase}\\${KEIL_OUTPUT_NAME}.hex')
-                    .replace(/\!L\b/g, '.\\${OutDirBase}\\${KEIL_OUTPUT_NAME}.axf')
+                    .replace(/\!H\b/g, '${KEIL_OUTPUT_DIR}\\${KEIL_OUTPUT_NAME}.hex')
+                    .replace(/\!L\b/g, '${KEIL_OUTPUT_DIR}\\${KEIL_OUTPUT_NAME}.axf')
                     .replace(/\bKEIL_OUTPUT_NAME\b/g, OUTNAME_KEY);
-
-                // keil props
-                const mdk_OutputDirectory: string = File.normalize(commonOption.OutputDirectory || '.');
-                const mdk_CreateHexFile: boolean  = commonOption.CreateHexFile == '1';
-                const mdk_CreateLib: boolean      = commonOption.CreateLib == '1';
 
                 // BeforeMake
                 const beforeMake = commonOption.BeforeMake;
@@ -994,11 +1001,6 @@ class ARMParser extends KeilParser<KeilARMOption> {
             obj.defineList = this.parseMacroString(target.TargetOption.TargetArmAds.Cads.VariousControls.Define);
 
             obj.env = {};
-            const keil_out_name = target.TargetOption.TargetCommonOption.OutputName;
-            if (keil_out_name && keil_out_name != this._file.noSuffixName) {
-                obj.env['KEIL_OUTPUT_NAME'] = keil_out_name;
-            }
-
             obj.compileOption = Object.create(null);
             obj.compileOption.toolchain = target.uAC6 === '1' ? 'AC6' : 'AC5';
             this.getOption(target.TargetOption, obj.compileOption, obj.env);
