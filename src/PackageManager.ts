@@ -428,7 +428,18 @@ export class PackageManager {
                 passCount++;
             }
 
+            // 1. compiler
+            // 2. compilerOption
+            // 3. Dvendor
+            // 4. Dname
+            // 5. condition
+            // ---
+            // if satisfy above conditions, passCount will be 5
             if (passCount === 5) {
+                // if this 'accept' is require a component, append it.
+                if (con.component) {
+                    comp_requires.push(con.component);
+                }
                 return;
             }
         }
