@@ -1089,6 +1089,9 @@ export class PackageManager {
                                     .replace(/\?/g, '.')
                                     .replace(/\*/g, '.*?'), 'i');
                             }
+                            if (accept.$Cclass && accept.$Cgroup) {
+                                condition.component = this.makeComponentGroupName(accept.$Cclass, accept.$Cgroup, accept.$Csub);
+                            }
 
                             if (Object.keys(condition).length > 0) {
                                 cGroup.acceptList.push(condition);
