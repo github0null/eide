@@ -34,10 +34,10 @@ import * as mathjs from 'mathjs';
 import { AbstractProject, VirtualSource } from "./EIDEProject";
 import { ResManager } from "./ResManager";
 import { File } from "../lib/node-utility/File";
-import { ProjectConfigData, ProjectConfiguration } from "./EIDETypeDefine";
+import { BuilderOptions, ProjectConfigData, ProjectConfiguration } from "./EIDETypeDefine";
 import {
     ArmBaseCompileData,
-    Memory, ARMStorageLayout, ICompileOptions,
+    Memory, ARMStorageLayout,
     FloatingHardwareOption, C51BaseCompileData, RiscvCompileData, AnyGccCompileData, MipsCompileData
 } from './EIDEProjectModules';
 import { SettingManager } from "./SettingManager";
@@ -87,7 +87,7 @@ export interface BuilderParams {
     incDirs: string[];
     libDirs: string[];
     defines: string[];
-    options: ICompileOptions;
+    options: BuilderOptions;
     sha?: { [options_name: string]: string };
     env?: { [name: string]: any };
 }
@@ -378,8 +378,7 @@ export abstract class CodeBuilder {
 
         const outDir = File.ToUnixPath(this.project.getOutputDir());
         const paramsPath = this.project.ToAbsolutePath(outDir + File.sep + this.paramsFileName);
-        const compileOptions: ICompileOptions = this.project.GetConfiguration()
-            .compileConfigModel.getOptions(this.project.getEideDir().path, config);
+        const compileOptions: BuilderOptions = this.project.GetConfiguration().compileConfigModel.getOptions();
         const memMaxSize = this.getMcuMemorySize();
         const oldParamsPath = `${paramsPath}.old`;
         const prevParams: BuilderParams | undefined = File.IsFile(oldParamsPath) ? JSON.parse(fs.readFileSync(oldParamsPath, 'utf8')) : undefined;
@@ -497,7 +496,7 @@ export abstract class CodeBuilder {
                 builderOptions.options.afterBuildTasks = [command].concat(builderOptions.options.afterBuildTasks);
             } catch (error) {
                 GlobalEvent.emit('msg', newMessage('Warning', `Generating '${mkfile_path}' failed !`));
-                GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+                GlobalEvent.log_error(error);
             }
         }
 
@@ -569,7 +568,7 @@ export abstract class CodeBuilder {
 
     protected abstract getMcuMemorySize(): MemorySize | undefined;
 
-    protected abstract preHandleOptions(options: ICompileOptions): void;
+    protected abstract preHandleOptions(options: BuilderOptions): void;
 
     static NewBuilder(_project: AbstractProject): CodeBuilder {
         switch (_project.GetConfiguration().config.type) {
@@ -911,7 +910,7 @@ export class ARMCodeBuilder extends CodeBuilder {
         return undefined;
     }
 
-    protected preHandleOptions(options: ICompileOptions) {
+    protected preHandleOptions(options: BuilderOptions) {
 
         const config = this.project.GetConfiguration<ArmBaseCompileData>().config;
         const toolchain = this.project.getToolchain();
@@ -1046,7 +1045,7 @@ class RiscvCodeBuilder extends CodeBuilder {
         return undefined;
     }
 
-    protected preHandleOptions(options: ICompileOptions) {
+    protected preHandleOptions(options: BuilderOptions) {
 
         const config = this.project.GetConfiguration<RiscvCompileData>().config;
 
@@ -1072,7 +1071,7 @@ class MipsCodeBuilder extends CodeBuilder {
         return undefined;
     }
 
-    protected preHandleOptions(options: ICompileOptions) {
+    protected preHandleOptions(options: BuilderOptions) {
 
         const config = this.project.GetConfiguration<MipsCompileData>().config;
 
@@ -1098,7 +1097,7 @@ class AnyGccCodeBuilder extends CodeBuilder {
         return undefined;
     }
 
-    protected preHandleOptions(options: ICompileOptions) {
+    protected preHandleOptions(options: BuilderOptions) {
 
         const config = this.project.GetConfiguration<AnyGccCompileData>().config;
 
@@ -1156,7 +1155,7 @@ class C51CodeBuilder extends CodeBuilder {
         return undefined;
     }
 
-    protected preHandleOptions(options: ICompileOptions) {
+    protected preHandleOptions(options: BuilderOptions) {
 
         const config = this.project.GetConfiguration<C51BaseCompileData>().config;
         const toolchain = this.project.getToolchain();

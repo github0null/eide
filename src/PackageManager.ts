@@ -58,7 +58,6 @@ export class PackageManager {
 
     private packList: PackInfo[];
 
-    private packRootDir: File | undefined;
     private currentPackDir: File | undefined;
     private project: AbstractProject;
 
@@ -134,27 +133,30 @@ export class PackageManager {
     }
 
     Init() {
-        /* set default pack root */
-        this.packRootDir = new File(this.project.ToAbsolutePath(PackageManager.PACK_DIR));
 
         /* if we have installed a pack, load and override old pack root */
         const prjConfig = this.project.GetConfiguration<ArmBaseCompileData>().config;
         if (prjConfig.packDir) {
             const packDir = new File(this.project.ToAbsolutePath(prjConfig.packDir));
             if (packDir.IsDir()) {
-                this.packRootDir = packDir;
                 const packManager = this.project.GetPackManager();
-                packManager.LoadPackage(this.packRootDir);
-                const devName = prjConfig.deviceName;
-                if (devName) {
-                    packManager.SetDeviceInfo(devName, prjConfig.compileConfig.cpuType);
+                try {
+                    packManager.LoadPackage(packDir);
+                    const devName = prjConfig.deviceName;
+                    if (devName) {
+                        packManager.SetDeviceInfo(devName, prjConfig.compileConfig.cpuType);
+                    }
+                } catch (error) {
+                    GlobalEvent.emit('msg', newMessage('Error', 'Fail to load chip package for this project !'));
+                    GlobalEvent.log_error(error);
+                    GlobalEvent.log_show();
                 }
             }
         }
     }
 
-    GetPackRootDir(): File | undefined {
-        return this.packRootDir;
+    private packRootDir(): File {
+        return File.from(this.project.ToAbsolutePath(PackageManager.PACK_DIR));
     }
 
     GetPackDir(): File | undefined {
@@ -317,23 +319,20 @@ export class PackageManager {
     }
 
     private ClearAll() {
-
-        if (this.packRootDir && this.packRootDir.IsDir()) {
-            DeleteDir(this.packRootDir);
+        if (this.packRootDir().IsDir()) {
+            DeleteDir(this.packRootDir());
         }
-
-        /* set default pack root */
-        this.packRootDir = new File(this.project.ToAbsolutePath(PackageManager.PACK_DIR));
     }
 
-    private _checkConditionGroup(gMap: ConditionMap,
-        cGroup: ConditionGroup, cDev: CurrentDevice, comp_requires: string[], toolchain?: IToolchian): boolean {
+    private _checkConditionGroup(gMap: ConditionMap, 
+        cGroup: ConditionGroup, cDev: CurrentDevice, 
+        comp_requires: string[], toolchain?: IToolchian): void {
 
         const familyInfo = cDev.packInfo.familyList[cDev.familyIndex];
         const devInfo = this.getCurrentDevInfo(cDev);
 
         if (devInfo == undefined) {
-            return false;
+            throw new Error(`No such device info: deviceIndex=${cDev.deviceIndex}`);
         }
 
         for (const con of cGroup.requireList) {
@@ -341,20 +340,20 @@ export class PackageManager {
             if (toolchain) {
 
                 if (con.compiler && con.compiler !== toolchain.categoryName) {
-                    return false;
+                    throw new Error(`Compiler category '${toolchain.categoryName}' not match, expect: ${con.compiler}`);
                 }
 
                 if (con.compilerOption && con.compilerOption !== toolchain.name) {
-                    return false;
+                    throw new Error(`Compiler name '${toolchain.name}' not match, expect: ${con.compilerOption}`);
                 }
             }
 
             if (con.Dvendor && con.Dvendor !== familyInfo.vendor) {
-                return false;
+                throw new Error(`Family vendor '${familyInfo.vendor}' not match, expect: ${con.Dvendor}`);
             }
 
             if (con.Dname && !con.Dname.test(devInfo.name)) {
-                return false;
+                throw new Error(`Device name '${devInfo.name}' not match, expect: ${con.Dname}`);
             }
 
             if (con.component) {
@@ -365,18 +364,16 @@ export class PackageManager {
                 const _group = gMap.get(con.condition);
                 if (_group) {
                     this._recurseList.push(con.condition);
-                    if (!this._checkConditionGroup(gMap, _group, cDev, comp_requires, toolchain)) {
-                        return false;
-                    }
+                    this._checkConditionGroup(gMap, _group, cDev, comp_requires, toolchain);
                 }
             }
         }
 
         if (cGroup.acceptList.length === 0) {
-            return true;
+            return;
         }
 
-        // return true, if one passed
+        // return, if one passed
         let passCount = 0;
         for (const con of cGroup.acceptList) {
 
@@ -418,8 +415,11 @@ export class PackageManager {
                 const _group = gMap.get(con.condition);
                 if (_group) {
                     this._recurseList.push(con.condition);
-                    if (this._checkConditionGroup(gMap, _group, cDev, comp_requires, toolchain)) {
+                    try {
+                        this._checkConditionGroup(gMap, _group, cDev, comp_requires, toolchain);
                         passCount++;
+                    } catch (error) {
+                        // nothing todo for accept condition
                     }
                 } else {
                     passCount++;
@@ -428,12 +428,23 @@ export class PackageManager {
                 passCount++;
             }
 
+            // 1. compiler
+            // 2. compilerOption
+            // 3. Dvendor
+            // 4. Dname
+            // 5. condition
+            // ---
+            // if satisfy above conditions, passCount will be 5
             if (passCount === 5) {
-                return true;
+                // if this 'accept' is require a component, append it.
+                if (con.component) {
+                    comp_requires.push(con.component);
+                }
+                return;
             }
         }
 
-        return false;
+        throw new Error(`Not match any 'accept' conditions !`);
     }
 
     CheckCondition(conditionName: string, toolchain: IToolchian): boolean {
@@ -443,27 +454,32 @@ export class PackageManager {
             const cGroup = cMap.get(conditionName);
             if (cGroup) {
                 this._recurseList = [conditionName];
-                return this._checkConditionGroup(cMap, cGroup, this.currentDevice, [], toolchain);
+                try {
+                    this._checkConditionGroup(cMap, cGroup, this.currentDevice, [], toolchain);
+                    return true;
+                } catch (error) {
+                    return false;
+                }
             }
         }
 
         return true;
     }
 
-    CheckConditionRequire(conditionName: string, toolchain: IToolchian): string[] | boolean {
+    checkComponentRequirement(conditionName: string, toolchain: IToolchian): string[] {
 
         if (this.currentDevice) {
             const cMap = this.currentDevice.packInfo.conditionMap;
             const cGroup = cMap.get(conditionName);
             if (cGroup) {
-                this._recurseList = [conditionName];
                 const components: string[] = [];
-                const pass = this._checkConditionGroup(cMap, cGroup, this.currentDevice, components, toolchain);
-                return pass ? ArrayDelRepetition(components) : false;
+                this._recurseList = [conditionName];
+                this._checkConditionGroup(cMap, cGroup, this.currentDevice, components, toolchain);
+                return ArrayDelRepetition(components);
             }
         }
 
-        return true;
+        return [];
     }
 
     makeComponentGroupName(...names: string[]): string {
@@ -1073,6 +1089,9 @@ export class PackageManager {
                                     .replace(/\?/g, '.')
                                     .replace(/\*/g, '.*?'), 'i');
                             }
+                            if (accept.$Cclass && accept.$Cgroup) {
+                                condition.component = this.makeComponentGroupName(accept.$Cclass, accept.$Cgroup, accept.$Csub);
+                            }
 
                             if (Object.keys(condition).length > 0) {
                                 cGroup.acceptList.push(condition);
@@ -1145,10 +1164,18 @@ export class PackageManager {
         return undefined;
     }
 
-    findComponents(groupName: string): Component[] | undefined {
+    FindAllComponents(matchName: string): Component[] | undefined {
         if (this.packList.length > 0) {
             return this.packList[0].components.filter((comp) => {
-                return comp.enable && comp.groupName === groupName;
+                if (!comp.enable)
+                    return false
+                // case 1: matchName == 'A' and comp.groupName == 'A'
+                if (comp.groupName === matchName)
+                    return true
+                // case 2: matchName == 'A' and comp.groupName == 'A.B.C'
+                if (comp.groupName.startsWith(matchName + '.'))
+                    return true;
+                return false
             });
         }
         return undefined;
@@ -1173,7 +1200,7 @@ export class PackageManager {
 
     async Install(pack: File, reporter?: (progress?: number, message?: string) => void): Promise<void> {
 
-        const packDir: File = (<File>this.packRootDir);
+        const packDir: File = this.packRootDir();
 
         this.ClearAll();
         packDir.CreateDir(true);

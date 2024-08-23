@@ -43,6 +43,14 @@ import { ExeCmd } from '../lib/node-utility/Executable';
 import { GlobalEvent } from './GlobalEvents';
 import { SettingManager } from './SettingManager';
 import { ToolchainName } from './ToolchainManager';
+import { Time } from '../lib/node-utility/Time';
+
+export function timeStamp(): string {
+    const time = Time.GetInstance().GetTimeInfo();
+    return `${time.year}/${time.month.toString().padStart(2, '0')}/${time.date.toString().padStart(2, '0')}`
+        + ` ${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}:${time.second.toString().padStart(2, '0')}`
+        + ` ${time.region}`;
+}
 
 /**
  * @return: example
@@ -191,7 +199,7 @@ export function getGccInternalDefines(gcc_dir: string, gcc_prefix: string, cmds:
 
         return results;
     } catch (error) {
-        GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+        GlobalEvent.log_warn(error);
     }
 }
 
@@ -214,7 +222,7 @@ export function getGccSystemSearchList(gccPath: string): string[] | undefined {
                 return f.path;
             });
     } catch (error) {
-        GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+        GlobalEvent.log_warn(error);
     }
 }
 
@@ -524,6 +532,9 @@ export function copyObject(src: any): any {
     } else {
         return src;
     }
+}
+export function deepCloneObject(obj: any): any {
+    return copyObject(obj);
 }
 
 export function wrapCommand(cmds: string[]): string {
@@ -939,13 +950,4 @@ export function getFirstKey(obj: any): string | undefined {
             return key;
         }
     }
-}
-
-export function deepCloneObject(obj: any): any {
-
-    if (typeof obj != 'object') {
-        return obj;
-    }
-
-    return JSON.parse(JSON.stringify(obj));
 }

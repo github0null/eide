@@ -6,6 +6,22 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.19.6] update
+
+**Change**:
+  - `Builder Options`: Combine all builder options (`*.options.json`) into `eide.json`.
+  - `Files Options`: Combine all file's options (`*.files.options.yml`) into single file: `files.options.yml`.
+
+**Optimize**:
+  - `Project TreeView`: Expand Project TreeView's root node when you open a project.
+  - `Keil Project Import`: Do not disable internal hex file output if keil project not have any actived User Commands.
+  - `Source Code`: Update dependence packages to resolve package vulnerabilities.
+  - `Chip Package Manager`: Optimize code.
+
+Update build environment to NodeJS `v16`.
+
+***
+
 ### [v3.18.2] revision
 
 **Fix**:

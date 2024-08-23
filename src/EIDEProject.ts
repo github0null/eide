@@ -42,10 +42,11 @@ import { KeilParser } from './KeilXmlParser';
 import { ResManager } from './ResManager';
 import { SevenZipper, SevenZipUnzipExcludeList } from './Compress';
 import {
+    BuilderOptions,
     ConfigMap, FileGroup,
     ProjectConfiguration, ProjectConfigData, WorkspaceConfiguration,
     CreateOptions,
-    ProjectConfigEvent, ProjectFileGroup, FileItem, EIDE_CONF_VERSION, ProjectTargetInfo, VirtualFolder, VirtualFile, CppConfigItem, ProjectBaseApi, ProjectType, BuilderConfigData
+    ProjectConfigEvent, ProjectFileGroup, FileItem, EIDE_CONF_VERSION, ProjectTargetInfo, VirtualFolder, VirtualFile, CppConfigItem, ProjectBaseApi, ProjectType, BuilderConfigData, MAPPED_KEYS_IN_TARGET_INFO
 } from './EIDETypeDefine';
 import { ToolchainName, IToolchian, ToolchainManager } from './ToolchainManager';
 import { GlobalEvent } from './GlobalEvents';
@@ -57,9 +58,11 @@ import { WebPanelManager } from './WebPanelManager';
 import { DependenceManager } from './DependenceManager';
 import * as platform from './Platform';
 import { IDebugConfigGenerator } from './DebugConfigGenerator';
-import { md5, copyObject, compareVersion, isGccFamilyToolchain, deepCloneObject } from './utility';
+import { md5, copyObject, compareVersion, isGccFamilyToolchain, deepCloneObject, notifyReloadWindow } from './utility';
 import { ResInstaller } from './ResInstaller';
 import {
+    view_str$prompt$filesOptionsComment,
+    view_str$prompt$reloadForOldProject,
     view_str$prompt$not_found_compiler, view_str$operation$name_can_not_be_blank,
     view_str$operation$name_can_not_have_invalid_char,
     view_str$prompt$project_is_opened_by_another,
@@ -74,7 +77,7 @@ import { ExeCmd } from '../lib/node-utility/Executable';
 import { jsonc } from 'jsonc';
 import * as iconv from 'iconv-lite';
 import * as globmatch from 'micromatch'
-import { ICompileOptions, EventData, CurrentDevice, ArmBaseCompileConfigModel } from './EIDEProjectModules';
+import { EventData, CurrentDevice, ArmBaseCompileConfigModel } from './EIDEProjectModules';
 import * as FileLock from '../lib/node-utility/FileLock';
 import { CompilerCommandsDatabaseItem } from './CodeBuilder';
 
@@ -440,7 +443,7 @@ class SourceRootList implements SourceProvider {
     private _add(dir: File): SourceRootInfo {
         const key: string = this.project.toRelativePath(dir.path);
         const watcher = platform.createSafetyFileWatcher(dir, true);
-        watcher.on('error', (err) => GlobalEvent.emit('globalLog', ExceptionToMessage(err, 'Warning')));
+        watcher.on('error', (err) => GlobalEvent.log_warn(err));
         const sourceInfo = this.newSourceInfo(key, watcher);
         this.srcFolderMaps.set(key, sourceInfo);
         return sourceInfo;
@@ -757,7 +760,7 @@ class SourceRootList implements SourceProvider {
 
         } catch (error) {
             rootFolderInfo.needUpdate = true; // set need update flag
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+            GlobalEvent.log_warn(error);
         }
     }
 }
@@ -771,10 +774,14 @@ export interface BaseProjectInfo {
 }
 
 export interface SourceExtraCompilerOptionsCfg {
-    version: string;
     files?: { [key: string]: string };
     virtualPathFiles?: { [key: string]: string };
 }
+
+export interface SourceFileOptions {
+    version: string;
+    options: { [target: string]: SourceExtraCompilerOptionsCfg };
+};
 
 export type DataChangeType = 'pack' | 'dependence' | 'compiler' | 'uploader' | 'files';
 
@@ -876,7 +883,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         //         suffix = model['groups']['linker']['$outputSuffix'];
         //     }
         // } catch (error) {
-        //     GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+        //     GlobalEvent.log_error(error);
         // }
         // return this.getExecutablePathWithoutSuffix() + suffix;
     }
@@ -942,7 +949,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     }
 
     public getProjectFile(): File {
-        return File.fromArray([this.getEideDir().path, AbstractProject.prjConfigName]);
+        return File.from(this.getEideDir().path, AbstractProject.prjConfigName);
+    }
+    public getEideProjectFile(): File {
+        return this.getProjectFile();
     }
 
     public getProjectRoot(): File {
@@ -1476,6 +1486,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     private _switchTarget(targetName: string): { name: string, isNew?: boolean; } {
 
+        const prevTargetName = this.getCurrentTarget();
         const prjConfig = this.GetConfiguration();
         const prjConfigData = prjConfig.config;
         const targets = prjConfigData.targets;
@@ -1490,10 +1501,6 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             isNewTarget = true;
             targets[targetName] = prjConfig.cloneCurrentTarget();
         }
-
-        const prevBuilderOptsFile = prjConfig.compileConfigModel
-            .getOptionsFile(this.getEideDir().path, prjConfig.config);
-        const prevSourcesOptsFile = this.getSourceExtraArgsCfgFile(true);
 
         // update current target name
         prjConfigData.mode = targetName;
@@ -1547,30 +1554,16 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
                 continue;
             }
 
+            if (!MAPPED_KEYS_IN_TARGET_INFO.includes(name))
+                continue;
+
             curTarget[name] = copyObject(oldTarget[name]);
         }
 
-        // if builder options file is not existed, copy it.
-        const optsFile = prjConfig.compileConfigModel
-            .getOptionsFile(this.getEideDir().path, prjConfig.config, true);
-        if (!optsFile.IsFile()) {
-            try {
-                fs.copyFileSync(prevBuilderOptsFile.path, optsFile.path);
-            } catch (error) {
-                // nothing todo
-            }
-        }
-
-        // if source options file is not existed, copy it.
-        if (prevSourcesOptsFile.IsFile()) {
-            const srcOptsFile = File.fromArray([this.getEideDir().path, `${targetName.toLowerCase()}.files.options.yml`]);
-            if (!srcOptsFile.IsFile()) {
-                try {
-                    fs.copyFileSync(prevSourcesOptsFile.path, srcOptsFile.path);
-                } catch (error) {
-                    // nothing todo
-                }
-            }
+        // copy source options if not exist
+        const opts = this.getSourceExtraArgsCfg(prevTargetName);
+        if (opts) {
+            this.setSourceExtraArgsCfg(opts, targetName);
         }
 
         this.sourceRoots.forceUpdateAllFolders();
@@ -1708,7 +1701,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             const rePath = this.ToRelativePath(outDir.path) || outDir.path;
 
             if (outDir.IsDir()) {
-                GlobalEvent.emit('globalLog', newMessage('Warning', `'${rePath}' directory is already exists !, Aborted !`));
+                GlobalEvent.log_warn(`'${rePath}' directory is already exists !, Aborted !`);
                 continue;
             }
 
@@ -1859,7 +1852,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             cfg = yaml.parse(fcfg.Read());
         } catch (error) {
             GlobalEvent.emit('msg', newMessage('Warning', `Parse '${fcfg.name}' failed !`));
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            GlobalEvent.log_error(error);
             GlobalEvent.emit('globalLog.show');
             return undefined;
         }
@@ -1904,7 +1897,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             }
             CC_OBJ_SUFFIX = mcc['$outputSuffix'] || '.o';
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            GlobalEvent.log_error(error);
             return undefined;
         }
 
@@ -2154,56 +2147,40 @@ $(OUT_DIR):
 
     getSourceExtraArgsCfgFile(notCreate: boolean = false): File {
 
-        const target = this.getCurrentTarget().toLowerCase();
-        const optFile = File.fromArray([this.getEideDir().path, `${target}.files.options.yml`]);
-
+        const optFile = File.fromArray([this.getEideDir().path, `files.options.yml`]);
         if (!optFile.IsFile() && !notCreate) {
-            const templateFile = File.fromArray([
-                ResManager.GetInstance().GetAppDataDir().path, 'template.files.options.yml'
-            ]);
-            optFile.Write(templateFile.Read());
+            const optsObj = <SourceFileOptions>{ version: '2.0', options: {} };
+            optsObj.version = '2.0';
+            optsObj.options[this.getCurrentTarget()] = { files: {}, virtualPathFiles: {} };
+            optFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(optsObj, { indent: 4 }));
         }
 
         return optFile;
     }
 
-    getSourceExtraArgsCfg(): SourceExtraCompilerOptionsCfg | undefined {
+    getSourceExtraArgsCfg(targetName?: string): SourceExtraCompilerOptionsCfg | undefined {
         try {
             const optFile = this.getSourceExtraArgsCfgFile();
-            return yaml.parse(optFile.Read());
+            const optsObj = <SourceFileOptions>yaml.parse(optFile.Read());
+            if (targetName == undefined)
+                targetName = this.getCurrentTarget();
+            if (optsObj.options == undefined) optsObj.options = {};
+            if (optsObj.options[targetName] == undefined) optsObj.options[targetName] = {};
+            return optsObj.options[targetName];
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            GlobalEvent.log_error(error);
         }
     }
 
-    setSourceExtraArgsCfg(cfg: SourceExtraCompilerOptionsCfg) {
-
-        const header: string[] = [
-            `##########################################################################################`,
-            `#                        Append Compiler Options For Source Files`,
-            `#`,
-            `# syntax:`,
-            `#   <your matcher expr>: <your compiler command>`,
-            `#`,
-            `# examples:`,
-            `#   'main.cpp':           --cpp11 -Og ...`,
-            `#   'src/*.c':            -gnu -O2 ...`,
-            `#   'src/lib/**/*.cpp':   --cpp11 -Os ...`,
-            `#   '!Application/*.c':   -O0`,
-            `#   '**/*.c':             -O2 -gnu ...`,
-            `#`,
-            `# For more syntax, please refer to: https://www.npmjs.com/package/micromatch`,
-            `#`,
-            `##########################################################################################`,
-            '',
-            ''
-        ];
-
+    setSourceExtraArgsCfg(cfg: SourceExtraCompilerOptionsCfg, targetName?: string) {
         try {
             const optFile = this.getSourceExtraArgsCfgFile();
-            optFile.Write(header.join(os.EOL) + yaml.stringify(cfg));
+            const optsObj = <SourceFileOptions>yaml.parse(optFile.Read());
+            optsObj.version = '2.0';
+            optsObj.options[targetName || this.getCurrentTarget()] = cfg;
+            optFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(optsObj, { indent: 4 }));
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            GlobalEvent.log_error(error);
         }
     }
 
@@ -2425,9 +2402,8 @@ $(OUT_DIR):
         return undefined;
     }
 
-    getBuilderOptions(): ICompileOptions {
-        const cfg = this.GetConfiguration();
-        return cfg.compileConfigModel.getOptions(this.getEideDir().path, cfg.config);
+    getBuilderOptions(): BuilderOptions {
+        return this.GetConfiguration().compileConfigModel.getOptions();
     }
 
     //---
@@ -2441,8 +2417,11 @@ $(OUT_DIR):
         let toolchainRoot = this.toolchain.getToolchainDir().path;
         this.registerBuiltinVar('ToolchainRoot', () => toolchainRoot);
 
-        const opFile = prjConfig.compileConfigModel.getOptionsFile(this.getEideDir().path, prjConfig.config);
-        toolManager.updateToolchainConfig(opFile, this.toolchain);
+        const curOptions = prjConfig.compileConfigModel.getOptions();
+        const newOptions = toolManager.upgradeBuilderOptions(curOptions, this.toolchain);
+        if (newOptions) {
+            prjConfig.compileConfigModel.setOptions(newOptions, undefined, this.toolchain.name);
+        }
     }
 
     protected reloadToolchain() {
@@ -2521,6 +2500,8 @@ $(OUT_DIR):
         this.registerBuiltinVar('ConfigName', () => this.GetConfiguration().config.mode);
         this.registerBuiltinVar('ProjectRoot', () => this.getRootDir().path);
         this.registerBuiltinVar('ExecutableName', () => this.getExecutablePathWithoutSuffix());
+        this.registerBuiltinVar('ChipPackDir', () => this.GetConfiguration().config.packDir || '');
+        this.registerBuiltinVar('ChipName', () => this.GetConfiguration().config.deviceName || '');
 
         // system vars
         this.registerBuiltinVar('SYS_Platform', () => platform.osType());
@@ -2616,10 +2597,114 @@ $(OUT_DIR):
             }
         }
 
+        // move old builder config files into eide.json
+        if (this.isOldVersionProject) {
+            const eideDir = File.from(eideFile.dir);
+            const toolchainManager = ToolchainManager.getInstance();
+
+            const toolchainInfos: any[] = [];
+            for (const n of toolchainManager.getToolchainNameList(conf.type)) {
+                const toolchain = toolchainManager.getToolchainByName(n);
+                if (toolchain) {
+                    toolchainInfos.push({
+                        name: n,
+                        configFileName: toolchain.configName
+                    });
+                }
+            }
+
+            // get all builder options
+            const allOptions: { target_l: string, toolchain: string, options: BuilderOptions }[] = [];
+            for (const file of eideDir.GetList(undefined, File.EXCLUDE_ALL_FILTER)) {
+                const tidx = toolchainInfos.findIndex(info => file.name.endsWith(info.configFileName));
+                if (tidx != -1) {
+                    const toolInfo = toolchainInfos[tidx];
+                    // get lower case target name
+                    let targetName_l: string = file.name.replace(toolInfo.configFileName, '');
+                    if (targetName_l == '') targetName_l = 'release';
+                    else targetName_l = targetName_l.substr(0, targetName_l.length - 1);
+                    // append in list
+                    const options = jsonc.parse(file.Read());
+                    allOptions.push({
+                        target_l: targetName_l,
+                        toolchain: toolInfo.name,
+                        options: options,
+                    });
+                    // delete old builder options file, we don't need it anymore.
+                    try { fs.unlinkSync(file.path); } catch {};
+                }
+            }
+
+            // copy all builder options into eide.json
+            const allTargetNames = Object.keys(conf.targets);
+            for (const optionsInfo of allOptions) {
+                const idx = allTargetNames.findIndex(
+                    name => optionsInfo.target_l == name.toLowerCase());
+                if (idx != -1) {
+                    const targetName = allTargetNames[idx];
+                    const target = conf.targets[targetName];
+                    if (target.builderOptions == undefined) target.builderOptions = {};
+                    target.builderOptions[optionsInfo.toolchain] = optionsInfo.options;
+                }
+            }
+        }
+
+        // remove 'sourceDirList' of custom_dep
+        if (this.isOldVersionProject) {
+            for (const name in conf.targets) {
+                const target = conf.targets[name];
+                if (target.custom_dep) {
+                    if ((<any>target.custom_dep)['sourceDirList'] != undefined) {
+                        (<any>target.custom_dep)['sourceDirList'] = undefined;
+                    }
+                }
+            }
+        }
+
+        // merge *.files.options.yml
+        const optionsFile = File.from(eideFile.dir, 'files.options.yml');
+        if (!optionsFile.IsFile()) {
+            const eideDir = File.from(eideFile.dir);
+            const allFileOptions: { targetName: string, fileOptions: any }[] = [];
+            // get all options
+            for (const file of eideDir.GetList([/\.files\.options\.yml$/i], File.EXCLUDE_ALL_FILTER)) {
+                const target_l = file.name.replace('.files.options.yml', '');
+                if (target_l) {
+                    const allTargets = Object.keys(conf.targets);
+                    if (conf.mode)
+                        allTargets.push(conf.mode);
+                    const idx = allTargets.findIndex(t => t.toLowerCase() == target_l);
+                    if (idx != -1) {
+                        const fileOptions = yaml.parse(file.Read());
+                        allFileOptions.push({ targetName: allTargets[idx], fileOptions: fileOptions });
+                    } else {
+                        GlobalEvent.log_warn(`This options file ".eide/${file.name}" not match any target. remove it !`);
+                    }
+                    try { fs.unlinkSync(file.path) } catch {} // delete file
+                }
+            }
+            // merge all files options
+            if (allFileOptions.length > 0) {
+                const optionsObj: SourceFileOptions = { 'version': '2.0', options: {} };
+                allFileOptions.forEach(opts => {
+                    const obj = opts.fileOptions;
+                    obj.version = undefined;
+                    Object.keys(obj).forEach(k => {
+                        if (obj[k] === undefined || obj[k] === null)
+                            delete obj[k];
+                    });
+                    if (Object.keys(obj).length > 0)
+                        optionsObj.options[opts.targetName] = obj;
+                });
+                // write to file
+                optionsFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(optionsObj, { indent: 4 }));
+            }
+        }
+
         /* udpate project version to lastest */
         if (this.isOldVersionProject) {
             conf.version = EIDE_CONF_VERSION;
-            eideFile.Write(JSON.stringify(conf));
+            eideFile.Write(JSON.stringify(conf, undefined, 2));
         }
     }
 
@@ -2723,7 +2808,7 @@ $(OUT_DIR):
 
     protected abstract onEideDirChanged(evt: 'changed' | 'renamed', file: File): void;
 
-    abstract NotifyBuilderConfigUpdate(fileName: string): void;
+    abstract NotifyBuilderConfigUpdate(): void;
 
     //-----------------------------------------------------------
 
@@ -2772,7 +2857,7 @@ class EIDEProject extends AbstractProject {
                                 try {
                                     this.dependenceManager.InstallComponent(packInfo.name, comp);
                                 } catch (error) {
-                                    GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+                                    GlobalEvent.log_warn(error);
                                 }
                             }
                         }
@@ -2916,7 +3001,7 @@ class EIDEProject extends AbstractProject {
         }
     }
 
-    NotifyBuilderConfigUpdate(fileName: string): void {
+    NotifyBuilderConfigUpdate(): void {
         this.dependenceManager.flushToolchainDep();
     }
 
@@ -2975,8 +3060,7 @@ class EIDEProject extends AbstractProject {
                             let command = cmd_item.command.replace('-co', '-sm -co');
                             child_process.exec(command, { cwd: cmd_item.directory }, (error: child_process.ExecException | null, stdout: string, stderr: string) => {
                                 if (error) {
-                                    const msg = `Failed to make '${deppath}', msg: ${(<Error>error).message}`;
-                                    GlobalEvent.emit('globalLog', newMessage('Warning', msg));
+                                    GlobalEvent.log_warn(`Failed to make '${deppath}', msg: ${(<Error>error).message}`);
                                     try { fs.unlinkSync(deppath) } catch (error) { } // del old .d file
                                     resolve();
                                 } else {
@@ -2989,7 +3073,7 @@ class EIDEProject extends AbstractProject {
                 }
             }
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+            GlobalEvent.log_warn(error);
         }
 
         const toolName = toolchain_ || this.getToolchain().name;
@@ -3011,7 +3095,7 @@ class EIDEProject extends AbstractProject {
                 this.srcRefMap.set(srcpath, refs.map((path) => new File(path)));
             }
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+            GlobalEvent.log_warn(error);
         }
 
         // notify update src view
@@ -3258,7 +3342,7 @@ class EIDEProject extends AbstractProject {
 
                     proc.on('line', (line) => GlobalEvent.emit('globalLog.append', line + os.EOL));
                     proc.on('errLine', (line) => GlobalEvent.emit('globalLog.append', line + os.EOL));
-                    proc.on('error', (err) => GlobalEvent.emit('globalLog', ExceptionToMessage(err)));
+                    proc.on('error', (err) => GlobalEvent.log_error(err));
 
                     proc.on('close', (exitInf) => {
                         GlobalEvent.emit('globalLog.append', os.EOL + `process exited, exitCode: ${exitInf.code}` + os.EOL)
@@ -3270,7 +3354,7 @@ class EIDEProject extends AbstractProject {
             });
 
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error));
+            GlobalEvent.log_error(error)
             GlobalEvent.emit('globalLog.show');
         }
 
@@ -3538,7 +3622,7 @@ class EIDEProject extends AbstractProject {
                 try {
                     platform.DeleteDir(_d);
                 } catch (error) {
-                    GlobalEvent.emit('globalLog', ExceptionToMessage(error));
+                    GlobalEvent.log_error(error);
                 }
             }
         }
@@ -3568,9 +3652,11 @@ class EIDEProject extends AbstractProject {
                 });
         }
 
-        // for old project, save now
-        if (this.isOldVersionProject) {
-            this.Save();
+        // save now
+        this.Save(false, 100);
+
+        if (this.GetConfiguration().needReloadProject) {
+            notifyReloadWindow(view_str$prompt$reloadForOldProject);
         }
     }
 
@@ -3617,7 +3703,7 @@ class EIDEProject extends AbstractProject {
     }
 
     private _getCompilerIntrDefsForCpptools<T extends BuilderConfigData>(
-        toolchain: IToolchian, builderCfg: T, builderOpts: ICompileOptions): string[] {
+        toolchain: IToolchian, builderCfg: T, builderOpts: BuilderOptions): string[] {
 
         if (['AC5', 'AC6'].includes(toolchain.name) || isGccFamilyToolchain(toolchain.name)) {
             // we have provide a xxx-intr.h for cpptools,

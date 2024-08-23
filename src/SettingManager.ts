@@ -96,7 +96,7 @@ export class SettingManager {
             this.refreshMDKStatus();
             this.refreshC51Status();
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Hidden'));
+            GlobalEvent.log_warn(error);
         }
 
         vscode.workspace.onDidChangeConfiguration((e) => {
@@ -118,7 +118,7 @@ export class SettingManager {
                     }
 
                 } catch (error) {
-                    GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Hidden'));
+                    GlobalEvent.log_warn(error);
                 }
 
                 this._event.emit('onChanged', e);

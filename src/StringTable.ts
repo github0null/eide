@@ -23,6 +23,7 @@
 */
 
 import * as vscode from 'vscode';
+import * as os from 'os';
 
 export enum LanguageIndexs {
     Chinese = 0,
@@ -418,6 +419,25 @@ export const view_str$env_desc$compiler_folder = [
 
 //---------------Other---------------
 
+export const view_str$prompt$filesOptionsComment = [
+    `##########################################################################################`,
+    `#                        Append Compiler Options For Source Files`,
+    `##########################################################################################`,
+    ``,
+    `# syntax:`,
+    `#   <your pattern>: <compiler options>`,
+    `# For get pattern syntax, please refer to: https://www.npmjs.com/package/micromatch`,
+    `#`,
+    `# examples:`,
+    `#   'main.cpp':           --cpp11 -Og ...`,
+    `#   'src/*.c':            -gnu -O2 ...`,
+    `#   'src/lib/**/*.cpp':   --cpp11 -Os ...`,
+    `#   '!Application/*.c':   -O0`,
+    `#   '**/*.c':             -O2 -gnu ...`,
+    '',
+    ''
+].join(os.EOL);
+
 export const view_str$prompt$userCanceledOperation = [
     `用户取消了操作。`,
     `The user canceled the operation.`
@@ -436,6 +456,11 @@ export const view_str$prompt$removeSrcDir = [
 export const view_str$prompt$needReloadToUpdateEnv = [
     `需要重启插件以刷新内置的环境变量，立即重启插件？`,
     `We need relaunch plug-in to refresh internal environment variables, relaunch now ?`
+][langIndex];
+
+export const view_str$prompt$reloadForOldProject = [
+    `项目文件版本过旧，需要重载项目以更新项目数据！现在重启插件吗？`,
+    `Project file version is too old, we need to reload the project to update the project file ! Restart the plugin now ?`
 ][langIndex];
 
 export const view_str$prompt$setupToolchainPrefix = [

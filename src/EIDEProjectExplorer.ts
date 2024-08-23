@@ -37,8 +37,16 @@ import { ResManager } from './ResManager';
 import { GlobalEvent } from './GlobalEvents';
 import { AbstractProject, CheckError, DataChangeType, VirtualSource } from './EIDEProject';
 import { ToolchainName, ToolchainManager } from './ToolchainManager';
-import { CreateOptions, VirtualFolder, VirtualFile, ImportOptions, ProjectTargetInfo, ProjectConfigData, ProjectType, ProjectConfiguration, ProjectBaseApi } from './EIDETypeDefine';
-import { PackInfo, ComponentFileItem, DeviceInfo, getComponentKeyDescription, ArmBaseCompileData, ArmBaseCompileConfigModel, RiscvCompileData, AnyGccCompileData, ICompileOptions } from "./EIDEProjectModules";
+import {
+    BuilderOptions,
+    CreateOptions, VirtualFolder, VirtualFile, ImportOptions,
+    ProjectTargetInfo, ProjectConfigData, ProjectType, ProjectConfiguration, ProjectBaseApi, MAPPED_KEYS_IN_TARGET_INFO
+} from './EIDETypeDefine';
+import {
+    PackInfo, ComponentFileItem, DeviceInfo,
+    getComponentKeyDescription, ArmBaseCompileData, ArmBaseCompileConfigModel,
+    RiscvCompileData, AnyGccCompileData
+} from "./EIDEProjectModules";
 import { WorkspaceManager } from './WorkspaceManager';
 import {
     can_not_close_project, project_is_opened, project_load_failed,
@@ -589,6 +597,13 @@ class ProjectItemCache {
         this.itemCache.clear();
     }
 
+    getRootTreeItem(prj: AbstractProject): ProjTreeItem | undefined {
+        const cache = this.itemCache.get(prj.getWsPath());
+        if (cache) {
+            return cache.root;
+        }
+    }
+
     getTreeItem(prj: AbstractProject, itemType: TreeItemType): ProjTreeItem | undefined {
         const cache = this.itemCache.get(prj.getWsPath());
         if (cache) {
@@ -629,6 +644,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
     private static readonly recName = 'sln.record';
     private static readonly RecMaxNum = 50;
 
+    private event: events.EventEmitter;
     private prjList: AbstractProject[] = [];
     private slnRecord: string[] = [];
     private recFile: File;
@@ -643,6 +659,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
     constructor(_context: vscode.ExtensionContext) {
 
+        this.event = new events.EventEmitter();
         this.context = _context;
         this.dataChangedEvent = new vscode.EventEmitter<ProjTreeItem>();
         this.context.subscriptions.push(this.dataChangedEvent);
@@ -656,6 +673,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         });
 
         this.loadRecord();
+    }
+
+    public on(event: 'rootItems_inited', listener: () => void): void;
+    public on(event: any, listener: (arg?: any) => void): void {
+        this.event.on(event, listener);
     }
 
     //---------------------------------------
@@ -997,6 +1019,18 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         }
     }
 
+    getParent(element: ProjTreeItem): vscode.ProviderResult<ProjTreeItem> {
+
+        if (element.type == TreeItemType.SOLUTION)
+            return undefined;
+
+        if (ProjTreeItem.PROJ_ROOT_ITEM_TYPES.includes(element.type))
+            return this.treeCache.getRootTreeItem(this.GetProjectByIndex(element.val.projectIndex));
+
+        /* 除了几个根节点之外，其他的忽略，getParent 主要用于 {@link TreeView.reveal reveal} API. */
+        return undefined;
+    }
+
     getTreeItem(element: ProjTreeItem): vscode.TreeItem | Thenable<vscode.TreeItem> {
         return element;
     }
@@ -1007,90 +1041,111 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
         if (element === undefined) {
 
-            this.prjList.forEach((sln, index) => {
+            this.prjList.forEach((project, projectIndex) => {
 
-                const isActived = this.activePrjPath === sln.getWsPath();
+                // --- init root Treeitem
 
+                const isActived = this.activePrjPath === project.getWsPath();
                 const cItem = new ProjTreeItem(TreeItemType.SOLUTION, {
-                    value: sln.getProjectName() + ' : ' + sln.getProjectCurrentTargetName(),
-                    projectIndex: index,
+                    value: project.getProjectName() + ' : ' + project.getProjectCurrentTargetName(),
+                    projectIndex: projectIndex,
                     icon: this.prjList.length > 1 ? (isActived ? 'active.svg' : 'idle.svg') : undefined,
                     tooltip: new vscode.MarkdownString([
-                        `**Name:** \`${sln.getProjectName()}\``,
-                        `- **Uid:** \`${sln.getUid()}\``,
-                        `- **Config:** \`${sln.getProjectCurrentTargetName()}\``,
-                        `- **Path:** \`${sln.GetRootDir().path}\``
+                        `**Name:** \`${project.getProjectName()}\``,
+                        `- **Uid:** \`${project.getUid()}\``,
+                        `- **Config:** \`${project.getProjectCurrentTargetName()}\``,
+                        `- **Path:** \`${project.GetRootDir().path}\``
                     ].join(os.EOL)),
-                }, sln.getUid());
+                }, project.getUid());
 
                 iList.push(cItem);
-
                 // cache project root item
-                this.treeCache.setTreeItem(sln, cItem, true);
+                this.treeCache.setTreeItem(project, cItem, true);
+
+                // --- pre-init primary TreeItems
+
+                const primaryItems: ProjTreeItem[] = [];
+
+                primaryItems.push(new ProjTreeItem(TreeItemType.PROJECT, {
+                    value: view_str$project$title,
+                    projectIndex: projectIndex,
+                    tooltip: view_str$project$title,
+                    obj: <VirtualFolderInfo>{ path: VirtualSource.rootName, vFolder: project.getVirtualSourceRoot() }
+                }, project.getUid()));
+
+                if (project.getProjectType() === 'ARM') { // only display for ARM project 
+                    primaryItems.push(new ProjTreeItem(TreeItemType.PACK, {
+                        value: pack_info,
+                        projectIndex: projectIndex,
+                        tooltip: pack_info
+                    }, project.getUid()));
+                }
+
+                const toolchain = project.getToolchain();
+                const toolprefix = toolchain.getToolchainPrefix ? toolchain.getToolchainPrefix() : undefined;
+                primaryItems.push(new ProjTreeItem(TreeItemType.COMPILE_CONFIGURATION, {
+                    value: `${compile_config} : ${toolchain.name}`,
+                    projectIndex: projectIndex,
+                    tooltip: newMarkdownString([
+                        `${compile_config} : ${toolchain.name}`,
+                        ` - **Id:** \`${toolchain.name}\``,
+                        ` - **Prefix:** ` + (toolprefix ? `\`${toolprefix}\`` : ''),
+                        ` - **Family:** \`${toolchain.categoryName}\``,
+                        ` - **Description:** \`${ToolchainManager.getInstance().getToolchainDesc(toolchain.name)}\``,
+                    ])
+                }, project.getUid()));
+
+                const curUploader = project.GetConfiguration().uploadConfigModel.uploader;
+                const uploaderLabel = HexUploaderManager.getInstance().getUploaderLabelByName(curUploader);
+                primaryItems.push(new ProjTreeItem(TreeItemType.UPLOAD_OPTION, {
+                    value: `${uploadConfig_desc} : ${uploaderLabel}`,
+                    projectIndex: projectIndex,
+                    contextVal: curUploader == 'Custom' ? `${getTreeItemTypeName(TreeItemType.UPLOAD_OPTION)}_Shell` : undefined,
+                    tooltip: `${uploadConfig_desc} : ${uploaderLabel}`
+                }, project.getUid()));
+
+                primaryItems.push(new ProjTreeItem(TreeItemType.DEPENDENCE, {
+                    value: project_dependence,
+                    projectIndex: projectIndex,
+                    tooltip: project_dependence
+                }, project.getUid()));
+
+                primaryItems.push(new ProjTreeItem(TreeItemType.SETTINGS, {
+                    value: view_str$project$other_settings,
+                    projectIndex: projectIndex,
+                    tooltip: view_str$project$other_settings
+                }, project.getUid()));
+
+                // cache primary views
+                primaryItems.forEach(item => this.treeCache.setTreeItem(project, item));
             });
+
+            // --- notify primary items all inited
+            setTimeout(() => this.event.emit('rootItems_inited'), 300);
+
         } else {
 
             const project = this.prjList[element.val.projectIndex];
-            const prjType = project.GetConfiguration().config.type;
             const prjExtraArgs = project.getSourceExtraArgsCfg();
 
             switch (element.type) {
                 case TreeItemType.SOLUTION:
                     {
-                        iList.push(new ProjTreeItem(TreeItemType.PROJECT, {
-                            value: view_str$project$title,
-                            projectIndex: element.val.projectIndex,
-                            tooltip: view_str$project$title,
-                            obj: <VirtualFolderInfo>{ path: VirtualSource.rootName, vFolder: project.getVirtualSourceRoot() }
-                        }, project.getUid()));
+                        const itemTypes: TreeItemType[] = [
+                            TreeItemType.PROJECT,
+                            TreeItemType.PACK,
+                            TreeItemType.COMPILE_CONFIGURATION,
+                            TreeItemType.UPLOAD_OPTION,
+                            TreeItemType.DEPENDENCE,
+                            TreeItemType.SETTINGS,
+                        ];
 
-                        if (prjType === 'ARM') { // only display for ARM project 
-                            iList.push(new ProjTreeItem(TreeItemType.PACK, {
-                                value: pack_info,
-                                projectIndex: element.val.projectIndex,
-                                tooltip: pack_info
-                            }, project.getUid()));
+                        for (const itemType of itemTypes) {
+                            const item = this.treeCache.getTreeItem(project, itemType);
+                            if (item) {
+                                iList.push(item);
+                            }
                         }
-
-                        const toolchain = project.getToolchain();
-                        const toolprefix = toolchain.getToolchainPrefix ? toolchain.getToolchainPrefix() : undefined;
-                        iList.push(new ProjTreeItem(TreeItemType.COMPILE_CONFIGURATION, {
-                            value: `${compile_config} : ${toolchain.name}`,
-                            projectIndex: element.val.projectIndex,
-                            tooltip: newMarkdownString([
-                                `${compile_config} : ${toolchain.name}`,
-                                ` - **Id:** \`${toolchain.name}\``,
-                                ` - **Prefix:** ` + (toolprefix ? `\`${toolprefix}\`` : ''),
-                                ` - **Family:** \`${toolchain.categoryName}\``,
-                                ` - **Description:** \`${ToolchainManager.getInstance().getToolchainDesc(toolchain.name)}\``,
-                            ])
-                        }, project.getUid()));
-
-                        const curUploader = project.GetConfiguration().uploadConfigModel.uploader;
-                        const uploaderLabel = HexUploaderManager.getInstance().getUploaderLabelByName(curUploader);
-                        iList.push(new ProjTreeItem(TreeItemType.UPLOAD_OPTION, {
-                            value: `${uploadConfig_desc} : ${uploaderLabel}`,
-                            projectIndex: element.val.projectIndex,
-                            contextVal: curUploader == 'Custom' ? `${getTreeItemTypeName(TreeItemType.UPLOAD_OPTION)}_Shell` : undefined,
-                            tooltip: `${uploadConfig_desc} : ${uploaderLabel}`
-                        }, project.getUid()));
-
-                        iList.push(new ProjTreeItem(TreeItemType.DEPENDENCE, {
-                            value: project_dependence,
-                            projectIndex: element.val.projectIndex,
-                            tooltip: project_dependence
-                        }, project.getUid()));
-
-                        iList.push(new ProjTreeItem(TreeItemType.SETTINGS, {
-                            value: view_str$project$other_settings,
-                            projectIndex: element.val.projectIndex,
-                            tooltip: view_str$project$other_settings
-                        }, project.getUid()));
-
-                        // cache sub root view
-                        iList.forEach((item) => {
-                            this.treeCache.setTreeItem(project, item);
-                        });
                     }
                     break;
                 case TreeItemType.PROJECT:
@@ -1099,7 +1154,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                         const _depsFolder = project
                             .getVirtualSourceManager()
                             .getFolder(`${VirtualSource.rootName}/${DependenceManager.DEPS_VFOLDER_NAME}`);
-                        if (_depsFolder && (_depsFolder.files.length +_depsFolder.folders.length) > 0) {
+                        if (_depsFolder && (_depsFolder.files.length + _depsFolder.folders.length) > 0) {
                             const folderDispName = view_str$project$cmsis_components;
                             const itemType = TreeItemType.V_FOLDER_ROOT;
                             const vFolderPath = `${VirtualSource.rootName}/${_depsFolder.name}`;
@@ -2160,7 +2215,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             eideProjInfo = jsonc.parse(eideConfigFile.Read());
         } catch (error) {
             GlobalEvent.emit('msg', newMessage('Warning', `Load '${eideConfigFile.path}' failed !`));
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            GlobalEvent.log_error(error);
         }
 
         const existedPrjIdx = this.prjList.findIndex((prj) => prj.getWsPath() == workspaceFilePath || prj.getUid() == eideProjInfo.miscInfo.uid);
@@ -2177,7 +2232,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             return prj;
         } catch (err) {
             GlobalEvent.emit('msg', newMessage('Warning', project_load_failed));
-            GlobalEvent.emit('globalLog', ExceptionToMessage(err, 'Error'));
+            GlobalEvent.log_error(err);
             GlobalEvent.emit('globalLog.show');
             return undefined;
         }
@@ -2381,23 +2436,22 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 const targetName = tname;
                 const iarTarget = iarproj.targets[tname];
 
-                const nEideTarget: ProjectTargetInfo = <any>{
+                const nEideTarget: ProjectTargetInfo = {
                     excludeList: iarTarget.excludeList,
                     toolchain: eidePrjCfg.toolchain,
                     compileConfig: copyObject(eidePrjCfg.compileConfig),
                     uploader: eidePrjCfg.uploader,
                     uploadConfig: copyObject(eidePrjCfg.uploadConfig),
-                    uploadConfigMap: copyObject(eidePrjCfg.uploadConfigMap)
+                    uploadConfigMap: copyObject(eidePrjCfg.uploadConfigMap),
+                    custom_dep: {
+                        name: 'default',
+                        incList: [],
+                        defineList: [],
+                        libList: []
+                    },
+                    builderOptions: {},
                 };
-
                 eidePrjCfg.targets[targetName] = nEideTarget;
-
-                nEideTarget.custom_dep = {
-                    name: 'default',
-                    incList: [],
-                    defineList: [],
-                    libList: []
-                };
 
                 nEideTarget.custom_dep.defineList = toArray(iarTarget.settings['ICCARM.CCDefines']);
                 nEideTarget.custom_dep.incList = toArray(iarTarget.settings['ICCARM.CCIncludePath2']);
@@ -2431,7 +2485,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 //
                 const toolchain = ToolchainManager.getInstance().getToolchain(eidePrjCfg.type, eidePrjCfg.toolchain);
                 const builderConfig = toolchain.getDefaultConfig();
-                const builderConfigFile = File.fromArray([eideFolder.path, `${targetName.toLowerCase()}.${toolchain.configName}`]);
 
                 const iar2eideOptsMap = iarParser.IAR2EIDE_OPTS_MAP;
 
@@ -2535,7 +2588,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     }
                 }
 
-                builderConfigFile.Write(JSON.stringify(builderConfig, undefined, 4));
+                nEideTarget.builderOptions[toolchainType] = builderConfig;
             }
 
             // init current target
@@ -2549,6 +2602,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                         [{ groupName: 'custom', depList: [curTarget[key]] }];
                     continue;
                 }
+                if (!MAPPED_KEYS_IN_TARGET_INFO.includes(key))
+                    continue;
                 (<any>eidePrjCfg)[key] = curTarget[key];
             }
 
@@ -2614,20 +2669,20 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         // init all target
         for (const eTarget of ePrjInfo.targets) {
 
-            const nEideTarget: ProjectTargetInfo = <any>{
+            const nEideTarget: ProjectTargetInfo = {
                 excludeList: eTarget.excList,
                 toolchain: nPrjConfig.toolchain,
                 compileConfig: copyObject(nPrjConfig.compileConfig),
                 uploader: nPrjConfig.uploader,
                 uploadConfig: copyObject(nPrjConfig.uploadConfig),
-                uploadConfigMap: copyObject(nPrjConfig.uploadConfigMap)
-            };
-
-            nEideTarget.custom_dep = {
-                name: 'default',
-                incList: [],
-                defineList: [],
-                libList: []
+                uploadConfigMap: copyObject(nPrjConfig.uploadConfigMap),
+                builderOptions: {},
+                custom_dep: {
+                    name: 'default',
+                    incList: [],
+                    defineList: [],
+                    libList: []
+                }
             };
 
             nEideTarget.custom_dep.defineList = eTarget.globalArgs.cMacros;
@@ -2738,7 +2793,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             {
                 const toolchain = ToolchainManager.getInstance().getToolchain(nPrjConfig.type, nPrjConfig.toolchain);
                 const toolchainDefConf = toolchain.getDefaultConfig();
-                const toolchainCfgFile = File.fromArray([eideFolder.path, `${eTarget.name.toLowerCase()}.${toolchain.configName}`]);
 
                 // glob
                 toolchainDefConf.global['misc-control'] = eTarget.globalArgs.globalArgs.filter(a => a.trim() != '');
@@ -2801,7 +2855,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     }
                 }
 
-                toolchainCfgFile.Write(JSON.stringify(toolchainDefConf, undefined, 4));
+                nEideTarget.builderOptions[toolchain.name] = toolchainDefConf;
             }
 
             nPrjConfig.targets[eTarget.name] = nEideTarget;
@@ -2817,6 +2871,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 }];
                 continue;
             }
+            if (!MAPPED_KEYS_IN_TARGET_INFO.includes(name))
+                continue;
             (<any>nPrjConfig)[name] = curTarget[name];
         }
 
@@ -3079,10 +3135,15 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
         const replaceUserTaskTmpVar = (t: any) => {
             const reKeilPrjDir = baseInfo.rootFolder.ToRelativeLocalPath(keilPrjFile.dir) || keilPrjFile.dir;
-            if (reKeilPrjDir === '.')
+            if (reKeilPrjDir === '.') {
                 t.command = t.command.replace('$<cd:mdk-proj-dir> && ', '');
-            else
-                t.command = t.command.replace('$<cd:mdk-proj-dir>', `cd .\\${reKeilPrjDir}`);
+            } else {
+                if (t.command.startsWith('bash')) {
+                    t.command = t.command.replace('$<cd:mdk-proj-dir>', `cd ${File.ToUnixPath(reKeilPrjDir)}`);
+                } else {
+                    t.command = t.command.replace('$<cd:mdk-proj-dir>', `cd .\\${reKeilPrjDir}`);
+                }
+            }
         }
 
         // project env
@@ -3099,6 +3160,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             newTarget.uploader = projectInfo.uploader;
             newTarget.uploadConfig = copyObject(projectInfo.uploadConfig);
             newTarget.uploadConfigMap = copyObject(projectInfo.uploadConfigMap);
+            newTarget.builderOptions = {};
 
             //
             // import specific configs
@@ -3115,10 +3177,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     defIncList.push(baseInfo.rootFolder.ToRelativePath(absPath) || absPath);
                 }
                 // import builder options
-                const opts: ICompileOptions = mergeBuilderOpts(toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
-                // write to file
-                const cfgFile = File.fromArray([baseInfo.rootFolder.path, AbstractProject.EIDE_DIR, `${keilTarget.name.toLowerCase()}.${toolchain.configName}`]);
-                cfgFile.Write(JSON.stringify(opts, undefined, 4));
+                const opts: BuilderOptions = mergeBuilderOpts(
+                    toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
+                newTarget.builderOptions[toolchain.name] = opts;
             }
 
             // ARM project
@@ -3141,20 +3202,19 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
                 // import builder options
                 const toolchain = ToolchainManager.getInstance().getToolchain('ARM', keilCompileConf.toolchain);
-                const opts: ICompileOptions = mergeBuilderOpts(toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
+                const opts: BuilderOptions = mergeBuilderOpts(
+                    toolchain.getDefaultConfig(), keilCompileConf.optionsGroup[keilCompileConf.toolchain]);
                 opts.beforeBuildTasks?.forEach((t) => replaceUserTaskTmpVar(t));
                 opts.afterBuildTasks?.forEach((t) => replaceUserTaskTmpVar(t));
-
-                // write to file
-                const cfgFile = File.fromArray([baseInfo.rootFolder.path, AbstractProject.EIDE_DIR, `${keilTarget.name.toLowerCase()}.${toolchain.configName}`]);
-                cfgFile.Write(JSON.stringify(opts, undefined, 4));
+                newTarget.builderOptions[toolchain.name] = opts;
             }
 
             // init custom dependence after specific configs done
-            newTarget.custom_dep = <any>{ name: 'default', libList: [] };
+            newTarget.custom_dep = <any>{ name: 'default' };
             const incList = keilTarget.incList.map((path) => baseInfo.rootFolder.ToRelativePath(path) || path);
             newTarget.custom_dep.incList = defIncList.concat(incList);
             newTarget.custom_dep.defineList = keilTarget.defineList;
+            newTarget.custom_dep.libList = [];
 
             // fill exclude list
             newTarget.excludeList = [];
@@ -3186,6 +3246,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 }];
                 continue;
             }
+            if (!MAPPED_KEYS_IN_TARGET_INFO.includes(name))
+                continue;
             (<any>projectInfo)[name] = curTarget[name];
         }
 
@@ -3259,7 +3321,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                             const prjConf: ProjectConfigData<any> = JSON.parse(prjFile.Read());
                                             prjConf.name = option.name; // set project name
                                             if (prjConf.miscInfo) prjConf.miscInfo.uid = undefined; // reset uid
-                                            prjFile.Write(JSON.stringify(prjConf));
+                                            prjFile.Write(JSON.stringify(prjConf, undefined, 2));
                                         } catch (error) {
                                             throw Error(`Init project failed !, msg: ${error.message}`);
                                         }
@@ -3469,6 +3531,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     private autosaveTimer: NodeJS.Timeout | undefined;
 
+    private isRevealed: boolean = false; // 用于标记，初始化后是否已触发了展开首个树视图的操作
+
     constructor(context: vscode.ExtensionContext) {
 
         this._event = new events.EventEmitter();
@@ -3482,8 +3546,26 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             dragAndDropController: this.dataProvider,
             canSelectMany: true,
         });
-
         context.subscriptions.push(this.view);
+
+        // 当主要的几个根视图初始化后，触发展开树视图
+        this.dataProvider.on('rootItems_inited', () => {
+            if (this.isRevealed == false) {
+                this.isRevealed = true;
+                const proj = this.dataProvider.getActiveProject();
+                // 当工作区有多个项目的时候，不进行展开操作
+                if (proj && this.dataProvider.getProjectCount() == 1) {
+                    const item = this.dataProvider.treeCache.getTreeItem(proj, TreeItemType.PROJECT);
+                    if (item) {
+                        this.view.reveal(item, {
+                            select: false,
+                            focus: false,
+                            expand: false
+                        });
+                    }
+                }
+            }
+        });
 
         // item click event
         context.subscriptions.push(vscode.commands.registerCommand(ProjTreeItem.ITEM_CLICK_EVENT, (item) => this.OnTreeItemClick(item)));
@@ -3612,14 +3694,14 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             if (extension) {
                 if (!extension.isActive) {
                     try {
-                        GlobalEvent.emit('globalLog', newMessage('Info', `Active extension: '${cpptoolsId}'`));
+                        GlobalEvent.log_info(`Active extension: '${cpptoolsId}'`);
                         await extension.activate();
                     } catch (error) {
-                        GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+                        GlobalEvent.log_warn(error);
                     }
                 }
             } else {
-                GlobalEvent.emit('globalLog', newMessage('Warning', `The extension '${cpptoolsId}' is not enabled or installed !`));
+                GlobalEvent.log_warn(`The extension '${cpptoolsId}' is not enabled or installed !`);
             }
         }
 
@@ -3822,7 +3904,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
             fclangd.Write(yaml.stringify(cfg));
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            GlobalEvent.log_error(error);
         }
     }
 
@@ -4271,7 +4353,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
 
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+            GlobalEvent.log_warn(error);
         }
 
         if (diag_res) {
@@ -5092,7 +5174,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             ui_cfg.items['inherit'] = {
                 type: 'input',
                 attrs: { readonly: true },
-                name: `Inherited Options (from other pattern, check your '*.files.options.yml' file for details !)`,
+                name: `Inherited Options (from other pattern, check your 'files.options.yml' file for details !)`,
                 data: <SimpleUIConfigData_input>{
                     value: inheritedArgs,
                     default: inheritedArgs
@@ -5198,7 +5280,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             ui_cfg.items['inherit'] = {
                 type: 'input',
                 attrs: { readonly: true },
-                name: `Inherited Options (from other args pattern, check your '*.files.options.yml' file for details !)`,
+                name: `Inherited Options (from other args pattern, check your 'files.options.yml' file for details !)`,
                 data: <SimpleUIConfigData_input>{
                     value: inheritedOptions,
                     default: inheritedOptions
@@ -5624,7 +5706,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const toolchain = prj.getToolchain();
         const prjConfig = prj.GetConfiguration();
         const depMerge = prjConfig.GetAllMergeDep();
-        const builderOpts = prjConfig.compileConfigModel.getOptions(prj.getEideDir().path, prjConfig.config);
+        const builderOpts = prjConfig.compileConfigModel.getOptions();
         const defMacros: string[] = ['__VSCODE_CPPTOOL']; /* it's for internal force include header */
         let defList: string[] = defMacros.concat(depMerge.defineList);
         depMerge.incList = ArrayDelRepetition(depMerge.incList.concat(prj.getSourceIncludeList()));
@@ -6889,7 +6971,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                         installDir.CreateDir(true);
                         const szip = new SevenZipper();
                         const r = szip.UnzipSync(new File(tmpPath), installDir);
-                        GlobalEvent.emit('globalLog', newMessage('Info', r));
+                        GlobalEvent.log_info(r);
 
                         isFirstInstall = true;
                     }
@@ -6936,7 +7018,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     private async genDebugConfig_internal(
-        type: 'jlink' | 'openocd' | 'pyocd', 
+        type: 'jlink' | 'openocd' | 'pyocd',
         prj: AbstractProject, old_cfgs: any[]): Promise<{ debug_config: any, override_idx: number } | undefined> {
 
         const _elfPath = File.ToUnixPath(prj.getOutputDir()) + '/' + `${prj.getProjectName()}.elf`;

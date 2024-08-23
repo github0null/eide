@@ -250,7 +250,7 @@ export class ResInstaller {
         const cont = await utility.requestTxt(idxUrl);
 
         if (cont instanceof Error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(cont, 'Warning'));
+            GlobalEvent.log_warn(cont);
             return;
         }
 
@@ -263,7 +263,7 @@ export class ResInstaller {
             idxArray = <ExternalUtilToolIndexDef[]>JSON.parse(cont);
             if (!Array.isArray(idxArray)) throw new Error(`Index file must be a json array obj !`);
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+            GlobalEvent.log_warn(error);
             return;
         }
 

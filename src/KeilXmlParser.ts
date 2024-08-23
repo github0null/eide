@@ -24,7 +24,7 @@
 
 import * as xml2js from 'x2js';
 import { File } from '../lib/node-utility/File';
-import { ProjectType, FileGroup, ProjectConfiguration } from './EIDETypeDefine';
+import { BuilderOptions, ProjectType, FileGroup, ProjectConfiguration } from './EIDETypeDefine';
 import { ToolchainName, ToolchainManager } from './ToolchainManager';
 import { AbstractProject } from './EIDEProject';
 import { GlobalEvent } from './GlobalEvents';
@@ -33,7 +33,7 @@ import { ResManager } from './ResManager';
 import * as NodePath from 'path';
 import { DependenceManager } from './DependenceManager';
 import { ArrayDelRepetition } from '../lib/node-utility/Utility';
-import { ICompileOptions, CurrentDevice, C51BaseCompileData, ArmBaseCompileData, ARMStorageLayout, ArmBaseCompileConfigModel } from './EIDEProjectModules';
+import { CurrentDevice, C51BaseCompileData, ArmBaseCompileData, ARMStorageLayout, ArmBaseCompileConfigModel } from './EIDEProjectModules';
 import * as utility from './utility';
 
 export interface KeilRteDependence {
@@ -57,7 +57,7 @@ export interface KeilParserResult<CompileOption> {
 }
 
 export interface ICompileOptionsGroup {
-    [tag: string]: ICompileOptions;
+    [tag: string]: BuilderOptions;
 }
 
 export interface ICommonOptions {
@@ -298,7 +298,7 @@ class C51Parser extends KeilParser<KeilC51Option> {
         const target51 = targetOptionObj.Target51;
 
         option.optionsGroup = Object.create(null);
-        const cOptions: ICompileOptions = option.optionsGroup['Keil_C51'] = Object.create(null);
+        const cOptions: BuilderOptions = option.optionsGroup['Keil_C51'] = Object.create(null);
 
         cOptions['global'] = Object.create(null);
         cOptions['c/cpp-compiler'] = Object.create(null);
@@ -429,8 +429,7 @@ class C51Parser extends KeilParser<KeilC51Option> {
     private setOption(targetOptionObj: any, prj: AbstractProject) {
 
         const target51 = targetOptionObj.Target51;
-        const options = prj.GetConfiguration().compileConfigModel
-            .getOptions(prj.getEideDir().path, prj.GetConfiguration().config);
+        const options = prj.GetConfiguration().compileConfigModel.getOptions();
 
         if (target51.Target51Misc) {
             switch (options.global['ram-mode']) {
@@ -712,6 +711,17 @@ class ARMParser extends KeilParser<KeilARMOption> {
                 if (eideOption.afterBuildTasks == undefined)
                     eideOption.afterBuildTasks = [];
 
+                // keil props
+                const mdk_OutputName: string      = commonOption.OutputName;
+                const mdk_OutputDirectory: string = File.normalize(commonOption.OutputDirectory || 'Objects');
+                const mdk_CreateHexFile: boolean  = commonOption.CreateHexFile == '1';
+                const mdk_CreateLib: boolean      = commonOption.CreateLib == '1';
+
+                // setup env
+                env['KEIL_OUTPUT_DIR'] = mdk_OutputDirectory;
+                if (mdk_OutputName && mdk_OutputName != this._file.noSuffixName)
+                    env['KEIL_OUTPUT_NAME'] = mdk_OutputName;
+
                 // --------------------------------------------
                 // KEIL Key Code: % # @ ! $
                 // % File name with extension (PROJECT1.UVPROJ) 
@@ -731,15 +741,15 @@ class ARMParser extends KeilParser<KeilARMOption> {
                     .replace(/%H\b/g, '${KEIL_OUTPUT_NAME}.hex')
                     .replace(/%L\b/g, '${KEIL_OUTPUT_NAME}.axf')
                     .replace(/%P\b/g, this._file.name)
-                    .replace(/#H\b/g, '${OutDir}\\${KEIL_OUTPUT_NAME}.hex')
-                    .replace(/#L\b/g, '${OutDir}\\${KEIL_OUTPUT_NAME}.axf')
+                    .replace(/#H\b/g, '${KEIL_OUTPUT_DIR}\\${KEIL_OUTPUT_NAME}.hex')
+                    .replace(/#L\b/g, '${KEIL_OUTPUT_DIR}\\${KEIL_OUTPUT_NAME}.axf')
                     .replace(/#P\b/g, this._file.path)
                     .replace(/@(H|L)\b/g, '${KEIL_OUTPUT_NAME}')
-                    .replace(/\$(H|L)\b/g, '${OutDir}\\')
+                    .replace(/\$(H|L)\b/g, '${KEIL_OUTPUT_DIR}\\')
                     .replace(/\$J\b/g, '${ToolchainRoot}\\include\\')
                     .replace(/\$K\b/g, '${ToolchainRoot}\\')
-                    .replace(/\!H\b/g, '.\\${OutDirBase}\\${KEIL_OUTPUT_NAME}.hex')
-                    .replace(/\!L\b/g, '.\\${OutDirBase}\\${KEIL_OUTPUT_NAME}.axf')
+                    .replace(/\!H\b/g, '${KEIL_OUTPUT_DIR}\\${KEIL_OUTPUT_NAME}.hex')
+                    .replace(/\!L\b/g, '${KEIL_OUTPUT_DIR}\\${KEIL_OUTPUT_NAME}.axf')
                     .replace(/\bKEIL_OUTPUT_NAME\b/g, OUTNAME_KEY);
 
                 // BeforeMake
@@ -761,30 +771,45 @@ class ARMParser extends KeilParser<KeilARMOption> {
                 // AfterMake
                 const afterMake = commonOption.AfterMake;
                 if (afterMake) {
-                    // Copy files to compate Keil User Commands
-                    if (env['KEIL_OUTPUT_NAME']) {
-                        eideOption.afterBuildTasks.push({
-                            "name": 'Copy linker output for Keil User Commands',
-                            "command": '$<cd:mdk-proj-dir> && copy ".\\${OutDirBase}\\${ProjectName}.axf" ".\\${OutDirBase}\\${KEIL_OUTPUT_NAME}.axf"',
-                            "disable": false,
-                            "abortAfterFailed": true
-                        });
-                    }
+                    let total_cnt = 0;
+                    let actived_cnt = 0;
                     for (let idx = 1; idx < 3; idx++) {
                         let cmd = afterMake[`UserProg${idx}Name`];
                         if (cmd) {
+                            total_cnt++;
+                            const actived = afterMake[`RunUserProg${idx}`] == '1';
+                            if (actived) actived_cnt++;
                             eideOption.afterBuildTasks.push({
                                 "name": cmd,
                                 "command": `$<cd:mdk-proj-dir> && ${replaceMdkEnv(cmd)}`,
-                                "disable": afterMake[`RunUserProg${idx}`] != '1',
+                                "disable": !actived,
                                 "abortAfterFailed": true
                             });
                         }
                     }
-                    // Make eide Don't output hex/bin
-                    if (eideOption.linker == undefined)
-                        eideOption.linker = {};
-                    eideOption.linker['$disableOutputTask'] = true;
+                    if (total_cnt > 0) {
+                        // Copy files to compate Keil User Commands
+                        const copyFilesCmd = {
+                            "name": '[Copy linker output for Keil User Commands]',
+                            "command": `$<cd:mdk-proj-dir> && mkdir \${KEIL_OUTPUT_DIR} & copy "\${OutDir}\\\${ProjectName}.axf" "\${KEIL_OUTPUT_DIR}\\\${KEIL_OUTPUT_NAME}.axf"`,
+                            "disable": actived_cnt == 0,
+                            "abortAfterFailed": true
+                        };
+                        if (!env['KEIL_OUTPUT_NAME']) {
+                            copyFilesCmd['command'] = copyFilesCmd['command'].replace('${KEIL_OUTPUT_NAME}', '${ProjectName}');
+                        }
+                        eideOption.afterBuildTasks.splice(0, 0, copyFilesCmd);
+                    }
+                    if (mdk_CreateLib) {
+                        // Make eide output lib instead of elf
+                        if (eideOption.linker == undefined) eideOption.linker = {};
+                        eideOption.linker['output-format'] = 'lib';
+                    }
+                    if (!mdk_CreateHexFile) {
+                        // Make eide Don't output hex/bin
+                        if (eideOption.linker == undefined) eideOption.linker = {};
+                        eideOption.linker['$disableOutputTask'] = true;
+                    }
                 }
             }
 
@@ -970,11 +995,6 @@ class ARMParser extends KeilParser<KeilARMOption> {
             obj.defineList = this.parseMacroString(target.TargetOption.TargetArmAds.Cads.VariousControls.Define);
 
             obj.env = {};
-            const keil_out_name = target.TargetOption.TargetCommonOption.OutputName;
-            if (keil_out_name && keil_out_name != this._file.noSuffixName) {
-                obj.env['KEIL_OUTPUT_NAME'] = keil_out_name;
-            }
-
             obj.compileOption = Object.create(null);
             obj.compileOption.toolchain = target.uAC6 === '1' ? 'AC6' : 'AC5';
             this.getOption(target.TargetOption, obj.compileOption, obj.env);
@@ -1068,7 +1088,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
                 if (toolName !== prj.getToolchain().name) {
                     const mapper = new KeilSettingMapper(toolName);
                     const toolchain = ToolchainManager.getInstance().getToolchain('ARM', toolName);
-                    const options: any = compileModel.getOptions(eidePath, prjConfig.config);
+                    const options: any = compileModel.getOptions();
                     for (const groupName of mapper.getGroupList()) {
                         for (const opKey in options[groupName]) {
                             mapper.toKeil(targetOptionObj, groupName, opKey, options[groupName][opKey]);
@@ -1080,7 +1100,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
             // set current
             const toolchain = prj.getToolchain();
             const mapper = new KeilSettingMapper(toolchain.name);
-            const options: any = compileModel.getOptions(eidePath, prjConfig.config);
+            const options: any = compileModel.getOptions();
             for (const groupName of mapper.getGroupList()) {
                 for (const opKey in options[groupName]) {
                     mapper.toKeil(targetOptionObj, groupName, opKey, options[groupName][opKey]);

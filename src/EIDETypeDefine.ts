@@ -44,32 +44,12 @@ import { VirtualSource } from "./EIDEProject";
 import * as utility from './utility';
 import { CompileConfigModel, UploadConfigModel, SdccCompileConfigModel, GccCompileConfigModel, RiscvCompileConfigModel, AnyGccCompileConfigModel, MipsCompileConfigModel } from './EIDEProjectModules';
 
-////////////////////////////////////////////////////////
+// ----------------------------------------------------------
+// - project struct define
+// ----------------------------------------------------------
 
-// eide project config file version
-export const EIDE_CONF_VERSION = '3.4';
-
-////////////////////////////////////////////////////////
-
-export interface ManagerInterface {
-    Init(): void;
-}
-
-export interface FileItem {
-    file: File;
-    disabled?: boolean; // for mdk file info
-}
-
-export interface FileGroup {
-    name: string;       // dir name if it's system folder, else it's a virtual path (with '<virtual_root>/' header)
-    files: FileItem[];
-    disabled?: boolean; // for mdk group info
-}
-
-export interface ProjectFileGroup extends FileGroup {
-    dir: File;
-    isRoot: boolean;
-}
+// !! eide project config file version !!
+export const EIDE_CONF_VERSION = '3.5';
 
 //
 //  'C51': 8BIT MCU Project (like: mcs51, stm8, ...)
@@ -96,6 +76,162 @@ export interface ImportOptions {
     createNewFolder?: boolean;
 }
 
+export interface Dependence {
+    name: string;
+    incList: string[];          // absolute path with env variables
+    libList: string[];          // absolute path with env variables
+    defineList: string[];
+}
+
+export interface DependenceGroup {
+    groupName: string;
+    depList: Dependence[];
+}
+
+export interface ProjectMiscInfo {
+    uid: string | undefined;
+}
+
+export interface BuilderOptions {
+    version: number;
+    beforeBuildTasks?: any[];
+    afterBuildTasks?: any[];
+    global?: any;
+    ['c/cpp-compiler']?: any;
+    ['asm-compiler']?: any;
+    linker?: any;
+}
+
+// 备注：由于历史原因，插件运行时会将 eide.json 直接转成json对象作为 项目的数据结构 使用；
+// 但插件运行时的数据结构和eide.json文件的内容是不一样的，有一些键仅在插件内部使用；
+// 需要保证一些键位于json对象的根下，因此需要将这些键从 targets 复制到上一层，
+// 对比 ProjectTargetInfo 与 ProjectConfigData 相同的键，这些键如下：
+export const MAPPED_KEYS_IN_TARGET_INFO = [
+    'excludeList',
+    'toolchain',
+    'compileConfig',
+    'uploader',
+    'uploadConfig',
+    'uploadConfigMap',
+    'custom_dep',
+];
+export interface ProjectTargetInfo {
+    excludeList: string[];
+    toolchain: ToolchainName;
+    compileConfig: any;
+    uploader: HexUploaderType;
+    uploadConfig: any | null;
+    uploadConfigMap: { [uploader: string]: any };
+    custom_dep: Dependence;
+    builderOptions: { [toolchain: string]: BuilderOptions };
+}
+
+export interface VirtualFile {
+    // this must be an relative path
+    // because virtual file path may be outside the project root directory
+    path: string;
+}
+
+export interface VirtualFolder {
+    name: string;
+    files: VirtualFile[];
+    folders: VirtualFolder[];
+}
+
+export interface BuilderConfigData { }
+
+// 备注：由于历史原因，插件运行时会将 eide.json 直接转成json对象作为 项目的数据结构 使用；
+// 但插件运行时的数据结构和eide.json文件的内容是不一样的，有一些键仅在插件内部使用；
+// 是不需要保存到 eide.json 文件中去，因此在保存项目数据结构时，需要排除这些键，如下：
+const EXCL_KEYS_IN_EIDE_JSON = [
+    'mode',
+    'excludeList',
+    'toolchain',
+    'compileConfig',
+    'uploader',
+    'uploadConfig',
+    'uploadConfigMap'
+];
+export interface ProjectConfigData<T extends BuilderConfigData> {
+
+    name: string;
+    type: ProjectType;
+
+    // cur target info (virtual node)
+    mode: string; // target name (And for historical reasons, that's what it's called)
+    excludeList: string[];
+    toolchain: ToolchainName;
+    compileConfig: T; //【历史遗留属性】用于储存一些 公共的 编译相关的 属性
+    uploader: HexUploaderType;
+    uploadConfig: any | null;
+    uploadConfigMap: { [uploader: string]: any };
+
+    // dependences (virtual node: 'custom', 'built-in')
+    dependenceList: DependenceGroup[];
+
+    // all targets
+    targets: { [target: string]: ProjectTargetInfo };
+
+    // source
+    srcDirs: string[];
+    virtualFolder: VirtualFolder;
+
+    outDir: string;
+    deviceName: string | null;
+    packDir: string | null;
+    miscInfo: ProjectMiscInfo;
+    version: string;
+}
+
+export interface ProjectUserContextData {
+
+    target?: string;
+}
+
+export type ProjectConfigEventType =
+    'dependence' | 'srcRootAdd' | 'srcRootRemoved' | 'compiler' | 'uploader' | 'projectFileChanged';
+
+export interface ProjectConfigEvent {
+    type: ProjectConfigEventType;
+    data?: any;
+}
+
+export interface ProjectBaseApi {
+    getRootDir: () => File;
+    toolchainName: () => ToolchainName;
+    toAbsolutePath: (path: string) => string;
+    toRelativePath: (path: string) => string;
+    resolveEnvVar: (path: string) => string;
+}
+
+// -------------------------------------------------
+// - other utils types
+// -------------------------------------------------
+
+export interface ManagerInterface {
+    Init(): void;
+}
+
+export interface FileItem {
+    file: File;
+    disabled?: boolean; // for mdk file info
+}
+
+export interface FileGroup {
+    name: string;       // dir name if it's system folder, else it's a virtual path (with '<virtual_root>/' header)
+    files: FileItem[];
+    disabled?: boolean; // for mdk group info
+}
+
+export interface ProjectFileGroup extends FileGroup {
+    dir: File;
+    isRoot: boolean;
+}
+
+// ----------------------------------------------------------
+// - class
+// ----------------------------------------------------------
+
 class EventItem {
 
     readonly name: string;
@@ -119,19 +255,12 @@ class EventItem {
     }
 }
 
-export interface ProjectBaseApi {
-    getRootDir: () => File;
-    toolchainName: () => ToolchainName;
-    toAbsolutePath: (path: string) => string;
-    toRelativePath: (path: string) => string;
-    resolveEnvVar: (path: string) => string;
-}
-
 export abstract class Configuration<ConfigType = any, EventType = any> {
 
     readonly FILE_NAME: string;
 
     config: ConfigType;
+    needReloadProject = false;
 
     private _eventMergeFlag: boolean;
     private _eventCache: EventItem[];
@@ -273,9 +402,11 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
         try {
             if (this.cfgFile.IsExist()) oldContent = this.cfgFile.Read();
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+            GlobalEvent.log_error(error);
         }
 
+        // ! 注意这里比较两个 json 字符串是否相等，需要去除空白字符，不要直接比较字符串，
+        // ! 不同平台上项目文件中的 \n 可能不同，会导致 git 提示有更改
         if (oldContent == undefined || !this._json_equal(oldContent, newContent)) {
             this.lastSaveTime = Date.now();
             this.cfgFile.Write(newContent);
@@ -336,90 +467,6 @@ export class ConfigMap {
             val.Save();
         });
     }
-}
-
-export interface Dependence {
-    name: string;
-    incList: string[];          // absolute path with env variables
-    libList: string[];          // absolute path with env variables
-    defineList: string[];
-}
-
-export interface DependenceGroup {
-    groupName: string;
-    depList: Dependence[];
-}
-
-export interface ProjectMiscInfo {
-    uid: string | undefined;
-}
-
-export interface ProjectTargetInfo {
-    excludeList: string[];
-    toolchain: ToolchainName;
-    compileConfig: any;
-    uploader: HexUploaderType;
-    uploadConfig: any | null;
-    uploadConfigMap: { [uploader: string]: any };
-    custom_dep: Dependence;
-}
-
-export interface VirtualFile {
-    // this must be an relative path
-    // because virtual file path may be outside the project root directory
-    path: string;
-}
-
-export interface VirtualFolder {
-    name: string;
-    files: VirtualFile[];
-    folders: VirtualFolder[];
-}
-
-export interface BuilderConfigData { }
-
-export interface ProjectConfigData<T extends BuilderConfigData> {
-
-    name: string;
-    type: ProjectType;
-
-    // cur target info (virtual node)
-    mode: string; // target name (And for historical reasons, that's what it's called)
-    excludeList: string[];
-    toolchain: ToolchainName;
-    compileConfig: T;
-    uploader: HexUploaderType;
-    uploadConfig: any | null;
-    uploadConfigMap: { [uploader: string]: any };
-
-    // dependences (virtual node: 'custom', 'built-in')
-    dependenceList: DependenceGroup[];
-
-    // all targets
-    targets: { [target: string]: ProjectTargetInfo };
-
-    // source
-    srcDirs: string[];
-    virtualFolder: VirtualFolder;
-
-    outDir: string;
-    deviceName: string | null;
-    packDir: string | null;
-    miscInfo: ProjectMiscInfo;
-    version: string;
-}
-
-export interface ProjectUserContextData {
-
-    target?: string;
-}
-
-export type ProjectConfigEventType =
-    'dependence' | 'srcRootAdd' | 'srcRootRemoved' | 'compiler' | 'uploader' | 'projectFileChanged';
-
-export interface ProjectConfigEvent {
-    type: ProjectConfigEventType;
-    data?: any;
 }
 
 export class ProjectConfiguration<T extends BuilderConfigData>
@@ -1223,6 +1270,12 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         custom_dep.incList = custom_dep.incList.map((path) => this.toRelativePath(path));
         custom_dep.libList = custom_dep.libList.map((path) => this.toRelativePath(path));
 
+        let builderOpts: any = {};
+        if (target.targets[target.mode] &&
+            target.targets[target.mode].builderOptions !== undefined) {
+            builderOpts = utility.deepCloneObject(target.targets[target.mode].builderOptions);
+        }
+
         return {
             excludeList: Array.from(target.excludeList),
             toolchain: target.toolchain,
@@ -1230,7 +1283,8 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             uploader: target.uploader,
             uploadConfig: utility.deepCloneObject(target.uploadConfig),
             uploadConfigMap: utility.deepCloneObject(target.uploadConfigMap),
-            custom_dep: custom_dep
+            custom_dep: custom_dep,
+            builderOptions: builderOpts
         };
     }
 
@@ -1281,7 +1335,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             try {
                 return JSON.parse(f.Read());
             } catch (error) {
-                GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+                GlobalEvent.log_error(error);
                 return {}; // empty obj
             }
         }
@@ -1298,7 +1352,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             try {
                 oldUsrCtxCont = usrCtxFile.Read();
             } catch (error) {
-                GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Warning'));
+                GlobalEvent.log_error(error);
             }
         }
 
@@ -1308,21 +1362,11 @@ export class ProjectConfiguration<T extends BuilderConfigData>
                 usrCtxFile.Write(newUsrCtxCont);
             }
         } catch (error) {
-            GlobalEvent.emit('globalLog', ExceptionToMessage(error, 'Error'));
+            GlobalEvent.log_error(error);
         }
     }
 
     //---
-
-    private static EXCL_KEYS_IN_EIDE_JSON: string[] = [
-        'mode',
-        'excludeList',
-        'toolchain',
-        'compileConfig',
-        'uploader',
-        'uploadConfig',
-        'uploadConfigMap'
-    ];
 
     protected afterInitConfigData() {
 
@@ -1335,7 +1379,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         let curCfg = <any>this.config;
         for (const key in defCfg) {
             if (curCfg[key] == undefined &&
-                ProjectConfiguration.EXCL_KEYS_IN_EIDE_JSON.includes(key) == false) {
+                EXCL_KEYS_IN_EIDE_JSON.includes(key) == false) {
                 curCfg[key] = defCfg[key];
             }
         }
@@ -1354,6 +1398,9 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         if (this.config.mode == undefined) {
             const usrCtx = this.getProjectUsrCtx();
             this.recoverTarget(usrCtx.target);
+        } else {
+            // 如果是很旧的项目，则需要重新加载一次以更新项目数据
+            this.needReloadProject = true;
         }
 
         // fill missing field after target recovered
@@ -1406,7 +1453,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             }
         }
 
-        return utility.ToJsonStringExclude(eidePrjObj, ProjectConfiguration.EXCL_KEYS_IN_EIDE_JSON, 2);
+        return utility.ToJsonStringExclude(eidePrjObj, EXCL_KEYS_IN_EIDE_JSON, 2);
     }
 
     Save(force?: boolean) {

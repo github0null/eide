@@ -65,7 +65,9 @@ export class DependenceManager implements ManagerInterface {
     }
 
     InstallComponent(packName: string, component: Component) {
+        GlobalEvent.log_info(`Install CMSIS Component: ${component.groupName} ...`);
         this._installComponent(packName, component, [component.groupName]);
+        GlobalEvent.log_info(`Done.`);
     }
 
     private _installComponent(packName: string, component: Component, pendingList: string[]) {
@@ -77,25 +79,32 @@ export class DependenceManager implements ManagerInterface {
 
         /* 安装此组件的依赖项 */
         if (component.condition) {
-            const r = packageManager.CheckConditionRequire(component.condition, toolchain);
-            if (r == false)
-                throw new Error(`This condition '${component.condition}' is not met for component: '${component.groupName}'`);
-            if (Array.isArray(r)) {
-                for (const comp of r) {
-                    const compName = comp.replace('Device.', '');
-                    if (!comp.startsWith('Device.'))
-                        continue; /* 排除非 Device 类型的组件 */
-                    if (this.isInstalled(packName, compName))
-                        continue; /* 排除已安装的 */
-                    if (pendingList.includes(compName))
-                        continue; /* 排除队列中已存在的 */ 
-                    const t = packageManager.FindComponent(compName);
-                    if (t) {
-                        pendingList.push(compName);
-                        this._installComponent(packName, t, pendingList);
+            // check and get dependences
+            let depList: string[] = [];
+            try {
+                depList= packageManager.checkComponentRequirement(component.condition, toolchain);
+            } catch (error) {
+                GlobalEvent.log_warn(`${(<Error>error).message}`);
+                throw new Error(`Condition '${component.condition}' is not fit for this component: '${component.groupName}'`);
+            }
+            // try install dependences
+            for (const fullname of depList) {
+                if (!fullname.startsWith('Device.')) {
+                    GlobalEvent.log_warn(`${' '.repeat(pendingList.length)}-> ignore component: '${fullname}'`);
+                    continue; /* 排除非 Device 类型的组件 */
+                }
+                const reqName  = fullname.replace('Device.', '');
+                const compList = packageManager.FindAllComponents(reqName);
+                if (compList) {
+                    for (const item of compList) {
+                        if (this.isInstalled(packName, item.groupName))
+                            continue; /* 排除已安装的 */
+                        if (pendingList.includes(item.groupName))
+                            continue; /* 排除队列中已存在的 */
+                        pendingList.push(item.groupName);
+                        GlobalEvent.log_info(`${' '.repeat(pendingList.length)}-> install dependence component: ${item.groupName}`);
+                        this._installComponent(packName, item, pendingList);
                         pendingList.pop();
-                    } else {
-                        throw new Error(`Not found required sub component: '${comp}'`);
                     }
                 }
             }
@@ -541,9 +550,7 @@ export class DependenceManager implements ManagerInterface {
 
         const toolchain = this.project.getToolchain();
         const prjConfig = this.project.GetConfiguration();
-
-        const builderOpts = prjConfig.compileConfigModel
-            .getOptions(this.project.getEideDir().path, prjConfig.config);
+        const builderOpts = prjConfig.compileConfigModel.getOptions();
 
         const incList = ArrayDelRepetition(toolchain.getSystemIncludeList(builderOpts)
             .concat(toolchain.getDefaultIncludeList()));
