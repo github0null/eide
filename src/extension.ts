@@ -741,6 +741,7 @@ function onBinariesInstallDone() {
 }
 
 function cleanLegacyUnifyBuilder() {
+    const resManager = ResManager.GetInstance();
     const legacyDir = File.fromArray([resManager.getLegacyBuilderDir().path, 'bin']);
     if (legacyDir.IsDir()) {
         platform.DeleteDir(legacyDir);
