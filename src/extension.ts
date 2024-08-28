@@ -761,13 +761,14 @@ function exportEnvToSysPath(context?: vscode.ExtensionContext) {
     const legacyBuilderDir = resManager.getLegacyBuilderDir();
 
     // export some eide binaries path to system env path
-    const systemEnvPaths: string[] = [
+    const prependSystemPaths: string[] = [
         File.normalize(`${resManager.getUnifyBuilderExe().dir}`),
-        File.normalize(`${legacyBuilderDir.path}/utils`), // utils tool folder
-        File.normalize(`${legacyBuilderDir.dir}/scripts`),
-        File.normalize(`${resManager.Get7zDir().path}`), // export built-in 7za tool
-        File.normalize(`${resManager.getBuiltInToolsDir().path}/utils`) // builtin utils tool folder
+        File.normalize(`${legacyBuilderDir.path}/utils`),  // C:\Users\<USER-NAME>\.eide\bin\builder\utils
+        File.normalize(`${legacyBuilderDir.dir}/scripts`), // C:\Users\<USER-NAME>\.eide\bin\scripts
+        File.normalize(`${resManager.Get7zDir().path}`),   // builtin 7za tool
+        File.normalize(`${resManager.getBuiltInToolsDir().path}/utils`) // builtin util tools
     ];
+    const appendSystemPaths: string[] = [];
 
     //
     const eideToolsFolder = new File(File.normalize(`${platform.userhome()}/.eide/tools`));
@@ -852,20 +853,28 @@ function exportEnvToSysPath(context?: vscode.ExtensionContext) {
         }
     });
 
-    // append all tools to system env paths
+    // prepend/append all tools to system env paths
     pathList
         .filter((env) => File.IsDir(env.path))
         .forEach(envInfo => {
-            systemEnvPaths.push(envInfo.path);
-            if (envInfo.extraPath) {
-                envInfo.extraPath.forEach(p => systemEnvPaths.push(p));
+            if (['EIDE_MSYS'].includes(envInfo.key)) {
+                appendSystemPaths.push(envInfo.path);
+                if (envInfo.extraPath) {
+                    envInfo.extraPath.forEach(p => appendSystemPaths.push(p));
+                }
+            } else {
+                prependSystemPaths.push(envInfo.path);
+                if (envInfo.extraPath) {
+                    envInfo.extraPath.forEach(p => prependSystemPaths.push(p));
+                }
             }
         });
 
     /* append to System Path if we not */
     if (isEnvSetuped == false) {
         isEnvSetuped = true;
-        platform.prependToSysEnv(process.env, systemEnvPaths);
+        platform.prependToSysEnv(process.env, prependSystemPaths);
+        platform.appendToSysEnv(process.env, appendSystemPaths);
     }
 
     /* update env key value */
