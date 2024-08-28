@@ -557,6 +557,9 @@ export class PackageManager {
 
     private parseMemory(memObj: any[], ramList: ARMRamItem[], romList: ARMRomItem[]) {
 
+        let guess_next_ram_id = 1;
+        let guess_next_rom_id = 1;
+
         for (let mem of memObj) {
 
             let mAc = mem.$access || '';
@@ -603,8 +606,15 @@ export class PackageManager {
                         _mem.id = 3;
                         ramList.push(_mem);
                         break;
-                    default:
+                    default: {
+                        if (guess_next_ram_id <= 2) {
+                            _mem.tag = 'IRAM';
+                            _mem.id = guess_next_ram_id;
+                            ramList.push(_mem);
+                            guess_next_ram_id += 1;
+                        }
                         break;
+                    }
                 }
             }
 
@@ -648,8 +658,15 @@ export class PackageManager {
                         _mem.id = 3;
                         romList.push(_mem);
                         break;
-                    default:
+                    default: {
+                        if (guess_next_rom_id <= 2) {
+                            _mem.tag = 'IROM';
+                            _mem.id = guess_next_rom_id;
+                            romList.push(_mem);
+                            guess_next_rom_id += 1;
+                        }
                         break;
+                    }
                 }
             }
         }
