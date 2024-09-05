@@ -3957,7 +3957,7 @@ class EIDEProject extends AbstractProject {
                             includePath: this.cppToolsConfig.includePath,
                             defines: this.cppToolsConfig.defines,
                             forcedInclude: this.cppToolsConfig.forcedInclude,
-                            compilerPath: this.cppToolsConfig.compilerPath,
+                            compilerPath: this.getToolchain().getGccFamilyCompilerPathForCpptools('c++') || "",
                             compilerArgs: compilerArgs
                         }
                     };
