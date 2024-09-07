@@ -103,7 +103,8 @@ import {
     compareVersion,
     getGccSystemSearchList,
     openocd_getConfigList,
-    pyocd_getTargetList
+    pyocd_getTargetList,
+    generateDotnetProgramCmd
 } from './utility';
 import { concatSystemEnvPath, DeleteDir, exeSuffix, kill, osType, DeleteAllChildren } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
@@ -4463,8 +4464,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         paramsFile.Write(JSON.stringify(cmdList));
 
         /* launch */
-        const exeName = ResManager.GetInstance().getUnifyBuilderExe().noSuffixName;
-        const commandLine = CmdLineHandler.getCommandLine(exeName, ['-r', paramsFile.path]);
+        const commandLine = generateDotnetProgramCmd(
+            ResManager.instance().getUnifyBuilderExe(), ['-r', paramsFile.path]);
         runShellCommand('build workspace', commandLine);
     }
 

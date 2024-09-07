@@ -45,6 +45,22 @@ import { SettingManager } from './SettingManager';
 import { ToolchainName } from './ToolchainManager';
 import { Time } from '../lib/node-utility/Time';
 
+export function generateDotnetProgramCmd(programFile: File, args?: string[]): string {
+    // 在 x64 平台上，.NET编译生成的 包装程序 <my_program>.exe 无法在 arm64 平台运行
+    // 因此需要直接使用 dotnet 命令去直接执行程序的本体.
+    // 命令 "<my_program>.exe" 的等价替换是 "dotnet <my_program_dir>/<my_program>.dll"
+    if (platform.getArchId() == 'arm64') {
+        let dllpath = [programFile.dir, `${programFile.noSuffixName}.dll`].join('/');
+        let commandLine = `dotnet ${CmdLineHandler.quoteString(File.ToLocalPath(dllpath), '"')}`;
+        args?.forEach(p => {
+            commandLine += ' ' + CmdLineHandler.quoteString(p, '"');
+        });
+        return commandLine;
+    } else {
+        return CmdLineHandler.getCommandLine(programFile.noSuffixName, args || []);
+    }
+}
+
 export function timeStamp(): string {
     const time = Time.GetInstance().GetTimeInfo();
     return `${time.year}/${time.month.toString().padStart(2, '0')}/${time.date.toString().padStart(2, '0')}`

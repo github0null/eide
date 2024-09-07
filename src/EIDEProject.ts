@@ -2510,6 +2510,9 @@ $(OUT_DIR):
         this.registerBuiltinVar('SYS_PathSep', () => platform.osType() != 'win32' ? ':' : ';');
         this.registerBuiltinVar('SYS_PathSeparator', () => platform.osType() != 'win32' ? ':' : ';');
         this.registerBuiltinVar('SYS_EOL', () => os.EOL);
+
+        // eide vars
+        this.registerBuiltinVar('UnifyBuilderDir', () => ResManager.instance().getUnifyBuilderExe().dir);
     }
 
     private RegisterEvent(): void {
