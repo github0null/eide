@@ -2732,7 +2732,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
                 const compilerOpt = <ArmBaseCompileData>nEideTarget.compileConfig;
                 compilerOpt.cpuType = guessArmCpuType(eTarget) || 'Cortex-M3';
-                compilerOpt.floatingPointHardware = /-M[4-9]\d+/.test(compilerOpt.cpuType) ? 'single' : 'none';
+                compilerOpt.floatingPointHardware = ArmCpuUtils.hasFpu(compilerOpt.cpuType) ? 'single' : 'none';
                 compilerOpt.useCustomScatterFile = true;
                 compilerOpt.scatterFilePath = '';
 
@@ -3862,50 +3862,68 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     private async registerClangdProvider(prj: AbstractProject) {
 
-        if (this.cppToolsApi) {
-            // 如果 cpptools 激活了，则禁用 clangd，防止两个冲突
-            return;
-        }
+        if (this.cppToolsApi)
+            return; // 如果 cpptools 激活了，则禁用 clangd，防止两个冲突
 
         prj.on('cppConfigChanged', () => {
-            // todo
+
+            const envs = prj.getProjectVariables();
+            if (envs['EIDE_CLANGD_PROVIDER_ENABLE'] == '0') {
+                GlobalEvent.log_info(`ignore update .clangd, because EIDE_CLANGD_PROVIDER_ENABLE=0 is set`);
+                return;
+            }
+
+            // ----------------------
+            // setup clangd config
+            // ----------------------
+            try {
+                let cfg: any = {};
+                const fclangd = File.fromArray([prj.getProjectRoot().path, '.clangd']);
+                if (fclangd.IsFile()) {
+                    cfg = yaml.parse(fclangd.Read());
+                }
+                if (!cfg['CompileFlags']) cfg['CompileFlags'] = {};
+                if (!cfg['CompileFlags']['Add']) cfg['CompileFlags']['Add'] = []
+                //
+                cfg['CompileFlags']['CompilationDatabase'] = './' + File.ToUnixPath(prj.getOutputDir());
+                const toolchain = prj.getToolchain();
+                const gccLikePath = toolchain.getGccFamilyCompilerPathForCpptools('c++');
+                if (gccLikePath) { // 仅兼容gcc的编译器
+                    cfg['CompileFlags']['Compiler'] = gccLikePath;
+                    let clangdCompileFlags = <string[]>(cfg['CompileFlags']['Add']);
+                    let compilerArgs = prj.getCpptoolsConfig().cppCompilerArgs;
+                    if (/GCC/.test(toolchain.name)) {
+                        const tRoot = toolchain.getToolchainDir().path;
+                        clangdCompileFlags = clangdCompileFlags.filter(p => !File.isSubPathOf(tRoot, p.substr(2)));
+                        let li = getGccSystemSearchList(File.ToLocalPath(gccLikePath), ['-xc++'].concat(compilerArgs || []));
+                        if (li) {
+                            li.forEach(p => {
+                                clangdCompileFlags.push(`-I${File.normalize(p)}`);
+                            });
+                        }
+                    } else {
+                        clangdCompileFlags.push(`-I${toolchain.getToolchainDir().path}/include`);
+                        clangdCompileFlags.push(`-I${toolchain.getToolchainDir().path}/include/libcxx`);
+                    }
+                    // // add flags
+                    // if (compilerArgs)
+                    //     compilerArgs.forEach(arg => clangdCompileFlags.push(arg));
+                    // // add user includes
+                    // prj.getCpptoolsConfig().includePath
+                    //     .forEach(path => clangdCompileFlags.push(`-I${path}`));
+                    // // add user defines
+                    // prj.getCpptoolsConfig().defines
+                    //     .forEach(d => clangdCompileFlags.push(`-D${d}`));
+                    // del repeat
+                    cfg['CompileFlags']['Add'] = ArrayDelRepetition(clangdCompileFlags);
+                }
+                fclangd.Write(yaml.stringify(cfg));
+            } catch (error) {
+                GlobalEvent.log_error(error);
+            }
         });
 
-        // ----------------------
-        // setup clangd config
-        // ----------------------
-        try {
-            let cfg: any = {};
-            const fclangd = File.fromArray([prj.getProjectRoot().path, '.clangd']);
-            if (fclangd.IsFile()) {
-                cfg = yaml.parse(fclangd.Read());
-            }
-            if (!cfg['CompileFlags']) cfg['CompileFlags'] = {};
-            if (!cfg['CompileFlags']['Add']) cfg['CompileFlags']['Add'] = []
-            //
-            cfg['CompileFlags']['CompilationDatabase'] = './' + File.ToUnixPath(prj.getOutputDir());
-            const toolchain = prj.getToolchain();
-            const gccLikePath = toolchain.getGccFamilyCompilerPathForCpptools();
-            if (gccLikePath) { // 仅兼容gcc的编译器
-                cfg['CompileFlags']['Compiler'] = gccLikePath;
-                let args: string[] = cfg['CompileFlags']['Add'];
-                if (/GCC/.test(toolchain.name)) {
-                    let li = getGccSystemSearchList(File.ToLocalPath(gccLikePath));
-                    if (li) {
-                        li.forEach(p => {
-                            args.push(`-I${File.normalize(p)}`);
-                        });
-                    }
-                } else {
-                    args.push(`-I${toolchain.getToolchainDir().path}/include`);
-                    args.push(`-I${toolchain.getToolchainDir().path}/include/libcxx`);
-                }
-                cfg['CompileFlags']['Add'] = ArrayDelRepetition(args);
-            }
-            fclangd.Write(yaml.stringify(cfg));
-        } catch (error) {
-            GlobalEvent.log_error(error);
-        }
+        prj.forceUpdateCpptoolsConfig();
     }
 
     // -----------------------------------------

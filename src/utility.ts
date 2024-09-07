@@ -207,11 +207,13 @@ export function isGccFamilyToolchain(name: ToolchainName): boolean {
     return name.includes('GCC');
 }
 
-export function getGccSystemSearchList(gccPath: string): string[] | undefined {
+export function getGccSystemSearchList(gccFullPath: string, args?: string[]): string[] | undefined {
     try {
-        const gccName = NodePath.basename(gccPath);
-        const gccDir = NodePath.dirname(gccPath);
-        const cmdLine = `${gccName} ` + ['-xc++', '-E', '-v', '-', `<${platform.osGetNullDev()}`, '2>&1'].join(' ');
+        const gccName = NodePath.basename(gccFullPath);
+        const gccDir = NodePath.dirname(gccFullPath);
+        let cmdArgs: string[] = ['-E', '-v', '-', `<${platform.osGetNullDev()}`, '2>&1'];
+        if (args) cmdArgs = args.concat(cmdArgs);
+        const cmdLine = `${gccName} ` + cmdArgs.join(' ');
         const lines = child_process.execSync(cmdLine, { cwd: gccDir }).toString().split(/\r\n|\n/);
         const iStart = lines.findIndex((line) => { return line.startsWith('#include <...>'); });
         const iEnd = lines.indexOf('End of search list.', iStart);

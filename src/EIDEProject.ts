@@ -2816,6 +2816,8 @@ $(OUT_DIR):
 
     public abstract getSourceRefs(file: File): File[];
 
+    public abstract getCpptoolsConfig(): CppConfigItem;
+
     //-----------------------------------------------------------
 
     public abstract createBase(option: CreateOptions, createNewPrjFolder?: boolean): BaseProjectInfo;
@@ -3678,6 +3680,10 @@ class EIDEProject extends AbstractProject {
 
     private __cpptools_updateTimeout: NodeJS.Timeout | undefined;
 
+    getCpptoolsConfig(): CppConfigItem {
+        return <CppConfigItem>deepCloneObject(this.cppToolsConfig);
+    }
+
     forceUpdateCpptoolsConfig(): void {
         this.UpdateCppConfig();
     }
@@ -3944,9 +3950,17 @@ class EIDEProject extends AbstractProject {
                 // c++ files
                 else {
 
-                    let compilerArgs = this.cppToolsConfig.cppCompilerArgs;
+                    const compilerArgs: string[] = [];
+                    const compilerPath = this.getToolchain().getGccFamilyCompilerPathForCpptools('c++');
+
+                    // We need to tell gcc compiler: this is a c++ file
+                    if (compilerPath) {
+                        compilerArgs.push('-xc++');
+                    }
+
+                    this.cppToolsConfig.cppCompilerArgs?.forEach(arg => compilerArgs.push(arg));
                     if (fileArgs) {
-                        compilerArgs = (compilerArgs || []).concat(fileArgs);
+                        fileArgs.forEach(arg => compilerArgs.push(arg));
                     }
 
                     return {
@@ -3957,7 +3971,7 @@ class EIDEProject extends AbstractProject {
                             includePath: this.cppToolsConfig.includePath,
                             defines: this.cppToolsConfig.defines,
                             forcedInclude: this.cppToolsConfig.forcedInclude,
-                            compilerPath: this.getToolchain().getGccFamilyCompilerPathForCpptools('c++') || "",
+                            compilerPath: compilerPath || "",
                             compilerArgs: compilerArgs
                         }
                     };
