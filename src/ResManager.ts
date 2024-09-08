@@ -163,7 +163,7 @@ export class ResManager extends events.EventEmitter {
 
     enumSerialPort(): string[] {
         try {
-            const cmd = this.getSerialPortExe().noSuffixName;
+            const cmd = utility.generateDotnetProgramCmd(this.getSerialPortExe());
             const data = ChildProcess.execSync(cmd, { env: process.env });
             const portList: string[] = JSON.parse(EncodingConverter.trimUtf8BomHeader(data));
             if (!Array.isArray(portList)) { throw Error("get current port list error !"); }

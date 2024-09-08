@@ -6,6 +6,19 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.19.8] update
+
+**Fix**:
+  - `Chip Package`: Storage layout default value missed.
+  - `Unify Builder`: Fix ac6 linker options missed on macos. Thanks [@Deadline039](https://github.com/Deadline039).
+
+**Optimize**:
+  - `Unify Builder`: Use 'dotnet unify_builder.dll' instead of 'unify_builder.exe' on arm64 platform.
+  - `C/C++ Config Provider`: Use g++ when provide compilerPath for cpptools.
+  - `Other`: Append msys path to the tail of system PATH, not head.
+
+***
+
 ### [v3.19.6] update
 
 **Change**:

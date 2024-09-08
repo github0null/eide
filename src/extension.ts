@@ -465,6 +465,9 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
             process.env['EIDE_BINARIES_VER'] = localVersion;
         }
 
+        // clean legacy builder/bin folder
+        cleanLegacyUnifyBuilder();
+
         return true;
     }
 
@@ -734,13 +737,14 @@ function onBinariesInstallDone() {
     }
 
     // delete legacy builder dir
+    cleanLegacyUnifyBuilder();
+}
+
+function cleanLegacyUnifyBuilder() {
+    const resManager = ResManager.GetInstance();
     const legacyDir = File.fromArray([resManager.getLegacyBuilderDir().path, 'bin']);
     if (legacyDir.IsDir()) {
-        platform.DeleteAllChildren(legacyDir);
-        fs.writeFileSync(legacyDir.path + '/' + 'NOTICE.TXT',
-            [`unify_builder has been moved to '${resManager.getUnifyBuilderExe().dir}, this folder is deprecated'`,
-             `---`,
-             `unify_builder 的位置已被转移到 '${resManager.getUnifyBuilderExe().dir}'，该位置已被弃用`].join(os.EOL));
+        platform.DeleteDir(legacyDir);
     }
 }
 
@@ -757,13 +761,14 @@ function exportEnvToSysPath(context?: vscode.ExtensionContext) {
     const legacyBuilderDir = resManager.getLegacyBuilderDir();
 
     // export some eide binaries path to system env path
-    const systemEnvPaths: string[] = [
+    const prependSystemPaths: string[] = [
         File.normalize(`${resManager.getUnifyBuilderExe().dir}`),
-        File.normalize(`${legacyBuilderDir.path}/utils`), // utils tool folder
-        File.normalize(`${legacyBuilderDir.dir}/scripts`),
-        File.normalize(`${resManager.Get7zDir().path}`), // export built-in 7za tool
-        File.normalize(`${resManager.getBuiltInToolsDir().path}/utils`) // builtin utils tool folder
+        File.normalize(`${legacyBuilderDir.path}/utils`),  // C:\Users\<USER-NAME>\.eide\bin\builder\utils
+        File.normalize(`${legacyBuilderDir.dir}/scripts`), // C:\Users\<USER-NAME>\.eide\bin\scripts
+        File.normalize(`${resManager.Get7zDir().path}`),   // builtin 7za tool
+        File.normalize(`${resManager.getBuiltInToolsDir().path}/utils`) // builtin util tools
     ];
+    const appendSystemPaths: string[] = [];
 
     //
     const eideToolsFolder = new File(File.normalize(`${platform.userhome()}/.eide/tools`));
@@ -848,20 +853,28 @@ function exportEnvToSysPath(context?: vscode.ExtensionContext) {
         }
     });
 
-    // append all tools to system env paths
+    // prepend/append all tools to system env paths
     pathList
         .filter((env) => File.IsDir(env.path))
         .forEach(envInfo => {
-            systemEnvPaths.push(envInfo.path);
-            if (envInfo.extraPath) {
-                envInfo.extraPath.forEach(p => systemEnvPaths.push(p));
+            if (['EIDE_MSYS'].includes(envInfo.key)) {
+                appendSystemPaths.push(envInfo.path);
+                if (envInfo.extraPath) {
+                    envInfo.extraPath.forEach(p => appendSystemPaths.push(p));
+                }
+            } else {
+                prependSystemPaths.push(envInfo.path);
+                if (envInfo.extraPath) {
+                    envInfo.extraPath.forEach(p => prependSystemPaths.push(p));
+                }
             }
         });
 
     /* append to System Path if we not */
     if (isEnvSetuped == false) {
         isEnvSetuped = true;
-        platform.prependToSysEnv(process.env, systemEnvPaths);
+        platform.prependToSysEnv(process.env, prependSystemPaths);
+        platform.appendToSysEnv(process.env, appendSystemPaths);
     }
 
     /* update env key value */
@@ -972,7 +985,7 @@ async function checkAndInstallRuntime() {
                     const pkgSha256 = sevenZip.sha256(pkgFile);
                     const reqSha256 = 'A085714B879DC1CB85538109640E22A2CBFF2B91195DF540A5F98AEA09AF2C1E'.toLowerCase();
                     if (pkgSha256 == reqSha256) { pkgReady = true; } // sha256 verified, use cached old file
-                    else { try { fs.unlinkSync(pkgFile.path); } catch{ } } // sha256 verify failed, del old file
+                    else { try { fs.unlinkSync(pkgFile.path); } catch { } } // sha256 verify failed, del old file
                 }
 
                 if (!pkgReady) { // if no cached pkg, download it
@@ -1555,7 +1568,7 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
             }
 
             if (!isSupported) {
-                webviewPanel.webview.html = this.genHtmlCont(title, 
+                webviewPanel.webview.html = this.genHtmlCont(title,
                     `<span class="error">Error</span>: We don't support this toolchain type: '${conf.tool}' yet !`);
                 return;
             }
@@ -1675,7 +1688,7 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
 
                         if (toolchain.parseMapFile) {
                             let ret = toolchain.parseMapFile(vInfo.mapPath);
-                            if (ret instanceof Error) 
+                            if (ret instanceof Error)
                                 throw ret;
                             else
                                 lines = ret;

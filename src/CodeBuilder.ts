@@ -49,7 +49,7 @@ import { ArrayDelRepetition } from "../lib/node-utility/Utility";
 import { DependenceManager } from "./DependenceManager";
 import { WorkspaceManager } from "./WorkspaceManager";
 import { ToolchainName } from "./ToolchainManager";
-import { md5, sha256, copyObject } from "./utility";
+import { md5, sha256, copyObject, generateDotnetProgramCmd } from "./utility";
 import { exeSuffix, osType } from "./Platform";
 import { FileWatcher } from "../lib/node-utility/FileWatcher";
 import { STVPFlasherOptions } from './HexUploader';
@@ -322,10 +322,8 @@ export abstract class CodeBuilder {
         outDir.CreateDir(true);
 
         // generate command line
-        const commandLine = CmdLineHandler.getCommandLine(
-            ResManager.instance().getUnifyBuilderExe().noSuffixName,
-            this.getCommands()
-        );
+        const commandLine = generateDotnetProgramCmd(
+            ResManager.instance().getUnifyBuilderExe(), this.getCommands());
 
         // if only generate params, exit
         if (options?.onlyGenParams) return;

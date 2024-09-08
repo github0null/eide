@@ -2510,6 +2510,9 @@ $(OUT_DIR):
         this.registerBuiltinVar('SYS_PathSep', () => platform.osType() != 'win32' ? ':' : ';');
         this.registerBuiltinVar('SYS_PathSeparator', () => platform.osType() != 'win32' ? ':' : ';');
         this.registerBuiltinVar('SYS_EOL', () => os.EOL);
+
+        // eide vars
+        this.registerBuiltinVar('UnifyBuilderDir', () => ResManager.instance().getUnifyBuilderExe().dir);
     }
 
     private RegisterEvent(): void {
@@ -2815,6 +2818,8 @@ $(OUT_DIR):
     public abstract notifyUpdateSourceRefs(toolchain: ToolchainName | undefined): void;
 
     public abstract getSourceRefs(file: File): File[];
+
+    public abstract getCpptoolsConfig(): CppConfigItem;
 
     //-----------------------------------------------------------
 
@@ -3678,6 +3683,10 @@ class EIDEProject extends AbstractProject {
 
     private __cpptools_updateTimeout: NodeJS.Timeout | undefined;
 
+    getCpptoolsConfig(): CppConfigItem {
+        return <CppConfigItem>deepCloneObject(this.cppToolsConfig);
+    }
+
     forceUpdateCpptoolsConfig(): void {
         this.UpdateCppConfig();
     }
@@ -3944,9 +3953,17 @@ class EIDEProject extends AbstractProject {
                 // c++ files
                 else {
 
-                    let compilerArgs = this.cppToolsConfig.cppCompilerArgs;
+                    const compilerArgs: string[] = [];
+                    const compilerPath = this.getToolchain().getGccFamilyCompilerPathForCpptools('c++');
+
+                    // We need to tell gcc compiler: this is a c++ file
+                    if (compilerPath) {
+                        compilerArgs.push('-xc++');
+                    }
+
+                    this.cppToolsConfig.cppCompilerArgs?.forEach(arg => compilerArgs.push(arg));
                     if (fileArgs) {
-                        compilerArgs = (compilerArgs || []).concat(fileArgs);
+                        fileArgs.forEach(arg => compilerArgs.push(arg));
                     }
 
                     return {
@@ -3957,7 +3974,7 @@ class EIDEProject extends AbstractProject {
                             includePath: this.cppToolsConfig.includePath,
                             defines: this.cppToolsConfig.defines,
                             forcedInclude: this.cppToolsConfig.forcedInclude,
-                            compilerPath: this.cppToolsConfig.compilerPath,
+                            compilerPath: compilerPath || "",
                             compilerArgs: compilerArgs
                         }
                     };

@@ -45,6 +45,22 @@ import { SettingManager } from './SettingManager';
 import { ToolchainName } from './ToolchainManager';
 import { Time } from '../lib/node-utility/Time';
 
+export function generateDotnetProgramCmd(programFile: File, args?: string[]): string {
+    // 在 x64 平台上，.NET编译生成的 包装程序 <my_program>.exe 无法在 arm64 平台运行
+    // 因此需要直接使用 dotnet 命令去直接执行程序的本体.
+    // 命令 "<my_program>.exe" 的等价替换是 "dotnet <my_program_dir>/<my_program>.dll"
+    if (platform.getArchId() == 'arm64') {
+        let dllpath = [programFile.dir, `${programFile.noSuffixName}.dll`].join('/');
+        let commandLine = `dotnet ${CmdLineHandler.quoteString(File.ToLocalPath(dllpath), '"')}`;
+        args?.forEach(p => {
+            commandLine += ' ' + CmdLineHandler.quoteString(p, '"');
+        });
+        return commandLine;
+    } else {
+        return CmdLineHandler.getCommandLine(programFile.noSuffixName, args || []);
+    }
+}
+
 export function timeStamp(): string {
     const time = Time.GetInstance().GetTimeInfo();
     return `${time.year}/${time.month.toString().padStart(2, '0')}/${time.date.toString().padStart(2, '0')}`
@@ -207,11 +223,13 @@ export function isGccFamilyToolchain(name: ToolchainName): boolean {
     return name.includes('GCC');
 }
 
-export function getGccSystemSearchList(gccPath: string): string[] | undefined {
+export function getGccSystemSearchList(gccFullPath: string, args?: string[]): string[] | undefined {
     try {
-        const gccName = NodePath.basename(gccPath);
-        const gccDir = NodePath.dirname(gccPath);
-        const cmdLine = `${gccName} ` + ['-xc++', '-E', '-v', '-', `<${platform.osGetNullDev()}`, '2>&1'].join(' ');
+        const gccName = NodePath.basename(gccFullPath);
+        const gccDir = NodePath.dirname(gccFullPath);
+        let cmdArgs: string[] = ['-E', '-v', '-', `<${platform.osGetNullDev()}`, '2>&1'];
+        if (args) cmdArgs = args.concat(cmdArgs);
+        const cmdLine = `${gccName} ` + cmdArgs.join(' ');
         const lines = child_process.execSync(cmdLine, { cwd: gccDir }).toString().split(/\r\n|\n/);
         const iStart = lines.findIndex((line) => { return line.startsWith('#include <...>'); });
         const iEnd = lines.indexOf('End of search list.', iStart);
