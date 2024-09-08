@@ -1,10 +1,10 @@
 # Embedded IDE
 
-[![](https://img.shields.io/badge/home_page-em--ide.com-blue)](https://em-ide.com/)
-[![](https://vsmarketplacebadges.dev/version/CL.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide)
-[![](https://vsmarketplacebadges.dev/installs-short/CL.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide)
-[![](https://vsmarketplacebadges.dev/downloads-short/CL.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide)
-[![](https://vsmarketplacebadges.dev/rating/CL.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide)
+[![](https://img.shields.io/badge/主页-em--ide.com-blue)](https://em-ide.com/)
+[![](https://img.shields.io/badge/论坛-discuss.em--ide.com-orange)](https://discuss.em-ide.com/)
+[![](https://img.shields.io/visual-studio-marketplace/v/CL.eide)](https://marketplace.visualstudio.com/items?itemName=CL.eide)
+[![](https://img.shields.io/visual-studio-marketplace/i/CL.eide)](https://marketplace.visualstudio.com/items?itemName=CL.eide)
+[![](https://img.shields.io/visual-studio-marketplace/stars/CL.eide)](https://marketplace.visualstudio.com/items?itemName=CL.eide&ssr=false#review-details)
 
 ***
 
