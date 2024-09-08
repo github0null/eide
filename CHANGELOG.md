@@ -6,7 +6,7 @@ All notable version changes will be recorded in this file.
 
 ***
 
-### [v3.19.7] update
+### [v3.19.8] update
 
 **Fix**:
   - `Chip Package`: Storage layout default value missed.

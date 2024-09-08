@@ -1,5 +1,11 @@
 # Embedded IDE
 
+[![](https://img.shields.io/badge/home_page-em--ide.com-blue)](https://em-ide.com/)
+[![](https://vsmarketplacebadges.dev/version/CL.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide)
+[![](https://vsmarketplacebadges.dev/installs-short/CL.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide)
+[![](https://vsmarketplacebadges.dev/downloads-short/CL.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide)
+[![](https://vsmarketplacebadges.dev/rating/CL.eide.svg)](https://marketplace.visualstudio.com/items?itemName=CL.eide)
+
 ***
 
 ## [中文](./README_ZH-CN.md)
