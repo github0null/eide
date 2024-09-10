@@ -2512,7 +2512,12 @@ $(OUT_DIR):
         this.registerBuiltinVar('SYS_EOL', () => os.EOL);
 
         // eide vars
-        this.registerBuiltinVar('UnifyBuilderDir', () => ResManager.instance().getUnifyBuilderExe().dir);
+        this.registerBuiltinVar('EIDE_BUILDER_DIR', () => ResManager.instance().getUnifyBuilderExe().dir);
+        for (const key in process.env) {
+            if (key.startsWith('EIDE_')) {
+                this.registerBuiltinVar(key, () => process.env[key] || '');
+            }
+        }
     }
 
     private RegisterEvent(): void {
