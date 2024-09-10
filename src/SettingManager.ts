@@ -35,6 +35,7 @@ import * as Utility from './utility';
 import { find, exeSuffix, userhome } from './Platform';
 import { WorkspaceManager } from './WorkspaceManager';
 import { ToolchainName } from './ToolchainManager';
+import { view_str$prompt$needReloadToUpdateEnv } from './StringTable';
 
 export enum CheckStatus {
     All_Verified,
@@ -115,6 +116,10 @@ export class SettingManager {
 
                     if (e.affectsConfiguration('EIDE.Builder.EnvironmentVariables')) {
                         this.syncGlobalEnvVariablesToNodeEnv();
+                    }
+
+                    if (e.affectsConfiguration('EIDE.Win32.Msys.Enable')) {
+                        Utility.notifyReloadWindow(view_str$prompt$needReloadToUpdateEnv);
                     }
 
                 } catch (error) {
