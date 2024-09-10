@@ -6,6 +6,17 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.19.9] revision
+
+**New**:
+  - `Plug-in Settings`: New plug-in settings: `Win32.Msys.Enable`, to determine whether to enable the built-in MSYS tools.
+  - `Project Variables`: Export `EIDE_xxx` variables into project variables.
+
+**Change**:
+  - ~~`Other`: Append msys path to the tail of system PATH, not head.~~
+
+***
+
 ### [v3.19.8] update
 
 **Fix**:
