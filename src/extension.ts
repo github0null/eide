@@ -768,7 +768,6 @@ function exportEnvToSysPath(context?: vscode.ExtensionContext) {
         File.normalize(`${resManager.Get7zDir().path}`),   // builtin 7za tool
         File.normalize(`${resManager.getBuiltInToolsDir().path}/utils`) // builtin util tools
     ];
-    const appendSystemPaths: string[] = [];
 
     //
     const eideToolsFolder = new File(File.normalize(`${platform.userhome()}/.eide/tools`));
@@ -846,8 +845,12 @@ function exportEnvToSysPath(context?: vscode.ExtensionContext) {
     legacyBuilderDir.GetList(File.EXCLUDE_ALL_FILTER).forEach((subDir) => {
         const binFolder = File.normalize(`${subDir.path}/bin`);
         if (File.IsDir(binFolder)) {
+            const key_name = `EIDE_${subDir.name.toUpperCase()}`;
+            // check msys is enabled
+            if (key_name == 'EIDE_MSYS' && !settingManager.isEnableMsys())
+                return;
             pathList.push({
-                key: `EIDE_${subDir.name.toUpperCase()}`,
+                key: key_name,
                 path: binFolder
             });
         }
@@ -857,16 +860,9 @@ function exportEnvToSysPath(context?: vscode.ExtensionContext) {
     pathList
         .filter((env) => File.IsDir(env.path))
         .forEach(envInfo => {
-            if (['EIDE_MSYS'].includes(envInfo.key)) {
-                appendSystemPaths.push(envInfo.path);
-                if (envInfo.extraPath) {
-                    envInfo.extraPath.forEach(p => appendSystemPaths.push(p));
-                }
-            } else {
-                prependSystemPaths.push(envInfo.path);
-                if (envInfo.extraPath) {
-                    envInfo.extraPath.forEach(p => prependSystemPaths.push(p));
-                }
+            prependSystemPaths.push(envInfo.path);
+            if (envInfo.extraPath) {
+                envInfo.extraPath.forEach(p => prependSystemPaths.push(p));
             }
         });
 
@@ -874,7 +870,6 @@ function exportEnvToSysPath(context?: vscode.ExtensionContext) {
     if (isEnvSetuped == false) {
         isEnvSetuped = true;
         platform.prependToSysEnv(process.env, prependSystemPaths);
-        platform.appendToSysEnv(process.env, appendSystemPaths);
     }
 
     /* update env key value */
@@ -1234,7 +1229,8 @@ class EideTaskProvider implements vscode.TaskProvider {
 
         const workspaceManager = WorkspaceManager.getInstance();
 
-        if (task_.definition.type == EideTaskProvider.TASK_TYPE_MSYS) {
+        if (task_.definition.type == EideTaskProvider.TASK_TYPE_MSYS && 
+            SettingManager.GetInstance().isEnableMsys()) {
 
             const definition: EideShellTaskDef = <any>task_.definition;
 

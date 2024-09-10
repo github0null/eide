@@ -35,6 +35,7 @@ import * as Utility from './utility';
 import { find, exeSuffix, userhome } from './Platform';
 import { WorkspaceManager } from './WorkspaceManager';
 import { ToolchainName } from './ToolchainManager';
+import { view_str$prompt$needReloadToUpdateEnv } from './StringTable';
 
 export enum CheckStatus {
     All_Verified,
@@ -115,6 +116,10 @@ export class SettingManager {
 
                     if (e.affectsConfiguration('EIDE.Builder.EnvironmentVariables')) {
                         this.syncGlobalEnvVariablesToNodeEnv();
+                    }
+
+                    if (e.affectsConfiguration('EIDE.Win32.Msys.Enable')) {
+                        Utility.notifyReloadWindow(view_str$prompt$needReloadToUpdateEnv);
                     }
 
                 } catch (error) {
@@ -287,6 +292,12 @@ export class SettingManager {
 
     getForceIncludeList(): string[] {
         return this.getConfiguration().get<string[]>('Cpptools.ForceInclude') || [];
+    }
+
+    isEnableMsys(): boolean {
+        if (os.platform() != 'win32')
+            return false; //! not support non-win32 platform
+        return this.getConfiguration().get<boolean>('Win32.Msys.Enable') || false;
     }
 
     isEnableTelemetry(): boolean {

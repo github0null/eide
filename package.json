@@ -38,7 +38,7 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/MIPS/RISC-V",
-    "version": "3.19.8",
+    "version": "3.19.9",
     "preview": false,
     "engines": {
         "vscode": "^1.67.0"
@@ -188,6 +188,12 @@
             {
                 "title": "Embedded IDE",
                 "properties": {
+                    "EIDE.Win32.Msys.Enable": {
+                        "type": "boolean",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.msys.enable%",
+                        "default": true
+                    },
                     "EIDE.DisplayLanguage": {
                         "type": "string",
                         "scope": "resource",
@@ -207,7 +213,7 @@
                     "EIDE.ExternalTools.IndexUrl": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "external tools **index.json** url, ref: https://github.com/github0null/eide_default_external_tools_index"
+                        "markdownDescription": "External tools **index.json** url, ref: https://github.com/github0null/eide_default_external_tools_index"
                     },
                     "EIDE.SourceTree.AutoSearchIncludePath": {
                         "type": "boolean",
