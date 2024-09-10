@@ -289,6 +289,12 @@ export class SettingManager {
         return this.getConfiguration().get<string[]>('Cpptools.ForceInclude') || [];
     }
 
+    isEnableMsys(): boolean {
+        if (os.platform() != 'win32')
+            return false; //! not support non-win32 platform
+        return this.getConfiguration().get<boolean>('Win32.Msys.Enable') || false;
+    }
+
     isEnableTelemetry(): boolean {
         return this.getConfiguration().get<boolean>('Option.EnableTelemetry') || false;
     }

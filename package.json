@@ -188,6 +188,12 @@
             {
                 "title": "Embedded IDE",
                 "properties": {
+                    "EIDE.Win32.Msys.Enable": {
+                        "type": "boolean",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.msys.enable%",
+                        "default": true
+                    },
                     "EIDE.DisplayLanguage": {
                         "type": "string",
                         "scope": "resource",
@@ -207,7 +213,7 @@
                     "EIDE.ExternalTools.IndexUrl": {
                         "type": "string",
                         "scope": "machine",
-                        "markdownDescription": "external tools **index.json** url, ref: https://github.com/github0null/eide_default_external_tools_index"
+                        "markdownDescription": "External tools **index.json** url, ref: https://github.com/github0null/eide_default_external_tools_index"
                     },
                     "EIDE.SourceTree.AutoSearchIncludePath": {
                         "type": "boolean",

@@ -95,6 +95,8 @@
     "eide.deps.macro.show": "Display All Macros",
     "eide.deps.macro.add": "Add Macro",
 
+    "settings.msys.enable": "Determine whether to enable the built-in **MSYS environment and tools** on Win32 platform",
+
     "settings.enable.telemetry": "Enable telemetry for extension. We will collect information from the logs to help improve the functionality of this extension.",
 
     "settings.builder.jobs": "The number of threads when build",
