@@ -6948,16 +6948,22 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 const tarFlasher = idxObj[sel.idx];
 
                 reporter.report({ message: 'download shell scripts' });
-                let scriptDir = new File(project.getRootDir().path);
-                if (tarFlasher.scriptInstallDir) scriptDir = File.fromArray([scriptDir.path, tarFlasher.scriptInstallDir]);
-                scriptDir.CreateDir(true);
+
+                // download and install flasher script
                 const scriptsList = await readGithubRepoFolder(`https://api.github.com/repos/${REPO_PATH}/contents/scripts/${tarFlasher.id}`);
-                if (scriptsList instanceof Error) throw scriptsList;
-                for (const scriptInfo of scriptsList) {
-                    if (scriptInfo.download_url) {
-                        const buff = await downloadFile(redirectHost(scriptInfo.download_url));
-                        if (!(buff instanceof Buffer)) throw buff || new Error(`Cannot download '${scriptInfo.name}'`);
-                        fs.writeFileSync(`${scriptDir.path}/${scriptInfo.name}`, buff);
+                if (scriptsList instanceof Error) {
+                    if (scriptsList.message?.trim() != 'Not Found')
+                        throw scriptsList;
+                } else {
+                    let scriptDir = new File(project.getRootDir().path);
+                    if (tarFlasher.scriptInstallDir) scriptDir = File.fromArray([scriptDir.path, tarFlasher.scriptInstallDir]);
+                    scriptDir.CreateDir(true);
+                    for (const scriptInfo of scriptsList) {
+                        if (scriptInfo.download_url) {
+                            const buff = await downloadFile(redirectHost(scriptInfo.download_url));
+                            if (!(buff instanceof Buffer)) throw buff || new Error(`Cannot download '${scriptInfo.name}'`);
+                            fs.writeFileSync(`${scriptDir.path}/${scriptInfo.name}`, buff);
+                        }
                     }
                 }
 
