@@ -103,6 +103,7 @@
     "settings.builder.extraCommandLine": "Append additional commandline when invoke unify_builder",
     "settings.builder.presetEnvVars": "Preset Global Environment Variables when build project",
     
+    "settings.enable.ccache": "Determine whether to enable [ccache](https://ccache.dev/) used to speed up compilation of large projects",
     "settings.option.show.toolbar.in.editer.title": "Displays some toolbars in the editor title",
     "settings.option.show.statusbar": "Displays toolbar icons in the status bar",
     "settings.option.print.relative.path": "Print relative path when compile source file",

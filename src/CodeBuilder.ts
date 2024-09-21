@@ -90,6 +90,7 @@ export interface BuilderParams {
     options: BuilderOptions;
     sha?: { [options_name: string]: string };
     env?: { [name: string]: any };
+    sysPaths?: string[];
 }
 
 export interface CompilerCommandsDatabaseItem {
@@ -404,7 +405,8 @@ export abstract class CodeBuilder {
             sourceParams: sourceInfo.params,
             sourceParamsMtime: sourceInfo.paramsModTime,
             options: JSON.parse(JSON.stringify(compileOptions)),
-            env: this.project.getProjectVariables()
+            env: this.project.getProjectVariables(),
+            sysPaths: []
         };
 
         // set ram size from env
@@ -541,15 +543,18 @@ export abstract class CodeBuilder {
             builderOptions.buildMode = builderModeList.map(str => str.toLowerCase()).join('|');
         }
 
-        // write project build params
-        fs.writeFileSync(paramsPath, JSON.stringify(builderOptions, undefined, 4));
-
-        let cmds = [
-            '-p', paramsPath,
-        ];
+        let cmds = ['-p', paramsPath];
 
         if (this.isRebuild()) {
             cmds.push('--rebuild');
+        } else {
+            if (settingManager.isEnableCcache(builderOptions.sourceList.length)) {
+                cmds.push('--use-ccache');
+                const dir = File.from(ResManager.instance().getBuiltInToolsDir().path, 'ccache');
+                if (dir.IsDir()) {
+                    builderOptions.sysPaths?.push(dir.path);
+                }
+            }
         }
 
         if (this.useShowParamsMode) {
@@ -560,6 +565,9 @@ export abstract class CodeBuilder {
         if (extraCmd) {
             cmds = cmds.concat(extraCmd.split(/\s+/));
         }
+
+        // write project build params
+        fs.writeFileSync(paramsPath, JSON.stringify(builderOptions, undefined, 4));
 
         return cmds;
     }

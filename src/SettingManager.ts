@@ -30,12 +30,12 @@ import * as NodePath from 'path';
 
 import { File } from '../lib/node-utility/File';
 import { GlobalEvent } from './GlobalEvents';
-import { ExceptionToMessage } from './Message';
+import { ExceptionToMessage, newMessage } from './Message';
 import * as Utility from './utility';
-import { find, exeSuffix, userhome } from './Platform';
+import { find, exeSuffix, userhome, osType } from './Platform';
 import { WorkspaceManager } from './WorkspaceManager';
 import { ToolchainName } from './ToolchainManager';
-import { view_str$prompt$needReloadToUpdateEnv } from './StringTable';
+import { view_str$prompt$needReloadToUpdateEnv, WARNING } from './StringTable';
 
 export enum CheckStatus {
     All_Verified,
@@ -121,6 +121,21 @@ export class SettingManager {
                     if (e.affectsConfiguration('EIDE.Win32.Msys.Enable')) {
                         Utility.notifyReloadWindow(view_str$prompt$needReloadToUpdateEnv);
                     }
+
+                    //! 暂时弃用 ccache
+                    // // for non-win32 platform, we provide a check when user want to use 'ccache'
+                    // if (osType() != 'win32') {
+                    //     if (e.affectsConfiguration('EIDE.Option.ccache')) {
+                    //         const sel = this.getConfiguration().get<string>('Option.ccache');
+                    //         if (sel !== 'never') {
+                    //             const path = find(`ccache${exeSuffix()}`);
+                    //             if (!path) {
+                    //                 vscode.window.showWarningMessage(
+                    //                     `${WARNING}: not found 'ccache', please install it by system packages manager.`);
+                    //             }
+                    //         }
+                    //     }
+                    // }
 
                 } catch (error) {
                     GlobalEvent.log_warn(error);
@@ -292,6 +307,32 @@ export class SettingManager {
 
     getForceIncludeList(): string[] {
         return this.getConfiguration().get<string[]>('Cpptools.ForceInclude') || [];
+    }
+
+    //! 暂时弃用 ccache
+    // "EIDE.Option.ccache": {
+    //     "type": "string",
+    //     "scope": "resource",
+    //     "markdownDescription": "%settings.enable.ccache%",
+    //     "default": "never",
+    //     "enum": [
+    //         "auto",
+    //         "always",
+    //         "never"
+    //     ],
+    //     "enumDescriptions": [
+    //         "Auto",
+    //         "Always Use",
+    //         "Never Use"
+    //     ]
+    // },
+    isEnableCcache(sourceAmount: number): boolean {
+        // const sel = this.getConfiguration().get<string>('Option.ccache');
+        // if (sel === 'always')
+        //     return true;
+        // if (sel === 'auto' && sourceAmount > 500)
+        //     return true;
+        return false;
     }
 
     isEnableMsys(): boolean {
