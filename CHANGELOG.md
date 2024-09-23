@@ -6,6 +6,19 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.20.0] update
+
+**New**:
+  - `Export GNU Makefile`: Support export GNU Makefile for help users customize the automatic build process.
+
+**Change**:
+  - `unify_builder`: Update unify_builder to v3.8.0
+
+**Fix**:
+  - `OpenOCD`: Can't get interface/target list for xpack openocd v12.
+
+***
+
 ### [v3.19.9] revision
 
 **New**:

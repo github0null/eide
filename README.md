@@ -117,4 +117,4 @@ You can build this project by your self.
 
 ## Sponsor 👍
 
-[Github Sponsor](https://github.com/sponsors/github0null)
+[Sponsor The Author](https://em-ide.com/sponsor)
