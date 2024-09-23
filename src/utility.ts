@@ -132,7 +132,7 @@ export function openocd_getConfigList(category: 'interface' | 'target', projectR
     }
 
     // find in build-in path
-    for (const path of ['scripts', 'share/openocd/scripts']) {
+    for (const path of ['scripts', 'share/openocd/scripts', 'openocd/scripts']) {
         const cfgFolder = File.from(openocdExe.dir, '..', path, category);
         if (cfgFolder.IsDir()) {
             cfgFolder.GetAll([/\.cfg$/i], File.EXCLUDE_ALL_FILTER).forEach((file) => {

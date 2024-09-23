@@ -4772,6 +4772,66 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         });
     }
 
+    async ExportMakefile(prjItem?: ProjTreeItem) {
+
+        const prj = this.getProjectByTreeItem(prjItem);
+
+        if (prj === undefined) {
+            GlobalEvent.emit('msg', newMessage('Error', 'No active project !'));
+            return;
+        }
+        if (this._buildLock) {
+            GlobalEvent.emit('msg', newMessage('Error', 'builder busy !, please wait !'));
+            return;
+        }
+
+        // gen command line
+        prj.Save(true);
+        const builder = CodeBuilder.NewBuilder(prj);
+        const cmdLine = builder.genBuildCommand({ otherArgs: ['--out-makefile', '--dry-run'] });
+        if (cmdLine === undefined) {
+            GlobalEvent.emit('msg', newMessage('Error', `Fail to generate build command`));
+            return;
+        }
+
+        // do export
+
+        vscode.window.withProgress({
+            title: `Export Makefile`,
+            location: vscode.ProgressLocation.Notification
+        }, (progress, cancel) => {
+            return new Promise<boolean>((resolve) => {
+                const proc = new ExeCmd();
+                let errLines: string[] = [`Execute: ${cmdLine}`];
+                proc.on('launch', () => {
+                    progress.report({ message: 'Running ...' });
+                });
+                proc.on('line', str => {
+                    errLines.push(str);
+                    progress.report({ message: str });
+                });
+                proc.on('close', exitInfo => {
+                    if (exitInfo.code == 0) {
+                        progress.report({ message: 'All Done.' });
+                        setTimeout(() => resolve(true), 1000);
+                    } else {
+                        resolve(false);
+                        GlobalEvent.emit('msg', newMessage('Error', `Fail to export Makefile, code=${exitInfo.code}`));
+                        if (errLines.length > 0) {
+                            GlobalEvent.log_warn(errLines.slice(-100).join(os.EOL));
+                        }
+                    }
+                });
+                cancel?.onCancellationRequested(_ => {
+                    if (!kill(<number>proc.pid())) {
+                        GlobalEvent.emit('msg', newMessage('Error', `Can not kill process: ${proc.pid()} !`));
+                    }
+                });
+                proc.Run(<string>cmdLine, undefined, { cwd: prj.getProjectRoot().path });
+            });
+        });
+    }
+
     private exportLocked: boolean = false;
     async ExportProjectTemplate(prjItem?: ProjTreeItem, isWorkspace?: boolean) {
 
@@ -6948,16 +7008,22 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 const tarFlasher = idxObj[sel.idx];
 
                 reporter.report({ message: 'download shell scripts' });
-                let scriptDir = new File(project.getRootDir().path);
-                if (tarFlasher.scriptInstallDir) scriptDir = File.fromArray([scriptDir.path, tarFlasher.scriptInstallDir]);
-                scriptDir.CreateDir(true);
+
+                // download and install flasher script
                 const scriptsList = await readGithubRepoFolder(`https://api.github.com/repos/${REPO_PATH}/contents/scripts/${tarFlasher.id}`);
-                if (scriptsList instanceof Error) throw scriptsList;
-                for (const scriptInfo of scriptsList) {
-                    if (scriptInfo.download_url) {
-                        const buff = await downloadFile(redirectHost(scriptInfo.download_url));
-                        if (!(buff instanceof Buffer)) throw buff || new Error(`Cannot download '${scriptInfo.name}'`);
-                        fs.writeFileSync(`${scriptDir.path}/${scriptInfo.name}`, buff);
+                if (scriptsList instanceof Error) {
+                    if (scriptsList.message?.trim() != 'Not Found')
+                        throw scriptsList;
+                } else {
+                    let scriptDir = new File(project.getRootDir().path);
+                    if (tarFlasher.scriptInstallDir) scriptDir = File.fromArray([scriptDir.path, tarFlasher.scriptInstallDir]);
+                    scriptDir.CreateDir(true);
+                    for (const scriptInfo of scriptsList) {
+                        if (scriptInfo.download_url) {
+                            const buff = await downloadFile(redirectHost(scriptInfo.download_url));
+                            if (!(buff instanceof Buffer)) throw buff || new Error(`Cannot download '${scriptInfo.name}'`);
+                            fs.writeFileSync(`${scriptDir.path}/${scriptInfo.name}`, buff);
+                        }
                     }
                 }
 

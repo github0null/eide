@@ -38,7 +38,7 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/MIPS/RISC-V",
-    "version": "3.19.9",
+    "version": "3.20.0",
     "preview": false,
     "engines": {
         "vscode": "^1.67.0"
@@ -632,6 +632,10 @@
             {
                 "command": "eide.operation.open_project",
                 "title": "Open an eide project"
+            },
+            {
+                "command": "_cl.eide.project.exportMakefile",
+                "title": "%eide.project.export.makefile%"
             },
             {
                 "command": "_cl.eide.project.show_proj_vars",
@@ -1572,12 +1576,17 @@
                 {
                     "command": "_cl.eide.project.exportAsTemplate",
                     "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
-                    "group": "9_group"
+                    "group": "0_group@1"
                 },
                 {
                     "command": "_cl.eide.project.exportXml",
                     "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
-                    "group": "9_group"
+                    "group": "0_group@2"
+                },
+                {
+                    "command": "_cl.eide.project.exportMakefile",
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
+                    "group": "0_group@3"
                 }
             ],
             "_cl.eide.menu/ui/project/static-check": [

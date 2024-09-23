@@ -20,8 +20,6 @@
     "eide.project.save.all": "Save All Projects",
     "eide.project.active": "Active Project",
     "eide.project.close": "Close Project",
-    "eide.project.export.template": "Eide Project Template",
-    "eide.project.export.keil": "Keil Project",
     "eide.project.show.commands": "Show Compiler CommandLine",
     "eide.project.switch.target": "Switch Target",
     "eide.project.build": "Build",
@@ -39,6 +37,9 @@
     "eide.prj.menus.sub.static-check.clear": "Clear Diagnostic Informations",
 
     "eide.prj.menus.main.export": "Export As ...",
+    "eide.project.export.template": "Eide Project Template",
+    "eide.project.export.keil": "Keil Project",
+    "eide.project.export.makefile": "GNU Makefile",
 
     "eide.workspace.build": "Build All",
     "eide.workspace.rebuild": "Rebuild All",
@@ -103,6 +104,7 @@
     "settings.builder.extraCommandLine": "Append additional commandline when invoke unify_builder",
     "settings.builder.presetEnvVars": "Preset Global Environment Variables when build project",
     
+    "settings.enable.ccache": "Determine whether to enable [ccache](https://ccache.dev/) used to speed up compilation of large projects",
     "settings.option.show.toolbar.in.editer.title": "Displays some toolbars in the editor title",
     "settings.option.show.statusbar": "Displays toolbar icons in the status bar",
     "settings.option.print.relative.path": "Print relative path when compile source file",
