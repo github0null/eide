@@ -955,6 +955,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         return this.getProjectFile();
     }
 
+    /**
+     * get project root dir, which contains *.code-workspace file
+    */
     public getProjectRoot(): File {
         return this.getRootDir();
     }

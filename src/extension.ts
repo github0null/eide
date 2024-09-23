@@ -149,7 +149,7 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('eide.reinstall.binaries', () => checkAndInstallBinaries(true)));
     subscriptions.push(vscode.commands.registerCommand('eide.project.flash.erase.all', (item) => projectExplorer.UploadToDevice(item, true)));
     subscriptions.push(vscode.commands.registerCommand('eide.project.buildAndFlash', (item) => projectExplorer.BuildSolution(item, { not_rebuild: true, flashAfterBuild: true })));
-    subscriptions.push(vscode.commands.registerCommand('eide.project.genBuilderParams', (item) => projectExplorer.BuildSolution(item, { not_rebuild: true, onlyGenParams: true })));
+    subscriptions.push(vscode.commands.registerCommand('eide.project.genBuilderParams', (item) => projectExplorer.BuildSolution(item, { not_rebuild: true, onlyDumpBuilderParams: true })));
     subscriptions.push(vscode.commands.registerCommand('eide.open.makelibs.cfg', (item) => projectExplorer.openLibsGeneratorConfig(item)));
 
     // operations bar
@@ -157,13 +157,15 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.clearHistoryRecord', () => projectExplorer.clearAllHistoryRecords()));
 
     // project
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.showBuildParams', (item) => projectExplorer.BuildSolution(item, { dry_run: true })));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.showBuildParams', (item) => projectExplorer.BuildSolution(item, { onlyDumpCompilerInfo: true })));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.setActive', (item) => projectExplorer.setActiveProject(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.close', (item) => projectExplorer.Close(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.saveAll', () => projectExplorer.SaveAll()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.refresh', () => projectExplorer.Refresh()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.switchMode', (item) => projectExplorer.switchTarget(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.exportAsTemplate', (item) => projectExplorer.ExportProjectTemplate(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.exportXml', (item) => projectExplorer.ExportKeilXml(item.val.projectIndex)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.exportMakefile', (item) => projectExplorer.ExportMakefile(item.val.projectIndex)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.show_proj_vars', (item) => projectExplorer.ShowProjectVariables(item)));
 
     // project explorer
@@ -212,7 +214,6 @@ export async function activate(context: vscode.ExtensionContext) {
     // package
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.removePackage', (item) => projectExplorer.UninstallKeilPackage(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.addPackage', (item) => projectExplorer.InstallKeilPackage(item.val.projectIndex)));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.exportXml', (item) => projectExplorer.ExportKeilXml(item.val.projectIndex)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.setDevice', (item) => projectExplorer.SetDevice(item.val.projectIndex)));
     // - cmsis core packages
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.installCMSISHeaders', (item) => projectExplorer.installCmsisSourcePack(item, 'header')));

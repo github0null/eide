@@ -634,6 +634,10 @@
                 "title": "Open an eide project"
             },
             {
+                "command": "_cl.eide.project.exportMakefile",
+                "title": "%eide.project.export.makefile%"
+            },
+            {
                 "command": "_cl.eide.project.show_proj_vars",
                 "title": "%eide.project.show_project_vars%"
             },
@@ -1572,12 +1576,17 @@
                 {
                     "command": "_cl.eide.project.exportAsTemplate",
                     "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
-                    "group": "9_group"
+                    "group": "0_group@1"
                 },
                 {
                     "command": "_cl.eide.project.exportXml",
                     "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
-                    "group": "9_group"
+                    "group": "0_group@2"
+                },
+                {
+                    "command": "_cl.eide.project.exportMakefile",
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
+                    "group": "0_group@3"
                 }
             ],
             "_cl.eide.menu/ui/project/static-check": [

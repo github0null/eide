@@ -57,13 +57,15 @@ import * as ArmCpuUtils from './ArmCpuUtils';
 
 export interface BuildOptions {
 
-    dry_run?: boolean; // true: 仅输出编译命令及版本信息
-
     not_rebuild?: boolean; // true: 增量编译，false: 重新编译所有
 
     flashAfterBuild?: boolean;
 
-    onlyGenParams?: boolean;
+    onlyDumpCompilerInfo?: boolean; // true: 仅输出编译命令及版本信息
+
+    onlyDumpBuilderParams?: boolean;
+
+    otherArgs?: string[];
 }
 
 export interface BuilderParams {
@@ -105,7 +107,8 @@ export abstract class CodeBuilder {
 
     protected project: AbstractProject;
     protected useFastCompile?: boolean;
-    protected useShowParamsMode?: boolean;
+    protected onlyDumpCompilerInfo?: boolean;
+    protected otherArgs?: string[];
     protected _event: events.EventEmitter;
     protected logWatcher: FileWatcher | undefined;
 
@@ -241,9 +244,10 @@ export abstract class CodeBuilder {
     build(options?: BuildOptions): void {
 
         let commandLine = this.genBuildCommand(options);
+        if (options?.onlyDumpBuilderParams) return; // if only generate params, exit
         if (!commandLine) return;
 
-        const title = (options?.dry_run ? 'compiler params' : 'build') + `:${this.project.getCurrentTarget()}`;
+        const title = (options?.onlyDumpCompilerInfo ? 'compiler params' : 'build') + `:${this.project.getCurrentTarget()}`;
 
         // watch log, to emit done event
         try {
@@ -311,9 +315,10 @@ export abstract class CodeBuilder {
 
     genBuildCommand(options?: BuildOptions, disPowershell?: boolean): string | undefined {
 
-        // reinit build mode
+        // setup build mode
         this.useFastCompile = options?.not_rebuild;
-        this.useShowParamsMode = options?.dry_run;
+        this.onlyDumpCompilerInfo = options?.onlyDumpCompilerInfo;
+        this.otherArgs = options?.otherArgs;
 
         /* if not found toolchain, exit ! */
         if (!this.project.checkAndNotifyInstallToolchain()) { return; }
@@ -325,9 +330,6 @@ export abstract class CodeBuilder {
         // generate command line
         const commandLine = generateDotnetProgramCmd(
             ResManager.instance().getUnifyBuilderExe(), this.getCommands());
-
-        // if only generate params, exit
-        if (options?.onlyGenParams) return;
 
         return commandLine;
     }
@@ -557,8 +559,12 @@ export abstract class CodeBuilder {
             }
         }
 
-        if (this.useShowParamsMode) {
+        if (this.onlyDumpCompilerInfo) {
             cmds.push('--only-dump-args');
+        }
+
+        if (this.otherArgs && this.otherArgs.length > 0) {
+            this.otherArgs.forEach(arg => cmds.push(arg));
         }
 
         const extraCmd = settingManager.getBuilderAdditionalCommandLine()?.trim();
