@@ -1,26 +1,29 @@
 /*
-	MIT License
+    MIT License
 
-	Copyright (c) 2019 github0null
+    Copyright (c) 2019 github0null
 
-	Permission is hereby granted, free of charge, to any person obtaining a copy
-	of this software and associated documentation files (the "Software"), to deal
-	in the Software without restriction, including without limitation the rights
-	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-	copies of the Software, and to permit persons to whom the Software is
-	furnished to do so, subject to the following conditions:
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
 
-	The above copyright notice and this permission notice shall be included in all
-	copies or substantial portions of the Software.
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
 
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-	SOFTWARE.
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
 */
+
+import { number } from "mathjs";
+import { config } from "process";
 
 export interface CmsisConfigItemRange {
 
@@ -126,8 +129,14 @@ export function parse(lines: string[]): CmsisConfiguration | undefined {
     }
 
     // check index
-    if ((startIdx == -1 || endIdx == -1) || (startIdx >= endIdx)) {
+    if (startIdx == -1) {
         return undefined; // not found config
+    }
+
+    // The Configuration Wizard end tag is OPTIONAL. Some CMSIS devices config files no define.
+    // If undefine, the last line is end. 
+    if (endIdx == -1) {
+        endIdx = lines.length - 1;
     }
 
     const cmsisConfig: CmsisConfiguration = { items: [] };
@@ -136,23 +145,28 @@ export function parse(lines: string[]): CmsisConfiguration | undefined {
 
     const context: ParserContext = {
         grp_stack: [],
+        fill_fifo: [],
         last_ele: undefined,
         cur_ele_lines_cnt: 0
     };
+
+    // There type needs to parse and modify code.
+    const fillType = ['section', 'bool', 'option', 'string'];
 
     for (let index = startIdx + 1; index < endIdx; index++) {
 
         const cur_grp: CmsisConfigItem | undefined = getCurGroup(context);
         const cur_line = lines[index];
-        const cur_ele = context.last_ele;
+        let cur_ele = context.last_ele;
 
         // is a cmsis header start ? 
         if (isCmsisTag(cur_line)) {
 
-            // is a group start ?
+            // is a group start ?.
             if (fieldMatcher['group'].start.test(cur_line)) {
                 const match = fieldMatcher['group'].start.exec(cur_line);
                 if (match && match.length > 1) {
+
                     const nGrp = newItemsGroup();
                     nGrp.name = match[1];
                     context.grp_stack.push(nGrp);
@@ -188,12 +202,14 @@ export function parse(lines: string[]): CmsisConfiguration | undefined {
                         } else { // this node is a element
                             const newItem = parseElement(cur_line, fieldType, match, context);
                             if (newItem) {
+                                if (fillType.includes(newItem.type)) context.fill_fifo.push(newItem);
                                 context.last_ele = newItem;
                                 cur_grp ? cur_grp.children.push(newItem) : cmsisConfig.items.push(newItem);
                                 context.cur_ele_lines_cnt = 0;
                                 validElement = true;
                                 // if this element is not end, push it to stack
-                                if (fieldMatcher[fieldType].end) context.grp_stack.push(newItem);
+                                if (fieldMatcher[fieldType].end)
+                                    context.grp_stack.push(newItem);
                                 break;
                             }
                         }
@@ -205,35 +221,57 @@ export function parse(lines: string[]): CmsisConfiguration | undefined {
             }
         }
 
-        // parse element content
-        if (cur_ele) {
-
-            context.cur_ele_lines_cnt++;
-
-            // skip some lines
-            if (cur_ele.var_skip_val && cur_ele.var_skip_val >= context.cur_ele_lines_cnt)
-                continue;
-
-            // content is code
-            if (cur_ele.type == 'code') {
-                if (cur_ele.location == undefined) { cur_ele.location = { start: index }; }
-                cur_ele.location.end = index;
-                cur_ele.var_value = cur_line.trimStart().startsWith('//') ? '!' : '' // update code value
-            }
-
-            // content is macro
-            else {
-                const match = macroMatcher.exec(cur_line);
-                if (match == null || match.groups == undefined) continue;
-                const keyVal = match.groups;
-                if (cur_ele.var_name && cur_ele.var_name != keyVal['key']) continue;
-                if (keyVal['value'] == undefined) continue;
-                // set value
-                cur_ele.var_value = keyVal['value'].trim();
-                cur_ele.location = { start: index };
-                updateElementDispVal(cur_ele);
-            }
+        // content is code
+        if (cur_ele && cur_ele.type == 'code') {
+            if (cur_ele.location == undefined) { cur_ele.location = { start: index }; }
+            cur_ele.location.end = index;
+            cur_ele.var_value = cur_line.trimStart().startsWith('//') ? '!' : '' // update code value
         }
+
+        cur_ele = context.fill_fifo[0];
+        if (cur_ele == undefined) continue;
+
+        let match = macroMatcher.exec(cur_line);
+
+        // If defined the location, don't parse the marco to repleace current config value.
+        if (cur_ele.location) continue;
+
+        // This may require modifying the html page. But I don't know how to modify it.
+        // if (match == null || match.groups == undefined) {
+        //     // Not marco, try identifier match.
+        //     /**
+        //      * e.g.
+        //      * //   <o redPortMode> Red port mode
+        //      * //     <OutPushPull_GPIO=>  PushPull
+        //      * //     <OutOpenDrain_GPIO=> OpenDrain
+        //      * //   <i>Selects GPIO output
+        //      * ledConf.redPortMode = OutPushPull_GPIO;
+        //      */
+        //     const identifierMatch = new RegExp('^.*(?<key>' + cur_ele.var_name + ')\\s*=\\s*(?<value>.*);');
+        //     match = identifierMatch.exec(cur_line);
+        // }
+
+        if (match == null || match.groups == undefined) continue;
+
+        if (cur_ele.var_skip_val && cur_ele.var_skip_val > context.cur_ele_lines_cnt) {
+            context.cur_ele_lines_cnt++;
+            continue;
+        }
+
+        const keyVal = match.groups;
+
+        // <o> Config item
+        if (cur_ele.var_name == undefined) cur_ele.var_name = keyVal['key'];
+        // <o identifer> item
+        if (cur_ele.var_name != keyVal['key']) continue;
+        if (keyVal['value'] == undefined) continue;
+        // set value
+        cur_ele.var_value = keyVal['value'].trim();
+        cur_ele.location = { start: index };
+        updateElementDispVal(cur_ele);
+        context.fill_fifo.shift();
+        if (context.fill_fifo[0] && context.fill_fifo[0].var_skip_val)
+            context.fill_fifo[0].var_skip_val = 0;
     }
 
     return cmsisConfig;
@@ -247,8 +285,10 @@ interface TagMatcher {
     [tag: string]: { start: RegExp, end?: RegExp }
 };
 
+
 interface ParserContext {
     grp_stack: any[];
+    fill_fifo: any[];
     last_ele: CmsisConfigItem | undefined;
     cur_ele_lines_cnt: number;
 };
@@ -285,7 +325,7 @@ interface NumberValueInfo {
     fmtStr?: string;
 }
 
-const numberMatcher = /(0x[0-9a-f]+|[\d\.]+)/i;
+const numberMatcher = /\b(0x[0-9a-f]+|[\d\.]+)\b/i;
 function parseNumber(str: string): NumberValueInfo {
     const m = numberMatcher.exec(str);
     if (m && m.length > 1) {
@@ -348,6 +388,7 @@ function newItemsGroup(): CmsisConfigItem {
 
 const subFieldNames = ['tooltip', 'defval', 'enums'];
 const optionPropMatchers = [
+    /<(?<enum_val>\w+)=>\s*(?<enum_desc>.+)$/i, // Parse enum items in <o> lines. e.g. <o>ISR FIFO Queue size<4=> 4 entries <8=> 8 entries
     /<(?<var_range_s>\d+|0x[0-9a-f]+)-(?<var_range_e>\d+|0x[0-9a-f]+)(?::(?<var_range_step>\d+|0x[0-9a-f]+))?>/i,
     /<#(?<disp_operator>[\+\-\*\/])(?<disp_operate_val>\d+|0x[0-9a-f]+)>/i,
     /<f\.(?<disp_fmt>[d|h|o|b])>/i
@@ -505,7 +546,7 @@ function updateElementDispVal(item: CmsisConfigItem) {
         }
 
         // apply bits
-        if (item.var_mod_bit && num != NaN) {
+        if (item.var_mod_bit && (!isNaN(num))) {
 
             item.var_mod_bit.end = undefined // 'section' bits size must be '1'
             let mask = get_mask(item.var_mod_bit.start, item.var_mod_bit.end) >>> item.var_mod_bit.start
@@ -533,6 +574,14 @@ function updateElementDispVal(item: CmsisConfigItem) {
 
         let { num, isHex, fmtStr } = parseNumber(item.var_value);
 
+        if (isNaN(num) && item.var_enum) {
+            for (const value of item.var_enum) {
+                if (item.var_value == value.val) {
+                    item.var_disp_value = value.val;
+                    return;
+                }
+            }
+        }
         // normal val
         {
             item.var_disp_value = isHex ? `0x${num.toString(16)}` : num.toString();
@@ -542,7 +591,7 @@ function updateElementDispVal(item: CmsisConfigItem) {
         // apply bits
         if (item.var_mod_bit) {
 
-            if (num != NaN) {
+            if (!isNaN(num)) {
 
                 let mask = get_mask(item.var_mod_bit.start, item.var_mod_bit.end) >>> item.var_mod_bit.start
 
@@ -595,7 +644,7 @@ function updateElementDispVal(item: CmsisConfigItem) {
                 disp_val = NaN
             }
 
-            if (disp_val != NaN) {
+            if (!isNaN(disp_val)) {
 
                 if (isHex) {
                     disp_val >>>= 0
