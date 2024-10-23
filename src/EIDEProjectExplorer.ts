@@ -5169,6 +5169,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     async Virtual_removeFile(item: ProjTreeItem, items: ProjTreeItem[]) {
+        if (items == undefined) items = [item];
+
         for (const fileItem of items) {
             const project = this.dataProvider.GetProjectByIndex(fileItem.val.projectIndex);
             const curFile = <VirtualFileInfo>fileItem.val.obj;
