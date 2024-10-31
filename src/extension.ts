@@ -194,20 +194,20 @@ export async function activate(context: vscode.ExtensionContext) {
     // virtual files
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.virtual_folder_add_file', (item) => projectExplorer.Virtual_folderAddFile(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.virtual_folder_add', (item) => projectExplorer.Virtual_folderAdd(item)));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.virtual_folder_remove', (item) => projectExplorer.Virtual_removeFolder(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.virtual_folder_remove', (item, items) => projectExplorer.Virtual_removeFolder(item, items)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.virtual_folder_rename', (item) => projectExplorer.Virtual_renameFolder(item)));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.virtual_file_remove', (item) => projectExplorer.Virtual_removeFile(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.virtual_file_remove', (item, items) => projectExplorer.Virtual_removeFile(item, items)));
 
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.file.modify.extraArgs', (item) => projectExplorer.modifyExtraCompilerArgs('file', item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.folder.modify.extraArgs', (item) => projectExplorer.modifyExtraCompilerArgs('folder', item)));
 
     // file other operations
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.excludeSource', (item) => projectExplorer.ExcludeSourceFile(item)));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.unexcludeSource', (item) => projectExplorer.UnexcludeSourceFile(item)));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.excludeFolder', (item) => projectExplorer.ExcludeFolder(item)));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.unexcludeFolder', (item) => projectExplorer.UnexcludeFolder(item)));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.excludeFolder.childSrcs', (item) => projectExplorer.ExcludeFolder(item, true)));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.unexcludeFolder.childSrcs', (item) => projectExplorer.UnexcludeFolder(item, true)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.excludeSource', (item, items) => projectExplorer.ExcludeSourceFile(item, items)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.unexcludeSource', (item, items) => projectExplorer.UnexcludeSourceFile(item, items)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.excludeFolder', (item, items) => projectExplorer.ExcludeFolder(item, items, false)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.unexcludeFolder', (item, items) => projectExplorer.UnexcludeFolder(item, items, false)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.excludeFolder.childSrcs', (item, items) => projectExplorer.ExcludeFolder(item, items, true)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.unexcludeFolder.childSrcs', (item, items) => projectExplorer.UnexcludeFolder(item, items, true)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.file.show.dir', (item) => projectExplorer.showFileInExplorer(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.modify.path', (item) => projectExplorer.openYamlConfig(item, 'src-path-cfg')));
 
