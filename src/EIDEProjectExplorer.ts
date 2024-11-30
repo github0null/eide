@@ -83,7 +83,8 @@ import {
     getLocalLanguageType,
     LanguageIndexs,
     txt_yes,
-    txt_no
+    txt_no,
+    remove_this_item,
 } from './StringTable';
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
@@ -6801,17 +6802,59 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     ///////////////////////////////////////////////////////////////////////////////
 
-    RemoveDependenceItem(item: ProjTreeItem) {
+    async editDependenceItem(item: ProjTreeItem) {
+
+        if (item.val.value instanceof File)
+            throw new Error('editDependenceItem: Invalid context item');
+
+        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        let newVal = await vscode.window.showInputBox({
+            value: item.val.value,
+            ignoreFocusOut: true,
+            validateInput: (input: string): string | undefined => {
+                if (input.trim() === '')
+                    return 'Cannot be empty or whitespace !'
+            }
+        });
+
+        if (newVal) {
+            newVal = newVal.trim();
+            switch ((<ModifiableDepInfo>item.val.obj).type) {
+                case 'INC_ITEM':
+                    prj.GetConfiguration().CustomDep_ModifyIncDir(prj.ToAbsolutePath(<string>item.val.value), prj.ToAbsolutePath(newVal));
+                    break;
+                case 'DEFINE_ITEM':
+                    prj.GetConfiguration().CustomDep_ModifyDefine(<string>item.val.value, newVal);
+                    break;
+                case 'LIB_ITEM':
+                    prj.GetConfiguration().CustomDep_ModifyLib(prj.ToAbsolutePath(<string>item.val.value), prj.ToAbsolutePath(newVal));
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    async RemoveDependenceItem(item: ProjTreeItem) {
+
+        if (item.val.value instanceof File)
+            throw new Error('RemoveDependenceItem: Invalid context item');
+
+        const msg = `${WARNING}: ${remove_this_item.replace('{}', item.val.value)}`;
+        const choice = await vscode.window.showWarningMessage(msg, 'Yes', 'No');
+        if (choice === undefined || choice === 'No')
+            return undefined;
+
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
         switch ((<ModifiableDepInfo>item.val.obj).type) {
             case 'INC_ITEM':
-                prj.GetConfiguration().CustomDep_RemoveIncDir(prj.ToAbsolutePath(<string>item.val.value));
+                prj.GetConfiguration().CustomDep_RemoveIncDir(prj.ToAbsolutePath(item.val.value));
                 break;
             case 'DEFINE_ITEM':
-                prj.GetConfiguration().CustomDep_RemoveDefine(<string>item.val.value);
+                prj.GetConfiguration().CustomDep_RemoveDefine(item.val.value);
                 break;
             case 'LIB_ITEM':
-                prj.GetConfiguration().CustomDep_RemoveLib(prj.ToAbsolutePath(<string>item.val.value));
+                prj.GetConfiguration().CustomDep_RemoveLib(prj.ToAbsolutePath(item.val.value));
                 break;
             default:
                 break;

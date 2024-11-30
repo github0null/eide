@@ -665,6 +665,11 @@ export const view_str$prompt$feedback = [
 
 //---------------Select string------------------
 
+export const remove_this_item = [
+    `确定要移除此项 '{}' 吗？`,
+    `Remove this item: '{}' ?`
+][langIndex];
+
 export const sponsor_author_text = [
     `赞助作者`,
     `Sponsor The Author`
@@ -925,7 +930,7 @@ export const import_project_hit = [
 
 export const create_project = [
     '新建项目',
-    'New Project'
+    'Create Project'
 ][langIndex];
 
 export const view_str$import_project = [
@@ -935,7 +940,7 @@ export const view_str$import_project = [
 
 export const create_project_hit = [
     '新建一个 EIDE 项目',
-    'Create a new EIDE project'
+    'Create New EIDE Project'
 ][langIndex];
 
 export const open_project = [
