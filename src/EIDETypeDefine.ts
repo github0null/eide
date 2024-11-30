@@ -1135,6 +1135,17 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         return dupList;
     }
 
+    CustomDep_ModifyIncDir(path: string, newPath: string) {
+        if (path == newPath || newPath.trim() == '')
+            return;
+        const dep = this.CustomDep_getDependence();
+        let index = dep.incList.findIndex((p) => { return p === path; });
+        if (index !== -1) {
+            dep.incList[index] = newPath;
+            this.emit('dataChanged', { type: 'dependence' });
+        }
+    }
+
     CustomDep_RemoveIncDir(path: string) {
         const dep = this.CustomDep_getDependence();
         let index = dep.incList.findIndex((p) => { return p === path; });
@@ -1182,6 +1193,17 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         }
     }
 
+    CustomDep_ModifyDefine(_define: string, newDefine: string) {
+        if (_define == newDefine || newDefine.trim() == '')
+            return;
+        const dep = this.CustomDep_getDependence();
+        let index = dep.defineList.findIndex((define) => { return define === _define; });
+        if (index !== -1) {
+            dep.defineList[index] = newDefine;
+            this.emit('dataChanged', { type: 'dependence' });
+        }
+    }
+
     CustomDep_RemoveDefine(_define: string) {
         const dep = this.CustomDep_getDependence();
         let index = dep.defineList.findIndex((define) => { return define === _define; });
@@ -1220,6 +1242,17 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         });
 
         if (needNotify) {
+            this.emit('dataChanged', { type: 'dependence' });
+        }
+    }
+
+    CustomDep_ModifyLib(path: string, newPath: string) {
+        if (path == newPath || newPath.trim() == '')
+            return;
+        const dep = this.CustomDep_getDependence();
+        let index = dep.libList.findIndex((p) => { return path === p; });
+        if (index !== -1) {
+            dep.libList[index] = newPath;
             this.emit('dataChanged', { type: 'dependence' });
         }
     }

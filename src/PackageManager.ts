@@ -79,6 +79,7 @@ export class PackageManager {
             arrayAccessFormPaths: [
                 'package.devices.family',
                 'package.devices.family.compile',
+                'package.devices.family.processor',
 
                 'package.devices.family.device',
                 'package.devices.family.device.memory',
@@ -716,8 +717,8 @@ export class PackageManager {
             }
 
             // set endian mode
-            if (family.processor && family.processor.$Dendian) {
-                _endianMode = family.processor.$Dendian;
+            if (family.processor && family.processor[0].$Dendian) {
+                _endianMode = family.processor[0].$Dendian;
             }
 
             // set svd path
@@ -728,7 +729,7 @@ export class PackageManager {
             let _famliy: DeviceFamily = {
                 name: family.$Dfamily,
                 vendor: family.$Dvendor,
-                core: family.processor ? family.processor.$Dcore : undefined,
+                core: family.processor ? family.processor[0].$Dcore : undefined,
                 series: family.$Dfamily.replace(/\s*series$/i, ''),
                 deviceList: [],
                 subFamilyList: []

@@ -374,6 +374,11 @@ export class OperationExplorer {
 
                         const itemList: ProjectTemplatePickItem[] = [
                             {
+                                label: 'Empty Project',
+                                detail: 'empty project for any 8bits toolchain',
+                                type: 'C51'
+                            },
+                            {
                                 label: '8051 Empty Project (With Keil C51 Compiler)',
                                 detail: '8051 general project',
                                 templateName: 'mcs51',
@@ -383,11 +388,6 @@ export class OperationExplorer {
                                 label: 'STM8 Empty Project (With COSMIC Compiler)',
                                 detail: 'stm8 general project',
                                 templateName: 'cosmic_stm8',
-                                type: 'C51'
-                            },
-                            {
-                                label: 'Empty Project',
-                                detail: 'empty project for any 8bits toolchain',
                                 type: 'C51'
                             },
                         ];
@@ -416,8 +416,8 @@ export class OperationExplorer {
                             type: 'C51'
                         },
                         {
-                            label: 'STC15 Quickstart',
-                            detail: 'stc15 quickstart project',
+                            label: 'STC15 Keil_C51 Quickstart',
+                            detail: 'stc15 quickstart project (with Keil_C51 Compiler)',
                             templateName: 'stc15',
                             type: 'C51'
                         },
@@ -428,14 +428,14 @@ export class OperationExplorer {
                             type: 'ANY-GCC'
                         },
                         {
-                            label: 'STM8 Quickstart With COSMIC Compiler',
+                            label: 'STM8 COSMIC Quickstart',
                             detail: 'stm8 general quickstart project (COSMIC STM8 Compiler)',
                             templateName: 'cosmic_stm8',
                             type: 'C51'
                         },
                         {
-                            label: 'STM8 Quickstart',
-                            detail: 'stm8s103 quickstart project',
+                            label: 'STM8 IAR Quickstart',
+                            detail: 'stm8s103 quickstart project (with iar stm8 compiler)',
                             templateName: 'stm8s103f3',
                             type: 'C51'
                         },
@@ -446,20 +446,14 @@ export class OperationExplorer {
                             type: 'C51'
                         },
                         {
-                            label: 'STM32F1 Quickstart',
-                            detail: 'stm32f1xx quickstart project',
-                            templateName: 'stm32f1xx',
-                            type: 'ARM'
-                        },
-                        {
-                            label: 'STM32F1 GCC Quickstart',
+                            label: 'STM32F103 Cortex-M3 Quickstart',
                             detail: 'stm32f1xx gcc quickstart project (with gcc compiler)',
                             templateName: 'stm32f1xx_gcc',
                             type: 'ARM'
                         },
                         {
-                            label: 'GD32VF103 Quickstart',
-                            detail: 'gd32vf103 quickstart project (riscv mcu)',
+                            label: 'GD32VF103 RISC-V Quickstart',
+                            detail: 'gd32vf103 riscv quickstart project (with gcc compiler)',
                             templateName: 'gd32vf103_riscv',
                             type: 'RISC-V'
                         }

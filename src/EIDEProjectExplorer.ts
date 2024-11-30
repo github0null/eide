@@ -83,7 +83,8 @@ import {
     getLocalLanguageType,
     LanguageIndexs,
     txt_yes,
-    txt_no
+    txt_no,
+    remove_this_item,
 } from './StringTable';
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
@@ -5134,14 +5135,17 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
     }
 
-    async Virtual_removeFolder(item: ProjTreeItem) {
+    async Virtual_removeFolder(item: ProjTreeItem, items: ProjTreeItem[]) {
+        if (items == undefined) items = [item];
 
-        const project = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
-        const curFolder = <VirtualFolderInfo>item.val.obj;
+        for (const folderItem of items) {
+            const project = this.dataProvider.GetProjectByIndex(folderItem.val.projectIndex);
+            const curFolder = <VirtualFolderInfo>folderItem.val.obj;
 
-        const answer = await vscode.window.showInformationMessage(view_str$prompt$removeSrcDir.replace('{}', curFolder.path), txt_yes, txt_no);
-        if (answer == txt_yes) {
-            project.getVirtualSourceManager().removeFolder(curFolder.path);
+            const answer = await vscode.window.showInformationMessage(view_str$prompt$removeSrcDir.replace('{}', curFolder.path), txt_yes, txt_no);
+            if (answer == txt_yes) {
+                project.getVirtualSourceManager().removeFolder(curFolder.path);
+            }
         }
     }
 
@@ -5165,10 +5169,14 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
     }
 
-    async Virtual_removeFile(item: ProjTreeItem) {
-        const project = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
-        const curFile = <VirtualFileInfo>item.val.obj;
-        project.getVirtualSourceManager().removeFile(curFile.path);
+    async Virtual_removeFile(item: ProjTreeItem, items: ProjTreeItem[]) {
+        if (items == undefined) items = [item];
+
+        for (const fileItem of items) {
+            const project = this.dataProvider.GetProjectByIndex(fileItem.val.projectIndex);
+            const curFile = <VirtualFileInfo>fileItem.val.obj;
+            project.getVirtualSourceManager().removeFile(curFile.path);
+        }
     }
 
     // filesystem folder
@@ -6589,110 +6597,122 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
     }
 
-    ExcludeSourceFile(item: ProjTreeItem) {
+    ExcludeSourceFile(item: ProjTreeItem, items: ProjTreeItem[]) {
+        if (items == undefined) items = [item];
 
-        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        for (const sourceItem of items) {
+            const prj = this.dataProvider.GetProjectByIndex(sourceItem.val.projectIndex);
 
-        // if it's a virtual file, we use virtual path
-        if (item.type === TreeItemType.V_FILE_ITEM) {
-            prj.excludeSourceFile((<VirtualFileInfo>item.val.obj).path);
-        }
+            // if it's a virtual file, we use virtual path
+            if (sourceItem.type === TreeItemType.V_FILE_ITEM) {
+                prj.excludeSourceFile((<VirtualFileInfo>sourceItem.val.obj).path);
+            }
 
-        // if it's a fs file, we use fs path
-        else if (item.val.value instanceof File) {
-            prj.excludeSourceFile(item.val.value.path);
-        }
-    }
-
-    UnexcludeSourceFile(item: ProjTreeItem) {
-
-        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
-
-        if (item.type === TreeItemType.V_EXCFILE_ITEM) {
-            prj.unexcludeSourceFile((<VirtualFileInfo>item.val.obj).path);
-        }
-        else if (item.val.value instanceof File) {
-            prj.unexcludeSourceFile(item.val.value.path);
+            // if it's a fs file, we use fs path
+            else if (sourceItem.val.value instanceof File) {
+                prj.excludeSourceFile(sourceItem.val.value.path);
+            }
         }
     }
 
-    ExcludeFolder(item: ProjTreeItem, onlyChildren?: boolean) {
+    UnexcludeSourceFile(item: ProjTreeItem, items: ProjTreeItem[]) {
+        if (items == undefined) items = [item];
 
-        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        for (const sourceItem of items) {
+            const prj = this.dataProvider.GetProjectByIndex(sourceItem.val.projectIndex);
 
-        switch (item.type) {
-            // filesystem folder
-            case TreeItemType.FOLDER:
-            case TreeItemType.FOLDER_ROOT:
-                if (onlyChildren) {
-                    const dir = <File>item.val.obj;
-                    dir.GetList(undefined, File.EXCLUDE_ALL_FILTER).forEach(f => {
-                        prj.excludeSourceFile(f.path);
-                    });
-                } else {
-                    prj.excludeFolder((<File>item.val.obj).path);
-                }
-                break;
-            // virtual folder
-            case TreeItemType.V_FOLDER:
-            case TreeItemType.V_FOLDER_ROOT:
-                if (onlyChildren) {
-                    const dir = <VirtualFolderInfo>item.val.obj;
-                    dir.vFolder.files.forEach(f => {
-                        prj.excludeSourceFile(`${dir.path}/${NodePath.basename(f.path)}`);
-                    });
-                } else {
-                    prj.excludeFolder((<VirtualFolderInfo>item.val.obj).path);
-                }
-                break;
-            default:
-                break;
+            if (sourceItem.type === TreeItemType.V_EXCFILE_ITEM) {
+                prj.unexcludeSourceFile((<VirtualFileInfo>sourceItem.val.obj).path);
+            }
+            else if (sourceItem.val.value instanceof File) {
+                prj.unexcludeSourceFile(sourceItem.val.value.path);
+            }
         }
     }
 
-    UnexcludeFolder(item: ProjTreeItem, onlyChildren?: boolean) {
+    ExcludeFolder(item: ProjTreeItem, items: ProjTreeItem[], onlyChildren?: boolean) {
+        if (items == undefined) items = [item];
 
-        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        for (const folderItem of items) {
+            const prj = this.dataProvider.GetProjectByIndex(folderItem.val.projectIndex);
 
-        if (onlyChildren) { // viewItem == FOLDER || viewItem == V_FOLDER || viewItem == FOLDER_ROOT || viewItem == V_FOLDER_ROOT
-            switch (item.type) {
+            switch (folderItem.type) {
                 // filesystem folder
                 case TreeItemType.FOLDER:
                 case TreeItemType.FOLDER_ROOT:
-                    {
-                        const dir = <File>item.val.obj;
+                    if (onlyChildren) {
+                        const dir = <File>folderItem.val.obj;
                         dir.GetList(undefined, File.EXCLUDE_ALL_FILTER).forEach(f => {
-                            prj.unexcludeSourceFile(f.path);
+                            prj.excludeSourceFile(f.path);
                         });
+                    } else {
+                        prj.excludeFolder((<File>folderItem.val.obj).path);
                     }
                     break;
                 // virtual folder
                 case TreeItemType.V_FOLDER:
                 case TreeItemType.V_FOLDER_ROOT:
-                    {
-                        const dir = <VirtualFolderInfo>item.val.obj;
+                    if (onlyChildren) {
+                        const dir = <VirtualFolderInfo>folderItem.val.obj;
                         dir.vFolder.files.forEach(f => {
-                            prj.unexcludeSourceFile(`${dir.path}/${NodePath.basename(f.path)}`);
+                            prj.excludeSourceFile(`${dir.path}/${NodePath.basename(f.path)}`);
                         });
+                    } else {
+                        prj.excludeFolder((<VirtualFolderInfo>folderItem.val.obj).path);
                     }
                     break;
                 default:
                     break;
             }
         }
+    }
 
-        else { // viewItem == EXCFOLDER || viewItem == V_EXCFOLDER
-            switch (item.type) {
-                // filesystem folder
-                case TreeItemType.EXCFOLDER:
-                    prj.unexcludeFolder((<File>item.val.obj).path);
-                    break;
-                // virtual folder
-                case TreeItemType.V_EXCFOLDER:
-                    prj.unexcludeFolder((<VirtualFolderInfo>item.val.obj).path);
-                    break;
-                default:
-                    break;
+    UnexcludeFolder(item: ProjTreeItem, items: ProjTreeItem[], onlyChildren?: boolean) {
+        if (items == undefined) items = [item];
+
+        for (const folderItem of items) {
+            const prj = this.dataProvider.GetProjectByIndex(folderItem.val.projectIndex);
+
+            if (onlyChildren) { // viewItem == FOLDER || viewItem == V_FOLDER || viewItem == FOLDER_ROOT || viewItem == V_FOLDER_ROOT
+                switch (folderItem.type) {
+                    // filesystem folder
+                    case TreeItemType.FOLDER:
+                    case TreeItemType.FOLDER_ROOT:
+                        {
+                            const dir = <File>folderItem.val.obj;
+                            dir.GetList(undefined, File.EXCLUDE_ALL_FILTER).forEach(f => {
+                                prj.unexcludeSourceFile(f.path);
+                            });
+                        }
+                        break;
+                    // virtual folder
+                    case TreeItemType.V_FOLDER:
+                    case TreeItemType.V_FOLDER_ROOT:
+                        {
+                            const dir = <VirtualFolderInfo>folderItem.val.obj;
+                            dir.vFolder.files.forEach(f => {
+                                prj.unexcludeSourceFile(`${dir.path}/${NodePath.basename(f.path)}`);
+                            });
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            else { // viewItem == EXCFOLDER || viewItem == V_EXCFOLDER
+                switch (folderItem.type) {
+                    // filesystem folder
+                    case TreeItemType.EXCFOLDER:
+                        prj.unexcludeFolder((<File>folderItem.val.obj).path);
+                        break;
+                    // virtual folder
+                    case TreeItemType.V_EXCFOLDER:
+                        prj.unexcludeFolder((<VirtualFolderInfo>folderItem.val.obj).path);
+                        break;
+                    default:
+                        break;
+                }
             }
         }
     }
@@ -6782,17 +6802,59 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     ///////////////////////////////////////////////////////////////////////////////
 
-    RemoveDependenceItem(item: ProjTreeItem) {
+    async editDependenceItem(item: ProjTreeItem) {
+
+        if (item.val.value instanceof File)
+            throw new Error('editDependenceItem: Invalid context item');
+
+        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        let newVal = await vscode.window.showInputBox({
+            value: item.val.value,
+            ignoreFocusOut: true,
+            validateInput: (input: string): string | undefined => {
+                if (input.trim() === '')
+                    return 'Cannot be empty or whitespace !'
+            }
+        });
+
+        if (newVal) {
+            newVal = newVal.trim();
+            switch ((<ModifiableDepInfo>item.val.obj).type) {
+                case 'INC_ITEM':
+                    prj.GetConfiguration().CustomDep_ModifyIncDir(prj.ToAbsolutePath(<string>item.val.value), prj.ToAbsolutePath(newVal));
+                    break;
+                case 'DEFINE_ITEM':
+                    prj.GetConfiguration().CustomDep_ModifyDefine(<string>item.val.value, newVal);
+                    break;
+                case 'LIB_ITEM':
+                    prj.GetConfiguration().CustomDep_ModifyLib(prj.ToAbsolutePath(<string>item.val.value), prj.ToAbsolutePath(newVal));
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    async RemoveDependenceItem(item: ProjTreeItem) {
+
+        if (item.val.value instanceof File)
+            throw new Error('RemoveDependenceItem: Invalid context item');
+
+        const msg = `${WARNING}: ${remove_this_item.replace('{}', item.val.value)}`;
+        const choice = await vscode.window.showWarningMessage(msg, 'Yes', 'No');
+        if (choice === undefined || choice === 'No')
+            return undefined;
+
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
         switch ((<ModifiableDepInfo>item.val.obj).type) {
             case 'INC_ITEM':
-                prj.GetConfiguration().CustomDep_RemoveIncDir(prj.ToAbsolutePath(<string>item.val.value));
+                prj.GetConfiguration().CustomDep_RemoveIncDir(prj.ToAbsolutePath(item.val.value));
                 break;
             case 'DEFINE_ITEM':
-                prj.GetConfiguration().CustomDep_RemoveDefine(<string>item.val.value);
+                prj.GetConfiguration().CustomDep_RemoveDefine(item.val.value);
                 break;
             case 'LIB_ITEM':
-                prj.GetConfiguration().CustomDep_RemoveLib(prj.ToAbsolutePath(<string>item.val.value));
+                prj.GetConfiguration().CustomDep_RemoveLib(prj.ToAbsolutePath(item.val.value));
                 break;
             default:
                 break;
