@@ -6,6 +6,20 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.20.1] revision
+
+**Optimize**:
+  - `Internal Templates`: Update internal project templates.
+  - `unify_builder`: Optimize makefile generator.
+  - `Project Resource`: Add batch operation support on files or folders. Thanks [Deadline039](https://github.com/Deadline039) !
+  - `CMSIS Config Wizard`: Add a search input box. Now you can search config.
+  - `CMSIS Config Wizard`: Add non-number options support. Thanks [Deadline039](https://github.com/Deadline039) !
+
+**Fix**:
+  - `Chip Package`: Fix package parser bug.
+
+***
+
 ### [v3.20.0] update
 
 **New**:
