@@ -106,7 +106,7 @@
         "jsonc": "^2.0.0",
         "jsonc-parser": "^3.2.1",
         "mathjs": "^11.5.0",
-        "micromatch": "^4.0.4",
+        "micromatch": "^4.0.8",
         "node-7z": "^3.0.0",
         "table": "^6.8.1",
         "vscode-cpptools": "^5.0.0",
