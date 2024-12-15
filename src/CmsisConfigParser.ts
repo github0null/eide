@@ -22,9 +22,6 @@
     SOFTWARE.
 */
 
-import { number } from "mathjs";
-import { config } from "process";
-
 export interface CmsisConfigItemRange {
 
     start: number;
@@ -60,7 +57,10 @@ export interface CmsisConfigItem {
 
     detail: string[];
 
+    // 映射到 #define XXX 语句的位置
     location?: { start: number, end?: number /* included last line */ };
+
+    line_idx: number;
 
     // ---
 
@@ -80,13 +80,17 @@ export interface CmsisConfigItem {
 
     var_enum?: CmsisConfigItemEnums[];
 
-    var_skip_val?: number;
+    var_skip_val?: number; // 对于标签 <c> 是跳过的行数，对于标签 <q> <o> <s> 是跳过的项数
 
     var_mod_bit?: { start: number, end?: number };
 
     var_len_limit?: number; // only for string
 
     var_disp_inf: CmsisConfigItemDispInfo;
+
+    // --- gui attr
+
+    css_class?: string;
 
     // ---
 
@@ -97,7 +101,6 @@ export interface CmsisConfiguration {
     items: CmsisConfigItem[];
 };
 
-const macroMatcher = /^\s*#define\s+(?<key>\w+)\s*(?<value>.+)?/;
 export function parse(lines: string[]): CmsisConfiguration | undefined {
 
     // rm whitespace for line
@@ -145,40 +148,34 @@ export function parse(lines: string[]): CmsisConfiguration | undefined {
 
     const context: ParserContext = {
         grp_stack: [],
-        fill_fifo: [],
         last_ele: undefined,
-        cur_ele_lines_cnt: 0
+        macro_list: [],
+        comment_skip_line_count: 0
     };
-
-    // There type needs to parse and modify code.
-    const fillType = ['section', 'bool', 'option', 'string'];
 
     for (let index = startIdx + 1; index < endIdx; index++) {
 
-        const cur_grp: CmsisConfigItem | undefined = getCurGroup(context);
+        const cur_grp  = getCurGroup(context);
         const cur_line = lines[index];
-        let cur_ele = context.last_ele;
+        const cur_ele  = context.last_ele;
 
         // is a cmsis header start ? 
         if (isCmsisTag(cur_line)) {
 
-            // is a group start ?.
+            // is a group start ?
             if (fieldMatcher['group'].start.test(cur_line)) {
                 const match = fieldMatcher['group'].start.exec(cur_line);
                 if (match && match.length > 1) {
-
                     const nGrp = newItemsGroup();
                     nGrp.name = match[1];
                     context.grp_stack.push(nGrp);
                     cur_grp ? cur_grp.children.push(nGrp) : cmsisConfig.items.push(nGrp);
-                    context.cur_ele_lines_cnt = 0;
                     continue; // go next line
                 }
             }
             // is group end tag ?
             else if (cur_grp && fieldMatcher[cur_grp.type] && fieldMatcher[cur_grp.type].end?.test(cur_line)) {
                 context.grp_stack.pop();
-                context.cur_ele_lines_cnt = 0;
                 context.last_ele = undefined;
                 continue; // go next line
             }
@@ -196,18 +193,18 @@ export function parse(lines: string[]): CmsisConfiguration | undefined {
                             nGrp.name = match[1];
                             context.grp_stack.push(nGrp);
                             cur_grp ? cur_grp.children.push(nGrp) : cmsisConfig.items.push(nGrp);
-                            context.cur_ele_lines_cnt = 0;
+                            context.comment_skip_line_count = 0;
                             validElement = true;
                             break;
                         } else { // this node is a element
                             const newItem = parseElement(cur_line, fieldType, match, context);
                             if (newItem) {
-                                if (fillType.includes(newItem.type)) context.fill_fifo.push(newItem);
+                                newItem.line_idx = index;
                                 context.last_ele = newItem;
                                 cur_grp ? cur_grp.children.push(newItem) : cmsisConfig.items.push(newItem);
-                                context.cur_ele_lines_cnt = 0;
+                                context.comment_skip_line_count = 0;
                                 validElement = true;
-                                // if this element is not end, push it to stack
+                                // if this element have a END matcher, push it to stack
                                 if (fieldMatcher[fieldType].end)
                                     context.grp_stack.push(newItem);
                                 break;
@@ -221,57 +218,128 @@ export function parse(lines: string[]): CmsisConfiguration | undefined {
             }
         }
 
-        // content is code
-        if (cur_ele && cur_ele.type == 'code') {
-            if (cur_ele.location == undefined) { cur_ele.location = { start: index }; }
-            cur_ele.location.end = index;
-            cur_ele.var_value = cur_line.trimStart().startsWith('//') ? '!' : '' // update code value
+        // parse element content
+        if (cur_ele) {
+
+            // <c> 标签作特殊处理
+            if (cur_ele.type == 'code') {
+
+                // skip some lines
+                context.comment_skip_line_count++;
+                if (cur_ele.var_skip_val && cur_ele.var_skip_val >= context.comment_skip_line_count)
+                    continue;
+
+                if (cur_ele.location == undefined)
+                    cur_ele.location = { start: index };
+                cur_ele.location.end = index;
+
+                // '!' 表示代码段已被注释，'' 表示取消注释
+                cur_ele.var_value = cur_line.trimStart().startsWith('//')
+                    ? '!' 
+                    : '';
+            }
         }
 
-        cur_ele = context.fill_fifo[0];
-        if (cur_ele == undefined) continue;
-
+        // 解析宏定义或者赋值语句
+        const macroMatcher = /^\s*#define\s+(?<key>\w+)\s*(?<value>.+)?/;
         let match = macroMatcher.exec(cur_line);
-
-        // If defined the location, don't parse the marco to repleace current config value.
-        if (cur_ele.location) continue;
-
-        // This may require modifying the html page. But I don't know how to modify it.
-        // if (match == null || match.groups == undefined) {
-        //     // Not marco, try identifier match.
-        //     /**
-        //      * e.g.
-        //      * //   <o redPortMode> Red port mode
-        //      * //     <OutPushPull_GPIO=>  PushPull
-        //      * //     <OutOpenDrain_GPIO=> OpenDrain
-        //      * //   <i>Selects GPIO output
-        //      * ledConf.redPortMode = OutPushPull_GPIO;
-        //      */
-        //     const identifierMatch = new RegExp('^.*(?<key>' + cur_ele.var_name + ')\\s*=\\s*(?<value>.*);');
-        //     match = identifierMatch.exec(cur_line);
-        // }
-
-        if (match == null || match.groups == undefined) continue;
-
-        if (cur_ele.var_skip_val && cur_ele.var_skip_val > context.cur_ele_lines_cnt) {
-            context.cur_ele_lines_cnt++;
-            continue;
+        if (!match || match.groups == undefined) {
+            if (cur_line.trim().startsWith('//') || 
+                cur_line.trim().startsWith('/*'))
+                continue; // 跳过注释
+            // 匹配赋值表达式：'GPIO.G.redPortMode = A = 1; // ABC'
+            const exprMatcher_s = /(?<key>[a-zA-Z_][\w$]*)\s*=/;
+            match = exprMatcher_s.exec(cur_line);
+            if (!match || match.groups == undefined)
+                continue; // 没有匹配到任何 宏定义 或者 赋值语句，则跳过
+            const exprMatcher_e = /=(?<value>[^=;]+);/;
+            const m = exprMatcher_e.exec(cur_line);
+            if (!m || m.groups == undefined)
+                continue; // 没有匹配到 赋值 ，则跳过
+            match.groups['value'] = m.groups['value'].trim();
         }
 
         const keyVal = match.groups;
+        if (keyVal['value'] == undefined)
+            keyVal['value'] = '1'; // 没有显式指定值的，则赋默认值 1
 
-        // <o> Config item
-        if (cur_ele.var_name == undefined) cur_ele.var_name = keyVal['key'];
-        // <o identifer> item
-        if (cur_ele.var_name != keyVal['key']) continue;
-        if (keyVal['value'] == undefined) continue;
-        // set value
-        cur_ele.var_value = keyVal['value'].trim();
-        cur_ele.location = { start: index };
-        updateElementDispVal(cur_ele);
-        context.fill_fifo.shift();
-        if (context.fill_fifo[0] && context.fill_fifo[0].var_skip_val)
-            context.fill_fifo[0].var_skip_val = 0;
+        const macroItem: MacroItem = {
+            name: keyVal['key'],
+            value: keyVal['value'].trim(),
+            line_idx: index,
+            line_txt: cur_line,
+        };
+        context.macro_list.push(macroItem);
+    }
+
+    const updateConfigItemValue = (configItem: CmsisConfigItem, macroItem: MacroItem) => {
+        configItem.var_value = macroItem.value;
+        configItem.location = { start: macroItem.line_idx };
+        updateElementDispVal(configItem);
+    };
+
+    const findNextMacro = (line_idx: number, skip_count?: number, range?: { start: number, end: number }): MacroItem | undefined => {
+        // 使用顺序遍历
+        for (let i = 0; i < context.macro_list.length; i++) {
+            const macro = context.macro_list[i];
+            if (range) {
+                if (macro.line_idx < range.start)
+                    continue;
+                if (macro.line_idx > range.end)
+                    return undefined;
+            }
+            if (macro.line_idx > line_idx)
+                return context.macro_list[i + (skip_count || 0)];
+        }
+    };
+    const findNextMacroByName = (name: string, range?: { start: number, end: number }): MacroItem | undefined => {
+        return context.macro_list.find((macro) => {
+            if (range) {
+                if (macro.line_idx < range.start)
+                    return false;
+                if (macro.line_idx > range.end)
+                    return false;
+            }
+            if (macro.name == name)
+                return true;
+        });
+    };
+
+    //
+    // 接下来统一处理所有解析完成的 c defines 和 配置项
+    // 为 每个配置项 匹配一个 c defines
+    //
+
+    const stk = cmsisConfig.items.map(item => item);
+    while (stk.length > 0) {
+        const cur_item = <CmsisConfigItem>stk.shift();
+
+        // <h> 标签：仅作为分组，不需要匹配对应的宏定义
+        if (cur_item.type == 'group') {
+            cur_item.children.forEach(t => stk.push(t));
+            continue;
+        }
+
+        // <!c> 标签：已经处理过了，不需要匹配对应的宏定义，直接跳过
+        if (cur_item.type == 'code')
+            continue;
+
+        // 为每个配置项查找与之匹配的宏，然后更新配置项的值
+        let macroItem: MacroItem | undefined;
+        if (cur_item.var_name) { // 如果指定了标识符名字，则必须匹配标识符
+            macroItem = findNextMacroByName(cur_item.var_name);
+        } else {
+            macroItem = findNextMacro(cur_item.line_idx, cur_item.var_skip_val);
+        }
+        if (macroItem) {
+            updateConfigItemValue(cur_item, macroItem);
+        } else if (!cur_item.location) {
+            // 对于未匹配到任何定义的 配置项，GUI标红提示
+            cur_item.css_class = 'err_blink';
+            cur_item.name += ` --- !!! Invalid item, please check your .h file !!!`;
+        }
+
+        cur_item.children.forEach(t => stk.push(t));
     }
 
     return cmsisConfig;
@@ -285,19 +353,25 @@ interface TagMatcher {
     [tag: string]: { start: RegExp, end?: RegExp }
 };
 
+interface MacroItem {
+    name: string;
+    value: string;
+    line_idx: number;
+    line_txt: string;
+};
 
 interface ParserContext {
-    grp_stack: any[];
-    fill_fifo: any[];
+    grp_stack: CmsisConfigItem[];
     last_ele: CmsisConfigItem | undefined;
-    cur_ele_lines_cnt: number;
+    macro_list: MacroItem[];
+    comment_skip_line_count: number; // 仅给 <!c> 标签使用
 };
 
 // ---
 
 const fieldMatcher: TagMatcher = {
     'group': { start: /^\/\/\s*<h>\s*(?<name>.+)/, end: /^\/\/\s*<\/h>/ },
-    'section': { start: /^\/\/\s*<e(?<var_skip_val>\d+)?(?:\.(?<var_mod_bit_s>[\d]+))?(?: (?<var_name>\w+))?>\s*(?<name>.+?)(?<desc>(?:\s+[-]+\s*.*)?)$/, end: /^\/\/\s*<\/e>/ },
+    'section': { start: /^\/\/\s*<e(?:\.(?<var_mod_bit_s>[\d]+))?(?: (?<var_name>\w+))?>\s*(?<name>.+?)(?<desc>(?:\s+[-]+\s*.*)?)$/, end: /^\/\/\s*<\/e>/ },
     'tooltip': { start: /^\/\/\s*<i>\s*(?<detail>.+)\s*$/ },
     'defval': { start: /^\/\/\s*<d>\s*(?<var_def_val>.+)\s*$/ },
     'code': { start: /^\/\/\s*<!?c(?<var_skip_val>\d+)?>\s*(?<name>.+?)(?<desc>(?:\s+[-]+\s*.*)?)$/, end: /^\/\/\s*<\/[!]?c>/ },
@@ -368,6 +442,7 @@ function getCurGroup(context: ParserContext) {
 
 function newConfigItem(): CmsisConfigItem {
     return {
+        line_idx: -1,
         name: '',
         type: '',
         desc: '',
@@ -386,9 +461,14 @@ function newItemsGroup(): CmsisConfigItem {
 
 // ---
 
-const subFieldNames = ['tooltip', 'defval', 'enums'];
+const subNodeNames = [
+    // 这些节点只能依附于一个父节点，作为父节点的属性；它们不能单独存在
+    'tooltip', 
+    'defval', 
+    'enums'
+];
 const optionPropMatchers = [
-    /<(?<enum_val>\w+)=>\s*(?<enum_desc>.+)$/i, // Parse enum items in <o> lines. e.g. <o>ISR FIFO Queue size<4=> 4 entries <8=> 8 entries
+    // 一个 <o> 选项后面可能会跟随一些属性，用于描述值的格式或者范围，下面的正则用于匹配它们
     /<(?<var_range_s>\d+|0x[0-9a-f]+)-(?<var_range_e>\d+|0x[0-9a-f]+)(?::(?<var_range_step>\d+|0x[0-9a-f]+))?>/i,
     /<#(?<disp_operator>[\+\-\*\/])(?<disp_operate_val>\d+|0x[0-9a-f]+)>/i,
     /<f\.(?<disp_fmt>[d|h|o|b])>/i
@@ -397,11 +477,14 @@ function parseElement(line: string, type: string, match: RegExpExecArray, contex
 
     let item: CmsisConfigItem | undefined;
 
-    // check we need create a new element ?
-    if (subFieldNames.includes(type)) {
+    // 如果这个节点用于描述上一个配置项，则不要新建新配置
+    if (subNodeNames.includes(type)) {
         item = context.last_ele;
-        if (item == undefined) return;
-    } else {
+        if (item == undefined)
+            return; // 如果上一个配置项不存在，则直接丢弃
+    }
+    // 否则，为这个这个节点新建一个新的配置项
+    else {
         item = newConfigItem();
         item.type = type;
     }
@@ -430,11 +513,26 @@ function parseElement(line: string, type: string, match: RegExpExecArray, contex
             // props
             const suffix = keyVal['suffix'] || ''
             if (suffix) {
-                for (const matcher of optionPropMatchers) {
-                    const opt_match = matcher.exec(suffix)
-                    if (opt_match && opt_match.groups) {
-                        for (const key in opt_match.groups) {
-                            keyVal[key] = opt_match.groups[key] || keyVal[key]
+                // 配置项与选项写在一行，需要解析选项，如：// <o> USART2_TX Pin <0=>Not Used <1=>PA2 <2=>PD5
+                if (/<\w+=>\s*[^<]+/.test(suffix)) {
+                    const enums = parseEnums(suffix);
+                    if (enums) {
+                        if (item.var_enum == undefined)
+                            item.var_enum = [];
+                        item.var_enum = item.var_enum.concat(enums);
+                    } else {
+                        // cannot reach here
+                        throw Error(`Fail to parse option: '${line}'`);
+                    }
+                }
+                // 匹配选项的附加属性
+                else {
+                    for (const matcher of optionPropMatchers) {
+                        const opt_match = matcher.exec(suffix)
+                        if (opt_match && opt_match.groups) {
+                            for (const key in opt_match.groups) {
+                                keyVal[key] = opt_match.groups[key] || keyVal[key]
+                            }
                         }
                     }
                 }
@@ -494,8 +592,12 @@ function parseElement(line: string, type: string, match: RegExpExecArray, contex
         }
     }
 
-    if (item == context.last_ele) return undefined;
+    // 如果这个节点用于描述上一个配置项，那么这个函数仅用于完善上一个配置的值
+    // 因此我们应该返回 空
+    if (item == context.last_ele)
+        return undefined;
 
+    // 如果这个配置项是新建的，则返回它
     return item;
 }
 
@@ -574,14 +676,30 @@ function updateElementDispVal(item: CmsisConfigItem) {
 
         let { num, isHex, fmtStr } = parseNumber(item.var_value);
 
-        if (isNaN(num) && item.var_enum) {
-            for (const value of item.var_enum) {
-                if (item.var_value == value.val) {
-                    item.var_disp_value = value.val;
-                    return;
+        // 处理选项的值是非数字的情况
+        // 注意：只有使用 <o key-identifier> 标签才能使用非数字的选项值，否则应该抛出错误
+        /*
+            //   <o TIMESTAMP_SRC>Time Stamp Source
+            //      <dwt=>     DWT Cycle Counter
+            //      <systick=> SysTick
+            //      <user=>    User Timer 
+            //   <i>Selects source for 32-bit time stamp
+            #define TIMESTAMP_SRC  dwt
+        */
+        if (isNaN(num)) {
+            if (item.var_name && item.var_enum) {
+                for (const value of item.var_enum) {
+                    if (item.var_value == value.val) {
+                        item.var_disp_value = value.val;
+                        return;
+                    }
                 }
+            } else {
+                const msg = `Syntax Error: Only <o key-identifier> options support non-number option value !\nAt line: ${item.location?.start}`;
+                throw Error(msg);
             }
         }
+
         // normal val
         {
             item.var_disp_value = isHex ? `0x${num.toString(16)}` : num.toString();
