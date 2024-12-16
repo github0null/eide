@@ -888,6 +888,15 @@ export const view_str$operation$openSettings = [
     'Open plug-in Settings'
 ][langIndex];
 
+export const view_str$operation$onlineHelp = [
+    '在线帮助',
+    'Online Help'
+][langIndex];
+export const view_str$operation$onlineHelpTooltip = [
+    '访问论坛网页以获取在线帮助',
+    'Visit the forum page for online help'
+][langIndex];
+
 export const invalid_keil_path = [
     '无效的 Keil {} 安装路径',
     'Invalid Keil {} Setup path'
