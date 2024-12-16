@@ -6158,14 +6158,19 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     const newName = await vscode.window.showInputBox({
                         value: prjConfig.name,
                         ignoreFocusOut: true,
-                        placeHolder: 'Input project name',
+                        placeHolder: 'Input new project name',
                         validateInput: (name) => AbstractProject.validateProjectName(name)
                     });
 
                     if (newName && newName !== prjConfig.name) {
                         prjConfig.name = newName; // update project name
                         this.dataProvider.UpdateView(); // udpate all view
-                        prj.Save();
+                        prj.Save(true);
+                        // rename workspace file
+                        const wsFile = prj.getWorkspaceFile();
+                        const newWsFile = File.from(wsFile.dir, `${newName}${wsFile.suffix}`);
+                        fs.renameSync(wsFile.path, newWsFile.path);
+                        WorkspaceManager.getInstance().openWorkspace(newWsFile);
                     }
                 }
                 break;
