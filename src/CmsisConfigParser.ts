@@ -159,6 +159,10 @@ export function parse(lines: string[]): CmsisConfiguration | undefined {
         const cur_line = lines[index];
         const cur_ele  = context.last_ele;
 
+        // skip some lines for <c> tag
+        if (cur_ele?.type == 'code')
+            context.comment_skip_line_count++;
+
         // is a cmsis header start ? 
         if (isCmsisTag(cur_line)) {
 
@@ -180,8 +184,18 @@ export function parse(lines: string[]): CmsisConfiguration | undefined {
                 continue; // go next line
             }
 
+            // 检查是否处于 <c> 标签的内容范围内
+            let is_in_code_region = false;
+            if (cur_ele?.type == 'code') {
+                // 将被跳过的行不属于 <c> 的内容文本
+                if (cur_ele.var_skip_val && cur_ele.var_skip_val >= context.comment_skip_line_count)
+                    is_in_code_region = false;
+                else
+                    is_in_code_region = true;
+            }
+
             // is a new element (skip parse '//' comment for code type)
-            if (cur_ele?.type != 'code') {
+            if (!is_in_code_region) {
 
                 let validElement = false;
 
@@ -224,8 +238,7 @@ export function parse(lines: string[]): CmsisConfiguration | undefined {
             // <c> 标签作特殊处理
             if (cur_ele.type == 'code') {
 
-                // skip some lines
-                context.comment_skip_line_count++;
+                // check skip lines
                 if (cur_ele.var_skip_val && cur_ele.var_skip_val >= context.comment_skip_line_count)
                     continue;
 
@@ -324,6 +337,12 @@ export function parse(lines: string[]): CmsisConfiguration | undefined {
         if (cur_item.type == 'code')
             continue;
 
+        // <n> 标签是没有值的，因此 location 是它自身
+        if (cur_item.type == 'notice') {
+            cur_item.location = { start: cur_item.line_idx };
+            continue;
+        }
+
         // 为每个配置项查找与之匹配的宏，然后更新配置项的值
         let macroItem: MacroItem | undefined;
         if (cur_item.var_name) { // 如果指定了标识符名字，则必须匹配标识符
@@ -331,12 +350,23 @@ export function parse(lines: string[]): CmsisConfiguration | undefined {
         } else {
             macroItem = findNextMacro(cur_item.line_idx, cur_item.var_skip_val);
         }
-        if (macroItem) {
-            updateConfigItemValue(cur_item, macroItem);
-        } else if (!cur_item.location) {
-            // 对于未匹配到任何定义的 配置项，GUI标红提示
+
+        try {
+            if (macroItem) {
+                updateConfigItemValue(cur_item, macroItem);
+            }
+            if (!cur_item.location) {
+                throw Error(`Error: Not match any C defines, at line ${cur_item.line_idx + 1}`);
+            }
+        } catch (error) {
+            // 对于发生错误的项，GUI标红提示
+            cur_item.type = 'notice'; // 强制改为 notice, 避免用户去修改选项值
+            cur_item.location = { start: cur_item.line_idx };
+            cur_item.name += ' - !!! ' + (<Error>error).message;
+            cur_item.detail.push((<Error>error).message);
+            cur_item.detail.push((<Error>error).message);
+            cur_item.detail.push((<Error>error).message);
             cur_item.css_class = 'err_blink';
-            cur_item.name += ` --- !!! Invalid item, please check your .h file !!!`;
         }
 
         cur_item.children.forEach(t => stk.push(t));
@@ -378,8 +408,8 @@ const fieldMatcher: TagMatcher = {
     'bool': { start: /^\/\/\s*<q(?<var_skip_val>\d+)?(?: (?<var_name>\w+))?>\s*(?<name>.+?)(?<desc>(?:\s+[-]+\s*.*)?)$/ },
     'option': { start: /^\/\/\s*<o(?<var_skip_val>\d+)?(?:\.(?<var_mod_bit_s>[\d]+)(?:\.\.(?<var_mod_bit_e>[\d]+))?)?(?: (?<var_name>\w+))?>\s*(?<name>[^<]+)(?<suffix>(?:.*)?)$/i },
     'string': { start: /^\/\/\s*<s(?<var_skip_val>\d+)?(?:\.(?<var_len_limit>[\d]+))?(?: (?<var_name>\w+))?>\s*(?<name>.+?)(?<desc>(?:\s+[-]+\s*.*)?)$/ },
-    'enums': { start: /^\/\/\s*<(?<enum_val>\w+)=>\s*(?<enum_desc>.+)$/ }
-    //'array': { start: /^\/\/\s*<a(?<var_skip_val>\d+)?(?:\.(?<var_len_limit>[\d]+))?(?: (?<var_name>\w+))?>\s*(?<name>.+?)(?<desc>(?:\s+[-]+\s*.*)?)$/ }
+    'enums': { start: /^\/\/\s*<(?<enum_val>\w+)=>\s*(?<enum_desc>.+)$/ },
+    'notice': { start: /^\/\/\s*<n>\s*(?<name>.+)/ }
 };
 
 const likeTagMatcher = /^\/\/\s*</;
@@ -520,9 +550,6 @@ function parseElement(line: string, type: string, match: RegExpExecArray, contex
                         if (item.var_enum == undefined)
                             item.var_enum = [];
                         item.var_enum = item.var_enum.concat(enums);
-                    } else {
-                        // cannot reach here
-                        throw Error(`Fail to parse option: '${line}'`);
                     }
                 }
                 // 匹配选项的附加属性
