@@ -55,6 +55,7 @@ import * as platform from './Platform';
 const extension_deps: string[] = [];
 
 let projectExplorer: ProjectExplorer;
+let operationExplorer: OperationExplorer;
 
 // set yaml global style
 yaml.scalarOptions.str.fold.lineWidth = 1000;
@@ -114,12 +115,13 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('eide.ReloadJlinkDevs', () => reloadJlinkDevices()));
     subscriptions.push(vscode.commands.registerCommand('eide.ReloadStm8Devs', () => reloadStm8Devices()));
     subscriptions.push(vscode.commands.registerCommand('eide.create.clang-format.file', () => newClangFormatFile()));
+    subscriptions.push(vscode.commands.registerCommand('eide.cleanCache', () => cleanCache()));
 
     // internal command
     // TODO
 
     // operations
-    const operationExplorer = new OperationExplorer(context);
+    operationExplorer = new OperationExplorer(context);
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.Open', () => operationExplorer.OnOpenProject()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.Create', () => operationExplorer.OnCreateProject()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.Import', () => operationExplorer.OnImportProject()));
@@ -294,7 +296,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
 // this method is called when your extension is deactivated
 export function deactivate() {
-    GlobalEvent.emit('extension_close');
+    projectExplorer.onDispose();
+    operationExplorer.onDispose();
+    ResManager.instance().onDispose();
+    LogDumper.getInstance().onDispose();
     StatusBarManager.getInstance().disposeAll();
 }
 
@@ -383,6 +388,15 @@ async function newClangFormatFile() {
         vscode.window.showInformationMessage(`.clang-format file was created in '${fSrc.dir}' !`);
     } else {
         vscode.window.showWarningMessage(`No opened workspace or folders !`);
+    }
+}
+
+function cleanCache() {
+    try {
+        platform.DeleteAllChildren(ResManager.instance().GetTmpDir());
+        GlobalEvent.emit('msg', newMessage('Info', 'Done.'));
+    } catch (error) {
+        GlobalEvent.log_error(error);
     }
 }
 

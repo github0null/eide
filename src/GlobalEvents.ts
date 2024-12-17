@@ -43,7 +43,6 @@ export class GlobalEvent {
     }
 
     //event
-    static on(event: 'extension_close', listener: () => void): void;
     static on(event: 'extension_launch_done', listener: () => void): void;
     static on(event: 'project.opened', listener: (prj: any) => void): void;
     static on(event: 'project.closed', listener: (uid?: string) => void): void;
@@ -69,7 +68,6 @@ export class GlobalEvent {
     }
 
     //event
-    static emit(event: 'extension_close'): boolean;
     static emit(event: 'extension_launch_done'): boolean;
     static emit(event: 'project.opened', prj: any): boolean;
     static emit(event: 'project.closed', uid?: string): boolean;

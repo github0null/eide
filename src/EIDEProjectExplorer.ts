@@ -667,14 +667,13 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         this.context.subscriptions.push(this.dataChangedEvent);
         this.onDidChangeTreeData = this.dataChangedEvent.event;
         this.recFile = File.fromArray([ResManager.GetInstance().getEideHomeFolder().path, ProjectDataProvider.recName]);
-
-        GlobalEvent.on('extension_close', () => {
-            this.SaveAll();
-            this.CloseAll();
-            this.saveRecord();
-        });
-
         this.loadRecord();
+    }
+
+    onDispose() {
+        this.SaveAll();
+        this.CloseAll();
+        this.saveRecord();
     }
 
     public on(event: 'rootItems_inited', listener: () => void): void;
@@ -795,7 +794,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         }
     }
 
-    /////////////////////////////////////////////////////////////////////
+    // ------------------------------------------
 
     onProjectChanged(prj: AbstractProject, type?: DataChangeType) {
 
@@ -823,8 +822,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
         prj.Save(false, 1000); // save project file with a delay
     }
-
-    //----------------
 
     private toLowercaseEIDEFolder(wsFolder: File) {
 
@@ -3389,6 +3386,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
     clearAllRecords() {
         this.slnRecord = [];
+        this.saveRecord();
     }
 
     removeRecord(record: string) {
@@ -3610,6 +3608,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         this.on('request_create_project', (option: CreateOptions) => this.dataProvider.CreateProject(option));
         this.on('request_create_from_template', (option) => this.dataProvider.CreateFromTemplate(option));
         this.on('request_import_project', (option) => this.dataProvider.ImportProject(option));
+    }
+
+    onDispose() {
+        this.dataProvider.onDispose();
     }
 
     loadWorkspace() {

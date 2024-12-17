@@ -190,13 +190,13 @@ export class OperationExplorer {
         this.view = vscode.window.createTreeView('cl.eide.view.operations', { treeDataProvider: this.provider });
         this.UpdateView();
 
-        GlobalEvent.on('extension_close', () => {
-            this.view.dispose();
-        });
-
         SettingManager.GetInstance().on('onChanged', () => {
             this.UpdateView();
         });
+    }
+
+    onDispose() {
+        this.view.dispose();
     }
 
     private UpdateView() {
