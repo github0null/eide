@@ -3267,7 +3267,7 @@ class EIDEProject extends AbstractProject {
             keilFile = keilFileList[fIndex];
         }
 
-        const keilParser = KeilParser.NewInstance(keilFile);
+        const keilParser = KeilParser.NewInstance(keilFile, prjConfig.type === 'C51' ? 'c51' : 'arm');
 
         let cDevice: CurrentDevice | undefined;
         if (prjConfig.type === 'ARM') { // only for ARM project

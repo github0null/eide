@@ -74,6 +74,7 @@ export interface ImportOptions {
     outDir?: File;
     projectFile: File;
     createNewFolder?: boolean;
+    mdk_prod?: 'c51' | 'arm';
 }
 
 export interface Dependence {

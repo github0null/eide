@@ -2945,7 +2945,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
     private async ImportKeilProject(option: ImportOptions) {
 
         const keilPrjFile = option.projectFile;
-        const keilParser = KeilParser.NewInstance(option.projectFile);
+        const keilParser = KeilParser.NewInstance(option.projectFile, <any>option.mdk_prod);
         const targets = keilParser.ParseData();
 
         if (targets.length == 0) {
@@ -3020,53 +3020,55 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             const incs: string[] = this.importCmsisHeaders(baseInfo.rootFolder).map((f) => f.path);
 
             /* try resolve all deps */
-            const mdkRoot = SettingManager.GetInstance().GetMdkArmDir();
-            if (mdkRoot) { // MDK ARM dir, like: 'D:\keil\ARM'
-                const fileTypes: string[] = ['source', 'header'];
-                rte_deps.forEach((dep) => {
-                    /* check dep whether is valid */
-                    if (fileTypes.includes(dep.category || '') && dep.class && dep.packPath) {
-                        const srcFileLi: File[] = [];
-                        const vFolder = getVirtualFolder(`${VirtualSource.rootName}/::${dep.class}`, true);
+            const fileTypes: string[] = ['source', 'header'];
+            rte_deps.forEach((dep) => {
 
-                        /* add all candidate files */
-                        if (dep.instance) { srcFileLi.push(new File(dep.instance[0])) }
-                        srcFileLi.push(File.fromArray([mdkRoot.path, 'PACK', dep.packPath, dep.path]));
+                // check category
+                if (!(dep.category && fileTypes.includes(dep.category))) {
+                    GlobalEvent.log_warn(`[Keil RTE Import] dependence '${dep.name}' is not a source file !`);
+                    unresolved_deps.push(dep); /* resolve failed !, store dep */
+                    return;
+                }
 
-                        /* resolve dependences */
-                        for (const srcFile of srcFileLi) {
+                // check source file
+                if (!dep.instance) {
+                    GlobalEvent.log_warn(`[Keil RTE Import] dependence '${dep.name}' have no instances !`);
+                    unresolved_deps.push(dep); /* resolve failed !, store dep */
+                    return;
+                }
 
-                            /* check condition */
-                            if (!srcFile.IsFile()) { continue; }
-                            if (dep.category == 'source' && !vFolder) { continue; }
+                const srcList = dep.instance.map(p => File.ToUnixPath(p));
+                const vFolder = getVirtualFolder(`${VirtualSource.rootName}/::${dep.class}`, false);
 
-                            let srcRePath: string | undefined = baseInfo.rootFolder.ToRelativePath(srcFile.path);
+                if (!vFolder) {
+                    GlobalEvent.log_warn(`[Keil RTE Import] No such folder '::${dep.class}'`);
+                    unresolved_deps.push(dep); /* resolve failed !, store dep */
+                    return;
+                }
 
-                            /* if it's not in workspace, copy it */
-                            if (srcRePath == undefined) {
-                                srcRePath = ['.cmsis', dep.packPath, dep.path].join(File.sep);
-                                const realFolder = File.fromArray([baseInfo.rootFolder.path, NodePath.dirname(srcRePath)]);
-                                realFolder.CreateDir(true);
-                                realFolder.CopyFile(srcFile);
-                            }
+                /* resolve dependences */
+                for (const srcPath of srcList) {
 
-                            /* if it's a source, add to project */
-                            if (dep.category == 'source' && vFolder) {
-                                vFolder.files.push({ path: srcRePath });
-                            }
-
-                            /* if it's a header, add to include path */
-                            else if (dep.category == 'header') {
-                                incs.push(`${baseInfo.rootFolder.path}${File.sep}${NodePath.dirname(srcRePath)}`);
-                            }
-
-                            return; /* resolved !, exit */
-                        }
+                    /* check condition */
+                    if (!File.IsFile(srcPath)) {
+                        GlobalEvent.log_warn(`[Keil RTE Import] No such file '${srcPath}'`);
+                        continue;
                     }
-                    /* resolve failed !, store dep */
-                    unresolved_deps.push(dep);
-                });
-            }
+
+                    const srcRePath = baseInfo.rootFolder.ToRelativePath(srcPath);
+
+                    /* add to project */
+                    vFolder.files.push({ path: srcRePath || srcPath });
+
+                    /* if it's a header, add to include path */
+                    if (dep.category == 'header') {
+                        if (srcRePath)
+                            incs.push(`${baseInfo.rootFolder.path}${File.sep}${NodePath.dirname(srcRePath)}`);
+                        else
+                            incs.push(NodePath.dirname(srcPath));
+                    }
+                }
+            });
 
             /* add include paths for targets */
             const mdk_rte_folder = File.fromArray([`${keilPrjFile.dir}`, 'RTE']);
@@ -3096,7 +3098,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     }
 
                     const nLine: string[] = [
-                        `FileName: '${dep.path}'`,
+                        `FileName: '${dep.name}'`,
                         `\tClass:     '${dep.class}'`,
                         `\tCategory:  '${dep.category}'`,
                         `\tLocation:  '${locate}'`,
@@ -3140,7 +3142,10 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 if (t.command.startsWith('bash')) {
                     t.command = t.command.replace('$<cd:mdk-proj-dir>', `cd ${File.ToUnixPath(reKeilPrjDir)}`);
                 } else {
-                    t.command = t.command.replace('$<cd:mdk-proj-dir>', `cd .\\${reKeilPrjDir}`);
+                    if (File.isAbsolute(reKeilPrjDir))
+                        t.command = t.command.replace('$<cd:mdk-proj-dir>', `cd /D ${reKeilPrjDir}`);
+                    else
+                        t.command = t.command.replace('$<cd:mdk-proj-dir>', `cd .\\${reKeilPrjDir}`);
                 }
             }
         }
@@ -5099,8 +5104,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             openLabel: view_str$project$add_source,
             defaultUri: vscode.Uri.file(project.GetRootDir().path),
             filters: {
-                'c/c++': ['c', 'cpp', 'cxx', 'cc', 'c++'],
-                'header': ['h', 'hxx', 'hpp', 'inc'],
+                'c/c++': ['c', 'cpp', 'cxx', 'cc', 'c++', 'h', 'hxx', 'hpp', 'inc'],
+                'c/c++ source': ['c', 'cpp', 'cxx', 'cc', 'c++'],
+                'c/c++ header': ['h', 'hxx', 'hpp', 'inc'],
                 'asm': ['s', 'asm', 'a51'],
                 'lib': ['lib', 'a', 'o', 'obj'],
                 'any (*.*)': ['*']

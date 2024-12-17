@@ -309,7 +309,7 @@ export class OperationExplorer {
             canSelectFolders: false,
             canSelectMany: false,
             filters: {
-                'EIDE workspace': ['code-workspace']
+                'vscode workspace': ['code-workspace']
             }
         }).then((uri: vscode.Uri[] | undefined) => {
             if (uri !== undefined) {
@@ -558,7 +558,7 @@ export class OperationExplorer {
                 description: 'embedded gcc projects',
                 detail: `Import Eclipse Projects`
             }
-        ], { placeHolder: `Project Type` });
+        ], { placeHolder: `Select Project Type` });
 
         if (!ideType)
             return;
@@ -568,14 +568,29 @@ export class OperationExplorer {
         //
         if (ideType.label == "MDK") {
 
+            const prod_type = await vscode.window.showQuickPick<any>([
+                {
+                    label: 'ARM',
+                    detail: `Keil ARM Project`,
+                    value: 'arm'
+                },
+                {
+                    label: 'C51',
+                    detail: `Keil C51 Project`,
+                    value: 'c51'
+                }
+            ], { placeHolder: `Select MDK Product Type` });
+    
+            if (!prod_type)
+                return;
+
             const prjFileUri = await vscode.window.showOpenDialog({
                 openLabel: 'Import',
                 canSelectFolders: false,
                 canSelectFiles: true,
                 canSelectMany: false,
                 filters: {
-                    'KEIL MDK': ['uvprojx'],
-                    'KEIL C51': ['uvproj']
+                    'Keil Project': ['uvprojx', 'uvproj']
                 }
             });
 
@@ -592,6 +607,7 @@ export class OperationExplorer {
 
             const importOption: ImportOptions = {
                 type: 'mdk',
+                mdk_prod: prod_type.value,
                 projectFile: new File(prjFileUri[0].fsPath),
                 outDir: orgPrjRoot,
                 createNewFolder: false

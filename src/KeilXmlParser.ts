@@ -37,11 +37,11 @@ import { CurrentDevice, C51BaseCompileData, ArmBaseCompileData, ARMStorageLayout
 import * as utility from './utility';
 
 export interface KeilRteDependence {
+    name: string;
     class?: string;
     category?: string;
     packPath?: string;
     instance?: string[];
-    path: string;
 }
 
 export interface KeilParserResult<CompileOption> {
@@ -247,21 +247,14 @@ export abstract class KeilParser<T> {
         }
     }
 
-    static GetProjectType(f: File): ProjectType {
-        if (/.uvproj$/i.test(f.suffix)) {
-            return 'C51';
-        }
-        return 'ARM';
-    }
-
-    static NewInstance(file: File): KeilParser<any> {
-        switch (this.GetProjectType(file)) {
-            case 'C51':
+    static NewInstance(file: File, product_type: string): KeilParser<any> {
+        switch (product_type) {
+            case 'c51':
                 return new C51Parser(file);
-            case 'ARM':
+            case 'arm':
                 return new ARMParser(file);
             default:
-                throw new Error(`not support this project type: '${this.GetProjectType(file)}'`);
+                throw new Error(`not support this project type: '${product_type}'`);
         }
     }
 
@@ -1037,6 +1030,30 @@ class ARMParser extends KeilParser<KeilARMOption> {
 
         /* parse RTE components */
 
+        /*
+        <files>
+            <file attr="config" category="source" name="CMSIS\RTOS2\RTX\Config\RTX_Config.c" version="5.1.0">
+                <instance index="0">RTE\CMSIS\RTX_Config.c</instance>
+            </file>
+            <file attr="config" category="header" name="CMSIS\RTOS2\RTX\Config\RTX_Config.h" version="5.4.0">
+                <instance index="0">RTE\CMSIS\RTX_Config.h</instance>
+                <component Capiversion="2.1.3" Cclass="CMSIS" Cgroup="RTOS2" Csub="Keil RTX5" Cvariant="Library" Cvendor="ARM" Cversion="5.4.0" condition="RTOS2 RTX5 Lib"/>
+                <package name="CMSIS" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="ARM" version="5.4.0"/>
+                <targetInfos>
+                <targetInfo name="pikascript-demo"/>
+                </targetInfos>
+            </file>
+            <file attr="config" category="header" name="RTE_Driver\Config\RTE_Device.h" version="1.1.2">
+                <instance index="0">RTE\Device\STM32F103C8\RTE_Device.h</instance>
+                <component Cclass="Device" Cgroup="Startup" Cvendor="Keil" Cversion="1.0.0" condition="STM32F1xx CMSIS"/>
+                <package name="STM32F1xx_DFP" schemaVersion="1.4.0" url="http://www.keil.com/pack/" vendor="Keil" version="2.3.0"/>
+                <targetInfos>
+                <targetInfo name="pikascript-demo"/>
+                </targetInfos>
+            </file>
+        <files>
+        */
+
         const RTE = this.doc.Project.RTE;
         const rte_deps: KeilRteDependence[] = [];
         if (RTE && RTE.files) {
@@ -1044,7 +1061,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
             for (const fGroups of RTE.files) {
                 if (fGroups.file == undefined) { continue; }
                 for (const fileInf of fGroups.file) {
-                    const dep: KeilRteDependence = { path: fileInf.$name };
+                    const dep: KeilRteDependence = { name: fileInf.$name };
                     dep.category = fileInf.$category;
                     if (fileInf.component) { dep.class = fileInf.component.$Cclass; }
                     if (fileInf.package &&
