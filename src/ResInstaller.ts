@@ -243,11 +243,22 @@ export class ResInstaller {
 
     async refreshExternalToolsIndex() {
 
+        const indexCacheFile = File.from(ResManager.instance().GetTmpDir().path, 'eide_external_tools.index.json');
         const defIdxUrl = 'https://raw.githubusercontent.com/github0null/eide_default_external_tools_index/master/index.json';
         const idxUrl = utility.redirectHost(
             SettingManager.GetInstance().getExternalToolsIndexUrl() || defIdxUrl);
 
-        const cont = await utility.requestTxt(idxUrl);
+        let cont: string | Error | undefined;
+        try {
+            if (indexCacheFile.IsFile() && 
+                new Date().getTime() < fs.statSync(indexCacheFile.path).mtime.getTime() + (6 * 3600 * 1000))
+                cont = indexCacheFile.Read();
+            else
+                throw Error();
+        } catch (error) {
+            // rollback to online get
+            cont = await utility.requestTxt(idxUrl);
+        }
 
         if (cont instanceof Error) {
             GlobalEvent.log_warn(cont);
@@ -295,6 +306,9 @@ export class ResInstaller {
                 postInstallCmd: () => tool.resources[node_plat].post_install_cmd
             });
         }
+
+        // save index file
+        indexCacheFile.Write(cont);
     }
 
     /**

@@ -590,6 +590,11 @@
                 }
             },
             {
+                "command": "eide.cleanCache",
+                "category": "eide",
+                "title": "Clean Cache"
+            },
+            {
                 "command": "eide.ShowUUID",
                 "category": "eide",
                 "title": "%eide.function.show.uuid%"
