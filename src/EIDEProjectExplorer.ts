@@ -5367,7 +5367,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         inheritedOptions = inheritedOptions.trim();
 
         const ui_cfg: SimpleUIConfig = {
-            title: `Extra Compiler Options (dir: ${folderpath})`,
+            title: `Extra Compiler Options (dir: ${NodePath.basename(folderpath)})`,
             items: {},
         };
 
