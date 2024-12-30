@@ -6820,6 +6820,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (item.val.value instanceof File)
             throw new Error('editDependenceItem: Invalid context item');
 
+        const itype = (<ModifiableDepInfo>item.val.obj).type;
+
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
         let newVal = await vscode.window.showInputBox({
             value: item.val.value,
@@ -6827,12 +6829,16 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             validateInput: (input: string): string | undefined => {
                 if (input.trim() === '')
                     return 'Cannot be empty or whitespace !'
+                if (itype == 'DEFINE_ITEM') {
+                    if (!/^\w+(=[^\s].*)?$/i.test(input))
+                        return "Cannot have whitespace on either side of '=' !";
+                }
             }
         });
 
         if (newVal) {
             newVal = newVal.trim();
-            switch ((<ModifiableDepInfo>item.val.obj).type) {
+            switch (itype) {
                 case 'INC_ITEM':
                     prj.GetConfiguration().CustomDep_ModifyIncDir(prj.ToAbsolutePath(<string>item.val.value), prj.ToAbsolutePath(newVal));
                     break;
