@@ -1974,7 +1974,7 @@ lib${libname}: $(lib${libname}_OBJS) ${makefile_repath}
 \t@echo -e $(COLOR_BLUE)-------------------------$(COLOR_END)
 \t@echo -e $(COLOR_BLUE)AR "${outname}"$(COLOR_END)
 \t@echo -e $(COLOR_BLUE)-------------------------$(COLOR_END)
-\t${AR_PATH} ${AR_CMD}
+\t$(AR) ${AR_CMD}
 OUT_LIBS += lib${libname}
 `;
             lib_rules.push(rule_tmp);
@@ -1986,6 +1986,7 @@ OUT_LIBS += lib${libname}
 # --------------------------------------------
 
 OUT_DIR = <LIB_OUT_DIR>
+AR ?= <LIB_AR_PATH>
 
 # colors
 COLOR_END  = "\\e[0m"
@@ -2015,7 +2016,8 @@ $(OUT_DIR):
 
         mk_tmp = mk_tmp
             .replace('<LIB_TARGETS>', lib_rules.join('\n'))
-            .replace('<LIB_OUT_DIR>', NodePath.dirname(makefile_repath));
+            .replace('<LIB_OUT_DIR>', NodePath.dirname(makefile_repath))
+            .replace('<LIB_AR_PATH>', AR_PATH);
 
         return mk_tmp;
     }
