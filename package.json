@@ -736,7 +736,11 @@
             },
             {
                 "command": "_cl.eide.project.source.virtual_folder_add_file",
-                "title": "%eide.explorer.add.file%"
+                "title": "%eide.explorer.add.file%",
+                "icon": {
+                    "dark": "./res/icon/AddFile_16x.svg",
+                    "light": "./res/icon/AddFile_16x.svg"
+                }
             },
             {
                 "command": "_cl.eide.project.source.virtual_folder_add",
@@ -1341,8 +1345,13 @@
                     "group": "z_group0@0"
                 },
                 {
+                    "command": "_cl.eide.project.source.virtual_folder_add_file",
+                    "group": "inline@0",
+                    "when": "viewItem == PROJECT && view == cl.eide.view.projects"
+                },
+                {
                     "command": "_cl.eide.project.addSrcDir",
-                    "group": "inline",
+                    "group": "inline@1",
                     "when": "viewItem == PROJECT && view == cl.eide.view.projects"
                 },
                 {
