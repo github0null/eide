@@ -80,6 +80,7 @@ import * as globmatch from 'micromatch'
 import { EventData, CurrentDevice, ArmBaseCompileConfigModel } from './EIDEProjectModules';
 import * as FileLock from '../lib/node-utility/FileLock';
 import { CompilerCommandsDatabaseItem } from './CodeBuilder';
+import { xpackRequireDevTools } from './XpackDevTools';
 
 export class CheckError extends Error {
 }
@@ -2782,9 +2783,47 @@ $(OUT_DIR):
         }
     }
 
-    public checkAndNotifyInstallToolchain(): boolean {
-        const toolchainManager = ToolchainManager.getInstance();
+    public getToolchainLocation(): File {
         const toolchain = this.getToolchain();
+        if (isGccFamilyToolchain(toolchain.name) && toolchain.getToolchainPrefix) {
+            try {
+                if (vscode.workspace.workspaceFile) {
+                    const dir = File.from(this.getWorkspaceFile().dir);
+                    const r = xpackRequireDevTools(dir, `${toolchain.getToolchainPrefix()}gcc`);
+                    if (r) {
+                        return r;
+                    }
+                }
+            } catch (error) {
+                GlobalEvent.log_warn(<Error>error);
+                return File.from(`<xpack-dev-tools ${toolchain.getToolchainPrefix()}gcc not-exist>`);
+            }
+        }
+        return toolchain.getToolchainDir();
+    }
+
+    public checkAndNotifyInstallToolchain(): boolean {
+        const toolchain = this.getToolchain();
+        if (isGccFamilyToolchain(toolchain.name) && toolchain.getToolchainPrefix) {
+            try {
+                if (vscode.workspace.workspaceFile) {
+                    const dir = File.from(this.getWorkspaceFile().dir);
+                    const r = xpackRequireDevTools(dir, `${toolchain.getToolchainPrefix()}gcc`);
+                    if (r) {
+                        return true;
+                    }
+                }
+            } catch (error) {
+                const msg = [
+                    `${toolchain.getToolchainPrefix()}gcc not avaliable:\n${(<Error>error).message}`,
+                    `Please check your package.json and run 'xpm install' to install xpack dependences.`
+                ].join(os.EOL);
+                GlobalEvent.emit('msg', newMessage('Error', msg));
+                GlobalEvent.log_warn(<Error>error);
+                return false
+            }
+        }
+        const toolchainManager = ToolchainManager.getInstance();
         if (!toolchainManager.isToolchainPathReady(toolchain.name)) {
             const dir = toolchainManager.getToolchainExecutableFolder(toolchain.name);
             const msg = view_str$prompt$not_found_compiler.replace('{}', toolchain.name) + `, [path]: '${dir?.path}'`;

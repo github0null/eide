@@ -390,7 +390,7 @@ export abstract class CodeBuilder {
             name: config.name,
             target: this.project.getCurrentTarget(),
             toolchain: toolchain.name,
-            toolchainLocation: toolchain.getToolchainDir().path,
+            toolchainLocation: this.project.getToolchainLocation().path,
             toolchainCfgFile: `${ResManager.GetInstance().getBuilderModelsDir().path}/${toolchain.modelName}`,
             buildMode: 'fast|multhread',
             showRepathOnLog: settingManager.isPrintRelativePathWhenBuild(),
@@ -1031,7 +1031,7 @@ export class ARMCodeBuilder extends CodeBuilder {
                 settingManager.IsConvertAxf2Elf() &&
                 options['linker']['$disableOutputTask'] != true) {
 
-                const tool_root_folder = toolchain.getToolchainDir().path;
+                const tool_root_folder = this.project.getToolchainLocation().path;
                 const ouput_path = `\${outDir}${File.sep}${config.name}`;
                 const axf2elf_log = `\${outDir}${File.sep}axf2elf.log`;
 
