@@ -405,10 +405,7 @@ export class OperationExplorer {
                             },
                         ];
 
-                        const subTyp = await vscode.window.showQuickPick(itemList);
-                        if (subTyp && subTyp.templateName) {
-                            templateItem = subTyp;
-                        }
+                        templateItem = await vscode.window.showQuickPick(itemList);
                     }
                 }
                 break;
