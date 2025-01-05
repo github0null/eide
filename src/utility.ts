@@ -508,7 +508,8 @@ export function escapeXml(str: string): string {
     });
 }
 
-export function runShellCommand(title: string, commandLine: string, env?: any, useTerminal?: boolean, cwd?: string): Error | undefined {
+export async function runShellCommand(title: string, commandLine: string, env?: any, 
+                                      useTerminal?: boolean, cwd?: string, silent?: boolean) {
     try {
 
         // use vsc task
@@ -523,7 +524,11 @@ export function runShellCommand(title: string, commandLine: string, env?: any, u
                 title, 'shell', new vscode.ShellExecution(commandLine, shellOption), []);
             task.isBackground = false;
             task.presentationOptions = { echo: true, focus: false, clear: true };
-            vscode.tasks.executeTask(task);
+            if (silent) {
+                task.presentationOptions.reveal = vscode.TaskRevealKind.Silent;
+                task.presentationOptions.showReuseMessage = false;
+            }
+            return await vscode.tasks.executeTask(task);
         }
 
         // use terminal
@@ -533,12 +538,12 @@ export function runShellCommand(title: string, commandLine: string, env?: any, u
             const tOpts: vscode.TerminalOptions = { name: title, env: env || process.env, cwd: cwd };
             if (os.platform() == 'win32') tOpts.shellPath = 'cmd.exe';
             const terminal = vscode.window.createTerminal(tOpts);
-            terminal.show(true);
+            if (!silent) terminal.show(true);
             terminal.sendText(CmdLineHandler.DeleteCmdPrefix(commandLine));
         }
 
     } catch (error) {
-        return error;
+        GlobalEvent.log_error(error);
     }
 }
 

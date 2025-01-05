@@ -107,7 +107,7 @@ import {
     pyocd_getTargetList,
     generateDotnetProgramCmd
 } from './utility';
-import { concatSystemEnvPath, DeleteDir, exeSuffix, kill, osType, DeleteAllChildren } from './Platform';
+import { concatSystemEnvPath, DeleteDir, exeSuffix, kill, osType, DeleteAllChildren, userhome } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
 import { VirtualDocument } from './VirtualDocsProvider';
 import { ResInstaller } from './ResInstaller';
@@ -4319,13 +4319,18 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             prj.Save(true);
 
             const codeBuilder = CodeBuilder.NewBuilder(prj);
-
             const toolchain = prj.getToolchain().name;
+
+            const buildbar = StatusBarManager.getInstance().get('build');
+            const bar_old_txt = buildbar?.text;
 
             // build launched event
             codeBuilder.on('launched', () => {
                 if (this.compiler_diags.has(prj.getUid())) {
                     this.compiler_diags.get(prj.getUid())?.clear();
+                }
+                if (buildbar) {
+                    buildbar.text = `$(loading~spin) Building`;
                 }
             });
 
@@ -4335,6 +4340,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 this.notifyUpdateOutputFolder(prj);
                 this.updateCompilerDiagsAfterBuild(prj);
                 if (options?.flashAfterBuild && done) this.UploadToDevice(prjItem);
+                if (buildbar && bar_old_txt) {
+                    buildbar.text = bar_old_txt;
+                }
             });
 
             // start build
@@ -4501,7 +4509,11 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (os.platform() == 'win32') {
             runShellCommand('clean', `cmd /E:ON /C del /S /Q "${outDir}"`);
         } else {
-            runShellCommand('clean', `rm -rf -v "${outDir}"`);
+            if (outDir == '/' || outDir == userhome()) {
+                GlobalEvent.emit('msg', newMessage('Error', `Cannot delete ${outDir} !`));
+            } else {
+                runShellCommand('clean', `rm -rf -v "${outDir}"`);
+            }
         }
 
         setTimeout(() => {

@@ -319,6 +319,12 @@
                         "markdownDescription": "%settings.option.show.toolbar.in.editer.title%",
                         "default": true
                     },
+                    "EIDE.Option.SilentWhenBuildOrFlash": {
+                        "type": "boolean",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.option.silent_build_or_flash%",
+                        "default": false
+                    },
                     "EIDE.Option.UseTaskToBuild": {
                         "type": "boolean",
                         "scope": "resource",

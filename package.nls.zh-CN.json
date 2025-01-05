@@ -109,6 +109,7 @@
     "settings.option.show.statusbar": "在状态栏显示工具栏图标",
     "settings.option.print.relative.path": "编译时打印源文件的相对路径",
     "settings.option.create.batch.file": "生成脚本",
+    "settings.option.silent_build_or_flash": "当执行构建或烧录时不显示任务面板，直到发生错误",
     "settings.option.use.task.to.build": "使用 vscode 任务执行编译命令",
     "settings.option.insert.extcommands.at.begin": "内置的构建任务将被插入到 `beforeBuildTasks / afterBuildTasks` 之前",
     

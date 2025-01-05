@@ -278,6 +278,10 @@ export class SettingManager {
 
     //--------------------- Global Option ------------------------
 
+    isSilentBuildOrFlash(): boolean {
+        return this.getConfiguration().get<boolean>('Option.SilentWhenBuildOrFlash') || false;
+    }
+
     syncGlobalEnvVariablesToNodeEnv() {
         const envs = this.getGlobalEnvVariables();
         for (const key in envs) {

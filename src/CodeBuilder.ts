@@ -297,6 +297,10 @@ export abstract class CodeBuilder {
             task.group = vscode.TaskGroup.Build;
             task.isBackground = false;
             task.presentationOptions = { echo: true, focus: false, clear: true };
+            if (SettingManager.GetInstance().isSilentBuildOrFlash()) {
+                task.presentationOptions.reveal = vscode.TaskRevealKind.Silent;
+                task.presentationOptions.showReuseMessage = false;
+            }
             vscode.tasks.executeTask(task);
         } else { // use terminal
             const index = vscode.window.terminals.findIndex((t) => { return t.name === title; });
@@ -305,7 +309,8 @@ export abstract class CodeBuilder {
             if (os.platform() == 'win32') { opts.shellPath = 'cmd.exe'; };
             opts.env = <any>process.env;
             const terminal = vscode.window.createTerminal(opts);
-            terminal.show(true);
+            if (!SettingManager.GetInstance().isSilentBuildOrFlash())
+                terminal.show(true);
             terminal.sendText(commandLine);
         }
 
