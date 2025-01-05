@@ -278,7 +278,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // others
     vscode.workspace.registerTextDocumentContentProvider(VirtualDocument.scheme, VirtualDocument.instance());
-    vscode.workspace.registerTaskProvider(EideTaskProvider.TASK_TYPE_MSYS, new EideTaskProvider());
+    vscode.workspace.registerTaskProvider(EideTaskProvider.TASK_TYPE_BASH, new EideTaskProvider());
 
     // auto save project
     projectExplorer.enableAutoSave(true);
@@ -1236,7 +1236,7 @@ interface EideShellTaskDef extends vscode.TaskDefinition {
 
 class EideTaskProvider implements vscode.TaskProvider {
 
-    public static TASK_TYPE_MSYS = 'eide.msys';
+    public static TASK_TYPE_BASH = 'eide.bash';
 
     provideTasks(token: vscode.CancellationToken): vscode.ProviderResult<vscode.Task[]> {
         return undefined;
@@ -1246,20 +1246,34 @@ class EideTaskProvider implements vscode.TaskProvider {
 
         const workspaceManager = WorkspaceManager.getInstance();
 
-        if (task_.definition.type == EideTaskProvider.TASK_TYPE_MSYS && 
-            SettingManager.GetInstance().isEnableMsys()) {
+        if (task_.definition.type == EideTaskProvider.TASK_TYPE_BASH) {
+
+            let bash_executable = '/bin/bash';
+
+            if (platform.osType() == 'win32') {
+                if (SettingManager.GetInstance().isEnableMsys()) {
+                    bash_executable = `${process.env['EIDE_MSYS']}/bash.exe`;
+                } else {
+                    bash_executable = `bash.exe`;
+                }
+            }
 
             const definition: EideShellTaskDef = <any>task_.definition;
 
             const task = new vscode.Task(definition, vscode.TaskScope.Workspace,
-                definition.name || definition.label, EideTaskProvider.TASK_TYPE_MSYS, definition.problemMatchers);
+                definition.name || definition.label, EideTaskProvider.TASK_TYPE_BASH, definition.problemMatchers);
 
-            const shellcommand = definition.command;
-            task.execution = new vscode.ShellExecution(shellcommand, {
-                executable: platform.osType() == 'win32' ? `${process.env['EIDE_MSYS']}/bash.exe` : '/bin/bash',
+            let envs = definition.env;
+            const prj = projectExplorer.getActiveProject();
+            if (prj) {
+                envs = utility.mergeEnv(prj.getProjectVariables(), envs || {});
+            }
+
+            task.execution = new vscode.ShellExecution(definition.command, {
+                executable: bash_executable,
                 shellArgs: ['-c'],
                 cwd: definition?.options?.cwd || workspaceManager.getCurrentFolder()?.path,
-                env: utility.mergeEnv(process.env, definition.env || {})
+                env: utility.mergeEnv(process.env, envs || {})
             });
 
             task.group = definition.group;
