@@ -1717,7 +1717,7 @@
             {
                 "id": "lkf",
                 "aliases": [
-                    "COSMIC STM8 Linker Command File"
+                    "COSMIC LKF"
                 ],
                 "extensions": [
                     ".lkf"

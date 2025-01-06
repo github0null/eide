@@ -65,26 +65,25 @@
             }
         },
         "define": {
-            "match": "(\\w+)\\s*=\\s*([^\\s]+)",
+            "match": "(\\w+)\\s*(=)\\s*([^\\s]+)",
             "captures": {
                 "1": {
                     "name": "variable"
                 },
                 "2": {
+                    "name": "keyword.operator"
+                },
+                "3": {
                     "patterns": [
                         {
                             "include": "#number"
-                        },
-                        {
-                            "match": ".+",
-                            "name": "variable"
                         }
                     ]
                 }
             }
         },
         "operators": {
-            "match": "\\+|-|@",
+            "match": "\\+|-|@|=",
             "captures": {
                 "0": {
                     "name": "keyword.operator"
