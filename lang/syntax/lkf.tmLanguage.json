@@ -10,22 +10,22 @@
             "include": "#comment"
         },
         {
-            "include": "#option"
+            "include": "#option_expr"
         },
         {
-            "include": "#option_no_args"
+            "include": "#option_expr_no_args"
         },
         {
             "include": "#number"
         },
         {
-            "include": "#define"
+            "include": "#assign_expr"
         },
         {
             "include": "#operators"
         },
         {
-            "include": "#eide_var"
+            "include": "#eide_builtin_func"
         }
     ],
     "repository": {
@@ -37,18 +37,69 @@
                 }
             }
         },
-        "option": {
-            "match": "^\\s*(\\+(?:seg|grp|def|spc))\\s+([^\\s]+)",
+        "section_name": {
+            "match": "\\.\\w+",
+            "captures": {
+                "0": {
+                    "name": "section.input"
+                }
+            }
+        },
+        "option_args": {
+            "match": "-\\w+",
+            "captures": {
+                "0": {
+                    "name": "keyword.operator"
+                }
+            }
+        },
+        "option_seg_args": {
+            "match": "(\\.\\w+)\\s+(.+)",
+            "captures": {
+                "1": {
+                    "patterns": [
+                        {
+                            "include": "#section_name"
+                        }
+                    ]
+                },
+                "2": {
+                    "patterns": [
+                        {
+                            "include": "#option_args"
+                        },
+                        {
+                            "include": "#section_name"
+                        },
+                        {
+                            "include": "#number"
+                        }
+                    ]
+                }
+            }
+        },
+        "option_expr": {
+            "match": "^\\s*(\\+(?:seg|grp|def|spc))\\s+([^#]+)",
             "captures": {
                 "1": {
                     "name": "keyword.control.define"
                 },
                 "2": {
-                    "name": "variable"
+                    "patterns": [
+                        {
+                            "include": "#assign_expr"
+                        },
+                        {
+                            "include": "#option_seg_args"
+                        },
+                        {
+                            "include": "#option_args"
+                        }
+                    ]
                 }
             }
         },
-        "option_no_args": {
+        "option_expr_no_args": {
             "match": "^\\s*(\\+(?:inc|new|pub|pri))\\b",
             "captures": {
                 "1": {
@@ -64,7 +115,7 @@
                 }
             }
         },
-        "define": {
+        "assign_expr": {
             "match": "(\\w+)\\s*(=)\\s*([^\\s]+)",
             "captures": {
                 "1": {
@@ -77,6 +128,9 @@
                     "patterns": [
                         {
                             "include": "#number"
+                        },
+                        {
+                            "include": "#section_name"
                         }
                     ]
                 }
@@ -90,11 +144,11 @@
                 }
             }
         },
-        "eide_var": {
+        "eide_builtin_func": {
             "match": "\\$<\\w+:.+?>",
             "captures": {
                 "0": {
-                    "name": "keyword.control.import"
+                    "name": "support.function"
                 }
             }
         }
