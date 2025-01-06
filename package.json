@@ -1713,6 +1713,19 @@
                     "**/*.elf.info"
                 ],
                 "configuration": "./lang/syntax/elf.info.language-configuration.json"
+            },
+            {
+                "id": "lkf",
+                "aliases": [
+                    "COSMIC STM8 Linker Command File"
+                ],
+                "extensions": [
+                    ".lkf"
+                ],
+                "filenamePatterns": [
+                    "**/*.lkf"
+                ],
+                "configuration": "./lang/syntax/lkf.language-configuration.json"
             }
         ],
         "jsonValidation": [
@@ -1789,6 +1802,11 @@
                 "language": "elf.info",
                 "scopeName": "source.elf.info",
                 "path": "./lang/syntax/elf.info.tmLanguage.json"
+            },
+            {
+                "language": "lkf",
+                "scopeName": "source.cosmic.lkf",
+                "path": "./lang/syntax/lkf.tmLanguage.json"
             }
         ],
         "taskDefinitions": [

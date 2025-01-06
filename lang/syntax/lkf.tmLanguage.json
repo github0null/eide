@@ -1,0 +1,103 @@
+{
+    "information_for_contributors": [
+        "cosmic stm8 linker command file"
+    ],
+    "version": "1.0.0",
+    "name": "lkf",
+    "scopeName": "source.cosmic.lkf",
+    "patterns": [
+        {
+            "include": "#comment"
+        },
+        {
+            "include": "#option"
+        },
+        {
+            "include": "#option_no_args"
+        },
+        {
+            "include": "#number"
+        },
+        {
+            "include": "#define"
+        },
+        {
+            "include": "#operators"
+        },
+        {
+            "include": "#eide_var"
+        }
+    ],
+    "repository": {
+        "comment": {
+            "match": "(#.*)",
+            "captures": {
+                "1": {
+                    "name": "comment.line"
+                }
+            }
+        },
+        "option": {
+            "match": "^\\s*(\\+(?:seg|grp|def|spc))\\s+([^\\s]+)",
+            "captures": {
+                "1": {
+                    "name": "keyword.control.define"
+                },
+                "2": {
+                    "name": "variable"
+                }
+            }
+        },
+        "option_no_args": {
+            "match": "^\\s*(\\+(?:inc|new|pub|pri))\\b",
+            "captures": {
+                "1": {
+                    "name": "keyword.control.define"
+                }
+            }
+        },
+        "number": {
+            "match": "(?i)\\b([0-9]+|0x[0-9a-f]+)\\b",
+            "captures": {
+                "1": {
+                    "name": "constant.numeric"
+                }
+            }
+        },
+        "define": {
+            "match": "(\\w+)\\s*=\\s*([^\\s]+)",
+            "captures": {
+                "1": {
+                    "name": "variable"
+                },
+                "2": {
+                    "patterns": [
+                        {
+                            "include": "#number"
+                        },
+                        {
+                            "match": ".+",
+                            "name": "variable"
+                        }
+                    ]
+                }
+            }
+        },
+        "operators": {
+            "match": "\\+|-|@",
+            "captures": {
+                "0": {
+                    "name": "keyword.operator"
+                }
+            }
+        },
+        "eide_var": {
+            "match": "\\$<\\w+:.+?>",
+            "captures": {
+                "0": {
+                    "name": "keyword.control.import"
+                }
+            }
+        }
+    }
+}
