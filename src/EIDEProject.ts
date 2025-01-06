@@ -682,8 +682,13 @@ class SourceRootList implements SourceProvider {
         const fileFilter = AbstractProject.getFileFilters();
 
         // if source root have no watcher, watch it !
-        if (rootFolderInfo.isValid() && !rootFolderInfo.fileWatcher.IsWatched())
-            rootFolderInfo.fileWatcher.Watch();
+        if (rootFolderInfo.isValid() && !rootFolderInfo.fileWatcher.IsWatched()) {
+            try {
+                rootFolderInfo.fileWatcher.Watch();
+            } catch (error) {
+                GlobalEvent.log_error(<Error>error);
+            }
+        }
 
         if (targetFolderList) { // only update target folders
             targetFolderList = targetFolderList.map((path) => this.project.ToAbsolutePath(path));
@@ -2727,7 +2732,12 @@ $(OUT_DIR):
         const prjConfig = this.GetConfiguration();
 
         // start watch '.eide' folder
-        this.eideDirWatcher?.Watch();
+        try {
+            this.eideDirWatcher?.Watch();
+        } catch (error) {
+            GlobalEvent.log_error(<Error>error);
+            GlobalEvent.emit('msg', newMessage('Error', `Cannot watch '.eide' folder, some functions will not available !`));
+        }
 
         // force flush toolchain dependence
         this.dependenceManager.Refresh(true);
