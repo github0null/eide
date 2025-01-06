@@ -1192,14 +1192,18 @@ class COSMIC_STM8 implements IToolchian {
                 crts_name += 'f';
             }
 
-            let machineLibs: string[] = [
+            const machineLibs: string[] = [
                 // CRT library
                 `${crts_name}.sm8`,
                 // standard ANSI libraries
-                `libfs${model_suffix}${codes_suffix}.sm8`, // Float Library
                 `libis${model_suffix}${codes_suffix}.sm8`, // Integer Only Library
                 `libm${codes_suffix}.sm8`,                 // Machine Library
             ];
+
+            // Float Library
+            if (options['linker']['$use-float-library']) {
+                machineLibs.push(`libfs${model_suffix}${codes_suffix}.sm8`);
+            }
 
             if (options['linker']['LIB_FLAGS'] == undefined) {
                 options['linker']['LIB_FLAGS'] = "";

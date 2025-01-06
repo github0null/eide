@@ -209,8 +209,17 @@
                     "type": "boolean",
                     "default": false
                 },
-                "plain-char-is-unsigned": {
-                    "description": "Plain Char Is Unsigned",
+                "plain-char-is-signed": {
+                    "readable_name": "Plain Char Is Signed",
+                    "description": "By default, char is Unsigned. As libraries expect unsigned chars as argument. If you forget this, run-time errors may occur.",
+                    "description.zh-cn": "默认情况下 char 是无符号的。因为库希望将无符号的 char 作为参数。如果您忘记了这一点，运行时可能会发生错误。",
+                    "type": "boolean",
+                    "default": false
+                },
+                "pack-bool-local-variables": {
+                    "readable_name": "Pack _Bool local variables",
+                    "description": "By default, _Bool local variables are allocated on one byte each.",
+                    "description.zh-cn": "默认情况下 _Bool 局部变量按每个字节分配。",
                     "type": "boolean",
                     "default": false
                 },
@@ -291,6 +300,11 @@
                 },
                 "auto-include-stdc-libraries": {
                     "description": "Auto Include Standard ANSI C Libraries",
+                    "type": "boolean",
+                    "default": false
+                },
+                "$use-float-library": {
+                    "description": "Use Floating Point Library",
                     "type": "boolean",
                     "default": false
                 },

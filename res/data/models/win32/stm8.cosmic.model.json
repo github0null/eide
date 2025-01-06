@@ -131,10 +131,17 @@
                     "false": ""
                 }
             },
-            "plain-char-is-unsigned": {
+            "plain-char-is-signed": {
                 "type": "selectable",
                 "command": {
-                    "true": "+unsigned-chars",
+                    "true": "",
+                    "false": "+unsigned-chars"
+                }
+            },
+            "pack-bool-local-variables": {
+                "type": "selectable",
+                "command": {
+                    "true": "+pack-local-bits",
                     "false": ""
                 }
             },
