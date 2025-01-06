@@ -1655,7 +1655,7 @@
         "snippets": [
             {
                 "language": "a51",
-                "path": "./lang/a51.snippets.json"
+                "path": "./lang/snippets/a51.snippets.json"
             }
         ],
         "languages": [
@@ -1673,7 +1673,7 @@
                     "**/*.a51",
                     "**/*.A51"
                 ],
-                "configuration": "./lang/a51.language-configuration.json"
+                "configuration": "./lang/syntax/a51.language-configuration.json"
             },
             {
                 "id": "edasm",
@@ -1686,7 +1686,7 @@
                 "filenamePatterns": [
                     "**/*.edasm"
                 ],
-                "configuration": "./lang/edasm.language-configuration.json"
+                "configuration": "./lang/syntax/edasm.language-configuration.json"
             },
             {
                 "id": "axf.info",
@@ -1699,7 +1699,7 @@
                 "filenamePatterns": [
                     "**/*.axf.info"
                 ],
-                "configuration": "./lang/axf.info.language-configuration.json"
+                "configuration": "./lang/syntax/axf.info.language-configuration.json"
             },
             {
                 "id": "elf.info",
@@ -1712,7 +1712,7 @@
                 "filenamePatterns": [
                     "**/*.elf.info"
                 ],
-                "configuration": "./lang/elf.info.language-configuration.json"
+                "configuration": "./lang/syntax/elf.info.language-configuration.json"
             }
         ],
         "jsonValidation": [
@@ -1773,22 +1773,22 @@
             {
                 "language": "a51",
                 "scopeName": "source.asm.a51",
-                "path": "./lang/a51.tmLanguage.json"
+                "path": "./lang/syntax/a51.tmLanguage.json"
             },
             {
                 "language": "edasm",
                 "scopeName": "source.dasm.gcc",
-                "path": "./lang/edasm.tmLanguage.json"
+                "path": "./lang/syntax/edasm.tmLanguage.json"
             },
             {
                 "language": "axf.info",
                 "scopeName": "source.axf.info",
-                "path": "./lang/axf.info.tmLanguage.json"
+                "path": "./lang/syntax/axf.info.tmLanguage.json"
             },
             {
                 "language": "elf.info",
                 "scopeName": "source.elf.info",
-                "path": "./lang/elf.info.tmLanguage.json"
+                "path": "./lang/syntax/elf.info.tmLanguage.json"
             }
         ],
         "taskDefinitions": [

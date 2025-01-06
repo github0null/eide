@@ -1412,7 +1412,7 @@ class COSMIC_STM8 implements IToolchian {
             beforeBuildTasks: [],
             afterBuildTasks: [],
             global: {
-                "model": "small",
+                "model": "large-0",
                 "output-debug-info": "enable",
                 "output-list-file": true
             },
