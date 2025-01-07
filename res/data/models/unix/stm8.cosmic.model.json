@@ -168,6 +168,13 @@
                     "all": "+Wall",
                     "false": ""
                 }
+            },
+            "check-stack-frame": {
+                "type": "selectable",
+                "command": {
+                    "true": "+check-stack-frame",
+                    "false": ""
+                }
             }
         },
         "asm": {
@@ -181,6 +188,15 @@
             "defines": {
                 "type": "list",
                 "command": "-d"
+            },
+            "optimization": {
+                "type": "selectable",
+                "command": {
+                    "none": "",
+                    "fast": "+Ofast",
+                    "size": "+Osize",
+                    "false": ""
+                }
             }
         },
         "linker": {
