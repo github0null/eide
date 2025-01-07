@@ -145,7 +145,7 @@
             }
         },
         "eide_builtin_func": {
-            "match": "\\$<\\w+:.+?>",
+            "match": "\\$<(?:objs|libs|defs|segs):.+?>",
             "captures": {
                 "0": {
                     "name": "support.function"
