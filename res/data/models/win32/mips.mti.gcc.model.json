@@ -175,23 +175,8 @@
                 "-xc"
             ],
             "$language-c": {
-                "type": "keyValue",
-                "command": "-std=",
-                "enum": {
-                    "default": "c11",
-                    "c89": "c89",
-                    "c90": "c90",
-                    "c99": "c99",
-                    "c11": "c11",
-                    "c1x": "c1x",
-                    "c17": "c17",
-                    "gnu89": "gnu89",
-                    "gnu90": "gnu90",
-                    "gnu99": "gnu99",
-                    "gnu11": "gnu11",
-                    "gnu1x": "gnu1x",
-                    "gnu17": "gnu17"
-                }
+                "type": "value",
+                "command": "-std="
             }
         },
         "cpp": {
@@ -211,19 +196,8 @@
                 "-c"
             ],
             "$language-cpp": {
-                "type": "keyValue",
-                "command": "-std=",
-                "enum": {
-                    "default": "c++11",
-                    "c++98": "c++98",
-                    "gnu++98": "gnu++98",
-                    "c++11": "c++11",
-                    "gnu++11": "gnu++11",
-                    "c++14": "c++14",
-                    "gnu++14": "gnu++14",
-                    "c++17": "c++17",
-                    "gnu++17": "gnu++17"
-                }
+                "type": "value",
+                "command": "-std="
             }
         },
         "asm": {

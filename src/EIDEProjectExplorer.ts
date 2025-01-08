@@ -4322,7 +4322,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             const toolchain = prj.getToolchain().name;
 
             const buildbar = StatusBarManager.getInstance().get('build');
-            const bar_old_txt = buildbar?.text;
 
             // build launched event
             codeBuilder.on('launched', () => {
@@ -4340,8 +4339,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 this.notifyUpdateOutputFolder(prj);
                 this.updateCompilerDiagsAfterBuild(prj);
                 if (options?.flashAfterBuild && done) this.UploadToDevice(prjItem);
-                if (buildbar && bar_old_txt) {
-                    buildbar.text = bar_old_txt;
+                if (buildbar) {
+                    buildbar.text = `$(tools) Build`;
                 }
             });
 

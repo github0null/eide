@@ -182,25 +182,27 @@
                     "markdownDescription": "C Standard",
                     "description.zh-cn": "C 标准",
                     "type": "string",
-                    "default": "c11",
+                    "default": "",
                     "enum": [
                         "c89",
                         "c90",
                         "c99",
                         "c11",
                         "c17",
+                        "c23",
                         "gnu89",
                         "gnu90",
                         "gnu99",
                         "gnu11",
-                        "gnu17"
+                        "gnu17",
+                        "gnu23"
                     ]
                 },
                 "language-cpp": {
                     "markdownDescription": "C++ Standard",
                     "description.zh-cn": "C++ 标准",
                     "type": "string",
-                    "default": "c++11",
+                    "default": "",
                     "enum": [
                         "c++98",
                         "gnu++98",
@@ -209,7 +211,11 @@
                         "c++14",
                         "gnu++14",
                         "c++17",
-                        "gnu++17"
+                        "gnu++17",
+                        "c++20",
+                        "gnu++20",
+                        "c++23",
+                        "gnu++23"
                     ]
                 },
                 "optimization": {
