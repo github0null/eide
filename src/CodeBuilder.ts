@@ -85,7 +85,6 @@ export interface BuilderParams {
     rom?: number;
     sourceList: string[];
     sourceParams?: { [name: string]: string; };
-    sourceParamsMtime?: number;
     incDirs: string[];
     libDirs: string[];
     defines: string[];
@@ -129,10 +128,9 @@ export abstract class CodeBuilder {
         this._event.emit(event, arg);
     }
 
-    genSourceInfo(prevBuilderParams: BuilderParams | undefined): {
+    protected genSourceInfo(prevBuilderParams: BuilderParams | undefined): {
         sources: string[],
         params?: { [name: string]: string; }
-        paramsModTime?: number;
     } {
 
         const srcParams: { [name: string]: string; } = {};
@@ -196,18 +194,9 @@ export abstract class CodeBuilder {
             GlobalEvent.emit('msg', newMessage('Warning', `Append files options failed !, msg: ${err.message || ''}`));
         }
 
-        let mTimeMs: number | undefined;
-
-        try {
-            mTimeMs = fs.statSync(this.project.getSourceExtraArgsCfgFile().path).mtimeMs
-        } catch (error) {
-            // do nothing
-        }
-
         return {
             sources: srcList.map((inf) => inf.path),
-            params: srcParams,
-            paramsModTime: mTimeMs
+            params: srcParams
         }
     }
 
@@ -410,7 +399,6 @@ export abstract class CodeBuilder {
             defines: this.getProjectCMacroList(),
             sourceList: sourceInfo.sources.sort(),
             sourceParams: sourceInfo.params,
-            sourceParamsMtime: sourceInfo.paramsModTime,
             options: JSON.parse(JSON.stringify(compileOptions)),
             env: this.project.getProjectVariables(),
             sysPaths: []
@@ -507,34 +495,38 @@ export abstract class CodeBuilder {
             }
         }
 
-        // generate hash for compiler options
-        builderOptions.sha = this.genHashFromCompilerOptions(builderOptions);
-
         // set build mode
         {
-            // check whether need rebuild project
-            if (this.isRebuild() == false && prevParams) {
-                try {
-                    // not found hash from old params file
-                    if (prevParams.sha == undefined) {
-                        this.enableRebuild();
-                    }
+            /** --------------------------------------------------------------
+             * @note After unify_builder v3.9.0, this function is deprecated 
+             * because we have built-in it in the latest unify_builder
+             * ---------------------------------------------------------------
+             */
+            // // generate hash for compiler options
+            // builderOptions.sha = this.genHashFromCompilerOptions(builderOptions);
+            // // check whether need rebuild project
+            // if (this.isRebuild() == false && prevParams) {
+            //     try {
+            //         // not found hash from old params file
+            //         if (prevParams.sha == undefined) {
+            //             this.enableRebuild();
+            //         }
 
-                    // check hash obj by specifies keys
-                    else {
-                        const keyList = ['global', 'c/cpp-defines', 'c/cpp-compiler', 'asm-compiler'];
-                        for (const key of keyList) {
-                            if (!this.compareHashObj(key, prevParams.sha, builderOptions.sha)) {
-                                this.enableRebuild();
-                                break;
-                            }
-                        }
-                    }
-                } catch (error) {
-                    this.enableRebuild(); // make rebuild
-                    GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
-                }
-            }
+            //         // check hash obj by specifies keys
+            //         else {
+            //             const keyList = ['global', 'c/cpp-defines', 'c/cpp-compiler', 'asm-compiler'];
+            //             for (const key of keyList) {
+            //                 if (!this.compareHashObj(key, prevParams.sha, builderOptions.sha)) {
+            //                     this.enableRebuild();
+            //                     break;
+            //                 }
+            //             }
+            //         }
+            //     } catch (error) {
+            //         this.enableRebuild(); // make rebuild
+            //         GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            //     }
+            // }
 
             if (config.toolchain === 'Keil_C51') {
                 builderModeList.push('normal'); // disable increment build for Keil C51

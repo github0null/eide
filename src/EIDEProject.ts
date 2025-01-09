@@ -2525,7 +2525,7 @@ $(OUT_DIR):
         // eide vars
         this.registerBuiltinVar('EIDE_BUILDER_DIR', () => ResManager.instance().getUnifyBuilderExe().dir);
         for (const key in process.env) {
-            if (key.startsWith('EIDE_')) {
+            if (key.startsWith('EIDE_') && !key.startsWith('EIDE_TOOL_')) {
                 this.registerBuiltinVar(key, () => process.env[key] || '');
             }
         }
