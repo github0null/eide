@@ -58,7 +58,7 @@ import { WebPanelManager } from './WebPanelManager';
 import { DependenceManager } from './DependenceManager';
 import * as platform from './Platform';
 import { IDebugConfigGenerator } from './DebugConfigGenerator';
-import { md5, copyObject, compareVersion, isGccFamilyToolchain, deepCloneObject, notifyReloadWindow } from './utility';
+import { md5, copyObject, compareVersion, isGccFamilyToolchain, deepCloneObject, notifyReloadWindow, copyAndMakeObjectKeysToLowerCase, runShellCommand } from './utility';
 import { ResInstaller } from './ResInstaller';
 import {
     view_str$prompt$filesOptionsComment,
@@ -966,6 +966,59 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     */
     public getProjectRoot(): File {
         return this.getRootDir();
+    }
+
+    /**
+     * @note Make sure you have build your project at least once time.
+     * If we not found 'ref.json', an error will be throwed.
+     */
+    public getSourceObjectPath(srcPath: string): string | undefined {
+
+        const refFile = File.fromArray([this.ToAbsolutePath(this.getOutputDir()), 'ref.json']);
+        if (!refFile.IsFile())
+            throw new Error(`No such file "${refFile.path}", please build your project at least once time.`);
+
+        let ref = jsonc.parse(refFile.Read());
+        if (platform.osType() == 'win32') { // to lower-case path for win32
+            ref = copyAndMakeObjectKeysToLowerCase(ref);
+            srcPath = this.toAbsolutePath(srcPath).toLowerCase();
+        }
+
+        // get obj path by source file path
+        return <string>ref[srcPath];
+    }
+
+    /**
+     * @note Make sure you have build your project at least once time.
+     * If we not found 'compile_commands.json', an error will be throwed.
+     */
+    public getSourceCompileDatabase(srcPath: string): {
+        directory: string,
+        file: string,
+        command: string
+    } | undefined {
+
+        const dbfile = File.fromArray([this.ToAbsolutePath(this.getOutputDir()), 'compile_commands.json']);
+        if (!dbfile.IsFile())
+            throw new Error(`No such file "${dbfile.path}", please build your project at least once time.`);
+
+        const database: any[] = jsonc.parse(dbfile.Read());
+        if (!Array.isArray(database))
+            throw new Error(`Not a json array. incorrect format of compile_commands.json`);
+
+        const absSrcPath = this.toAbsolutePath(srcPath);
+        const idx = database.findIndex((item) => {
+            if (platform.osType() == 'win32') {
+                return (<string>item.file).toLowerCase() === absSrcPath.toLowerCase();
+            } else {
+                return item.file === absSrcPath;
+            }
+        });
+
+        if (idx === -1)
+            return;
+
+        return database[idx];
     }
 
     ////////////////////////////////// Abstract Project ///////////////////////////////////

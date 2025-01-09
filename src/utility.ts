@@ -538,7 +538,7 @@ export async function runShellCommand(title: string, commandLine: string, env?: 
             if (os.platform() == 'win32') tOpts.shellPath = 'cmd.exe';
             const terminal = vscode.window.createTerminal(tOpts);
             if (!silent) terminal.show(true);
-            terminal.sendText(CmdLineHandler.DeleteCmdPrefix(commandLine));
+            terminal.sendText(commandLine);
         }
 
     } catch (error) {

@@ -69,6 +69,7 @@
     "eide.explorer.modify.file.path": "修改源文件路径",
     "eide.explorer.modify.exclude_list": "修改源文件排除列表",
     "eide.explorer.file.modify.extraArgs": "修改此文件的附加编译参数",
+    "eide.explorer.file.compile": "编译",
     "eide.explorer.folder.modify.extraArgs": "修改此文件夹的附加编译参数",
 
     "eide.source.show_cmsis_config_wizard": "CMSIS Configuration Wizard",

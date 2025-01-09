@@ -777,6 +777,10 @@
                 "title": "%eide.explorer.file.modify.extraArgs%"
             },
             {
+                "command": "_cl.eide.project.source.file.compile",
+                "title": "%eide.explorer.file.compile%"
+            },
+            {
                 "command": "_cl.eide.project.source.folder.modify.extraArgs",
                 "title": "%eide.explorer.folder.modify.extraArgs%"
             },
@@ -1459,6 +1463,11 @@
                     "command": "_cl.eide.project.unexcludeFolder.childSrcs",
                     "when": "viewItem == FOLDER || viewItem == V_FOLDER || viewItem == FOLDER_ROOT || viewItem == V_FOLDER_ROOT && view == cl.eide.view.projects",
                     "group": "a_exclude@1"
+                },
+                {
+                    "command": "_cl.eide.project.source.file.compile",
+                    "when": "viewItem == FILE_ITEM || viewItem == V_FILE_ITEM && view == cl.eide.view.projects",
+                    "group": "1_file@0"
                 },
                 {
                     "command": "_cl.eide.project.source.file.modify.extraArgs",

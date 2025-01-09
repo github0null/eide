@@ -4547,6 +4547,28 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         this._uploadLock = false;
     }
 
+    compileSingleFile(item: ProjTreeItem) {
+
+        const project = this.getProjectByTreeItem(item);
+        if (!project)
+            return;
+        if (!(item.val.value instanceof File))
+            return;
+
+        try {
+            const srcPath = item.val.value.path;
+            const dbinfo = project.getSourceCompileDatabase(srcPath);
+            if (dbinfo) {
+                runShellCommand(`compile: ${NodePath.basename(srcPath)}`, 
+                    dbinfo.command, undefined, true, dbinfo.directory);
+            } else {
+                throw Error(`No compile commands for this file: ${srcPath}`);
+            }
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+        }
+    }
+
     ExportKeilXml(prjIndex: number) {
         try {
             const prj = this.dataProvider.GetProjectByIndex(prjIndex);
@@ -5583,18 +5605,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
 
             // get obj file
-            let objPath: string | undefined;
-            const refFile = File.fromArray([activePrj.ToAbsolutePath(activePrj.getOutputDir()), 'ref.json']);
-            if (!refFile.IsFile()) { throw new Error(`Not found 'ref.json' at output folder, you need build project !`) }
-            let ref = JSON.parse(refFile.Read());
-
-            if (osType() == 'win32') { // to lower-case path for win32
-                ref = copyAndMakeObjectKeysToLowerCase(ref);
-                srcPath = srcPath.toLowerCase();
-            }
-
-            // get obj path by source file path
-            objPath = <string>ref[srcPath];
+            const objPath = activePrj.getSourceObjectPath(srcPath);
 
             if (typeof objPath != 'string') {
                 throw new Error(`Not found any reference for this source file !, [path]: '${srcPath}'`);
