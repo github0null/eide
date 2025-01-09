@@ -46,10 +46,9 @@ import { ToolchainName } from './ToolchainManager';
 import { Time } from '../lib/node-utility/Time';
 
 export function generateDotnetProgramCmd(programFile: File, args?: string[]): string {
-    // 在 x64 平台上，.NET编译生成的 包装程序 <my_program>.exe 无法在 arm64 平台运行
-    // 因此需要直接使用 dotnet 命令去直接执行程序的本体.
+    // 在非 win32 平台上，使用 dotnet 命令去直接执行程序的本体.
     // 命令 "<my_program>.exe" 的等价替换是 "dotnet <my_program_dir>/<my_program>.dll"
-    if (platform.getArchId() == 'arm64') {
+    if (platform.osType() != 'win32') {
         let dllpath = [programFile.dir, `${programFile.noSuffixName}.dll`].join('/');
         let commandLine = `dotnet ${CmdLineHandler.quoteString(File.ToLocalPath(dllpath), '"')}`;
         args?.forEach(p => {
