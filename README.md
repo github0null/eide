@@ -121,3 +121,7 @@ You can build this project by your self.
 ## Sponsor 👍
 
 [Sponsor The Author](https://em-ide.com/sponsor)
+
+Thanks:
+
+![Sponsor List](https://em-ide.com/sponsor_list/image.png)

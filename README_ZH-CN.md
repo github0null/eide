@@ -96,3 +96,7 @@
 ## 赞助 👍
 
 [请作者喝咖啡](https://em-ide.com/sponsor)
+
+感谢:
+
+![Sponsor List](https://em-ide.com/sponsor_list/image.png)
