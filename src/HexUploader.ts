@@ -234,19 +234,17 @@ export abstract class HexUploader<InvokeParamsType> {
 
     async executeShellCommand(title: string, commandLine: string, env?: any, useTerminal?: boolean, cwd?: string) {
         const silent = SettingManager.GetInstance().isSilentBuildOrFlash();
-        const etask = await runShellCommand(title, commandLine, env, useTerminal, cwd, silent);
+        const etask = await runShellCommand(title, commandLine, {
+            source: 'eide.flasher',
+            env: env,
+            useTerminal: useTerminal,
+            cwd: cwd,
+            silent: silent
+        });
         const bar = StatusBarManager.getInstance().get('flash');
         if (etask && bar) {
-            const old_txt = bar.text;
-            const old_tooltip = bar.tooltip;
             bar.text = `$(loading~spin) Flashing`;
             bar.tooltip = `Command: ${commandLine}`;
-            vscode.tasks.onDidEndTask((e) => {
-                if (e.execution == etask) {
-                    bar.text = old_txt;
-                    bar.tooltip = old_tooltip;
-                }
-            });
         }
     }
 

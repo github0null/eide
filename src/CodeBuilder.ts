@@ -285,7 +285,7 @@ export abstract class CodeBuilder {
             // setup task
             if (os.platform() == 'win32') commandLine = `"${commandLine}"`;
             const task = new vscode.Task({ type: 'shell', command: commandLine }, vscode.TaskScope.Workspace,
-                title, 'eide', new vscode.ShellExecution(commandLine, shellOption), []);
+                title, 'eide.builder', new vscode.ShellExecution(commandLine, shellOption), []);
             task.group = vscode.TaskGroup.Build;
             task.isBackground = false;
             task.presentationOptions = { echo: true, focus: false, clear: true };

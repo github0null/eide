@@ -171,8 +171,10 @@ function requestAndActivate_COSMIC_STM8(toolchain: IToolchian) {
 
             if (msg == 'btn.show-host-id') {
 
-                runShellCommand('(COSMIC) show host id',
-                    'LmregFSE', undefined, true, toolchainRootDir.path);
+                runShellCommand('(COSMIC) show host id', 'LmregFSE', {
+                    useTerminal: true,
+                    cwd: toolchainRootDir.path
+                });
             }
         });
 

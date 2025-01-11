@@ -1128,7 +1128,7 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
 
         bar_flash.text    = `$(arrow-down) Flash`;
         bar_flash.command = `_cl.eide.statusbar.flash`;
-        bar_flash.tooltip = `Program flash eide project`;
+        bar_flash.tooltip = `Upload binary file to device`;
     }
 
     // register msys bash profile for windows

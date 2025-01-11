@@ -943,7 +943,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         this.updateStatusBarForActiveProjects();
     }
 
-    private updateStatusBarForActiveProjects() {
+    updateStatusBarForActiveProjects() {
 
         const statusbars = StatusBarManager.getInstance();
 
@@ -963,6 +963,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             }
 
             else if (name == 'build') {
+                bar.text = `$(tools) Build`;
                 if (activeProj) {
                     let txt = `Build eide project:`;
                     let repath = activeProj.ToRelativePath(activeProj.getExecutablePath());
@@ -974,20 +975,22 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             }
 
             else if (name == 'flash') {
+                bar.text = '$(arrow-down) Flash';
                 if (activeProj) {
                     try {
                         const flasher = HexUploaderManager.getInstance().createUploader(activeProj);
-                        let txt = `Program flash eide project:`;
+                        let txt = `Upload binary file to device:`;
                         flasher.getAllProgramFiles().forEach(f => {
                             let repath = activeProj.ToRelativePath(f.path) || f.path;
                             txt += `${os.EOL}  - \`${repath}\``
                         });
                         bar.tooltip = new vscode.MarkdownString(txt);
                     } catch (error) {
-                        GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+                        bar.tooltip = `Upload binary file to device`;
+                        GlobalEvent.log_error(error);
                     }
                 } else {
-                    bar.tooltip = `Program flash eide project`;
+                    bar.tooltip = `Upload binary file to device`;
                 }
             }
         });
@@ -3604,6 +3607,14 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         context.subscriptions.push(
             vscode.languages.registerCompletionItemProvider({ scheme: 'file', pattern: '**/*.eide.*.{yml,yaml}' }, this.newPathStringCompletionItemProvider(), '/', '\\'));
 
+        // register task end event callback
+        context.subscriptions.push(
+            vscode.tasks.onDidEndTask((t) => {
+                if (['eide.flasher', 'eide.builder'].includes(t.execution.task.source)) {
+                    this.dataProvider.updateStatusBarForActiveProjects();
+                }
+            }));
+
         // register project hook
         GlobalEvent.on('project.opened', (prj) => this.onProjectOpened(prj));
         GlobalEvent.on('project.closed', (uid) => this.onProjectClosed(uid));
@@ -4321,13 +4332,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             const codeBuilder = CodeBuilder.NewBuilder(prj);
             const toolchain = prj.getToolchain().name;
 
-            const buildbar = StatusBarManager.getInstance().get('build');
-
             // build launched event
             codeBuilder.on('launched', () => {
                 if (this.compiler_diags.has(prj.getUid())) {
                     this.compiler_diags.get(prj.getUid())?.clear();
                 }
+                const buildbar = StatusBarManager.getInstance().get('build');
                 if (buildbar) {
                     buildbar.text = `$(loading~spin) Building`;
                 }
@@ -4339,9 +4349,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 this.notifyUpdateOutputFolder(prj);
                 this.updateCompilerDiagsAfterBuild(prj);
                 if (options?.flashAfterBuild && done) this.UploadToDevice(prjItem);
-                if (buildbar) {
-                    buildbar.text = `$(tools) Build`;
-                }
+                this.dataProvider.updateStatusBarForActiveProjects();
             });
 
             // start build
@@ -4559,8 +4567,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             const srcPath = item.val.value.path;
             const dbinfo = project.getSourceCompileDatabase(srcPath);
             if (dbinfo) {
-                runShellCommand(`compile: ${NodePath.basename(srcPath)}`, 
-                    dbinfo.command, undefined, true, dbinfo.directory);
+                runShellCommand(`compile: ${NodePath.basename(srcPath)}`, dbinfo.command, {
+                    useTerminal: true,
+                    cwd: dbinfo.directory
+                });
             } else {
                 throw Error(`No compile commands for this file: ${srcPath}`);
             }
