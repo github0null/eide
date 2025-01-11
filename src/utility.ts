@@ -533,9 +533,10 @@ export async function runShellCommand(title: string, commandLine: string, opts?:
             if (os.platform() == 'win32')
                 tOpts.shellPath = 'cmd.exe';
             const terminal = vscode.window.createTerminal(tOpts);
-            terminal.sendText(commandLine);
+            // show terminal before sendtext
             if (!opts?.silent)
                 terminal.show(true);
+            terminal.sendText(commandLine);
         }
         // use vscode task
         else {
