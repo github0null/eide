@@ -131,6 +131,9 @@
                         },
                         {
                             "include": "#section_name"
+                        },
+                        {
+                            "include": "#eide_var"
                         }
                     ]
                 }
@@ -149,6 +152,14 @@
             "captures": {
                 "0": {
                     "name": "support.function"
+                }
+            }
+        },
+        "eide_var": {
+            "match": "\\$\\{\\w+\\}",
+            "captures": {
+                "0": {
+                    "name": "variable"
                 }
             }
         }

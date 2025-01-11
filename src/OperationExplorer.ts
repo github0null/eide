@@ -393,14 +393,14 @@ export class OperationExplorer {
                             },
                             {
                                 label: '8051 Empty Project (Keil C51 Compiler)',
-                                detail: '8051 general project',
+                                detail: '8051 empty project',
                                 templateName: 'mcs51',
                                 type: 'C51'
                             },
                             {
                                 label: 'STM8 Empty Project (COSMIC Compiler)',
-                                detail: 'stm8 general project',
-                                templateName: 'cosmic_stm8',
+                                detail: 'stm8 empty project',
+                                templateName: 'cosmic_stm8_empty',
                                 type: 'C51'
                             },
                         ];
@@ -438,9 +438,9 @@ export class OperationExplorer {
                             type: 'ANY-GCC'
                         },
                         {
-                            label: 'STM8 COSMIC Quickstart',
-                            detail: 'stm8 general quickstart project (COSMIC STM8 Compiler)',
-                            templateName: 'cosmic_stm8',
+                            label: 'STM8S COSMIC Quickstart',
+                            detail: 'stm8s quickstart project (STM8S003,STM8S005,STM8S103) (COSMIC STM8 Compiler)',
+                            templateName: 'stm8s_cosmic_quickstart',
                             type: 'C51'
                         },
                         {
