@@ -233,6 +233,9 @@ export abstract class CodeBuilder {
     build(options?: BuildOptions): void {
 
         let commandLine = this.genBuildCommand(options);
+
+        // do some check
+        if (!this.project.checkAndNotifyInstallToolchain()) return;
         if (options?.onlyDumpBuilderParams) return; // if only generate params, exit
         if (!commandLine) return;
 
@@ -313,9 +316,6 @@ export abstract class CodeBuilder {
         this.useFastCompile = options?.not_rebuild;
         this.onlyDumpCompilerInfo = options?.onlyDumpCompilerInfo;
         this.otherArgs = options?.otherArgs;
-
-        /* if not found toolchain, exit ! */
-        if (!this.project.checkAndNotifyInstallToolchain()) { return; }
 
         const prjConfig = this.project.GetConfiguration();
         const outDir = new File(this.project.ToAbsolutePath(prjConfig.getOutDir()));

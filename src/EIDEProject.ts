@@ -58,7 +58,7 @@ import { WebPanelManager } from './WebPanelManager';
 import { DependenceManager } from './DependenceManager';
 import * as platform from './Platform';
 import { IDebugConfigGenerator } from './DebugConfigGenerator';
-import { md5, copyObject, compareVersion, isGccFamilyToolchain, deepCloneObject, notifyReloadWindow, copyAndMakeObjectKeysToLowerCase, runShellCommand } from './utility';
+import { md5, copyObject, compareVersion, isGccFamilyToolchain, deepCloneObject, notifyReloadWindow, copyAndMakeObjectKeysToLowerCase, runShellCommand, execInternalCommand } from './utility';
 import { ResInstaller } from './ResInstaller';
 import {
     view_str$prompt$filesOptionsComment,
@@ -79,7 +79,7 @@ import * as iconv from 'iconv-lite';
 import * as globmatch from 'micromatch'
 import { EventData, CurrentDevice, ArmBaseCompileConfigModel } from './EIDEProjectModules';
 import * as FileLock from '../lib/node-utility/FileLock';
-import { CompilerCommandsDatabaseItem } from './CodeBuilder';
+import { CompilerCommandsDatabaseItem, CodeBuilder } from './CodeBuilder';
 import { xpackRequireDevTools } from './XpackDevTools';
 
 export class CheckError extends Error {
@@ -2900,6 +2900,36 @@ $(OUT_DIR):
         this.emit('dataChanged', 'files');
     }
 
+    doUpdateCompilerDatabase() {
+
+        const cmdLine = CodeBuilder.NewBuilder(this).genBuildCommand({ otherArgs: ['--only-dump-compilerdb'] });
+        if (!cmdLine)
+            return;
+
+        return new Promise<boolean>((resolve) => {
+            /* Output Example:
+                Source Map Database Path: c:\xxx\ref.json
+                Compiler Database Path: c:\xxx\compile_commands.json
+            */
+            const proc = new ExeCmd();
+            proc.on('launch', () => {
+                GlobalEvent.log_info('Updating Compiler Database');
+            });
+            proc.on('line', str => {
+                GlobalEvent.log_info(str);
+            });
+            proc.on('close', exitInfo => {
+                if (exitInfo.code == 0) {
+                    resolve(true);
+                } else {
+                    resolve(false);
+                    GlobalEvent.log_warn(`Fail to exec "${cmdLine}", code=${exitInfo.code}`);
+                }
+            });
+            proc.Run(<string>cmdLine, undefined, { cwd: this.getProjectRoot().path });
+        });
+    }
+
     protected onToolchainChanged() {
         /* check toolchain is installed ? */
         this.checkAndNotifyInstallToolchain();
@@ -2907,6 +2937,15 @@ $(OUT_DIR):
 
     protected onUploaderChanged() {
         //TODO
+    }
+
+    onBuilderConfigChanged(): void {
+        this.dependenceManager.flushToolchainDep();
+        this.forceUpdateCpptoolsConfig();
+    }
+
+    onSourceCompilerOptionsChanged(): void {
+        this.forceUpdateCpptoolsConfig();
     }
 
     protected abstract onComponentUpdate(updateList: ComponentUpdateItem[]): void;
@@ -2922,8 +2961,6 @@ $(OUT_DIR):
     protected abstract onTargetChanged(info: { name: string, isNew?: boolean }): void;
 
     protected abstract onEideDirChanged(evt: 'changed' | 'renamed', file: File): void;
-
-    abstract NotifyBuilderConfigUpdate(): void;
 
     //-----------------------------------------------------------
 
@@ -3116,10 +3153,6 @@ class EIDEProject extends AbstractProject {
                 this.UpdateCppConfig(); // trigger cpptools config update
             }
         }
-    }
-
-    NotifyBuilderConfigUpdate(): void {
-        this.dependenceManager.flushToolchainDep();
     }
 
     ////////////////////////////////
@@ -3811,10 +3844,11 @@ class EIDEProject extends AbstractProject {
                 setTimeout(() => {
                     try {
                         this.doUpdateCpptoolsConfig();
+                        this.doUpdateCompilerDatabase();
                     } catch (error) {
                         GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
                     }
-                }, 600);
+                }, 1000);
         }
 
         // we already have a updater in running, now delay it

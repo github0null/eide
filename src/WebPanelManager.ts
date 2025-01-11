@@ -294,7 +294,7 @@ export class WebPanelManager {
                     projectConfig.compileConfigModel.setOptions(data);
                     status.success = true;
                     status.msg = view_str$operation$done;
-                    project.NotifyBuilderConfigUpdate();
+                    project.onBuilderConfigChanged();
                 } catch (error) {
                     status.success = false;
                     status.msg = (<Error>error).message;

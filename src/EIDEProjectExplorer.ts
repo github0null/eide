@@ -5294,7 +5294,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         inheritedArgs = inheritedArgs.trim();
 
         const ui_cfg: SimpleUIConfig = {
-            title: `Extra Compiler Options (file: ${NodePath.basename(fspath)})`,
+            title: `Modify Compiler Options (file: ${NodePath.basename(fspath)})`,
             items: {},
         };
 
@@ -5313,13 +5313,34 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         ui_cfg.items['args'] = {
             type: 'input',
             attrs: {},
-            name: 'Compiler Options',
+            name: 'Append Compiler Options',
             data: <SimpleUIConfigData_input>{
-                placeHolder: `compiler options, like: '-O1', '-Os', '-flto' ...`,
+                placeHolder: [
+                    `For Append   Options. e.g. " -Os -flto " ...`,
+                    `For Replace  Options. e.g. " $<replace:-O1/-O2> " ...`,
+                    `For Override Options. e.g. " $<override:-I./include -g -O2 -flto> " ...`,
+                ].join(os.EOL),
                 value: ccOptions,
                 default: ccOptions,
             },
         };
+
+        try {
+            const db = project.getSourceCompileDatabase(fspath);
+            if (db) {
+                ui_cfg.items['current_commands'] = {
+                    type: 'input',
+                    attrs: { readonly: true },
+                    name: `Current Compiler Commands`,
+                    data: <SimpleUIConfigData_input>{
+                        value: db.command,
+                        default: db.command
+                    }
+                };
+            }
+        } catch (error) {
+            // nothing todo
+        }
 
         WebPanelManager.instance().showSimpleConfigUI(ui_cfg, async (new_cfg) => {
 
@@ -5353,6 +5374,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
 
             project.setSourceExtraArgsCfg(extraArgs);
+            project.onSourceCompilerOptionsChanged();
 
             // update explorer
             if (virtpath) {
@@ -5400,7 +5422,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         inheritedOptions = inheritedOptions.trim();
 
         const ui_cfg: SimpleUIConfig = {
-            title: `Extra Compiler Options (dir: ${NodePath.basename(folderpath)})`,
+            title: `Modify Compiler Options (dir: ${NodePath.basename(folderpath)})`,
             items: {},
         };
 
@@ -5419,9 +5441,13 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         ui_cfg.items['args'] = {
             type: 'input',
             attrs: {},
-            name: 'Compiler Options',
+            name: 'Append Compiler Options',
             data: <SimpleUIConfigData_input>{
-                placeHolder: `compiler options, like: '-O1', '-Os', '-flto' ...`,
+                placeHolder: [
+                    `For Append   Options. e.g. " -Os -flto " ...`,
+                    `For Replace  Options. e.g. " $<replace:-O1/-O2> " ...`,
+                    `For Override Options. e.g. " $<override:-I./include -g -O2 -flto> " ...`,
+                ].join(os.EOL),
                 value: ccOptions,
                 default: ccOptions,
             },
@@ -5475,6 +5501,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
 
             project.setSourceExtraArgsCfg(extraArgs);
+            project.onSourceCompilerOptionsChanged();
 
             // update explorer
             if (isVirtpath) {

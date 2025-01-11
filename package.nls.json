@@ -68,9 +68,9 @@
     "eide.explorer.show.file.dir": "Show In File Explorer",
     "eide.explorer.modify.file.path": "Modify File Path",
     "eide.explorer.modify.exclude_list": "Modify Source File Exclude List",
-    "eide.explorer.file.modify.extraArgs": "Modify Extra Compiler Options",
     "eide.explorer.file.compile": "Compile",
-    "eide.explorer.folder.modify.extraArgs": "Modify Extra Compiler Options",
+    "eide.explorer.file.modify.extraArgs": "Modify Compiler Options",
+    "eide.explorer.folder.modify.extraArgs": "Modify Compiler Options",
 
     "eide.source.show_cmsis_config_wizard": "CMSIS Configuration Wizard",
     "eide.source.show.disassembly": "Show Disassembly",
