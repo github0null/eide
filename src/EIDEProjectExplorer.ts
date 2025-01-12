@@ -2272,7 +2272,13 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             return undefined;
         }
 
-        const prj = await this._OpenProject(workspaceFilePath);
+        const prj = await vscode.window.withProgress({
+            title: 'Open Project',
+            location: vscode.ProgressLocation.Notification,
+        }, (progress) => {
+            progress.report({ message: `${workspaceFilePath}` });
+            return this._OpenProject(workspaceFilePath);
+        });
         if (prj) {
             this.SwitchProject(prj, switchWorkspaceImmediately);
             return prj;
