@@ -58,7 +58,7 @@ import { WebPanelManager } from './WebPanelManager';
 import { DependenceManager } from './DependenceManager';
 import * as platform from './Platform';
 import { IDebugConfigGenerator } from './DebugConfigGenerator';
-import { md5, copyObject, compareVersion, isGccFamilyToolchain, deepCloneObject, notifyReloadWindow } from './utility';
+import { md5, copyObject, compareVersion, isGccFamilyToolchain, deepCloneObject, notifyReloadWindow, copyAndMakeObjectKeysToLowerCase, runShellCommand, execInternalCommand } from './utility';
 import { ResInstaller } from './ResInstaller';
 import {
     view_str$prompt$filesOptionsComment,
@@ -79,7 +79,8 @@ import * as iconv from 'iconv-lite';
 import * as globmatch from 'micromatch'
 import { EventData, CurrentDevice, ArmBaseCompileConfigModel } from './EIDEProjectModules';
 import * as FileLock from '../lib/node-utility/FileLock';
-import { CompilerCommandsDatabaseItem } from './CodeBuilder';
+import { CompilerCommandsDatabaseItem, CodeBuilder } from './CodeBuilder';
+import { xpackRequireDevTools } from './XpackDevTools';
 
 export class CheckError extends Error {
 }
@@ -681,8 +682,13 @@ class SourceRootList implements SourceProvider {
         const fileFilter = AbstractProject.getFileFilters();
 
         // if source root have no watcher, watch it !
-        if (rootFolderInfo.isValid() && !rootFolderInfo.fileWatcher.IsWatched())
-            rootFolderInfo.fileWatcher.Watch();
+        if (rootFolderInfo.isValid() && !rootFolderInfo.fileWatcher.IsWatched()) {
+            try {
+                rootFolderInfo.fileWatcher.Watch();
+            } catch (error) {
+                GlobalEvent.log_error(<Error>error);
+            }
+        }
 
         if (targetFolderList) { // only update target folders
             targetFolderList = targetFolderList.map((path) => this.project.ToAbsolutePath(path));
@@ -960,6 +966,59 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     */
     public getProjectRoot(): File {
         return this.getRootDir();
+    }
+
+    /**
+     * @note Make sure you have build your project at least once time.
+     * If we not found 'ref.json', an error will be throwed.
+     */
+    public getSourceObjectPath(srcPath: string): string | undefined {
+
+        const refFile = File.fromArray([this.ToAbsolutePath(this.getOutputDir()), 'ref.json']);
+        if (!refFile.IsFile())
+            throw new Error(`No such file "${refFile.path}", please build your project at least once time.`);
+
+        let ref = jsonc.parse(refFile.Read());
+        if (platform.osType() == 'win32') { // to lower-case path for win32
+            ref = copyAndMakeObjectKeysToLowerCase(ref);
+            srcPath = this.toAbsolutePath(srcPath).toLowerCase();
+        }
+
+        // get obj path by source file path
+        return <string>ref[srcPath];
+    }
+
+    /**
+     * @note Make sure you have build your project at least once time.
+     * If we not found 'compile_commands.json', an error will be throwed.
+     */
+    public getSourceCompileDatabase(srcPath: string): {
+        directory: string,
+        file: string,
+        command: string
+    } | undefined {
+
+        const dbfile = File.fromArray([this.ToAbsolutePath(this.getOutputDir()), 'compile_commands.json']);
+        if (!dbfile.IsFile())
+            throw new Error(`No such file "${dbfile.path}", please build your project at least once time.`);
+
+        const database: any[] = jsonc.parse(dbfile.Read());
+        if (!Array.isArray(database))
+            throw new Error(`Not a json array. incorrect format of compile_commands.json`);
+
+        const absSrcPath = this.toAbsolutePath(srcPath);
+        const idx = database.findIndex((item) => {
+            if (platform.osType() == 'win32') {
+                return (<string>item.file).toLowerCase() === absSrcPath.toLowerCase();
+            } else {
+                return item.file === absSrcPath;
+            }
+        });
+
+        if (idx === -1)
+            return;
+
+        return database[idx];
     }
 
     ////////////////////////////////// Abstract Project ///////////////////////////////////
@@ -1974,7 +2033,7 @@ lib${libname}: $(lib${libname}_OBJS) ${makefile_repath}
 \t@echo -e $(COLOR_BLUE)-------------------------$(COLOR_END)
 \t@echo -e $(COLOR_BLUE)AR "${outname}"$(COLOR_END)
 \t@echo -e $(COLOR_BLUE)-------------------------$(COLOR_END)
-\t${AR_PATH} ${AR_CMD}
+\t$(AR) ${AR_CMD}
 OUT_LIBS += lib${libname}
 `;
             lib_rules.push(rule_tmp);
@@ -1986,6 +2045,7 @@ OUT_LIBS += lib${libname}
 # --------------------------------------------
 
 OUT_DIR = <LIB_OUT_DIR>
+AR ?= <LIB_AR_PATH>
 
 # colors
 COLOR_END  = "\\e[0m"
@@ -2015,7 +2075,8 @@ $(OUT_DIR):
 
         mk_tmp = mk_tmp
             .replace('<LIB_TARGETS>', lib_rules.join('\n'))
-            .replace('<LIB_OUT_DIR>', NodePath.dirname(makefile_repath));
+            .replace('<LIB_OUT_DIR>', NodePath.dirname(makefile_repath))
+            .replace('<LIB_AR_PATH>', AR_PATH);
 
         return mk_tmp;
     }
@@ -2517,7 +2578,7 @@ $(OUT_DIR):
         // eide vars
         this.registerBuiltinVar('EIDE_BUILDER_DIR', () => ResManager.instance().getUnifyBuilderExe().dir);
         for (const key in process.env) {
-            if (key.startsWith('EIDE_')) {
+            if (key.startsWith('EIDE_') && !key.startsWith('EIDE_TOOL_')) {
                 this.registerBuiltinVar(key, () => process.env[key] || '');
             }
         }
@@ -2724,7 +2785,12 @@ $(OUT_DIR):
         const prjConfig = this.GetConfiguration();
 
         // start watch '.eide' folder
-        this.eideDirWatcher?.Watch();
+        try {
+            this.eideDirWatcher?.Watch();
+        } catch (error) {
+            GlobalEvent.log_error(<Error>error);
+            GlobalEvent.emit('msg', newMessage('Error', `Cannot watch '.eide' folder, some functions will not available !`));
+        }
 
         // force flush toolchain dependence
         this.dependenceManager.Refresh(true);
@@ -2780,9 +2846,47 @@ $(OUT_DIR):
         }
     }
 
-    public checkAndNotifyInstallToolchain(): boolean {
-        const toolchainManager = ToolchainManager.getInstance();
+    public getToolchainLocation(): File {
         const toolchain = this.getToolchain();
+        if (isGccFamilyToolchain(toolchain.name) && toolchain.getToolchainPrefix) {
+            try {
+                if (vscode.workspace.workspaceFile) {
+                    const dir = File.from(this.getWorkspaceFile().dir);
+                    const r = xpackRequireDevTools(dir, `${toolchain.getToolchainPrefix()}gcc`);
+                    if (r) {
+                        return r;
+                    }
+                }
+            } catch (error) {
+                GlobalEvent.log_warn(<Error>error);
+                return File.from(`<xpack-dev-tools ${toolchain.getToolchainPrefix()}gcc not-exist>`);
+            }
+        }
+        return toolchain.getToolchainDir();
+    }
+
+    public checkAndNotifyInstallToolchain(): boolean {
+        const toolchain = this.getToolchain();
+        if (isGccFamilyToolchain(toolchain.name) && toolchain.getToolchainPrefix) {
+            try {
+                if (vscode.workspace.workspaceFile) {
+                    const dir = File.from(this.getWorkspaceFile().dir);
+                    const r = xpackRequireDevTools(dir, `${toolchain.getToolchainPrefix()}gcc`);
+                    if (r) {
+                        return true;
+                    }
+                }
+            } catch (error) {
+                const msg = [
+                    `${toolchain.getToolchainPrefix()}gcc not avaliable:\n${(<Error>error).message}`,
+                    `Please check your package.json and run 'xpm install' to install xpack dependences.`
+                ].join(os.EOL);
+                GlobalEvent.emit('msg', newMessage('Error', msg));
+                GlobalEvent.log_warn(<Error>error);
+                return false
+            }
+        }
+        const toolchainManager = ToolchainManager.getInstance();
         if (!toolchainManager.isToolchainPathReady(toolchain.name)) {
             const dir = toolchainManager.getToolchainExecutableFolder(toolchain.name);
             const msg = view_str$prompt$not_found_compiler.replace('{}', toolchain.name) + `, [path]: '${dir?.path}'`;
@@ -2796,6 +2900,36 @@ $(OUT_DIR):
         this.emit('dataChanged', 'files');
     }
 
+    doUpdateCompilerDatabase() {
+
+        const cmdLine = CodeBuilder.NewBuilder(this).genBuildCommand({ otherArgs: ['--only-dump-compilerdb'] });
+        if (!cmdLine)
+            return;
+
+        return new Promise<boolean>((resolve) => {
+            /* Output Example:
+                Source Map Database Path: c:\xxx\ref.json
+                Compiler Database Path: c:\xxx\compile_commands.json
+            */
+            const proc = new ExeCmd();
+            proc.on('launch', () => {
+                GlobalEvent.log_info('Updating Compiler Database');
+            });
+            proc.on('line', str => {
+                GlobalEvent.log_info(str);
+            });
+            proc.on('close', exitInfo => {
+                if (exitInfo.code == 0) {
+                    resolve(true);
+                } else {
+                    resolve(false);
+                    GlobalEvent.log_warn(`Fail to exec "${cmdLine}", code=${exitInfo.code}`);
+                }
+            });
+            proc.Run(<string>cmdLine, undefined, { cwd: this.getProjectRoot().path });
+        });
+    }
+
     protected onToolchainChanged() {
         /* check toolchain is installed ? */
         this.checkAndNotifyInstallToolchain();
@@ -2803,6 +2937,15 @@ $(OUT_DIR):
 
     protected onUploaderChanged() {
         //TODO
+    }
+
+    onBuilderConfigChanged(): void {
+        this.dependenceManager.flushToolchainDep();
+        this.forceUpdateCpptoolsConfig();
+    }
+
+    onSourceCompilerOptionsChanged(): void {
+        this.forceUpdateCpptoolsConfig();
     }
 
     protected abstract onComponentUpdate(updateList: ComponentUpdateItem[]): void;
@@ -2818,8 +2961,6 @@ $(OUT_DIR):
     protected abstract onTargetChanged(info: { name: string, isNew?: boolean }): void;
 
     protected abstract onEideDirChanged(evt: 'changed' | 'renamed', file: File): void;
-
-    abstract NotifyBuilderConfigUpdate(): void;
 
     //-----------------------------------------------------------
 
@@ -3012,10 +3153,6 @@ class EIDEProject extends AbstractProject {
                 this.UpdateCppConfig(); // trigger cpptools config update
             }
         }
-    }
-
-    NotifyBuilderConfigUpdate(): void {
-        this.dependenceManager.flushToolchainDep();
     }
 
     ////////////////////////////////
@@ -3267,7 +3404,7 @@ class EIDEProject extends AbstractProject {
             keilFile = keilFileList[fIndex];
         }
 
-        const keilParser = KeilParser.NewInstance(keilFile);
+        const keilParser = KeilParser.NewInstance(keilFile, prjConfig.type === 'C51' ? 'c51' : 'arm');
 
         let cDevice: CurrentDevice | undefined;
         if (prjConfig.type === 'ARM') { // only for ARM project
@@ -3707,10 +3844,11 @@ class EIDEProject extends AbstractProject {
                 setTimeout(() => {
                     try {
                         this.doUpdateCpptoolsConfig();
+                        this.doUpdateCompilerDatabase();
                     } catch (error) {
                         GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
                     }
-                }, 600);
+                }, 1000);
         }
 
         // we already have a updater in running, now delay it

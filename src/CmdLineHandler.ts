@@ -51,15 +51,6 @@ export class CmdLineHandler {
         return commandLine.trim();
     }
 
-    /**
-     * input: ""a b.exe" -a -b -c"
-     * 
-     * output: "a b.exe" -a -b -c
-    */
-    static DeleteCmdPrefix(cmdLine: string): string {
-        return cmdLine.replace(/^"|"$/g, '');
-    }
-
     static quoteString(str: string, quote: string): string {
         return (str.includes(' ') && !str.includes(quote)) ? (quote + str + quote) : str;
     }

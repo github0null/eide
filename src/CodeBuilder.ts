@@ -85,7 +85,6 @@ export interface BuilderParams {
     rom?: number;
     sourceList: string[];
     sourceParams?: { [name: string]: string; };
-    sourceParamsMtime?: number;
     incDirs: string[];
     libDirs: string[];
     defines: string[];
@@ -129,10 +128,9 @@ export abstract class CodeBuilder {
         this._event.emit(event, arg);
     }
 
-    genSourceInfo(prevBuilderParams: BuilderParams | undefined): {
+    protected genSourceInfo(prevBuilderParams: BuilderParams | undefined): {
         sources: string[],
         params?: { [name: string]: string; }
-        paramsModTime?: number;
     } {
 
         const srcParams: { [name: string]: string; } = {};
@@ -196,18 +194,9 @@ export abstract class CodeBuilder {
             GlobalEvent.emit('msg', newMessage('Warning', `Append files options failed !, msg: ${err.message || ''}`));
         }
 
-        let mTimeMs: number | undefined;
-
-        try {
-            mTimeMs = fs.statSync(this.project.getSourceExtraArgsCfgFile().path).mtimeMs
-        } catch (error) {
-            // do nothing
-        }
-
         return {
             sources: srcList.map((inf) => inf.path),
-            params: srcParams,
-            paramsModTime: mTimeMs
+            params: srcParams
         }
     }
 
@@ -244,6 +233,9 @@ export abstract class CodeBuilder {
     build(options?: BuildOptions): void {
 
         let commandLine = this.genBuildCommand(options);
+
+        // do some check
+        if (!this.project.checkAndNotifyInstallToolchain()) return;
         if (options?.onlyDumpBuilderParams) return; // if only generate params, exit
         if (!commandLine) return;
 
@@ -293,10 +285,14 @@ export abstract class CodeBuilder {
             // setup task
             if (os.platform() == 'win32') commandLine = `"${commandLine}"`;
             const task = new vscode.Task({ type: 'shell', command: commandLine }, vscode.TaskScope.Workspace,
-                title, 'eide', new vscode.ShellExecution(commandLine, shellOption), []);
+                title, 'eide.builder', new vscode.ShellExecution(commandLine, shellOption), []);
             task.group = vscode.TaskGroup.Build;
             task.isBackground = false;
             task.presentationOptions = { echo: true, focus: false, clear: true };
+            if (SettingManager.GetInstance().isSilentBuildOrFlash()) {
+                task.presentationOptions.reveal = vscode.TaskRevealKind.Silent;
+                task.presentationOptions.showReuseMessage = false;
+            }
             vscode.tasks.executeTask(task);
         } else { // use terminal
             const index = vscode.window.terminals.findIndex((t) => { return t.name === title; });
@@ -305,7 +301,8 @@ export abstract class CodeBuilder {
             if (os.platform() == 'win32') { opts.shellPath = 'cmd.exe'; };
             opts.env = <any>process.env;
             const terminal = vscode.window.createTerminal(opts);
-            terminal.show(true);
+            if (!SettingManager.GetInstance().isSilentBuildOrFlash())
+                terminal.show(true);
             terminal.sendText(commandLine);
         }
 
@@ -319,9 +316,6 @@ export abstract class CodeBuilder {
         this.useFastCompile = options?.not_rebuild;
         this.onlyDumpCompilerInfo = options?.onlyDumpCompilerInfo;
         this.otherArgs = options?.otherArgs;
-
-        /* if not found toolchain, exit ! */
-        if (!this.project.checkAndNotifyInstallToolchain()) { return; }
 
         const prjConfig = this.project.GetConfiguration();
         const outDir = new File(this.project.ToAbsolutePath(prjConfig.getOutDir()));
@@ -390,7 +384,7 @@ export abstract class CodeBuilder {
             name: config.name,
             target: this.project.getCurrentTarget(),
             toolchain: toolchain.name,
-            toolchainLocation: toolchain.getToolchainDir().path,
+            toolchainLocation: this.project.getToolchainLocation().path,
             toolchainCfgFile: `${ResManager.GetInstance().getBuilderModelsDir().path}/${toolchain.modelName}`,
             buildMode: 'fast|multhread',
             showRepathOnLog: settingManager.isPrintRelativePathWhenBuild(),
@@ -405,7 +399,6 @@ export abstract class CodeBuilder {
             defines: this.getProjectCMacroList(),
             sourceList: sourceInfo.sources.sort(),
             sourceParams: sourceInfo.params,
-            sourceParamsMtime: sourceInfo.paramsModTime,
             options: JSON.parse(JSON.stringify(compileOptions)),
             env: this.project.getProjectVariables(),
             sysPaths: []
@@ -502,34 +495,38 @@ export abstract class CodeBuilder {
             }
         }
 
-        // generate hash for compiler options
-        builderOptions.sha = this.genHashFromCompilerOptions(builderOptions);
-
         // set build mode
         {
-            // check whether need rebuild project
-            if (this.isRebuild() == false && prevParams) {
-                try {
-                    // not found hash from old params file
-                    if (prevParams.sha == undefined) {
-                        this.enableRebuild();
-                    }
+            /** --------------------------------------------------------------
+             * @note After unify_builder v3.9.0, this function is deprecated 
+             * because we have built-in it in the latest unify_builder
+             * ---------------------------------------------------------------
+             */
+            // // generate hash for compiler options
+            // builderOptions.sha = this.genHashFromCompilerOptions(builderOptions);
+            // // check whether need rebuild project
+            // if (this.isRebuild() == false && prevParams) {
+            //     try {
+            //         // not found hash from old params file
+            //         if (prevParams.sha == undefined) {
+            //             this.enableRebuild();
+            //         }
 
-                    // check hash obj by specifies keys
-                    else {
-                        const keyList = ['global', 'c/cpp-defines', 'c/cpp-compiler', 'asm-compiler'];
-                        for (const key of keyList) {
-                            if (!this.compareHashObj(key, prevParams.sha, builderOptions.sha)) {
-                                this.enableRebuild();
-                                break;
-                            }
-                        }
-                    }
-                } catch (error) {
-                    this.enableRebuild(); // make rebuild
-                    GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
-                }
-            }
+            //         // check hash obj by specifies keys
+            //         else {
+            //             const keyList = ['global', 'c/cpp-defines', 'c/cpp-compiler', 'asm-compiler'];
+            //             for (const key of keyList) {
+            //                 if (!this.compareHashObj(key, prevParams.sha, builderOptions.sha)) {
+            //                     this.enableRebuild();
+            //                     break;
+            //                 }
+            //             }
+            //         }
+            //     } catch (error) {
+            //         this.enableRebuild(); // make rebuild
+            //         GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            //     }
+            // }
 
             if (config.toolchain === 'Keil_C51') {
                 builderModeList.push('normal'); // disable increment build for Keil C51
@@ -1031,7 +1028,7 @@ export class ARMCodeBuilder extends CodeBuilder {
                 settingManager.IsConvertAxf2Elf() &&
                 options['linker']['$disableOutputTask'] != true) {
 
-                const tool_root_folder = toolchain.getToolchainDir().path;
+                const tool_root_folder = this.project.getToolchainLocation().path;
                 const ouput_path = `\${outDir}${File.sep}${config.name}`;
                 const axf2elf_log = `\${outDir}${File.sep}axf2elf.log`;
 

@@ -142,6 +142,7 @@
             "type": "object",
             "properties": {
                 "device": {
+                    "readable_name": "Processor Type",
                     "markdownDescription": "Processor Type",
                     "description.zh-cn": "芯片类型",
                     "default": "mcs51",
@@ -149,8 +150,18 @@
                     "type": "string",
                     "auto_complete_ctx": "gcc.compiler.archs"
                 },
+                "out-debug-info": {
+                    "type": "boolean",
+                    "readable_name": "Output Debug Info",
+                    "markdownDescription": "Output debug info",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
                 "optimize-type": {
                     "type": "string",
+                    "readable_name": "Optimization Level",
                     "markdownDescription": "Optimization Level",
                     "description.zh-cn": "代码优化级别",
                     "default": "balanced",
@@ -160,89 +171,10 @@
                         "size"
                     ]
                 },
-                "plain-char-is-signed": {
-                    "type": "boolean",
-                    "markdownDescription": "plain char is signed",
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "out-debug-info": {
-                    "type": "boolean",
-                    "markdownDescription": "output debug info",
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "use-non-free": {
-                    "type": "boolean",
-                    "markdownDescription": "use non-free libraries and include paths",
-                    "disable_readable_name": true,
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "stack-auto": {
-                    "type": "boolean",
-                    "markdownDescription": "Stack automatic variables",
-                    "disable_readable_name": true,
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "use-external-stack": {
-                    "type": "boolean",
-                    "markdownDescription": "Use external stack",
-                    "disable_readable_name": true,
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "int-long-reent": {
-                    "type": "boolean",
-                    "markdownDescription": "Use reentrant calls on the int and long support functions",
-                    "disable_readable_name": true,
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "float-reent": {
-                    "type": "boolean",
-                    "markdownDescription": "Use reentrant calls on the float support functions",
-                    "disable_readable_name": true,
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "xram-movc": {
-                    "type": "boolean",
-                    "markdownDescription": "Use movc instead of movx to read xram (xdata)",
-                    "disable_readable_name": true,
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
-                "noinit-xram-from-code": {
-                    "type": "boolean",
-                    "markdownDescription": "don't memcpy initialized xram from code",
-                    "disable_readable_name": true,
-                    "enum": [
-                        true,
-                        false
-                    ]
-                },
                 "peep-asm": {
                     "type": "boolean",
+                    "readable_name": "Peephole Optimize Inline Assembly Code",
                     "markdownDescription": "Enable peephole optimization on inline assembly",
-                    "disable_readable_name": true,
                     "enum": [
                         true,
                         false
@@ -250,8 +182,8 @@
                 },
                 "peep-return": {
                     "type": "boolean",
+                    "readable_name": "Peephole Optimize 'return' Instructions",
                     "markdownDescription": "Enable peephole optimization for return instructions",
-                    "disable_readable_name": true,
                     "enum": [
                         true,
                         false
@@ -259,8 +191,8 @@
                 },
                 "allow-unsafe-read": {
                     "type": "boolean",
+                    "readable_name": "Allow Unsafe Memory Read",
                     "markdownDescription": "Allow optimizations to read any memory location anytime",
-                    "disable_readable_name": true,
                     "enum": [
                         true,
                         false
@@ -268,8 +200,80 @@
                 },
                 "no-optimize-std-lib": {
                     "type": "boolean",
+                    "readable_name": "Disable Optimize Standard Library",
                     "markdownDescription": "Disable optimization of calls to standard library",
-                    "disable_readable_name": true,
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "stack-auto": {
+                    "type": "boolean",
+                    "readable_name": "Stack Auto",
+                    "markdownDescription": "Stack automatic variables",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "plain-char-is-signed": {
+                    "type": "boolean",
+                    "readable_name": "Plain Char Is Signed",
+                    "markdownDescription": "Plain char is signed",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "noinit-xram-from-code": {
+                    "type": "boolean",
+                    "readable_name": "Don't Initialize xram",
+                    "markdownDescription": "don't memcpy initialized xram from code",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "use-non-free": {
+                    "type": "boolean",
+                    "readable_name": "Use non-free Libraries",
+                    "markdownDescription": "Use non-free libraries and include paths",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "use-external-stack": {
+                    "type": "boolean",
+                    "readable_name": "Use External Stack",
+                    "markdownDescription": "Use external stack",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "int-long-reent": {
+                    "type": "boolean",
+                    "readable_name": "Use Reentrant Calls For 'int/long'",
+                    "markdownDescription": "Use reentrant calls on the int and long support functions",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "float-reent": {
+                    "type": "boolean",
+                    "readable_name": "Use Reentrant Calls For 'float'",
+                    "markdownDescription": "Use reentrant calls on the float support functions",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "xram-movc": {
+                    "type": "boolean",
+                    "readable_name": "Use 'movc' Instead Of 'movx'",
+                    "markdownDescription": "Use movc instead of movx to read xram (xdata)",
                     "enum": [
                         true,
                         false

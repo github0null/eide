@@ -47,7 +47,9 @@ import {
     view_str$prompt$needReloadToUpdateEnv,
     view_str$operation$create_prj_done,
     view_str$prompt$requestAndActivateLicence,
-    view_str$operation$empty_mips_prj
+    view_str$operation$empty_mips_prj,
+    view_str$operation$onlineHelp,
+    view_str$operation$onlineHelpTooltip
 } from './StringTable';
 import { CreateOptions, ImportOptions, ProjectType } from './EIDETypeDefine';
 import { File } from '../lib/node-utility/File';
@@ -188,13 +190,13 @@ export class OperationExplorer {
         this.view = vscode.window.createTreeView('cl.eide.view.operations', { treeDataProvider: this.provider });
         this.UpdateView();
 
-        GlobalEvent.on('extension_close', () => {
-            this.view.dispose();
-        });
-
         SettingManager.GetInstance().on('onChanged', () => {
             this.UpdateView();
         });
+    }
+
+    onDispose() {
+        this.view.dispose();
     }
 
     private UpdateView() {
@@ -283,6 +285,17 @@ export class OperationExplorer {
             iconPath: vscode.Uri.file(icoPath.path)
         });
 
+        icoPath = resManager.GetIconByName('StatusHelp_16x.svg');
+        this.provider.AddData({
+            label: view_str$operation$onlineHelp,
+            command: {
+                title: view_str$operation$onlineHelp,
+                command: '_cl.eide.Operation.onlineHelp'
+            },
+            tooltip: view_str$operation$onlineHelpTooltip,
+            iconPath: vscode.Uri.file(icoPath.path)
+        });
+
         this.provider.Update();
     }
 
@@ -296,7 +309,7 @@ export class OperationExplorer {
             canSelectFolders: false,
             canSelectMany: false,
             filters: {
-                'EIDE workspace': ['code-workspace']
+                'vscode workspace': ['code-workspace']
             }
         }).then((uri: vscode.Uri[] | undefined) => {
             if (uri !== undefined) {
@@ -379,23 +392,20 @@ export class OperationExplorer {
                                 type: 'C51'
                             },
                             {
-                                label: '8051 Empty Project (With Keil C51 Compiler)',
-                                detail: '8051 general project',
+                                label: '8051 Empty Project (Keil C51 Compiler)',
+                                detail: '8051 empty project',
                                 templateName: 'mcs51',
                                 type: 'C51'
                             },
                             {
-                                label: 'STM8 Empty Project (With COSMIC Compiler)',
-                                detail: 'stm8 general project',
-                                templateName: 'cosmic_stm8',
+                                label: 'STM8 Empty Project (COSMIC Compiler)',
+                                detail: 'stm8 empty project',
+                                templateName: 'cosmic_stm8_empty',
                                 type: 'C51'
                             },
                         ];
 
-                        const subTyp = await vscode.window.showQuickPick(itemList);
-                        if (subTyp && subTyp.templateName) {
-                            templateItem = subTyp;
-                        }
+                        templateItem = await vscode.window.showQuickPick(itemList);
                     }
                 }
                 break;
@@ -405,55 +415,55 @@ export class OperationExplorer {
                     const itemList: ProjectTemplatePickItem[] = [
                         {
                             label: '8051 Quickstart',
-                            detail: 'Universal 8051 quickstart project',
+                            detail: 'Universal 8051 quickstart project (Keil C51 Compiler)',
                             templateName: 'mcs51',
                             type: 'C51'
                         },
                         {
                             label: '89C52 SDCC Quickstart',
-                            detail: '89c52 quickstart project (with sdcc compiler)',
+                            detail: '89c52 quickstart project (SDCC)',
                             templateName: '89c52_sdcc',
                             type: 'C51'
                         },
                         {
                             label: 'STC15 Keil_C51 Quickstart',
-                            detail: 'stc15 quickstart project (with Keil_C51 Compiler)',
+                            detail: 'stc15 quickstart project (Keil C51 Compiler)',
                             templateName: 'stc15',
                             type: 'C51'
                         },
                         {
                             label: 'AVR FreeRTOS Quickstart',
-                            detail: 'avr atmega128 quickstart project (FreeRTOS) (WinAVR-GCC compiler)',
+                            detail: 'avr atmega128 quickstart project (FreeRTOS) (WinAVR-GCC)',
                             templateName: 'avr_atmega128_rtos',
                             type: 'ANY-GCC'
                         },
                         {
-                            label: 'STM8 COSMIC Quickstart',
-                            detail: 'stm8 general quickstart project (COSMIC STM8 Compiler)',
-                            templateName: 'cosmic_stm8',
+                            label: 'STM8S COSMIC Quickstart',
+                            detail: 'stm8s quickstart project (STM8S003,STM8S005,STM8S103) (COSMIC STM8 Compiler)',
+                            templateName: 'stm8s_cosmic_quickstart',
                             type: 'C51'
                         },
                         {
                             label: 'STM8 IAR Quickstart',
-                            detail: 'stm8s103 quickstart project (with iar stm8 compiler)',
+                            detail: 'stm8s103 quickstart project (IAR STM8 Compiler)',
                             templateName: 'stm8s103f3',
                             type: 'C51'
                         },
                         {
                             label: 'STM8 SDCC Quickstart',
-                            detail: 'stm8s103 quickstart project (with sdcc compiler)',
+                            detail: 'stm8s103 quickstart project (SDCC)',
                             templateName: 'stm8s103_sdcc',
                             type: 'C51'
                         },
                         {
                             label: 'STM32F103 Cortex-M3 Quickstart',
-                            detail: 'stm32f1xx gcc quickstart project (with gcc compiler)',
+                            detail: 'stm32f1xx gcc quickstart project (ARM GCC)',
                             templateName: 'stm32f1xx_gcc',
                             type: 'ARM'
                         },
                         {
                             label: 'GD32VF103 RISC-V Quickstart',
-                            detail: 'gd32vf103 riscv quickstart project (with gcc compiler)',
+                            detail: 'gd32vf103 riscv quickstart project (RISC-V GCC)',
                             templateName: 'gd32vf103_riscv',
                             type: 'RISC-V'
                         }
@@ -487,6 +497,7 @@ export class OperationExplorer {
         const name = await vscode.window.showInputBox({
             placeHolder: input_project_name,
             ignoreFocusOut: true,
+            value: templateItem.templateName ? `${templateItem.templateName}-quickstart` : 'NewProject1',
             validateInput: (name) => AbstractProject.validateProjectName(name)
         });
         if (name === undefined) {
@@ -544,7 +555,7 @@ export class OperationExplorer {
                 description: 'embedded gcc projects',
                 detail: `Import Eclipse Projects`
             }
-        ], { placeHolder: `Project Type` });
+        ], { placeHolder: `Select Project Type` });
 
         if (!ideType)
             return;
@@ -554,14 +565,29 @@ export class OperationExplorer {
         //
         if (ideType.label == "MDK") {
 
+            const prod_type = await vscode.window.showQuickPick<any>([
+                {
+                    label: 'ARM',
+                    detail: `Keil ARM Project`,
+                    value: 'arm'
+                },
+                {
+                    label: 'C51',
+                    detail: `Keil C51 Project`,
+                    value: 'c51'
+                }
+            ], { placeHolder: `Select MDK Product Type` });
+    
+            if (!prod_type)
+                return;
+
             const prjFileUri = await vscode.window.showOpenDialog({
                 openLabel: 'Import',
                 canSelectFolders: false,
                 canSelectFiles: true,
                 canSelectMany: false,
                 filters: {
-                    'KEIL MDK': ['uvprojx'],
-                    'KEIL C51': ['uvproj']
+                    'Keil Project': ['uvprojx', 'uvproj']
                 }
             });
 
@@ -578,6 +604,7 @@ export class OperationExplorer {
 
             const importOption: ImportOptions = {
                 type: 'mdk',
+                mdk_prod: prod_type.value,
                 projectFile: new File(prjFileUri[0].fsPath),
                 outDir: orgPrjRoot,
                 createNewFolder: false
@@ -1462,6 +1489,7 @@ export class OperationExplorer {
             const projectname = await vscode.window.showInputBox({
                 placeHolder: input_project_name,
                 ignoreFocusOut: true,
+                value: `${targetTempFile.noSuffixName}-template`,
                 validateInput: (name) => AbstractProject.validateProjectName(name)
             });
 
@@ -1583,6 +1611,7 @@ export class OperationExplorer {
         const name = await vscode.window.showInputBox({
             placeHolder: input_project_name,
             ignoreFocusOut: true,
+            value: `${targetTempFile.noSuffixName}-template`,
             validateInput: (name) => AbstractProject.validateProjectName(name)
         });
 

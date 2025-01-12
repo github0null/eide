@@ -205,17 +205,37 @@
                     ]
                 },
                 "split-functions": {
-                    "description": "Split Functions In Different Sections",
+                    "readable_name": "Split Functions In Different Sections",
+                    "description": "Split functions in different sections",
+                    "description.zh-cn": "为每个函数创建不同的代码段，以便后续执行尺寸优化 (段的上限是255个)",
                     "type": "boolean",
                     "default": false
                 },
-                "plain-char-is-unsigned": {
-                    "description": "Plain Char Is Unsigned",
+                "plain-char-is-signed": {
+                    "readable_name": "Plain Char Is Signed",
+                    "description": "By default, char is Unsigned. As libraries expect unsigned chars as argument. If you forget this, run-time errors may occur.",
+                    "description.zh-cn": "默认情况下 char 是无符号的。因为库希望将无符号的 char 作为参数。如果您忘记了这一点，运行时可能会发生错误。",
+                    "type": "boolean",
+                    "default": false
+                },
+                "pack-bool-local-variables": {
+                    "readable_name": "Pack _Bool Local Variables",
+                    "description": "By default, _Bool local variables are allocated on one byte each.",
+                    "description.zh-cn": "默认情况下 _Bool 局部变量按每个字节分配。",
                     "type": "boolean",
                     "default": false
                 },
                 "strict-mode": {
-                    "description": "Enforce A Stronger Type Checking",
+                    "readable_name": "Enforce A Stronger Type Checking",
+                    "description": "Enforce stronger type checking",
+                    "description.zh-cn": "增加额外的类型检查",
+                    "type": "boolean",
+                    "default": false
+                },
+                "check-stack-frame": {
+                    "readable_name": "Check Stack Frame",
+                    "description": "Check stack frame",
+                    "description.zh-cn": "检查栈帧",
                     "type": "boolean",
                     "default": false
                 },
@@ -252,6 +272,21 @@
             "description.zh-cn": "汇编器选项",
             "type": "object",
             "properties": {
+                "optimization": {
+                    "description": "Optimization Level",
+                    "type": "string",
+                    "default": "none",
+                    "enum": [
+                        "none",
+                        "fast",
+                        "size"
+                    ],
+                    "enumDescriptions": [
+                        "No Optimization",
+                        "Code Speed",
+                        "Code Size"
+                    ]
+                },
                 "defines": {
                     "readable_name": "Preprocessor Definitions",
                     "markdownDescription": "Preprocessor Definitions",
@@ -291,6 +326,11 @@
                 },
                 "auto-include-stdc-libraries": {
                     "description": "Auto Include Standard ANSI C Libraries",
+                    "type": "boolean",
+                    "default": false
+                },
+                "$use-float-library": {
+                    "description": "Use Floating Point Library",
                     "type": "boolean",
                     "default": false
                 },

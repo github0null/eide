@@ -131,10 +131,17 @@
                     "false": ""
                 }
             },
-            "plain-char-is-unsigned": {
+            "plain-char-is-signed": {
                 "type": "selectable",
                 "command": {
-                    "true": "+unsigned-chars",
+                    "true": "",
+                    "false": "+unsigned-chars"
+                }
+            },
+            "pack-bool-local-variables": {
+                "type": "selectable",
+                "command": {
+                    "true": "+pack-local-bits",
                     "false": ""
                 }
             },
@@ -160,6 +167,13 @@
                     "all": "+Wall",
                     "false": ""
                 }
+            },
+            "check-stack-frame": {
+                "type": "selectable",
+                "command": {
+                    "true": "+check-stack-frame",
+                    "false": ""
+                }
             }
         },
         "asm": {
@@ -173,6 +187,15 @@
             "defines": {
                 "type": "list",
                 "command": "-d"
+            },
+            "optimization": {
+                "type": "selectable",
+                "command": {
+                    "none": "",
+                    "fast": "+Ofast",
+                    "size": "+Osize",
+                    "false": ""
+                }
             }
         },
         "linker": {

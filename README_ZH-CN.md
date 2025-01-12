@@ -76,7 +76,10 @@
 
 你可以自行构建该扩展
 
-1. 安装 `NodeJS 16`
+> 由于这个扩展有一些历史原因，因此要求的 node 版本是 16。
+
+1. 安装 `NodeJS 16`（建议版本：v16.20.2）；推荐使用 nvm 工具管理 NodeJS 版本
+   安装 `vsce`; 执行：`npm install -g cheerio@1.0.0-rc.9 vsce@2.15.0`
 
 2. 克隆该仓库，用 VSCode 打开该项目，并执行如下命令
 
@@ -93,3 +96,7 @@
 ## 赞助 👍
 
 [请作者喝咖啡](https://em-ide.com/sponsor)
+
+感谢:
+
+![Sponsor List](https://em-ide.com/sponsor_list/image.png)

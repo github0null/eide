@@ -146,12 +146,13 @@ export function parseArmccCompilerLog(projApi: ProjectBaseApi, logFile: File): C
 //  .\src\main.c:46: syntax error: token -> '}' ; column 1
 //  .\src\main.c:53: syntax error: token -> 'TIM4_TypeDef' ; column 22
 //  .\libraries\STM8S_StdPeriph_Driver\source\stm8s_itc.c:61: warning 59: function 'ITC_GetCPUCC' must return value
+//  .\src\main.c:12:19: fatal error: reg52.h: No such file or directory
 export function parseSdccCompilerLog(projApi: ProjectBaseApi, logfile: File): CompilerDiagnostics {
 
     const pattern = {
-        "regexp": "^(.+):(\\d+):([^:]+):\\s+(.*)$",
+        "regexp": "^(.{2}[^:]+):(\\d+(?::\\d+)?):\\s([^:]+):\\s+(.*)$",
         "file": 1,
-        "line": 2,
+        "line_col": 2,
         "severity": 3,
         "message": 4
     };
@@ -166,7 +167,7 @@ export function parseSdccCompilerLog(projApi: ProjectBaseApi, logfile: File): Co
         if (m && m.length > 4) {
 
             const fspath = projApi.toAbsolutePath(m[pattern.file]);
-            const line = parseInt(m[pattern.line]);
+            const line_col = m[pattern.line_col].trim();
             const severity = m[pattern.severity].trim();
             const message = m[pattern.message].trim();
 
@@ -177,11 +178,19 @@ export function parseSdccCompilerLog(projApi: ProjectBaseApi, logfile: File): Co
                 errCode = ec_m[1];
             }
 
-            // xxxx ; column 22
+            let line: number;
             let col: number | undefined;
-            const col_m = /column\s+(\d+)$/.exec(message);
-            if (col_m && col_m.length > 1) {
-                col = parseInt(col_m[1]);
+            if (line_col.includes(':')) {
+                const p = line_col.split(':');
+                line = parseInt(p[0]);
+                col  = parseInt(p[1]);
+            } else {
+                line = parseInt(line_col);
+                // xxxx ; column 22
+                const col_m = /column\s+(\d+)$/.exec(message);
+                if (col_m && col_m.length > 1) {
+                    col = parseInt(col_m[1]);
+                }
             }
 
             const diags = result[fspath] || [];
@@ -299,7 +308,7 @@ export function parseKeilc51CompilerLog(projApi: ProjectBaseApi, logfile: File):
 
             const vscDiag = new vscode.Diagnostic(
                 newVscFileRange(line, 0, 10), message, toVscServerity(severity));
-            vscDiag.source = 'Keil_C51';
+            vscDiag.source = 'keil-c51 compiler';
             vscDiag.code = code;
             diags.push(vscDiag);
         }
@@ -411,7 +420,7 @@ export function parseCosmicStm8CompilerLog(projApi: ProjectBaseApi, logfile: Fil
 
             const vscDiag = new vscode.Diagnostic(
                 newVscFileRange(line, column, column_rng), message, toVscServerity(severity));
-            vscDiag.source = toolname;
+            vscDiag.source = `cosmic-stm8: ${toolname}`;
 
             diags.push(vscDiag);
         }

@@ -6,6 +6,32 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.21.0] update
+
+**New**:
+  - `Xpack Toolchain`: Add xpack-dev-tools `package.json` support.
+  - `Right-click Menu`: Add `Compile` button for source file.
+  - `Project Resource`: Add new inline button: `Add File`.
+  - `Builder Configuration`: Add `open` button for `linker script` path config.
+
+**Optimize**:
+  - `CMSIS Config Wizard`: Minor refactoring to improve parser. Support `<n>` `<s.i>` tags. Support error prompt.
+  - `Open Project`: Add progress bar when opening a project.
+  - `Create Project`: Improve create project. Fill default project name when creating a new project.
+  - `Import Project`: Improve Keil project import. Support import RTE source files.
+  - `Built-in Project Templates`: Update stm8s/sdcc project templates.
+  - `COSMIC-STM8`: Improve COSMIC-STM8 project. Support cosmic-stm8 '.lkf' file grammar highlight.
+  - `unify_builder`: Update unify_builder to **v3.9.1**. Improve increment compile. Improve makefile generator.
+  - `Source Compile Options`: Improve GUI. Add a textarea to show current compile commands.
+  - `Build Project`: Support silent mode. Add spinning animation for 'build' and 'flash' status bar.
+  - `Compile Database Generator`: Auto generate `compile_commands.json`.
+
+**Changes**:
+  - `Custom Task`: Rename task type `eide.msys` to `eide.bash`.
+  - `Project Build`: Remove project variables which starts with `EIDE_TOOL_`.
+
+***
+
 ### [v3.20.1] revision
 
 **Optimize**:

@@ -42,6 +42,7 @@ import * as ini from 'ini';
 import { ResInstaller } from "./ResInstaller";
 import { newMessage } from "./Message";
 import { concatSystemEnvPath, exeSuffix, prependToSysEnv, osType } from "./Platform";
+import { StatusBarManager } from "./StatusBarManager";
 
 let _mInstance: HexUploaderManager | undefined;
 
@@ -231,6 +232,22 @@ export abstract class HexUploader<InvokeParamsType> {
         return this.parseProgramFiles(this.getUploadOptions<any>());
     }
 
+    async executeShellCommand(title: string, commandLine: string, env?: any, useTerminal?: boolean, cwd?: string) {
+        const silent = SettingManager.GetInstance().isSilentBuildOrFlash();
+        const etask = await runShellCommand(title, commandLine, {
+            source: 'eide.flasher',
+            env: env,
+            useTerminal: useTerminal,
+            cwd: cwd,
+            silent: silent
+        });
+        const bar = StatusBarManager.getInstance().get('flash');
+        if (etask && bar) {
+            bar.text = `$(loading~spin) Flashing`;
+            bar.tooltip = `Command: ${commandLine}`;
+        }
+    }
+
     protected toAbsolute(_path: string): File | undefined {
         if (_path.trim() == '') return undefined;
         return new File(this.project.ToAbsolutePath(_path));
@@ -375,7 +392,7 @@ class JLinkUploader extends HexUploader<any> {
         const jlinkPath = `${SettingManager.GetInstance().getJlinkDir()}${NodePath.sep}JLink${exeSuffix()}`;
         const option = this.getUploadOptions<JLinkOptions>();
         const commandLine = CmdLineHandler.getCommandLine(jlinkPath, commandLines);
-        runShellCommand(this.toolType, `${commandLine} ${option.otherCmds || ''}`.trimEnd());
+        this.executeShellCommand(this.toolType, `${commandLine} ${option.otherCmds || ''}`.trimEnd());
     }
 }
 
@@ -508,7 +525,7 @@ class StcgalUploader extends HexUploader<string[]> {
         }
 
         // run
-        runShellCommand(this.toolType, `stcgal ${option.extraOptions} ${commands.join(' ')}`);
+        this.executeShellCommand(this.toolType, `stcgal ${option.extraOptions} ${commands.join(' ')}`);
     }
 }
 
@@ -721,7 +738,7 @@ class STLinkUploader extends HexUploader<string[]> {
         if (osType() == 'win32' && exe.noSuffixName.toLowerCase().startsWith('stm32_programmer_cli')) {
             cmd = 'chcp 437 && ' + cmd;
         }
-        runShellCommand(this.toolType, cmd);
+        this.executeShellCommand(this.toolType, cmd);
     }
 }
 
@@ -832,7 +849,7 @@ class STVPHexUploader extends HexUploader<string[]> {
         if (!eraseAll) {
             const commandLine = CmdLineHandler.getCommandLine(
                 SettingManager.GetInstance().getStvpExePath(), commands, false, true);
-            runShellCommand(this.toolType, commandLine);
+            this.executeShellCommand(this.toolType, commandLine);
         }
 
         // erase all mode
@@ -845,7 +862,7 @@ class STVPHexUploader extends HexUploader<string[]> {
             envs['EIDE_STM8_CPU'] = options.deviceName;
             envs['EIDE_DAT_ROOT'] = datDir.path;
             prependToSysEnv(envs, [stvpDir, ResManager.GetInstance().getStvpToolsDir().path]);
-            runShellCommand(this.toolType, cli, envs, undefined, datDir.path);
+            this.executeShellCommand(this.toolType, cli, envs, undefined, datDir.path);
         }
     }
 }
@@ -940,7 +957,7 @@ class PyOCDUploader extends HexUploader<string[]> {
         }
 
         // run
-        runShellCommand(this.toolType, commandLine);
+        this.executeShellCommand(this.toolType, commandLine);
     }
 }
 
@@ -1024,7 +1041,7 @@ class OpenOCDUploader extends HexUploader<string[]> {
     protected _launch(commands: string[]): void {
         const exePath = SettingManager.GetInstance().getOpenOCDExePath();
         const commandLine = `${CmdLineHandler.quoteString(exePath, '"')} ${commands.join(' ')}`;
-        runShellCommand(this.toolType, commandLine);
+        this.executeShellCommand(this.toolType, commandLine);
     }
 }
 /**
@@ -1100,6 +1117,6 @@ class CustomUploader extends HexUploader<string> {
             }
         }
 
-        runShellCommand(this.toolType, commandLine, env);
+        this.executeShellCommand(this.toolType, commandLine, env);
     }
 }

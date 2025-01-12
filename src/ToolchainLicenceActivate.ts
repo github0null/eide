@@ -151,7 +151,7 @@ function requestAndActivate_COSMIC_STM8(toolchain: IToolchian) {
         // on submited
         async (data) => {
 
-            // http://vps362893.ovh.net/registerAuto.php?name={1}&hostid={2}&mail={3}&product=LXSTM8FSE_2023
+            // https://license.cosmic.fr/registerAuto.php?name={1}&hostid={2}&mail={3}&product=LXSTM8FSE_2023
             // 其中：
             //  - {1} 填 用户名
             //  - {2} 填 主机ID
@@ -161,7 +161,7 @@ function requestAndActivate_COSMIC_STM8(toolchain: IToolchian) {
             const hostId = data.items['hostId'].data.value.replace(/"/g, '').trim();
             const email_ = data.items['email'].data.value.trim();
 
-            const url = `http://vps362893.ovh.net/registerAuto.php?name=${usrNam}&hostid=${hostId}&mail=${email_}&product=LXSTM8FSE_2023`;
+            const url = `https://license.cosmic.fr/registerAuto.php?name=${usrNam}&hostid=${hostId}&mail=${email_}&product=LXSTM8FSE_2023`;
 
             openUrl(url);
         },
@@ -171,8 +171,10 @@ function requestAndActivate_COSMIC_STM8(toolchain: IToolchian) {
 
             if (msg == 'btn.show-host-id') {
 
-                runShellCommand('(COSMIC) show host id',
-                    'LmregFSE', undefined, true, toolchainRootDir.path);
+                runShellCommand('(COSMIC) show host id', 'LmregFSE', {
+                    useTerminal: true,
+                    cwd: toolchainRootDir.path
+                });
             }
         });
 

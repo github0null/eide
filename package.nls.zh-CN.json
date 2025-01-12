@@ -5,6 +5,7 @@
     "eide.item.copy": "复制值",
     "eide.item.modify": "修改",
     "eide.item.remove": "移除",
+    "eide.item.open": "打开",
 
     "eide.function.show.uuid": "查看 UUID",
     "eide.function.convert.keil.to.sdcc": "将 Keil_C51 寄存器声明转换为 SDCC 格式",
@@ -68,8 +69,9 @@
     "eide.explorer.show.file.dir": "在文件浏览器中显示",
     "eide.explorer.modify.file.path": "修改源文件路径",
     "eide.explorer.modify.exclude_list": "修改源文件排除列表",
-    "eide.explorer.file.modify.extraArgs": "修改此文件的附加编译参数",
-    "eide.explorer.folder.modify.extraArgs": "修改此文件夹的附加编译参数",
+    "eide.explorer.file.compile": "编译",
+    "eide.explorer.file.modify.extraArgs": "修改此文件的编译器选项",
+    "eide.explorer.folder.modify.extraArgs": "修改此文件夹的编译器选项",
 
     "eide.source.show_cmsis_config_wizard": "CMSIS Configuration Wizard",
     "eide.source.show.disassembly": "查看反汇编",
@@ -109,6 +111,7 @@
     "settings.option.show.statusbar": "在状态栏显示工具栏图标",
     "settings.option.print.relative.path": "编译时打印源文件的相对路径",
     "settings.option.create.batch.file": "生成脚本",
+    "settings.option.silent_build_or_flash": "当执行构建或烧录时不显示任务面板，直到发生错误",
     "settings.option.use.task.to.build": "使用 vscode 任务执行编译命令",
     "settings.option.insert.extcommands.at.begin": "内置的构建任务将被插入到 `beforeBuildTasks / afterBuildTasks` 之前",
     

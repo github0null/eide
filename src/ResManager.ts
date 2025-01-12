@@ -128,10 +128,9 @@ export class ResManager extends events.EventEmitter {
             this.loadJlinkDevList();
             this.loadStm8DevList();
         });
-
-        GlobalEvent.on('extension_close', () => {
-            this.saveCache();
-        });
+    }
+    onDispose() {
+        this.saveCache();
     }
 
     static GetInstance(context?: vscode.ExtensionContext): ResManager {

@@ -38,7 +38,7 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/MIPS/RISC-V",
-    "version": "3.20.1",
+    "version": "3.21.0",
     "preview": false,
     "engines": {
         "vscode": "^1.67.0"
@@ -319,6 +319,12 @@
                         "markdownDescription": "%settings.option.show.toolbar.in.editer.title%",
                         "default": true
                     },
+                    "EIDE.Option.SilentWhenBuildOrFlash": {
+                        "type": "boolean",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.option.silent_build_or_flash%",
+                        "default": false
+                    },
                     "EIDE.Option.UseTaskToBuild": {
                         "type": "boolean",
                         "scope": "resource",
@@ -590,6 +596,11 @@
                 }
             },
             {
+                "command": "eide.cleanCache",
+                "category": "eide",
+                "title": "Clean Cache"
+            },
+            {
                 "command": "eide.ShowUUID",
                 "category": "eide",
                 "title": "%eide.function.show.uuid%"
@@ -731,7 +742,11 @@
             },
             {
                 "command": "_cl.eide.project.source.virtual_folder_add_file",
-                "title": "%eide.explorer.add.file%"
+                "title": "%eide.explorer.add.file%",
+                "icon": {
+                    "dark": "./res/icon/AddFile_16x.svg",
+                    "light": "./res/icon/AddFile_16x.svg"
+                }
             },
             {
                 "command": "_cl.eide.project.source.virtual_folder_add",
@@ -760,6 +775,10 @@
             {
                 "command": "_cl.eide.project.source.file.modify.extraArgs",
                 "title": "%eide.explorer.file.modify.extraArgs%"
+            },
+            {
+                "command": "_cl.eide.project.source.file.compile",
+                "title": "%eide.explorer.file.compile%"
             },
             {
                 "command": "_cl.eide.project.source.folder.modify.extraArgs",
@@ -894,6 +913,14 @@
                 "icon": {
                     "dark": "./res/icon/Pen4_16x.svg",
                     "light": "./res/icon/Pen4_16x.svg"
+                }
+            },
+            {
+                "command": "_cl.eide.project.modifyCompileConfig.openFile",
+                "title": "%eide.item.open%",
+                "icon": {
+                    "dark": "./res/icon/OpenFile_16x.svg",
+                    "light": "./res/icon/OpenFile_16x.svg"
                 }
             },
             {
@@ -1336,8 +1363,13 @@
                     "group": "z_group0@0"
                 },
                 {
+                    "command": "_cl.eide.project.source.virtual_folder_add_file",
+                    "group": "inline@0",
+                    "when": "viewItem == PROJECT && view == cl.eide.view.projects"
+                },
+                {
                     "command": "_cl.eide.project.addSrcDir",
-                    "group": "inline",
+                    "group": "inline@1",
                     "when": "viewItem == PROJECT && view == cl.eide.view.projects"
                 },
                 {
@@ -1441,6 +1473,11 @@
                     "group": "a_exclude@1"
                 },
                 {
+                    "command": "_cl.eide.project.source.file.compile",
+                    "when": "viewItem == FILE_ITEM || viewItem == V_FILE_ITEM && view == cl.eide.view.projects",
+                    "group": "1_file@0"
+                },
+                {
                     "command": "_cl.eide.project.source.file.modify.extraArgs",
                     "when": "viewItem == FILE_ITEM || viewItem == V_FILE_ITEM && view == cl.eide.view.projects",
                     "group": "z_group0@1"
@@ -1506,9 +1543,14 @@
                     "when": "viewItem == UPLOAD_OPTION_Shell && view == cl.eide.view.projects"
                 },
                 {
+                    "command": "_cl.eide.project.modifyCompileConfig.openFile",
+                    "group": "inline@0",
+                    "when": "viewItem == COMPILE_CONFIGURATION_ITEM_FILEPATH && view == cl.eide.view.projects"
+                },
+                {
                     "command": "_cl.eide.project.modifyCompileConfig",
-                    "group": "inline",
-                    "when": "viewItem == COMPILE_CONFIGURATION_ITEM && view == cl.eide.view.projects"
+                    "group": "inline@1",
+                    "when": "viewItem == COMPILE_CONFIGURATION_ITEM_FILEPATH || viewItem == COMPILE_CONFIGURATION_ITEM && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.modifyUploadConfig",
@@ -1635,7 +1677,7 @@
         "snippets": [
             {
                 "language": "a51",
-                "path": "./lang/a51.snippets.json"
+                "path": "./lang/snippets/a51.snippets.json"
             }
         ],
         "languages": [
@@ -1653,7 +1695,7 @@
                     "**/*.a51",
                     "**/*.A51"
                 ],
-                "configuration": "./lang/a51.language-configuration.json"
+                "configuration": "./lang/syntax/a51.language-configuration.json"
             },
             {
                 "id": "edasm",
@@ -1666,7 +1708,7 @@
                 "filenamePatterns": [
                     "**/*.edasm"
                 ],
-                "configuration": "./lang/edasm.language-configuration.json"
+                "configuration": "./lang/syntax/edasm.language-configuration.json"
             },
             {
                 "id": "axf.info",
@@ -1679,7 +1721,7 @@
                 "filenamePatterns": [
                     "**/*.axf.info"
                 ],
-                "configuration": "./lang/axf.info.language-configuration.json"
+                "configuration": "./lang/syntax/axf.info.language-configuration.json"
             },
             {
                 "id": "elf.info",
@@ -1692,7 +1734,20 @@
                 "filenamePatterns": [
                     "**/*.elf.info"
                 ],
-                "configuration": "./lang/elf.info.language-configuration.json"
+                "configuration": "./lang/syntax/elf.info.language-configuration.json"
+            },
+            {
+                "id": "lkf",
+                "aliases": [
+                    "COSMIC LKF"
+                ],
+                "extensions": [
+                    ".lkf"
+                ],
+                "filenamePatterns": [
+                    "**/*.lkf"
+                ],
+                "configuration": "./lang/syntax/lkf.language-configuration.json"
             }
         ],
         "jsonValidation": [
@@ -1753,27 +1808,32 @@
             {
                 "language": "a51",
                 "scopeName": "source.asm.a51",
-                "path": "./lang/a51.tmLanguage.json"
+                "path": "./lang/syntax/a51.tmLanguage.json"
             },
             {
                 "language": "edasm",
                 "scopeName": "source.dasm.gcc",
-                "path": "./lang/edasm.tmLanguage.json"
+                "path": "./lang/syntax/edasm.tmLanguage.json"
             },
             {
                 "language": "axf.info",
                 "scopeName": "source.axf.info",
-                "path": "./lang/axf.info.tmLanguage.json"
+                "path": "./lang/syntax/axf.info.tmLanguage.json"
             },
             {
                 "language": "elf.info",
                 "scopeName": "source.elf.info",
-                "path": "./lang/elf.info.tmLanguage.json"
+                "path": "./lang/syntax/elf.info.tmLanguage.json"
+            },
+            {
+                "language": "lkf",
+                "scopeName": "source.cosmic.lkf",
+                "path": "./lang/syntax/lkf.tmLanguage.json"
             }
         ],
         "taskDefinitions": [
             {
-                "type": "eide.msys",
+                "type": "eide.bash",
                 "required": [
                     "label",
                     "command"

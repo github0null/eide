@@ -100,7 +100,10 @@ Supported Platforms:
 
 You can build this project by your self.
 
-1. Install `NodeJS 16`
+> The required version of NodeJS is **16** because of some historical reasons for this extension.
+
+1. Install `NodeJS 16` (recommanded v16.20.2). You can use `nvm` to manage your NodeJS.
+   Install `vsce` by `npm install -g cheerio@1.0.0-rc.9 vsce@2.15.0`
 
 2. Clone this repo, Open folder by vscode and then run command: 
 
@@ -118,3 +121,7 @@ You can build this project by your self.
 ## Sponsor 👍
 
 [Sponsor The Author](https://em-ide.com/sponsor)
+
+Thanks:
+
+![Sponsor List](https://em-ide.com/sponsor_list/image.png)

@@ -1152,19 +1152,19 @@ class COSMIC_STM8 implements IToolchian {
 
             // for more informations, see CXSTM8_UsersGuide.pdf, page 303
             switch (model_option) {
-                case 'small':
+                case 'small': // Stack Short Model
                     model_suffix = '';
                     codes_suffix = '';
                     break;
-                case 'large':
+                case 'large': // Stack Long Model
                     model_suffix = 'l';
                     codes_suffix = '';
                     break;
-                case 'small-0':
+                case 'small-0': // Stack Short Model（Code < 64KB）
                     model_suffix = '';
                     codes_suffix = '0';
                     break;
-                case 'large-0':
+                case 'large-0': // Stack Long Model（Code < 64KB）
                     model_suffix = 'l';
                     codes_suffix = '0';
                     break;
@@ -1174,32 +1174,35 @@ class COSMIC_STM8 implements IToolchian {
 
             // crt libraries
             //  | Startup     | Initialize     | From Table in
-            //  | crtsi(0).s  | @near          | @near
-            //  | crtsx(0).s  | @near and @far | @near
-            //  | crtsif(0).s | @near          | @far
-            //  | crtsxf(0).s | @near and @far | @far
+            //  | crtsi0.s    | @near          | @near
+            //  | crtsx0.s    | @near and @far | @near
+            //  | crtsif.s    | @near          | @far
+            //  | crtsxf.s    | @near and @far | @far
 
             let crts_name = 'crtsi';
             if (options['linker']['crts-initialize']) {
                 crts_name = options['linker']['crts-initialize'];
             }
-            if (model_option.startsWith('small')) {
-                if (model_option == 'small-0') {
-                    crts_name += '0';
-                }
+            // When using a model for application smaller than 64K, you must use the
+            // specific startup (name ending with ‘0’).
+            if (codes_suffix == '0') {
+                crts_name += '0';
             } else {
-                // crtsif or crtsxf
                 crts_name += 'f';
             }
 
-            let machineLibs: string[] = [
+            const machineLibs: string[] = [
                 // CRT library
                 `${crts_name}.sm8`,
                 // standard ANSI libraries
-                `libfs${model_suffix}${codes_suffix}.sm8`, // Float Library
                 `libis${model_suffix}${codes_suffix}.sm8`, // Integer Only Library
                 `libm${codes_suffix}.sm8`,                 // Machine Library
             ];
+
+            // Float Library
+            if (options['linker']['$use-float-library']) {
+                machineLibs.push(`libfs${model_suffix}${codes_suffix}.sm8`);
+            }
 
             if (options['linker']['LIB_FLAGS'] == undefined) {
                 options['linker']['LIB_FLAGS'] = "";
@@ -1409,7 +1412,7 @@ class COSMIC_STM8 implements IToolchian {
             beforeBuildTasks: [],
             afterBuildTasks: [],
             global: {
-                "model": "small",
+                "model": "large-0",
                 "output-debug-info": "enable",
                 "output-list-file": true
             },

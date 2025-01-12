@@ -69,10 +69,10 @@ export class LogDumper {
         LogAnalyzer.on('Log', (logData) => {
             this.dump(logData);
         });
+    }
 
-        GlobalEvent.on('extension_close', () => {
-            this.close();
-        });
+    onDispose() {
+        this.close();
     }
 
     static getInstance(): LogDumper {

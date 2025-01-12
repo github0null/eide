@@ -74,6 +74,7 @@ export interface ImportOptions {
     outDir?: File;
     projectFile: File;
     createNewFolder?: boolean;
+    mdk_prod?: 'c51' | 'arm';
 }
 
 export interface Dependence {
@@ -314,7 +315,7 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
         try {
             this.watcher.Watch();
         } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+            GlobalEvent.emit('error', <Error>error);
         }
     }
 

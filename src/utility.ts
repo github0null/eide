@@ -46,10 +46,9 @@ import { ToolchainName } from './ToolchainManager';
 import { Time } from '../lib/node-utility/Time';
 
 export function generateDotnetProgramCmd(programFile: File, args?: string[]): string {
-    // 在 x64 平台上，.NET编译生成的 包装程序 <my_program>.exe 无法在 arm64 平台运行
-    // 因此需要直接使用 dotnet 命令去直接执行程序的本体.
+    // 在非 win32 平台上，使用 dotnet 命令去直接执行程序的本体.
     // 命令 "<my_program>.exe" 的等价替换是 "dotnet <my_program_dir>/<my_program>.dll"
-    if (platform.getArchId() == 'arm64') {
+    if (platform.osType() != 'win32') {
         let dllpath = [programFile.dir, `${programFile.noSuffixName}.dll`].join('/');
         let commandLine = `dotnet ${CmdLineHandler.quoteString(File.ToLocalPath(dllpath), '"')}`;
         args?.forEach(p => {
@@ -508,37 +507,72 @@ export function escapeXml(str: string): string {
     });
 }
 
-export function runShellCommand(title: string, commandLine: string, env?: any, useTerminal?: boolean, cwd?: string): Error | undefined {
+export interface ShellCommandOptions {
+    env?: { [key: string]: any };
+    useTerminal?: boolean;
+    cwd?: string;
+    silent?: boolean;
+    source?: string;
+};
+
+export async function runShellCommand(title: string, commandLine: string, opts?: ShellCommandOptions) {
     try {
 
-        // use vsc task
-        if (!useTerminal && WorkspaceManager.getInstance().hasWorkspaces()) {
-            // init shell
-            const shellOption: vscode.ShellExecutionOptions = { env: env || process.env, cwd: cwd };
-            if (platform.osType() == 'win32') { shellOption.executable = 'cmd.exe'; shellOption.shellArgs = ['/C']; }
-            else { shellOption.executable = '/bin/bash'; shellOption.shellArgs = ['-c']; }
-            // init task
-            if (platform.osType() == 'win32') commandLine = `"${commandLine}"`;
-            const task = new vscode.Task({ type: 'shell', command: commandLine }, vscode.TaskScope.Global,
-                title, 'shell', new vscode.ShellExecution(commandLine, shellOption), []);
-            task.isBackground = false;
-            task.presentationOptions = { echo: true, focus: false, clear: true };
-            vscode.tasks.executeTask(task);
-        }
-
         // use terminal
-        else {
-            const index = vscode.window.terminals.findIndex((t) => { return t.name === title; });
-            if (index !== -1) { vscode.window.terminals[index].dispose(); }
-            const tOpts: vscode.TerminalOptions = { name: title, env: env || process.env, cwd: cwd };
-            if (os.platform() == 'win32') tOpts.shellPath = 'cmd.exe';
+        if (opts?.useTerminal || !WorkspaceManager.getInstance().hasWorkspaces()) {
+            // clean old terminal
+            const index = vscode.window.terminals.findIndex((t) => t.name === title);
+            if (index !== -1)
+                vscode.window.terminals[index].dispose();
+            // new terminal
+            const tOpts: vscode.TerminalOptions = {
+                name: title,
+                env: opts?.env || process.env,
+                cwd: opts?.cwd
+            };
+            if (os.platform() == 'win32')
+                tOpts.shellPath = 'cmd.exe';
             const terminal = vscode.window.createTerminal(tOpts);
-            terminal.show(true);
-            terminal.sendText(CmdLineHandler.DeleteCmdPrefix(commandLine));
+            // show terminal before sendtext
+            if (!opts?.silent)
+                terminal.show(true);
+            terminal.sendText(commandLine);
+        }
+        // use vscode task
+        else {
+            // init shell
+            const shellOption: vscode.ShellExecutionOptions = {
+                env: opts?.env || process.env,
+                cwd: opts?.cwd
+            };
+            if (platform.osType() == 'win32') {
+                shellOption.executable = 'cmd.exe';
+                shellOption.shellArgs = ['/C'];
+            } else {
+                shellOption.executable = '/bin/bash';
+                shellOption.shellArgs = ['-c'];
+            }
+            // init task
+            if (platform.osType() == 'win32')
+                commandLine = `"${commandLine}"`;
+            const task = new vscode.Task({ type: 'shell', command: commandLine }, vscode.TaskScope.Global,
+                title, opts?.source || 'eide', new vscode.ShellExecution(commandLine, shellOption), []);
+            task.isBackground = false;
+            task.presentationOptions = {
+                echo: true,
+                focus: false,
+                clear: true
+            };
+            if (opts?.silent) {
+                task.presentationOptions.reveal = vscode.TaskRevealKind.Silent;
+                task.presentationOptions.showReuseMessage = false;
+            }
+            return await vscode.tasks.executeTask(task);
         }
 
     } catch (error) {
-        return error;
+        GlobalEvent.log_error(error);
+        GlobalEvent.log_show();
     }
 }
 

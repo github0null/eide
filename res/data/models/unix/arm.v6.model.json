@@ -181,17 +181,8 @@
                 "-xc"
             ],
             "$language-c": {
-                "type": "keyValue",
-                "command": "-std=",
-                "enum": {
-                    "default": "gnu11",
-                    "c90": "c90",
-                    "gnu90": "gnu90",
-                    "c99": "c99",
-                    "gnu99": "gnu99",
-                    "c11": "c11",
-                    "gnu11": "gnu11"
-                }
+                "type": "value",
+                "command": "-std="
             },
             "use-microLIB": {
                 "type": "selectable",
@@ -321,17 +312,8 @@
                 "-xc++"
             ],
             "$language-cpp": {
-                "type": "keyValue",
-                "command": "-std=",
-                "enum": {
-                    "default": "gnu++98",
-                    "c++98": "c++98",
-                    "gnu++98": "gnu++98",
-                    "c++11": "c++11",
-                    "gnu++11": "gnu++11",
-                    "c++03": "c++03",
-                    "c++14": "c++14"
-                }
+                "type": "value",
+                "command": "-std="
             },
             "use-microLIB": {
                 "type": "selectable",

@@ -1,0 +1,167 @@
+{
+    "information_for_contributors": [
+        "cosmic stm8 linker command file"
+    ],
+    "version": "1.0.0",
+    "name": "lkf",
+    "scopeName": "source.cosmic.lkf",
+    "patterns": [
+        {
+            "include": "#comment"
+        },
+        {
+            "include": "#option_expr"
+        },
+        {
+            "include": "#option_expr_no_args"
+        },
+        {
+            "include": "#number"
+        },
+        {
+            "include": "#assign_expr"
+        },
+        {
+            "include": "#operators"
+        },
+        {
+            "include": "#eide_builtin_func"
+        }
+    ],
+    "repository": {
+        "comment": {
+            "match": "(#.*)",
+            "captures": {
+                "1": {
+                    "name": "comment.line"
+                }
+            }
+        },
+        "section_name": {
+            "match": "\\.\\w+",
+            "captures": {
+                "0": {
+                    "name": "section.input"
+                }
+            }
+        },
+        "option_args": {
+            "match": "-\\w+",
+            "captures": {
+                "0": {
+                    "name": "keyword.operator"
+                }
+            }
+        },
+        "option_seg_args": {
+            "match": "(\\.\\w+)\\s+(.+)",
+            "captures": {
+                "1": {
+                    "patterns": [
+                        {
+                            "include": "#section_name"
+                        }
+                    ]
+                },
+                "2": {
+                    "patterns": [
+                        {
+                            "include": "#option_args"
+                        },
+                        {
+                            "include": "#section_name"
+                        },
+                        {
+                            "include": "#number"
+                        }
+                    ]
+                }
+            }
+        },
+        "option_expr": {
+            "match": "^\\s*(\\+(?:seg|grp|def|spc))\\s+([^#]+)",
+            "captures": {
+                "1": {
+                    "name": "keyword.control.define"
+                },
+                "2": {
+                    "patterns": [
+                        {
+                            "include": "#assign_expr"
+                        },
+                        {
+                            "include": "#option_seg_args"
+                        },
+                        {
+                            "include": "#option_args"
+                        }
+                    ]
+                }
+            }
+        },
+        "option_expr_no_args": {
+            "match": "^\\s*(\\+(?:inc|new|pub|pri))\\b",
+            "captures": {
+                "1": {
+                    "name": "keyword.control.define"
+                }
+            }
+        },
+        "number": {
+            "match": "(?i)\\b([0-9]+|0x[0-9a-f]+)\\b",
+            "captures": {
+                "1": {
+                    "name": "constant.numeric"
+                }
+            }
+        },
+        "assign_expr": {
+            "match": "(\\w+)\\s*(=)\\s*([^\\s]+)",
+            "captures": {
+                "1": {
+                    "name": "variable"
+                },
+                "2": {
+                    "name": "keyword.operator"
+                },
+                "3": {
+                    "patterns": [
+                        {
+                            "include": "#number"
+                        },
+                        {
+                            "include": "#section_name"
+                        },
+                        {
+                            "include": "#eide_var"
+                        }
+                    ]
+                }
+            }
+        },
+        "operators": {
+            "match": "\\+|-|@|=",
+            "captures": {
+                "0": {
+                    "name": "keyword.operator"
+                }
+            }
+        },
+        "eide_builtin_func": {
+            "match": "\\$<(?:objs|libs):.+?>",
+            "captures": {
+                "0": {
+                    "name": "support.function"
+                }
+            }
+        },
+        "eide_var": {
+            "match": "\\$\\{\\w+\\}",
+            "captures": {
+                "0": {
+                    "name": "variable"
+                }
+            }
+        }
+    }
+}

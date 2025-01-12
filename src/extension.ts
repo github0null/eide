@@ -55,6 +55,7 @@ import * as platform from './Platform';
 const extension_deps: string[] = [];
 
 let projectExplorer: ProjectExplorer;
+let operationExplorer: OperationExplorer;
 
 // set yaml global style
 yaml.scalarOptions.str.fold.lineWidth = 1000;
@@ -114,18 +115,20 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('eide.ReloadJlinkDevs', () => reloadJlinkDevices()));
     subscriptions.push(vscode.commands.registerCommand('eide.ReloadStm8Devs', () => reloadStm8Devices()));
     subscriptions.push(vscode.commands.registerCommand('eide.create.clang-format.file', () => newClangFormatFile()));
+    subscriptions.push(vscode.commands.registerCommand('eide.cleanCache', () => cleanCache()));
 
     // internal command
     // TODO
 
     // operations
-    const operationExplorer = new OperationExplorer(context);
+    operationExplorer = new OperationExplorer(context);
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.Open', () => operationExplorer.OnOpenProject()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.Create', () => operationExplorer.OnCreateProject()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.Import', () => operationExplorer.OnImportProject()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.SetToolchainPath', () => operationExplorer.OnSetToolchainPath()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.SetupUtilTools', () => operationExplorer.setupUtilTools()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.openSettings', () => SettingManager.jumpToSettings('@ext:cl.eide')));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.Operation.onlineHelp', () => utility.openUrl('https://discuss.em-ide.com')));
 
     // operations user cmds
     subscriptions.push(vscode.commands.registerCommand('eide.operation.install_toolchain', () => operationExplorer.OnSetToolchainPath()));
@@ -199,6 +202,7 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.virtual_file_remove', (item, items) => projectExplorer.Virtual_removeFile(item, items)));
 
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.file.modify.extraArgs', (item) => projectExplorer.modifyExtraCompilerArgs('file', item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.file.compile', (item) => projectExplorer.compileSingleFile(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.folder.modify.extraArgs', (item) => projectExplorer.modifyExtraCompilerArgs('folder', item)));
 
     // file other operations
@@ -222,6 +226,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // builder
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.modifyCompileConfig', (item) => projectExplorer.ModifyCompileConfig(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.modifyCompileConfig.openFile', (item) => projectExplorer.ModifyCompileConfig_openFile(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.switchToolchain', (item) => projectExplorer.onSwitchCompileTools(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.configToolchain', (item) => projectExplorer.onConfigureToolchain(item)));
 
@@ -275,7 +280,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // others
     vscode.workspace.registerTextDocumentContentProvider(VirtualDocument.scheme, VirtualDocument.instance());
-    vscode.workspace.registerTaskProvider(EideTaskProvider.TASK_TYPE_MSYS, new EideTaskProvider());
+    vscode.workspace.registerTaskProvider(EideTaskProvider.TASK_TYPE_BASH, new EideTaskProvider());
 
     // auto save project
     projectExplorer.enableAutoSave(true);
@@ -293,7 +298,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
 // this method is called when your extension is deactivated
 export function deactivate() {
-    GlobalEvent.emit('extension_close');
+    projectExplorer.onDispose();
+    operationExplorer.onDispose();
+    ResManager.instance().onDispose();
+    LogDumper.getInstance().onDispose();
     StatusBarManager.getInstance().disposeAll();
 }
 
@@ -382,6 +390,15 @@ async function newClangFormatFile() {
         vscode.window.showInformationMessage(`.clang-format file was created in '${fSrc.dir}' !`);
     } else {
         vscode.window.showWarningMessage(`No opened workspace or folders !`);
+    }
+}
+
+function cleanCache() {
+    try {
+        platform.DeleteAllChildren(ResManager.instance().GetTmpDir());
+        GlobalEvent.emit('msg', newMessage('Info', 'Done.'));
+    } catch (error) {
+        GlobalEvent.log_error(error);
     }
 }
 
@@ -1112,7 +1129,7 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
 
         bar_flash.text    = `$(arrow-down) Flash`;
         bar_flash.command = `_cl.eide.statusbar.flash`;
-        bar_flash.tooltip = `Program flash eide project`;
+        bar_flash.tooltip = `Upload binary file to device`;
     }
 
     // register msys bash profile for windows
@@ -1221,7 +1238,7 @@ interface EideShellTaskDef extends vscode.TaskDefinition {
 
 class EideTaskProvider implements vscode.TaskProvider {
 
-    public static TASK_TYPE_MSYS = 'eide.msys';
+    public static TASK_TYPE_BASH = 'eide.bash';
 
     provideTasks(token: vscode.CancellationToken): vscode.ProviderResult<vscode.Task[]> {
         return undefined;
@@ -1231,20 +1248,34 @@ class EideTaskProvider implements vscode.TaskProvider {
 
         const workspaceManager = WorkspaceManager.getInstance();
 
-        if (task_.definition.type == EideTaskProvider.TASK_TYPE_MSYS && 
-            SettingManager.GetInstance().isEnableMsys()) {
+        if (task_.definition.type == EideTaskProvider.TASK_TYPE_BASH) {
+
+            let bash_executable = '/bin/bash';
+
+            if (platform.osType() == 'win32') {
+                if (SettingManager.GetInstance().isEnableMsys()) {
+                    bash_executable = `${process.env['EIDE_MSYS']}/bash.exe`;
+                } else {
+                    bash_executable = `bash.exe`;
+                }
+            }
 
             const definition: EideShellTaskDef = <any>task_.definition;
 
             const task = new vscode.Task(definition, vscode.TaskScope.Workspace,
-                definition.name || definition.label, EideTaskProvider.TASK_TYPE_MSYS, definition.problemMatchers);
+                definition.name || definition.label, EideTaskProvider.TASK_TYPE_BASH, definition.problemMatchers);
 
-            const shellcommand = definition.command;
-            task.execution = new vscode.ShellExecution(shellcommand, {
-                executable: platform.osType() == 'win32' ? `${process.env['EIDE_MSYS']}/bash.exe` : '/bin/bash',
+            let envs = definition.env;
+            const prj = projectExplorer.getActiveProject();
+            if (prj) {
+                envs = utility.mergeEnv(prj.getProjectVariables(), envs || {});
+            }
+
+            task.execution = new vscode.ShellExecution(definition.command, {
+                executable: bash_executable,
                 shellArgs: ['-c'],
                 cwd: definition?.options?.cwd || workspaceManager.getCurrentFolder()?.path,
-                env: utility.mergeEnv(process.env, definition.env || {})
+                env: utility.mergeEnv(process.env, envs || {})
             });
 
             task.group = definition.group;

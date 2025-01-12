@@ -36,6 +36,7 @@ import { find, exeSuffix, userhome, osType } from './Platform';
 import { WorkspaceManager } from './WorkspaceManager';
 import { ToolchainName } from './ToolchainManager';
 import { view_str$prompt$needReloadToUpdateEnv, WARNING } from './StringTable';
+import { xpackRequireDevTools } from './XpackDevTools';
 
 export enum CheckStatus {
     All_Verified,
@@ -277,6 +278,10 @@ export class SettingManager {
 
     //--------------------- Global Option ------------------------
 
+    isSilentBuildOrFlash(): boolean {
+        return this.getConfiguration().get<boolean>('Option.SilentWhenBuildOrFlash') || false;
+    }
+
     syncGlobalEnvVariablesToNodeEnv() {
         const envs = this.getGlobalEnvVariables();
         for (const key in envs) {
@@ -437,6 +442,18 @@ export class SettingManager {
     }
 
     getOpenOCDExePath(): string {
+        try {
+            if (vscode.workspace.workspaceFile) {
+                const dir = File.from(NodePath.dirname(vscode.workspace.workspaceFile.fsPath));
+                const r = xpackRequireDevTools(dir, 'openocd');
+                if (r) {
+                    return File.from(r.path, 'bin', `openocd${exeSuffix()}`).path;
+                }
+            }
+        } catch (error) {
+            GlobalEvent.log_warn(<Error>error);
+            return `<xpack-dev-tools openocd not-exist>`;
+        }
         return this.getFullPathByPluginConfig('OpenOCD.ExePath')
             || this.findExePathInSystemEnv('openocd')
             || 'null';
@@ -529,6 +546,18 @@ export class SettingManager {
     }
 
     getGCCDir(): File {
+        try {
+            if (vscode.workspace.workspaceFile) {
+                const dir = File.from(NodePath.dirname(vscode.workspace.workspaceFile.fsPath));
+                const r = xpackRequireDevTools(dir, `${this.getGCCPrefix()}gcc`);
+                if (r) {
+                    return r;
+                }
+            }
+        } catch (error) {
+            GlobalEvent.log_warn(<Error>error);
+            return File.from(`<xpack-dev-tools ${this.getGCCPrefix()}gcc not-exist>`);
+        }
         return new File(
             this.getFullPathByPluginConfig('ARM.GCC.InstallDirectory') ||
             this.findGccCompilerRootInSystemEnv(`${this.getGCCPrefix()}gcc`) ||
@@ -665,6 +694,18 @@ export class SettingManager {
     //------------------------------- RISC-V ----------------------------------
 
     getRiscvToolFolder(): File {
+        try {
+            if (vscode.workspace.workspaceFile) {
+                const dir = File.from(NodePath.dirname(vscode.workspace.workspaceFile.fsPath));
+                const r = xpackRequireDevTools(dir, `${this.getRiscvToolPrefix()}gcc`);
+                if (r) {
+                    return r;
+                }
+            }
+        } catch (error) {
+            GlobalEvent.log_warn(<Error>error);
+            return File.from(`<xpack-dev-tools ${this.getRiscvToolPrefix()}gcc not-exist>`);
+        }
         return new File(
             this.getFullPathByPluginConfig('RISCV.InstallDirectory') ||
             this.findGccCompilerRootInSystemEnv(`${this.getRiscvToolPrefix()}gcc`) ||
@@ -679,6 +720,18 @@ export class SettingManager {
     //------------------------------- MTI GCC ----------------------------------
 
     getMipsToolFolder(): File {
+        try {
+            if (vscode.workspace.workspaceFile) {
+                const dir = File.from(NodePath.dirname(vscode.workspace.workspaceFile.fsPath));
+                const r = xpackRequireDevTools(dir, `${this.getMipsToolPrefix()}gcc`);
+                if (r) {
+                    return r;
+                }
+            }
+        } catch (error) {
+            GlobalEvent.log_warn(<Error>error);
+            return File.from(`<xpack-dev-tools ${this.getMipsToolPrefix()}gcc not-exist>`);
+        }
         return new File(
             this.getFullPathByPluginConfig('MIPS.InstallDirectory') ||
             this.findGccCompilerRootInSystemEnv(`${this.getMipsToolPrefix()}gcc`) ||
@@ -693,6 +746,18 @@ export class SettingManager {
     //------------------------------- Any GCC ----------------------------------
 
     getAnyGccToolFolder(): File {
+        try {
+            if (vscode.workspace.workspaceFile) {
+                const dir = File.from(NodePath.dirname(vscode.workspace.workspaceFile.fsPath));
+                const r = xpackRequireDevTools(dir, `${this.getAnyGccToolPrefix()}gcc`);
+                if (r) {
+                    return r;
+                }
+            }
+        } catch (error) {
+            GlobalEvent.log_warn(<Error>error);
+            return File.from(`<xpack-dev-tools ${this.getAnyGccToolPrefix()}gcc not-exist>`);
+        }
         return new File(
             this.getFullPathByPluginConfig('Toolchain.AnyGcc.InstallDirectory') ||
             this.findGccCompilerRootInSystemEnv(`${this.getAnyGccToolPrefix()}gcc`) ||

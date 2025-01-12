@@ -107,7 +107,7 @@ import {
     pyocd_getTargetList,
     generateDotnetProgramCmd
 } from './utility';
-import { concatSystemEnvPath, DeleteDir, exeSuffix, kill, osType, DeleteAllChildren } from './Platform';
+import { concatSystemEnvPath, DeleteDir, exeSuffix, kill, osType, DeleteAllChildren, userhome } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
 import { VirtualDocument } from './VirtualDocsProvider';
 import { ResInstaller } from './ResInstaller';
@@ -667,14 +667,13 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         this.context.subscriptions.push(this.dataChangedEvent);
         this.onDidChangeTreeData = this.dataChangedEvent.event;
         this.recFile = File.fromArray([ResManager.GetInstance().getEideHomeFolder().path, ProjectDataProvider.recName]);
-
-        GlobalEvent.on('extension_close', () => {
-            this.SaveAll();
-            this.CloseAll();
-            this.saveRecord();
-        });
-
         this.loadRecord();
+    }
+
+    onDispose() {
+        this.SaveAll();
+        this.CloseAll();
+        this.saveRecord();
     }
 
     public on(event: 'rootItems_inited', listener: () => void): void;
@@ -795,7 +794,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         }
     }
 
-    /////////////////////////////////////////////////////////////////////
+    // ------------------------------------------
 
     onProjectChanged(prj: AbstractProject, type?: DataChangeType) {
 
@@ -823,8 +822,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
         prj.Save(false, 1000); // save project file with a delay
     }
-
-    //----------------
 
     private toLowercaseEIDEFolder(wsFolder: File) {
 
@@ -946,7 +943,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         this.updateStatusBarForActiveProjects();
     }
 
-    private updateStatusBarForActiveProjects() {
+    updateStatusBarForActiveProjects() {
 
         const statusbars = StatusBarManager.getInstance();
 
@@ -966,6 +963,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             }
 
             else if (name == 'build') {
+                bar.text = `$(tools) Build`;
                 if (activeProj) {
                     let txt = `Build eide project:`;
                     let repath = activeProj.ToRelativePath(activeProj.getExecutablePath());
@@ -977,20 +975,22 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             }
 
             else if (name == 'flash') {
+                bar.text = '$(arrow-down) Flash';
                 if (activeProj) {
                     try {
                         const flasher = HexUploaderManager.getInstance().createUploader(activeProj);
-                        let txt = `Program flash eide project:`;
+                        let txt = `Upload binary file to device:`;
                         flasher.getAllProgramFiles().forEach(f => {
                             let repath = activeProj.ToRelativePath(f.path) || f.path;
                             txt += `${os.EOL}  - \`${repath}\``
                         });
                         bar.tooltip = new vscode.MarkdownString(txt);
                     } catch (error) {
-                        GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+                        bar.tooltip = `Upload binary file to device`;
+                        GlobalEvent.log_error(error);
                     }
                 } else {
-                    bar.tooltip = `Program flash eide project`;
+                    bar.tooltip = `Upload binary file to device`;
                 }
             }
         });
@@ -1296,6 +1296,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
                         for (const key in keyMap) {
                             if (cConfig.isKeyEnable(key) && !excludeKeys.includes(key)) {
+                                let uiContext: string | undefined;
+                                // 为 "链接器脚本文件" 增加一个可以打开文件的小按钮
+                                if (/\b(linkerScript|scatterFile)/.test(key)) {
+                                    uiContext = 'COMPILE_CONFIGURATION_ITEM_FILEPATH';
+                                }
                                 iList.push(new ProjTreeItem(TreeItemType.COMPILE_CONFIGURATION_ITEM, {
                                     key: key,
                                     keyAlias: cConfig.GetKeyDescription(key),
@@ -1304,7 +1309,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                         `${cConfig.GetKeyDescription(key)}`,
                                         `- **Value:** \`${cConfig.getKeyValue(key)}\``]),
                                     icon: cConfig.getKeyIcon(key),
-                                    projectIndex: element.val.projectIndex
+                                    projectIndex: element.val.projectIndex,
+                                    contextVal: uiContext
                                 }));
                             }
                         }
@@ -2032,6 +2038,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     size = size || '--';
                     type = type || '--';
                     loca = loca || sym_cur_file_location || '--';
+                    loca = prj.toRelativePath(loca) || loca;
 
                     if (dispType == 'hide_no_sized' && size == '--') {
                         continue; // ignore no-size symbols
@@ -2266,7 +2273,13 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             return undefined;
         }
 
-        const prj = await this._OpenProject(workspaceFilePath);
+        const prj = await vscode.window.withProgress({
+            title: 'Open Project',
+            location: vscode.ProgressLocation.Notification,
+        }, (progress) => {
+            progress.report({ message: `${workspaceFilePath}` });
+            return this._OpenProject(workspaceFilePath);
+        });
         if (prj) {
             this.SwitchProject(prj, switchWorkspaceImmediately);
             return prj;
@@ -2948,7 +2961,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
     private async ImportKeilProject(option: ImportOptions) {
 
         const keilPrjFile = option.projectFile;
-        const keilParser = KeilParser.NewInstance(option.projectFile);
+        const keilParser = KeilParser.NewInstance(option.projectFile, <any>option.mdk_prod);
         const targets = keilParser.ParseData();
 
         if (targets.length == 0) {
@@ -3023,53 +3036,55 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             const incs: string[] = this.importCmsisHeaders(baseInfo.rootFolder).map((f) => f.path);
 
             /* try resolve all deps */
-            const mdkRoot = SettingManager.GetInstance().GetMdkArmDir();
-            if (mdkRoot) { // MDK ARM dir, like: 'D:\keil\ARM'
-                const fileTypes: string[] = ['source', 'header'];
-                rte_deps.forEach((dep) => {
-                    /* check dep whether is valid */
-                    if (fileTypes.includes(dep.category || '') && dep.class && dep.packPath) {
-                        const srcFileLi: File[] = [];
-                        const vFolder = getVirtualFolder(`${VirtualSource.rootName}/::${dep.class}`, true);
+            const fileTypes: string[] = ['source', 'header'];
+            rte_deps.forEach((dep) => {
 
-                        /* add all candidate files */
-                        if (dep.instance) { srcFileLi.push(new File(dep.instance[0])) }
-                        srcFileLi.push(File.fromArray([mdkRoot.path, 'PACK', dep.packPath, dep.path]));
+                // check category
+                if (!(dep.category && fileTypes.includes(dep.category))) {
+                    GlobalEvent.log_warn(`[Keil RTE Import] dependence '${dep.name}' is not a source file !`);
+                    unresolved_deps.push(dep); /* resolve failed !, store dep */
+                    return;
+                }
 
-                        /* resolve dependences */
-                        for (const srcFile of srcFileLi) {
+                // check source file
+                if (!dep.instance) {
+                    GlobalEvent.log_warn(`[Keil RTE Import] dependence '${dep.name}' have no instances !`);
+                    unresolved_deps.push(dep); /* resolve failed !, store dep */
+                    return;
+                }
 
-                            /* check condition */
-                            if (!srcFile.IsFile()) { continue; }
-                            if (dep.category == 'source' && !vFolder) { continue; }
+                const srcList = dep.instance.map(p => File.ToUnixPath(p));
+                const vFolder = getVirtualFolder(`${VirtualSource.rootName}/::${dep.class}`, false);
 
-                            let srcRePath: string | undefined = baseInfo.rootFolder.ToRelativePath(srcFile.path);
+                if (!vFolder) {
+                    GlobalEvent.log_warn(`[Keil RTE Import] No such folder '::${dep.class}'`);
+                    unresolved_deps.push(dep); /* resolve failed !, store dep */
+                    return;
+                }
 
-                            /* if it's not in workspace, copy it */
-                            if (srcRePath == undefined) {
-                                srcRePath = ['.cmsis', dep.packPath, dep.path].join(File.sep);
-                                const realFolder = File.fromArray([baseInfo.rootFolder.path, NodePath.dirname(srcRePath)]);
-                                realFolder.CreateDir(true);
-                                realFolder.CopyFile(srcFile);
-                            }
+                /* resolve dependences */
+                for (const srcPath of srcList) {
 
-                            /* if it's a source, add to project */
-                            if (dep.category == 'source' && vFolder) {
-                                vFolder.files.push({ path: srcRePath });
-                            }
-
-                            /* if it's a header, add to include path */
-                            else if (dep.category == 'header') {
-                                incs.push(`${baseInfo.rootFolder.path}${File.sep}${NodePath.dirname(srcRePath)}`);
-                            }
-
-                            return; /* resolved !, exit */
-                        }
+                    /* check condition */
+                    if (!File.IsFile(srcPath)) {
+                        GlobalEvent.log_warn(`[Keil RTE Import] No such file '${srcPath}'`);
+                        continue;
                     }
-                    /* resolve failed !, store dep */
-                    unresolved_deps.push(dep);
-                });
-            }
+
+                    const srcRePath = baseInfo.rootFolder.ToRelativePath(srcPath);
+
+                    /* add to project */
+                    vFolder.files.push({ path: srcRePath || srcPath });
+
+                    /* if it's a header, add to include path */
+                    if (dep.category == 'header') {
+                        if (srcRePath)
+                            incs.push(`${baseInfo.rootFolder.path}${File.sep}${NodePath.dirname(srcRePath)}`);
+                        else
+                            incs.push(NodePath.dirname(srcPath));
+                    }
+                }
+            });
 
             /* add include paths for targets */
             const mdk_rte_folder = File.fromArray([`${keilPrjFile.dir}`, 'RTE']);
@@ -3099,7 +3114,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     }
 
                     const nLine: string[] = [
-                        `FileName: '${dep.path}'`,
+                        `FileName: '${dep.name}'`,
                         `\tClass:     '${dep.class}'`,
                         `\tCategory:  '${dep.category}'`,
                         `\tLocation:  '${locate}'`,
@@ -3143,7 +3158,10 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 if (t.command.startsWith('bash')) {
                     t.command = t.command.replace('$<cd:mdk-proj-dir>', `cd ${File.ToUnixPath(reKeilPrjDir)}`);
                 } else {
-                    t.command = t.command.replace('$<cd:mdk-proj-dir>', `cd .\\${reKeilPrjDir}`);
+                    if (File.isAbsolute(reKeilPrjDir))
+                        t.command = t.command.replace('$<cd:mdk-proj-dir>', `cd /D ${reKeilPrjDir}`);
+                    else
+                        t.command = t.command.replace('$<cd:mdk-proj-dir>', `cd .\\${reKeilPrjDir}`);
                 }
             }
         }
@@ -3389,6 +3407,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
     clearAllRecords() {
         this.slnRecord = [];
+        this.saveRecord();
     }
 
     removeRecord(record: string) {
@@ -3601,6 +3620,14 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         context.subscriptions.push(
             vscode.languages.registerCompletionItemProvider({ scheme: 'file', pattern: '**/*.eide.*.{yml,yaml}' }, this.newPathStringCompletionItemProvider(), '/', '\\'));
 
+        // register task end event callback
+        context.subscriptions.push(
+            vscode.tasks.onDidEndTask((t) => {
+                if (['eide.flasher', 'eide.builder'].includes(t.execution.task.source)) {
+                    this.dataProvider.updateStatusBarForActiveProjects();
+                }
+            }));
+
         // register project hook
         GlobalEvent.on('project.opened', (prj) => this.onProjectOpened(prj));
         GlobalEvent.on('project.closed', (uid) => this.onProjectClosed(uid));
@@ -3610,6 +3637,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         this.on('request_create_project', (option: CreateOptions) => this.dataProvider.CreateProject(option));
         this.on('request_create_from_template', (option) => this.dataProvider.CreateFromTemplate(option));
         this.on('request_import_project', (option) => this.dataProvider.ImportProject(option));
+    }
+
+    onDispose() {
+        this.dataProvider.onDispose();
     }
 
     loadWorkspace() {
@@ -4312,13 +4343,16 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             prj.Save(true);
 
             const codeBuilder = CodeBuilder.NewBuilder(prj);
-
             const toolchain = prj.getToolchain().name;
 
             // build launched event
             codeBuilder.on('launched', () => {
                 if (this.compiler_diags.has(prj.getUid())) {
                     this.compiler_diags.get(prj.getUid())?.clear();
+                }
+                const buildbar = StatusBarManager.getInstance().get('build');
+                if (buildbar) {
+                    buildbar.text = `$(loading~spin) Building`;
                 }
             });
 
@@ -4328,6 +4362,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 this.notifyUpdateOutputFolder(prj);
                 this.updateCompilerDiagsAfterBuild(prj);
                 if (options?.flashAfterBuild && done) this.UploadToDevice(prjItem);
+                this.dataProvider.updateStatusBarForActiveProjects();
             });
 
             // start build
@@ -4494,7 +4529,11 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (os.platform() == 'win32') {
             runShellCommand('clean', `cmd /E:ON /C del /S /Q "${outDir}"`);
         } else {
-            runShellCommand('clean', `rm -rf -v "${outDir}"`);
+            if (outDir == '/' || outDir == userhome()) {
+                GlobalEvent.emit('msg', newMessage('Error', `Cannot delete ${outDir} !`));
+            } else {
+                runShellCommand('clean', `rm -rf -v "${outDir}"`);
+            }
         }
 
         setTimeout(() => {
@@ -4527,6 +4566,30 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
 
         this._uploadLock = false;
+    }
+
+    compileSingleFile(item: ProjTreeItem) {
+
+        const project = this.getProjectByTreeItem(item);
+        if (!project)
+            return;
+        if (!(item.val.value instanceof File))
+            return;
+
+        try {
+            const srcPath = item.val.value.path;
+            const dbinfo = project.getSourceCompileDatabase(srcPath);
+            if (dbinfo) {
+                runShellCommand(`compile: ${NodePath.basename(srcPath)}`, dbinfo.command, {
+                    useTerminal: true,
+                    cwd: dbinfo.directory
+                });
+            } else {
+                throw Error(`No compile commands for this file: ${srcPath}`);
+            }
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+        }
     }
 
     ExportKeilXml(prjIndex: number) {
@@ -5097,8 +5160,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             openLabel: view_str$project$add_source,
             defaultUri: vscode.Uri.file(project.GetRootDir().path),
             filters: {
-                'c/c++': ['c', 'cpp', 'cxx', 'cc', 'c++'],
-                'header': ['h', 'hxx', 'hpp', 'inc'],
+                'c/c++': ['c', 'cpp', 'cxx', 'cc', 'c++', 'h', 'hxx', 'hpp', 'inc'],
+                'c/c++ source': ['c', 'cpp', 'cxx', 'cc', 'c++'],
+                'c/c++ header': ['h', 'hxx', 'hpp', 'inc'],
                 'asm': ['s', 'asm', 'a51'],
                 'lib': ['lib', 'a', 'o', 'obj'],
                 'any (*.*)': ['*']
@@ -5253,7 +5317,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         inheritedArgs = inheritedArgs.trim();
 
         const ui_cfg: SimpleUIConfig = {
-            title: 'Extra Compiler Options',
+            title: `Modify Compiler Options (file: ${NodePath.basename(fspath)})`,
             items: {},
         };
 
@@ -5272,13 +5336,34 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         ui_cfg.items['args'] = {
             type: 'input',
             attrs: {},
-            name: 'Compiler Options',
+            name: 'Append Compiler Options',
             data: <SimpleUIConfigData_input>{
-                placeHolder: `compiler options, like: '-O1', '-Os', '-flto' ...`,
+                placeHolder: [
+                    `For Append   Options. e.g. " -Os -flto " ...`,
+                    `For Replace  Options. e.g. " $<replace:-O1/-O2> " ...`,
+                    `For Override Options. e.g. " $<override:-I./include -g -O2 -flto> " ...`,
+                ].join(os.EOL),
                 value: ccOptions,
                 default: ccOptions,
             },
         };
+
+        try {
+            const db = project.getSourceCompileDatabase(fspath);
+            if (db) {
+                ui_cfg.items['current_commands'] = {
+                    type: 'input',
+                    attrs: { readonly: true },
+                    name: `Current Compiler Commands`,
+                    data: <SimpleUIConfigData_input>{
+                        value: db.command,
+                        default: db.command
+                    }
+                };
+            }
+        } catch (error) {
+            // nothing todo
+        }
 
         WebPanelManager.instance().showSimpleConfigUI(ui_cfg, async (new_cfg) => {
 
@@ -5312,6 +5397,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
 
             project.setSourceExtraArgsCfg(extraArgs);
+            project.onSourceCompilerOptionsChanged();
 
             // update explorer
             if (virtpath) {
@@ -5359,7 +5445,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         inheritedOptions = inheritedOptions.trim();
 
         const ui_cfg: SimpleUIConfig = {
-            title: 'Extra Compiler Options',
+            title: `Modify Compiler Options (dir: ${NodePath.basename(folderpath)})`,
             items: {},
         };
 
@@ -5378,9 +5464,13 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         ui_cfg.items['args'] = {
             type: 'input',
             attrs: {},
-            name: 'Compiler Options',
+            name: 'Append Compiler Options',
             data: <SimpleUIConfigData_input>{
-                placeHolder: `compiler options, like: '-O1', '-Os', '-flto' ...`,
+                placeHolder: [
+                    `For Append   Options. e.g. " -Os -flto " ...`,
+                    `For Replace  Options. e.g. " $<replace:-O1/-O2> " ...`,
+                    `For Override Options. e.g. " $<override:-I./include -g -O2 -flto> " ...`,
+                ].join(os.EOL),
                 value: ccOptions,
                 default: ccOptions,
             },
@@ -5434,6 +5524,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
 
             project.setSourceExtraArgsCfg(extraArgs);
+            project.onSourceCompilerOptionsChanged();
 
             // update explorer
             if (isVirtpath) {
@@ -5564,18 +5655,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
 
             // get obj file
-            let objPath: string | undefined;
-            const refFile = File.fromArray([activePrj.ToAbsolutePath(activePrj.getOutputDir()), 'ref.json']);
-            if (!refFile.IsFile()) { throw new Error(`Not found 'ref.json' at output folder, you need build project !`) }
-            let ref = JSON.parse(refFile.Read());
-
-            if (osType() == 'win32') { // to lower-case path for win32
-                ref = copyAndMakeObjectKeysToLowerCase(ref);
-                srcPath = srcPath.toLowerCase();
-            }
-
-            // get obj path by source file path
-            objPath = <string>ref[srcPath];
+            const objPath = activePrj.getSourceObjectPath(srcPath);
 
             if (typeof objPath != 'string') {
                 throw new Error(`Not found any reference for this source file !, [path]: '${srcPath}'`);
@@ -6113,6 +6193,41 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         prj.GetConfiguration().compileConfigModel.ShowModifyWindow(<string>item.val.key, prj.GetRootDir());
     }
 
+    async ModifyCompileConfig_openFile(item: ProjTreeItem) {
+
+        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        const key = <string>item.val.key;
+
+        if (/\b(linkerScript|scatterFile)/.test(key)) {
+            const scatterFilePath = <string>item.val.value;
+            const ldFileList: string[] = [];
+            scatterFilePath.split(',')
+                .filter(s => s.trim() != '')
+                .forEach((sctPath) => {
+                    ldFileList.push(sctPath);
+                });
+            try {
+                if (ldFileList.length == 1) {
+                    const fpath = prj.ToAbsolutePath(ldFileList[0]);
+                    vscode.window.showTextDocument(
+                        vscode.Uri.parse(File.ToUri(fpath)), { preview: true });
+                } else if (ldFileList.length > 1) {
+                    const sel = await vscode.window.showQuickPick(ldFileList, {
+                        canPickMany: false,
+                        placeHolder: `Select One To Open`
+                    });
+                    if (sel) {
+                        const fpath = prj.ToAbsolutePath(sel);
+                        vscode.window.showTextDocument(
+                            vscode.Uri.parse(File.ToUri(fpath)), { preview: true });
+                    }
+                }
+            } catch (error) {
+                GlobalEvent.emit('error', error);
+            }
+        }
+    }
+
     ModifyUploadConfig(item: ProjTreeItem) {
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
         const key = <string>item.val.key;
@@ -6158,14 +6273,19 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     const newName = await vscode.window.showInputBox({
                         value: prjConfig.name,
                         ignoreFocusOut: true,
-                        placeHolder: 'Input project name',
+                        placeHolder: 'Input new project name',
                         validateInput: (name) => AbstractProject.validateProjectName(name)
                     });
 
                     if (newName && newName !== prjConfig.name) {
                         prjConfig.name = newName; // update project name
                         this.dataProvider.UpdateView(); // udpate all view
-                        prj.Save();
+                        prj.Save(true);
+                        // rename workspace file
+                        const wsFile = prj.getWorkspaceFile();
+                        const newWsFile = File.from(wsFile.dir, `${newName}${wsFile.suffix}`);
+                        fs.renameSync(wsFile.path, newWsFile.path);
+                        WorkspaceManager.getInstance().openWorkspace(newWsFile);
                     }
                 }
                 break;
@@ -6807,6 +6927,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (item.val.value instanceof File)
             throw new Error('editDependenceItem: Invalid context item');
 
+        const itype = (<ModifiableDepInfo>item.val.obj).type;
+
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
         let newVal = await vscode.window.showInputBox({
             value: item.val.value,
@@ -6814,12 +6936,16 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             validateInput: (input: string): string | undefined => {
                 if (input.trim() === '')
                     return 'Cannot be empty or whitespace !'
+                if (itype == 'DEFINE_ITEM') {
+                    if (!/^\w+(=[^\s].*)?$/i.test(input))
+                        return "Cannot have whitespace on either side of '=' !";
+                }
             }
         });
 
         if (newVal) {
             newVal = newVal.trim();
-            switch ((<ModifiableDepInfo>item.val.obj).type) {
+            switch (itype) {
                 case 'INC_ITEM':
                     prj.GetConfiguration().CustomDep_ModifyIncDir(prj.ToAbsolutePath(<string>item.val.value), prj.ToAbsolutePath(newVal));
                     break;
