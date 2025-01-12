@@ -1296,6 +1296,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
                         for (const key in keyMap) {
                             if (cConfig.isKeyEnable(key) && !excludeKeys.includes(key)) {
+                                let uiContext: string | undefined;
+                                // 为 "链接器脚本文件" 增加一个可以打开文件的小按钮
+                                if (/\b(linkerScript|scatterFile)/.test(key)) {
+                                    uiContext = 'COMPILE_CONFIGURATION_ITEM_FILEPATH';
+                                }
                                 iList.push(new ProjTreeItem(TreeItemType.COMPILE_CONFIGURATION_ITEM, {
                                     key: key,
                                     keyAlias: cConfig.GetKeyDescription(key),
@@ -1304,7 +1309,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                         `${cConfig.GetKeyDescription(key)}`,
                                         `- **Value:** \`${cConfig.getKeyValue(key)}\``]),
                                     icon: cConfig.getKeyIcon(key),
-                                    projectIndex: element.val.projectIndex
+                                    projectIndex: element.val.projectIndex,
+                                    contextVal: uiContext
                                 }));
                             }
                         }
@@ -6178,6 +6184,41 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     ModifyCompileConfig(item: ProjTreeItem) {
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
         prj.GetConfiguration().compileConfigModel.ShowModifyWindow(<string>item.val.key, prj.GetRootDir());
+    }
+
+    async ModifyCompileConfig_openFile(item: ProjTreeItem) {
+
+        const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
+        const key = <string>item.val.key;
+
+        if (/\b(linkerScript|scatterFile)/.test(key)) {
+            const scatterFilePath = <string>item.val.value;
+            const ldFileList: string[] = [];
+            scatterFilePath.split(',')
+                .filter(s => s.trim() != '')
+                .forEach((sctPath) => {
+                    ldFileList.push(sctPath);
+                });
+            try {
+                if (ldFileList.length == 1) {
+                    const fpath = prj.ToAbsolutePath(ldFileList[0]);
+                    vscode.window.showTextDocument(
+                        vscode.Uri.parse(File.ToUri(fpath)), { preview: true });
+                } else if (ldFileList.length > 1) {
+                    const sel = await vscode.window.showQuickPick(ldFileList, {
+                        canPickMany: false,
+                        placeHolder: `Select One To Open`
+                    });
+                    if (sel) {
+                        const fpath = prj.ToAbsolutePath(sel);
+                        vscode.window.showTextDocument(
+                            vscode.Uri.parse(File.ToUri(fpath)), { preview: true });
+                    }
+                }
+            } catch (error) {
+                GlobalEvent.emit('error', error);
+            }
+        }
     }
 
     ModifyUploadConfig(item: ProjTreeItem) {

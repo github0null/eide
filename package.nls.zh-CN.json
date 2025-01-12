@@ -5,6 +5,7 @@
     "eide.item.copy": "复制值",
     "eide.item.modify": "修改",
     "eide.item.remove": "移除",
+    "eide.item.open": "打开",
 
     "eide.function.show.uuid": "查看 UUID",
     "eide.function.convert.keil.to.sdcc": "将 Keil_C51 寄存器声明转换为 SDCC 格式",

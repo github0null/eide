@@ -916,6 +916,14 @@
                 }
             },
             {
+                "command": "_cl.eide.project.modifyCompileConfig.openFile",
+                "title": "%eide.item.open%",
+                "icon": {
+                    "dark": "./res/icon/OpenFile_16x.svg",
+                    "light": "./res/icon/OpenFile_16x.svg"
+                }
+            },
+            {
                 "command": "_cl.eide.project.switchToolchain",
                 "title": "%eide.builder.switch%",
                 "icon": {
@@ -1535,9 +1543,14 @@
                     "when": "viewItem == UPLOAD_OPTION_Shell && view == cl.eide.view.projects"
                 },
                 {
+                    "command": "_cl.eide.project.modifyCompileConfig.openFile",
+                    "group": "inline@0",
+                    "when": "viewItem == COMPILE_CONFIGURATION_ITEM_FILEPATH && view == cl.eide.view.projects"
+                },
+                {
                     "command": "_cl.eide.project.modifyCompileConfig",
-                    "group": "inline",
-                    "when": "viewItem == COMPILE_CONFIGURATION_ITEM && view == cl.eide.view.projects"
+                    "group": "inline@1",
+                    "when": "viewItem == COMPILE_CONFIGURATION_ITEM_FILEPATH || viewItem == COMPILE_CONFIGURATION_ITEM && view == cl.eide.view.projects"
                 },
                 {
                     "command": "_cl.eide.project.modifyUploadConfig",

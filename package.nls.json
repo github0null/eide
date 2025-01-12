@@ -5,6 +5,7 @@
     "eide.item.copy": "Copy Value",
     "eide.item.modify": "Modify",
     "eide.item.remove": "Remove",
+    "eide.item.open": "Open",
 
     "eide.function.show.uuid": "Show UUID",
     "eide.function.convert.keil.to.sdcc": "Convert Keil_C51 Registers To SDCC Format",

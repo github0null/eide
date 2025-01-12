@@ -226,6 +226,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // builder
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.modifyCompileConfig', (item) => projectExplorer.ModifyCompileConfig(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.modifyCompileConfig.openFile', (item) => projectExplorer.ModifyCompileConfig_openFile(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.switchToolchain', (item) => projectExplorer.onSwitchCompileTools(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.configToolchain', (item) => projectExplorer.onConfigureToolchain(item)));
 

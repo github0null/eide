@@ -520,8 +520,16 @@ export interface ArmBaseCompileData extends BuilderConfigData {
     cpuType: string;
     floatingPointHardware: FloatingHardwareOption;
     useCustomScatterFile: boolean;
+    /**
+     * 这个配置文件用来描述地址重定位信息，编译时作为链接器的参数
+     * @note 这个参数可能包含多个文件，当包含多个文件时，以逗号 `,` 作为分隔
+     */
     scatterFilePath: string;
     storageLayout: ARMStorageLayout;
+    /**
+     * 由此打开一个更详细的配置，用于设置更多的编译期配置。
+     * 这个选项的值根据实现而定，多数情况下是空的。
+     */
     options: string;
 }
 
