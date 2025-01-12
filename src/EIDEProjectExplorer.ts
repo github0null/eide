@@ -2038,6 +2038,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     size = size || '--';
                     type = type || '--';
                     loca = loca || sym_cur_file_location || '--';
+                    loca = prj.toRelativePath(loca) || loca;
 
                     if (dispType == 'hide_no_sized' && size == '--') {
                         continue; // ignore no-size symbols
