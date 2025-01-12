@@ -6,15 +6,17 @@ All notable version changes will be recorded in this file.
 
 ***
 
-### [v3.20.x] update
+### [v3.21.0] update
 
 **New**:
   - `Xpack Toolchain`: Add xpack-dev-tools `package.json` support.
   - `Right-click Menu`: Add `Compile` button for source file.
   - `Project Resource`: Add new inline button: `Add File`.
+  - `Builder Configuration`: Add `open` button for `linker script` path config.
 
 **Optimize**:
   - `CMSIS Config Wizard`: Minor refactoring to improve parser. Support `<n>` `<s.i>` tags. Support error prompt.
+  - `Open Project`: Add progress bar when opening a project.
   - `Create Project`: Improve create project. Fill default project name when creating a new project.
   - `Import Project`: Improve Keil project import. Support import RTE source files.
   - `Built-in Project Templates`: Update stm8s/sdcc project templates.
