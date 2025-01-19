@@ -103,38 +103,53 @@ export type CompilerDiagnostics = { [path: string]: vscode.Diagnostic[]; }
 
 export function parseArmccCompilerLog(projApi: ProjectBaseApi, logFile: File): CompilerDiagnostics {
 
-    const pattern = {
-        "regexp": "^\"([^\"]+)\", line (\\d+): (Error|Warning):\\s+#([^\\s]+):\\s+(.+)$",
-        "file": 1,
-        "line": 2,
-        "severity": 3,
-        "code": 4,
-        "message": 5
-    };
+    /* examples:
+        ".\source\main.c", line 68: Error: At end of source:  #67: expected a "}"
+    */
+    const patterns = [
+        {
+            "groupLen": 5,
+            "regexp": /^"([^"]+)", line (\d+): (Error|Warning):\s+#([^\s]+):\s+(.+)$/i,
+            "file": 1,
+            "line": 2,
+            "severity": 3,
+            "code": 4,
+            "message": 5
+        },
+        {
+            "groupLen": 4,
+            "regexp": /^"([^"]+)", line (\d+): (Error|Warning|\w+):\s+(.+)$/i,
+            "file": 1,
+            "line": 2,
+            "severity": 3,
+            "message": 4
+        }
+    ];
 
-    const matcher = new RegExp(pattern.regexp, 'i');
     const result: { [path: string]: vscode.Diagnostic[] } = {};
     const ccLogLines = parseLogLines(logFile);
 
     for (let idx = 0; idx < ccLogLines.length; idx++) {
         const line = ccLogLines[idx];
-        const m = matcher.exec(line);
-        if (m && m.length > 5) {
+        for (const pattern of patterns) {
+            const m = pattern.regexp.exec(line);
+            if (m && m.length > pattern.groupLen) {
+                const fspath = projApi.toAbsolutePath(m[pattern.file]);
+                const line = parseInt(m[pattern.line]);
+                const severity = m[pattern.severity];
+                const errCode = pattern.code ? m[pattern.code].trim() : undefined;
+                const message = m[pattern.message].trim();
 
-            const fspath = projApi.toAbsolutePath(m[pattern.file]);
-            const line = parseInt(m[pattern.line]);
-            const severity = m[pattern.severity];
-            const errCode = m[pattern.code].trim();
-            const message = m[pattern.message].trim();
+                const diags = result[fspath] || [];
+                if (result[fspath] == undefined) result[fspath] = diags;
 
-            const diags = result[fspath] || [];
-            if (result[fspath] == undefined) result[fspath] = diags;
-
-            const vscDiag = new vscode.Diagnostic(
-                newVscFileRange(line, 0, 10), message, toVscServerity(severity));
-            vscDiag.code = errCode;
-            vscDiag.source = 'armcc';
-            diags.push(vscDiag);
+                const vscDiag = new vscode.Diagnostic(
+                    newVscFileRange(line, 0, 10), message, toVscServerity(severity));
+                vscDiag.code = errCode;
+                vscDiag.source = 'armcc';
+                diags.push(vscDiag);
+                break;
+            }
         }
     }
 
