@@ -38,7 +38,7 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/MIPS/RISC-V",
-    "version": "3.21.0",
+    "version": "3.21.1",
     "preview": false,
     "engines": {
         "vscode": "^1.67.0"
@@ -1748,6 +1748,19 @@
                     "**/*.lkf"
                 ],
                 "configuration": "./lang/syntax/lkf.language-configuration.json"
+            },
+            {
+                "id": "sct",
+                "aliases": [
+                    "ARM Scatter File"
+                ],
+                "extensions": [
+                    ".sct"
+                ],
+                "filenamePatterns": [
+                    "**/*.sct"
+                ],
+                "configuration": "./lang/syntax/sct.language-configuration.json"
             }
         ],
         "jsonValidation": [
@@ -1829,6 +1842,11 @@
                 "language": "lkf",
                 "scopeName": "source.cosmic.lkf",
                 "path": "./lang/syntax/lkf.tmLanguage.json"
+            },
+            {
+                "language": "sct",
+                "scopeName": "source.arm.sct",
+                "path": "./lang/syntax/sct.tmLanguage.json"
             }
         ],
         "taskDefinitions": [

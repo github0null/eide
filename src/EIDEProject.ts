@@ -2877,12 +2877,20 @@ $(OUT_DIR):
                     }
                 }
             } catch (error) {
+                GlobalEvent.log_warn(<Error>error);
                 const msg = [
                     `${toolchain.getToolchainPrefix()}gcc not avaliable:\n${(<Error>error).message}`,
                     `Please check your package.json and run 'xpm install' to install xpack dependences.`
                 ].join(os.EOL);
-                GlobalEvent.emit('msg', newMessage('Error', msg));
-                GlobalEvent.log_warn(<Error>error);
+                vscode.window.showErrorMessage(msg, 'Install', 'Later')
+                    .then((value) => {
+                        if (value == 'Install') {
+                            runShellCommand('xpm install', 'xpm install', {
+                                useTerminal: true,
+                                cwd: this.getRootDir().path
+                            });
+                        }
+                    });
                 return false
             }
         }

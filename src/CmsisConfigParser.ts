@@ -401,7 +401,7 @@ interface ParserContext {
 
 const fieldMatcher: TagMatcher = {
     'group': { start: /^\/\/\s*<h>\s*(?<name>.+)/, end: /^\/\/\s*<\/h>/ },
-    'section': { start: /^\/\/\s*<e(?:\.(?<var_mod_bit_s>[\d]+))?(?: (?<var_name>\w+))?>\s*(?<name>.+?)(?<desc>(?:\s+[-]+\s*.*)?)$/, end: /^\/\/\s*<\/e>/ },
+    'section': { start: /^\/\/\s*<e(?<var_skip_val>\d+)?(?:\.(?<var_mod_bit_s>[\d]+))?(?: (?<var_name>\w+))?>\s*(?<name>.+?)(?<desc>(?:\s+[-]+\s*.*)?)$/, end: /^\/\/\s*<\/e>/ },
     'tooltip': { start: /^\/\/\s*<i>\s*(?<detail>.+)\s*$/ },
     'defval': { start: /^\/\/\s*<d>\s*(?<var_def_val>.+)\s*$/ },
     'code': { start: /^\/\/\s*<!?c(?<var_skip_val>\d+)?>\s*(?<name>.+?)(?<desc>(?:\s+[-]+\s*.*)?)$/, end: /^\/\/\s*<\/[!]?c>/ },

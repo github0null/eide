@@ -40,6 +40,7 @@ import * as os from 'os';
 import { ArmBaseBuilderConfigData, ArmBaseCompileData } from "./EIDEProjectModules";
 import * as utility from "./utility";
 
+//! 名称应该是大写，但由于历史因素，其中 'Keil_C51' 大小写暂时无法更正（避免旧的项目出现问题） 
 export type ToolchainName =
     'SDCC' | 'Keil_C51' | 'IAR_STM8' | 'GNU_SDCC_STM8' | 'COSMIC_STM8' |
     'AC5' | 'AC6' | 'GCC' | 'IAR_ARM' |
@@ -223,21 +224,21 @@ export class ToolchainManager {
 
         switch (prjType) {
             case 'RISC-V':
-                res = this.toolchainMap.get('RISCV_GCC');
+                res = this.getToolchainByName('RISCV_GCC');
                 break;
             case 'ANY-GCC':
-                res = this.toolchainMap.get('ANY_GCC');
+                res = this.getToolchainByName('ANY_GCC');
                 break;
             case 'ARM':
                 switch (toolchainName) {
                     case 'None':
-                        res = this.toolchainMap.get('AC5');
+                        res = this.getToolchainByName('AC5');
                         break;
                     default:
                         if (this.toolchainNames['ARM'].includes(toolchainName)) {
-                            res = this.toolchainMap.get(toolchainName);
+                            res = this.getToolchainByName(toolchainName);
                         } else {
-                            res = this.toolchainMap.get('AC5');
+                            res = this.getToolchainByName('AC5');
                             GlobalEvent.emit('msg', newMessage('Warning',
                                 'Invalid toolchain name \'' + toolchainName + '\' !, use default toolchain.'));
                         }
@@ -246,21 +247,21 @@ export class ToolchainManager {
             case 'C51':
                 switch (toolchainName) {
                     case 'None':
-                        res = this.toolchainMap.get('Keil_C51');
+                        res = this.getToolchainByName('Keil_C51');
                         break;
                     default:
                         if (this.toolchainNames['C51'].includes(toolchainName)) {
-                            res = this.toolchainMap.get(toolchainName);
+                            res = this.getToolchainByName(toolchainName);
                         }
                         else {
-                            res = this.toolchainMap.get('Keil_C51');
+                            res = this.getToolchainByName('Keil_C51');
                             GlobalEvent.emit('msg', newMessage('Warning',
                                 'Invalid toolchain name \'' + toolchainName + '\' !, use default toolchain.'));
                         }
                 }
                 break;
             case 'MIPS':
-                res = this.toolchainMap.get('MTI_GCC');
+                res = this.getToolchainByName('MTI_GCC');
                 break;
             default:
                 throw new Error('Invalid project type \'' + prjType + '\'');
@@ -274,6 +275,9 @@ export class ToolchainManager {
     }
 
     getToolchainByName(name: ToolchainName): IToolchian | undefined {
+        //! 'Keil_C51' 大小写问题的补丁
+        if (name.toLowerCase() == 'keil_c51')
+            return this.toolchainMap.get('Keil_C51');
         return this.toolchainMap.get(name);
     }
 
@@ -426,7 +430,7 @@ export class ToolchainManager {
     }
 
     getToolchainPrefix(toolchainName: ToolchainName): string | undefined {
-        const toolchain = this.toolchainMap.get(toolchainName);
+        const toolchain = this.getToolchainByName(toolchainName);
         if (toolchain && toolchain.getToolchainPrefix) {
             return toolchain.getToolchainPrefix();
         }
@@ -530,6 +534,121 @@ class KeilC51 implements IToolchian {
                 throw new Error('Create empty C51 LIB failed !');
             }
         }
+    }
+
+    /*
+    Program Size: data=82.4 xdata=0 const=19 code=1644
+    */
+    private _parseMap(mapPath: string): {
+        sections: string[],
+        objDic: {
+            [name: string]: { [section: string]: number }
+        },
+    } {
+
+        const objDic: any = {};
+        const secList: string[] = [ 'Size' ];
+
+        const lines = fs.readFileSync(mapPath).toString().split(/\r\n|\n/);
+        for (const line of lines) {
+            const m = /Program Size: data=(?<data>[\d+\.]+) xdata=(?<xdata>\d+) const=(?<const>\d+) code=(?<code>\d+)/.exec(line);
+            if (m && m.groups) {
+                for (const key in m.groups) {
+                    const val = m.groups[key];
+                    const size = val.includes('.') ? parseFloat(val) : parseInt(val);
+                    if (!objDic[key]) objDic[key] = {};
+                    objDic[key]['Size'] = size;
+                }
+                break;
+            }
+        }
+
+        return {
+            sections: secList,
+            objDic: objDic
+        };
+    };
+
+    parseMapFile(mapPath: string): string[] | Error {
+
+        if (!File.IsFile(mapPath))
+            return new Error(`No such file: ${mapPath}`);
+
+        const mapInfo = this._parseMap(mapPath);
+        const secList = mapInfo.sections;
+        const objDic = mapInfo.objDic;
+
+        let oldObjDic: any = {};
+        if (File.IsFile(mapPath + '.old')) {
+            const inf = this._parseMap(mapPath + '.old');
+            oldObjDic = inf.objDic;
+        }
+
+        const tableRows: string[][] = [];
+
+        // push header
+        let header: string[] = [];
+        header.push('Section');
+        header = header.concat(secList);
+        tableRows.push(header);
+
+        let objTotalSize: any = { new: 0, old: 0 };
+        let secTotalSize: any = {};
+        for (const objpath in objDic) {
+
+            const objInfo = objDic[objpath];
+            const row: string[] = [objpath];
+
+            let totalSize = 0;
+            for (const key in objInfo) {
+                totalSize += objInfo[key];
+            }
+
+            let oldInfo: any = {};
+            if (oldObjDic[objpath]) {
+                oldInfo = oldObjDic[objpath];
+            }
+
+            let oldTotalSize = 0;
+            for (const key in oldInfo) {
+                oldTotalSize += oldInfo[key];
+            }
+
+            objTotalSize.new += totalSize;
+            objTotalSize.old += oldTotalSize;
+
+            for (const sec of secList) {
+
+                const oldSecSize = oldInfo[sec] ? oldInfo[sec] : 0;
+                const nowSecSize = objInfo[sec] ? objInfo[sec] : 0;
+
+                const diffSize = nowSecSize - oldSecSize;
+                if (diffSize.toString().indexOf(".") != -1) {
+                    row.push(nowSecSize.toString() + `(${diffSize > 0 ? '+' : ''}${diffSize.toFixed(1)})`);
+                } else {
+                    row.push(nowSecSize.toString() + `(${diffSize > 0 ? '+' : ''}${diffSize.toString()})`);
+                }
+
+                if (secTotalSize[sec] == undefined) {
+                    secTotalSize[sec] = {
+                        new: 0,
+                        old: 0
+                    };
+                };
+
+                secTotalSize[sec].new += nowSecSize;
+                secTotalSize[sec].old += oldSecSize;
+            }
+
+            tableRows.push(row);
+        }
+
+        const tableLines = utility.makeTextTable(tableRows);
+        if (tableLines == undefined) {
+            return new Error(`Nothing for this map: ${mapPath} !`);
+        }
+
+        return tableLines;
     }
 
     getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
@@ -704,6 +823,135 @@ class SDCC implements IToolchian {
         const devName = options.global?.['device'] || 'mcs51';
         const asmName = `sdas${this.asmMapper[devName] || devName}`;
         options["asm-compiler"]['$toolName'] = asmName;
+    }
+
+    /*
+        Area                                    Addr        Size        Decimal Bytes (Attributes)
+        --------------------------------        ----        ----        ------- ----- ------------
+        GSINIT0                             00000006    00000003 =           3. bytes (REL,CON,CODE)
+
+            Value  Global                              Global Defined In Module
+            -----  --------------------------------   ------------------------
+        C:   00000006  __sdcc_gsinit_startup              
+    */
+    private _parseMap(mapPath: string): {
+        sections: string[],
+        objDic: {
+            [name: string]: { [section: string]: number }
+        },
+    } {
+
+        const objDic: any = {};
+        const secList: string[] = [ 'Size' ];
+
+        const lines = fs.readFileSync(mapPath).toString().split(/\r\n|\n/);
+        let counter = 0;
+        for (const line of lines) {
+            if (counter == 2) {
+                const m = /^\s*(?<name>\w+)\s+(?<addr>(?:0x)?[a-f\d]+)\s+(?<size>(?:0x)?[a-f\d]+)\s+=\s+(?<size_dec>\d+)\./i.exec(line);
+                if (m && m.groups) {
+                    const name = m.groups['name'];
+                    const size_dec = m.groups['size_dec'];
+                    if (size_dec) {
+                        if (!objDic[name]) objDic[name] = {};
+                        objDic[name]['Size'] = parseInt(size_dec);
+                    }
+                }
+                counter = 0;
+            } else if (counter == 1) {
+                if (/^\s*----/.test(line))
+                    counter = 2;
+                else
+                    counter = 0;
+            } else {
+                if (/^\s*Area\s+Addr/.test(line))
+                    counter = 1;
+                else
+                    counter = 0;
+            }
+        }
+
+        return {
+            sections: secList,
+            objDic: objDic
+        };
+    };
+
+    parseMapFile(mapPath: string): string[] | Error {
+
+        if (!File.IsFile(mapPath))
+            return new Error(`No such file: ${mapPath}`);
+
+        const mapInfo = this._parseMap(mapPath);
+        const secList = mapInfo.sections;
+        const objDic = mapInfo.objDic;
+
+        let oldObjDic: any = {};
+        if (File.IsFile(mapPath + '.old')) {
+            const inf = this._parseMap(mapPath + '.old');
+            oldObjDic = inf.objDic;
+        }
+
+        const tableRows: string[][] = [];
+
+        // push header
+        let header: string[] = [];
+        header.push('Section');
+        header = header.concat(secList);
+        tableRows.push(header);
+
+        let objTotalSize: any = { new: 0, old: 0 };
+        let secTotalSize: any = {};
+        for (const objpath in objDic) {
+
+            const objInfo = objDic[objpath];
+            const row: string[] = [objpath];
+
+            let totalSize = 0;
+            for (const key in objInfo) {
+                totalSize += objInfo[key];
+            }
+
+            let oldInfo: any = {};
+            if (oldObjDic[objpath]) {
+                oldInfo = oldObjDic[objpath];
+            }
+
+            let oldTotalSize = 0;
+            for (const key in oldInfo) {
+                oldTotalSize += oldInfo[key];
+            }
+
+            objTotalSize.new += totalSize;
+            objTotalSize.old += oldTotalSize;
+
+            for (const sec of secList) {
+
+                const oldSecSize = oldInfo[sec] ? oldInfo[sec] : 0;
+                const nowSecSize = objInfo[sec] ? objInfo[sec] : 0;
+                const diffSize = nowSecSize - oldSecSize;
+                row.push(nowSecSize.toString() + `(${diffSize > 0 ? '+' : ''}${diffSize.toString()})`);
+
+                if (secTotalSize[sec] == undefined) {
+                    secTotalSize[sec] = {
+                        new: 0,
+                        old: 0
+                    };
+                };
+
+                secTotalSize[sec].new += nowSecSize;
+                secTotalSize[sec].old += oldSecSize;
+            }
+
+            tableRows.push(row);
+        }
+
+        const tableLines = utility.makeTextTable(tableRows);
+        if (tableLines == undefined) {
+            return new Error(`Nothing for this map: ${mapPath} !`);
+        }
+
+        return tableLines;
     }
 
     private parseCodeModel(conf: string): string | undefined {

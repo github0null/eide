@@ -1728,8 +1728,10 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
                     for (let index = 0; index < lines.length; index++) {
                         const line = lines[index];
                         lines[index] = line
-                            .replace(/\((\+[^0]\d*)\)/g, `(<span class="success">$1</span>)`)
-                            .replace(/\((\-[^0]\d*)\)/g, `(<span class="error">$1</span>)`)
+                            .replace(/\((\+[^0][\d\.]*)\)/g, `(<span class="success">$1</span>)`)
+                            .replace(/\((\-[^0][\d\.]*)\)/g, `(<span class="error">$1</span>)`)
+                            .replace(/\((\+0\.\d+)\)/g, `(<span class="success">$1</span>)`)
+                            .replace(/\((\-0\.\d+)\)/g, `(<span class="error">$1</span>)`)
                             .replace(/^(\s*\|\s*)(Subtotals)/, `$1<span class="info">$2</span>`)
                             .replace(/^(\s*Total)/, `\n$1`);
                     }

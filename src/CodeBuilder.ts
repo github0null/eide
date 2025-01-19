@@ -128,7 +128,7 @@ export abstract class CodeBuilder {
         this._event.emit(event, arg);
     }
 
-    protected genSourceInfo(prevBuilderParams: BuilderParams | undefined): {
+    protected genSourceInfo(): {
         sources: string[],
         params?: { [name: string]: string; }
     } {
@@ -174,18 +174,6 @@ export abstract class CodeBuilder {
                 if (typeof options?.files == 'object') {
                     const parttenInfo = options?.files;
                     matcher(parttenInfo, 'path');
-                }
-
-                // if src options is modified to null but old is not null,
-                // we need make source recompile
-                if (prevBuilderParams) {
-                    const oldSrcParams = prevBuilderParams.sourceParams;
-                    for (const path in oldSrcParams) {
-                        if (srcParams[path] == undefined && oldSrcParams[path] != undefined &&
-                            oldSrcParams[path] != '') {
-                            srcParams[path] = ""; // make it empty to trigger recompile 
-                        }
-                    }
                 }
             }
 
@@ -375,9 +363,7 @@ export abstract class CodeBuilder {
         const paramsPath = this.project.ToAbsolutePath(outDir + File.sep + this.paramsFileName);
         const compileOptions: BuilderOptions = this.project.GetConfiguration().compileConfigModel.getOptions();
         const memMaxSize = this.getMcuMemorySize();
-        const oldParamsPath = `${paramsPath}.old`;
-        const prevParams: BuilderParams | undefined = File.IsFile(oldParamsPath) ? JSON.parse(fs.readFileSync(oldParamsPath, 'utf8')) : undefined;
-        const sourceInfo = this.genSourceInfo(prevParams);
+        const sourceInfo = this.genSourceInfo();
         const builderModeList: string[] = []; // build mode
 
         const builderOptions: BuilderParams = {
@@ -497,37 +483,6 @@ export abstract class CodeBuilder {
 
         // set build mode
         {
-            /** --------------------------------------------------------------
-             * @note After unify_builder v3.9.0, this function is deprecated 
-             * because we have built-in it in the latest unify_builder
-             * ---------------------------------------------------------------
-             */
-            // // generate hash for compiler options
-            // builderOptions.sha = this.genHashFromCompilerOptions(builderOptions);
-            // // check whether need rebuild project
-            // if (this.isRebuild() == false && prevParams) {
-            //     try {
-            //         // not found hash from old params file
-            //         if (prevParams.sha == undefined) {
-            //             this.enableRebuild();
-            //         }
-
-            //         // check hash obj by specifies keys
-            //         else {
-            //             const keyList = ['global', 'c/cpp-defines', 'c/cpp-compiler', 'asm-compiler'];
-            //             for (const key of keyList) {
-            //                 if (!this.compareHashObj(key, prevParams.sha, builderOptions.sha)) {
-            //                     this.enableRebuild();
-            //                     break;
-            //                 }
-            //             }
-            //         }
-            //     } catch (error) {
-            //         this.enableRebuild(); // make rebuild
-            //         GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
-            //     }
-            // }
-
             if (config.toolchain === 'Keil_C51') {
                 builderModeList.push('normal'); // disable increment build for Keil C51
             } else {
