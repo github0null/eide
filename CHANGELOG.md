@@ -6,6 +6,18 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.21.1] revision
+
+**New**:
+  - `Map View`: Support show `map.view` file for SDCC and KEIL_C51 toolchain.
+  - `Scatter File Highlight`: Support a simple arm scatter file (`.sct`) language support.
+
+**Fix**:
+  - `Program Matcher`: Sometimes armcc problem matcher missed matchs.
+  - `CMSIS Config Wizard`: Missed skip value for `<e>` tag.
+
+***
+
 ### [v3.21.0] update
 
 **New**:
