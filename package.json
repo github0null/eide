@@ -1748,6 +1748,19 @@
                     "**/*.lkf"
                 ],
                 "configuration": "./lang/syntax/lkf.language-configuration.json"
+            },
+            {
+                "id": "sct",
+                "aliases": [
+                    "ARM Scatter File"
+                ],
+                "extensions": [
+                    ".sct"
+                ],
+                "filenamePatterns": [
+                    "**/*.sct"
+                ],
+                "configuration": "./lang/syntax/sct.language-configuration.json"
             }
         ],
         "jsonValidation": [
@@ -1829,6 +1842,11 @@
                 "language": "lkf",
                 "scopeName": "source.cosmic.lkf",
                 "path": "./lang/syntax/lkf.tmLanguage.json"
+            },
+            {
+                "language": "sct",
+                "scopeName": "source.arm.sct",
+                "path": "./lang/syntax/sct.tmLanguage.json"
             }
         ],
         "taskDefinitions": [

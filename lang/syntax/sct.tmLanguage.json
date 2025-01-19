@@ -1,0 +1,97 @@
+{
+    "information_for_contributors": [
+        "arm scatter file"
+    ],
+    "version": "1.0.0",
+    "name": "sct",
+    "scopeName": "source.arm.sct",
+    "patterns": [
+        {
+            "include": "#commandline"
+        },
+        {
+            "include": "#line_comment"
+        },
+        {
+            "include": "#block_comment"
+        },
+        {
+            "include": "#number"
+        },
+        {
+            "include": "#operators"
+        },
+        {
+            "include": "#preprocessor"
+        },
+        {
+            "include": "#keyword.load_region"
+        },
+        {
+            "include": "#keyword.exec_region"
+        }
+    ],
+    "repository": {
+        "commandline": {
+            "match": "^#!.*$",
+            "captures": {
+                "0": {
+                    "name": "markup.italic"
+                }
+            }
+        },
+        "line_comment": {
+            "match": "(;.*)",
+            "captures": {
+                "1": {
+                    "name": "comment.line"
+                }
+            }
+        },
+        "block_comment": {
+            "begin": "\\/\\*",
+            "end"  : "\\*\\/",
+            "name": "comment.block"
+        },
+        "number": {
+            "match": "(?i)\\b([0-9]+|0x[0-9a-f]+)\\b",
+            "captures": {
+                "1": {
+                    "name": "constant.numeric"
+                }
+            }
+        },
+        "operators": {
+            "match": "\\+|-|=",
+            "captures": {
+                "0": {
+                    "name": "keyword.operator"
+                }
+            }
+        },
+        "preprocessor": {
+            "match": "^\\s*(#define|#undef|#include|#if|#ifdef|#ifndef|#elif|#else|#endif)",
+            "captures": {
+                "1": {
+                    "name": "keyword.control.define"
+                }
+            }
+        },
+        "keyword.load_region": {
+            "match": "\\b(ABSOLUTE|ALIGN|NOCOMPRESS|OVERLAY|PI|PROTECTED|RELOC)\\b",
+            "captures": {
+                "1": {
+                    "name": "keyword"
+                }
+            }
+        },
+        "keyword.exec_region": {
+            "match": "\\b(ABSOLUTE|ALIGN|NOCOMPRESS|OVERLAY|PI|ALIGNALL|ANY_SIZE|EMPTY|FILL|FIXED|PADVALUE|SORTTYPE|UNINIT|ZEROPAD)\\b",
+            "captures": {
+                "1": {
+                    "name": "keyword"
+                }
+            }
+        }
+    }
+}
