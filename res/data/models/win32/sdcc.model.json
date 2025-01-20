@@ -17,6 +17,19 @@
             ],
             "location": "first"
         },
+        "out-debug-info": {
+            "type": "selectable",
+            "command": {
+                "true": "--debug",
+                "false": ""
+            },
+            "group": [
+                "c/cpp",
+                "linker",
+                "linker-elf",
+                "linker-s19"
+            ]
+        },
         "stack-auto": {
             "type": "selectable",
             "command": {
@@ -116,17 +129,6 @@
             },
             "group": [
                 "c/cpp"
-            ]
-        },
-        "out-debug-info": {
-            "type": "selectable",
-            "command": {
-                "true": "--debug",
-                "false": ""
-            },
-            "group": [
-                "c/cpp",
-                "linker-elf"
             ]
         },
         "allow-unsafe-read": {
