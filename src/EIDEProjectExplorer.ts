@@ -35,7 +35,7 @@ import * as jsonc_parser from 'jsonc-parser';
 import { File } from '../lib/node-utility/File';
 import { ResManager } from './ResManager';
 import { GlobalEvent } from './GlobalEvents';
-import { AbstractProject, CheckError, DataChangeType, VirtualSource } from './EIDEProject';
+import { AbstractProject, CheckError, DataChangeType, VirtualSource, SourceFileOptions } from './EIDEProject';
 import { ToolchainName, ToolchainManager } from './ToolchainManager';
 import {
     BuilderOptions,
@@ -85,6 +85,7 @@ import {
     txt_yes,
     txt_no,
     remove_this_item,
+    view_str$prompt$filesOptionsComment,
 } from './StringTable';
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
@@ -3013,17 +3014,62 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             return curFolder;
         };
 
+        // init source args
+        const srcOptsObj = <SourceFileOptions>{ version: '2.0', options: {} };
+        srcOptsObj.version = '2.0';
+        const setupSourceOpts = (vFolderPath: string, srcFilePath: string) => {
+            for (const keilTarget of targets) {
+                if (srcOptsObj.options[keilTarget.name] == undefined)
+                    srcOptsObj.options[keilTarget.name] = { files: {}, virtualPathFiles: {} };
+                const targetSrcOpts = srcOptsObj.options[keilTarget.name];
+                if (keilTarget.fileOptions) {
+                    const vFilePath = `${vFolderPath}/${NodePath.basename(srcFilePath)}`;
+                    const fopts = keilTarget.fileOptions[vFilePath];
+                    if (fopts && targetSrcOpts.virtualPathFiles) {
+                        const optLi = [];
+                        fopts.includes.forEach(item => {
+                            if (keilTarget.type === 'C51') {
+                                optLi.push(`INCDIR(${baseInfo.rootFolder.ToRelativePath(item) || item})`);
+                            } else {
+                                optLi.push(`-I${baseInfo.rootFolder.ToRelativePath(item) || item}`);
+                            }
+                        });
+                        fopts.defines.forEach(item => {
+                            if (keilTarget.type === 'C51') {
+                                if (item.includes('='))
+                                    optLi.push(`DEFINE(${item})`);
+                                else
+                                    optLi.push(`DEFINE(${item}=1)`);
+                            } else {
+                                optLi.push(`-D${item}`);
+                            }
+                        });
+                        fopts.undefines.forEach(item => {
+                            if (keilTarget.type === 'C51') {
+                                //TODO: not support -U options.
+                            } else {
+                                optLi.push(`-U${item}`);
+                            }
+                        });
+                        if (fopts.miscOptions)
+                            optLi.push(fopts.miscOptions);
+                        targetSrcOpts.virtualPathFiles[vFilePath] = optLi.join(' ');
+                    }
+                }
+            }
+        };
+
         // init file group
-        const fileFilter = AbstractProject.getFileFilters();
         targets[0].fileGroups.forEach((group) => {
             const vPath = `${VirtualSource.rootName}/${File.ToUnixPath(group.name)}`;
             const VFolder = <VirtualFolder>getVirtualFolder(vPath);
             group.files.forEach((fileItem) => {
-                if (fileFilter.some((reg) => reg.test(fileItem.file.name))) {
-                    VFolder.files.push({
-                        path: baseInfo.rootFolder.ToRelativePath(fileItem.file.path) || fileItem.file.path
-                    });
-                }
+                // add source file
+                VFolder.files.push({
+                    path: baseInfo.rootFolder.ToRelativePath(fileItem.file.path) || fileItem.file.path
+                });
+                // add file options for every target
+                setupSourceOpts(vPath, fileItem.file.path);
             });
         });
 
@@ -3279,6 +3325,10 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             File.fromArray([baseInfo.rootFolder.path, AbstractProject.EIDE_DIR, 'env.ini'])
                 .Write(ini.stringify(prjenv));
         }
+
+        // save src options
+        const optFile = File.fromArray([baseInfo.rootFolder.path, AbstractProject.EIDE_DIR, `files.options.yml`]);
+        optFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(srcOptsObj, { indent: 4 }));
 
         // switch project
         const selection = await vscode.window.showInformationMessage(

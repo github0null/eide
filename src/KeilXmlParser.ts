@@ -26,7 +26,7 @@ import * as xml2js from 'x2js';
 import { File } from '../lib/node-utility/File';
 import { BuilderOptions, ProjectType, FileGroup, ProjectConfiguration } from './EIDETypeDefine';
 import { ToolchainName, ToolchainManager } from './ToolchainManager';
-import { AbstractProject } from './EIDEProject';
+import { AbstractProject, VirtualSource } from './EIDEProject';
 import { GlobalEvent } from './GlobalEvents';
 import { ExceptionToMessage } from './Message';
 import { ResManager } from './ResManager';
@@ -54,6 +54,14 @@ export interface KeilParserResult<CompileOption> {
     compileOption: CompileOption;
     rte_deps?: KeilRteDependence[];
     env?: { [key: string]: string };
+    fileOptions?: {
+        [path: string]: {
+            defines: string[];
+            undefines: string[];
+            includes: string[];
+            miscOptions: string;
+        }
+    };
 }
 
 export interface ICompileOptionsGroup {
@@ -98,7 +106,17 @@ export abstract class KeilParser<T> {
         this.doc = this.parser.xml2js<any>(this._file.Read());
     }
 
-    protected SplitPathSeparator(str: string, sep: string | RegExp): string[] {
+    protected getNodeText(node: any): string {
+        if (typeof node === 'string') {
+            return node;
+        } else if (!node) {
+            return '';
+        } else {
+            return node.__text || '';
+        }
+    }
+
+    private _splitPathSeparator(str: string, sep: string | RegExp): string[] {
 
         const _list: string[] = [];
 
@@ -111,7 +129,16 @@ export abstract class KeilParser<T> {
         return _list;
     }
 
+    protected parseIncludePaths(str: string): string[] {
+        if (typeof str !== 'string') return [];
+        return this._splitPathSeparator(str, new RegExp(File.delimiter + '\\s*'))
+            .map<string>((path) => this.ToAbsolutePath(path));
+    }
+
     protected parseMacroString(str: string): string[] {
+
+        if (typeof str !== 'string')
+            return [];
 
         const result: string[] = [];
         const charStack: string[] = [];
@@ -369,10 +396,7 @@ class C51Parser extends KeilParser<KeilC51Option> {
 
             obj.device = target.TargetOption.TargetCommonOption.Device;
 
-            obj.incList = this.SplitPathSeparator(
-                target.TargetOption.Target51.C51.VariousControls.IncludePath, new RegExp(File.delimiter + '\\s*'))
-                .map<string>((path) => { return this.ToAbsolutePath(path); });
-
+            obj.incList = this.parseIncludePaths(target.TargetOption.Target51.C51.VariousControls.IncludePath);
             obj.defineList = this.parseMacroString(target.TargetOption.Target51.C51.VariousControls.Define);
 
             obj.compileOption = Object.create(null);
@@ -981,10 +1005,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
             obj.type = this.TYPE_TAG;
             obj.device = target.TargetOption.TargetCommonOption.Device;
 
-            obj.incList = this.SplitPathSeparator(
-                target.TargetOption.TargetArmAds.Cads.VariousControls.IncludePath, new RegExp(File.delimiter + '\\s*'))
-                .map<string>((path) => { return this.ToAbsolutePath(path); });
-
+            obj.incList = this.parseIncludePaths(target.TargetOption.TargetArmAds.Cads.VariousControls.IncludePath);
             obj.defineList = this.parseMacroString(target.TargetOption.TargetArmAds.Cads.VariousControls.Define);
 
             obj.env = {};
@@ -1010,13 +1031,54 @@ class ARMParser extends KeilParser<KeilARMOption> {
                             group.Files[0].File = group.Files[0].File.concat(FILE.File);
                         });
 
-                        group.Files[0].File.forEach((node: { FileName: string, FileType: string, FilePath: string }) => {
+                        /* example:
+                        <File>
+                            <FileName>device.c</FileName>
+                            <FileType>1</FileType>
+                            <FilePath>..\..\..\components\drivers\core\device.c</FilePath>
+                            <FileOption>
+                                <FileArmAds>
+                                    <Cads>
+                                        <VariousControls>
+                                            <MiscControls> </MiscControls>
+                                            <Define>__RT_IPC_SOURCE__</Define>
+                                            <Undefine> </Undefine>
+                                            <IncludePath> </IncludePath>
+                                        </VariousControls>
+                                    </Cads>
+                                </FileArmAds>
+                            </FileOption>
+                        </File>
+                        */
+                        group.Files[0].File.forEach((node: {
+                            FileName: string,
+                            FileType: string,
+                            FilePath: string,
+                            FileOption: { [key: string]: any };
+                        }) => {
                             const fPath = node.FilePath;
                             if (fPath !== undefined) {
                                 fGroup.files.push({
                                     file: new File(this.ToAbsolutePath(fPath)),
                                     disabled: this.isFileDisabled(node)
                                 });
+                                // parse file options
+                                const fopts = node?.FileOption?.FileArmAds?.Cads?.VariousControls;
+                                if (fopts) {
+                                    const _MiscControls = this.getNodeText(fopts.MiscControls);
+                                    const _Define       = this.getNodeText(fopts.Define);
+                                    const _Undefine     = this.getNodeText(fopts.Undefine);
+                                    const _IncludePath  = this.getNodeText(fopts.IncludePath);
+                                    // ---
+                                    const vPath = `${VirtualSource.rootName}/${fGroup.name}/${NodePath.basename(fPath)}`;
+                                    if (obj.fileOptions === undefined) obj.fileOptions = {};
+                                    obj.fileOptions[vPath] = {
+                                        defines: this.parseMacroString(_Define),
+                                        undefines: this.parseMacroString(_Undefine),
+                                        includes: this.parseIncludePaths(_IncludePath),
+                                        miscOptions: _MiscControls
+                                    };
+                                }
                             }
                         });
                     }
