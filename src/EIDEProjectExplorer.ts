@@ -3294,7 +3294,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         const templateFile = <File>option.templateFile;
 
         const targetDir = new File(option.outDir.path + File.sep + option.name);
-        const targetWorkspaceFilePath = targetDir.path + File.sep + option.name + AbstractProject.workspaceSuffix;
+        const targetWorkspaceFile = File.from(targetDir.path,
+            (option.projectName || option.name) + AbstractProject.workspaceSuffix);
 
         try {
 
@@ -3324,7 +3325,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                             if (wsFile) {
 
                                 // rename workspace file name
-                                fs.renameSync(wsFile.path, targetWorkspaceFilePath);
+                                fs.renameSync(wsFile.path, targetWorkspaceFile.path);
 
                                 // rename project
                                 if (templateFile.suffix != '.ewt') { // ignore eide workspace project
@@ -3371,7 +3372,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
             // switch workspace
             if (item === 'Yes') {
-                const wsFile = new File(targetWorkspaceFilePath);
+                const wsFile = targetWorkspaceFile;
                 if (wsFile.IsFile()) {
                     WorkspaceManager.getInstance().openWorkspace(wsFile);
                 }

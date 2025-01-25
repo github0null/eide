@@ -3355,7 +3355,8 @@ class EIDEProject extends AbstractProject {
 
         rootDir.CreateDir(true);
 
-        const wsFile = File.fromArray([rootDir.path, option.name + AbstractProject.workspaceSuffix]);
+        const wsFile = File.from(rootDir.path,
+            (option.projectName || option.name) + AbstractProject.workspaceSuffix);
 
         // if workspace is existed, force delete it
         if (wsFile.IsFile()) { try { fs.unlinkSync(wsFile.path); } catch (error) { } }
