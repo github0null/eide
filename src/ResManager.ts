@@ -367,29 +367,9 @@ export class ResManager extends events.EventEmitter {
     }
 
     getCmsisLibPacks(): { [name: string]: File } {
-
-        const cmsisDir = File.fromArray([(<File>this.GetDir('include')).path, 'cmsis']);
-        const packages: { [name: string]: File } = {
-            'libdsp': File.fromArray([cmsisDir.path, 'dsp_lib.7z'])
+        return {
+            'libdsp': File.from(this.GetAppDataDir().path, 'cmsis_dsp_lib_v5_9_0.7z')
         };
-
-        const libsDir = File.fromArray([cmsisDir.path, 'libs']);
-        const indexFile = File.fromArray([libsDir.path, 'index.json']);
-        if (indexFile.IsFile()) {
-            try {
-                const libs = jsonc.parse(indexFile.Read());
-                for (const key in libs) {
-                    const libpath = libs[key];
-                    if (typeof libpath == 'string') {
-                        packages[key] = File.fromArray([libsDir.path, libpath]);
-                    }
-                }
-            } catch (error) {
-                // nothing todo
-            }
-        }
-
-        return packages;
     }
 
     getStvpToolsDir(): File {
