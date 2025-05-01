@@ -336,8 +336,8 @@ export const definition_list_desc = [
 ][langIndex];
 
 export const project_dependence = [
-    '项目属性',
-    'Project Attributes'
+    'C/C++属性',
+    'C/C++ Attributes'
 ][langIndex];
 
 export const view_str$dialog$add_to_source_folder = [
