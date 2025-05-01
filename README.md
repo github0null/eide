@@ -100,6 +100,7 @@ Supported Platforms:
 
 You can build this project by your self.
 
+> [!IMPORTANT]  
 > The required version of NodeJS is **16** because of some historical reasons for this extension.
 
 1. Install `NodeJS 16` (recommanded v16.20.2). You can use `nvm` to manage your NodeJS.
@@ -117,6 +118,9 @@ You can build this project by your self.
 
    - Use `build vsix` to build as a vsix package.
 
+
+> [!NOTE]  
+> There may be syntax errors when opening project source code using VSCode, this is because the project uses an older Version of TypeScript, please press `Ctrl+Shift+P` to execute `TypeScript: Select TypeScript Version...` and select version: `v3.9.x`.
 
 ## Sponsor 👍
 

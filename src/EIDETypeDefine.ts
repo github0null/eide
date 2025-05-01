@@ -215,13 +215,13 @@ export interface ManagerInterface {
 
 export interface FileItem {
     file: File;
-    disabled?: boolean; // for mdk file info
+    disabled?: boolean;
 }
 
 export interface FileGroup {
     name: string;       // dir name if it's system folder, else it's a virtual path (with '<virtual_root>/' header)
     files: FileItem[];
-    disabled?: boolean; // for mdk group info
+    disabled?: boolean;
 }
 
 export interface ProjectFileGroup extends FileGroup {
