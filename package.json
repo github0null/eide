@@ -1793,10 +1793,6 @@
                 "url": "./lang/arm.iar.verify.json"
             },
             {
-                "fileMatch": "**/*.stm8.gnu-sdcc.json",
-                "url": "./lang/stm8.gnu-sdcc.verify.json"
-            },
-            {
                 "fileMatch": "**/*.stm8.iar.json",
                 "url": "./lang/stm8.iar.verify.json"
             },

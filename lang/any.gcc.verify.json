@@ -252,18 +252,21 @@
                     "markdownDescription": "Object Order (used to determine the order in which object files are linked)",
                     "description.zh-cn": "Object Order（用于决定某些 obj 文件的链接顺序）",
                     "default": [],
-                    "properties": {
-                        "pattern": {
-                            "type": "string",
-                            "readable_name": "Pattern",
-                            "description": "A glob pattern (https://github.com/dazinator/DotNet.Glob) to match a object (*.o) file",
-                            "default": "**/your/pattern/for/object/file/path/*.o"
-                        },
-                        "order": {
-                            "type": "number",
-                            "readable_name": "Order",
-                            "description": "An integer number (The smaller the value, the higher the priority)",
-                            "default": 0
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "pattern": {
+                                "type": "string",
+                                "readable_name": "Pattern",
+                                "description": "A glob pattern (https://github.com/dazinator/DotNet.Glob) to match a object (*.o) file",
+                                "default": "**/your/pattern/for/object/file/path/*.o"
+                            },
+                            "order": {
+                                "type": "number",
+                                "readable_name": "Order",
+                                "description": "An integer number (The smaller the value, the higher the priority)",
+                                "default": 0
+                            }
                         }
                     }
                 }

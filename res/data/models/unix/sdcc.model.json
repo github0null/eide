@@ -193,7 +193,7 @@
                 "useFile": false,
                 "body": "${value}"
             },
-            "$output": "-MMD -o ${out} ${in}",
+            "$output": "-MF ${refPath} -o ${out} ${in}",
             "$outputSuffix": ".rel",
             "$default": [
                 "-c"
