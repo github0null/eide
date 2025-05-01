@@ -92,6 +92,7 @@ export interface BuilderParams {
     sha?: { [options_name: string]: string };
     env?: { [name: string]: any };
     sysPaths?: string[];
+    alwaysInBuildSources?: string[];
 }
 
 export interface CompilerCommandsDatabaseItem {
@@ -130,11 +131,13 @@ export abstract class CodeBuilder {
 
     protected genSourceInfo(): {
         sources: string[],
-        params?: { [name: string]: string; }
+        params?: { [name: string]: string; },
+        alwaysBuildSourceFiles?: string[]
     } {
 
         const srcParams: { [name: string]: string; } = {};
         const srcList: { path: string, virtualPath?: string; }[] = this.project.getAllSources();
+        const alwaysBuildSourceFiles: string[] = [];
 
         // append user options for files
         try {
@@ -175,6 +178,14 @@ export abstract class CodeBuilder {
                     const parttenInfo = options?.files;
                     matcher(parttenInfo, 'path');
                 }
+
+                if (Array.isArray(options.alwaysBuildSourceFiles)) {
+                    options.alwaysBuildSourceFiles.forEach((srcPath) => {
+                        if (srcList.findIndex((inf) => this.project.comparePath(inf.path, srcPath)) != -1) {
+                            alwaysBuildSourceFiles.push(srcPath);
+                        }
+                    });
+                }
             }
 
         } catch (err) {
@@ -184,7 +195,8 @@ export abstract class CodeBuilder {
 
         return {
             sources: srcList.map((inf) => inf.path),
-            params: srcParams
+            params: srcParams,
+            alwaysBuildSourceFiles
         }
     }
 
@@ -384,6 +396,7 @@ export abstract class CodeBuilder {
             libDirs: this.getLibDirs().map(p => this.project.toRelativePath(p)),
             defines: this.getProjectCMacroList(),
             sourceList: sourceInfo.sources.sort(),
+            alwaysInBuildSources: sourceInfo.alwaysBuildSourceFiles,
             sourceParams: sourceInfo.params,
             options: JSON.parse(JSON.stringify(compileOptions)),
             env: this.project.getProjectVariables(),

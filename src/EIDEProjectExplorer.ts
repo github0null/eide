@@ -5399,6 +5399,20 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             },
         };
 
+        let isAlwaysInBuild = false;
+        if (extraArgs.alwaysBuildSourceFiles)
+            isAlwaysInBuild = extraArgs.alwaysBuildSourceFiles
+                .findIndex(p => project.comparePath(p, <string>fspath)) !== -1;
+        ui_cfg.items['always_in_build'] = {
+            type: 'bool',
+            attrs: {},
+            name: 'Always In Build',
+            data: <SimpleUIConfigData_boolean>{
+                value: isAlwaysInBuild,
+                default: isAlwaysInBuild,
+            }
+        };
+
         try {
             const db = project.getSourceCompileDatabase(fspath);
             if (db) {
@@ -5431,21 +5445,35 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
 
             let category: string = 'files';
-            let argsConf: any = extraArgs;
+            let fileOptions: any = extraArgs;
 
             if (virtpath) {
                 category = 'virtualPathFiles';
             }
 
-            if (!argsConf[category])
-                argsConf[category] = {};
+            if (!fileOptions[category])
+                fileOptions[category] = {};
 
             if (nArgs) {
-                argsConf[category][pattern] = nArgs;
+                fileOptions[category][pattern] = nArgs;
             } else {
-                if (argsConf[category][pattern] != undefined)
-                    delete argsConf[category][pattern];
+                if (fileOptions[category][pattern] != undefined)
+                    delete fileOptions[category][pattern];
             }
+
+            // option: always in build
+            const isAlwaysInBuild = (<SimpleUIConfigData_boolean>new_cfg.items['always_in_build'].data).value;
+            let alwaysBuildSourceFiles: string[] = fileOptions.alwaysBuildSourceFiles || [];
+            if (isAlwaysInBuild) {
+                alwaysBuildSourceFiles.push(<string>fspath);
+            } else {
+                const idx = alwaysBuildSourceFiles.findIndex(p => project.comparePath(p, <string>fspath));
+                if (idx !== -1) {
+                    alwaysBuildSourceFiles.splice(idx, 1);
+                }
+            }
+            alwaysBuildSourceFiles = ArrayDelRepetition(alwaysBuildSourceFiles);
+            fileOptions.alwaysBuildSourceFiles = alwaysBuildSourceFiles.length > 0 ? alwaysBuildSourceFiles : undefined;
 
             project.setSourceExtraArgsCfg(extraArgs);
             project.onSourceCompilerOptionsChanged();

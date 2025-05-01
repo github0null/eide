@@ -782,6 +782,7 @@ export interface BaseProjectInfo {
 export interface SourceExtraCompilerOptionsCfg {
     files?: { [key: string]: string };
     virtualPathFiles?: { [key: string]: string };
+    alwaysBuildSourceFiles?: string[];
 }
 
 export interface SourceFileOptions {
@@ -914,6 +915,19 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     public resolveEnvVar(p: string): string {
         return this.replacePathEnv(p);
+    }
+
+    public comparePath(path1: string, path2: string): boolean {
+        const abs1 = this.toAbsolutePath(path1);
+        const abs2 = this.toAbsolutePath(path2);
+        // windows 上盘符可能不区分大小写，因此需比较相对路径
+        if (platform.osType() == 'win32') {
+            const repath1 = this.toRelativePath(abs1);
+            const repath2 = this.toRelativePath(abs2);
+            return repath1 === repath2;
+        } else {
+            return abs1 === abs2;
+        }
     }
 
     public registerBuiltinVar(key: string, func: () => string) {
@@ -2294,6 +2308,13 @@ $(OUT_DIR):
                 if (globmatch.isMatch(searchPath, expr)) {
                     return true;
                 }
+            }
+        }
+
+        if (cfg.alwaysBuildSourceFiles) {
+            const idx = cfg.alwaysBuildSourceFiles.findIndex(p => this.comparePath(p, fspath));
+            if (idx !== -1) {
+                return true;
             }
         }
 
