@@ -782,6 +782,7 @@ export interface BaseProjectInfo {
 export interface SourceExtraCompilerOptionsCfg {
     files?: { [key: string]: string };
     virtualPathFiles?: { [key: string]: string };
+    alwaysBuildSourceFiles?: string[];
 }
 
 export interface SourceFileOptions {
@@ -914,6 +915,19 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     public resolveEnvVar(p: string): string {
         return this.replacePathEnv(p);
+    }
+
+    public comparePath(path1: string, path2: string): boolean {
+        const abs1 = this.toAbsolutePath(path1);
+        const abs2 = this.toAbsolutePath(path2);
+        // windows 上盘符可能不区分大小写，因此需比较相对路径
+        if (platform.osType() == 'win32') {
+            const repath1 = this.toRelativePath(abs1);
+            const repath2 = this.toRelativePath(abs2);
+            return repath1 === repath2;
+        } else {
+            return abs1 === abs2;
+        }
     }
 
     public registerBuiltinVar(key: string, func: () => string) {
@@ -1849,31 +1863,40 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             const compresser = new SevenZipper();
             compresser.UnzipSync(zipfile, outDir);
 
-            // setup
-            const libPaths: string[] = [outDir.path];
-            const keywords = prjLibTypKeywords.get(this.getToolchain().name);
-            if (keywords) {
-                // do match
-                const subdirs = outDir
-                    .GetList(File.EXCLUDE_ALL_FILTER, undefined)
-                    .filter(f => keywords.some(k => f.name.toLowerCase().includes(k)));
-                // matched dirs, filter files
-                if (subdirs.length > 0) {
-                    const cpuTyp = (<ArmBaseCompileConfigModel>this.GetConfiguration().compileConfigModel).data.cpuType;
-                    const allfiles = subdirs[0].GetList(undefined, File.EXCLUDE_ALL_FILTER);
-                    const unusedFiles = allfiles.filter(f => !matchLibFileAndCpuTyp(f.name, cpuTyp));
-                    libPaths.push(subdirs[0].path);
-                    if (unusedFiles.length < allfiles.length) {
-                        unusedFiles.forEach(f => { try { fs.unlinkSync(f.path) } catch (e) { } });
-                    }
-                }
-                // delete non-matched dirs
-                outDir.GetList(File.EXCLUDE_ALL_FILTER, undefined)
-                    .filter(f => !keywords.some(k => f.name.toLowerCase().includes(k)))
-                    .forEach(f => platform.DeleteDir(f));
+            // add include
+            const incroot = File.from(outDir.path, 'include');
+            if (incroot.IsDir()) {
+                this.GetConfiguration().CustomDep_AddIncDir(incroot);
             }
 
-            this.GetConfiguration().CustomDep_AddAllFromLibList(libPaths);
+            // add lib
+            const libroot = File.from(outDir.path, 'lib');
+            if (libroot.IsDir()) {
+                const libPaths: string[] = [libroot.path];
+                const keywords = prjLibTypKeywords.get(this.getToolchain().name);
+                if (keywords) {
+                    // do match
+                    const subdirs = libroot
+                        .GetList(File.EXCLUDE_ALL_FILTER, undefined)
+                        .filter(f => keywords.some(k => f.name.toLowerCase().includes(k)));
+                    // matched dirs, filter files
+                    if (subdirs.length > 0) {
+                        const cpuTyp = (<ArmBaseCompileConfigModel>this.GetConfiguration().compileConfigModel).data.cpuType;
+                        const allfiles = subdirs[0].GetList(undefined, File.EXCLUDE_ALL_FILTER);
+                        const unusedFiles = allfiles.filter(f => !matchLibFileAndCpuTyp(f.name, cpuTyp));
+                        libPaths.push(subdirs[0].path);
+                        if (unusedFiles.length < allfiles.length) {
+                            unusedFiles.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) { } });
+                        }
+                    }
+                    // delete non-matched dirs
+                    libroot.GetList(File.EXCLUDE_ALL_FILTER, undefined)
+                        .filter(f => !keywords.some(k => f.name.toLowerCase().includes(k)))
+                        .forEach(f => platform.DeleteDir(f));
+                }
+
+                this.GetConfiguration().CustomDep_AddAllFromLibList(libPaths);
+            }
 
             doneList.push(rePath);
         }
@@ -2285,6 +2308,13 @@ $(OUT_DIR):
                 if (globmatch.isMatch(searchPath, expr)) {
                     return true;
                 }
+            }
+        }
+
+        if (cfg.alwaysBuildSourceFiles) {
+            const idx = cfg.alwaysBuildSourceFiles.findIndex(p => this.comparePath(p, fspath));
+            if (idx !== -1) {
+                return true;
             }
         }
 
@@ -3355,7 +3385,8 @@ class EIDEProject extends AbstractProject {
 
         rootDir.CreateDir(true);
 
-        const wsFile = File.fromArray([rootDir.path, option.name + AbstractProject.workspaceSuffix]);
+        const wsFile = File.from(rootDir.path,
+            (option.projectName || option.name) + AbstractProject.workspaceSuffix);
 
         // if workspace is existed, force delete it
         if (wsFile.IsFile()) { try { fs.unlinkSync(wsFile.path); } catch (error) { } }

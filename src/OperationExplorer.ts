@@ -494,13 +494,13 @@ export class OperationExplorer {
         }
 
         // require project name
-        const name = await vscode.window.showInputBox({
+        const projectName = await vscode.window.showInputBox({
             placeHolder: input_project_name,
             ignoreFocusOut: true,
             value: templateItem.templateName ? `${templateItem.templateName}-quickstart` : 'NewProject1',
             validateInput: (name) => AbstractProject.validateProjectName(name)
         });
-        if (name === undefined) {
+        if (projectName === undefined) {
             return;
         }
 
@@ -520,7 +520,8 @@ export class OperationExplorer {
 
             this.emit('request_create_from_template', {
                 type: <any>null, // ignore it
-                name: name,
+                name: projectName,
+                projectName: projectName,
                 outDir: new File(outDir[0].fsPath),
                 templateFile: File.fromArray([
                     ResManager.GetInstance().GetTemplateDir().path, `${templateItem.templateName}.ept`
@@ -531,7 +532,8 @@ export class OperationExplorer {
 
             this.emit('request_create_project', {
                 type: templateItem.type,
-                name: name,
+                name: projectName,
+                projectName: projectName,
                 outDir: new File(outDir[0].fsPath)
             });
         }

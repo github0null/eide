@@ -35,7 +35,7 @@ import * as jsonc_parser from 'jsonc-parser';
 import { File } from '../lib/node-utility/File';
 import { ResManager } from './ResManager';
 import { GlobalEvent } from './GlobalEvents';
-import { AbstractProject, CheckError, DataChangeType, VirtualSource } from './EIDEProject';
+import { AbstractProject, CheckError, DataChangeType, VirtualSource, SourceFileOptions } from './EIDEProject';
 import { ToolchainName, ToolchainManager } from './ToolchainManager';
 import {
     BuilderOptions,
@@ -85,6 +85,7 @@ import {
     txt_yes,
     txt_no,
     remove_this_item,
+    view_str$prompt$filesOptionsComment,
 } from './StringTable';
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
@@ -3013,17 +3014,62 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             return curFolder;
         };
 
+        // init source args
+        const srcOptsObj = <SourceFileOptions>{ version: '2.0', options: {} };
+        srcOptsObj.version = '2.0';
+        const setupSourceOpts = (vFolderPath: string, srcFilePath: string) => {
+            for (const keilTarget of targets) {
+                if (srcOptsObj.options[keilTarget.name] == undefined)
+                    srcOptsObj.options[keilTarget.name] = { files: {}, virtualPathFiles: {} };
+                const targetSrcOpts = srcOptsObj.options[keilTarget.name];
+                if (keilTarget.fileOptions) {
+                    const vFilePath = `${vFolderPath}/${NodePath.basename(srcFilePath)}`;
+                    const fopts = keilTarget.fileOptions[vFilePath];
+                    if (fopts && targetSrcOpts.virtualPathFiles) {
+                        const optLi = [];
+                        fopts.includes.forEach(item => {
+                            if (keilTarget.type === 'C51') {
+                                optLi.push(`INCDIR(${baseInfo.rootFolder.ToRelativePath(item) || item})`);
+                            } else {
+                                optLi.push(`-I${baseInfo.rootFolder.ToRelativePath(item) || item}`);
+                            }
+                        });
+                        fopts.defines.forEach(item => {
+                            if (keilTarget.type === 'C51') {
+                                if (item.includes('='))
+                                    optLi.push(`DEFINE(${item})`);
+                                else
+                                    optLi.push(`DEFINE(${item}=1)`);
+                            } else {
+                                optLi.push(`-D${item}`);
+                            }
+                        });
+                        fopts.undefines.forEach(item => {
+                            if (keilTarget.type === 'C51') {
+                                //TODO: not support -U options.
+                            } else {
+                                optLi.push(`-U${item}`);
+                            }
+                        });
+                        if (fopts.miscOptions)
+                            optLi.push(fopts.miscOptions);
+                        targetSrcOpts.virtualPathFiles[vFilePath] = optLi.join(' ');
+                    }
+                }
+            }
+        };
+
         // init file group
-        const fileFilter = AbstractProject.getFileFilters();
         targets[0].fileGroups.forEach((group) => {
             const vPath = `${VirtualSource.rootName}/${File.ToUnixPath(group.name)}`;
             const VFolder = <VirtualFolder>getVirtualFolder(vPath);
             group.files.forEach((fileItem) => {
-                if (fileFilter.some((reg) => reg.test(fileItem.file.name))) {
-                    VFolder.files.push({
-                        path: baseInfo.rootFolder.ToRelativePath(fileItem.file.path) || fileItem.file.path
-                    });
-                }
+                // add source file
+                VFolder.files.push({
+                    path: baseInfo.rootFolder.ToRelativePath(fileItem.file.path) || fileItem.file.path
+                });
+                // add file options for every target
+                setupSourceOpts(vPath, fileItem.file.path);
             });
         });
 
@@ -3280,6 +3326,10 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 .Write(ini.stringify(prjenv));
         }
 
+        // save src options
+        const optFile = File.fromArray([baseInfo.rootFolder.path, AbstractProject.EIDE_DIR, `files.options.yml`]);
+        optFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(srcOptsObj, { indent: 4 }));
+
         // switch project
         const selection = await vscode.window.showInformationMessage(
             view_str$operation$import_done, continue_text, cancel_text);
@@ -3294,7 +3344,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         const templateFile = <File>option.templateFile;
 
         const targetDir = new File(option.outDir.path + File.sep + option.name);
-        const targetWorkspaceFilePath = targetDir.path + File.sep + option.name + AbstractProject.workspaceSuffix;
+        const targetWorkspaceFile = File.from(targetDir.path,
+            (option.projectName || option.name) + AbstractProject.workspaceSuffix);
 
         try {
 
@@ -3324,7 +3375,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                             if (wsFile) {
 
                                 // rename workspace file name
-                                fs.renameSync(wsFile.path, targetWorkspaceFilePath);
+                                fs.renameSync(wsFile.path, targetWorkspaceFile.path);
 
                                 // rename project
                                 if (templateFile.suffix != '.ewt') { // ignore eide workspace project
@@ -3371,7 +3422,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
             // switch workspace
             if (item === 'Yes') {
-                const wsFile = new File(targetWorkspaceFilePath);
+                const wsFile = targetWorkspaceFile;
                 if (wsFile.IsFile()) {
                     WorkspaceManager.getInstance().openWorkspace(wsFile);
                 }
@@ -5348,6 +5399,20 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             },
         };
 
+        let isAlwaysInBuild = false;
+        if (extraArgs.alwaysBuildSourceFiles)
+            isAlwaysInBuild = extraArgs.alwaysBuildSourceFiles
+                .findIndex(p => project.comparePath(p, <string>fspath)) !== -1;
+        ui_cfg.items['always_in_build'] = {
+            type: 'bool',
+            attrs: {},
+            name: 'Always In Build',
+            data: <SimpleUIConfigData_boolean>{
+                value: isAlwaysInBuild,
+                default: isAlwaysInBuild,
+            }
+        };
+
         try {
             const db = project.getSourceCompileDatabase(fspath);
             if (db) {
@@ -5380,21 +5445,35 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
 
             let category: string = 'files';
-            let argsConf: any = extraArgs;
+            let fileOptions: any = extraArgs;
 
             if (virtpath) {
                 category = 'virtualPathFiles';
             }
 
-            if (!argsConf[category])
-                argsConf[category] = {};
+            if (!fileOptions[category])
+                fileOptions[category] = {};
 
             if (nArgs) {
-                argsConf[category][pattern] = nArgs;
+                fileOptions[category][pattern] = nArgs;
             } else {
-                if (argsConf[category][pattern] != undefined)
-                    delete argsConf[category][pattern];
+                if (fileOptions[category][pattern] != undefined)
+                    delete fileOptions[category][pattern];
             }
+
+            // option: always in build
+            const isAlwaysInBuild = (<SimpleUIConfigData_boolean>new_cfg.items['always_in_build'].data).value;
+            let alwaysBuildSourceFiles: string[] = fileOptions.alwaysBuildSourceFiles || [];
+            if (isAlwaysInBuild) {
+                alwaysBuildSourceFiles.push(<string>fspath);
+            } else {
+                const idx = alwaysBuildSourceFiles.findIndex(p => project.comparePath(p, <string>fspath));
+                if (idx !== -1) {
+                    alwaysBuildSourceFiles.splice(idx, 1);
+                }
+            }
+            alwaysBuildSourceFiles = ArrayDelRepetition(alwaysBuildSourceFiles);
+            fileOptions.alwaysBuildSourceFiles = alwaysBuildSourceFiles.length > 0 ? alwaysBuildSourceFiles : undefined;
 
             project.setSourceExtraArgsCfg(extraArgs);
             project.onSourceCompilerOptionsChanged();

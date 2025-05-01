@@ -38,7 +38,7 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/MIPS/RISC-V",
-    "version": "3.21.1",
+    "version": "3.21.2",
     "preview": false,
     "engines": {
         "vscode": "^1.67.0"
@@ -1791,10 +1791,6 @@
             {
                 "fileMatch": "**/*.options.arm.iar.json",
                 "url": "./lang/arm.iar.verify.json"
-            },
-            {
-                "fileMatch": "**/*.stm8.gnu-sdcc.json",
-                "url": "./lang/stm8.gnu-sdcc.verify.json"
             },
             {
                 "fileMatch": "**/*.stm8.iar.json",

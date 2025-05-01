@@ -6,6 +6,23 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.21.2] revision
+
+**New**:
+  - `File Option`: New option `Always In Build`. This will make the source file always be builded regardless of whether it changes or not.
+  - `Linker Option`: New option `Don't Output Specific Binary Files`. You can exclude some specific binary type when output binary files.
+
+**Fix**:
+  - `SDCC model`: Debug option missed on linker.
+
+**Optimize**:
+  - `CMSIS Library`: Update built-in cmsis dsp lib/headers.
+  - `Keil Project Import`: Parse file options when import keil arm project.
+  - `Create Project`: Use projectName when create .code-workspace file.
+  - `unify_builder`: Update unify_builder to v3.9.4
+
+***
+
 ### [v3.21.1] revision
 
 **New**:

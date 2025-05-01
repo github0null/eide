@@ -76,6 +76,7 @@
 
 你可以自行构建该扩展
 
+> [!IMPORTANT]  
 > 由于这个扩展有一些历史原因，因此要求的 node 版本是 16。
 
 1. 安装 `NodeJS 16`（建议版本：v16.20.2）；推荐使用 nvm 工具管理 NodeJS 版本
@@ -92,6 +93,9 @@
    - 使用 `npm: webpack` 可构建带有调试信息的扩展，稍后你可以按 F5 进行调试
 
    - 使用 `build vsix` 构建并打包成 VSIX
+
+> [!NOTE]  
+> 注意：VSCode 打开工程源码可能会语法报错，这是由于这个项目使用了较老版本的 TypeScript，请按下 `Ctrl+Shift+P` 执行 `TypeScript: Select TypeScript Version...` 选择工作区中的版本 `v3.9.x`.
 
 ## 赞助 👍
 
