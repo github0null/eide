@@ -45,6 +45,15 @@ import { SettingManager } from './SettingManager';
 import { ToolchainName } from './ToolchainManager';
 import { Time } from '../lib/node-utility/Time';
 
+/**
+ * @param len len必须是2的整数倍
+ */
+export function generateRandomStr(len?: number): string {
+    if (len == undefined || len < 16) len = 16;
+    const randomName = crypto.randomBytes(len / 2).toString('hex'); // 生成一个32字符长的十六进制字符串
+    return randomName;
+}
+
 export function generateDotnetProgramCmd(programFile: File, args?: string[]): string {
     // 在非 win32 平台上，使用 dotnet 命令去直接执行程序的本体.
     // 命令 "<my_program>.exe" 的等价替换是 "dotnet <my_program_dir>/<my_program>.dll"

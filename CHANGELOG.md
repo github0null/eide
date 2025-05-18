@@ -6,6 +6,16 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.21.3] revision
+
+**Fix**:
+  - `Eclipse Importer`: Eclipse project parser crashed on some empty node.
+
+**Optimize**:
+  - `Export Makefile`: Use relative linker script path when export makefile. Generate `builder.params` to system tmp dir when export makefile.
+
+***
+
 ### [v3.21.2] revision
 
 **New**:
