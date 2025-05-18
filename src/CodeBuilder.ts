@@ -49,7 +49,7 @@ import { ArrayDelRepetition } from "../lib/node-utility/Utility";
 import { DependenceManager } from "./DependenceManager";
 import { WorkspaceManager } from "./WorkspaceManager";
 import { ToolchainName } from "./ToolchainManager";
-import { md5, sha256, copyObject, generateDotnetProgramCmd } from "./utility";
+import { md5, sha256, copyObject, generateDotnetProgramCmd, generateRandomStr } from "./utility";
 import { exeSuffix, osType } from "./Platform";
 import { FileWatcher } from "../lib/node-utility/FileWatcher";
 import { STVPFlasherOptions } from './HexUploader';
@@ -230,6 +230,26 @@ export abstract class CodeBuilder {
         return !this.useFastCompile;
     }
 
+    protected isExportMakefileMode(): boolean {
+        return this.otherArgs?.includes('--out-makefile') || false;
+    }
+
+    protected isDryRun(): boolean {
+        return this.otherArgs?.includes('--dry-run') || false;
+    }
+
+    protected convLinkerScriptPathForCompiler(path: string, noQuote?: boolean): string {
+        let outPath: string;
+        if (this.isExportMakefileMode()) {
+            outPath = this.project.toRelativePath(path);
+        } else {
+            outPath = File.ToUnixPath(this.project.ToAbsolutePath(path));
+        }
+        if (outPath.includes(' ') && !noQuote)
+            outPath = `"${outPath}"`; // add quotes if path has space
+        return outPath;
+    }
+
     build(options?: BuildOptions): void {
 
         let commandLine = this.genBuildCommand(options);
@@ -328,43 +348,6 @@ export abstract class CodeBuilder {
         return commandLine;
     }
 
-    private genHashFromCompilerOptions(builderOptions: BuilderParams): any {
-
-        const res: any = {};
-
-        if (typeof builderOptions['defines'] == 'object') {
-            res['c/cpp-defines'] = md5(JSON.stringify(builderOptions['defines']));
-        }
-
-        const options: any = builderOptions.options;
-
-        for (const key in options) {
-            if (typeof options[key] == 'object') {
-                res[key] = md5(JSON.stringify(options[key]));
-            }
-        }
-
-        return res;
-    }
-
-    private compareHashObj(key: string, hashObj_1?: { [key: string]: string }, hashObj_2?: { [key: string]: string }): boolean {
-
-        if (hashObj_1 == hashObj_2 == undefined) {
-            return true;
-        }
-
-        if (hashObj_1 && hashObj_2) {
-
-            if (hashObj_1[key] == hashObj_2[key] == undefined) {
-                return true;
-            }
-
-            return hashObj_1[key] == hashObj_2[key];
-        }
-
-        return false;
-    }
-
     private getCommands(): string[] {
 
         const config = this.project.GetConfiguration().config;
@@ -372,7 +355,6 @@ export abstract class CodeBuilder {
         const toolchain = this.project.getToolchain();
 
         const outDir = File.ToUnixPath(this.project.getOutputDir());
-        const paramsPath = this.project.ToAbsolutePath(outDir + File.sep + this.paramsFileName);
         const compileOptions: BuilderOptions = this.project.GetConfiguration().compileConfigModel.getOptions();
         const memMaxSize = this.getMcuMemorySize();
         const sourceInfo = this.genSourceInfo();
@@ -510,6 +492,9 @@ export abstract class CodeBuilder {
             builderOptions.buildMode = builderModeList.map(str => str.toLowerCase()).join('|');
         }
 
+        const paramsPath = (this.isExportMakefileMode() && this.isDryRun())
+            ? File.from(os.tmpdir(), `${generateRandomStr()}-${this.paramsFileName}`).path
+            : this.project.ToAbsolutePath(outDir + File.sep + this.paramsFileName);
         let cmds = ['-p', paramsPath];
 
         if (this.isRebuild()) {
@@ -924,10 +909,11 @@ export class ARMCodeBuilder extends CodeBuilder {
                         scatterFilePath.split(',')
                             .filter(s => s.trim() != '')
                             .forEach((sctPath) => {
-                                ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
+                                ldFileList.push(this.convLinkerScriptPathForCompiler(sctPath));
                             });
-                    } else { // auto generate scatter file 
-                        ldFileList.push(`"${File.ToUnixPath(this.GenMemScatterFile(config).path)}"`);
+                    } else { // auto generate scatter file
+                        const sctPath = this.GenMemScatterFile(config).path;
+                        ldFileList.push(this.convLinkerScriptPathForCompiler(sctPath));
                     }
                 }
                 break;
@@ -938,7 +924,7 @@ export class ARMCodeBuilder extends CodeBuilder {
                     scatterFilePath.split(',')
                         .filter(s => s.trim() != '')
                         .forEach((sctPath) => {
-                            ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
+                            ldFileList.push(this.convLinkerScriptPathForCompiler(sctPath));
                         });
                 }
                 break;
@@ -949,7 +935,7 @@ export class ARMCodeBuilder extends CodeBuilder {
                     scatterFilePath.split(',')
                         .filter(s => s.trim() != '')
                         .forEach((sctPath) => {
-                            ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
+                            ldFileList.push(this.convLinkerScriptPathForCompiler(sctPath));
                         });
                 }
                 break;
@@ -1030,7 +1016,7 @@ class RiscvCodeBuilder extends CodeBuilder {
         config.compileConfig.linkerScriptPath.split(',')
             .filter(s => s.trim() != '')
             .forEach((sctPath) => {
-                ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
+                ldFileList.push(this.convLinkerScriptPathForCompiler(sctPath));
             });
 
         if (!options['linker']) {
@@ -1056,7 +1042,7 @@ class MipsCodeBuilder extends CodeBuilder {
         config.compileConfig.linkerScriptPath.split(',')
             .filter(s => s.trim() != '')
             .forEach((sctPath) => {
-                ldFileList.push(`"${File.ToUnixPath(this.project.ToAbsolutePath(sctPath))}"`);
+                ldFileList.push(this.convLinkerScriptPathForCompiler(sctPath));
             });
 
         if (!options['linker']) {
@@ -1086,8 +1072,7 @@ class AnyGccCodeBuilder extends CodeBuilder {
         options.linker['linker-script'] = config.compileConfig.linkerScriptPath.split(',')
             .filter(s => s.trim() != '')
             .map((sctPath) => {
-                const absPath = File.ToUnixPath(this.project.ToAbsolutePath(sctPath));
-                return absPath.includes(' ') ? `"${absPath}"` : absPath;
+                return this.convLinkerScriptPathForCompiler(sctPath);
             });
     }
 }
@@ -1145,7 +1130,7 @@ class C51CodeBuilder extends CodeBuilder {
             config.compileConfig.linkerScript.split(',')
                 .filter(s => s.trim() != '')
                 .forEach((sctPath) => {
-                    ldFileList.push(this.project.ToAbsolutePath(sctPath));
+                    ldFileList.push(this.convLinkerScriptPathForCompiler(sctPath, true));
                 });
 
             if (!options['linker']) {

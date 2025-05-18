@@ -262,7 +262,7 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
             }
         }
 
-        if (cTarget.sourceEntries) {
+        if (Array.isArray(cTarget.sourceEntries) && typeof cTarget.sourceEntries[0] == 'object') {
 
             toArray(cTarget.sourceEntries[0].entry).forEach(e => {
 
@@ -338,7 +338,7 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
     const virtualRootMap: { [vpath: string]: string } = {};
 
     // parse external source
-    if (_prjDom.linkedResources) {
+    if (_prjDom.linkedResources && typeof _prjDom.linkedResources[0] == 'object') {
         toArray(_prjDom.linkedResources[0].link).forEach(link => {
             if (link.type[0] == '1') { // virtual file
                 const vPath = link.name[0].trim();
