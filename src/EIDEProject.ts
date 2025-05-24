@@ -57,7 +57,6 @@ import { HexUploaderType } from './HexUploader';
 import { WebPanelManager } from './WebPanelManager';
 import { DependenceManager } from './DependenceManager';
 import * as platform from './Platform';
-import { IDebugConfigGenerator } from './DebugConfigGenerator';
 import { md5, copyObject, compareVersion, isGccFamilyToolchain, deepCloneObject, notifyReloadWindow, copyAndMakeObjectKeysToLowerCase, runShellCommand, execInternalCommand } from './utility';
 import { ResInstaller } from './ResInstaller';
 import {
