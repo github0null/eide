@@ -57,7 +57,6 @@ import { HexUploaderType } from './HexUploader';
 import { WebPanelManager } from './WebPanelManager';
 import { DependenceManager } from './DependenceManager';
 import * as platform from './Platform';
-import { IDebugConfigGenerator } from './DebugConfigGenerator';
 import { md5, copyObject, compareVersion, isGccFamilyToolchain, deepCloneObject, notifyReloadWindow, copyAndMakeObjectKeysToLowerCase, runShellCommand, execInternalCommand } from './utility';
 import { ResInstaller } from './ResInstaller';
 import {
@@ -2068,7 +2067,7 @@ OUT_LIBS += lib${libname}
 # --------------------------------------------
 
 OUT_DIR = <LIB_OUT_DIR>
-AR ?= <LIB_AR_PATH>
+AR = <LIB_AR_PATH>
 
 # colors
 COLOR_END  = "\\e[0m"
@@ -3162,9 +3161,9 @@ class EIDEProject extends AbstractProject {
     protected onPackageChanged(): void {
         const prjConfig = this.GetConfiguration();
         const packDir = this.GetPackManager().GetPackDir();
-        if (packDir) { // update project config
-            prjConfig.config.packDir = this.ToRelativePath(packDir.path) || null; // cannot at outside of project root
-        }
+        prjConfig.config.packDir = packDir ? (this.ToRelativePath(packDir.path) || null) : null;
+        if (!this.GetPackManager().getCurrentDevInfo())
+            prjConfig.config.deviceName = null;
         this.dependenceManager.Refresh();
         this.emit('dataChanged', 'pack');
     }

@@ -167,8 +167,8 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.refresh', () => projectExplorer.Refresh()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.switchMode', (item) => projectExplorer.switchTarget(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.exportAsTemplate', (item) => projectExplorer.ExportProjectTemplate(item)));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.exportXml', (item) => projectExplorer.ExportKeilXml(item.val.projectIndex)));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.exportMakefile', (item) => projectExplorer.ExportMakefile(item.val.projectIndex)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.exportXml', (item) => projectExplorer.ExportKeilXml(item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.exportMakefile', (item) => projectExplorer.ExportMakefile(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.show_proj_vars', (item) => projectExplorer.ShowProjectVariables(item)));
 
     // project explorer

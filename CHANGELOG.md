@@ -6,6 +6,15 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.21.4] revision
+
+**Fix**:
+  - `unify_builder`: `pre-build` task was running unexpectedly.
+  - `Project View`: Some command callbacks passed wrong params.
+  - `CMSIS Pack`: Package info was not be cleaned after uninstalled package.
+
+***
+
 ### [v3.21.3] revision
 
 **Fix**:

@@ -4643,9 +4643,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
     }
 
-    ExportKeilXml(prjIndex: number) {
+    ExportKeilXml(prjItem: ProjTreeItem) {
         try {
-            const prj = this.dataProvider.GetProjectByIndex(prjIndex);
+            const prj = this.getProjectByTreeItem(prjItem);
+            if (!prj)
+                return;
+
             const matchList: ToolchainName[] = ['AC5', 'AC6', 'GCC', 'Keil_C51'];
 
             // limit toolchain
@@ -4920,6 +4923,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 let errLines: string[] = [`Execute: ${cmdLine}`];
                 proc.on('launch', () => {
                     progress.report({ message: 'Running ...' });
+                    GlobalEvent.log_info(`Export Makefile: ${cmdLine}`);
                 });
                 proc.on('line', str => {
                     errLines.push(str);
