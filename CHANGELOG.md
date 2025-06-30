@@ -6,6 +6,14 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.21.5] revision
+
+**Fix**:
+  - `unify_builder`: Unresolved variables in compiler command line.
+  - `Keil Project Import`: Incorrect option mapping when import keil project.
+
+***
+
 ### [v3.21.4] revision
 
 **Fix**:
