@@ -31,7 +31,6 @@
                             "level-0": "1",
                             "level-1": "2",
                             "level-2": "3",
-                            "default": "3",
                             "level-3": "4"
                         }
                     },
@@ -83,8 +82,7 @@
                         "enum": {
                             "unspecified": "0",
                             "no-warnings": "1",
-                            "all-warnings": "2",
-                            "default": "2"
+                            "all-warnings": "2"
                         }
                     },
                     "strict-ANSI-C": {
@@ -227,7 +225,6 @@
                         "keilName": "Optim",
                         "enum": {
                             "level-0": "1",
-                            "default": "1",
                             "level-1": "2",
                             "level-2": "3",
                             "level-3": "4",
@@ -306,14 +303,12 @@
                             "no-warnings": "1",
                             "all-warnings": "2",
                             "ac5-like-warnings": "3",
-                            "default": "3",
                             "misra-compatible": "4"
                         }
                     },
                     "language-c": {
                         "keilName": "v6Lang",
                         "enum": {
-                            "default": "6",
                             "c90": "1",
                             "gnu90": "2",
                             "c99": "3",
@@ -325,7 +320,6 @@
                     "language-cpp": {
                         "keilName": "v6LangP",
                         "enum": {
-                            "default": "2",
                             "c++98": "1",
                             "gnu++98": "2",
                             "c++11": "3",
