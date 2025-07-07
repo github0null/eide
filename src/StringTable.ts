@@ -419,6 +419,11 @@ export const view_str$env_desc$compiler_folder = [
 
 //---------------Other---------------
 
+export const view_str$virual_doc_provider_banner = [
+    `通过修改并保存这个文件来更新项目配置（注意这个文件是临时的，不要使用其他工具打开这个文件）`,
+    `You can modify the configuration by editing and saving this file.`
+][langIndex];
+
 export const view_str$prompt$filesOptionsComment = [
     `##########################################################################################`,
     `#                        Append Compiler Options For Source Files`,

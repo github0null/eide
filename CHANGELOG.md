@@ -6,6 +6,13 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.21.6] preview
+
+**Change**:
+  - `Exclude List`: Show all exclude list for every targets. (command: `_cl.eide.project.source.modify.exclude_list`)
+
+***
+
 ### [v3.21.5] revision
 
 **Fix**:

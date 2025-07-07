@@ -86,6 +86,7 @@ import {
     txt_no,
     remove_this_item,
     view_str$prompt$filesOptionsComment,
+    view_str$virual_doc_provider_banner
 } from './StringTable';
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
@@ -8066,7 +8067,7 @@ class ProjectAttrModifier implements ModifiableYamlConfigProvider {
         // gen deps yaml content
         const yamlLines: string[] = [
             `#`,
-            `# You can modify the configuration by editing and saving this file.`,
+            `# ${view_str$virual_doc_provider_banner}`,
             `#`,
             `# example:`,
             `#`,
@@ -8225,24 +8226,41 @@ class ProjectExcSourceModifier implements ModifiableYamlConfigProvider {
         // gen deps yaml content
         const yamlLines: string[] = [
             `#`,
-            `# You can modify the configuration by editing and saving this file.`,
+            `# ${view_str$virual_doc_provider_banner}`,
             `#`,
-            '# format:',
-            '#      - ./xxx/xxx_src_1.c',
-            '#      - ../xx/a/b/x/xxx_src_2.c',
-            '#      - <virtual_root>/virtual_folder_1/xxx_src_1.c',
-            '#      - <virtual_root>/virtual_folder_1/dir/xxx_src_2.c',
+            '# text format:',
+            '',
+            '# <target name>:',
+            '#     - ./xxx/xxx_src_1.c',
+            '#     - ../xx/a/b/x/xxx_src_2.c',
+            '#     - <virtual_root>/virtual_folder_1/xxx_src_1.c',
+            '#     - <virtual_root>/virtual_folder_1/dir/xxx_src_2.c',
             '#',
             ``,
         ];
 
         try {
 
-            prj.GetConfiguration().config.excludeList.forEach((path) => {
-                yamlLines.push(`- ${path}`);
+            // 将所有的 targets 中的 excludeList 原样摘出，
+            // 然后使用 yaml 格式转换为文本
+            prj.getTargets().forEach((targetName) => {
+                let excludeList: string[] = [];
+                if (targetName == prj.getCurrentTarget()) {
+                    excludeList = prj.GetConfiguration().config.excludeList;
+                } else {
+                    let target = prj.GetConfiguration().config.targets[targetName];
+                    if (target)
+                        excludeList = target.excludeList;
+                }
+                yamlLines.push(`${targetName}:`);
+                excludeList.forEach(path => {
+                    yamlLines.push(`    - ${path}`);
+                });
+                yamlLines.push('');
             });
 
-            const getOldNameByProject = (prj: AbstractProject) => {
+            // 查找是否有还未销毁的临时文件可用
+            const findCache = (prj: AbstractProject) => {
                 for (const KV of this.yamlFilesMap) {
                     if (KV[1].getWsPath().toLowerCase() == prj.getWsPath().toLowerCase()) {
                         return KV[0];
@@ -8251,11 +8269,11 @@ class ProjectExcSourceModifier implements ModifiableYamlConfigProvider {
             };
 
             const yamlStr = yamlLines.join(os.EOL);
-            const oldName = getOldNameByProject(prj);
+            const oldfile = findCache(prj);
 
             let ymlFile: File;
-            if (oldName) {
-                ymlFile = File.fromArray([os.tmpdir(), oldName]);
+            if (oldfile) {
+                ymlFile = File.fromArray([os.tmpdir(), oldfile]);
             } else {
                 ymlFile = File.fromArray([os.tmpdir(), defFileName]);
                 this.yamlFilesMap.set(ymlFile.name, prj);
@@ -8278,17 +8296,37 @@ class ProjectExcSourceModifier implements ModifiableYamlConfigProvider {
         if (!prj) return;
 
         try {
-            const excList = yml.parse(yamlFile.Read());
-            if (!Array.isArray(excList)) { throw new Error(`Type error, exclude list must be an array !`); }
-            const newExcLi = excList.map(p => File.ToUnixPath(p));
+            const jobj = yml.parse(yamlFile.Read());
+            // check yaml format
+            for (const k in jobj) {
+                if (jobj[k] == null)
+                    jobj[k] = [];
+                else if (!Array.isArray(jobj[k]))
+                    throw new Error(`Type error in key '${k}': exclude list must be an array.`);
+            }
+            // update target's exclude list
+            let newExcLi: string[] = []; // for current target
             const oldExcLi = prj.GetConfiguration().config.excludeList;
+            const allTargets = prj.GetConfiguration().config.targets;
+            prj.getTargets().forEach((targetName) => {
+                let newValue: string[] = [];
+                if (jobj[targetName])
+                    newValue = (<string[]>jobj[targetName]).map(p => File.ToUnixPath(p));
+                if (targetName == prj.getCurrentTarget())
+                    newExcLi = newValue;
+                else
+                    allTargets[targetName].excludeList = newValue;
+            });
             prj.GetConfiguration().config.excludeList = newExcLi;
+            prj.Save();
             prj.notifySourceExplorerViewRefresh();
-            // update filesystem source link
+            // update filesystem source link for current target
             const diffNew2Old = newExcLi.filter(p => !oldExcLi.includes(p));
             const diffOld2New = oldExcLi.filter(p => !newExcLi.includes(p));
-            const needUpdateLi = ArrayDelRepetition(diffNew2Old.concat(diffOld2New)).filter(p => !p.startsWith(VirtualSource.rootName));
-            needUpdateLi.forEach(dir => prj.getNormalSourceManager().notifyUpdateFolder(prj.ToAbsolutePath(dir)));
+            const needUpdateLi = ArrayDelRepetition(diffNew2Old.concat(diffOld2New))
+                .filter(p => !p.startsWith(VirtualSource.rootName));
+            needUpdateLi.forEach(dir => 
+                prj.getNormalSourceManager().notifyUpdateFolder(prj.ToAbsolutePath(dir)));
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
         }
