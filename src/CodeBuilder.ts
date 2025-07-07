@@ -815,6 +815,9 @@ export class ARMCodeBuilder extends CodeBuilder {
 
         cpu = cpu.toLowerCase();
 
+        if (ArmCpuUtils.isArmArchName(cpu))
+            return cpu; // 如果是 arm 架构名，则直接返回
+
         switch (hardOption) {
             case 'single':
                 if (ArmCpuUtils.hasFpu(cpu)) {
@@ -890,6 +893,9 @@ export class ARMCodeBuilder extends CodeBuilder {
         options.global['microcontroller-fpu'] = cpuString;
         options.global['microcontroller-float'] = cpuString;
         options.global['target'] = cpuString; // params for 'armclang-asm'
+
+        if (ArmCpuUtils.isArmArchName(config.compileConfig.cpuType))
+            options.global['$arch-extensions'] = config.compileConfig.archExtensions.replace(/,/g, '');
 
         if (!options['linker']) {
             options.linker = Object.create(null);

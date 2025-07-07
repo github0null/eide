@@ -179,6 +179,11 @@ export const view_str$compile$cpuType = [
     'CPU Type'
 ][langIndex];
 
+export const view_str$compile$archExtensions = [
+    'Arch 扩展选项',
+    'Arch Extended Options'
+][langIndex];
+
 export const view_str$compile$cpuVendor = [
     'CPU 厂商',
     'CPU Vendor'
