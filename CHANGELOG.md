@@ -6,7 +6,10 @@ All notable version changes will be recorded in this file.
 
 ***
 
-### [v3.21.6] preview
+### [v3.21.7] preview
+
+**New**:
+  - `Toolchain`: Add `Armv8-M.Main, Armv8.1-M.Main` architectures support for `AC6 (armclang)` and `arm-none-eabi-gcc`.
 
 **Change**:
   - `Exclude List`: Show all exclude list for every targets. (command: `_cl.eide.project.source.modify.exclude_list`)
