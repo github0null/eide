@@ -710,7 +710,7 @@ export abstract class ArmBaseCompileConfigModel
                 case 'archExtensions':
                     return ArmCpuUtils.isArmArchName(this.data.cpuType);
                 case 'floatingPointHardware':
-                    return ArmCpuUtils.hasFpu(this.data.cpuType);
+                    return ArmCpuUtils.hasFpu(this.data.cpuType) && !ArmCpuUtils.isArmArchName(this.data.cpuType);
                 default:
                     return false;
             }
@@ -1028,10 +1028,10 @@ class Armcc6CompileConfigModel extends ArmBaseCompileConfigModel {
         //'Cortex-R4F',
         'SC000',
         'SC300',
-        // this.DIV_TAG + 'Architectures', // div
-        // 'Armv8-m.Base',
-        // 'Armv8-m.Main',
-        // 'Armv8-m.Main'
+        this.DIV_TAG + 'Architectures', // div
+        'Armv8-m.Base',
+        'Armv8-m.Main',
+        'Armv8.1-m.Main'
     ];
 }
 
