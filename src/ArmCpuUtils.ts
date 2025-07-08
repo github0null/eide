@@ -42,11 +42,15 @@ const armArchMap: { [arch: string]: string[] } = {
     'ARMv6-M': ['Cortex-M family', 'sc000', 'cortex-m0', 'cortex-m0+', 'cortex-m0plus', 'cortex-m1'],
     'ARMv7-M': ['Cortex-M family', 'cortex-m3', 'sc300'],
     'ARMv7E-M': ['Cortex-M family', 'cortex-m4', 'cortex-m7'],
-    'ARMv8-M.Base': ['Cortex-M family', 'cortex-m23'],
-    'ARMv8-M.Main': ['Cortex-M family', 'cortex-m33', 'cortex-m35p'],
-    'ARMv8.1-M.Main': ['Cortex-M family', 'cortex-m52', 'cortex-m55', 'cortex-m85'],
     'ARMv7-R': ['Cortex-R family', 'cortex-r4', 'cortex-r5', 'cortex-r7', 'cortex-r8'],
     'ARMv8-R': ['Cortex-R family', 'cortex-r52', 'cortex-r82'],
+    'ARMv8-M.Base'                  : ['ARMv8-M Baseline', 'cortex-m23'],
+    'ARMv8-M.Main'                  : ['ARMv8-M Mainline', 'cortex-m33', 'cortex-m35p'],
+    'ARMv8.1-M.Main'                : ['ARMv8.1-M Mainline (With full feature)', 'cortex-m52', 'cortex-m55', 'cortex-m85'],
+    'ARMv8.1-M.Main.no_mve.no_fpu'  : ['ARMv8.1-M Mainline (No Helium, no FPU)', 'cortex-m52', 'cortex-m55', 'cortex-m85'],
+    'ARMv8.1-M.Main.no_mve.fpu'     : ['ARMv8.1-M Mainline (No Helium, with FPU)', 'cortex-m52', 'cortex-m55', 'cortex-m85'],
+    'ARMv8.1-M.Main.mve.no_fpu'     : ['ARMv8.1-M Mainline (With Integer Helium, no FPU)', 'cortex-m52', 'cortex-m55', 'cortex-m85'],
+    'ARMv8.1-M.Main.mve.scalar_fpu' : ['ARMv8.1-M Mainline (With Integer Helium, scalar FPU)', 'cortex-m52', 'cortex-m55', 'cortex-m85'],
 };
 
 export function isArmArchName(name: string): boolean {
@@ -239,25 +243,6 @@ export function getArchExtensions(arch: string, toolchain: string): { name: stri
                         description: 'Digital Signal Processing (DSP) extension for the Armv8-M.mainline architecture.'
                     }
                 ];
-            case 'armv8.1-m.main':
-                return [
-                    {
-                        name: '+dsp',
-                        description: 'Digital Signal Processing (DSP) extension for the Armv8-M.mainline architecture.'
-                    },
-                    {
-                        name: '+lob',
-                        description: 'Low Overhead Branch extension. (Enabled by default)'
-                    },
-                    {
-                        name: '+mve',
-                        description: 'M-Profile Vector Extension (MVE).'
-                    },
-                    {
-                        name: '+pacbti',
-                        description: 'Pointer Authentication and Branch Target Identification (PACBTI) extension.'
-                    }
-                ];
             default:
                 return [];
         }
@@ -279,6 +264,8 @@ export function hasFpu(cpu: string, hasDp?: boolean) {
             case 'armv7e-m':
             case 'armv8-m.main':
             case 'armv8.1-m.main':
+            case 'armv8.1-m.main.no_mve.fpu':
+            case 'armv8.1-m.main.mve.scalar_fpu':
                 return true;
             default:
                 return false;

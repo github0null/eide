@@ -685,15 +685,17 @@ export abstract class ArmBaseCompileConfigModel
         const toolchain = this.prjConfigData.toolchain;
 
         if (toolchain === 'AC5' || toolchain === 'AC6') {
+            // AC6 中的 armv8.1-m 已经含有 arch 扩展，无需额外指定 floatingPointHardware
+            const is_arm_v8_1_m = this.data.cpuType.toLowerCase().startsWith('armv8.1-m.');
             switch (key) {
                 case 'cpuType':
                 case 'useCustomScatterFile':
                 case 'options':
                     return true;
                 case 'archExtensions':
-                    return ArmCpuUtils.isArmArchName(this.data.cpuType);
+                    return ArmCpuUtils.getArchExtensions(this.data.cpuType, toolchain).length > 0;
                 case 'floatingPointHardware':
-                    return ArmCpuUtils.hasFpu(this.data.cpuType);
+                    return !is_arm_v8_1_m && ArmCpuUtils.hasFpu(this.data.cpuType);
                 case 'storageLayout':
                     return !this.data.useCustomScatterFile;
                 case 'scatterFilePath':
@@ -708,7 +710,7 @@ export abstract class ArmBaseCompileConfigModel
                 case 'options':
                     return true;
                 case 'archExtensions':
-                    return ArmCpuUtils.isArmArchName(this.data.cpuType);
+                    return ArmCpuUtils.getArchExtensions(this.data.cpuType, toolchain).length > 0;
                 case 'floatingPointHardware':
                     return ArmCpuUtils.hasFpu(this.data.cpuType) && !ArmCpuUtils.isArmArchName(this.data.cpuType);
                 default:
@@ -1029,9 +1031,13 @@ class Armcc6CompileConfigModel extends ArmBaseCompileConfigModel {
         'SC000',
         'SC300',
         this.DIV_TAG + 'Architectures', // div
-        'Armv8-m.Base',
-        'Armv8-m.Main',
-        'Armv8.1-m.Main'
+        'Armv8-M.Base',
+        'Armv8-M.Main',
+        "Armv8.1-M.Main.no_mve.no_fpu",
+        "Armv8.1-M.Main.no_mve.fpu",
+        "Armv8.1-M.Main.mve.no_fpu",
+        "Armv8.1-M.Main.mve.scalar_fpu",
+        "Armv8.1-M.Main"
     ];
 }
 

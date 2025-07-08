@@ -39,31 +39,36 @@
         },
         "microcontroller-cpu": {
             "type": "keyValue",
-            "command": "-mcpu=",
+            "command": "",
             "enum": {
-                "cortex-m0": "cortex-m0",
-                "cortex-m0+": "cortex-m0plus",
-                "cortex-m23": "cortex-m23",
-                "cortex-m3": "cortex-m3",
-                "cortex-m33": "cortex-m33+nodsp",
-                "cortex-m33-sp": "cortex-m33+nodsp",
-                "cortex-m33.dsp": "cortex-m33",
-                "cortex-m33.dsp-sp": "cortex-m33",
-                "cortex-m35p": "cortex-m35p+nodsp",
-                "cortex-m35p-sp": "cortex-m35p+nodsp",
-                "cortex-m35p.dsp": "cortex-m35p",
-                "cortex-m35p.dsp-sp": "cortex-m35p",
-                "cortex-m4": "cortex-m4",
-                "cortex-m4-sp": "cortex-m4",
-                "cortex-m7": "cortex-m7",
-                "cortex-m7-sp": "cortex-m7",
-                "cortex-m7-dp": "cortex-m7",
-                "sc000": "sc000",
-                "sc300": "sc300",
-                "armv8-m.base": "armv8m.base",
-                "armv8-m.main"   : "armv8m.main${$clang-arch-extensions}",
-                "armv8-m.main-sp": "armv8m.main${$clang-arch-extensions}",
-                "armv8-m.main-dp": "armv8m.main${$clang-arch-extensions}"
+                "cortex-m0"         : "-mcpu=cortex-m0",
+                "cortex-m0+"        : "-mcpu=cortex-m0plus",
+                "cortex-m23"        : "-mcpu=cortex-m23",
+                "cortex-m3"         : "-mcpu=cortex-m3",
+                "cortex-m33"        : "-mcpu=cortex-m33+nodsp",
+                "cortex-m33-sp"     : "-mcpu=cortex-m33+nodsp",
+                "cortex-m33.dsp"    : "-mcpu=cortex-m33",
+                "cortex-m33.dsp-sp" : "-mcpu=cortex-m33",
+                "cortex-m35p"       : "-mcpu=cortex-m35p+nodsp",
+                "cortex-m35p-sp"    : "-mcpu=cortex-m35p+nodsp",
+                "cortex-m35p.dsp"   : "-mcpu=cortex-m35p",
+                "cortex-m35p.dsp-sp": "-mcpu=cortex-m35p",
+                "cortex-m4"         : "-mcpu=cortex-m4",
+                "cortex-m4-sp"      : "-mcpu=cortex-m4",
+                "cortex-m7"         : "-mcpu=cortex-m7",
+                "cortex-m7-sp"      : "-mcpu=cortex-m7",
+                "cortex-m7-dp"      : "-mcpu=cortex-m7",
+                "sc000"             : "-mcpu=sc000",
+                "sc300"             : "-mcpu=sc300",
+                "armv8-m.base"      : "-march=armv8m.base",
+                "armv8-m.main"      : "-march=armv8m.main${$clang-arch-extensions}",
+                "armv8-m.main-sp"   : "-march=armv8m.main${$clang-arch-extensions}",
+                "armv8-m.main-dp"   : "-march=armv8m.main${$clang-arch-extensions}",
+                "armv8.1-m.main.no_mve.no_fpu"   : "-march=armv8.1-m.main+dsp",
+                "armv8.1-m.main.no_mve.fpu"      : "-march=armv8.1-m.main+dsp+fp.dp",
+                "armv8.1-m.main.mve.no_fpu"      : "-march=armv8.1-m.main+mve",
+                "armv8.1-m.main.mve.scalar_fpu"  : "-march=armv8.1-m.main+mve+fp.dp",
+                "armv8.1-m.main"                 : "-march=armv8.1-m.main+mve.fp+fp.dp"
             },
             "group": [
                 "c",
@@ -97,7 +102,12 @@
                 "armv8-m.base": "",
                 "armv8-m.main"   : "-mfpu=none",
                 "armv8-m.main-sp": "-mfpu=fpv5-sp-d16",
-                "armv8-m.main-dp": "-mfpu=fpv5-d16"
+                "armv8-m.main-dp": "-mfpu=fpv5-d16",
+                "armv8.1-m.main.no_mve.no_fpu"   : "",
+                "armv8.1-m.main.no_mve.fpu"      : "",
+                "armv8.1-m.main.mve.no_fpu"      : "",
+                "armv8.1-m.main.mve.scalar_fpu"  : "",
+                "armv8.1-m.main"                 : ""
             },
             "group": [
                 "c",
@@ -131,7 +141,12 @@
                 "armv8-m.base": "",
                 "armv8-m.main"   : "-mfloat-abi=soft",
                 "armv8-m.main-sp": "-mfloat-abi=hard",
-                "armv8-m.main-dp": "-mfloat-abi=hard"
+                "armv8-m.main-dp": "-mfloat-abi=hard",
+                "armv8.1-m.main.no_mve.no_fpu"   : "",
+                "armv8.1-m.main.no_mve.fpu"      : "",
+                "armv8.1-m.main.mve.no_fpu"      : "",
+                "armv8.1-m.main.mve.scalar_fpu"  : "",
+                "armv8.1-m.main"                 : ""
             },
             "group": [
                 "c",
@@ -458,7 +473,12 @@
                     "armv8-m.base": "8-M.Base",
                     "armv8-m.main"   : "8-M.Main${$armlink-arch-extensions} --fpu=SoftVFP",
                     "armv8-m.main-sp": "8-M.Main${$armlink-arch-extensions} --fpu=FPv5-SP",
-                    "armv8-m.main-dp": "8-M.Main${$armlink-arch-extensions} --fpu=FPv5_D16"
+                    "armv8-m.main-dp": "8-M.Main${$armlink-arch-extensions} --fpu=FPv5_D16",    
+                    "armv8.1-m.main.no_mve.no_fpu"   : "8.1-M.Main.no_mve.no_fp",
+                    "armv8.1-m.main.no_mve.fpu"      : "8.1-M.Main.no_mve",
+                    "armv8.1-m.main.mve.no_fpu"      : "8.1-M.Main.no_fp",
+                    "armv8.1-m.main.mve.scalar_fpu"  : "8.1-M.Main.no_mvefp",
+                    "armv8.1-m.main"                 : "8.1-M.Main"
                 }
             },
             "big-endian": {
@@ -520,7 +540,7 @@
         "linker": {
             "microcontroller-cpu": {
                 "type": "keyValue",
-                "command": "--cpu=",
+                "command": "--cpu ",
                 "enum": {
                     "cortex-m0": "Cortex-M0",
                     "cortex-m0+": "Cortex-M0+",
@@ -544,7 +564,12 @@
                     "armv8-m.base": "8-M.Base",
                     "armv8-m.main"   : "8-M.Main${$armlink-arch-extensions} --fpu=SoftVFP",
                     "armv8-m.main-sp": "8-M.Main${$armlink-arch-extensions} --fpu=FPv5-SP",
-                    "armv8-m.main-dp": "8-M.Main${$armlink-arch-extensions} --fpu=FPv5_D16"
+                    "armv8-m.main-dp": "8-M.Main${$armlink-arch-extensions} --fpu=FPv5_D16",
+                    "armv8.1-m.main.no_mve.no_fpu"   : "8.1-M.Main.no_mve.no_fp",
+                    "armv8.1-m.main.no_mve.fpu"      : "8.1-M.Main.no_mve",
+                    "armv8.1-m.main.mve.no_fpu"      : "8.1-M.Main.no_fp",
+                    "armv8.1-m.main.mve.scalar_fpu"  : "8.1-M.Main.no_mvefp",
+                    "armv8.1-m.main"                 : "8.1-M.Main"
                 }
             },
             "$path": "bin\\armlink.exe",

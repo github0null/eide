@@ -1771,7 +1771,8 @@ class AC5 implements IToolchian {
         };
 
         const cfg: ArmBaseBuilderConfigData = <any>builderCfg;
-        const cpuKey = ARMCodeBuilder.genCpuId(cfg.cpuType.toLowerCase(), cfg.floatingPointHardware);
+        const cpuKey = cfg.cpuType.toLowerCase() + 
+            ARMCodeBuilder.getFpuSuffix(cfg.cpuType, cfg.floatingPointHardware);
 
         try {
 

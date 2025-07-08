@@ -883,11 +883,15 @@ export class ARMCodeBuilder extends CodeBuilder {
             config.compileConfig.floatingPointHardware);
 
         /**
-         * 对于 GCC 当使用 march 代替 mcpu 时，则无需指定 mfpu，
-         * 而是通过添加 +<扩展名> 来增加扩展功能，因此清除 fpu_suffix
+         * 某些情况下，fpu是通过添加 +<扩展名> 来开启，因此无需 fpu_suffix 标记
+         * 需要清除 fpu_suffix
         */
-        if (toolchain.name == 'GCC' && ArmCpuUtils.isArmArchName(cpu_id)) {
-            fpu_suffix = '';
+        if (toolchain.name == 'GCC') {
+            if (ArmCpuUtils.isArmArchName(cpu_id))
+                fpu_suffix = '';
+        } else if (toolchain.name == 'AC6') {
+            if (cpu_id.startsWith('armv8.1-m.'))
+                fpu_suffix = ''; // AC6 的 armv8.1-m 的 FPU 已经通过 +<扩展名> 开启
         }
 
         options.global['microcontroller-cpu']   = cpu_id + fpu_suffix;
