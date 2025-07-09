@@ -359,11 +359,18 @@ export class ResManager extends events.EventEmitter {
         return File.fromArray([this.Get7zDir().path, `7za${exeSuffix()}`]);
     }
 
-    getCMSISHeaderPacks(): File[] {
-        const dir = File.fromArray([(<File>this.GetDir('include')).path, 'cmsis']);
-        return dir.GetList(undefined, File.EXCLUDE_ALL_FILTER)
-            .filter(f => f.suffix === '.zip' || f.suffix === '.7z')
-            .filter(f => !f.noSuffixName.startsWith('lib') && !f.noSuffixName.endsWith('_lib'));
+    getCMSISHeaderPacks(): { name: string; zippath: string; exportIncs?: string[] } [] {
+        return [
+            {
+                name: 'include',
+                zippath: File.from(this.GetAppDataDir().path, 'cmsis_include_v5_9_0.7z').path,
+                exportIncs: ['.']
+            },
+            {
+                name: 'device',
+                zippath: File.from(this.GetAppDataDir().path, 'cmsis_device_source_v5_9_0.7z').path
+            }
+        ];
     }
 
     getCmsisLibPacks(): { [name: string]: File } {

@@ -2314,27 +2314,22 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         }
     }
 
-    private importCmsisHeaders(rootDir: File): File[] {
+    private importCmsisHeaders(rootDir: File): string[] {
 
-        const folders: File[] = [];
+        const result: string[] = [];
 
-        const packList = ResManager.GetInstance().getCMSISHeaderPacks();
-        if (packList.length === 0) {
-            return folders;
+        const headerInfos = ResManager.GetInstance().getCMSISHeaderPacks();
+        for (const info of headerInfos) {
+            const outDir = File.fromArray([rootDir.path, '.cmsis', info.name]);
+            if (!outDir.IsDir()) {
+                outDir.CreateDir(true);
+                const compresser = new SevenZipper(ResManager.GetInstance().Get7zDir());
+                compresser.UnzipSync(File.from(info.zippath), outDir);
+            }
+            info.exportIncs?.forEach(p => result.push(File.normalize(File.from(outDir.path, p).path)));
         }
 
-        for (const packZipFile of packList) {
-            // make dir
-            const outDir = File.fromArray([rootDir.path, '.cmsis', packZipFile.noSuffixName]);
-            if (outDir.IsDir()) { continue; } /* folder existed, exit */
-            outDir.CreateDir(true);
-            // unzip
-            const compresser = new SevenZipper(ResManager.GetInstance().Get7zDir());
-            compresser.UnzipSync(packZipFile, outDir);
-            folders.push(outDir);
-        }
-
-        return folders;
+        return result;
     }
 
     ImportProject(option: ImportOptions) {
@@ -3080,7 +3075,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         if (rte_deps) {
 
             /* import cmsis headers */
-            const incs: string[] = this.importCmsisHeaders(baseInfo.rootFolder).map((f) => f.path);
+            const incs: string[] = this.importCmsisHeaders(baseInfo.rootFolder);
 
             /* try resolve all deps */
             const fileTypeMatchers: RegExp[] = [/source/, /header/];
@@ -6204,14 +6199,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             if (prj) {
                 switch (type) {
                     case 'header':
-                        prj.installCmsisSourceCodePack(
-                            ResManager.GetInstance().getCMSISHeaderPacks().map(f => {
-                                return {
-                                    name: f.noSuffixName,
-                                    zippath: f.path,
-                                    exportIncs: ['.']
-                                }
-                            }));
+                        prj.installCmsisSourceCodePack(ResManager.GetInstance().getCMSISHeaderPacks());
                         break;
                     case 'lib':
                         prj.installCmsisLibs();
