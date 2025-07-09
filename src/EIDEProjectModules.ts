@@ -32,7 +32,8 @@ import {
     view_str$flasher$external_loader,
     view_str$flasher$resetMode,
     view_str$flasher$other_cmds,
-    view_str$flasher$stcgalOptions
+    view_str$flasher$stcgalOptions,
+    view_str$compile$archExtensions
 } from "./StringTable";
 import { ResManager } from "./ResManager";
 import { ArrayDelRepetition } from "../lib/node-utility/Utility";
@@ -174,6 +175,9 @@ type FieldType = 'INPUT' | 'INPUT_INTEGER' | 'SELECTION' | 'OPEN_FILE' | 'EVENT'
 type OpenFileFilter = { [name: string]: string[] };
 
 interface CompileConfigPickItem extends vscode.QuickPickItem {
+    /**
+     * 如果 label 和 最终值 不同，则 val 用于存放最终的赋值。否则 val 应为 undefined 或者 null
+    */
     val?: any;
 }
 
@@ -289,14 +293,18 @@ export abstract class ConfigModel<DataType> {
                 {
                     const itemList = selections || this.GetSelectionList(key) || [];
 
-                    const pickItem = await vscode.window.showQuickPick(itemList, {
-                        canPickMany: false,
+                    const pickItems = await vscode.window.showQuickPick(itemList, {
+                        canPickMany: this.canSelectMany(key),
                         matchOnDescription: true,
                         placeHolder: `found ${itemList.length} results`
                     });
 
-                    if (pickItem) {
-                        this.SetKeyValue(key, pickItem.val !== undefined ? pickItem.val : pickItem.label);
+                    if (Array.isArray(pickItems)) {
+                        const val = pickItems.map(item => item.val !== undefined ? item.val : item.label).join(',');
+                        this.SetKeyValue(key, val);
+                    } else if (pickItems) {
+                        const val = pickItems.val !== undefined ? pickItems.val : pickItems.label;
+                        this.SetKeyValue(key, val);
                     }
                 }
                 break;
@@ -306,7 +314,7 @@ export abstract class ConfigModel<DataType> {
                         defaultUri: vscode.Uri.file(prjRootDir.path),
                         filters: this.GetOpenFileFilters(key) || { '*.*': ['*'] },
                         canSelectFiles: true,
-                        canSelectMany: this.IsOpenFileCanSelectMany(key)
+                        canSelectMany: this.canSelectMany(key)
                     });
 
                     if (uri && uri.length > 0) {
@@ -381,12 +389,16 @@ export abstract class ConfigModel<DataType> {
         // TODO
     }
 
-    protected IsOpenFileCanSelectMany(key: string): boolean {
+    protected canSelectMany(key: string): boolean {
         return false;
     }
 
     abstract GetKeyDescription(key: string): string;
 
+    /**
+     * @note 注意这个方法当前的含义是获取 display value，用于在UI中显示
+     * 因此得到的可能不是实际的值（由于历史原因暂时不做修改）
+    */
     abstract getKeyValue(key: string): string;
 
     protected abstract GetKeyType(key: string): FieldType;
@@ -517,14 +529,44 @@ export type FloatingHardwareOption = 'none' | 'single' | 'double';
 
 // deprecated
 export interface ArmBaseCompileData extends BuilderConfigData {
+    /**
+     * ARM CPU 类型，可选值包括：
+     * 'Cortex-M0', 'Cortex-M0+', 'Cortex-M3', 'Cortex-M4', 'Cortex-M7' 等
+    */
     cpuType: string;
+    /**
+     * 是否使用浮点硬件，默认为 'none'，表示不使用浮点硬件
+     * @note 这个选项会根据你选择的 cpuType 自动调整，
+     *   如果你选择的 cpuType 不支持浮点硬件，则会自动设置为 'none'。
+    */
     floatingPointHardware: FloatingHardwareOption;
+    /**
+     * 当 cpuType 是一个 arch 名称时，
+     *   可以使用这个选项指定该 arch 的扩展功能，
+     *   例如 'armv8-m.main' 可以使用 '+dsp' 来启用 DSP 指令集。
+     * 当 cpuType 是一个确切的 cpu 名称时，比如 'Cortex-M4',
+     *   则这个选项会被忽略。
+     * @note 如果有多个选项，则选项之间以 ‘,’ 进行分隔
+    */
+    archExtensions: string;
+    /**
+     * 是否使用自定义的链接脚本文件
+     * @note 这个选项是为 armcc 准备的，
+     * 如果为 false，则提供一个类似于keil风格的GUI界面来设置存储器布局信息，
+     *   这个界面会自动生成一个链接脚本文件，并在编译时使用。
+     * 如果为 true，则需要在 `scatterFilePath` 中指定链接脚本文件的路径
+    */
     useCustomScatterFile: boolean;
     /**
      * 这个配置文件用来描述地址重定位信息，编译时作为链接器的参数
      * @note 这个参数可能包含多个文件，当包含多个文件时，以逗号 `,` 作为分隔
      */
     scatterFilePath: string;
+    /**
+     * 这个选项是为 armcc 准备的，
+     * 如果 useCustomScatterFile 为 false，则提供一个类似于keil风格的GUI界面来设置存储器布局信息，
+     *   这个界面会自动生成一个链接脚本文件，并在编译时使用。
+    */
     storageLayout: ARMStorageLayout;
     /**
      * 由此打开一个更详细的配置，用于设置更多的编译期配置。
@@ -593,6 +635,8 @@ export abstract class ArmBaseCompileConfigModel
         switch (key) {
             case 'cpuType':
                 return view_str$compile$cpuType;
+            case 'archExtensions':
+                return view_str$compile$archExtensions;
             case 'storageLayout':
                 return view_str$compile$storageLayout;
             case 'useCustomScatterFile':
@@ -641,13 +685,17 @@ export abstract class ArmBaseCompileConfigModel
         const toolchain = this.prjConfigData.toolchain;
 
         if (toolchain === 'AC5' || toolchain === 'AC6') {
+            // AC6 中的 armv8.1-m 已经含有 arch 扩展，无需额外指定 floatingPointHardware
+            const is_arm_v8_1_m = this.data.cpuType.toLowerCase().startsWith('armv8.1-m.');
             switch (key) {
                 case 'cpuType':
                 case 'useCustomScatterFile':
                 case 'options':
                     return true;
+                case 'archExtensions':
+                    return ArmCpuUtils.getArchExtensions(this.data.cpuType, toolchain).length > 0;
                 case 'floatingPointHardware':
-                    return ArmCpuUtils.hasFpu(this.data.cpuType);
+                    return !is_arm_v8_1_m && ArmCpuUtils.hasFpu(this.data.cpuType);
                 case 'storageLayout':
                     return !this.data.useCustomScatterFile;
                 case 'scatterFilePath':
@@ -661,8 +709,10 @@ export abstract class ArmBaseCompileConfigModel
                 case 'scatterFilePath':
                 case 'options':
                     return true;
+                case 'archExtensions':
+                    return ArmCpuUtils.getArchExtensions(this.data.cpuType, toolchain).length > 0;
                 case 'floatingPointHardware':
-                    return ArmCpuUtils.hasFpu(this.data.cpuType);
+                    return ArmCpuUtils.hasFpu(this.data.cpuType) && !ArmCpuUtils.isArmArchName(this.data.cpuType);
                 default:
                     return false;
             }
@@ -807,6 +857,14 @@ export abstract class ArmBaseCompileConfigModel
                     }
                 });
                 break;
+            case 'archExtensions':
+                ArmCpuUtils.getArchExtensions(this.data.cpuType, this.prjConfigData.toolchain).forEach((ext) => {
+                    res.push({
+                        label: ext.name,
+                        detail: ext.description
+                    });
+                });
+                break;
             case 'floatingPointHardware':
                 this.hardwareOptionList.filter((option) => {
                     return this.verifyHardwareOption(option.name);
@@ -837,6 +895,7 @@ export abstract class ArmBaseCompileConfigModel
             case 'cpuType':
             case 'floatingPointHardware':
             case 'useCustomScatterFile':
+            case 'archExtensions':
                 return 'SELECTION';
             case 'storageLayout':
             case 'options':
@@ -861,12 +920,14 @@ export abstract class ArmBaseCompileConfigModel
         }
     }
 
-    protected IsOpenFileCanSelectMany(key: string): boolean {
+    protected canSelectMany(key: string): boolean {
         switch (key) {
             case 'scatterFilePath':
                 return true;
+            case 'archExtensions':
+                return true;
             default:
-                return super.IsOpenFileCanSelectMany(key);
+                return super.canSelectMany(key);
         }
     }
 
@@ -887,6 +948,7 @@ export abstract class ArmBaseCompileConfigModel
         return {
             cpuType: 'Cortex-M3',
             floatingPointHardware: 'none',
+            archExtensions: '',
             useCustomScatterFile: false,
             scatterFilePath: '<YOUR_SCATTER_FILE>.sct',
             storageLayout: {
@@ -969,9 +1031,13 @@ class Armcc6CompileConfigModel extends ArmBaseCompileConfigModel {
         'SC000',
         'SC300',
         this.DIV_TAG + 'Architectures', // div
-        'Armv8-m.Base',
-        'Armv8-m.Main',
-        'Armv8-m.Main.Dsp'
+        'Armv8-M.Base',
+        'Armv8-M.Main',
+        "Armv8.1-M.Main.no_mve.no_fpu",
+        "Armv8.1-M.Main.no_mve.fpu",
+        "Armv8.1-M.Main.mve.no_fpu",
+        "Armv8.1-M.Main.mve.scalar_fpu",
+        "Armv8.1-M.Main"
     ];
 }
 
@@ -1002,11 +1068,13 @@ export class GccCompileConfigModel extends ArmBaseCompileConfigModel {
         "Armv7-R",
         "Armv8-M.Base",
         "Armv8-M.Main",
+        "Armv8.1-M.Main"
     ];
 
     protected GetKeyType(key: string): FieldType {
         switch (key) {
             case 'cpuType':
+            case 'archExtensions':
             case 'floatingPointHardware':
                 return 'SELECTION';
             case 'scatterFilePath':
@@ -1022,6 +1090,7 @@ export class GccCompileConfigModel extends ArmBaseCompileConfigModel {
         return {
             cpuType: 'Cortex-M3',
             floatingPointHardware: 'none',
+            archExtensions: '',
             scatterFilePath: '<YOUR_LINKER_SCRIPT>.lds',
             useCustomScatterFile: true,
             storageLayout: { RAM: [], ROM: [] },
@@ -1121,6 +1190,7 @@ class IarArmCompileConfigModel extends ArmBaseCompileConfigModel {
         return {
             cpuType: 'Cortex-M3',
             floatingPointHardware: 'none',
+            archExtensions: '',
             scatterFilePath: '${ToolchainRoot}/config/<YOUR_LINKER_CFG>.icf',
             useCustomScatterFile: true,
             storageLayout: { RAM: [], ROM: [] },
@@ -1185,12 +1255,12 @@ export class RiscvCompileConfigModel extends CompileConfigModel<RiscvCompileData
         }
     }
 
-    protected IsOpenFileCanSelectMany(key: string): boolean {
+    protected canSelectMany(key: string): boolean {
         switch (key) {
             case 'linkerScriptPath':
                 return true;
             default:
-                return super.IsOpenFileCanSelectMany(key);
+                return super.canSelectMany(key);
         }
     }
 
@@ -1285,12 +1355,12 @@ export class MipsCompileConfigModel extends CompileConfigModel<MipsCompileData> 
         }
     }
 
-    protected IsOpenFileCanSelectMany(key: string): boolean {
+    protected canSelectMany(key: string): boolean {
         switch (key) {
             case 'linkerScriptPath':
                 return true;
             default:
-                return super.IsOpenFileCanSelectMany(key);
+                return super.canSelectMany(key);
         }
     }
 
@@ -1389,12 +1459,12 @@ export class AnyGccCompileConfigModel extends CompileConfigModel<AnyGccCompileDa
         }
     }
 
-    protected IsOpenFileCanSelectMany(key: string): boolean {
+    protected canSelectMany(key: string): boolean {
         switch (key) {
             case 'linkerScriptPath':
                 return true;
             default:
-                return super.IsOpenFileCanSelectMany(key);
+                return super.canSelectMany(key);
         }
     }
 
@@ -1495,12 +1565,12 @@ abstract class C51BaseCompileConfigModel extends CompileConfigModel<C51BaseCompi
         }
     }
 
-    protected IsOpenFileCanSelectMany(key: string): boolean {
+    protected canSelectMany(key: string): boolean {
         switch (key) {
             case 'linkerScript':
                 return true;
             default:
-                return super.IsOpenFileCanSelectMany(key);
+                return super.canSelectMany(key);
         }
     }
 
@@ -1659,12 +1729,12 @@ class CosmicStm8CompileConfigModel extends C51BaseCompileConfigModel {
         }
     }
 
-    protected IsOpenFileCanSelectMany(key: string): boolean {
+    protected canSelectMany(key: string): boolean {
         switch (key) {
             case 'linkerScript':
                 return true;
             default:
-                return super.IsOpenFileCanSelectMany(key);
+                return super.canSelectMany(key);
         }
     }
 

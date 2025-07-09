@@ -49,7 +49,7 @@ import { CompileConfigModel, UploadConfigModel, SdccCompileConfigModel, GccCompi
 // ----------------------------------------------------------
 
 // !! eide project config file version !!
-export const EIDE_CONF_VERSION = '3.5';
+export const EIDE_CONF_VERSION = '3.6';
 
 //
 //  'C51': 8BIT MCU Project (like: mcs51, stm8, ...)

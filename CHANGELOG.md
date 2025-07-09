@@ -6,6 +6,22 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.22.0] update
+
+> NOTE: Update the version of file `eide.json` to `v3.6`
+
+**New**:
+  - `Toolchain`: Add `Armv8-M.Main, Armv8.1-M.Main` architectures support for `AC6 (armclang)` and `arm-none-eabi-gcc`.
+
+**Fix**:
+  - `Keil Project Import`: Miss match RTE source files when import mdk arm projects. Fix mdk C macro importer.
+
+**Change**:
+  - `Exclude List`: Show all exclude list for every targets. (command: `_cl.eide.project.source.modify.exclude_list`)
+  - `CMSIS Core Headers`: Built-in cmsis header zip files in plug-in.
+
+***
+
 ### [v3.21.5] revision
 
 **Fix**:

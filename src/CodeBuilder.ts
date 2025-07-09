@@ -49,7 +49,7 @@ import { ArrayDelRepetition } from "../lib/node-utility/Utility";
 import { DependenceManager } from "./DependenceManager";
 import { WorkspaceManager } from "./WorkspaceManager";
 import { ToolchainName } from "./ToolchainManager";
-import { md5, sha256, copyObject, generateDotnetProgramCmd, generateRandomStr } from "./utility";
+import { md5, sha256, copyObject, generateDotnetProgramCmd, generateRandomStr, isGccFamilyToolchain } from "./utility";
 import { exeSuffix, osType } from "./Platform";
 import { FileWatcher } from "../lib/node-utility/FileWatcher";
 import { STVPFlasherOptions } from './HexUploader';
@@ -808,29 +808,15 @@ export class ARMCodeBuilder extends CodeBuilder {
         return sctFile;
     }
 
-    // 用于生成带有浮点类型后缀的 cpu 系列名，用作代号
-    static genCpuId(cpu: string, hardOption: FloatingHardwareOption): string {
-
-        let suffix: string = '';
-
-        cpu = cpu.toLowerCase();
-
+    static getFpuSuffix(cpu: string, hardOption: FloatingHardwareOption): string {
         switch (hardOption) {
             case 'single':
-                if (ArmCpuUtils.hasFpu(cpu)) {
-                    suffix = '-sp';
-                }
-                break;
+                return ArmCpuUtils.hasFpu(cpu) ? '-sp' : '';
             case 'double':
-                if (ArmCpuUtils.hasFpu(cpu, true)) {
-                    suffix = '-dp';
-                }
-                break;
+                return ArmCpuUtils.hasFpu(cpu, true) ? '-dp' : '';
             default: // none
-                break;
+                return '';
         }
-
-        return cpu + suffix;
     }
 
     protected getMcuMemorySize(): MemorySize | undefined {
@@ -878,18 +864,57 @@ export class ARMCodeBuilder extends CodeBuilder {
         const toolchain = this.project.getToolchain();
         const settingManager = SettingManager.GetInstance();
 
-        const cpuString = ARMCodeBuilder.genCpuId(
-            config.compileConfig.cpuType.toLowerCase(), config.compileConfig.floatingPointHardware
-        );
-
-        if (!options.global) {
+        if (!options.global)
             options.global = Object.create(null);
+
+        /**
+         * xxx.model.json 中的 cpu id 历史格式：
+         *      <cortex_name>-[fp/dp type]
+         * 
+         * 通过在 xxx.model.json 中增加一些带有 -sp 或者 -dp 后缀的条目来增加 fpu 支持, 就像下面这样：
+         *      "armv8-m.main"   : "-mfpu=none",
+         *      "armv8-m.main-sp": "-mfpu=fpv5-sp-d16",
+         *      "armv8-m.main-dp": "-mfpu=fpv5-d16"
+         * 
+         * unify_builder 会根据这些条目来匹配 options.global['microcontroller-cpu'] 传入的 cpu_id, 然后生成对应的编译参数
+         */
+        const cpu_id = config.compileConfig.cpuType.toLowerCase();
+        let fpu_suffix = ARMCodeBuilder.getFpuSuffix(config.compileConfig.cpuType, 
+            config.compileConfig.floatingPointHardware);
+
+        /**
+         * 某些情况下，fpu是通过添加 +<扩展名> 来开启，因此无需 fpu_suffix 标记
+         * 需要清除 fpu_suffix
+        */
+        if (toolchain.name == 'GCC') {
+            if (ArmCpuUtils.isArmArchName(cpu_id))
+                fpu_suffix = '';
+        } else if (toolchain.name == 'AC6') {
+            if (cpu_id.startsWith('armv8.1-m.'))
+                fpu_suffix = ''; // AC6 的 armv8.1-m 的 FPU 已经通过 +<扩展名> 开启
         }
 
-        options.global['microcontroller-cpu'] = cpuString;
-        options.global['microcontroller-fpu'] = cpuString;
-        options.global['microcontroller-float'] = cpuString;
-        options.global['target'] = cpuString; // params for 'armclang-asm'
+        options.global['microcontroller-cpu']   = cpu_id + fpu_suffix;
+        options.global['microcontroller-fpu']   = cpu_id + fpu_suffix;
+        options.global['microcontroller-float'] = cpu_id + fpu_suffix;
+
+        // 遗留参数，后面可能删除
+        options.global['target'] = cpu_id + fpu_suffix;
+
+        // arch extensions
+        if (ArmCpuUtils.isArmArchName(cpu_id)) {
+            const opts = config.compileConfig.archExtensions.split(',');
+            // for gcc
+            if (isGccFamilyToolchain(toolchain.name)) {
+                options.global['$arch-extensions'] = opts.join('');
+            }
+            // for armcc
+            else if (toolchain.name == 'AC6') {
+                options.global['$clang-arch-extensions']   = opts.join('');
+                // 对于 linker 和 asm, 我们要将 '+' 替换成 '.' 字符
+                options.global['$armlink-arch-extensions'] = opts.map(v => v.replace('+', '.')).join('');
+            }
+        }
 
         if (!options['linker']) {
             options.linker = Object.create(null);

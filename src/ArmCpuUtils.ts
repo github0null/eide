@@ -42,11 +42,15 @@ const armArchMap: { [arch: string]: string[] } = {
     'ARMv6-M': ['Cortex-M family', 'sc000', 'cortex-m0', 'cortex-m0+', 'cortex-m0plus', 'cortex-m1'],
     'ARMv7-M': ['Cortex-M family', 'cortex-m3', 'sc300'],
     'ARMv7E-M': ['Cortex-M family', 'cortex-m4', 'cortex-m7'],
-    'ARMv8-M.Base': ['Cortex-M family', 'cortex-m23'],
-    'ARMv8-M.Main': ['Cortex-M family', 'cortex-m33', 'cortex-m35p'],
-    'ARMv8.1-M.Main': ['Cortex-M family', 'cortex-m55', 'cortex-m85'],
     'ARMv7-R': ['Cortex-R family', 'cortex-r4', 'cortex-r5', 'cortex-r7', 'cortex-r8'],
     'ARMv8-R': ['Cortex-R family', 'cortex-r52', 'cortex-r82'],
+    'ARMv8-M.Base'                  : ['ARMv8-M Baseline', 'cortex-m23'],
+    'ARMv8-M.Main'                  : ['ARMv8-M Mainline', 'cortex-m33', 'cortex-m35p'],
+    'ARMv8.1-M.Main'                : ['ARMv8.1-M Mainline (With full feature)', 'cortex-m52', 'cortex-m55', 'cortex-m85'],
+    'ARMv8.1-M.Main.no_mve.no_fpu'  : ['ARMv8.1-M Mainline (No Helium, no FPU)', 'cortex-m52', 'cortex-m55', 'cortex-m85'],
+    'ARMv8.1-M.Main.no_mve.fpu'     : ['ARMv8.1-M Mainline (No Helium, with FPU)', 'cortex-m52', 'cortex-m55', 'cortex-m85'],
+    'ARMv8.1-M.Main.mve.no_fpu'     : ['ARMv8.1-M Mainline (With Integer Helium, no FPU)', 'cortex-m52', 'cortex-m55', 'cortex-m85'],
+    'ARMv8.1-M.Main.mve.scalar_fpu' : ['ARMv8.1-M Mainline (With Integer Helium, scalar FPU)', 'cortex-m52', 'cortex-m55', 'cortex-m85'],
 };
 
 export function isArmArchName(name: string): boolean {
@@ -82,19 +86,199 @@ export function getArchFamily(arch: string): string | undefined {
     }
 }
 
-const cortex_dp_mcus = ['m7', 'm55', 'r4', 'r5', 'r7'];
-const cortex_sp_mcus = ['m33', 'm4', 'm35p'].concat(cortex_dp_mcus);
+/**
+ * 当使用 march 代替 mcpu 时，则无需指定 mfpu，而是通过添加 +<扩展名> 来增加扩展功能
+ * 虽然 mcpu 也可以指定 +<扩展名>，但一般情况下我们不会这样使用，所以这里不考虑这种情况。
+ * @param toolchain 可用值：'GCC', 'AC6'
+ * @note 该函数返回的 arch 扩展的别名 'name' 字段默认是使用 GCC 的命名方式。
+ * 如果使用 AC6 的 armlink.exe, 则需要进行额外处理。
+*/
+export function getArchExtensions(arch: string, toolchain: string): { name: string, description: string }[] {
+    // for arm-none-eabi-gcc
+    // - docs: https://gcc.gnu.org/onlinedocs/gcc/ARM-Options.html
+    if (toolchain == 'GCC') {
+        switch (arch.toLowerCase()) {
+            case 'armv7-r':
+                return [
+                    {
+                        name: '+fp.sp',
+                        description: 'The single-precision VFPv3 floating-point instructions. The extension `+vfpv3xd` can be used as an alias for this extension.'
+                    },
+                    {
+                        name: '+fp',
+                        description: 'The VFPv3 floating-point instructions with 16 double-precision registers. The extension +vfpv3-d16 can be used as an alias for this extension.'
+                    },
+                    {
+                        name: '+vfpv3xd-d16-fp16',
+                        description: 'The single-precision VFPv3 floating-point instructions with 16 double-precision registers and the half-precision floating-point conversion operations.'
+                    },
+                    {
+                        name: '+vfpv3-d16-fp16',
+                        description: 'The VFPv3 floating-point instructions with 16 double-precision registers and the half-precision floating-point conversion operations.'
+                    },
+                    {
+                        name: '+nofp',
+                        description: 'Disable the floating-point extension.'
+                    },
+                    {
+                        name: '+idiv',
+                        description: 'The ARM-state integer division instructions.'
+                    },
+                    {
+                        name: '+noidiv',
+                        description: 'Disable the ARM-state integer division extension.'
+                    }
+                ];
+            case 'armv8-r':
+                return [
+                    {
+                        name: '+crc',
+                        description: 'The Cyclic Redundancy Check (CRC) instructions.'
+                    },
+                    {
+                        name: '+fp.sp',
+                        description: 'The single-precision FPv5 floating-point instructions.'
+                    },
+                    {
+                        name: '+simd',
+                        description: 'The ARMv8-A Advanced SIMD and floating-point instructions.'
+                    },
+                    {
+                        name: '+crypto',
+                        description: 'The cryptographic instructions.'
+                    },
+                    {
+                        name: '+nocrypto',
+                        description: 'Disable the cryptographic instructions.'
+                    },
+                    {
+                        name: '+nofp',
+                        description: 'Disable the floating-point, Advanced SIMD and cryptographic instructions.'
+                    }
+                ];
+            case 'armv7e-m':
+                return [
+                    {
+                        name: '+fp',
+                        description: 'The single-precision VFPv4 floating-point instructions.'
+                    },
+                    {
+                        name: '+fpv5',
+                        description: 'The single-precision FPv5 floating-point instructions.'
+                    },
+                    {
+                        name: '+fp.dp',
+                        description: 'The single- and double-precision FPv5 floating-point instructions.'
+                    },
+                    {
+                        name: '+nofp',
+                        description: 'Disable the floating-point extensions.'
+                    }
+                ];
+            case 'armv8-m.main':
+                return [
+                    {
+                        name: '+dsp',
+                        description: 'The DSP instructions.'
+                    },
+                    {
+                        name: '+nodsp',
+                        description: 'Disable the DSP extension.'
+                    },
+                    {
+                        name: '+fp',
+                        description: 'The single-precision floating-point instructions.'
+                    },
+                    {
+                        name: '+fp.dp',
+                        description: 'The single- and double-precision floating-point instructions.'
+                    },
+                    {
+                        name: '+nofp',
+                        description: 'Disable the floating-point extension.'
+                    }
+                ];
+            case 'armv8.1-m.main':
+                return [
+                    {
+                        name: '+dsp',
+                        description: 'The DSP instructions.'
+                    },
+                    {
+                        name: '+mve',
+                        description: 'The M-Profile Vector Extension (MVE) integer instructions.'
+                    },
+                    {
+                        name: '+mve.fp',
+                        description: 'The M-Profile Vector Extension (MVE) integer and single precision floating-point instructions.'
+                    },
+                    {
+                        name: '+fp',
+                        description: 'The single-precision floating-point instructions.'
+                    },
+                    {
+                        name: '+fp.dp',
+                        description: 'The single- and double-precision floating-point instructions.'
+                    },
+                    {
+                        name: '+nofp',
+                        description: 'Disable the floating-point extension.'
+                    },
+                    {
+                        name: '+pacbti',
+                        description: 'Enable the Pointer Authentication and Branch Target Identification Extension.'
+                    }
+                ];
+            default:
+                return [];
+        }
+    }
+    // for armcc v6
+    // - docs: https://developer.arm.com/documentation/109443/6-22-1LTS/armclang-Reference/armclang-Command-line-Options/-mcpu?lang=en
+    else if (toolchain == 'AC6') {
+        switch (arch.toLowerCase()) {
+            case 'armv8-m.main':
+                return [
+                    {
+                        name: '+dsp',
+                        description: 'Digital Signal Processing (DSP) extension for the Armv8-M.mainline architecture.'
+                    }
+                ];
+            default:
+                return [];
+        }
+    }
+    else {
+        return [];
+    }
+}
 
-const armvx_dp_archs: string[] = ['armv8-m.main'];
-const armvx_sp_archs: string[] = armvx_dp_archs;
-
+/**
+ * 返回 cpu 是否支持 fpu
+*/
 export function hasFpu(cpu: string, hasDp?: boolean) {
-    cpu = cpu.toLowerCase();
-    if (hasDp) { // check dp
-        return cortex_dp_mcus.some(a => cpu.includes(a))
-            || armvx_dp_archs.some(a => cpu.includes(a));
-    } else { // check sp
-        return cortex_sp_mcus.some(a => cpu.includes(a))
-            || armvx_sp_archs.some(a => cpu.includes(a));
+    if (isArmArchName(cpu)) {
+        switch (cpu.toLowerCase()) {
+            case 'armv8-r':
+                return hasDp ? false : true;
+            case 'armv7-r':
+            case 'armv7e-m':
+            case 'armv8-m.main':
+            case 'armv8.1-m.main':
+            case 'armv8.1-m.main.no_mve.fpu':
+            case 'armv8.1-m.main.mve.scalar_fpu':
+                return true;
+            default:
+                return false;
+        }
+    } else {
+        const cortex_dp_mcus = ['m7', 'm52', 'm55', 'r4', 'r5', 'r7'];
+        const cortex_sp_mcus = ['m33', 'm4', 'm35p'].concat(cortex_dp_mcus);
+        cpu = cpu.toLowerCase();
+        if (hasDp) { // check dp
+            return cortex_dp_mcus.some(a => cpu.includes(a));
+        } else { // check sp
+            return cortex_sp_mcus.some(a => cpu.includes(a));
+        }
     }
 }
