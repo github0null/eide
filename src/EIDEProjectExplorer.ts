@@ -3083,11 +3083,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             const incs: string[] = this.importCmsisHeaders(baseInfo.rootFolder).map((f) => f.path);
 
             /* try resolve all deps */
-            const fileTypes: string[] = ['source', 'header'];
+            const fileTypeMatchers: RegExp[] = [/source/, /header/];
             rte_deps.forEach((dep) => {
 
                 // check category
-                if (!(dep.category && fileTypes.includes(dep.category))) {
+                if (!(dep.category && fileTypeMatchers.some(reg => reg.test(dep.category || '')))) {
                     GlobalEvent.log_warn(`[Keil RTE Import] dependence '${dep.name}' is not a source file !`);
                     unresolved_deps.push(dep); /* resolve failed !, store dep */
                     return;
@@ -3175,6 +3175,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 file.Write(cont); // write content to file
                 const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(file.ToUri()));
                 vscode.window.showTextDocument(doc, { preview: false });
+                GlobalEvent.log_show();
             }
         }
 

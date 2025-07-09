@@ -135,9 +135,9 @@ export abstract class KeilParser<T> {
             .map<string>((path) => this.ToAbsolutePath(path));
     }
 
-    protected parseMacroString(str: string): string[] {
+    protected parseMacroString(macroStr: string): string[] {
 
-        if (typeof str !== 'string')
+        if (typeof macroStr !== 'string')
             return [];
 
         const result: string[] = [];
@@ -151,12 +151,13 @@ export abstract class KeilParser<T> {
         };
 
         let curSubStr: string = '';
-        for (let index = 0; index < str.length; index++) {
+        for (let index = 0; index < macroStr.length; index++) {
 
-            let prevChar = index > 0 ? str[index - 1] : '';
-            let curChar = str[index];
+            let prevChar = index > 0 ? macroStr[index - 1] : '';
+            let curChar = macroStr[index];
+            let nxtSubStr = macroStr.substr(index + 1);
 
-            // string char
+            // 处理宏定义中的字符串
             if (curChar === '"' || curChar === '\'') {
                 if (prevChar !== '\\') { // ignore '\"' in string
                     if (charStack.length > 0) {
@@ -173,9 +174,14 @@ export abstract class KeilParser<T> {
                     }
                 }
             }
-            // split char
+            // 分割宏定义
             else if (curChar === ' ' || curChar === ',') {
                 if (charStack.length === 0) {
+                    // 剔除 ‘=’ 两边的空格
+                    if (curChar === ' ' && nxtSubStr.trimStart().startsWith('='))
+                        continue;
+                    if (curChar === ' ' && curSubStr.endsWith('='))
+                        continue;
                     pushToResult(curSubStr);
                     curSubStr = ''; // reset it
                     continue; // skip split char
