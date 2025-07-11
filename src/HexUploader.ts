@@ -389,9 +389,9 @@ class JLinkUploader extends HexUploader<any> {
     }
 
     protected _launch(commandLines: string[]): void {
-        const jlinkPath = `${SettingManager.GetInstance().getJlinkDir()}${NodePath.sep}JLink${exeSuffix()}`;
+        const jlinkExePath = SettingManager.instance().getJlinkExePath();
         const option = this.getUploadOptions<JLinkOptions>();
-        const commandLine = CmdLineHandler.getCommandLine(jlinkPath, commandLines);
+        const commandLine = CmdLineHandler.getCommandLine(jlinkExePath, commandLines);
         this.executeShellCommand(this.toolType, `${commandLine} ${option.otherCmds || ''}`.trimEnd());
     }
 }

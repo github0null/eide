@@ -113,7 +113,7 @@ export class ResInstaller {
 
         this.registerTool('JLink', {
             resource_name: 'jlink',
-            readable_name: 'JLink (v6.90)',
+            readable_name: 'JLink (v8.50)',
             setting_name: 'JLink.InstallDirectory',
             no_binaries: no_binaries,
             getDrvInstaller: () => {

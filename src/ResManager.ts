@@ -542,7 +542,7 @@ export class ResManager extends events.EventEmitter {
         let file: File = File.fromArray([this.GetAppDataDir().path, 'JLinkDevices.xml']);
 
         /* get jlink internal device list */
-        const jlinkExe = SettingManager.GetInstance().getJlinkDir() + File.sep + 'JLink';
+        const jlinkExe = SettingManager.instance().getJlinkExePath();
         const timestamp = Date.now();
         const devXmlFile = File.fromArray([os.tmpdir(), `jlink_internal_devices_tmp.${timestamp}.xml`]);
         const jlinkTmpCmdFile = File.fromArray([os.tmpdir(), `jlink_cmds_tmp.${timestamp}.jlink`]);

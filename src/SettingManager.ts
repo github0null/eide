@@ -147,6 +147,15 @@ export class SettingManager {
         });
     }
 
+    static instance(context?: vscode.ExtensionContext): SettingManager {
+        if (_instance === undefined)
+            _instance = new SettingManager(context);
+        return _instance;
+    }
+
+    /**
+     * @deprecated please use `instance()` instead of it.
+    */
     static GetInstance(context?: vscode.ExtensionContext): SettingManager {
         if (_instance === undefined) {
             _instance = new SettingManager(context);
@@ -423,9 +432,19 @@ export class SettingManager {
     //----------------------------- Flasher --------------------------------
 
     getJlinkDir(): string {
+        // on linux: `/usr/bin/JLinkExe`
+        // on Windows: `C:\Program Files (x86)\SEGGER\JLink\JLink.exe`
         return this.getFullPathByPluginConfig('JLink.InstallDirectory')
-            || this.findExeDirInSystemEnv('JLink')
+            || this.findExeDirInSystemEnv(osType() === 'win32' ? 'JLink' : 'JLinkExe')
             || 'null';
+    }
+
+    getJlinkExePath(): string {
+        const dir = this.getJlinkDir();
+        const name = osType() === 'win32' ? 'JLink.exe' : 'JLinkExe';
+        if (dir == 'null')
+            return name;
+        return NodePath.join(dir, name);
     }
 
     getStvpExePath(): string {
