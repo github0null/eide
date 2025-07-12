@@ -1,7 +1,6 @@
 {
     "name": "COSMIC C Compiler For STM8",
     "id": "COSMIC_STM8",
-    "useUnixPath": true,
     "version": {
         "args": "",
         "matcher": "(?<name>COSMIC Software STM8 C Cross Compiler.*?) V(?<version>[\\d\\.]+)"
@@ -104,7 +103,8 @@
                 "body": "-i ${value}"
             },
             "$defines": {
-                "body": "-d${key}=${value}"
+                "body": "-d${key}=${value}",
+                "body_noval": "-d${key}"
             },
             "$output": "-co \"${outDir}\" ${in}",
             "$outputSuffix": ".o",

@@ -141,6 +141,37 @@
             "description.zh-cn": "C/C++ 编译器选项",
             "type": "object",
             "properties": {
+                "optimization": {
+                    "markdownDescription": "Optimization Level",
+                    "description.zh-cn": "代码优化级别",
+                    "type": "string",
+                    "default": "level-0",
+                    "enum": [
+                        "level-0",
+                        "level-1",
+                        "level-2",
+                        "level-3",
+                        "level-size",
+                        "level-size-Oz",
+                        "level-fast",
+                        "level-debug"
+                    ],
+                    "enumDescriptions": [
+                        "-O0",
+                        "-O1",
+                        "-O2",
+                        "-O3",
+                        "-Os",
+                        "-Oz",
+                        "-Ofast",
+                        "-Og"
+                    ]
+                },
+                "optimization-lto": {
+                    "markdownDescription": "Link-time Optimization (-flto)",
+                    "description.zh-cn": "链接时优化 (-flto)",
+                    "type": "boolean"
+                },
                 "one-elf-section-per-function": {
                     "markdownDescription": "One ELF Section per Function",
                     "type": "boolean"

@@ -1,7 +1,7 @@
 {
-    "name": "RISC-V GCC",
+    "name": "MIPS GCC",
     "id": "GCC",
-    "toolPrefix": "riscv-none-embed-",
+    "toolPrefix": "mips-mti-elf-",
     "useUnixPath": true,
     "version": {
         "args": "--version",
@@ -22,17 +22,6 @@
         "abi": {
             "type": "value",
             "command": "-mabi=",
-            "group": [
-                "c",
-                "cpp",
-                "asm",
-                "linker"
-            ],
-            "location": "first"
-        },
-        "code-model": {
-            "type": "value",
-            "command": "-mcmodel=",
             "group": [
                 "c",
                 "cpp",
@@ -169,12 +158,13 @@
     },
     "groups": {
         "c": {
-            "$path": "bin\\${toolPrefix}gcc.exe",
+            "$path": "bin/${toolPrefix}gcc",
             "$includes": {
                 "body": "-I${value}"
             },
             "$defines": {
-                "body": "-D${key}=\"${value}\""
+                "body": "-D\"${key}=${value}\"",
+                "body_noval": "-D\"${key}\""
             },
             "$invoke": {
                 "useFile": true,
@@ -191,12 +181,13 @@
             }
         },
         "cpp": {
-            "$path": "bin\\${toolPrefix}g++.exe",
+            "$path": "bin/${toolPrefix}g++",
             "$includes": {
                 "body": "-I${value}"
             },
             "$defines": {
-                "body": "-D${key}=\"${value}\""
+                "body": "-D\"${key}=${value}\"",
+                "body_noval": "-D\"${key}\""
             },
             "$invoke": {
                 "useFile": true,
@@ -212,7 +203,7 @@
             }
         },
         "asm": {
-            "$path": "bin\\${toolPrefix}gcc.exe",
+            "$path": "bin/${toolPrefix}gcc",
             "$includes": {
                 "body": "-I${value}"
             },
@@ -231,7 +222,7 @@
             }
         },
         "linker": {
-            "$path": "bin\\${toolPrefix}${toolName}.exe",
+            "$path": "bin/${toolPrefix}${toolName}",
             "$defToolName": "gcc",
             "$libs": {
                 "body": "-L${value}"
@@ -265,20 +256,20 @@
             "$outputBin": [
                 {
                     "name": "output hex file",
-                    "toolPath": "bin\\${toolPrefix}objcopy.exe",
+                    "toolPath": "bin/${toolPrefix}objcopy",
                     "outputSuffix": ".hex",
                     "command": "-O ihex ${linkerOutput} ${output}"
                 },
                 {
                     "name": "output bin file",
-                    "toolPath": "bin\\${toolPrefix}objcopy.exe",
+                    "toolPath": "bin/${toolPrefix}objcopy",
                     "outputSuffix": ".bin",
                     "command": "-O binary ${linkerOutput} ${output}"
                 }
             ]
         },
         "linker-lib": {
-            "$path": "bin\\${toolPrefix}ar.exe",
+            "$path": "bin/${toolPrefix}ar",
             "$invoke": {
                 "useFile": true,
                 "body": "@${value}"

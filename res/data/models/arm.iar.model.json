@@ -155,12 +155,13 @@
     },
     "groups": {
         "c": {
-            "$path": "bin\\iccarm.exe",
+            "$path": "bin/iccarm",
             "$includes": {
                 "body": "-I${value}"
             },
             "$defines": {
-                "body": "-D${key}=${value}"
+                "body": "-D${key}=${value}",
+                "body_noval": "-D${key}"
             },
             "$invoke": {
                 "useFile": true,
@@ -256,12 +257,13 @@
             }
         },
         "cpp": {
-            "$path": "bin\\iccarm.exe",
+            "$path": "bin/iccarm",
             "$includes": {
                 "body": "-I${value}"
             },
             "$defines": {
-                "body": "-D${key}=${value}"
+                "body": "-D${key}=${value}",
+                "body_noval": "-D${key}"
             },
             "$invoke": {
                 "useFile": true,
@@ -352,7 +354,7 @@
             }
         },
         "asm": {
-            "$path": "bin\\iasmarm.exe",
+            "$path": "bin/iasmarm",
             "$invoke": {
                 "useFile": true,
                 "body": "-f ${value}"
@@ -451,7 +453,7 @@
             }
         },
         "linker": {
-            "$path": "bin\\ilinkarm.exe",
+            "$path": "bin/ilinkarm",
             "$invoke": {
                 "useFile": true,
                 "body": "-f ${value}"
@@ -565,20 +567,20 @@
             "$outputBin": [
                 {
                     "name": "output hex file",
-                    "toolPath": "bin\\ielftool.exe",
+                    "toolPath": "bin/ielftool",
                     "outputSuffix": ".hex",
                     "command": "--silent --ihex ${linkerOutput} ${output}"
                 },
                 {
                     "name": "output bin file",
-                    "toolPath": "bin\\ielftool.exe",
+                    "toolPath": "bin/ielftool",
                     "outputSuffix": ".bin",
                     "command": "--silent --bin ${linkerOutput} ${output}"
                 }
             ]
         },
         "linker-lib": {
-            "$path": "bin\\iarchive.exe",
+            "$path": "bin/iarchive",
             "$invoke": {
                 "useFile": true,
                 "body": "-f ${value}"

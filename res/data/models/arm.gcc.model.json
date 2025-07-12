@@ -186,6 +186,111 @@
                 "asm"
             ]
         },
+        "one-elf-section-per-function": {
+            "type": "selectable",
+            "command": {
+                "true": "-ffunction-sections",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "one-elf-section-per-data": {
+            "type": "selectable",
+            "command": {
+                "true": "-fdata-sections",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "optimization-lto": {
+            "type": "selectable",
+            "command": {
+                "true": "-flto",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp",
+                "linker"
+            ]
+        },
+        "signed-char": {
+            "type": "selectable",
+            "command": {
+                "true": "-fsigned-char",
+                "false": "-funsigned-char"
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "no-rtti": {
+            "type": "selectable",
+            "command": {
+                "true": "-fno-rtti",
+                "false": ""
+            },
+            "group": [
+                "cpp"
+            ]
+        },
+        "no-exceptions": {
+            "type": "selectable",
+            "command": {
+                "true": "-fno-exceptions",
+                "false": ""
+            },
+            "group": [
+                "cpp"
+            ]
+        },
+        "no-use-cxa-atexit": {
+            "type": "selectable",
+            "command": {
+                "true": "-fno-use-cxa-atexit",
+                "false": ""
+            },
+            "group": [
+                "cpp"
+            ]
+        },
+        "no-threadsafe-statics": {
+            "type": "selectable",
+            "command": {
+                "true": "-fno-threadsafe-statics",
+                "false": ""
+            },
+            "group": [
+                "cpp"
+            ]
+        },
+        "remove-unused-input-sections": {
+            "type": "selectable",
+            "command": {
+                "true": "-Wl,--gc-sections",
+                "false": ""
+            },
+            "group": [
+                "linker"
+            ]
+        },
+        "misc-control": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ]
+        },
         "C_FLAGS": {
             "type": "list",
             "command": "",
@@ -213,48 +318,6 @@
             "group": [
                 "linker"
             ]
-        },
-        "misc-control": {
-            "type": "list",
-            "command": "",
-            "group": [
-                "c",
-                "cpp",
-                "asm",
-                "linker"
-            ]
-        },
-        "one-elf-section-per-function": {
-            "type": "selectable",
-            "command": {
-                "true": "-ffunction-sections",
-                "false": ""
-            },
-            "group": [
-                "c",
-                "cpp"
-            ]
-        },
-        "one-elf-section-per-data": {
-            "type": "selectable",
-            "command": {
-                "true": "-fdata-sections",
-                "false": ""
-            },
-            "group": [
-                "c",
-                "cpp"
-            ]
-        },
-        "remove-unused-input-sections": {
-            "type": "selectable",
-            "command": {
-                "true": "-Wl,--gc-sections",
-                "false": ""
-            },
-            "group": [
-                "linker"
-            ]
         }
     },
     "groups": {
@@ -264,7 +327,8 @@
                 "body": "-I${value}"
             },
             "$defines": {
-                "body": "-D${key}=\"${value}\""
+                "body": "-D\"${key}=${value}\"",
+                "body_noval": "-D\"${key}\""
             },
             "$invoke": {
                 "useFile": true,
@@ -289,6 +353,7 @@
                     "level-2": "-O2",
                     "level-3": "-O3",
                     "level-size": "-Os",
+                    "level-size-Oz": "-Oz",
                     "level-fast": "-Ofast",
                     "level-debug": "-Og"
                 }
@@ -315,7 +380,8 @@
                 "body": "-I${value}"
             },
             "$defines": {
-                "body": "-D${key}=\"${value}\""
+                "body": "-D\"${key}=${value}\"",
+                "body_noval": "-D\"${key}\""
             },
             "$invoke": {
                 "useFile": true,
@@ -333,12 +399,13 @@
             "optimization": {
                 "type": "selectable",
                 "command": {
-                    "false": "-O0",
+                    "false": "",
                     "level-0": "-O0",
                     "level-1": "-O1",
                     "level-2": "-O2",
                     "level-3": "-O3",
                     "level-size": "-Os",
+                    "level-size-Oz": "-Oz",
                     "level-fast": "-Ofast",
                     "level-debug": "-Og"
                 }

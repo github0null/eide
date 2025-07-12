@@ -191,7 +191,8 @@
                 "body": "-I${value}"
             },
             "$defines": {
-                "body": "-D${key}=\"${value}\""
+                "body": "-D\"${key}=${value}\"",
+                "body_noval": "-D\"${key}\""
             },
             "$output": "-o ${out} -MMD ${in}",
             "$invoke": {
@@ -322,7 +323,8 @@
                 "body": "-I${value}"
             },
             "$defines": {
-                "body": "-D${key}=\"${value}\""
+                "body": "-D\"${key}=${value}\"",
+                "body_noval": "-D\"${key}\""
             },
             "$output": "-o ${out} -MMD ${in}",
             "$invoke": {

@@ -1,7 +1,7 @@
 {
-    "name": "MIPS GCC",
+    "name": "RISC-V GCC",
     "id": "GCC",
-	"toolPrefix": "mips-mti-elf-",
+    "toolPrefix": "riscv-none-embed-",
     "useUnixPath": true,
     "version": {
         "args": "--version",
@@ -30,20 +30,95 @@
             ],
             "location": "first"
         },
+        "code-model": {
+            "type": "value",
+            "command": "-mcmodel=",
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ],
+            "location": "first"
+        },
         "optimization": {
             "type": "selectable",
             "command": {
-                "false": "-O0",
+                "false": "",
                 "level-0": "-O0",
                 "level-1": "-O1",
                 "level-2": "-O2",
                 "level-3": "-O3",
                 "level-size": "-Os",
+                "level-size-Oz": "-Oz",
                 "level-fast": "-Ofast",
                 "level-debug": "-Og"
             },
             "group": [
                 "c",
+                "cpp"
+            ]
+        },
+        "optimization-lto": {
+            "type": "selectable",
+            "command": {
+                "true": "-flto",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp",
+                "linker"
+            ]
+        },
+        "signed-char": {
+            "type": "selectable",
+            "command": {
+                "true": "-fsigned-char",
+                "false": "-funsigned-char"
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "no-rtti": {
+            "type": "selectable",
+            "command": {
+                "true": "-fno-rtti",
+                "false": ""
+            },
+            "group": [
+                "cpp"
+            ]
+        },
+        "no-exceptions": {
+            "type": "selectable",
+            "command": {
+                "true": "-fno-exceptions",
+                "false": ""
+            },
+            "group": [
+                "cpp"
+            ]
+        },
+        "no-use-cxa-atexit": {
+            "type": "selectable",
+            "command": {
+                "true": "-fno-use-cxa-atexit",
+                "false": ""
+            },
+            "group": [
+                "cpp"
+            ]
+        },
+        "no-threadsafe-statics": {
+            "type": "selectable",
+            "command": {
+                "true": "-fno-threadsafe-statics",
+                "false": ""
+            },
+            "group": [
                 "cpp"
             ]
         },
@@ -85,44 +160,6 @@
                 "asm"
             ]
         },
-        "C_FLAGS": {
-            "type": "list",
-            "command": "",
-            "group": [
-                "c"
-            ]
-        },
-        "CXX_FLAGS": {
-            "type": "list",
-            "command": "",
-            "group": [
-                "cpp"
-            ]
-        },
-        "ASM_FLAGS": {
-            "type": "list",
-            "command": "",
-            "group": [
-                "asm"
-            ]
-        },
-        "LD_FLAGS": {
-            "type": "list",
-            "command": "",
-            "group": [
-                "linker"
-            ]
-        },
-        "misc-control": {
-            "type": "list",
-            "command": "",
-            "group": [
-                "c",
-                "cpp",
-                "asm",
-                "linker"
-            ]
-        },
         "one-elf-section-per-function": {
             "type": "selectable",
             "command": {
@@ -154,6 +191,44 @@
             "group": [
                 "linker"
             ]
+        },
+        "misc-control": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ]
+        },
+        "C_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c"
+            ]
+        },
+        "CXX_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "cpp"
+            ]
+        },
+        "ASM_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "asm"
+            ]
+        },
+        "LD_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "linker"
+            ]
         }
     },
     "groups": {
@@ -163,7 +238,8 @@
                 "body": "-I${value}"
             },
             "$defines": {
-                "body": "-D${key}=\"${value}\""
+                "body": "-D\"${key}=${value}\"",
+                "body_noval": "-D\"${key}\""
             },
             "$invoke": {
                 "useFile": true,
@@ -185,7 +261,8 @@
                 "body": "-I${value}"
             },
             "$defines": {
-                "body": "-D${key}=\"${value}\""
+                "body": "-D\"${key}=${value}\"",
+                "body_noval": "-D\"${key}\""
             },
             "$invoke": {
                 "useFile": true,
