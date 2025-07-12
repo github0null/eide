@@ -903,7 +903,7 @@ export class ARMCodeBuilder extends CodeBuilder {
 
         // arch extensions
         if (ArmCpuUtils.isArmArchName(cpu_id)) {
-            const opts = config.compileConfig.archExtensions.split(',');
+            const opts = (config.compileConfig.archExtensions || '').split(',');
             // for gcc
             if (isGccFamilyToolchain(toolchain.name)) {
                 options.global['$arch-extensions'] = opts.join('');

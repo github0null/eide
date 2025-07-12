@@ -527,7 +527,10 @@ export interface ARMStorageLayout {
 
 export type FloatingHardwareOption = 'none' | 'single' | 'double';
 
-// deprecated
+/**
+ * @note 注意，如果后续需要新增字段，则字段必须带有 '| undefined' 的类型，表示可能是未定义的，
+ * 因为旧的工程可能没有这些字段，会导致报错
+ */
 export interface ArmBaseCompileData extends BuilderConfigData {
     /**
      * ARM CPU 类型，可选值包括：
@@ -535,7 +538,8 @@ export interface ArmBaseCompileData extends BuilderConfigData {
     */
     cpuType: string;
     /**
-     * 是否使用浮点硬件，默认为 'none'，表示不使用浮点硬件
+     * 是否使用浮点硬件，可选值包括：'single', 'double', 'none'
+     * 默认为 'none'，表示不使用浮点硬件
      * @note 这个选项会根据你选择的 cpuType 自动调整，
      *   如果你选择的 cpuType 不支持浮点硬件，则会自动设置为 'none'。
     */
@@ -548,7 +552,7 @@ export interface ArmBaseCompileData extends BuilderConfigData {
      *   则这个选项会被忽略。
      * @note 如果有多个选项，则选项之间以 ‘,’ 进行分隔
     */
-    archExtensions: string;
+    archExtensions?: string;
     /**
      * 是否使用自定义的链接脚本文件
      * @note 这个选项是为 armcc 准备的，
