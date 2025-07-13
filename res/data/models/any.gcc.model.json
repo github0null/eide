@@ -8,28 +8,6 @@
         "matcher": "\\((?<name>.*?)\\) (?<version>[\\d\\.]+)"
     },
     "global": {
-        "one-elf-section-per-function": {
-            "type": "selectable",
-            "command": {
-                "true": "-ffunction-sections",
-                "false": ""
-            },
-            "group": [
-                "c",
-                "cpp"
-            ]
-        },
-        "one-elf-section-per-data": {
-            "type": "selectable",
-            "command": {
-                "true": "-fdata-sections",
-                "false": ""
-            },
-            "group": [
-                "c",
-                "cpp"
-            ]
-        },
         "optimization": {
             "type": "selectable",
             "command": {
@@ -59,6 +37,50 @@
                 "cpp",
                 "linker",
                 "linker-g++"
+            ]
+        },
+        "no-rtti": {
+            "type": "selectable",
+            "command": {
+                "true": "-fno-rtti",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "no-exceptions": {
+            "type": "selectable",
+            "command": {
+                "true": "-fno-exceptions",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "one-elf-section-per-function": {
+            "type": "selectable",
+            "command": {
+                "true": "-ffunction-sections",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "one-elf-section-per-data": {
+            "type": "selectable",
+            "command": {
+                "true": "-fdata-sections",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
             ]
         },
         "misc-control": {

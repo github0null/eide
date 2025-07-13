@@ -172,6 +172,16 @@
                     "description.zh-cn": "链接时优化 (-flto)",
                     "type": "boolean"
                 },
+                "no-rtti": {
+                    "markdownDescription": "No RTTI (-fno-rtti)",
+                    "description.zh-cn": "禁用运行时类型信息 (-fno-rtti)",
+                    "type": "boolean"
+                },
+                "no-exceptions": {
+                    "markdownDescription": "Disable Exception Handling (-fno-exceptions)",
+                    "description.zh-cn": "禁用异常处理 (-fno-exceptions)",
+                    "type": "boolean"
+                },
                 "one-elf-section-per-function": {
                     "markdownDescription": "One ELF Section per Function",
                     "type": "boolean"
