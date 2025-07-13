@@ -32,44 +32,43 @@
                 "linker"
             ]
         },
-        "microcontroller-cpu": {
-            "type": "keyValue",
-            "command": "",
-            "enum": {
-                "cortex-m0": "-mcpu=cortex-m0",
-                "cortex-m0+": "-mcpu=cortex-m0plus",
-                "cortex-m0.small-multiply": "-mcpu=cortex-m0.small-multiply",
-                "cortex-m0+.small-multiply": "-mcpu=cortex-m0plus.small-multiply",
-                "cortex-m23": "-mcpu=cortex-m23",
-                "cortex-m3": "-mcpu=cortex-m3",
-                "cortex-m33": "-mcpu=cortex-m33",
-                "cortex-m33-sp": "-mcpu=cortex-m33",
-                "cortex-m35p": "-mcpu=cortex-m35p",
-                "cortex-m35p-sp": "-mcpu=cortex-m35p",
-                "cortex-m4": "-mcpu=cortex-m4",
-                "cortex-m4-sp": "-mcpu=cortex-m4",
-                "cortex-m7": "-mcpu=cortex-m7",
-                "cortex-m7-sp": "-mcpu=cortex-m7",
-                "cortex-m7-dp": "-mcpu=cortex-m7",
-                "cortex-r4": "-mcpu=cortex-r4",
-                "cortex-r4-sp": "-mcpu=cortex-r4",
-                "cortex-r4-dp": "-mcpu=cortex-r4",
-                "cortex-r5": "-mcpu=cortex-r5",
-                "cortex-r5-sp": "-mcpu=cortex-r5",
-                "cortex-r5-dp": "-mcpu=cortex-r5",
-                "cortex-r7": "-mcpu=cortex-r7",
-                "cortex-r7-sp": "-mcpu=cortex-r7",
-                "cortex-r7-dp": "-mcpu=cortex-r7",
-                "armv4": "-march=armv4${$arch-extensions}",
-                "armv4t": "-march=armv4t${$arch-extensions}",
-                "armv5te": "-march=armv5te${$arch-extensions}",
-                "armv6-m": "-march=armv6-m${$arch-extensions}",
-                "armv7-m": "-march=armv7-m${$arch-extensions}",
-                "armv7e-m": "-march=armv7e-m${$arch-extensions}",
-                "armv7-r": "-march=armv7-r${$arch-extensions}",
-                "armv8-m.base": "-march=armv8-m.base${$arch-extensions}",
-                "armv8-m.main": "-march=armv8-m.main${$arch-extensions}",
-                "armv8.1-m.main": "-march=armv8.1-m.main${$arch-extensions}"
+        "microcontroller-float": {
+            "type": "selectable",
+            "command": {
+                "cortex-m0": "",
+                "cortex-m0+": "",
+                "cortex-m0.small-multiply": "",
+                "cortex-m0+.small-multiply": "",
+                "cortex-m23": "",
+                "cortex-m3": "",
+                "cortex-m33": "-mfloat-abi=soft",
+                "cortex-m33-sp": "-mfloat-abi=${$float-abi-type}",
+                "cortex-m35p": "-mfloat-abi=soft",
+                "cortex-m35p-sp": "-mfloat-abi=${$float-abi-type}",
+                "cortex-m4": "-mfloat-abi=soft",
+                "cortex-m4-sp": "-mfloat-abi=${$float-abi-type}",
+                "cortex-m7": "-mfloat-abi=soft",
+                "cortex-m7-sp": "-mfloat-abi=${$float-abi-type}",
+                "cortex-m7-dp": "-mfloat-abi=${$float-abi-type}",
+                "cortex-r4": "-mfloat-abi=soft",
+                "cortex-r4-sp": "-mfloat-abi=${$float-abi-type}",
+                "cortex-r4-dp": "-mfloat-abi=${$float-abi-type}",
+                "cortex-r5": "-mfloat-abi=soft",
+                "cortex-r5-sp": "-mfloat-abi=${$float-abi-type}",
+                "cortex-r5-dp": "-mfloat-abi=${$float-abi-type}",
+                "cortex-r7": "-mfloat-abi=soft",
+                "cortex-r7-sp": "-mfloat-abi=${$float-abi-type}",
+                "cortex-r7-dp": "-mfloat-abi=${$float-abi-type}",
+                "armv4": "",
+                "armv4t": "",
+                "armv5te": "",
+                "armv6-m": "",
+                "armv7-m": "",
+                "armv7e-m": "",
+                "armv7-r": "",
+                "armv8-m.base": "",
+                "armv8-m.main": "-mfloat-abi=${$float-abi-type}",
+                "armv8.1-m.main": "-mfloat-abi=${$float-abi-type}"
             },
             "group": [
                 "c",
@@ -125,43 +124,44 @@
             ],
             "location": "first"
         },
-        "microcontroller-float": {
-            "type": "selectable",
-            "command": {
-                "cortex-m0": "",
-                "cortex-m0+": "",
-                "cortex-m0.small-multiply": "",
-                "cortex-m0+.small-multiply": "",
-                "cortex-m23": "",
-                "cortex-m3": "",
-                "cortex-m33": "-mfloat-abi=soft",
-                "cortex-m33-sp": "-mfloat-abi=${$float-abi-type}",
-                "cortex-m35p": "-mfloat-abi=soft",
-                "cortex-m35p-sp": "-mfloat-abi=${$float-abi-type}",
-                "cortex-m4": "-mfloat-abi=soft",
-                "cortex-m4-sp": "-mfloat-abi=${$float-abi-type}",
-                "cortex-m7": "-mfloat-abi=soft",
-                "cortex-m7-sp": "-mfloat-abi=${$float-abi-type}",
-                "cortex-m7-dp": "-mfloat-abi=${$float-abi-type}",
-                "cortex-r4": "-mfloat-abi=soft",
-                "cortex-r4-sp": "-mfloat-abi=${$float-abi-type}",
-                "cortex-r4-dp": "-mfloat-abi=${$float-abi-type}",
-                "cortex-r5": "-mfloat-abi=soft",
-                "cortex-r5-sp": "-mfloat-abi=${$float-abi-type}",
-                "cortex-r5-dp": "-mfloat-abi=${$float-abi-type}",
-                "cortex-r7": "-mfloat-abi=soft",
-                "cortex-r7-sp": "-mfloat-abi=${$float-abi-type}",
-                "cortex-r7-dp": "-mfloat-abi=${$float-abi-type}",
-                "armv4": "",
-                "armv4t": "",
-                "armv5te": "",
-                "armv6-m": "",
-                "armv7-m": "",
-                "armv7e-m": "",
-                "armv7-r": "",
-                "armv8-m.base": "",
-                "armv8-m.main": "-mfloat-abi=${$float-abi-type}",
-                "armv8.1-m.main": "-mfloat-abi=${$float-abi-type}"
+        "microcontroller-cpu": {
+            "type": "keyValue",
+            "command": "",
+            "enum": {
+                "cortex-m0": "-mcpu=cortex-m0",
+                "cortex-m0+": "-mcpu=cortex-m0plus",
+                "cortex-m0.small-multiply": "-mcpu=cortex-m0.small-multiply",
+                "cortex-m0+.small-multiply": "-mcpu=cortex-m0plus.small-multiply",
+                "cortex-m23": "-mcpu=cortex-m23",
+                "cortex-m3": "-mcpu=cortex-m3",
+                "cortex-m33": "-mcpu=cortex-m33",
+                "cortex-m33-sp": "-mcpu=cortex-m33",
+                "cortex-m35p": "-mcpu=cortex-m35p",
+                "cortex-m35p-sp": "-mcpu=cortex-m35p",
+                "cortex-m4": "-mcpu=cortex-m4",
+                "cortex-m4-sp": "-mcpu=cortex-m4",
+                "cortex-m7": "-mcpu=cortex-m7",
+                "cortex-m7-sp": "-mcpu=cortex-m7",
+                "cortex-m7-dp": "-mcpu=cortex-m7",
+                "cortex-r4": "-mcpu=cortex-r4",
+                "cortex-r4-sp": "-mcpu=cortex-r4",
+                "cortex-r4-dp": "-mcpu=cortex-r4",
+                "cortex-r5": "-mcpu=cortex-r5",
+                "cortex-r5-sp": "-mcpu=cortex-r5",
+                "cortex-r5-dp": "-mcpu=cortex-r5",
+                "cortex-r7": "-mcpu=cortex-r7",
+                "cortex-r7-sp": "-mcpu=cortex-r7",
+                "cortex-r7-dp": "-mcpu=cortex-r7",
+                "armv4": "-march=armv4${$arch-extensions}",
+                "armv4t": "-march=armv4t${$arch-extensions}",
+                "armv5te": "-march=armv5te${$arch-extensions}",
+                "armv6-m": "-march=armv6-m${$arch-extensions}",
+                "armv7-m": "-march=armv7-m${$arch-extensions}",
+                "armv7e-m": "-march=armv7e-m${$arch-extensions}",
+                "armv7-r": "-march=armv7-r${$arch-extensions}",
+                "armv8-m.base": "-march=armv8-m.base${$arch-extensions}",
+                "armv8-m.main": "-march=armv8-m.main${$arch-extensions}",
+                "armv8.1-m.main": "-march=armv8.1-m.main${$arch-extensions}"
             },
             "group": [
                 "c",
@@ -238,6 +238,7 @@
                 "false": ""
             },
             "group": [
+                "c",
                 "cpp"
             ]
         },
@@ -248,6 +249,7 @@
                 "false": ""
             },
             "group": [
+                "c",
                 "cpp"
             ]
         },
@@ -258,6 +260,7 @@
                 "false": ""
             },
             "group": [
+                "c",
                 "cpp"
             ]
         },
@@ -268,17 +271,8 @@
                 "false": ""
             },
             "group": [
+                "c",
                 "cpp"
-            ]
-        },
-        "remove-unused-input-sections": {
-            "type": "selectable",
-            "command": {
-                "true": "-Wl,--gc-sections",
-                "false": ""
-            },
-            "group": [
-                "linker"
             ]
         },
         "misc-control": {
@@ -472,6 +466,13 @@
             "link-scatter": {
                 "type": "list",
                 "command": "-T "
+            },
+            "remove-unused-input-sections": {
+                "type": "selectable",
+                "command": {
+                    "true": "-Wl,--gc-sections",
+                    "false": ""
+                }
             },
             "not-print-mem-usage": {
                 "type": "selectable",

@@ -8,17 +8,6 @@
         "matcher": "\\((?<name>.*?)\\) (?<version>\\d+\\.\\d+\\.\\d+)"
     },
     "global": {
-        "arch": {
-            "type": "value",
-            "command": "-march=",
-            "group": [
-                "c",
-                "cpp",
-                "asm",
-                "linker"
-            ],
-            "location": "first"
-        },
         "abi": {
             "type": "value",
             "command": "-mabi=",
@@ -33,6 +22,17 @@
         "code-model": {
             "type": "value",
             "command": "-mcmodel=",
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ],
+            "location": "first"
+        },
+        "arch": {
+            "type": "value",
+            "command": "-march=",
             "group": [
                 "c",
                 "cpp",
@@ -89,6 +89,7 @@
                 "false": ""
             },
             "group": [
+                "c",
                 "cpp"
             ]
         },
@@ -99,6 +100,7 @@
                 "false": ""
             },
             "group": [
+                "c",
                 "cpp"
             ]
         },
@@ -109,6 +111,7 @@
                 "false": ""
             },
             "group": [
+                "c",
                 "cpp"
             ]
         },
@@ -119,6 +122,7 @@
                 "false": ""
             },
             "group": [
+                "c",
                 "cpp"
             ]
         },
@@ -180,16 +184,6 @@
             "group": [
                 "c",
                 "cpp"
-            ]
-        },
-        "remove-unused-input-sections": {
-            "type": "selectable",
-            "command": {
-                "true": "-Wl,--gc-sections",
-                "false": ""
-            },
-            "group": [
-                "linker"
             ]
         },
         "misc-control": {
@@ -320,6 +314,13 @@
             "linker-script": {
                 "type": "list",
                 "command": "-T "
+            },
+            "remove-unused-input-sections": {
+                "type": "selectable",
+                "command": {
+                    "true": "-Wl,--gc-sections",
+                    "false": ""
+                }
             },
             "not-print-mem-usage": {
                 "type": "selectable",
