@@ -91,16 +91,17 @@ export class ResInstaller {
             no_binaries: no_binaries
         });
 
-        /* this.registerTool('GNU_SDCC_STM8', {
-            setting_name: 'STM8.GNU-SDCC.InstallDirectory',
-            resource_name: 'stm8_gnu_sdcc',
-            no_binaries: no_binaries
-        }); */
-
         this.registerTool('GCC', {
             resource_name: 'gcc_arm',
             readable_name: 'GNU Arm Embedded Toolchain (10.2.1)',
             setting_name: 'ARM.GCC.InstallDirectory',
+            no_binaries: no_binaries
+        });
+
+        this.registerTool('LLVM_ARM', {
+            resource_name: 'llvm_arm',
+            readable_name: 'LLVM Embedded Toolchain For Arm (19.1.5)',
+            setting_name: 'ARM.LLVM.InstallDirectory',
             no_binaries: no_binaries
         });
 

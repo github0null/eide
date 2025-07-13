@@ -409,6 +409,12 @@
                         "markdownDescription": "%settings.arm.gcc.install.folder%",
                         "default": "${userRoot}/.eide/tools/gcc_arm"
                     },
+                    "EIDE.ARM.LLVM.InstallDirectory": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.arm.llvm.install.folder%",
+                        "default": "${userRoot}/.eide/tools/llvm_arm"
+                    },
                     "EIDE.ARM.INI.Path": {
                         "type": "string",
                         "scope": "machine",

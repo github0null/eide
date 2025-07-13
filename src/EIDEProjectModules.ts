@@ -460,6 +460,8 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
                 return <any>new SdccGnuStm8CompileConfigModel(prjConfigData);
             case 'MTI_GCC':
                 return <any>new MipsCompileConfigModel(prjConfigData);
+            case 'LLVM_ARM':
+                return <any>new LLVMArmCompileConfigModel(prjConfigData);
             default:
                 throw new Error('Unsupported toolchain: ' + prjConfigData.toolchain);
         }
@@ -1109,6 +1111,66 @@ export class GccCompileConfigModel extends ArmBaseCompileConfigModel {
 
     GetDefault(): ArmBaseCompileData {
         return GccCompileConfigModel.getDefaultConfig();
+    }
+}
+
+export class LLVMArmCompileConfigModel extends ArmBaseCompileConfigModel {
+
+    protected cpuTypeList = [
+        this.DIV_TAG + 'Processors', // div
+        'Cortex-M0',
+        'Cortex-M0+',
+        'Cortex-M23',
+        'Cortex-M3',
+        'Cortex-M33',
+        'Cortex-M35P',
+        'Cortex-M4',
+        'Cortex-M7',
+        'Cortex-M52',
+        'Cortex-M55',
+        'Cortex-M85',
+        'Cortex-R4',
+        'Cortex-R5',
+        'Cortex-R7',
+        this.DIV_TAG + 'Architectures', // div
+        "Armv6-M",
+        "Armv7-M",
+        "Armv7E-M",
+        "Armv8-M.Base",
+        "Armv8-M.Main",
+        "Armv8.1-M.Main",
+        "Armv8.1-M.Main.mve.no_fpu",
+    ];
+
+    protected GetKeyType(key: string): FieldType {
+        switch (key) {
+            case 'cpuType':
+            case 'archExtensions':
+            case 'floatingPointHardware':
+                return 'SELECTION';
+            case 'scatterFilePath':
+                return 'INPUT';
+            case 'options':
+                return 'EVENT';
+            default:
+                return 'Disable';
+        }
+    }
+
+    static getDefaultConfig(): ArmBaseCompileData {
+        return {
+            cpuType: 'Cortex-M3',
+            archExtensions: '',
+            floatingPointHardware: 'none',
+            scatterFilePath: '<YOUR_LINKER_SCRIPT>.lds',
+            useCustomScatterFile: true,
+            storageLayout: { RAM: [], ROM: [] },
+            options: 'null'
+        };
+    }
+
+    GetDefault(): ArmBaseCompileData {
+        return LLVMArmCompileConfigModel.getDefaultConfig();
     }
 }
 

@@ -30,7 +30,7 @@ import { SettingManager } from "./SettingManager";
 import { CmdLineHandler } from "./CmdLineHandler";
 import { gotoSet_text, view_str$download_software } from "./StringTable";
 import { EncodingConverter } from "./EncodingConverter";
-import { ToolchainName } from "./ToolchainManager";
+import { ToolchainName, ToolchainManager } from "./ToolchainManager";
 import { runShellCommand } from './utility';
 import { WorkspaceManager } from "./WorkspaceManager";
 
@@ -63,17 +63,50 @@ export interface HexUploaderInfo {
 
 export class HexUploaderManager {
 
-    private uploaderList: HexUploaderInfo[] = [
-        { type: 'JLink', description: 'for Cortex-M chips, only JLink interface', filters: ['AC5', 'AC6', 'GCC', 'IAR_ARM', 'RISCV_GCC', 'ANY_GCC'] },
-        { type: 'STLink', description: 'for STM32 chips, only STLink interface', filters: ['AC5', 'AC6', 'GCC', 'IAR_ARM'] },
-        { type: 'pyOCD', description: 'for Cortex-M chips', filters: ['AC5', 'AC6', 'GCC', 'IAR_ARM', 'RISCV_GCC', 'ANY_GCC'] },
-        { type: 'OpenOCD', description: 'for Cortex-M chips', filters: ['AC5', 'AC6', 'GCC', 'IAR_ARM', 'RISCV_GCC', 'ANY_GCC'] },
-        { type: 'stcgal', description: 'for STC chips', filters: ['Keil_C51', 'SDCC'] },
-        { type: 'STVP', description: 'for STM8 chips, only STLink interface', filters: ['IAR_STM8', 'SDCC', 'COSMIC_STM8'] },
-        { type: 'Custom', label: 'Shell', description: 'download program by custom shell command' }
-    ];
+    private uploaderList: HexUploaderInfo[] = [];
 
     private constructor() {
+
+        const arm_toolchains   = ToolchainManager.getInstance().getToolchainNameList('ARM');
+        const riscv_toolchains = ToolchainManager.getInstance().getToolchainNameList('RISC-V');
+
+        this.uploaderList = [
+            {
+                type: 'JLink',
+                description: 'for Cortex-M chips, only JLink interface',
+                filters: arm_toolchains.concat(riscv_toolchains, ['ANY_GCC'])
+            },
+            {
+                type: 'STLink',
+                description: 'for STM32 chips, only STLink interface',
+                filters: arm_toolchains
+            },
+            {
+                type: 'pyOCD',
+                description: 'for Cortex-M chips',
+                filters: arm_toolchains.concat(riscv_toolchains, ['ANY_GCC'])
+            },
+            {
+                type: 'OpenOCD',
+                description: 'for Cortex-M chips',
+                filters: arm_toolchains.concat(riscv_toolchains, ['ANY_GCC'])
+            },
+            {
+                type: 'stcgal',
+                description: 'for STC chips',
+                filters: ['Keil_C51', 'SDCC']
+            },
+            {
+                type: 'STVP',
+                description: 'for STM8 chips, only STLink interface',
+                filters: ['IAR_STM8', 'SDCC', 'COSMIC_STM8']
+            },
+            {
+                type: 'Custom',
+                label: 'Shell',
+                description: 'download program by custom shell command'
+            }
+        ];
     }
 
     getUploaderLabelByName(uploaderName: HexUploaderType): string {

@@ -1,0 +1,490 @@
+{
+    "name": "LLVM for Arm",
+    "id": "GCC",
+    "useUnixPath": true,
+    "version": {
+        "args": "--version",
+        "matcher": "version (?<version>[\\d\\.]+)"
+    },
+    "global": {
+        "$float-abi-type": {
+            "type": "selectable",
+            "command": {
+                "softfp": "softfp",
+                "hard": "hard",
+                "false": "softfp"
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ]
+        },
+        "microcontroller-float": {
+            "type": "selectable",
+            "command": {
+                "cortex-m0"     : "",
+                "cortex-m0+"    : "",
+                "cortex-m23"    : "",
+                "cortex-m3"     : "",
+                "cortex-m33"    : "-mfloat-abi=soft",
+                "cortex-m33-sp" : "-mfloat-abi=${$float-abi-type}",
+                "cortex-m35p"   : "-mfloat-abi=soft",
+                "cortex-m35p-sp": "-mfloat-abi=${$float-abi-type}",
+                "cortex-m4"     : "-mfloat-abi=soft",
+                "cortex-m4-sp"  : "-mfloat-abi=${$float-abi-type}",
+                "cortex-m7"     : "-mfloat-abi=soft",
+                "cortex-m7-sp"  : "-mfloat-abi=${$float-abi-type}",
+                "cortex-m7-dp"  : "-mfloat-abi=${$float-abi-type}",
+                "cortex-m52"    : "-mfloat-abi=soft",
+                "cortex-m52-sp" : "-mfloat-abi=${$float-abi-type}",
+                "cortex-m52-dp" : "-mfloat-abi=${$float-abi-type}",
+                "cortex-m55"    : "-mfloat-abi=soft",
+                "cortex-m55-sp" : "-mfloat-abi=${$float-abi-type}",
+                "cortex-m55-dp" : "-mfloat-abi=${$float-abi-type}",
+                "cortex-m85"    : "-mfloat-abi=soft",
+                "cortex-m85-sp" : "-mfloat-abi=${$float-abi-type}",
+                "cortex-m85-dp" : "-mfloat-abi=${$float-abi-type}",
+                "cortex-r4"     : "-mfloat-abi=soft",
+                "cortex-r4-sp"  : "-mfloat-abi=${$float-abi-type}",
+                "cortex-r4-dp"  : "-mfloat-abi=${$float-abi-type}",
+                "cortex-r5"     : "-mfloat-abi=soft",
+                "cortex-r5-sp"  : "-mfloat-abi=${$float-abi-type}",
+                "cortex-r5-dp"  : "-mfloat-abi=${$float-abi-type}",
+                "cortex-r7"     : "-mfloat-abi=soft",
+                "cortex-r7-sp"  : "-mfloat-abi=${$float-abi-type}",
+                "cortex-r7-dp"  : "-mfloat-abi=${$float-abi-type}",
+                "armv6-m"       : "",
+                "armv7-m"       : "-mfloat-abi=soft",
+                "armv7e-m"      : "-mfloat-abi=${$float-abi-type}",
+                "armv8-m.main"              : "-mfloat-abi=${$float-abi-type}",
+                "armv8.1-m.main"            : "-mfloat-abi=${$float-abi-type}",
+                "armv8.1-m.main.mve.no_fpu" : "-mfloat-abi=soft"
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ],
+            "location": "first"
+        },
+        "microcontroller-fpu": {
+            "type": "selectable",
+            "command": {
+                "cortex-m0"     : "-mfpu=none",
+                "cortex-m0+"    : "-mfpu=none",
+                "cortex-m23"    : "-mfpu=none",
+                "cortex-m3"     : "-mfpu=none",
+                "cortex-m33"    : "-mfpu=none",
+                "cortex-m33-sp" : "-mfpu=fpv5-sp-d16",
+                "cortex-m35p"   : "-mfpu=none",
+                "cortex-m35p-sp": "-mfpu=fpv5-sp-d16",
+                "cortex-m4"     : "-mfpu=none",
+                "cortex-m4-sp"  : "-mfpu=fpv4-sp-d16",
+                "cortex-m7"     : "-mfpu=none",
+                "cortex-m7-sp"  : "-mfpu=fpv4-sp-d16",
+                "cortex-m7-dp"  : "-mfpu=fpv5-d16",
+                "cortex-m52"    : "-mfpu=none",
+                "cortex-m52-sp" : "-mfpu=fp-armv8-fullfp16-sp-d16",
+                "cortex-m52-dp" : "-mfpu=fp-armv8-fullfp16-d16",
+                "cortex-m55"    : "-mfpu=none",
+                "cortex-m55-sp" : "-mfpu=fp-armv8-fullfp16-sp-d16",
+                "cortex-m55-dp" : "-mfpu=fp-armv8-fullfp16-d16",
+                "cortex-m85"    : "-mfpu=none",
+                "cortex-m85-sp" : "-mfpu=fp-armv8-fullfp16-sp-d16",
+                "cortex-m85-dp" : "-mfpu=fp-armv8-fullfp16-d16",
+                "cortex-r4"     : "-mfpu=none",
+                "cortex-r4-sp"  : "-mfpu=vfpv3xd",
+                "cortex-r4-dp"  : "-mfpu=vfpv3-d16",
+                "cortex-r5"     : "-mfpu=none",
+                "cortex-r5-sp"  : "-mfpu=vfpv3xd",
+                "cortex-r5-dp"  : "-mfpu=vfpv3-d16",
+                "cortex-r7"     : "-mfpu=none",
+                "cortex-r7-sp"  : "-mfpu=vfpv3xd",
+                "cortex-r7-dp"  : "-mfpu=vfpv3-d16",
+                "armv6-m"       : "-mfpu=none",
+                "armv7-m"       : "-mfpu=none",
+                "armv7e-m"      : "-mfpu=fpv5-d16",
+                "armv8-m.main"              : "-mfpu=fpv5-sp-d16",
+                "armv8.1-m.main"            : "-mfpu=fp-armv8-fullfp16-d16",
+                "armv8.1-m.main.mve.no_fpu" : "-mfpu=none"
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ],
+            "location": "first"
+        },
+        "microcontroller-cpu": {
+            "type": "keyValue",
+            "command": "",
+            "enum": {
+                "cortex-m0"     : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m0",
+                "cortex-m0+"    : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m0plus",
+                "cortex-m23"    : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m23",
+                "cortex-m3"     : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m3",
+                "cortex-m33"    : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m33",
+                "cortex-m33-sp" : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m33",
+                "cortex-m35p"   : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m35p",
+                "cortex-m35p-sp": "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m35p",
+                "cortex-m4"     : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m4",
+                "cortex-m4-sp"  : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m4",
+                "cortex-m7"     : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m7",
+                "cortex-m7-sp"  : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m7",
+                "cortex-m7-dp"  : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m7",
+                "cortex-m52"    : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m52",
+                "cortex-m52-sp" : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m52",
+                "cortex-m52-dp" : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m52",
+                "cortex-m55"    : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m55",
+                "cortex-m55-sp" : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m55",
+                "cortex-m55-dp" : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m55",
+                "cortex-m85"    : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m85",
+                "cortex-m85-sp" : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m85",
+                "cortex-m85-dp" : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-m85",
+                "cortex-r4"     : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-r4",
+                "cortex-r4-sp"  : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-r4",
+                "cortex-r4-dp"  : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-r4",
+                "cortex-r5"     : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-r5",
+                "cortex-r5-sp"  : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-r5",
+                "cortex-r5-dp"  : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-r5",
+                "cortex-r7"     : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-r7",
+                "cortex-r7-sp"  : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-r7",
+                "cortex-r7-dp"  : "-mthumb --target=arm-unknown-none-eabi -mcpu=cortex-r7",
+                "armv6-m"       : "-mthumb --target=thumbv6m-unknown-none-eabi",
+                "armv7-m"       : "-mthumb --target=thumbv7m-unknown-none-eabi",
+                "armv7e-m"      : "-mthumb --target=thumbv7m-unknown-none-eabihf",
+                "armv8-m.main"              : "-mthumb --target=thumbv8m.main-unknown-none-eabihf",
+                "armv8.1-m.main"            : "-mthumb --target=thumbv8.1m.main-unknown-none-eabihf -march=thumbv8.1m.main+fp16",
+                "armv8.1-m.main.mve.no_fpu" : "-mthumb --target=thumbv8.1m.main-unknown-none-eabihf -march=thumbv8.1m.main+mve"
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ],
+            "location": "first"
+        },
+        "output-debug-info": {
+            "type": "selectable",
+            "command": {
+                "enable": "-g",
+                "disable": "",
+                "dwarf-2": "-g -gdwarf-2",
+                "dwarf-3": "-g -gdwarf-3",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm"
+            ]
+        },
+        "one-elf-section-per-function": {
+            "type": "selectable",
+            "command": {
+                "true": "-ffunction-sections",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "one-elf-section-per-data": {
+            "type": "selectable",
+            "command": {
+                "true": "-fdata-sections",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "optimization": {
+            "type": "selectable",
+            "command": {
+                "false": "",
+                "level-0": "-O0",
+                "level-1": "-O1",
+                "level-2": "-O2",
+                "level-3": "-O3",
+                "level-size": "-Os",
+                "level-fast": "-O3 -ffast-math"
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "optimization-lto": {
+            "type": "selectable",
+            "command": {
+                "true": "-flto",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp",
+                "linker"
+            ]
+        },
+        "signed-char": {
+            "type": "selectable",
+            "command": {
+                "true": "-fsigned-char",
+                "false": "-funsigned-char"
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "no-rtti": {
+            "type": "selectable",
+            "command": {
+                "true": "-fno-rtti",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "no-exceptions": {
+            "type": "selectable",
+            "command": {
+                "true": "-fno-exceptions",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "no-use-cxa-atexit": {
+            "type": "selectable",
+            "command": {
+                "true": "-fno-use-cxa-atexit",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "no-threadsafe-statics": {
+            "type": "selectable",
+            "command": {
+                "true": "-fno-threadsafe-statics",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "misc-control": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ]
+        },
+        "C_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c"
+            ]
+        },
+        "CXX_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "cpp"
+            ]
+        },
+        "ASM_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "asm"
+            ]
+        },
+        "LD_FLAGS": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "linker"
+            ]
+        }
+    },
+    "groups": {
+        "c": {
+            "$path": "bin/clang",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "-D\"${key}=${value}\"",
+                "body_noval": "-D\"${key}\""
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$output": "-o ${out} -MMD ${in}",
+            "$default": [
+                "-c",
+                "-x c"
+            ],
+            "$language-c": {
+                "type": "value",
+                "command": "-std="
+            },
+            "turn-Warning-into-errors": {
+                "type": "selectable",
+                "command": {
+                    "true": "-Werror",
+                    "false": ""
+                }
+            },
+            "warnings": {
+                "type": "selectable",
+                "command": {
+                    "false": "",
+                    "no-warnings": "-w",
+                    "all-warnings": "-Wall"
+                }
+            }
+        },
+        "cpp": {
+            "$path": "bin/clang++",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "-D\"${key}=${value}\"",
+                "body_noval": "-D\"${key}\""
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$output": "-o ${out} -MMD ${in}",
+            "$default": [
+                "-c"
+            ],
+            "$language-cpp": {
+                "type": "value",
+                "command": "-std="
+            },
+            "turn-Warning-into-errors": {
+                "type": "selectable",
+                "command": {
+                    "true": "-Werror",
+                    "false": ""
+                }
+            },
+            "warnings": {
+                "type": "selectable",
+                "command": {
+                    "false": "",
+                    "no-warnings": "-w",
+                    "all-warnings": "-Wall"
+                }
+            }
+        },
+        "asm": {
+            "$path": "bin/clang",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$output": "-o ${out} -MMD ${in}",
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$default": [
+                "-c",
+                "-x assembler-with-cpp"
+            ],
+            "defines": {
+                "type": "list",
+                "command": "-D"
+            }
+        },
+        "linker": {
+            "$path": "bin/${toolName}",
+            "$defToolName": "clang",
+            "$libs": {
+                "body": "-L${value}"
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$default": [],
+            "$output": "-o ${out} ${in} ${lib_flags}",
+            "$outputSuffix": ".elf",
+            "$linkMap": {
+                "type": "value",
+                "command": "-Wl,-Map=${mapPath}"
+            },
+            "$LIB_FLAGS": {
+                "type": "list",
+                "command": ""
+            },
+            "remove-unused-input-sections": {
+                "type": "selectable",
+                "command": {
+                    "true": "-Wl,--gc-sections",
+                    "false": ""
+                }
+            },
+            "not-print-mem-usage": {
+                "type": "selectable",
+                "command": {
+                    "true": "",
+                    "false": "-Wl,--print-memory-usage"
+                }
+            },
+            "link-scatter": {
+                "type": "list",
+                "command": "-T "
+            },
+            "$outputBin": [
+                {
+                    "name": "output hex file",
+                    "toolPath": "bin/llvm-objcopy",
+                    "outputSuffix": ".hex",
+                    "command": "-O ihex ${linkerOutput} ${output}"
+                },
+                {
+                    "name": "output bin file",
+                    "toolPath": "bin/llvm-objcopy",
+                    "outputSuffix": ".bin",
+                    "command": "-O binary ${linkerOutput} ${output}"
+                }
+            ]
+        },
+        "linker-lib": {
+            "$path": "bin/llvm-ar",
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$output": "-rcv ${out} ${in}",
+            "$outputSuffix": ".a"
+        }
+    }
+}

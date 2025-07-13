@@ -107,7 +107,8 @@ import {
     getGccSystemSearchList,
     openocd_getConfigList,
     pyocd_getTargetList,
-    generateDotnetProgramCmd
+    generateDotnetProgramCmd,
+    isGccFamilyToolchain
 } from './utility';
 import { concatSystemEnvPath, DeleteDir, exeSuffix, kill, osType, DeleteAllChildren, userhome } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
@@ -3974,7 +3975,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     cfg['CompileFlags']['Compiler'] = gccLikePath;
                     let clangdCompileFlags = <string[]>(cfg['CompileFlags']['Add']);
                     let compilerArgs = prj.getCpptoolsConfig().cppCompilerArgs;
-                    if (/GCC/.test(toolchain.name)) {
+                    if (isGccFamilyToolchain(toolchain.name)) {
                         const tRoot = toolchain.getToolchainDir().path;
                         clangdCompileFlags = clangdCompileFlags.filter(p => !File.isSubPathOf(tRoot, p.substr(2)));
                         let li = getGccSystemSearchList(File.ToLocalPath(gccLikePath), ['-xc++'].concat(compilerArgs || []));
@@ -3983,6 +3984,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                                 clangdCompileFlags.push(`-I${File.normalize(p)}`);
                             });
                         }
+                    } else if (toolchain.name == 'LLVM_ARM') {
+                        // nothing todo. This is llvm.
                     } else {
                         clangdCompileFlags.push(`-I${toolchain.getToolchainDir().path}/include`);
                         clangdCompileFlags.push(`-I${toolchain.getToolchainDir().path}/include/libcxx`);
@@ -4665,7 +4668,11 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             if (!prj)
                 return;
 
-            const matchList: ToolchainName[] = ['AC5', 'AC6', 'GCC', 'Keil_C51'];
+            const matchList: ToolchainName[] = [];
+
+            ToolchainManager.getInstance().getToolchainNameList('ARM')
+                .forEach(n => matchList.push(n)); // for Keil Arm
+            matchList.push(`Keil_C51`); // for keil C51
 
             // limit toolchain
             if (!matchList.includes(prj.getToolchain().name)) {
@@ -5650,8 +5657,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     private async showDisassemblyForElf(elfPath: string, prj: AbstractProject) {
 
-        const isGccToolchain = (name: ToolchainName) => { return /GCC/.test(name); };
-
         try {
 
             const toolchainName = prj.getToolchain().name;
@@ -5665,12 +5670,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 try { fs.unlinkSync(dasmFile.path); } catch (error) { }
             }
 
-            if (isGccToolchain(toolchainName)) { // gcc
+            if (isGccFamilyToolchain(toolchainName)) { // gcc
                 const toolchain = ToolchainManager.getInstance().getToolchainByName(toolchainName);
-                if (!toolchain) throw new Error(`Can't get toolchain '${toolchainName}'`);
+                if (!toolchain) throw Error(`Can't get toolchain '${toolchainName}'`);
                 const toolPrefix = toolchain.getToolchainPrefix ? toolchain.getToolchainPrefix() : '';
                 exeFile = File.fromArray([prj.getToolchain().getToolchainDir().path, 'bin', `${toolPrefix}objdump${exeSuffix()}`]);
-                if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
+                if (!exeFile.IsFile()) throw Error(`Not found '${exeFile.name}' !`);
                 cmds = ['-S', '-l', elfPath, '>', dasmFile.path];
                 // https://interrupt.memfault.com/blog/gnu-binutils#new-feature-visualize-jumps
                 const binutilsVer = getGccBinutilsVersion(exeFile.dir, toolPrefix, 'objdump');
@@ -5680,10 +5685,16 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
             else if (toolchainName.startsWith('AC')) { // armcc
                 exeFile = File.fromArray([prj.getToolchain().getToolchainDir().path, 'bin', `fromelf${exeSuffix()}`]);
-                if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
+                if (!exeFile.IsFile()) throw Error(`Not found '${exeFile.name}' !`);
                 cmds = ['-c', elfPath, '--output', dasmFile.path];
-            } else {
-                throw new Error(`Not support toolchain: '${toolchainName}' !`);
+            }
+            else if (toolchainName == 'LLVM_ARM') {
+                exeFile = File.from(prj.getToolchain().getToolchainDir().path, 'bin', `llvm-objdump${exeSuffix()}`);
+                if (!exeFile.IsFile()) throw Error(`Not found '${exeFile.name}' !`);
+                cmds = ['-S', '-l', elfPath, '>', dasmFile.path];
+            }
+            else {
+                throw new Error(`Not support showDisassemblyForElf for toolchain: '${toolchainName}' !`);
             }
 
             // do disassembly code
@@ -5727,19 +5738,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     async showDisassembly(uri: vscode.Uri, prj?: AbstractProject) {
 
-        const supportList = ['AC5', 'AC6'];
-
-        const isGccToolchain = (name: ToolchainName) => { return /GCC/.test(name); };
-
         try {
-
-            const notSupprotMsg = `Only support '${supportList.join(',')}' and 'GCC' compiler !`;
 
             // check condition
             const activePrj = prj || this.dataProvider.getActiveProject();
-            if (!activePrj) { throw new Error('Not found active project !'); }
-            const toolchainName = activePrj.getToolchain().name;
-            if (!supportList.includes(toolchainName) && !isGccToolchain(toolchainName)) { throw new Error(notSupprotMsg); }
+            if (!activePrj)
+                throw new Error('Not found active project !');
 
             let srcPath = uri.fsPath;
 
@@ -5773,12 +5777,14 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 try { fs.unlinkSync(tmpFile.path); } catch (error) { }
             }
 
-            if (isGccToolchain(toolchainName)) { // gcc
+            const toolchainName = activePrj.getToolchain().name;
+
+            if (isGccFamilyToolchain(toolchainName)) { // gcc
                 const toolchain = ToolchainManager.getInstance().getToolchainByName(toolchainName);
                 if (!toolchain) throw new Error(`Can't get toolchain '${toolchainName}'`);
                 const toolPrefix = toolchain.getToolchainPrefix ? toolchain.getToolchainPrefix() : '';
                 exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `${toolPrefix}objdump${exeSuffix()}`]);
-                if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
+                if (!exeFile.IsFile()) throw Error(`Not found '${exeFile.name}' !`);
                 cmds = ['-S', '-l', objPath, '>', tmpFile.path];
                 // https://interrupt.memfault.com/blog/gnu-binutils#new-feature-visualize-jumps
                 const binutilsVer = getGccBinutilsVersion(exeFile.dir, toolPrefix, 'objdump');
@@ -5788,11 +5794,16 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
             else if (toolchainName.startsWith('AC')) { // armcc
                 exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `fromelf${exeSuffix()}`]);
-                if (!exeFile.IsFile()) { throw Error(`Not found '${exeFile.name}' !`) }
+                if (!exeFile.IsFile()) throw Error(`Not found '${exeFile.name}' !`);
                 cmds = ['-c', objPath, '--output', tmpFile.path];
             }
-            else { // none
-                throw new Error(notSupprotMsg);
+            else if (toolchainName == 'LLVM_ARM') {
+                exeFile = File.from(activePrj.getToolchain().getToolchainDir().path, 'bin', `llvm-objdump${exeSuffix()}`);
+                if (!exeFile.IsFile()) throw Error(`Not found '${exeFile.name}' !`);
+                cmds = ['-S', '-l', objPath, '>', tmpFile.path];
+            }
+            else { // Not support
+                throw new Error(`Not support showDisassembly for toolchain: '${toolchainName}' !`);
             }
 
             // do disassembly code
@@ -5823,7 +5834,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 // jump to example: 
                 //          c:/xxx/xxx\sourceName.c:123
                 //
-                if (isGccToolchain(toolchainName)) {
+                if (isGccFamilyToolchain(toolchainName) || toolchainName == 'LLVM_ARM') {
 
                     const activeTextEditor = vscode.window.activeTextEditor;
                     const curLine = activeTextEditor.selection.start.line;
@@ -7845,9 +7856,13 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 const activePrj = this.getActiveProject();
                 if (activePrj) {
                     const toolchain = activePrj.getToolchain();
-                    if (!['AC5', 'AC6'].includes(toolchain.name) && toolchain.getToolchainPrefix) {
+                    if (isGccFamilyToolchain(toolchain.name) && toolchain.getToolchainPrefix) {
                         readelf = [toolchain.getToolchainDir().path, 'bin', `${toolchain.getToolchainPrefix()}readelf`].join(File.sep);
                         elfsize = [toolchain.getToolchainDir().path, 'bin', `${toolchain.getToolchainPrefix()}size`].join(File.sep);
+                    }
+                    else if (toolchain.name == 'LLVM_ARM') {
+                        readelf = [toolchain.getToolchainDir().path, 'bin', `llvm-readelf`].join(File.sep);
+                        elfsize = [toolchain.getToolchainDir().path, 'bin', `llvm-size`].join(File.sep);
                     }
                 }
 

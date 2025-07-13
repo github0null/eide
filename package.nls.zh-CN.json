@@ -138,6 +138,8 @@
     "settings.arm.gcc.install.folder": "GNU Arm Embedded Toolchain 安装目录 [`example: D:\\arm-gcc\\8 2019-q3-update`]",
     "settings.arm.gcc.prefix": "GNU Arm Embedded Toolchain 编译器前缀 [`example: arm-none-eabi-`]",
 
+    "settings.arm.llvm.install.folder": "'LLVM Embedded Toolchain For Arm' 的安装目录",
+
     "settings.armcc.ini": "Keil MDK-ARM `UV4.exe` 或 `TOOLS.INI` 文件路径 [`example: C:\\Keil_v5\\UV4\\UV4.exe`]",
     "settings.armcc.convert.axf": "编译完成后将 `.axf` 转换为 `.elf`",
     

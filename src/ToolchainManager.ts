@@ -45,7 +45,7 @@ import * as ArmCpuUtils from "./ArmCpuUtils";
 export type ToolchainName =
     'SDCC' | 'Keil_C51' | 'IAR_STM8' | 'GNU_SDCC_STM8' | 'COSMIC_STM8' |
     'AC5' | 'AC6' | 'GCC' | 'IAR_ARM' |
-    'RISCV_GCC' | 'ANY_GCC' | 'MIPS_GCC' | 'MTI_GCC' | 'None';
+    'RISCV_GCC' | 'ANY_GCC' | 'MIPS_GCC' | 'MTI_GCC' | 'LLVM_ARM' | 'None';
 
 export interface IProjectInfo {
 
@@ -71,11 +71,15 @@ export interface IToolchian {
 
     readonly name: ToolchainName;
 
+    /**
+     * 一个分类用于标记工具链的编译参数兼容性
+    */
     readonly categoryName: string;
 
     readonly modelName: string;
 
     /**
+     * 这个字段在 eide.json v3.5 及之后的版本，已不再使用。新建的工具链请设置为字符串 'null' 值
      * @deprecated 这个字段在 eide.json v3.5 及之后的版本，已不再使用
     */
     readonly configName: string;
@@ -169,7 +173,7 @@ export class ToolchainManager {
 
     private readonly toolchainNames: ToolchainEnums = {
         'C51': ['Keil_C51', 'SDCC', 'IAR_STM8', 'COSMIC_STM8'],
-        'ARM': ['AC5', 'AC6', 'GCC', 'IAR_ARM'],
+        'ARM': ['AC5', 'AC6', 'GCC', 'LLVM_ARM', 'IAR_ARM'],
         'RISC-V': ['RISCV_GCC'],
         'MIPS': ['MTI_GCC'],
         'ANY-GCC': ['ANY_GCC']
@@ -198,6 +202,7 @@ export class ToolchainManager {
         this.add(new AC5());
         this.add(new AC6());
         this.add(new GCC());
+        this.add(new LLVM_ARM());
         this.add(new IARSTM8());
         this.add(new COSMIC_STM8());
         this.add(new RISCV_GCC());
@@ -314,6 +319,8 @@ export class ToolchainManager {
                 return 'COSMIC STM8 C Compiler';
             case 'MTI_GCC':
                 return 'MIPS MTI GCC Compiler';
+            case 'LLVM_ARM':
+                return 'LLVM ARM C/C++ Compiler';
             default:
                 return '';
         }
@@ -367,7 +374,7 @@ export class ToolchainManager {
 
                     // for gcc, '--specs=xxx' should be global options
                     // ref: https://github.com/github0null/eide/issues/259
-                    if (/GCC/.test(toolchain.name) && curOption.linker && typeof curOption.linker['LD_FLAGS'] == 'string') {
+                    if (utility.isGccFamilyToolchain(toolchain.name) && curOption.linker && typeof curOption.linker['LD_FLAGS'] == 'string') {
                         const specsOpts = curOption.linker['LD_FLAGS'].match(/--specs=[^\s]+/g);
                         if (specsOpts && specsOpts.length > 0) {
                             let optstr = specsOpts.join(' ');
@@ -427,6 +434,8 @@ export class ToolchainManager {
                 return File.fromArray([settingManager.getGnuSdccStm8Dir().path, 'bin']);
             case 'ANY_GCC':
                 return File.fromArray([settingManager.getAnyGccToolFolder().path, 'bin']);
+            case 'LLVM_ARM':
+                return File.from(settingManager.getLLVMArmDir().path, 'bin');
             default:
                 return undefined;
         }
@@ -1983,7 +1992,7 @@ class GCC implements IToolchian {
                 result.push(this.mfpuMap[mcpu_id]);
 
             if (this.fabiMap[mcpu_id]) {
-                const abiType = builderOpts.global['$float-abi-type'] || 'soft';
+                const abiType = builderOpts.global['$float-abi-type'] || 'hard';
                 result.push(this.fabiMap[mcpu_id].replace('${$float-abi-type}', abiType));
             }
         }
@@ -2116,7 +2125,7 @@ class GCC implements IToolchian {
             beforeBuildTasks: [],
             afterBuildTasks: [],
             global: {
-                "$float-abi-type": 'softfp',
+                "$float-abi-type": 'hard',
                 "output-debug-info": 'enable',
                 "misc-control": "--specs=nosys.specs --specs=nano.specs"
             },
@@ -2276,6 +2285,257 @@ class IARARM implements IToolchian {
                 "auto-search-runtime-lib": true,
                 "perform-cpp-virtual-func-elimination": "enable",
                 "config-defines": []
+            }
+        };
+    }
+}
+
+class LLVM_ARM implements IToolchian {
+
+    readonly version = 1;
+
+    readonly settingName: string = 'EIDE.ARM.LLVM.InstallDirectory';
+
+    readonly categoryName: string = 'GCC';
+
+    readonly name: ToolchainName = "LLVM_ARM";
+
+    readonly modelName: string = 'arm.llvm.model.json';
+
+    readonly configName: string = 'null';
+
+    readonly verifyFileName: string = 'arm.llvm.verify.json';
+
+    readonly elfSuffix = '.elf';
+
+    private readonly mcpuMap: { [k: string]: string } = {};
+    private readonly mfpuMap: { [k: string]: string } = {};
+    private readonly fabiMap: { [k: string]: string } = {};
+
+    constructor() {
+        const modelpath = File.from(ResManager.instance().getBuilderModelsDir().path, this.modelName);
+        const modelData = JSON.parse(fs.readFileSync(modelpath.path).toString());
+        // global.microcontroller-cpu.enum
+        // global.microcontroller-fpu.command
+        // global.microcontroller-float.command
+        const mcpu_cmd = modelData['global']['microcontroller-cpu'].command || '';
+        const mcpus    = modelData['global']['microcontroller-cpu'].enum;
+        const mfpus    = modelData['global']['microcontroller-fpu'].command;
+        const fabis    = modelData['global']['microcontroller-float'].command;
+        for (let k in mcpus) {
+            this.mcpuMap[k] = mcpu_cmd + mcpus[k];
+            this.mfpuMap[k] = mfpus[k];
+            this.fabiMap[k] = fabis[k];
+        }
+    }
+
+    private getToolPrefix(): string {
+        return '';
+    }
+
+    //-----------
+
+    newInstance(): IToolchian {
+        return new LLVM_ARM();
+    }
+
+    getGccFamilyCompilerPathForCpptools(type?: 'c' | 'c++'): string | undefined {
+        const gcc = File.from(
+            this.getToolchainDir().path, 'bin', 
+            `${type == 'c++' ? 'clang++' : 'clang'}${platform.exeSuffix()}`);
+        return gcc.path;
+    }
+
+    getToolchainPrefix(): string {
+        return this.getToolPrefix();
+    }
+
+    private getCompilerTargetArgs(cpuName: string, fpuType: string, archExt: string, builderOpts: BuilderOptions): string[] {
+
+        const result: string[] = [];
+
+        cpuName = cpuName.toLowerCase();
+
+        let mcpu_id: string;
+        if (ArmCpuUtils.isArmArchName(cpuName)) {
+            mcpu_id = cpuName;
+        } else {
+            if (fpuType == 'single')
+                mcpu_id = cpuName + '-sp';
+            else if (fpuType == 'double')
+                mcpu_id = cpuName + '-dp';
+            else
+                mcpu_id = cpuName;
+        }
+
+        if (this.mcpuMap[mcpu_id] == undefined)
+            return result;
+
+        if (ArmCpuUtils.getArchExtensions(cpuName, this.name).length > 0) {
+            const exts = archExt.split(',').join('');
+            result.push(this.mcpuMap[mcpu_id].replace('${$arch-extensions}', exts));
+        } else {
+            result.push(this.mcpuMap[mcpu_id].replace('${$arch-extensions}', ''));
+        }
+
+        if (!ArmCpuUtils.isArmArchName(cpuName)) {
+
+            if (this.mfpuMap[mcpu_id])
+                result.push(this.mfpuMap[mcpu_id]);
+
+            if (this.fabiMap[mcpu_id]) {
+                const abiType = builderOpts.global['$float-abi-type'] || 'hard';
+                result.push(this.fabiMap[mcpu_id].replace('${$float-abi-type}', abiType));
+            }
+        }
+
+        return result;
+    }
+
+    updateCppIntellisenceCfg(builderOpts: BuilderOptions, cppToolsConfig: CppConfigItem): void {
+
+        cppToolsConfig.cStandard = 'c11';
+        cppToolsConfig.cppStandard = 'c++11';
+
+        cppToolsConfig.compilerArgs = ['-std=${c_cppStandard}', '-mthumb'];
+
+        // pass global args for cpptools
+        if (builderOpts.global) {
+
+            const cpuName = builderOpts.global['_cpuName'] || 'cortex-m3';
+            const fpuType = builderOpts.global['_fpuType'] || '';
+            const archExt = builderOpts.global['_archExt'] || '';
+
+            this.getCompilerTargetArgs(cpuName, fpuType, archExt, builderOpts)
+                .forEach((arg) => cppToolsConfig.compilerArgs?.push(arg));
+
+            if (typeof builderOpts.global['misc-control'] == 'string') {
+                const pList = builderOpts.global['misc-control'].trim().split(/\s+/);
+                pList.forEach((p) => cppToolsConfig.compilerArgs?.push(p));
+            }
+        }
+
+        if (builderOpts["c/cpp-compiler"]) {
+
+            if (builderOpts["c/cpp-compiler"]['language-c']) {
+                cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'];
+            }
+
+            if (builderOpts["c/cpp-compiler"]['language-cpp']) {
+                cppToolsConfig.cppStandard = builderOpts["c/cpp-compiler"]['language-cpp'];
+            }
+
+            if (typeof builderOpts["c/cpp-compiler"]['C_FLAGS'] == 'string') {
+                const pList = builderOpts['c/cpp-compiler']['C_FLAGS'].trim().split(/\s+/);
+                cppToolsConfig.cCompilerArgs = pList;
+            }
+
+            if (typeof builderOpts["c/cpp-compiler"]['CXX_FLAGS'] == 'string') {
+                const pList = builderOpts['c/cpp-compiler']['CXX_FLAGS'].trim().split(/\s+/);
+                cppToolsConfig.cppCompilerArgs = pList;
+            }
+        }
+    }
+
+    preHandleOptions(prjInfo: IProjectInfo, options: BuilderOptions): void {
+
+        // convert output lib commmand
+        if (options['linker'] && options['linker']['output-format'] === 'lib') {
+            options['linker']['$use'] = 'linker-lib';
+        }
+
+        // create options if it's not exists
+        if (typeof options['global'] !== 'object')
+            options['global'] = {};
+        if (typeof options['c/cpp-compiler'] !== 'object')
+            options['c/cpp-compiler'] = {};
+
+        // set tool prefix
+        options['global']['toolPrefix'] = this.getToolPrefix();
+        // To use the link-time optimizer, -flto and optimization options 
+        // should be specified at compile time and during the final link.
+        options['global']['optimization-lto'] = options['c/cpp-compiler']['optimization-lto'];
+        options['c/cpp-compiler']['optimization-lto'] = undefined;
+    }
+
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): utility.CppMacroDefine[] {
+
+        const cfg: ArmBaseBuilderConfigData = <any>builderCfg;
+        const cpuName = cfg.cpuType.toLowerCase();
+        const fpuType = cfg.floatingPointHardware;
+        const archExt = cfg.archExtensions || '';
+        const compilerArgs = this.getCompilerTargetArgs(cpuName, fpuType, archExt, builderOpts);
+
+        if (compilerArgs.length > 0) {
+            compilerArgs.push('-mthumb');
+            const gccpath = <string>this.getGccFamilyCompilerPathForCpptools('c');
+            const defines = utility.getGccInternalDefines(gccpath, compilerArgs);
+            if (defines) {
+                return defines;
+            }
+        }
+
+        return [
+            { name: '__GNUC__'              , value: '4',   type: 'var' },
+            { name: '__GNUC_MINOR__'        , value: '2',   type: 'var' },
+            { name: '__GNUC_PATCHLEVEL__'   , value: '1',   type: 'var' }
+        ];
+    }
+
+    getCustomDefines(): string[] | undefined {
+        return undefined;
+    }
+
+    getToolchainDir(): File {
+        return SettingManager.instance().getLLVMArmDir();
+    }
+
+    getSystemIncludeList(builderOpts: BuilderOptions): string[] {
+        return [];
+    }
+
+    getForceIncludeHeaders(): string[] | undefined {
+        return [
+            ResManager.GetInstance().getGccForceIncludeHeaders().path
+        ];
+    }
+
+    getDefaultIncludeList(): string[] {
+        return [];
+    }
+
+    getLibDirs(): string[] {
+        return [];
+    }
+
+    getDefaultConfig(): BuilderOptions {
+        return <BuilderOptions>{
+            version: this.version,
+            beforeBuildTasks: [],
+            afterBuildTasks: [],
+            global: {
+                "$float-abi-type": 'hard',
+                "output-debug-info": 'enable',
+                "misc-control": ""
+            },
+            'c/cpp-compiler': {
+                "language-c": "c11",
+                "language-cpp": "c++11",
+                "optimization": 'level-1',
+                "warnings": "all-warnings",
+                "one-elf-section-per-function": true,
+                "one-elf-section-per-data": true,
+                "C_FLAGS": "",
+                "CXX_FLAGS": ""
+            },
+            'asm-compiler': {
+                "ASM_FLAGS": ""
+            },
+            linker: {
+                "output-format": "elf",
+                "remove-unused-input-sections": true,
+                "LD_FLAGS": "",
+                "LIB_FLAGS": "-lm"
             }
         };
     }

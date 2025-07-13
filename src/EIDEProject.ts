@@ -3898,8 +3898,8 @@ class EIDEProject extends AbstractProject {
     private _getCompilerIntrDefsForCpptools<T extends BuilderConfigData>(
         toolchain: IToolchian, builderCfg: T, builderOpts: BuilderOptions): string[] {
 
-        if (isGccFamilyToolchain(toolchain.name)) {
-            // 对于 gcc 系列，C/C++ 具备自动解析宏定义功能，因此无需返回任何宏定义
+        if (isGccFamilyToolchain(toolchain.name) || toolchain.name == 'LLVM_ARM') {
+            // 对于 gcc/clang 系列，C/C++ 具备自动解析宏定义功能，因此无需返回任何宏定义
             return [];
         } else {
             let defines = toolchain.getInternalDefines(builderCfg, builderOpts);

@@ -439,7 +439,10 @@ export abstract class CodeBuilder {
             if (tool == 'auto' || tool == undefined || tool == null) {
                 let hascpp = builderOptions.sourceList
                     .some((path) => /\.(?:cpp|c\+\+|cc|cxx)$/i.test(path));
-                tool = hascpp ? 'g++' : 'gcc';
+                if (toolchain.name == 'LLVM_ARM')
+                    tool = hascpp ? 'clang++' : 'clang'; // llvm-clang
+                else
+                    tool = hascpp ? 'g++' : 'gcc'; // gcc
             }
             // setup tool name
             builderOptions.options.linker['$toolName'] = tool;
@@ -892,6 +895,9 @@ export class ARMCodeBuilder extends CodeBuilder {
         } else if (toolchain.name == 'AC6') {
             if (cpu_id.startsWith('armv8.1-m.'))
                 fpu_suffix = ''; // AC6 的 armv8.1-m 的 FPU 已经通过 +<扩展名> 开启
+        } else if (toolchain.name == 'LLVM_ARM') {
+            if (ArmCpuUtils.isArmArchName(cpu_id))
+                fpu_suffix = ''; // 使用 arch 时，无需 fpu_suffix 标记
         }
 
         options.global['microcontroller-cpu']   = cpu_id + fpu_suffix;
@@ -913,6 +919,9 @@ export class ARMCodeBuilder extends CodeBuilder {
                 options.global['$clang-arch-extensions']   = opts.join('');
                 // 对于 linker 和 asm, 我们要将 '+' 替换成 '.' 字符
                 options.global['$armlink-arch-extensions'] = opts.map(v => v.replace('+', '.')).join('');
+            }
+            else if (toolchain.name == 'LLVM_ARM') {
+                // nothing todo now
             }
         }
 
@@ -943,28 +952,15 @@ export class ARMCodeBuilder extends CodeBuilder {
                 }
                 break;
 
-            // arm gcc
-            case 'GCC':
-                {
-                    scatterFilePath.split(',')
-                        .filter(s => s.trim() != '')
-                        .forEach((sctPath) => {
-                            ldFileList.push(this.convLinkerScriptPathForCompiler(sctPath));
-                        });
-                }
-                break;
-
-            // iar
-            case 'IAR_ARM':
-                {
-                    scatterFilePath.split(',')
-                        .filter(s => s.trim() != '')
-                        .forEach((sctPath) => {
-                            ldFileList.push(this.convLinkerScriptPathForCompiler(sctPath));
-                        });
-                }
-                break;
+            // by default
             default:
+                {
+                    scatterFilePath.split(',')
+                        .filter(s => s.trim() != '')
+                        .forEach((sctPath) => {
+                            ldFileList.push(this.convLinkerScriptPathForCompiler(sctPath));
+                        });
+                }
                 break;
         }
 

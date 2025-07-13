@@ -318,6 +318,9 @@ export function hasFpu(cpu: string, hasDp?: boolean) {
             case 'armv8-r':
                 return hasDp ? false : true;
             case 'armv7-r':
+            // https://documentation-service.arm.com/static/5f8fef3af86e16515cdbf816
+            // 尽管 armv7-m 也支持 Floating-point extension
+            // 但常见的 带 fpu 的 mcpu 使用的是 armv7e-m, 因此我们这里假定 armv7-m 是不支持浮点的
             case 'armv7e-m':
             case 'armv8-m.main':
             case 'armv8.1-m.main':

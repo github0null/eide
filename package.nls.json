@@ -141,6 +141,8 @@
     "settings.arm.gcc.install.folder": "GCC for ARM toolchain install directory [`example: D:\\arm-gcc\\8 2019-q3-update`]",
     "settings.arm.gcc.prefix": "ARM GCC toolchain prefix [`example: arm-none-eabi-`]",
 
+    "settings.arm.llvm.install.folder": "Install directory of 'LLVM Embedded Toolchain For Arm'",
+
     "settings.armcc.ini": "Keil MDK-ARM `UV4.exe` or `TOOLS.INI` file path [`example: C:\\Keil_v5\\UV4\\UV4.exe`]",
     "settings.armcc.convert.axf": "Convert `.axf` to `.elf` for ARMCC compiler",
 

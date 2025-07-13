@@ -586,6 +586,16 @@ export class SettingManager {
 
     // ---
 
+    getLLVMArmDir(): File {
+        return new File(
+            this.getFullPathByPluginConfig('ARM.LLVM.InstallDirectory') ||
+            this.findGccCompilerRootInSystemEnv('clang') ||
+            'null'
+        );
+    }
+
+    // ---
+
     getArmcc5Dir(): File {
         return new File(
             this.getFullPathByPluginConfig('ARM.ARMCC5.InstallDirectory') ||
