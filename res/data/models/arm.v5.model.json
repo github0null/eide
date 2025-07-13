@@ -125,12 +125,13 @@
     },
     "groups": {
         "c": {
-            "$path": "bin\\armcc.exe",
+            "$path": "bin/armcc",
             "$includes": {
                 "body": "-I${value}"
             },
             "$defines": {
-                "body": "-D${key}=\"${value}\""
+                "body": "-D\"${key}=${value}\"",
+                "body_noval": "-D\"${key}\""
             },
             "$invoke": {
                 "useFile": true,
@@ -238,12 +239,13 @@
             }
         },
         "cpp": {
-            "$path": "bin\\armcc.exe",
+            "$path": "bin/armcc",
             "$includes": {
                 "body": "-I${value}"
             },
             "$defines": {
-                "body": "-D${key}=\"${value}\""
+                "body": "-D\"${key}=${value}\"",
+                "body_noval": "-D\"${key}\""
             },
             "$invoke": {
                 "useFile": true,
@@ -330,7 +332,7 @@
             }
         },
         "asm": {
-            "$path": "bin\\armasm.exe",
+            "$path": "bin/armasm",
             "$includes": {
                 "body": "-I${value}"
             },
@@ -369,7 +371,7 @@
             }
         },
         "linker": {
-            "$path": "bin\\armlink.exe",
+            "$path": "bin/armlink",
             "$invoke": {
                 "useFile": true,
                 "body": "--Via ${value}"
@@ -432,26 +434,26 @@
             "$outputBin": [
                 {
                     "name": "output hex file",
-                    "toolPath": "bin\\fromelf.exe",
+                    "toolPath": "bin/fromelf",
                     "outputSuffix": ".hex",
                     "command": "--i32combined --output ${output} ${linkerOutput}"
                 },
                 {
                     "name": "output s19 file",
-                    "toolPath": "bin\\fromelf.exe",
+                    "toolPath": "bin/fromelf",
                     "outputSuffix": ".s19",
                     "command": "--m32combined --output ${output} ${linkerOutput}"
                 },
                 {
                     "name": "output bin file",
-                    "toolPath": "bin\\fromelf.exe",
+                    "toolPath": "bin/fromelf",
                     "outputSuffix": ".bin",
                     "command": "--bincombined --output ${output} ${linkerOutput}"
                 }
             ]
         },
         "linker-lib": {
-            "$path": "bin\\armar.exe",
+            "$path": "bin/armar",
             "$invoke": {
                 "useFile": true,
                 "body": "--Via ${value}"

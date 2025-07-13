@@ -1956,7 +1956,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         try {
             const compiler = this.getToolchain();
             let mname = compiler.modelName;
-            let fpath = `${ResManager.GetInstance().getBuilderModelsDir('unix').path}/${mname}`;
+            let fpath = `${ResManager.GetInstance().getBuilderModelsDir().path}/${mname}`;
             let model = JSON.parse(fs.readFileSync(fpath).toString());
             // linker
             let mlink = model['groups']['linker-lib'];
@@ -3898,12 +3898,31 @@ class EIDEProject extends AbstractProject {
     private _getCompilerIntrDefsForCpptools<T extends BuilderConfigData>(
         toolchain: IToolchian, builderCfg: T, builderOpts: BuilderOptions): string[] {
 
-        if (['AC5', 'AC6'].includes(toolchain.name) || isGccFamilyToolchain(toolchain.name)) {
-            // we have provide a xxx-intr.h for cpptools,
-            // so return empty list.
+        if (isGccFamilyToolchain(toolchain.name) || toolchain.name == 'LLVM_ARM') {
+            // 对于 gcc/clang 系列，C/C++ 具备自动解析宏定义功能，因此无需返回任何宏定义
             return [];
         } else {
-            return toolchain.getInternalDefines(builderCfg, builderOpts);
+            let defines = toolchain.getInternalDefines(builderCfg, builderOpts);
+            // 对于 AC5 和 AC6, 我们仅仅返回几个动态的宏，其他的宏定义暂时丢弃，
+            // 因为这可能会导致 Cpptools 无法识别，另外我们已经在 xxx_intr.h 中预定义了一些宏
+            if (toolchain.name == 'AC5') {
+                const filterkeys = [
+                    '__ARMCC_VERSION',
+                    '__TARGET_CPU_',
+                    '__TARGET_FPU_', '__SOFTFP',
+                    '__TARGET_ARCH',
+                    '__thumb',
+                    '__MICROLIB',
+                    '__STDC_VERSION'
+                ];
+                defines = defines.filter(d => filterkeys.some(k => d.name.startsWith(k)));
+            } else if (toolchain.name == 'AC6') {
+                const filterkeys = [
+                    '__ARM_PCS_VFP'
+                ];
+                defines = defines.filter(d => filterkeys.some(k => d.name.startsWith(k)));
+            }
+            return defines.map(d => `${d.name}=${d.value}`);
         }
     }
 
@@ -3934,10 +3953,14 @@ class EIDEProject extends AbstractProject {
             // preset cpu info for arm project
             if (prjConfig.compileConfigModel instanceof ArmBaseCompileConfigModel) {
                 builderOpts.global = builderOpts.global || {};
-                const cpuName = prjConfig.compileConfigModel.data.cpuType.toLowerCase();
-                const fpuName = prjConfig.compileConfigModel.data.floatingPointHardware.toLowerCase();
-                builderOpts.global['cpuType'] = cpuName.replace('cortex-m0+', 'cortex-m0plus');
-                builderOpts.global['fpuType'] = fpuName.replace('single', 'sp').replace('double', 'dp');
+                const cpuName: string = prjConfig.compileConfigModel.data.cpuType.toLowerCase();
+                const fpuName: string = prjConfig.compileConfigModel.data.floatingPointHardware;
+                const archExt: string = prjConfig.compileConfigModel.data.archExtensions || '';
+                // 将 cpu 信息作为上下文传递给 updateCppIntellisenceCfg，
+                // 以便 toolchain 能够生成合适的 compiler args 用于执行 Intellisence
+                builderOpts.global['_cpuName'] = cpuName;
+                builderOpts.global['_fpuType'] = fpuName;
+                builderOpts.global['_archExt'] = archExt;
             }
 
             // update

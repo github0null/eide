@@ -836,6 +836,20 @@ export class OperationExplorer {
                             tooltip: view_str$prompt$setupToolchainPrefix
                         }
                     ]
+                },
+
+                // llvm
+                {
+                    type: 'None',
+                    label: 'LLVM (free)',
+                    kind: vscode.QuickPickItemKind.Separator,
+                },
+                {
+                    label: `LLVM Embedded Toolchain For Arm (clang)`,
+                    type: 'LLVM_ARM',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('LLVM_ARM'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('LLVM_ARM')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', `LLVM Embedded Toolchain For Arm`)
                 }
             ];
 

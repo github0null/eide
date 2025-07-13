@@ -214,18 +214,50 @@
                         "level-2",
                         "level-3",
                         "level-size",
+                        "level-size-Oz",
                         "level-fast",
                         "level-debug"
                     ],
                     "enumDescriptions": [
-                        "-O0 (default)",
+                        "-O0",
                         "-O1",
                         "-O2",
                         "-O3",
                         "-Os",
+                        "-Oz",
                         "-Ofast",
                         "-Og"
                     ]
+                },
+                "optimization-lto": {
+                    "markdownDescription": "Link-time Optimization (-flto)",
+                    "description.zh-cn": "链接时优化 (-flto)",
+                    "type": "boolean"
+                },
+                "signed-char": {
+                    "markdownDescription": "Signed Char (-fsigned-char)",
+                    "description.zh-cn": "Signed Char (-fsigned-char)",
+                    "type": "boolean"
+                },
+                "no-rtti": {
+                    "markdownDescription": "Not use RTTI (-fno-rtti)",
+                    "description.zh-cn": "禁用运行时类型信息 (-fno-rtti)",
+                    "type": "boolean"
+                },
+                "no-exceptions": {
+                    "markdownDescription": "Not use exceptions (-fno-exceptions)",
+                    "description.zh-cn": "禁用异常处理 (-fno-exceptions)",
+                    "type": "boolean"
+                },
+                "no-use-cxa-atexit": {
+                    "markdownDescription": "Not use `__cxa_atexit()` (-fno-use-cxa-atexit)",
+                    "description.zh-cn": "Not use `__cxa_atexit()` (-fno-use-cxa-atexit)",
+                    "type": "boolean"
+                },
+                "no-threadsafe-statics": {
+                    "markdownDescription": "Not use thread-safe statics (-fno-threadsafe-statics)",
+                    "description.zh-cn": "禁用本地静态变量的线程安全初始化 (-fno-threadsafe-statics)",
+                    "type": "boolean"
                 },
                 "warnings": {
                     "markdownDescription": "Warning Level",

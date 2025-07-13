@@ -413,6 +413,11 @@ export abstract class ConfigModel<DataType> {
 
     protected abstract getEventData(key: string): EventData | undefined;
 
+    /**
+     * 获取配置的初始值
+     * @note 这个方法返回的 object 必须是一个完整的配置对象，
+     *       包含所有的字段和默认值。其中 key 的顺序决定了 UI 中的显示顺序
+    */
     abstract GetDefault(): DataType;
 }
 
@@ -455,6 +460,8 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
                 return <any>new SdccGnuStm8CompileConfigModel(prjConfigData);
             case 'MTI_GCC':
                 return <any>new MipsCompileConfigModel(prjConfigData);
+            case 'LLVM_ARM':
+                return <any>new LLVMArmCompileConfigModel(prjConfigData);
             default:
                 throw new Error('Unsupported toolchain: ' + prjConfigData.toolchain);
         }
@@ -527,7 +534,10 @@ export interface ARMStorageLayout {
 
 export type FloatingHardwareOption = 'none' | 'single' | 'double';
 
-// deprecated
+/**
+ * @note 注意，如果后续需要新增字段，则字段必须带有 '| undefined' 的类型，表示可能是未定义的，
+ * 因为旧的工程可能没有这些字段，会导致报错
+ */
 export interface ArmBaseCompileData extends BuilderConfigData {
     /**
      * ARM CPU 类型，可选值包括：
@@ -535,7 +545,8 @@ export interface ArmBaseCompileData extends BuilderConfigData {
     */
     cpuType: string;
     /**
-     * 是否使用浮点硬件，默认为 'none'，表示不使用浮点硬件
+     * 是否使用浮点硬件，可选值包括：'single', 'double', 'none'
+     * 默认为 'none'，表示不使用浮点硬件
      * @note 这个选项会根据你选择的 cpuType 自动调整，
      *   如果你选择的 cpuType 不支持浮点硬件，则会自动设置为 'none'。
     */
@@ -548,7 +559,7 @@ export interface ArmBaseCompileData extends BuilderConfigData {
      *   则这个选项会被忽略。
      * @note 如果有多个选项，则选项之间以 ‘,’ 进行分隔
     */
-    archExtensions: string;
+    archExtensions?: string;
     /**
      * 是否使用自定义的链接脚本文件
      * @note 这个选项是为 armcc 准备的，
@@ -947,8 +958,8 @@ export abstract class ArmBaseCompileConfigModel
     static getDefaultConfig(): ArmBaseCompileData {
         return {
             cpuType: 'Cortex-M3',
-            floatingPointHardware: 'none',
             archExtensions: '',
+            floatingPointHardware: 'none',
             useCustomScatterFile: false,
             scatterFilePath: '<YOUR_SCATTER_FILE>.sct',
             storageLayout: {
@@ -1089,8 +1100,8 @@ export class GccCompileConfigModel extends ArmBaseCompileConfigModel {
     static getDefaultConfig(): ArmBaseCompileData {
         return {
             cpuType: 'Cortex-M3',
-            floatingPointHardware: 'none',
             archExtensions: '',
+            floatingPointHardware: 'none',
             scatterFilePath: '<YOUR_LINKER_SCRIPT>.lds',
             useCustomScatterFile: true,
             storageLayout: { RAM: [], ROM: [] },
@@ -1100,6 +1111,66 @@ export class GccCompileConfigModel extends ArmBaseCompileConfigModel {
 
     GetDefault(): ArmBaseCompileData {
         return GccCompileConfigModel.getDefaultConfig();
+    }
+}
+
+export class LLVMArmCompileConfigModel extends ArmBaseCompileConfigModel {
+
+    protected cpuTypeList = [
+        this.DIV_TAG + 'Processors', // div
+        'Cortex-M0',
+        'Cortex-M0+',
+        'Cortex-M23',
+        'Cortex-M3',
+        'Cortex-M33',
+        'Cortex-M35P',
+        'Cortex-M4',
+        'Cortex-M7',
+        'Cortex-M52',
+        'Cortex-M55',
+        'Cortex-M85',
+        'Cortex-R4',
+        'Cortex-R5',
+        'Cortex-R7',
+        this.DIV_TAG + 'Architectures', // div
+        "Armv6-M",
+        "Armv7-M",
+        "Armv7E-M",
+        "Armv8-M.Base",
+        "Armv8-M.Main",
+        "Armv8.1-M.Main",
+        "Armv8.1-M.Main.mve.no_fpu",
+    ];
+
+    protected GetKeyType(key: string): FieldType {
+        switch (key) {
+            case 'cpuType':
+            case 'archExtensions':
+            case 'floatingPointHardware':
+                return 'SELECTION';
+            case 'scatterFilePath':
+                return 'INPUT';
+            case 'options':
+                return 'EVENT';
+            default:
+                return 'Disable';
+        }
+    }
+
+    static getDefaultConfig(): ArmBaseCompileData {
+        return {
+            cpuType: 'Cortex-M3',
+            archExtensions: '',
+            floatingPointHardware: 'none',
+            scatterFilePath: '<YOUR_LINKER_SCRIPT>.lds',
+            useCustomScatterFile: true,
+            storageLayout: { RAM: [], ROM: [] },
+            options: 'null'
+        };
+    }
+
+    GetDefault(): ArmBaseCompileData {
+        return LLVMArmCompileConfigModel.getDefaultConfig();
     }
 }
 
@@ -1189,8 +1260,8 @@ class IarArmCompileConfigModel extends ArmBaseCompileConfigModel {
     static getDefaultConfig(): ArmBaseCompileData {
         return {
             cpuType: 'Cortex-M3',
-            floatingPointHardware: 'none',
             archExtensions: '',
+            floatingPointHardware: 'none',
             scatterFilePath: '${ToolchainRoot}/config/<YOUR_LINKER_CFG>.icf',
             useCustomScatterFile: true,
             storageLayout: { RAM: [], ROM: [] },

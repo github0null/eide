@@ -194,19 +194,6 @@ export class WebPanelManager {
         // init panel data
         panel.iconPath = vscode.Uri.parse(resManager.GetIconByName('Property_16x.svg').ToUri());
 
-        const getModelFile = (verifyFileName: string): File => {
-            const packageJson = resManager.getPackageJson();
-            const jsonValidations = packageJson['contributes']['jsonValidation'];
-            for (const validationObj of jsonValidations) {
-                const fname = NodePath.basename(validationObj.url);
-                if (fname == verifyFileName) {
-                    const path = resManager.getAppRootFolder().path + File.sep + validationObj.url;
-                    return new File(File.normalize(path));
-                }
-            }
-            throw new Error(`not found model file for '${verifyFileName}'`)
-        }
-
         const envList: any[] = [
             // unify_builder specific variables
             { name: '${BuilderFolder}', desc: view_str$env_desc$builer_folder },
@@ -222,9 +209,11 @@ export class WebPanelManager {
             })
         }
 
+        const toolchain = project.getToolchain();
+
         /* prepare page-init event data */
         const initMsg = <any>{
-            model: JSON.parse(getModelFile(project.getToolchain().verifyFileName).Read()),
+            model: JSON.parse(File.from(resManager.getAppRootFolder().path, 'lang', toolchain.verifyFileName).Read()),
             data: projectConfig.compileConfigModel.getOptions(),
             info: {
                 lang: vscode.env.language,
@@ -232,8 +221,6 @@ export class WebPanelManager {
                 contextData: {}
             }
         };
-
-        const toolchain = project.getToolchain();
 
         if (toolchain.getGccCompilerTargetInfo) {
             const inf = toolchain.getGccCompilerTargetInfo();

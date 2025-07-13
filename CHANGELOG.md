@@ -6,6 +6,22 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.23.1] update
+
+**New**:
+  - `Arm Project`: Support new toolchain [LLVM-embedded-toolchain-for-Arm](https://github.com/ARM-software/LLVM-embedded-toolchain-for-Arm).
+
+**Improve**:
+  - `Arm Project`: Improve `CPU Extension Options` feature.
+  - `GCC Toolchain`: More c/c++ options in builder options GUI. like: '-Oz', '-flto', '-fno-rtti' ...
+  - `Intellisence`: Improve intellisence config provider.
+  - `JLink`: Update jlink to v8.50, fix jlink exe name error on linux.
+
+**Change**:
+  - `unify_builder`: Update to v3.10.0
+
+***
+
 ### [v3.22.0] update
 
 > NOTE: Update the version of file `eide.json` to `v3.6`

@@ -444,18 +444,29 @@ export class ResManager extends events.EventEmitter {
         return File.fromArray([this.getUnifyBuilderExe().dir, `serial_monitor${exeSuffix()}`]);
     }
 
-    getBuilderModelsDir(plat?: 'win32' | 'unix'): File {
-        const platDir = plat || (osType() == 'win32' ? 'win32' : 'unix');
-        return File.fromArray([this.GetAppDataDir().path, 'models', platDir]);
+    getBuilderModelsDir(): File {
+        return File.fromArray([this.GetAppDataDir().path, 'models']);
     }
 
     /* ----------------------------------- */
 
+    /**
+     * @deprecated
+    */
     GetBinDir(): File {
         return <File>this.GetDir('bin');
     }
+    getBinDir(): File {
+        return <File>this.GetDir('bin');
+    }
 
+    /**
+     * @deprecated
+    */
     GetLibDir(): File {
+        return <File>this.GetDir('lib');
+    }
+    getLibDir(): File {
         return <File>this.GetDir('lib');
     }
 
@@ -463,15 +474,33 @@ export class ResManager extends events.EventEmitter {
         return <File>this.GetDir('lang');
     }
 
+    /**
+     * @deprecated
+    */
     GetHTMLDir(): File {
         return <File>this.GetDir('html');
     }
+    getHTMLDir(): File {
+        return <File>this.GetDir('html');
+    }
 
+    /**
+     * @deprecated
+    */
     GetTemplateDir(): File {
         return <File>this.GetDir('template');
     }
+    getTemplateDir(): File {
+        return <File>this.GetDir('template');
+    }
 
+    /**
+     * @deprecated
+    */
     GetAppDataDir(): File {
+        return <File>this.GetDir('data');
+    }
+    getAppDataDir(): File {
         return <File>this.GetDir('data');
     }
 
@@ -542,7 +571,7 @@ export class ResManager extends events.EventEmitter {
         let file: File = File.fromArray([this.GetAppDataDir().path, 'JLinkDevices.xml']);
 
         /* get jlink internal device list */
-        const jlinkExe = SettingManager.GetInstance().getJlinkDir() + File.sep + 'JLink';
+        const jlinkExe = SettingManager.instance().getJlinkExePath();
         const timestamp = Date.now();
         const devXmlFile = File.fromArray([os.tmpdir(), `jlink_internal_devices_tmp.${timestamp}.xml`]);
         const jlinkTmpCmdFile = File.fromArray([os.tmpdir(), `jlink_cmds_tmp.${timestamp}.jlink`]);

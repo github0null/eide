@@ -1,7 +1,7 @@
 {
     "name": "MIPS GCC",
     "id": "GCC",
-	"toolPrefix": "mips-mti-elf-",
+    "toolPrefix": "mips-mti-elf-",
     "useUnixPath": true,
     "version": {
         "args": "--version",
@@ -163,7 +163,8 @@
                 "body": "-I${value}"
             },
             "$defines": {
-                "body": "-D${key}=\"${value}\""
+                "body": "-D\"${key}=${value}\"",
+                "body_noval": "-D\"${key}\""
             },
             "$invoke": {
                 "useFile": true,
@@ -185,7 +186,8 @@
                 "body": "-I${value}"
             },
             "$defines": {
-                "body": "-D${key}=\"${value}\""
+                "body": "-D\"${key}=${value}\"",
+                "body_noval": "-D\"${key}\""
             },
             "$invoke": {
                 "useFile": true,

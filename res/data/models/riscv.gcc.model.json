@@ -8,17 +8,6 @@
         "matcher": "\\((?<name>.*?)\\) (?<version>\\d+\\.\\d+\\.\\d+)"
     },
     "global": {
-        "arch": {
-            "type": "value",
-            "command": "-march=",
-            "group": [
-                "c",
-                "cpp",
-                "asm",
-                "linker"
-            ],
-            "location": "first"
-        },
         "abi": {
             "type": "value",
             "command": "-mabi=",
@@ -41,20 +30,96 @@
             ],
             "location": "first"
         },
+        "arch": {
+            "type": "value",
+            "command": "-march=",
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ],
+            "location": "first"
+        },
         "optimization": {
             "type": "selectable",
             "command": {
-                "false": "-O0",
+                "false": "",
                 "level-0": "-O0",
                 "level-1": "-O1",
                 "level-2": "-O2",
                 "level-3": "-O3",
                 "level-size": "-Os",
+                "level-size-Oz": "-Oz",
                 "level-fast": "-Ofast",
                 "level-debug": "-Og"
             },
             "group": [
                 "c",
+                "cpp"
+            ]
+        },
+        "optimization-lto": {
+            "type": "selectable",
+            "command": {
+                "true": "-flto",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp",
+                "linker"
+            ]
+        },
+        "signed-char": {
+            "type": "selectable",
+            "command": {
+                "true": "-fsigned-char",
+                "false": "-funsigned-char"
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "no-rtti": {
+            "type": "selectable",
+            "command": {
+                "true": "-fno-rtti",
+                "false": ""
+            },
+            "group": [
+                "cpp"
+            ]
+        },
+        "no-exceptions": {
+            "type": "selectable",
+            "command": {
+                "true": "-fno-exceptions",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "no-use-cxa-atexit": {
+            "type": "selectable",
+            "command": {
+                "true": "-fno-use-cxa-atexit",
+                "false": ""
+            },
+            "group": [
+                "cpp"
+            ]
+        },
+        "no-threadsafe-statics": {
+            "type": "selectable",
+            "command": {
+                "true": "-fno-threadsafe-statics",
+                "false": ""
+            },
+            "group": [
                 "cpp"
             ]
         },
@@ -96,6 +161,38 @@
                 "asm"
             ]
         },
+        "one-elf-section-per-function": {
+            "type": "selectable",
+            "command": {
+                "true": "-ffunction-sections",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "one-elf-section-per-data": {
+            "type": "selectable",
+            "command": {
+                "true": "-fdata-sections",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "misc-control": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ]
+        },
         "C_FLAGS": {
             "type": "list",
             "command": "",
@@ -123,58 +220,17 @@
             "group": [
                 "linker"
             ]
-        },
-        "misc-control": {
-            "type": "list",
-            "command": "",
-            "group": [
-                "c",
-                "cpp",
-                "asm",
-                "linker"
-            ]
-        },
-        "one-elf-section-per-function": {
-            "type": "selectable",
-            "command": {
-                "true": "-ffunction-sections",
-                "false": ""
-            },
-            "group": [
-                "c",
-                "cpp"
-            ]
-        },
-        "one-elf-section-per-data": {
-            "type": "selectable",
-            "command": {
-                "true": "-fdata-sections",
-                "false": ""
-            },
-            "group": [
-                "c",
-                "cpp"
-            ]
-        },
-        "remove-unused-input-sections": {
-            "type": "selectable",
-            "command": {
-                "true": "-Wl,--gc-sections",
-                "false": ""
-            },
-            "group": [
-                "linker"
-            ]
         }
     },
     "groups": {
         "c": {
-            "$path": "bin\\${toolPrefix}gcc.exe",
+            "$path": "bin/${toolPrefix}gcc",
             "$includes": {
                 "body": "-I${value}"
             },
             "$defines": {
-                "body": "-D${key}=\"${value}\""
+                "body": "-D\"${key}=${value}\"",
+                "body_noval": "-D\"${key}\""
             },
             "$invoke": {
                 "useFile": true,
@@ -191,12 +247,13 @@
             }
         },
         "cpp": {
-            "$path": "bin\\${toolPrefix}g++.exe",
+            "$path": "bin/${toolPrefix}g++",
             "$includes": {
                 "body": "-I${value}"
             },
             "$defines": {
-                "body": "-D${key}=\"${value}\""
+                "body": "-D\"${key}=${value}\"",
+                "body_noval": "-D\"${key}\""
             },
             "$invoke": {
                 "useFile": true,
@@ -212,7 +269,7 @@
             }
         },
         "asm": {
-            "$path": "bin\\${toolPrefix}gcc.exe",
+            "$path": "bin/${toolPrefix}gcc",
             "$includes": {
                 "body": "-I${value}"
             },
@@ -231,7 +288,7 @@
             }
         },
         "linker": {
-            "$path": "bin\\${toolPrefix}${toolName}.exe",
+            "$path": "bin/${toolPrefix}${toolName}",
             "$defToolName": "gcc",
             "$libs": {
                 "body": "-L${value}"
@@ -255,6 +312,13 @@
                 "type": "list",
                 "command": "-T "
             },
+            "remove-unused-input-sections": {
+                "type": "selectable",
+                "command": {
+                    "true": "-Wl,--gc-sections",
+                    "false": ""
+                }
+            },
             "not-print-mem-usage": {
                 "type": "selectable",
                 "command": {
@@ -265,20 +329,20 @@
             "$outputBin": [
                 {
                     "name": "output hex file",
-                    "toolPath": "bin\\${toolPrefix}objcopy.exe",
+                    "toolPath": "bin/${toolPrefix}objcopy",
                     "outputSuffix": ".hex",
                     "command": "-O ihex ${linkerOutput} ${output}"
                 },
                 {
                     "name": "output bin file",
-                    "toolPath": "bin\\${toolPrefix}objcopy.exe",
+                    "toolPath": "bin/${toolPrefix}objcopy",
                     "outputSuffix": ".bin",
                     "command": "-O binary ${linkerOutput} ${output}"
                 }
             ]
         },
         "linker-lib": {
-            "$path": "bin\\${toolPrefix}ar.exe",
+            "$path": "bin/${toolPrefix}ar",
             "$invoke": {
                 "useFile": true,
                 "body": "@${value}"

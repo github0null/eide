@@ -160,16 +160,16 @@ export interface CppMacroDefine {
     type: 'var' | 'func';
     name: string;
     value: string;
-};
+}
 
-export class CppMacroDefinesConv {
+export class CppMacroParser {
 
-    private regMatchers = {
+    private static regMatchers = {
         'var' : /^#define (\w+) (.*)$/,
         'func': /^#define (\w+\([^\)]*\)) (.*)$/
     };
 
-    toExpression(line: string): string | undefined {
+    static toExpression(line: string): string | undefined {
 
         let mList = this.regMatchers['var'].exec(line);
         if (mList && mList.length > 2) {
@@ -182,7 +182,7 @@ export class CppMacroDefinesConv {
         }
     }
 
-    parse(line: string): CppMacroDefine | undefined {
+    static parse(line: string): CppMacroDefine | undefined {
 
         let mList = this.regMatchers['var'].exec(line);
         if (mList && mList.length > 2) {
@@ -204,18 +204,17 @@ export class CppMacroDefinesConv {
     }
 }
 
-export function getGccInternalDefines(gcc_dir: string, gcc_prefix: string, cmds: string[] | undefined): CppMacroDefine[] | undefined {
+export function getGccInternalDefines(gccpath: string, cmds: string[] | undefined): CppMacroDefine[] | undefined {
     try {
-        const gccName = gcc_prefix + 'gcc';
+        // gcc ... -E -dM - <null
         const cmdArgs = (cmds || []).concat(['-E', '-dM', '-', `<${platform.osGetNullDev()}`]);
-        const cmdLine = `${gccName} ` + cmdArgs.join(' ');
-        const outputs = child_process.execSync(cmdLine, { cwd: gcc_dir }).toString().split(/\r\n|\n/);
+        const cmdLine = `${gccpath} ` + cmdArgs.join(' ');
+        const outputs = child_process.execSync(cmdLine, { cwd: NodePath.dirname(gccpath) }).toString().split(/\r\n|\n/);
         const results: CppMacroDefine[] = [];
-        const mHandler = new CppMacroDefinesConv();
 
         outputs.filter((line) => { return line.trim() !== ''; })
             .forEach((line) => {
-                const value = mHandler.parse(line);
+                const value = CppMacroParser.parse(line);
                 if (value) {
                     results.push(value);
                 }
@@ -427,7 +426,7 @@ export function newFileTooltipString(f: File | FileTooltipInfo, root?: File): vs
     let title = `**Name:** \`${f.name}\``;
 
     if (!(f instanceof File) && f.desc) {
-        title = title + ` (\`${f.desc}\`)`
+        title = title + ` (\`${f.desc}\`)`;
     }
 
     const s = [
@@ -522,7 +521,7 @@ export interface ShellCommandOptions {
     cwd?: string;
     silent?: boolean;
     source?: string;
-};
+}
 
 export async function runShellCommand(title: string, commandLine: string, opts?: ShellCommandOptions) {
     try {

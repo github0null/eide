@@ -33,12 +33,13 @@
         "msys",
         "cosmic",
         "mips",
-        "mips-mti"
+        "mips-mti",
+        "llvm"
     ],
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/MIPS/RISC-V",
-    "version": "3.22.0",
+    "version": "3.23.1",
     "preview": false,
     "engines": {
         "vscode": "^1.67.0"
@@ -408,6 +409,12 @@
                         "scope": "resource",
                         "markdownDescription": "%settings.arm.gcc.install.folder%",
                         "default": "${userRoot}/.eide/tools/gcc_arm"
+                    },
+                    "EIDE.ARM.LLVM.InstallDirectory": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.arm.llvm.install.folder%",
+                        "default": "${userRoot}/.eide/tools/llvm_arm"
                     },
                     "EIDE.ARM.INI.Path": {
                         "type": "string",
@@ -1767,50 +1774,6 @@
             {
                 "fileMatch": "**/*.flash.json",
                 "url": "./lang/stc.flash.verify.json"
-            },
-            {
-                "fileMatch": "**/*.options.keil.json",
-                "url": "./lang/8051.keil.verify.json"
-            },
-            {
-                "fileMatch": "**/*.sdcc.json",
-                "url": "./lang/sdcc.verify.json"
-            },
-            {
-                "fileMatch": "**/*.options.v5.json",
-                "url": "./lang/arm.v5.verify.json"
-            },
-            {
-                "fileMatch": "**/*.options.v6.json",
-                "url": "./lang/arm.v6.verify.json"
-            },
-            {
-                "fileMatch": "**/*.options.gcc.json",
-                "url": "./lang/arm.gcc.verify.json"
-            },
-            {
-                "fileMatch": "**/*.options.arm.iar.json",
-                "url": "./lang/arm.iar.verify.json"
-            },
-            {
-                "fileMatch": "**/*.stm8.iar.json",
-                "url": "./lang/stm8.iar.verify.json"
-            },
-            {
-                "fileMatch": "**/*riscv.gcc.options.json",
-                "url": "./lang/riscv.gcc.verify.json"
-            },
-            {
-                "fileMatch": "**/*mips.mti.gcc.options.json",
-                "url": "./lang/mips.mti.gcc.verify.json"
-            },
-            {
-                "fileMatch": "**/*.any.gcc.json",
-                "url": "./lang/any.gcc.verify.json"
-            },
-            {
-                "fileMatch": "**/*.options.stm8-cosmic.json",
-                "url": "./lang/stm8.cosmic.verify.json"
             }
         ],
         "grammars": [

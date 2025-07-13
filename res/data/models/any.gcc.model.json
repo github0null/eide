@@ -8,6 +8,80 @@
         "matcher": "\\((?<name>.*?)\\) (?<version>[\\d\\.]+)"
     },
     "global": {
+        "optimization": {
+            "type": "selectable",
+            "command": {
+                "false": "",
+                "level-0": "-O0",
+                "level-1": "-O1",
+                "level-2": "-O2",
+                "level-3": "-O3",
+                "level-size": "-Os",
+                "level-size-Oz": "-Oz",
+                "level-fast": "-Ofast",
+                "level-debug": "-Og"
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "optimization-lto": {
+            "type": "selectable",
+            "command": {
+                "true": "-flto",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp",
+                "linker",
+                "linker-g++"
+            ]
+        },
+        "no-rtti": {
+            "type": "selectable",
+            "command": {
+                "true": "-fno-rtti",
+                "false": ""
+            },
+            "group": [
+                "cpp"
+            ]
+        },
+        "no-exceptions": {
+            "type": "selectable",
+            "command": {
+                "true": "-fno-exceptions",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "one-elf-section-per-function": {
+            "type": "selectable",
+            "command": {
+                "true": "-ffunction-sections",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "one-elf-section-per-data": {
+            "type": "selectable",
+            "command": {
+                "true": "-fdata-sections",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
         "misc-control": {
             "type": "list",
             "command": "",
@@ -37,28 +111,6 @@
             "group": [
                 "asm"
             ]
-        },
-        "one-elf-section-per-function": {
-            "type": "selectable",
-            "command": {
-                "true": "-ffunction-sections",
-                "false": ""
-            },
-            "group": [
-                "c",
-                "cpp"
-            ]
-        },
-        "one-elf-section-per-data": {
-            "type": "selectable",
-            "command": {
-                "true": "-fdata-sections",
-                "false": ""
-            },
-            "group": [
-                "c",
-                "cpp"
-            ]
         }
     },
     "groups": {
@@ -68,7 +120,8 @@
                 "body": "-I${value}"
             },
             "$defines": {
-                "body": "-D${key}=\"${value}\""
+                "body": "-D\"${key}=${value}\"",
+                "body_noval": "-D\"${key}\""
             },
             "$invoke": {
                 "useFile": true,
@@ -82,7 +135,8 @@
                 "body": "-I${value}"
             },
             "$defines": {
-                "body": "-D${key}=\"${value}\""
+                "body": "-D\"${key}=${value}\"",
+                "body_noval": "-D\"${key}\""
             },
             "$invoke": {
                 "useFile": true,
@@ -124,16 +178,16 @@
                 "type": "list",
                 "command": ""
             },
-            "linker-script": {
-                "type": "list",
-                "command": "-T "
-            },
             "remove-unused-input-sections": {
                 "type": "selectable",
                 "command": {
                     "true": "-Wl,--gc-sections",
                     "false": ""
                 }
+            },
+            "linker-script": {
+                "type": "list",
+                "command": "-T "
             },
             "misc-control": {
                 "type": "list",
@@ -163,16 +217,16 @@
                 "type": "list",
                 "command": ""
             },
-            "linker-script": {
-                "type": "list",
-                "command": "-T "
-            },
             "remove-unused-input-sections": {
                 "type": "selectable",
                 "command": {
                     "true": "-Wl,--gc-sections",
                     "false": ""
                 }
+            },
+            "linker-script": {
+                "type": "list",
+                "command": "-T "
             },
             "misc-control": {
                 "type": "list",
