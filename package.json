@@ -1767,50 +1767,6 @@
             {
                 "fileMatch": "**/*.flash.json",
                 "url": "./lang/stc.flash.verify.json"
-            },
-            {
-                "fileMatch": "**/*.options.keil.json",
-                "url": "./lang/8051.keil.verify.json"
-            },
-            {
-                "fileMatch": "**/*.sdcc.json",
-                "url": "./lang/sdcc.verify.json"
-            },
-            {
-                "fileMatch": "**/*.options.v5.json",
-                "url": "./lang/arm.v5.verify.json"
-            },
-            {
-                "fileMatch": "**/*.options.v6.json",
-                "url": "./lang/arm.v6.verify.json"
-            },
-            {
-                "fileMatch": "**/*.options.gcc.json",
-                "url": "./lang/arm.gcc.verify.json"
-            },
-            {
-                "fileMatch": "**/*.options.arm.iar.json",
-                "url": "./lang/arm.iar.verify.json"
-            },
-            {
-                "fileMatch": "**/*.stm8.iar.json",
-                "url": "./lang/stm8.iar.verify.json"
-            },
-            {
-                "fileMatch": "**/*riscv.gcc.options.json",
-                "url": "./lang/riscv.gcc.verify.json"
-            },
-            {
-                "fileMatch": "**/*mips.mti.gcc.options.json",
-                "url": "./lang/mips.mti.gcc.verify.json"
-            },
-            {
-                "fileMatch": "**/*.any.gcc.json",
-                "url": "./lang/any.gcc.verify.json"
-            },
-            {
-                "fileMatch": "**/*.options.stm8-cosmic.json",
-                "url": "./lang/stm8.cosmic.verify.json"
             }
         ],
         "grammars": [
