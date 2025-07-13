@@ -100,7 +100,7 @@ export class ResInstaller {
 
         this.registerTool('LLVM_ARM', {
             resource_name: 'llvm_arm',
-            readable_name: 'LLVM Embedded Toolchain For Arm (19.1.5)',
+            readable_name: 'LLVM Embedded Toolchain For Arm (20.x.x)',
             setting_name: 'ARM.LLVM.InstallDirectory',
             no_binaries: no_binaries
         });
