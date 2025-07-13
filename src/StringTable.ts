@@ -180,8 +180,8 @@ export const view_str$compile$cpuType = [
 ][langIndex];
 
 export const view_str$compile$archExtensions = [
-    'Arch 扩展选项',
-    'Arch Extended Options'
+    'CPU 扩展选项',
+    'CPU Extended Options'
 ][langIndex];
 
 export const view_str$compile$cpuVendor = [

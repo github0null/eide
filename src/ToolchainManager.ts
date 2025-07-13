@@ -1736,8 +1736,12 @@ class AC6 implements IToolchian {
         if (this.mcpuMap[mcpu_id] == undefined)
             return result;
 
-        const exts = archExt.split(',').join('');
-        result.push(this.mcpuMap[mcpu_id].replace('${$clang-arch-extensions}', exts));
+        if (ArmCpuUtils.getArchExtensions(cpuName, this.name).length > 0) {
+            const exts = archExt.split(',').join('');
+            result.push(this.mcpuMap[mcpu_id].replace('${$clang-arch-extensions}', exts));
+        } else {
+            result.push(this.mcpuMap[mcpu_id].replace('${$clang-arch-extensions}', ''));
+        }
 
         // 非 armv8.1-m.main 需指定 mfpu 和 abi
         if (!cpuName.startsWith('armv8.1-m.main')) {
@@ -1963,12 +1967,14 @@ class GCC implements IToolchian {
         if (this.mcpuMap[mcpu_id] == undefined)
             return result;
 
-        if (ArmCpuUtils.isArmArchName(cpuName)) {
+        if (ArmCpuUtils.getArchExtensions(cpuName, this.name).length > 0) {
             const exts = archExt.split(',').join('');
             result.push(this.mcpuMap[mcpu_id].replace('${$arch-extensions}', exts));
+        } else {
+            result.push(this.mcpuMap[mcpu_id].replace('${$arch-extensions}', ''));
         }
-        else {
-            result.push(this.mcpuMap[mcpu_id]);
+
+        if (!ArmCpuUtils.isArmArchName(cpuName)) {
 
             if (this.mfpuMap[mcpu_id])
                 result.push(this.mfpuMap[mcpu_id]);

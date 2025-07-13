@@ -64,11 +64,11 @@
                 "armv8-m.main"      : "-march=armv8m.main${$clang-arch-extensions}",
                 "armv8-m.main-sp"   : "-march=armv8m.main${$clang-arch-extensions}",
                 "armv8-m.main-dp"   : "-march=armv8m.main${$clang-arch-extensions}",
-                "armv8.1-m.main.no_mve.no_fpu"   : "-march=armv8.1-m.main+dsp",
-                "armv8.1-m.main.no_mve.fpu"      : "-march=armv8.1-m.main+dsp+fp.dp",
-                "armv8.1-m.main.mve.no_fpu"      : "-march=armv8.1-m.main+mve",
-                "armv8.1-m.main.mve.scalar_fpu"  : "-march=armv8.1-m.main+mve+fp.dp",
-                "armv8.1-m.main"                 : "-march=armv8.1-m.main+mve.fp+fp.dp"
+                "armv8.1-m.main.no_mve.no_fpu"   : "-march=armv8.1-m.main+dsp${$clang-arch-extensions}",
+                "armv8.1-m.main.no_mve.fpu"      : "-march=armv8.1-m.main+dsp+fp.dp${$clang-arch-extensions}",
+                "armv8.1-m.main.mve.no_fpu"      : "-march=armv8.1-m.main+mve${$clang-arch-extensions}",
+                "armv8.1-m.main.mve.scalar_fpu"  : "-march=armv8.1-m.main+mve+fp.dp${$clang-arch-extensions}",
+                "armv8.1-m.main"                 : "-march=armv8.1-m.main+mve.fp+fp.dp${$clang-arch-extensions}"
             },
             "group": [
                 "c",
@@ -476,11 +476,11 @@
                     "armv8-m.main"   : "8-M.Main${$armlink-arch-extensions} --fpu=SoftVFP",
                     "armv8-m.main-sp": "8-M.Main${$armlink-arch-extensions} --fpu=FPv5-SP",
                     "armv8-m.main-dp": "8-M.Main${$armlink-arch-extensions} --fpu=FPv5_D16",    
-                    "armv8.1-m.main.no_mve.no_fpu"   : "8.1-M.Main.no_mve.no_fp",
-                    "armv8.1-m.main.no_mve.fpu"      : "8.1-M.Main.no_mve",
-                    "armv8.1-m.main.mve.no_fpu"      : "8.1-M.Main.no_fp",
-                    "armv8.1-m.main.mve.scalar_fpu"  : "8.1-M.Main.no_mvefp",
-                    "armv8.1-m.main"                 : "8.1-M.Main"
+                    "armv8.1-m.main.no_mve.no_fpu"   : "8.1-M.Main.no_mve.no_fp${$armlink-arch-extensions}",
+                    "armv8.1-m.main.no_mve.fpu"      : "8.1-M.Main.no_mve${$armlink-arch-extensions}",
+                    "armv8.1-m.main.mve.no_fpu"      : "8.1-M.Main.no_fp${$armlink-arch-extensions}",
+                    "armv8.1-m.main.mve.scalar_fpu"  : "8.1-M.Main.no_mvefp${$armlink-arch-extensions}",
+                    "armv8.1-m.main"                 : "8.1-M.Main${$armlink-arch-extensions}"
                 }
             },
             "big-endian": {
@@ -567,11 +567,11 @@
                     "armv8-m.main"   : "8-M.Main${$armlink-arch-extensions} --fpu=SoftVFP",
                     "armv8-m.main-sp": "8-M.Main${$armlink-arch-extensions} --fpu=FPv5-SP",
                     "armv8-m.main-dp": "8-M.Main${$armlink-arch-extensions} --fpu=FPv5_D16",
-                    "armv8.1-m.main.no_mve.no_fpu"   : "8.1-M.Main.no_mve.no_fp",
-                    "armv8.1-m.main.no_mve.fpu"      : "8.1-M.Main.no_mve",
-                    "armv8.1-m.main.mve.no_fpu"      : "8.1-M.Main.no_fp",
-                    "armv8.1-m.main.mve.scalar_fpu"  : "8.1-M.Main.no_mvefp",
-                    "armv8.1-m.main"                 : "8.1-M.Main"
+                    "armv8.1-m.main.no_mve.no_fpu"   : "8.1-M.Main.no_mve.no_fp${$armlink-arch-extensions}",
+                    "armv8.1-m.main.no_mve.fpu"      : "8.1-M.Main.no_mve${$armlink-arch-extensions}",
+                    "armv8.1-m.main.mve.no_fpu"      : "8.1-M.Main.no_fp${$armlink-arch-extensions}",
+                    "armv8.1-m.main.mve.scalar_fpu"  : "8.1-M.Main.no_mvefp${$armlink-arch-extensions}",
+                    "armv8.1-m.main"                 : "8.1-M.Main${$armlink-arch-extensions}"
                 }
             },
             "$path": "bin/armlink",

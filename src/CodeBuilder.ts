@@ -888,7 +888,7 @@ export class ARMCodeBuilder extends CodeBuilder {
         */
         if (toolchain.name == 'GCC') {
             if (ArmCpuUtils.isArmArchName(cpu_id))
-                fpu_suffix = '';
+                fpu_suffix = ''; // 使用 march 时，无需 fpu_suffix 标记
         } else if (toolchain.name == 'AC6') {
             if (cpu_id.startsWith('armv8.1-m.'))
                 fpu_suffix = ''; // AC6 的 armv8.1-m 的 FPU 已经通过 +<扩展名> 开启
@@ -898,11 +898,11 @@ export class ARMCodeBuilder extends CodeBuilder {
         options.global['microcontroller-fpu']   = cpu_id + fpu_suffix;
         options.global['microcontroller-float'] = cpu_id + fpu_suffix;
 
-        // 遗留参数，后面可能删除
-        options.global['target'] = cpu_id + fpu_suffix;
-
-        // arch extensions
-        if (ArmCpuUtils.isArmArchName(cpu_id)) {
+        // ISA extensions
+        options.global['$arch-extensions'] = '';
+        options.global['$clang-arch-extensions'] = '';
+        options.global['$armlink-arch-extensions'] = '';
+        if (ArmCpuUtils.getArchExtensions(cpu_id, toolchain.name).length > 0) {
             const opts = (config.compileConfig.archExtensions || '').split(',');
             // for gcc
             if (isGccFamilyToolchain(toolchain.name)) {

@@ -86,6 +86,17 @@ export function getArchFamily(arch: string): string | undefined {
     }
 }
 
+function __cde_extensions(): { name: string, description: string }[] {
+    const result: { name: string, description: string }[] = [];
+    for (let i = 0; i < 8; i++) {
+        result.push({
+            name: `+cdecp${i}`,
+            description: 'Custom Datapath Extension (CDE). +cdecp<N>, <N> is in the range 0-7'
+        });
+    }
+    return result;
+}
+
 /**
  * 当使用 march 代替 mcpu 时，则无需指定 mfpu，而是通过添加 +<扩展名> 来增加扩展功能
  * 虽然 mcpu 也可以指定 +<扩展名>，但一般情况下我们不会这样使用，所以这里不考虑这种情况。
@@ -93,11 +104,40 @@ export function getArchFamily(arch: string): string | undefined {
  * @note 该函数返回的 arch 扩展的别名 'name' 字段默认是使用 GCC 的命名方式。
  * 如果使用 AC6 的 armlink.exe, 则需要进行额外处理。
 */
-export function getArchExtensions(arch: string, toolchain: string): { name: string, description: string }[] {
+export function getArchExtensions(arch_or_cpu: string, toolchain: string): { name: string, description: string }[] {
     // for arm-none-eabi-gcc
     // - docs: https://gcc.gnu.org/onlinedocs/gcc/ARM-Options.html
     if (toolchain == 'GCC') {
-        switch (arch.toLowerCase()) {
+        switch (arch_or_cpu.toLowerCase()) {
+            case 'cortex-m33':
+            case 'cortex-m35p':
+                return [
+                    {
+                        name: '+nodsp',
+                        description: 'Disable the DSP instructions.'
+                    }
+                ];
+            case 'cortex-m52':
+            case 'cortex-m55':
+            case 'cortex-m85':
+                return [
+                    {
+                        name: '+nodsp',
+                        description: 'Disable the DSP instructions. Also disable the M-Profile Vector Extension (MVE).'
+                    },
+                    {
+                        name: '+nopacbti',
+                        description: 'Disable the Pointer Authentication and Branch Target Identification Extension.'
+                    },
+                    {
+                        name: '+nomve',
+                        description: 'Disable the M-Profile Vector Extension (MVE) integer and single precision floating-point instructions.'
+                    },
+                    {
+                        name: '+nomve.fp',
+                        description: 'Disable the M-Profile Vector Extension (MVE) single precision floating-point instructions.'
+                    }
+                ].concat(__cde_extensions());
             case 'armv7-r':
                 return [
                     {
@@ -197,7 +237,7 @@ export function getArchExtensions(arch: string, toolchain: string): { name: stri
                         name: '+nofp',
                         description: 'Disable the floating-point extension.'
                     }
-                ];
+                ].concat(__cde_extensions());
             case 'armv8.1-m.main':
                 return [
                     {
@@ -228,7 +268,7 @@ export function getArchExtensions(arch: string, toolchain: string): { name: stri
                         name: '+pacbti',
                         description: 'Enable the Pointer Authentication and Branch Target Identification Extension.'
                     }
-                ];
+                ].concat(__cde_extensions());
             default:
                 return [];
         }
@@ -236,16 +276,32 @@ export function getArchExtensions(arch: string, toolchain: string): { name: stri
     // for armcc v6
     // - docs: https://developer.arm.com/documentation/109443/6-22-1LTS/armclang-Reference/armclang-Command-line-Options/-mcpu?lang=en
     else if (toolchain == 'AC6') {
-        switch (arch.toLowerCase()) {
-            case 'armv8-m.main':
-                return [
-                    {
-                        name: '+dsp',
-                        description: 'Digital Signal Processing (DSP) extension for the Armv8-M.mainline architecture.'
-                    }
-                ];
-            default:
-                return [];
+        const name = arch_or_cpu.toLowerCase();
+        if (name == 'armv8-m.main') {
+            return [
+                {
+                    name: '+dsp',
+                    description: 'Digital Signal Processing (DSP) extension for the Armv8-M.mainline architecture.'
+                }
+            ].concat(__cde_extensions());
+        }
+        else if (name.startsWith('armv8.1-m.main')) {
+            // AC6 中 armv8.1-m.main 内嵌所有后缀的枚举，此处无需这些 extensions
+            // Helium option (“+mve”) implies that legacy DSP feature (“+dsp”) is also enabled.
+            //  - "armv8.1-m.main.no_mve.no_fpu"   : "8.1-M.Main.no_mve.no_fp",
+            //  - "armv8.1-m.main.no_mve.fpu"      : "8.1-M.Main.no_mve",
+            //  - "armv8.1-m.main.mve.no_fpu"      : "8.1-M.Main.no_fp",
+            //  - "armv8.1-m.main.mve.scalar_fpu"  : "8.1-M.Main.no_mvefp",
+            //  - "armv8.1-m.main"                 : "8.1-M.Main"
+            return [
+                {
+                    name: '+pacbti',
+                    description: 'Enable Pointer Authentication and Branch Target Identification (PACBTI) extension.'
+                }
+            ].concat(__cde_extensions());
+        }
+        else {
+            return []
         }
     }
     else {

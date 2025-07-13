@@ -413,6 +413,11 @@ export abstract class ConfigModel<DataType> {
 
     protected abstract getEventData(key: string): EventData | undefined;
 
+    /**
+     * 获取配置的初始值
+     * @note 这个方法返回的 object 必须是一个完整的配置对象，
+     *       包含所有的字段和默认值。其中 key 的顺序决定了 UI 中的显示顺序
+    */
     abstract GetDefault(): DataType;
 }
 
@@ -951,8 +956,8 @@ export abstract class ArmBaseCompileConfigModel
     static getDefaultConfig(): ArmBaseCompileData {
         return {
             cpuType: 'Cortex-M3',
-            floatingPointHardware: 'none',
             archExtensions: '',
+            floatingPointHardware: 'none',
             useCustomScatterFile: false,
             scatterFilePath: '<YOUR_SCATTER_FILE>.sct',
             storageLayout: {
@@ -1093,8 +1098,8 @@ export class GccCompileConfigModel extends ArmBaseCompileConfigModel {
     static getDefaultConfig(): ArmBaseCompileData {
         return {
             cpuType: 'Cortex-M3',
-            floatingPointHardware: 'none',
             archExtensions: '',
+            floatingPointHardware: 'none',
             scatterFilePath: '<YOUR_LINKER_SCRIPT>.lds',
             useCustomScatterFile: true,
             storageLayout: { RAM: [], ROM: [] },
@@ -1193,8 +1198,8 @@ class IarArmCompileConfigModel extends ArmBaseCompileConfigModel {
     static getDefaultConfig(): ArmBaseCompileData {
         return {
             cpuType: 'Cortex-M3',
-            floatingPointHardware: 'none',
             archExtensions: '',
+            floatingPointHardware: 'none',
             scatterFilePath: '${ToolchainRoot}/config/<YOUR_LINKER_CFG>.icf',
             useCustomScatterFile: true,
             storageLayout: { RAM: [], ROM: [] },
