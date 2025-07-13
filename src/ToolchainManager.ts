@@ -37,8 +37,9 @@ import * as fs from 'fs';
 import * as events from 'events';
 import * as NodePath from 'path';
 import * as os from 'os';
-import { ArmBaseBuilderConfigData, ArmBaseCompileData } from "./EIDEProjectModules";
+import { ArmBaseBuilderConfigData, ArmBaseCompileData, RiscvBuilderConfigData } from "./EIDEProjectModules";
 import * as utility from "./utility";
+import * as ArmCpuUtils from "./ArmCpuUtils";
 
 //! 名称应该是大写，但由于历史因素，其中 'Keil_C51' 大小写暂时无法更正（避免旧的项目出现问题） 
 export type ToolchainName =
@@ -108,7 +109,7 @@ export interface IToolchian {
     /**
      * get compiler internal defines (for static check)
      */
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[];
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): utility.CppMacroDefine[];
 
     /**
      * force append some custom macro
@@ -116,12 +117,14 @@ export interface IToolchian {
     getCustomDefines(): string[] | undefined;
 
     /**
-     * the system header include path (not be added to compiler params)
+     * the system header include path 
+     * @note 这些包含路径**不会**被添加到编译参数中，仅仅用于 C/C++ intellisence
      */
     getSystemIncludeList(builderOpts: BuilderOptions): string[];
 
     /**
      * the default source file include path which will be added in compiler params.
+     * @note 这些包含路径会被添加到编译参数中，参与编译
      */
     getDefaultIncludeList(): string[];
 
@@ -651,7 +654,7 @@ class KeilC51 implements IToolchian {
         return tableLines;
     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): utility.CppMacroDefine[] {
         return [];
     }
 
@@ -968,13 +971,13 @@ class SDCC implements IToolchian {
         }
     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): utility.CppMacroDefine[] {
 
-        const mList: string[] = [
-            '__SDCC',
-            `__SDCC_VERSION_MAJOR=4`,
-            `__SDCC_VERSION_MINOR=1`,
-            `__SDCC_VERSION_PATCH=0`
+        const mList: utility.CppMacroDefine[] = [
+            { name: '__SDCC',               value: '1', type: 'var' },
+            { name: '__SDCC_VERSION_MAJOR', value: '4', type: 'var' },
+            { name: '__SDCC_VERSION_MINOR', value: '2', type: 'var' },
+            { name: '__SDCC_VERSION_PATCH', value: '0', type: 'var' }
         ];
 
         // code model
@@ -989,7 +992,7 @@ class SDCC implements IToolchian {
             // get device name
             if (conf['device']) {
                 devName = conf['device'];
-                mList.push(`__SDCC_${devName}`);
+                mList.push({ name: `__SDCC_${devName}`, value: '1', type: 'var' });
             }
 
             // get model type
@@ -1000,22 +1003,22 @@ class SDCC implements IToolchian {
 
             // is use stack auto 
             if (conf['stack-auto']) {
-                mList.push(`__SDCC_STACK_AUTO`);
+                mList.push({ name: `__SDCC_STACK_AUTO`, value: '1', type: 'var' });
             }
 
             // is use xstack 
             if (conf['use-external-stack']) {
-                mList.push(`__SDCC_USE_XSTACK`);
+                mList.push({ name: `__SDCC_USE_XSTACK`, value: '1', type: 'var' });
             }
 
             // int long reent
             if (conf['int-long-reent']) {
-                mList.push(`__SDCC_INT_LONG_REENT`);
+                mList.push({ name: `__SDCC_INT_LONG_REENT`, value: '1', type: 'var' });
             }
 
             // float reent
             if (conf['float-reent']) {
-                mList.push(`__SDCC_FLOAT_REENT`);
+                mList.push({ name: `__SDCC_FLOAT_REENT`, value: '1', type: 'var' });
             }
         }
 
@@ -1032,14 +1035,14 @@ class SDCC implements IToolchian {
         if (processor) {
             // for pic processor
             if (devName.startsWith('pic')) {
-                mList.push(`__SDCC_PIC${processor.toUpperCase()}`);
+                mList.push({ name: `__SDCC_PIC${processor.toUpperCase()}`, value: '1', type: 'var' });
             }
         }
 
         if (devName == 'ds390') { // set ds390 model
-            mList.push(`__SDCC_MODEL_FLAT24`);
+            mList.push({ name: `__SDCC_MODEL_FLAT24`, value: '1', type: 'var' });
         } else if (codeModel) { // set code model
-            mList.push(`__SDCC_MODEL_${codeModel.toUpperCase()}`);
+            mList.push({ name: `__SDCC_MODEL_${codeModel.toUpperCase()}`, value: '1', type: 'var' });
         }
 
         return mList;
@@ -1135,214 +1138,6 @@ class SDCC implements IToolchian {
         };
     }
 }
-
-// class GnuStm8Sdcc implements IToolchian {
-
-//     readonly version = 1;
-
-//     readonly settingName: string = 'EIDE.STM8.GNU-SDCC.InstallDirectory';
-
-//     readonly categoryName: string = 'SDCC';
-
-//     readonly name: ToolchainName = 'GNU_SDCC_STM8';
-
-//     readonly modelName: string = 'stm8.gnu-sdcc.model.json';
-
-//     readonly configName: string = 'options.stm8.gnu-sdcc.json';
-
-//     readonly verifyFileName: string = 'stm8.gnu-sdcc.verify.json';
-
-//     readonly elfSuffix = '.elf';
-
-//     newInstance(): IToolchian {
-//         return new SDCC();
-//     }
-
-//     getGccFamilyCompilerPathForCpptools(type?: 'c' | 'c++'): string | undefined {
-//         //const gcc = File.fromArray([this.getToolchainDir().path, 'bin', `sdcc${platform.exeSuffix()}`]);
-//         //return gcc.path;
-//         return undefined;
-//     }
-
-//     updateCppIntellisenceCfg(builderOpts: BuilderOptions, cppToolsConfig: CppConfigItem): void {
-
-//         cppToolsConfig.cStandard = 'c99';
-//         cppToolsConfig.cppStandard = 'c++98';
-
-//         if (builderOpts["c/cpp-compiler"]) {
-//             cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'] || 'c99';
-//         }
-//     }
-
-//     preHandleOptions(prjInfo: IProjectInfo, options: BuilderOptions): void {
-
-//         if (options['linker'] == undefined) {
-//             options['linker'] = {};
-//         }
-
-//         // convert output lib commmand
-//         if (options['linker']['output-format'] === 'lib') {
-//             options['linker']['$use'] = 'linker-lib';
-//         }
-
-//         // get code model
-//         let codeModel: string = 'medium';
-//         if (options["c/cpp-compiler"]) {
-//             const conf = options["c/cpp-compiler"];
-//             if (conf['misc-controls']) { // get model type
-//                 codeModel = this.parseCodeModel(conf['misc-controls']) || codeModel;
-//             }
-//         }
-
-//         /* append def linker params */
-//         {
-//             const ldFlags: string[] = [];
-//             const libFlags: string[] = [];
-
-//             if (options['linker']['misc-controls']) {
-//                 ldFlags.push(options['linker']['misc-controls']);
-//             }
-
-//             if (options['linker']['LIB_FLAGS']) {
-//                 libFlags.push(options['linker']['LIB_FLAGS']);
-//             }
-
-//             // append default lib search path
-//             const libDir = File.ToUnixPath(this.getToolchainDir().path + File.sep + `lib-${codeModel}`);
-//             ldFlags.push(`-L"${libDir}"`);
-
-//             // append default system lib
-//             libFlags.push('-lstm8');
-
-//             // set flags
-//             options['linker']['misc-controls'] = ldFlags.join(' ');
-//             options['linker']['LIB_FLAGS'] = libFlags.join(' ');
-//         }
-//     }
-
-//     private parseCodeModel(conf: string): string | undefined {
-//         const mType = /\s*--model-(\w+)\s*/i.exec(conf);
-//         if (mType && mType.length > 1) {
-//             return mType[1];
-//         }
-//     }
-
-//     getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
-
-//         const mList: string[] = [
-//             '__SDCC',
-//             `__SDCC_VERSION_MAJOR=3`,
-//             `__SDCC_VERSION_MINOR=9`,
-//             `__SDCC_VERSION_PATCH=3`
-//         ];
-
-//         // code model
-//         let devName: string = 'stm8';
-//         let codeModel: string = 'medium';
-
-//         // fix device name: stm8
-//         mList.push(`__SDCC_${devName}`);
-
-//         // global config
-//         if (builderOpts["c/cpp-compiler"]) {
-
-//             const conf = builderOpts["c/cpp-compiler"];
-
-//             // get model type
-//             if (conf['misc-controls']) {
-//                 codeModel = this.parseCodeModel(conf['misc-controls']) || codeModel;
-//             }
-
-//             // is use stack auto 
-//             if (conf['stack-auto']) {
-//                 mList.push(`__SDCC_STACK_AUTO`);
-//             }
-
-//             // is use xstack 
-//             if (conf['use-external-stack']) {
-//                 mList.push(`__SDCC_USE_XSTACK`);
-//             }
-
-//             // int long reent
-//             if (conf['int-long-reent']) {
-//                 mList.push(`__SDCC_INT_LONG_REENT`);
-//             }
-
-//             // float reent
-//             if (conf['float-reent']) {
-//                 mList.push(`__SDCC_FLOAT_REENT`);
-//             }
-//         }
-
-//         if (codeModel) { // set code model
-//             mList.push(`__SDCC_MODEL_${codeModel.toUpperCase()}`);
-//         }
-
-//         return mList;
-//     }
-
-//     getCustomDefines(): string[] | undefined {
-//         return undefined;
-//     }
-
-//     getToolchainDir(): File {
-//         return SettingManager.GetInstance().getGnuSdccStm8Dir();
-//     }
-
-//     getSystemIncludeList(builderOpts: BuilderOptions): string[] {
-
-//         let toolSearchLoc: string = this.getToolchainDir().path;
-//         if (platform.osType() != 'win32') {
-//             toolSearchLoc = `${toolSearchLoc}/share/sdcc`;
-//         }
-
-//         const incList: string[] = [File.fromArray([toolSearchLoc, 'include']).path];
-
-//         // get device name include
-//         const devInc = File.fromArray([toolSearchLoc, 'include', 'stm8']);
-//         if (devInc.IsDir()) {
-//             incList.push(devInc.path);
-//         }
-
-//         return incList;
-//     }
-
-//     getForceIncludeHeaders(): string[] | undefined {
-//         return [
-//             ResManager.GetInstance().getC51ForceIncludeHeaders().path
-//         ];
-//     }
-
-//     getDefaultIncludeList(): string[] {
-//         return [];
-//     }
-
-//     getLibDirs(): string[] {
-//         return [];
-//     }
-
-//     getDefaultConfig(): BuilderOptions {
-//         return <BuilderOptions>{
-//             version: this.version,
-//             beforeBuildTasks: [],
-//             afterBuildTasks: [],
-//             global: {
-//                 "out-debug-info": false
-//             },
-//             'c/cpp-compiler': {
-//                 "language-c": "c99",
-//                 "optimize-type": "speed",
-//                 "one-elf-section-per-function": true,
-//                 "one-elf-section-per-data": false
-//             },
-//             'asm-compiler': {},
-//             linker: {
-//                 "output-format": "elf",
-//                 "remove-unused-sections": true
-//             }
-//         };
-//     }
-// }
 
 class COSMIC_STM8 implements IToolchian {
 
@@ -1613,13 +1408,10 @@ class COSMIC_STM8 implements IToolchian {
         return tableLines;
     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
-
-        const mList: string[] = [
-            '__CSMC__=1'
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): utility.CppMacroDefine[] {
+        return [
+            { name: '__CSMC__', value: '1', type: 'var' },
         ];
-
-        return mList;
     }
 
     getCustomDefines(): string[] | undefined {
@@ -1697,6 +1489,19 @@ class AC5 implements IToolchian {
 
     readonly elfSuffix = '.axf';
 
+    private readonly mcpuMap: { [k: string]: string } = {};
+
+    constructor() {
+        const modelpath = File.from(ResManager.instance().getBuilderModelsDir().path, this.modelName);
+        const modelData = JSON.parse(fs.readFileSync(modelpath.path).toString());
+        // global.microcontroller-cpu.enum
+        const mcpu_cmd = modelData['global']['microcontroller-cpu'].command || '';
+        const mcpus    = modelData['global']['microcontroller-cpu'].enum;
+        for (let k in mcpus) {
+            this.mcpuMap[k] = mcpu_cmd + mcpus[k];
+        }
+    }
+
     newInstance(): IToolchian {
         return new AC5();
     }
@@ -1749,39 +1554,19 @@ class AC5 implements IToolchian {
     // armcc list macros command: 
     //      armcc xxx --list_macros -E - <nul
     //
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
-
-        return [];
-
-        //
-        // 暂时禁用，c/c++ 插件暂时无法解析某些宏定义
-        //
-
-        const cpuMap: { [key: string]: string } = {
-            "cortex-m0": "Cortex-M0",
-            "cortex-m0+": "Cortex-M0+",
-            "cortex-m3": "Cortex-M3",
-            "cortex-m4-none": "Cortex-M4 --fpu=SoftVFP",
-            "cortex-m4-sp": "Cortex-M4.fp",
-            "cortex-m7-none": "Cortex-M7 --fpu=SoftVFP",
-            "cortex-m7-sp": "Cortex-M7.fp.sp",
-            "cortex-m7-dp": "Cortex-M7.fp.dp",
-            "sc000": "SC000",
-            "sc300": "SC300"
-        };
-
-        const cfg: ArmBaseBuilderConfigData = <any>builderCfg;
-        const cpuKey = cfg.cpuType.toLowerCase() + 
-            ARMCodeBuilder.getFpuSuffix(cfg.cpuType, cfg.floatingPointHardware);
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): utility.CppMacroDefine[] {
 
         try {
 
-            if (cpuMap[cpuKey]) {
+            const cfg: ArmBaseBuilderConfigData = <any>builderCfg;
+            const mcpu_id = cfg.cpuType.toLowerCase() + 
+                ARMCodeBuilder.getFpuSuffix(cfg.cpuType, cfg.floatingPointHardware);
+    
+            if (this.mcpuMap[mcpu_id]) {
 
-                const result: string[] = [];
-                const macroParser = new utility.CppMacroDefinesConv();
+                const result: utility.CppMacroDefine[] = [];
                 const armccDir = File.fromArray([this.getToolchainDir().path, 'bin']).path;
-                const cmdList = [`--cpu ${cpuMap[cpuKey]}`, '--apcs=interwork'];
+                const cmdList = [this.mcpuMap[mcpu_id], '--apcs=interwork'];
 
                 if (builderOpts.global) {
 
@@ -1811,9 +1596,9 @@ class AC5 implements IToolchian {
                 child_process.execSync(cmd, { cwd: armccDir, encoding: 'utf8' })
                     .trim().split(/\r\n|\n/)
                     .forEach((line) => {
-                        const expr = macroParser.toExpression(line);
-                        if (expr) {
-                            result.push(expr);
+                        const macro = utility.CppMacroParser.parse(line);
+                        if (macro) {
+                            result.push(macro);
                         }
                     });
 
@@ -1821,7 +1606,7 @@ class AC5 implements IToolchian {
             }
 
         } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            GlobalEvent.log_warn(error);
             return [];
         }
 
@@ -1897,38 +1682,26 @@ class AC6 implements IToolchian {
 
     readonly elfSuffix = '.axf';
 
-    /*
-    private readonly defMacroList: string[];
+    private readonly mcpuMap: { [k: string]: string } = {};
+    private readonly mfpuMap: { [k: string]: string } = {};
+    private readonly fabiMap: { [k: string]: string } = {};
 
     constructor() {
-        const armClang = File.fromArray([this.getToolchainDir().path, 'bin', `armclang${platform.exeSuffix()}`]);
-        this.defMacroList = this.getMacroList(armClang.path);
-    }
-
-    private getMacroList(armClangPath: string): string[] {
-        try {
-            const cmdLine = CmdLineHandler.quoteString(armClangPath, '"')
-                + ' ' + ['--target=arm-arm-none-eabi', '-E', '-dM', '-', `<${osDevNull}`].join(' ');
-
-            const lines = child_process.execSync(cmdLine).toString().split(/\r\n|\n/);
-            const resList: string[] = [];
-            const mHandler = new MacroHandler();
-
-            lines.filter((line) => { return line.trim() !== ''; })
-                .forEach((line) => {
-                    const value = mHandler.toExpression(line);
-                    if (value) {
-                        resList.push(value);
-                    }
-                });
-
-            return resList;
-        } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
-            return ['__GNUC__=4', '__GNUC_MINOR__=2', '__GNUC_PATCHLEVEL__=1'];
+        const modelpath = File.from(ResManager.instance().getBuilderModelsDir().path, this.modelName);
+        const modelData = JSON.parse(fs.readFileSync(modelpath.path).toString());
+        // global.microcontroller-cpu.enum
+        // global.microcontroller-fpu.command
+        // global.microcontroller-float.command
+        const mcpu_cmd = modelData['global']['microcontroller-cpu'].command || '';
+        const mcpus    = modelData['global']['microcontroller-cpu'].enum;
+        const mfpus    = modelData['global']['microcontroller-fpu'].command;
+        const fabis    = modelData['global']['microcontroller-float'].command;
+        for (let k in mcpus) {
+            this.mcpuMap[k] = mcpu_cmd + mcpus[k];
+            this.mfpuMap[k] = mfpus[k];
+            this.fabiMap[k] = fabis[k];
         }
     }
-    */
 
     newInstance(): IToolchian {
         return new AC6();
@@ -1939,48 +1712,62 @@ class AC6 implements IToolchian {
         return armclang.path;
     }
 
+    private getCompilerTargetArgs(cpuName: string, fpuType: string, archExt: string, builderOpts: BuilderOptions): string[] {
+
+        const result: string[] = [
+            '--target=arm-arm-none-eabi'
+        ];
+
+        cpuName = cpuName.toLowerCase();
+
+        let mcpu_id: string;
+        // armv8.1-m.main 没有 -sp -dp 后缀标识
+        if (cpuName.startsWith('armv8.1-m.main')) {
+            mcpu_id = cpuName;
+        } else {
+            if (fpuType == 'single')
+                mcpu_id = cpuName + '-sp';
+            else if (fpuType == 'double')
+                mcpu_id = cpuName + '-dp';
+            else
+                mcpu_id = cpuName;
+        }
+
+        if (this.mcpuMap[mcpu_id] == undefined)
+            return result;
+
+        const exts = archExt.split(',').join('');
+        result.push(this.mcpuMap[mcpu_id].replace('${$clang-arch-extensions}', exts));
+
+        // 非 armv8.1-m.main 需指定 mfpu 和 abi
+        if (!cpuName.startsWith('armv8.1-m.main')) {
+            if (this.mfpuMap[mcpu_id])
+                result.push(this.mfpuMap[mcpu_id]);
+            if (this.fabiMap[mcpu_id])
+                result.push(this.fabiMap[mcpu_id]);
+        }
+
+        return result;
+    }
+
     updateCppIntellisenceCfg(builderOpts: BuilderOptions, cppToolsConfig: CppConfigItem): void {
 
         cppToolsConfig.cStandard = 'gnu11';
         cppToolsConfig.cppStandard = 'gnu++98';
 
-        cppToolsConfig.compilerArgs = [
-            '--target=arm-arm-none-eabi',
-            '-std=${c_cppStandard}'
-        ];
+        cppToolsConfig.compilerArgs = [];
 
         // pass global args for cpptools
         if (builderOpts.global) {
 
-            let cpuType = 'cortex-m3'; // default val
+            const cpuName = builderOpts.global['_cpuName'] || 'cortex-m3';
+            const fpuType = builderOpts.global['_fpuType'] || '';
+            const archExt = builderOpts.global['_archExt'] || '';
 
-            if (typeof builderOpts.global['cpuType'] == 'string') {
-                cpuType = builderOpts.global['cpuType'];
-                cppToolsConfig.compilerArgs.push(`-mcpu=${cpuType}`);
-            }
+            this.getCompilerTargetArgs(cpuName, fpuType, archExt, builderOpts)
+                .forEach((arg) => cppToolsConfig.compilerArgs?.push(arg));
 
-            if (typeof builderOpts.global['fpuType'] == 'string') {
-                const fpuType = builderOpts.global['fpuType'];
-                switch (fpuType) {
-                    case 'sp':
-                        cppToolsConfig.compilerArgs.push(`-mfpu=fpv5-sp-d16`);
-                        break;
-                    case 'dp':
-                        cppToolsConfig.compilerArgs.push(`-mfpu=fpv5-d16`);
-                        break;
-                    case 'none':
-                        cppToolsConfig.compilerArgs.push(`-mfpu=none`);
-                        break;
-                    default:
-                        break;
-                }
-                if (['sp', 'dp'].includes(fpuType)) {
-                    if (typeof builderOpts.global['$float-abi-type'] == 'string') {
-                        const abiType = builderOpts.global['$float-abi-type'];
-                        cppToolsConfig.compilerArgs.push(`-mfloat-abi=${abiType}`);
-                    }
-                }
-            }
+            cppToolsConfig.compilerArgs.push('-std=${c_cppStandard}');
 
             if (typeof builderOpts.global['misc-control'] == 'string') {
                 const pList = builderOpts.global['misc-control'].trim().split(/\s+/);
@@ -2031,8 +1818,14 @@ class AC6 implements IToolchian {
         return SettingManager.GetInstance().getArmcc6Dir();
     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
-        return [];
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): utility.CppMacroDefine[] {
+        const cfg: ArmBaseBuilderConfigData = <any>builderCfg;
+        const cpuName = cfg.cpuType.toLowerCase();
+        // armv8.1-m.main 没有 -sp -dp 后缀标识
+        const fpuType = cpuName.startsWith('armv8.1-m.main') ? '' : cfg.floatingPointHardware;
+        const args = this.getCompilerTargetArgs(cpuName, fpuType, cfg.archExtensions || '', builderOpts);
+        const clangPath = NodePath.join(this.getToolchainDir().path, 'bin', `armclang${platform.exeSuffix()}`);
+        return utility.getGccInternalDefines(clangPath, args) || [];
     }
 
     getCustomDefines(): string[] | undefined {
@@ -2110,49 +1903,23 @@ class GCC implements IToolchian {
 
     readonly elfSuffix = '.elf';
 
+    private readonly mcpuMap: { [k: string]: string } = {};
+    private readonly mfpuMap: { [k: string]: string } = {};
+
     constructor() {
-        // nothing todo
-    }
-    /* 
-        private getIncludeList(gccDir: string): string[] | undefined {
-            try {
-                const gccName = this.getToolPrefix() + 'gcc';
-                const cmdLine = `${gccName} ` + ['-xc++', '-E', '-v', '-', `<${platform.osGetNullDev()}`, '2>&1'].join(' ');
-                const lines = child_process.execSync(cmdLine, { cwd: gccDir }).toString().split(/\r\n|\n/);
-                const iStart = lines.findIndex((line) => { return line.startsWith('#include <...>'); });
-                const iEnd = lines.indexOf('End of search list.', iStart);
-                return lines.slice(iStart + 1, iEnd)
-                    .map((line) => { return new File(File.ToLocalPath(line.trim())); })
-                    .filter((file) => { return file.IsDir(); })
-                    .map((f) => {
-                        return f.path;
-                    });
-            } catch (error) {
-                // do nothing
-            }
+        const modelpath = File.from(ResManager.instance().getBuilderModelsDir().path, this.modelName);
+        const modelData = JSON.parse(fs.readFileSync(modelpath.path).toString());
+        // global.microcontroller-cpu.enum
+        // global.microcontroller-fpu.command
+        // global.microcontroller-float.command
+        const mcpu_cmd = modelData['global']['microcontroller-cpu'].command || '';
+        const mcpus    = modelData['global']['microcontroller-cpu'].enum;
+        const mfpus    = modelData['global']['microcontroller-fpu'].command;
+        for (let k in mcpus) {
+            this.mcpuMap[k] = mcpu_cmd + mcpus[k];
+            this.mfpuMap[k] = mfpus[k];
         }
-    
-        private getMacroList(gccDir: string): string[] | undefined {
-            try {
-                const gccName = this.getToolPrefix() + 'gcc';
-                const cmdLine = `${gccName} ` + ['-E', '-dM', '-', `<${platform.osGetNullDev()}`].join(' ');
-                const lines = child_process.execSync(cmdLine, { cwd: gccDir }).toString().split(/\r\n|\n/);
-                const results: string[] = [];
-                const mHandler = new MacroHandler();
-    
-                lines.filter((line) => { return line.trim() !== ''; })
-                    .forEach((line) => {
-                        const value = mHandler.toExpression(line);
-                        if (value) {
-                            results.push(value);
-                        }
-                    });
-    
-                return results;
-            } catch (error) {
-                // do nothing
-            }
-        } */
+    }
 
     private getToolPrefix(): string {
         return SettingManager.GetInstance().getGCCPrefix();
@@ -2175,6 +1942,48 @@ class GCC implements IToolchian {
         return this.getToolPrefix();
     }
 
+    private getCompilerTargetArgs(cpuName: string, fpuType: string, archExt: string, builderOpts: BuilderOptions): string[] {
+
+        const result: string[] = [];
+
+        cpuName = cpuName.toLowerCase();
+
+        let mcpu_id: string;
+        if (ArmCpuUtils.isArmArchName(cpuName)) {
+            mcpu_id = cpuName;
+        } else {
+            if (fpuType == 'single')
+                mcpu_id = cpuName + '-sp';
+            else if (fpuType == 'double')
+                mcpu_id = cpuName + '-dp';
+            else
+                mcpu_id = cpuName;
+        }
+
+        if (this.mcpuMap[mcpu_id] == undefined)
+            return result;
+
+        if (ArmCpuUtils.isArmArchName(cpuName)) {
+            const exts = archExt.split(',').join('');
+            result.push(this.mcpuMap[mcpu_id].replace('${$arch-extensions}', exts));
+        }
+        else {
+            result.push(this.mcpuMap[mcpu_id]);
+
+            if (this.mfpuMap[mcpu_id])
+                result.push(this.mfpuMap[mcpu_id]);
+
+            if (typeof builderOpts.global['$float-abi-type'] == 'string') {
+                const abiType = builderOpts.global['$float-abi-type'];
+                result.push(`-mfloat-abi=${abiType}`);
+            } else {
+                result.push('-mfloat-abi=soft');
+            }
+        }
+
+        return result;
+    }
+
     updateCppIntellisenceCfg(builderOpts: BuilderOptions, cppToolsConfig: CppConfigItem): void {
 
         cppToolsConfig.cStandard = 'c11';
@@ -2185,30 +1994,12 @@ class GCC implements IToolchian {
         // pass global args for cpptools
         if (builderOpts.global) {
 
-            if (typeof builderOpts.global['cpuType'] == 'string') {
-                const cpuType = builderOpts.global['cpuType'];
-                cppToolsConfig.compilerArgs.push(`-mcpu=${cpuType}`);
-            }
+            const cpuName = builderOpts.global['_cpuName'] || 'cortex-m3';
+            const fpuType = builderOpts.global['_fpuType'] || '';
+            const archExt = builderOpts.global['_archExt'] || '';
 
-            if (typeof builderOpts.global['fpuType'] == 'string') {
-                const fpuType = builderOpts.global['fpuType'];
-                switch (fpuType) {
-                    case 'sp':
-                        cppToolsConfig.compilerArgs.push(`-mfpu=fpv5-sp-d16`);
-                        break;
-                    case 'dp':
-                        cppToolsConfig.compilerArgs.push(`-mfpu=fpv5-d16`);
-                        break;
-                    default:
-                        break;
-                }
-                if (['sp', 'dp'].includes(fpuType)) {
-                    if (typeof builderOpts.global['$float-abi-type'] == 'string') {
-                        const abiType = builderOpts.global['$float-abi-type'];
-                        cppToolsConfig.compilerArgs.push(`-mfloat-abi=${abiType}`);
-                    }
-                }
-            }
+            this.getCompilerTargetArgs(cpuName, fpuType, archExt, builderOpts)
+                .forEach((arg) => cppToolsConfig.compilerArgs?.push(arg));
 
             if (typeof builderOpts.global['misc-control'] == 'string') {
                 const pList = builderOpts.global['misc-control'].trim().split(/\s+/);
@@ -2245,67 +2036,45 @@ class GCC implements IToolchian {
             options['linker']['$use'] = 'linker-lib';
         }
 
-        // if region 'global' is not exist, create it
-        if (typeof options['global'] !== 'object') {
+        // create options if it's not exists
+        if (typeof options['global'] !== 'object')
             options['global'] = {};
-        }
+        if (typeof options['c/cpp-compiler'] !== 'object')
+            options['c/cpp-compiler'] = {};
 
         // set tool prefix
         options['global'].toolPrefix = SettingManager.GetInstance().getGCCPrefix();
+        // To use the link-time optimizer, -flto and optimization options 
+        // should be specified at compile time and during the final link.
+        options['global']['optimization-lto'] = options['c/cpp-compiler']['optimization-lto'];
+        options['c/cpp-compiler']['optimization-lto'] = undefined;
     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): utility.CppMacroDefine[] {
+
+        const cfg: ArmBaseBuilderConfigData = <any>builderCfg;
+        const cpuName = cfg.cpuType.toLowerCase();
+        const fpuType = cfg.floatingPointHardware;
+        const archExt = cfg.archExtensions || '';
+        const compilerArgs = this.getCompilerTargetArgs(cpuName, fpuType, archExt, builderOpts);
+
+        if (compilerArgs.length > 0) {
+            compilerArgs.push('-mthumb');
+            const gccpath = <string>this.getGccFamilyCompilerPathForCpptools('c');
+            const defines = utility.getGccInternalDefines(gccpath, compilerArgs);
+            if (defines) {
+                return defines;
+            }
+        }
 
         return [
-            '__GNUC__=10',
-            '__GNUC_MINOR__=2',
-            '__GNUC_PATCHLEVEL__=1',
-            '__GNUC_STDC_INLINE__=1',
-            '__thumb__=1',
-            '__thumb2__=1'
+            { name: '__GNUC__'              , value: '10',  type: 'var' },
+            { name: '__GNUC_MINOR__'        , value: '2',   type: 'var' },
+            { name: '__GNUC_PATCHLEVEL__'   , value: '1',   type: 'var' },
+            { name: '__GNUC_STDC_INLINE__'  , value: '1',   type: 'var' },
+            { name: '__thumb__'             , value: '1',   type: 'var' },
+            { name: '__thumb2__'            , value: '1',   type: 'var' },
         ];
-
-        // const cfg: ArmBaseBuilderConfigData = <any>builderCfg;
-
-        // const cpu = cfg.cpuType.toLowerCase()
-        //     .replace('cortex-m0+', 'cortex-m0plus');
-        // const fpu = cfg.floatingPointHardware.toLowerCase()
-        //     .replace('single', 'sp').replace('double', 'dp');
-
-        // const compilerArgs: string[] = ['-mthumb'];
-
-        // // setup cpu
-        // compilerArgs.push(`-mcpu=${cpu}`);
-
-        // // setup fpu
-        // switch (fpu) {
-        //     case 'sp':
-        //         compilerArgs.push(`-mfpu=fpv5-sp-d16`);
-        //         break;
-        //     case 'dp':
-        //         compilerArgs.push(`-mfpu=fpv5-d16`);
-        //         break;
-        //     default:
-        //         break;
-        // }
-        // if (['sp', 'dp'].includes(fpu)) {
-        //     if (typeof builderOpts.global['$float-abi-type'] == 'string') {
-        //         const abiType = builderOpts.global['$float-abi-type'];
-        //         compilerArgs.push(`-mfloat-abi=${abiType}`);
-        //     }
-        // }
-
-        // const r = utility.getGccInternalDefines(
-        //     this.getToolchainDir().path + '/bin', this.getToolPrefix(), compilerArgs);
-
-        // if (!r)
-        //     return [];
-
-        // const result: string[] = r
-        //     .filter(d => d.type != 'func')
-        //     .map(d => `${d.name}=${(d.value == undefined || d.value == '') ? '1' : d.value}`);
-
-        // return result;
     }
 
     getCustomDefines(): string[] | undefined {
@@ -2424,9 +2193,9 @@ class IARARM implements IToolchian {
         return SettingManager.GetInstance().getIarForArmDir();
     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): utility.CppMacroDefine[] {
         return [
-            '__ICCARM__=1'
+            { name: '__ICCARM__', value: '1',  type: 'var' },
         ];
     }
 
@@ -2586,7 +2355,7 @@ class IARSTM8 implements IToolchian {
         return SettingManager.GetInstance().getIARForStm8Dir();
     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): utility.CppMacroDefine[] {
         return [];
     }
 
@@ -2829,12 +2598,12 @@ class MTI_GCC implements IToolchian {
         return SettingManager.GetInstance().getMipsToolFolder();
     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): utility.CppMacroDefine[] {
         return [
-            '__GNUC__=10',
-            '__GNUC_MINOR__=2',
-            '__GNUC_PATCHLEVEL__=1',
-            '__GNUC_STDC_INLINE__=1',
+            { name: '__GNUC__'              , value: '10',  type: 'var' },
+            { name: '__GNUC_MINOR__'        , value: '2',   type: 'var' },
+            { name: '__GNUC_PATCHLEVEL__'   , value: '1',   type: 'var' },
+            { name: '__GNUC_STDC_INLINE__'  , value: '1',   type: 'var' },
         ];
     }
 
@@ -3085,25 +2854,47 @@ class RISCV_GCC implements IToolchian {
             options['linker']['$use'] = 'linker-lib';
         }
 
-        // if region 'global' is not exist, create it
-        if (typeof options['global'] !== 'object') {
+        // create options if it's not exists
+        if (typeof options['global'] !== 'object')
             options['global'] = {};
-        }
+        if (typeof options['c/cpp-compiler'] !== 'object')
+            options['c/cpp-compiler'] = {};
 
         // set tool prefix
         options['global'].toolPrefix = this.getToolPrefix();
+        // To use the link-time optimizer, -flto and optimization options 
+        // should be specified at compile time and during the final link.
+        options['global']['optimization-lto'] = options['c/cpp-compiler']['optimization-lto'];
+        options['c/cpp-compiler']['optimization-lto'] = undefined;
     }
 
     getToolchainDir(): File {
         return SettingManager.GetInstance().getRiscvToolFolder();
     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): utility.CppMacroDefine[] {
+
+        if (builderOpts.global) {
+            const arch  = builderOpts.global['arch'] || 'rv32imac';
+            const eabi  = builderOpts.global['abi'] || 'ilp32';
+            const model = builderOpts.global['code-model'] || 'medlow';
+            const compilerArgs = [
+                `-march=${arch}`,
+                `-mabi=${eabi}`,
+                `-mcmodel=${model}`,
+            ];
+            const gccpath = <string>this.getGccFamilyCompilerPathForCpptools('c');
+            const defines = utility.getGccInternalDefines(gccpath, compilerArgs);
+            if (defines) {
+                return defines;
+            }
+        }
+
         return [
-            '__GNUC__=10',
-            '__GNUC_MINOR__=2',
-            '__GNUC_PATCHLEVEL__=1',
-            '__GNUC_STDC_INLINE__=1',
+            { name: '__GNUC__'              , value: '10',  type: 'var' },
+            { name: '__GNUC_MINOR__'        , value: '2',   type: 'var' },
+            { name: '__GNUC_PATCHLEVEL__'   , value: '1',   type: 'var' },
+            { name: '__GNUC_STDC_INLINE__'  , value: '1',   type: 'var' },
         ];
     }
 
@@ -3308,21 +3099,36 @@ class AnyGcc implements IToolchian {
             }
         }
 
-        // if region 'global' is not exist, create it
-        if (typeof options['global'] !== 'object') {
+        // create options if it's not exists
+        if (typeof options['global'] !== 'object')
             options['global'] = {};
-        }
+        if (typeof options['c/cpp-compiler'] !== 'object')
+            options['c/cpp-compiler'] = {};
 
         // set tool prefix
         options['global'].toolPrefix = this.getToolPrefix();
+        // To use the link-time optimizer, -flto and optimization options 
+        // should be specified at compile time and during the final link.
+        options['global']['optimization-lto'] = options['c/cpp-compiler']['optimization-lto'];
+        options['c/cpp-compiler']['optimization-lto'] = undefined;
     }
 
-    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): string[] {
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): utility.CppMacroDefine[] {
+
+        if (builderOpts.global && typeof builderOpts.global['misc-control'] == 'string') {
+            const compilerArgs = builderOpts.global['misc-control'].trim().split(/\s+/);
+            const gccpath = <string>this.getGccFamilyCompilerPathForCpptools('c');
+            const defines = utility.getGccInternalDefines(gccpath, compilerArgs);
+            if (defines) {
+                return defines;
+            }
+        }
+
         return [
-            '__GNUC__=10',
-            '__GNUC_MINOR__=2',
-            '__GNUC_PATCHLEVEL__=1',
-            '__GNUC_STDC_INLINE__=1',
+            { name: '__GNUC__'              , value: '10',  type: 'var' },
+            { name: '__GNUC_MINOR__'        , value: '2',   type: 'var' },
+            { name: '__GNUC_PATCHLEVEL__'   , value: '1',   type: 'var' },
+            { name: '__GNUC_STDC_INLINE__'  , value: '1',   type: 'var' },
         ];
     }
 

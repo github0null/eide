@@ -162,14 +162,14 @@ export interface CppMacroDefine {
     value: string;
 }
 
-export class CppMacroDefinesConv {
+export class CppMacroParser {
 
-    private regMatchers = {
+    private static regMatchers = {
         'var' : /^#define (\w+) (.*)$/,
         'func': /^#define (\w+\([^\)]*\)) (.*)$/
     };
 
-    toExpression(line: string): string | undefined {
+    static toExpression(line: string): string | undefined {
 
         let mList = this.regMatchers['var'].exec(line);
         if (mList && mList.length > 2) {
@@ -182,7 +182,7 @@ export class CppMacroDefinesConv {
         }
     }
 
-    parse(line: string): CppMacroDefine | undefined {
+    static parse(line: string): CppMacroDefine | undefined {
 
         let mList = this.regMatchers['var'].exec(line);
         if (mList && mList.length > 2) {
@@ -211,11 +211,10 @@ export function getGccInternalDefines(gccpath: string, cmds: string[] | undefine
         const cmdLine = `${gccpath} ` + cmdArgs.join(' ');
         const outputs = child_process.execSync(cmdLine, { cwd: NodePath.dirname(gccpath) }).toString().split(/\r\n|\n/);
         const results: CppMacroDefine[] = [];
-        const mHandler = new CppMacroDefinesConv();
 
         outputs.filter((line) => { return line.trim() !== ''; })
             .forEach((line) => {
-                const value = mHandler.parse(line);
+                const value = CppMacroParser.parse(line);
                 if (value) {
                     results.push(value);
                 }

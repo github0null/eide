@@ -3965,11 +3965,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 }
                 if (!cfg['CompileFlags']) cfg['CompileFlags'] = {};
                 if (!cfg['CompileFlags']['Add']) cfg['CompileFlags']['Add'] = []
+                if (!cfg['CompileFlags']['Remove']) cfg['CompileFlags']['Remove'] = [];
                 //
                 cfg['CompileFlags']['CompilationDatabase'] = './' + File.ToUnixPath(prj.getOutputDir());
                 const toolchain = prj.getToolchain();
                 const gccLikePath = toolchain.getGccFamilyCompilerPathForCpptools('c++');
-                if (gccLikePath) { // 仅兼容gcc的编译器
+                if (gccLikePath) { // clangd 仅兼容gcc的编译器
                     cfg['CompileFlags']['Compiler'] = gccLikePath;
                     let clangdCompileFlags = <string[]>(cfg['CompileFlags']['Add']);
                     let compilerArgs = prj.getCpptoolsConfig().cppCompilerArgs;
@@ -3997,6 +3998,24 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     //     .forEach(d => clangdCompileFlags.push(`-D${d}`));
                     // del repeat
                     cfg['CompileFlags']['Add'] = ArrayDelRepetition(clangdCompileFlags);
+
+                    // 排除掉 clangd 不支持的参数
+                    const removeArgs = <string[]>cfg['CompileFlags']['Remove'];
+                    removeArgs.push(`-f*`);
+                    cfg['CompileFlags']['Remove'] = ArrayDelRepetition(removeArgs);
+                }
+                // 其他不受 clangd 支持的编译器要自行设置 -I -D
+                else if (toolchain.name == 'AC5' || toolchain.name == 'SDCC') {
+                    const builderOpts = prj.getBuilderOptions();
+                    const prjConfig = prj.GetConfiguration();
+                    const compilerFlags: string[] = cfg['CompileFlags']['Add'] || [];
+                    toolchain.getSystemIncludeList(builderOpts)
+                        .forEach(p => compilerFlags.push(`-I"${p}"`));
+                    toolchain.getInternalDefines(<any>prjConfig.config.compileConfig, builderOpts)
+                        .forEach(d => compilerFlags.push(`-D"${d.name}=${d.value}"`));
+                    cfg['CompileFlags']['Add'] = ArrayDelRepetition(compilerFlags);
+                    // 禁用所有诊断错误，因为 clangd 不支持这些编译器
+                    cfg['Diagnostics'] = { 'Suppress': '*' }
                 }
                 fclangd.Write(yaml.stringify(cfg));
             } catch (error) {
@@ -5991,18 +6010,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             return;
         }
 
-        if (os.platform() == 'win32') {
-            if (toolchain.name == 'GCC' && cppcheck_has_cfg('armgcc'))
-                cfgList.push('armgcc');
-            else if (toolchain.name == 'RISCV_GCC' && cppcheck_has_cfg('riscv'))
-                cfgList.push('riscv');
-            else
-                defList = defList.concat(
-                    toolchain.getInternalDefines(<any>prjConfig.config.compileConfig, builderOpts));
-        } else {
-            defList = defList.concat(
-                toolchain.getInternalDefines(<any>prjConfig.config.compileConfig, builderOpts));
-        }
+        toolchain.getInternalDefines(<any>prjConfig.config.compileConfig, builderOpts).forEach(d => {
+            if (d.type === 'var')
+                defList.push(`${d.name}=${d.value}`);
+        });
 
         if (toolchain.name == 'ANY_GCC' && toolchain.getToolchainPrefix) {
             const prefix = toolchain.getToolchainPrefix();
