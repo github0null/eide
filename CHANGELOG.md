@@ -6,7 +6,7 @@ All notable version changes will be recorded in this file.
 
 ***
 
-### [v3.23.0] update
+### [v3.23.1] update
 
 **New**:
   - `Arm Project`: Support new toolchain [LLVM-embedded-toolchain-for-Arm](https://github.com/ARM-software/LLVM-embedded-toolchain-for-Arm).

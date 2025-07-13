@@ -31,7 +31,7 @@ Supported Platforms:
 * Support to import KEIL5/IAR/Eclipse projects, support to import 'IAR-STM8, IAR-ARM, Segger Embedded Studio' project source file resource tree.
 * Support for installing standard KEIL chip support packs (only for Cortex-M projects).
 * Provides many project templates for quick start a project.
-* Build, rebuild, support many toolchains (armcc, gcc-arm-none-eabi, riscv-gcc, xxx-gcc, keil_c51, sdcc ...).
+* Build, rebuild, support many toolchains (armcc, gcc-arm-none-eabi, llvm-for-arm, riscv-gcc, xxx-gcc, keil_c51, sdcc ...).
 * Program flash, support: jlink, stlink, openocd, pyocd ...
 * ~~Built-in serial port monitor~~ (recommended to use `Serial Monitor` plug-in).
 * Supports static checking projects by using Cppcheck.

@@ -29,7 +29,7 @@
 * 支持导入 KEIL5/IAR/Eclipse 项目，支持导入 `IAR-STM8, IAR-ARM, Segger Embedded Studio` 项目源文件资源树。
 * 支持安装标准的 KEIL 芯片支持包 (仅用于 Cortex-M 项目)。
 * 提供丰富的项目模板方便快速开始项目。
-* 一键编译，支持多种主流的编译工具 (armcc, gcc-arm-none-eabi, riscv-gcc, xxx-gcc, keil_c51, sdcc ...)。
+* 一键编译，支持多种主流的编译工具 (armcc, gcc-arm-none-eabi, llvm-for-arm, riscv-gcc, xxx-gcc, keil_c51, sdcc ...)。
 * 一键烧录到芯片，支持多种主流的烧录器 (jlink, stlink, openocd, pyocd ...)。
 * ~~内置的串口监视器，一键打开串口~~（建议使用 `Serial Monitor` 插件）。
 * 支持使用 Cppcheck 对项目进行静态检查。

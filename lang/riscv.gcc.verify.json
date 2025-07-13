@@ -252,22 +252,22 @@
                     "type": "boolean"
                 },
                 "no-rtti": {
-                    "markdownDescription": "No RTTI (-fno-rtti)",
+                    "markdownDescription": "Not use RTTI (-fno-rtti)",
                     "description.zh-cn": "禁用运行时类型信息 (-fno-rtti)",
                     "type": "boolean"
                 },
                 "no-exceptions": {
-                    "markdownDescription": "Disable Exception Handling (-fno-exceptions)",
+                    "markdownDescription": "Not use exceptions (-fno-exceptions)",
                     "description.zh-cn": "禁用异常处理 (-fno-exceptions)",
                     "type": "boolean"
                 },
                 "no-use-cxa-atexit": {
-                    "markdownDescription": "Use `atexit` instead of `__cxa_atexit` (-fno-use-cxa-atexit)",
-                    "description.zh-cn": "使用 atexit 替代 __cxa_atexit (-fno-use-cxa-atexit)",
+                    "markdownDescription": "Not use `__cxa_atexit()` (-fno-use-cxa-atexit)",
+                    "description.zh-cn": "Not use `__cxa_atexit()` (-fno-use-cxa-atexit)",
                     "type": "boolean"
                 },
                 "no-threadsafe-statics": {
-                    "markdownDescription": "No thread-safe init-code for local statics (-fno-threadsafe-statics)",
+                    "markdownDescription": "Not use thread-safe statics (-fno-threadsafe-statics)",
                     "description.zh-cn": "禁用本地静态变量的线程安全初始化 (-fno-threadsafe-statics)",
                     "type": "boolean"
                 },

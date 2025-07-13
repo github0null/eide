@@ -33,12 +33,13 @@
         "msys",
         "cosmic",
         "mips",
-        "mips-mti"
+        "mips-mti",
+        "llvm"
     ],
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/MIPS/RISC-V",
-    "version": "3.23.0",
+    "version": "3.23.1",
     "preview": false,
     "engines": {
         "vscode": "^1.67.0"

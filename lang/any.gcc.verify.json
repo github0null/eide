@@ -173,12 +173,12 @@
                     "type": "boolean"
                 },
                 "no-rtti": {
-                    "markdownDescription": "No RTTI (-fno-rtti)",
+                    "markdownDescription": "Not use RTTI (-fno-rtti)",
                     "description.zh-cn": "禁用运行时类型信息 (-fno-rtti)",
                     "type": "boolean"
                 },
                 "no-exceptions": {
-                    "markdownDescription": "Disable Exception Handling (-fno-exceptions)",
+                    "markdownDescription": "Not use exceptions (-fno-exceptions)",
                     "description.zh-cn": "禁用异常处理 (-fno-exceptions)",
                     "type": "boolean"
                 },
