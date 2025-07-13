@@ -1909,6 +1909,7 @@ class GCC implements IToolchian {
 
     private readonly mcpuMap: { [k: string]: string } = {};
     private readonly mfpuMap: { [k: string]: string } = {};
+    private readonly fabiMap: { [k: string]: string } = {};
 
     constructor() {
         const modelpath = File.from(ResManager.instance().getBuilderModelsDir().path, this.modelName);
@@ -1919,9 +1920,11 @@ class GCC implements IToolchian {
         const mcpu_cmd = modelData['global']['microcontroller-cpu'].command || '';
         const mcpus    = modelData['global']['microcontroller-cpu'].enum;
         const mfpus    = modelData['global']['microcontroller-fpu'].command;
+        const fabis    = modelData['global']['microcontroller-float'].command;
         for (let k in mcpus) {
             this.mcpuMap[k] = mcpu_cmd + mcpus[k];
             this.mfpuMap[k] = mfpus[k];
+            this.fabiMap[k] = fabis[k];
         }
     }
 
@@ -1979,11 +1982,9 @@ class GCC implements IToolchian {
             if (this.mfpuMap[mcpu_id])
                 result.push(this.mfpuMap[mcpu_id]);
 
-            if (typeof builderOpts.global['$float-abi-type'] == 'string') {
-                const abiType = builderOpts.global['$float-abi-type'];
-                result.push(`-mfloat-abi=${abiType}`);
-            } else {
-                result.push('-mfloat-abi=soft');
+            if (this.fabiMap[mcpu_id]) {
+                const abiType = builderOpts.global['$float-abi-type'] || 'soft';
+                result.push(this.fabiMap[mcpu_id].replace('${$float-abi-type}', abiType));
             }
         }
 
