@@ -4222,11 +4222,17 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         prj.deleteTarget(selTarget);
     }
 
-    switchTarget(prjItem: ProjTreeItem) {
+    switchTarget(prjItem?: ProjTreeItem) {
 
-        const prj = this.dataProvider.GetProjectByIndex(prjItem.val.projectIndex);
+        const prj = prjItem 
+            ? this.dataProvider.GetProjectByIndex(prjItem.val.projectIndex)
+            : this.getActiveProject();
+        if (!prj) { // not active project
+            GlobalEvent.emit('msg', newMessage('Info', `No active project !`));
+            return;
+        }
+
         const resManager = ResManager.GetInstance();
-
         const pickBox = vscode.window.createQuickPick();
         pickBox.title = view_str$project$sel_target;
         pickBox.placeholder = view_str$project$sel_target;
@@ -4237,7 +4243,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     dark: vscode.Uri.parse(resManager.GetIconByName('Add_16xMD.svg').ToUri()),
                     light: vscode.Uri.parse(resManager.GetIconByName('Add_16xMD.svg').ToUri())
                 },
-                tooltip: 'New Target'
+                tooltip: 'Create Target'
             },
             {
                 iconPath: {
@@ -4313,27 +4319,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     const acvtiveProj = this.dataProvider.getActiveProject();
                     if (acvtiveProj && result.uid == acvtiveProj.getUid()) return;
                     this.dataProvider.setActiveProject(idx);
-                }
-            }
-        }
-    }
-
-    async showQuickPickAndSwitchActiveTarget() {
-
-        const activeProj = this.getActiveProject();
-
-        if (activeProj) {
-
-            const selections = activeProj.getTargets().map<vscode.QuickPickItem>((name) => { return { label: name }; });
-
-            const result = await vscode.window.showQuickPick(selections, {
-                title: `Switch Active Target`,
-                canPickMany: false
-            });
-
-            if (result) {
-                if (result.label != activeProj.getCurrentTarget()) {
-                    activeProj.switchTarget(result.label);
                 }
             }
         }

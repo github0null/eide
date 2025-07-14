@@ -274,7 +274,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // status bar
     //subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.switch-project', () => projectExplorer.showQuickPickAndSwitchActiveProject()));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.switch-target', () => projectExplorer.showQuickPickAndSwitchActiveTarget()));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.switch-target', () => projectExplorer.switchTarget()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.build', () => projectExplorer.BuildSolution(undefined, { not_rebuild: true })));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.flash', () => projectExplorer.UploadToDevice(undefined)));
 
