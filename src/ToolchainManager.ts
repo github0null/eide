@@ -312,15 +312,15 @@ export class ToolchainManager {
             case 'GNU_SDCC_STM8':
                 return 'SDCC With GNU Patch For STM8';
             case 'RISCV_GCC':
-                return 'GCC For RISC-V';
+                return 'GNU RISC-V Toolchain';
             case 'ANY_GCC':
-                return 'Any GNU Toolchain';
+                return 'GNU Toolchain';
             case 'COSMIC_STM8':
                 return 'COSMIC STM8 C Compiler';
             case 'MTI_GCC':
                 return 'MIPS MTI GCC Compiler';
             case 'LLVM_ARM':
-                return 'LLVM ARM C/C++ Compiler';
+                return 'LLVM Embedded Toolchain For Arm';
             default:
                 return '';
         }
