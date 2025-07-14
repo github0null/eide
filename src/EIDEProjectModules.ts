@@ -501,7 +501,7 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
         this._event.emit('dataChanged');
     }
 
-    copyCommonCompileConfigFrom(model: CompileConfigModel<T>) {
+    copyCommonCompileConfigFrom(from_toolchain: ToolchainName, from_model: CompileConfigModel<T>) {
         // do nothing
     }
 }
@@ -626,14 +626,22 @@ export abstract class ArmBaseCompileConfigModel
         }
     }
 
-    copyCommonCompileConfigFrom(model: ArmBaseCompileConfigModel) {
+    copyCommonCompileConfigFrom(from_toolchain: ToolchainName, from_model: ArmBaseCompileConfigModel) {
 
-        this.data.floatingPointHardware = model.data.floatingPointHardware;
+        this.data.floatingPointHardware = from_model.data.floatingPointHardware;
 
-        if (this.cpuTypeList.includes(model.data.cpuType)) { // found target cpu, update it
-            this.data.cpuType = model.data.cpuType;
-        } else { // not found, use cpuList[0]
-            this.data.cpuType = this.cpuTypeList[1];
+        if (this.cpuTypeList.includes(from_model.data.cpuType)) { // found target cpu, update it
+            this.data.cpuType = from_model.data.cpuType;
+        } else { // not found, set default
+            this.data.cpuType = 'Cortex-M3';
+            GlobalEvent.emit('msg', newMessage('Warning', 
+                `This toolchain not support "${from_model.data.cpuType}". Use default value.`));
+        }
+
+        const cur_toolchain = this.prjConfigData.toolchain;
+        if (utility.isGccOptionsCompatibleToolchain(from_toolchain) &&
+            utility.isGccOptionsCompatibleToolchain(cur_toolchain)) {
+            this.data.scatterFilePath = from_model.data.scatterFilePath;
         }
 
         this.onPropertyChanged('cpuType');

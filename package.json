@@ -39,7 +39,7 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/MIPS/RISC-V",
-    "version": "3.23.1",
+    "version": "3.23.2",
     "preview": false,
     "engines": {
         "vscode": "^1.67.0"
@@ -313,6 +313,12 @@
                         "default": [
                             "# Name=Value"
                         ]
+                    },
+                    "EIDE.Option.EnableClangdConfigGenerator": {
+                        "type": "boolean",
+                        "scope": "resource",
+                        "markdownDescription": "Enable auto generate '.clangd' configuration file.",
+                        "default": true
                     },
                     "EIDE.Option.ShowToolbarInEditerTitle": {
                         "type": "boolean",

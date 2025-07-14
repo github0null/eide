@@ -226,8 +226,19 @@ export function getGccInternalDefines(gccpath: string, cmds: string[] | undefine
     }
 }
 
+/**
+ * @note 判断是否为 gcc 工具链
+*/
 export function isGccFamilyToolchain(name: ToolchainName): boolean {
     return name.includes('GCC');
+}
+
+/**
+ * 检查 toolchain 是否属于 gcc 编译参数兼容的工具链
+ * @note 注意是编译参数兼容，比如 clang 也是兼容的，但它不是 gcc 编译器
+*/
+export function isGccOptionsCompatibleToolchain(name: ToolchainName): boolean {
+    return name.includes('GCC') || name.includes('LLVM');
 }
 
 export function getGccSystemSearchList(gccFullPath: string, args?: string[]): string[] | undefined {

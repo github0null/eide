@@ -183,11 +183,11 @@
                     "type": "boolean"
                 },
                 "one-elf-section-per-function": {
-                    "markdownDescription": "One ELF Section per Function",
+                    "markdownDescription": "Function Sections (-ffunction-sections)",
                     "type": "boolean"
                 },
                 "one-elf-section-per-data": {
-                    "markdownDescription": "One ELF Section per Data",
+                    "markdownDescription": "Data Sections (-fdata-sections)",
                     "type": "boolean"
                 },
                 "C_FLAGS": {
@@ -258,7 +258,7 @@
                     ]
                 },
                 "remove-unused-input-sections": {
-                    "markdownDescription": "Remove Unused Input Sections",
+                    "markdownDescription": "Remove Unused Input Sections (-Wl,--gc-sections)",
                     "type": "boolean"
                 },
                 "elf-suffix": {

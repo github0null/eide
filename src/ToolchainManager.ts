@@ -312,15 +312,15 @@ export class ToolchainManager {
             case 'GNU_SDCC_STM8':
                 return 'SDCC With GNU Patch For STM8';
             case 'RISCV_GCC':
-                return 'GCC For RISC-V';
+                return 'GNU RISC-V Toolchain';
             case 'ANY_GCC':
-                return 'Any GNU Toolchain';
+                return 'GNU Toolchain';
             case 'COSMIC_STM8':
                 return 'COSMIC STM8 C Compiler';
             case 'MTI_GCC':
                 return 'MIPS MTI GCC Compiler';
             case 'LLVM_ARM':
-                return 'LLVM ARM C/C++ Compiler';
+                return 'LLVM Embedded Toolchain For Arm';
             default:
                 return '';
         }
@@ -2435,6 +2435,258 @@ class LLVM_ARM implements IToolchian {
                 cppToolsConfig.cppCompilerArgs = pList;
             }
         }
+    }
+
+    /*
+     VMA      LMA     Size Align Out     In      Symbol
+       0        0        0     1 _estack = 0x20020000
+       0        0        0     1 _Min_Heap_Size = 0x000
+       0        0        0     1 _Min_Stack_Size = 0x400
+ 8000000  8000000      188     1 .isr_vector
+ 8000000  8000000        0     1         . = ALIGN(4)
+ 8000000  8000000      188     1         ./out/LLVM/.obj/Core/Src/startup_stm32f407xx.o:(.isr_vector)
+ 8000000  8000000        0     1                 g_pfnVectors
+ 8000188  8000188        0     1         . = ALIGN(4)
+ 8000190  8000190     c16c    16 .text
+ 8000190  8000190        0     1         . = ALIGN(4)
+ 8000190  8000190       14     4         C:\Users\Administrator\.eide\tools\llvm_arm\bin\..\lib\clang-runtimes/arm-none-eabi/armv7m_hard_fpv4_sp_d16_exn_rtti_unaligned\lib\libclang_rt.builtins.a(aeabi_uldivmod.S.obj):(.text)
+ 8000190  8000190        0     1                 $t
+ 8000191  8000191       14     1                 __aeabi_uldivmod
+ 80001a4  80001a4       2c     2         ./out/LLVM/.obj/Core/Src/logger.o:(.text._log)
+ 80001a4  80001a4        0     1                 $t
+ 80001a5  80001a5       2c     1                 _log
+    */
+    private _mapPattern__line = /^\s*(?<vma>[0-9a-f]+)\s+(?<lma>[0-9a-f]+)\s+(?<size>[0-9a-f]+)\s+(?<align>\d+)\s+(?<text>.+)/i;
+    private _parseMap(mapPath: string): {
+        messages: string[],
+        sections: string[],
+        objects: {
+            [name: string]: { [section: string]: number }
+        }
+    } {
+        const messages: string[] = [];
+        const objects: any = {};
+        const sections: string[] = [];
+        const lines = fs.readFileSync(mapPath).toString().split(/\r\n|\n/);
+
+        let section_offset = -1;
+        let input_offset   = -1;
+        let cur_section    = undefined;
+
+        for (let line of lines) {
+            if (section_offset > 0) {
+                if (line.charAt(section_offset) == '.') { // is a section ?
+                    const sec_name = line.substring(section_offset).trim();
+                    if (/^\.\w+$/.test(sec_name)) {
+                        if (sec_name == '.comment' || sec_name.startsWith('.debug')) {
+                            break; // 结束
+                        }
+                        cur_section = sec_name;
+                        sections.push(sec_name);
+                    }
+                }
+                else if (line.charAt(input_offset) != ' ') { // input object
+                    const m = this._mapPattern__line.exec(line);
+                    if (m && m.groups) {
+                        const size = parseInt(m.groups['size'], 16);
+                        if (size == 0)
+                            continue; // skip size == 0
+                        const text = m.groups['text'].trim();
+                        if (!cur_section)
+                            throw Error(`"${text}" not match any sections !`);
+                        // 获取对象名
+                        let object_name: string;
+                        // .o:(.text.xQueueReceiveFromISR)
+                        // <internal>:(.rodata.str1.1)
+                        let m_obj = /(.+\.o|\<internal\>):\([^)]+\)$/.exec(text);
+                        if (m_obj) {
+                            object_name = m_obj[1];
+                            if (object_name == '<internal>') {
+                                object_name = '[internal]';
+                            } else {
+                                // 将路径名 './xx/xxx/.obj/' 之后的截断
+                                const parts = object_name.split(/\\|\//);
+                                const idx = parts[0] == '.' ? 3 : 2;
+                                if (parts[idx] == '.obj') {
+                                    object_name = parts.slice(idx + 1).map(p => p == '__' ? '..' : p).join('/');
+                                }
+                            }
+                        } else {
+                            // .a(aeabi_memset.c.o):(.text.__aeabi_memset)
+                            m_obj = /(?<libname>.+\.a)\((?<objname>[^)]+)\):\([^)]+\)$/.exec(text);
+                            if (m_obj && m_obj.groups) {
+                                object_name = m_obj.groups['libname'];
+                                // 我们只取库名的名字，不要父路径
+                                //  [lib]/<libname>/<objname>
+                                const parts = object_name.split(/\\|\//);
+                                const objname = m_obj.groups['objname'];
+                                object_name = `[lib]/${parts[parts.length - 1]}/${objname}`;
+                            } else {
+                                // 没有名字的的统一放置到 [anonymous] 杂项
+                                object_name = '[anonymous]';
+                            }
+                        }
+                        if (object_name) {
+                            if (objects[object_name] == undefined)
+                                objects[object_name] = {};
+                            if (objects[object_name][cur_section] == undefined)
+                                objects[object_name][cur_section] = 0;
+                            // add size
+                            objects[object_name][cur_section] += size;
+                        } else {
+                            messages.push(`Error object name on line: "${line}"`);
+                        }
+                    }
+                }
+            } else {
+                if (/VMA\s+LMA\s+Size\s+Align\s+Out\s+In\s+Symbol/.test(line)) {
+                    section_offset = line.indexOf('Out');
+                    input_offset   = line.indexOf('In');
+                }
+            }
+        }
+
+        // 将 sections 排序，因为这将决定表头的顺序，
+        // 我们尽量将 `.text` `.data` `.bss` 这些放置在最前面
+        const orders: any = {
+            '.text': 0,
+            '.data': 1,
+            '.bss' : 2
+        };
+        let final_sections = sections.sort((a, b) => {
+            const order_a = orders[a] == undefined ? 100 : orders[a];
+            const order_b = orders[b] == undefined ? 100 : orders[b];
+            return order_a - order_b;
+        });
+
+        return {
+            messages,
+            sections: final_sections,
+            objects
+        };
+    }
+
+    parseMapFile(mapPath: string): string[] | Error {
+
+        if (!File.IsFile(mapPath))
+            return new Error(`No such file: ${mapPath}`);
+
+        const mapInfo = this._parseMap(mapPath);
+        const secList = mapInfo.sections;
+        const objDic = mapInfo.objects;
+
+        let oldObjDic: any = {};
+        if (File.IsFile(mapPath + '.old')) {
+            const inf = this._parseMap(mapPath + '.old');
+            oldObjDic = inf.objects;
+        }
+
+        const tableRows: string[][] = [];
+
+        // push header
+        let header: string[] = [];
+        header.push('Module');
+        header.push('Size');
+        header = header.concat(secList);
+        tableRows.push(header);
+
+        let objTotalSize: any = { new: 0, old: 0 };
+        let secTotalSize: any = {};
+        for (const objpath in objDic) {
+
+            const objInfo = objDic[objpath];
+            const row: string[] = [objpath];
+
+            let totalSize = 0;
+            for (const key in objInfo) {
+                totalSize += objInfo[key];
+            }
+
+            let oldInfo: any = {};
+            if (oldObjDic[objpath]) {
+                oldInfo = oldObjDic[objpath];
+            }
+
+            let oldTotalSize = 0;
+            for (const key in oldInfo) {
+                oldTotalSize += oldInfo[key];
+            }
+
+            objTotalSize.new += totalSize;
+            objTotalSize.old += oldTotalSize;
+
+            const diffSize = totalSize - oldTotalSize;
+            row.push(totalSize.toString() + `(${diffSize > 0 ? '+' : ''}${diffSize.toString()})`);
+
+            for (const sec of secList) {
+
+                const oldSecSize = oldInfo[sec] ? oldInfo[sec] : 0;
+                const nowSecSize = objInfo[sec] ? objInfo[sec] : 0;
+                const diffSize = nowSecSize - oldSecSize;
+                row.push(nowSecSize.toString() + `(${diffSize > 0 ? '+' : ''}${diffSize.toString()})`);
+
+                if (secTotalSize[sec] == undefined) {
+                    secTotalSize[sec] = {
+                        new: 0,
+                        old: 0
+                    };
+                };
+
+                secTotalSize[sec].new += nowSecSize;
+                secTotalSize[sec].old += oldSecSize;
+            }
+
+            tableRows.push(row);
+        }
+
+        const row_total: string[] = ['Subtotals'];
+        {
+            const diffSize = objTotalSize.new - objTotalSize.old;
+            row_total.push(objTotalSize.new.toString() + `(${diffSize > 0 ? '+' : ''}${diffSize.toString()})`);
+
+            for (const sec of secList) {
+                const oldSecSize = secTotalSize[sec].old ? secTotalSize[sec].old : 0;
+                const newSecSize = secTotalSize[sec].new ? secTotalSize[sec].new : 0;
+                const diffSize = newSecSize - oldSecSize;
+                row_total.push(newSecSize.toString() + `(${diffSize > 0 ? '+' : ''}${diffSize.toString()})`);
+            }
+        }
+        tableRows.push(row_total);
+
+        const tableLines = utility.makeTextTable(tableRows);
+        if (tableLines == undefined) {
+            let msg = mapInfo.messages.join('\n');
+            if (msg)
+                msg += '\n\n';
+            return new Error(`${msg}Nothing for this map: ${mapPath} !`);
+        }
+
+        const result: string[] = mapInfo.messages.concat(tableLines);
+
+        /*
+            Total Static RAM memory (data + bss): 72796(-8) bytes
+            Total Flash memory (text + data): 44940(-6640) bytes
+        */
+        try {
+            const totalRAM_new: number  = secTotalSize['.data'].new + secTotalSize['.bss'].new;
+            const totalRAM_old: number  = secTotalSize['.data'].old + secTotalSize['.bss'].old;
+            const totalRAM_diff: number = totalRAM_new - totalRAM_old;
+            const RAM_diff_text = `${totalRAM_diff > 0 ? '+' : ''}${totalRAM_diff.toString()}`;
+            result.push(`Total Static RAM memory (data + bss): ${totalRAM_new.toString()}(${RAM_diff_text}) bytes`);
+            let totalROM_new: number  = secTotalSize['.text'].new + secTotalSize['.data'].new;
+            let totalROM_old: number  = secTotalSize['.text'].old + secTotalSize['.data'].old;
+            if (secTotalSize['.rodata']) {
+                totalROM_new += secTotalSize['.rodata'].new;
+                totalROM_old += secTotalSize['.rodata'].old;
+            }
+            const totalROM_diff: number = totalROM_new - totalROM_old;
+            const ROM_diff_text = `${totalROM_diff > 0 ? '+' : ''}${totalROM_diff.toString()}`;
+            result.push(`Total Flash memory (text + data): ${totalROM_new.toString()}(${ROM_diff_text}) bytes`);
+        } catch (err) {
+            // nothing todo
+        }
+
+        return result;
     }
 
     preHandleOptions(prjInfo: IProjectInfo, options: BuilderOptions): void {

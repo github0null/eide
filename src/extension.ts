@@ -274,7 +274,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // status bar
     //subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.switch-project', () => projectExplorer.showQuickPickAndSwitchActiveProject()));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.switch-target', () => projectExplorer.showQuickPickAndSwitchActiveTarget()));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.switch-target', () => projectExplorer.switchTarget()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.build', () => projectExplorer.BuildSolution(undefined, { not_rebuild: true })));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.flash', () => projectExplorer.UploadToDevice(undefined)));
 
@@ -1561,15 +1561,26 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
         }
 
         // check tool type
-        const conf: { tool?: string, fileName?: string } = yaml.parse(viewFile.Read());
+        const conf: {
+            tool?: string, 
+            fileName?: string, 
+            compilerName?: string,
+            compilerFullName?: string
+        } = yaml.parse(viewFile.Read());
         if (!conf.tool) {
             webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: Invalid toolchain type !`);
             return;
         }
 
         let toolchainId = conf.tool;
-        let fileDepth = SettingManager.GetInstance().getMapViewParserDepth();
 
+        // 由于 LLVM model 的 toolId 使用的是 GCC（因为clang兼容GCC的参数）
+        // 因此对于 LLVM 我们要单独判断
+        if (conf.compilerName && conf.compilerName.includes('LLVM'))
+            if (/\bArm\b/i.test(conf.compilerName))
+                toolchainId = 'LLVM_ARM';
+
+        let fileDepth = SettingManager.GetInstance().getMapViewParserDepth();
         if (fileDepth < 0)
             fileDepth = 1;
 

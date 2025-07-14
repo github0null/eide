@@ -738,14 +738,15 @@ export class ProjectConfiguration<T extends BuilderConfigData>
     setToolchain(toolchain: ToolchainName) {
 
         const oldModel = this.compileConfigModel;
+        const oldToolchain = this.config.toolchain;
+
+        // bind
         this.config.toolchain = toolchain; // update toolchain name
         this.compileConfigModel = CompileConfigModel.getInstance(this.config);
         this.config.compileConfig = this.compileConfigModel.data; // bind obj
 
-        // update config
-        this.compileConfigModel.copyCommonCompileConfigFrom(oldModel);
-
-        // update listeners
+        // update
+        this.compileConfigModel.copyCommonCompileConfigFrom(oldToolchain, oldModel);
         this.compileConfigModel.copyListenerFrom(oldModel);
     }
 
