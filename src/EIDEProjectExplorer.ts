@@ -1928,6 +1928,21 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                         elfcmds = ['-s', elfpath];
                         symMatcher = /^\s*(?<name>\w+):\s+(?<addr>[0-9a-f]+)\s+\w+\s+(?<type>[\w\.]+)/i;
                         break;
+                    case 'LLVM_ARM':
+                        // 2001132c 000002d0 B hUsbDeviceFS        c:\Users\xx+FatFs+USB_device_demo-template\./USB_DEVICE/App\usb_device.c:45
+                        // 200115fc 00000200 B USBD_StrDesc        c:\Users\xx+FatFs+USB_device_demo-template\./USB_DEVICE/App\usbd_desc.c:235
+                        // 200117fc 0000040c B hpcd_USB_OTG_FS     c:\Users\xx+FatFs+USB_device_demo-template\./USB_DEVICE/Target\usbd_conf.c:41
+                        // 20011c08 00000004 B __malloc_free_list
+                        // 20011c0c 00000004 B __malloc_sbrk_top
+                        // 20011c10 00000004 B __malloc_sbrk_start
+                        // 20011c14 00000001 B __lock___libc_recursive_mutex
+                        elfpath = prj.getExecutablePath();
+                        elftool = [toolchain.getToolchainDir().path, 'bin', `llvm-nm${exeSuffix()}`].join(File.sep);
+                        elfcmds = sortType == 'size' ? ['-l', '-S', '--size-sort', elfpath] : ['-ln', '-S', elfpath];
+                        elfsort = true;
+                        symMatcher = /^(?<addr>[0-9a-f]+)\s+(?<size>[0-9a-f]+\s+)?(?<type>\w)\s+(?<name>[^\s]+)\s+(?<loca>.*)/i;
+                        symTypConv = (t) => this.convGnuSymbolType2ReadableString(t)
+                        break;
                     default:
                         throw new Error(`Not support symbol view for '${toolchain.name}' !`);
                 }
