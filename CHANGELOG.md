@@ -6,6 +6,19 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.23.2] revision
+
+**Improve**:
+  - `LLVM Arm Toolchain`: Support `map view`, `symbol tables` features for LLVM Arm Toolchain.
+  - `Switch Target`: Improve using status-bar to switch target.
+  - `Builder Options`: Improve description text for some options.
+  - `Plug-in Settings`: New option: `EIDE.Option.EnableClangdConfigGenerator` to control auto generate '.clangd' file.
+
+**Change**:
+  - `unify_builder`: Update to v3.10.1
+
+***
+
 ### [v3.23.1] update
 
 **New**:
