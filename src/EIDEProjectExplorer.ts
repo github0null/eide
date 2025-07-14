@@ -3964,9 +3964,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         prj.on('cppConfigChanged', () => {
 
-            const envs = prj.getProjectVariables();
-            if (envs['EIDE_CLANGD_PROVIDER_ENABLE'] == '0') {
-                GlobalEvent.log_info(`ignore update .clangd, because EIDE_CLANGD_PROVIDER_ENABLE=0 is set`);
+            if (!SettingManager.instance().isEnableClangdConfigGenerator()) {
+                GlobalEvent.log_info(`ignore update .clangd, because "EIDE.Option.EnableClangdConfigGenerator" is not set`);
                 return;
             }
 

@@ -287,6 +287,10 @@ export class SettingManager {
 
     //--------------------- Global Option ------------------------
 
+    isEnableClangdConfigGenerator(): boolean {
+        return this.getConfiguration().get<boolean>('Option.EnableClangdConfigGenerator') || false;
+    }
+
     isSilentBuildOrFlash(): boolean {
         return this.getConfiguration().get<boolean>('Option.SilentWhenBuildOrFlash') || false;
     }
