@@ -1264,12 +1264,36 @@ class COSMIC_STM8 implements IToolchian {
             options['linker']['LIB_FLAGS'] += ' ' + machineLibs.join(' ');
         }
     }
-
+    // --------
+    // Segments
+    // --------
+    // start 00008000 end 00008080 length   128 segment .vector
+    // start 00008080 end 00008080 length     0 segment .const
+    // start 00008080 end 0000820a length   394 segment .text
+    // start 0000820d end 0000820d length     0 segment .FLASH_CODE
+    // start 00004000 end 00004000 length     0 segment .eeprom
+    // start 00000000 end 00000000 length     0 segment .bsct
+    // start 00000000 end 00000006 length     6 segment .ubsct
+    // start 00000006 end 00000006 length     0 segment .bit
+    // start 00000006 end 00000006 length     0 segment .data
+    // start 00000006 end 00000006 length     0 segment .bss
+    // start 00000000 end 00010999 length 67993 segment .debug
+    // start 00000000 end 00001272 length  4722 segment .info.
+    // start 0000820a end 0000820d length     3 segment .init
+    // ----------
+    // Modules
+    // ----------
     // start 0000054b end 00000613 length   200 section .info.
     // start ******** end ******** length     0 section .text *** removed ***
     // start 000080f9 end 0000814a length    81 section .text
     private _mapPattern__objSec = /start [^\s]+ end [^\s]+ length \s*(?<size>[^\s]+) section (?<sec>[^\s]+)/;
-    private _parseMap(mapPath: string): any {
+    private _parseMap(mapPath: string): {
+        messages: string[],
+        sections: string[],
+        objects: {
+            [name: string]: { [section: string]: number }
+        }
+    } {
 
         const lines = fs.readFileSync(mapPath).toString().split(/\r\n|\n/);
 
@@ -1318,7 +1342,8 @@ class COSMIC_STM8 implements IToolchian {
 
         return {
             sections: secList,
-            objDic: objDic
+            objects: objDic,
+            messages: []
         };
     };
 
@@ -1329,12 +1354,12 @@ class COSMIC_STM8 implements IToolchian {
 
         const mapInfo = this._parseMap(mapPath);
         const secList = mapInfo.sections;
-        const objDic = mapInfo.objDic;
+        const objDic = mapInfo.objects;
 
         let oldObjDic: any = {};
         if (File.IsFile(mapPath + '.old')) {
             const inf = this._parseMap(mapPath + '.old');
-            oldObjDic = inf.objDic;
+            oldObjDic = inf.objects;
         }
 
         const tableRows: string[][] = [];
@@ -1342,16 +1367,38 @@ class COSMIC_STM8 implements IToolchian {
         // push header
         let header: string[] = [];
         header.push('Module');
-        header.push('Size');
         header = header.concat(secList);
         tableRows.push(header);
+
+        // 确保新旧 objlist 是一样的，这样才能正确 diff
+        // 这样即使两次编译时的 .o 列表不一致，diff 结果也不会出现错误
+        for (const objpath in oldObjDic) {
+            // 在较新的 objDic 中查找已被删除的 obj, 将 obj 的所有 section 大小置零 
+            if (objDic[objpath] == undefined) {
+                objDic[objpath] = {};
+                for (const sec of secList)
+                    objDic[objpath][sec] = 0;
+            }
+        }
+
+        const isEmptyObject = (obj: any) => {
+            let size = 0;
+            for (const sec in obj)
+                size += obj[sec];
+            return size == 0;
+        }
 
         let objTotalSize: any = { new: 0, old: 0 };
         let secTotalSize: any = {};
         for (const objpath in objDic) {
 
             const objInfo = objDic[objpath];
-            const row: string[] = [objpath];
+            const row: string[] = [];
+
+            let objectDispName = objpath;
+            if (isEmptyObject(objInfo))
+                objectDispName += ' (removed)';
+            row.push(objectDispName);
 
             let totalSize = 0;
             for (const key in objInfo) {
@@ -1370,9 +1417,6 @@ class COSMIC_STM8 implements IToolchian {
 
             objTotalSize.new += totalSize;
             objTotalSize.old += oldTotalSize;
-
-            const diffSize = totalSize - oldTotalSize;
-            row.push(totalSize.toString() + `(${diffSize > 0 ? '+' : ''}${diffSize.toString()})`);
 
             for (const sec of secList) {
 
@@ -1397,9 +1441,6 @@ class COSMIC_STM8 implements IToolchian {
 
         const row_total: string[] = ['Subtotals'];
         {
-            const diffSize = objTotalSize.new - objTotalSize.old;
-            row_total.push(objTotalSize.new.toString() + `(${diffSize > 0 ? '+' : ''}${diffSize.toString()})`);
-
             for (const sec of secList) {
                 const oldSecSize = secTotalSize[sec].old ? secTotalSize[sec].old : 0;
                 const newSecSize = secTotalSize[sec].new ? secTotalSize[sec].new : 0;
@@ -1411,10 +1452,45 @@ class COSMIC_STM8 implements IToolchian {
 
         const tableLines = utility.makeTextTable(tableRows);
         if (tableLines == undefined) {
-            return new Error(`Nothing for this map: ${mapPath} !`);
+            let msg = mapInfo.messages.join('\n');
+            if (msg)
+                msg += '\n\n';
+            return new Error(`${msg}Nothing for this map: ${mapPath} !`);
         }
 
-        return tableLines;
+        const result: string[] = mapInfo.messages.concat(tableLines);
+
+        /*
+            Total Static RAM memory (data + bss): 72796(-8) bytes
+            Total Flash memory (text + data): 44940(-6640) bytes
+        */
+        const createTotalSizeDiff = (sections: string[]) => {
+            let total_new: number = 0;
+            let total_old: number = 0;
+            let sect_text: string = '';
+            for (const sec of sections) {
+                if (secTotalSize[sec]) {
+                    total_new += secTotalSize[sec].new;
+                    total_old += secTotalSize[sec].old;
+                    if (sect_text)
+                        sect_text += ` + ${sec}`
+                    else
+                        sect_text = sec
+                }
+            }
+            const diff = total_new - total_old;
+            const text = `${diff > 0 ? '+' : ''}${diff.toString()}`;
+            return {
+                sect_text,
+                diff_text: `${total_new.toString()}(${text})`
+            };
+        };
+        const ram_diff = createTotalSizeDiff(['.data', '.bss', '.bsct', '.bit']);
+        result.push(`Total Static RAM memory (${ram_diff.sect_text}): ${ram_diff.diff_text} bytes`);
+        const rom_diff = createTotalSizeDiff(['.text', '.data', '.const', '.vector']);
+        result.push(`Total Flash memory (${rom_diff.sect_text}): ${rom_diff.diff_text} bytes`);
+
+        return result;
     }
 
     getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): utility.CppMacroDefine[] {
@@ -2456,7 +2532,7 @@ class LLVM_ARM implements IToolchian {
  80001a4  80001a4        0     1                 $t
  80001a5  80001a5       2c     1                 _log
     */
-    private _mapPattern__line = /^\s*(?<vma>[0-9a-f]+)\s+(?<lma>[0-9a-f]+)\s+(?<size>[0-9a-f]+)\s+(?<align>\d+)\s+(?<text>.+)/i;
+    private _mapPattern__line = /^\s*(?<vma>[0-9a-f]+)\s+(?<lma>[0-9a-f]+)\s+(?<size>[0-9a-f]+)\s+(?<align>\d+)/i;
     private _parseMap(mapPath: string): {
         messages: string[],
         sections: string[],
@@ -2491,14 +2567,14 @@ class LLVM_ARM implements IToolchian {
                         const size = parseInt(m.groups['size'], 16);
                         if (size == 0)
                             continue; // skip size == 0
-                        const text = m.groups['text'].trim();
+                        const objtext = line.substring(input_offset).trim();
                         if (!cur_section)
-                            throw Error(`"${text}" not match any sections !`);
+                            throw Error(`"${objtext}" not match any sections !`);
                         // 获取对象名
                         let object_name: string;
                         // .o:(.text.xQueueReceiveFromISR)
                         // <internal>:(.rodata.str1.1)
-                        let m_obj = /(.+\.o|\<internal\>):\([^)]+\)$/.exec(text);
+                        let m_obj = /(.+\.o|\<internal\>):\([^)]+\)$/.exec(objtext);
                         if (m_obj) {
                             object_name = m_obj[1];
                             if (object_name == '<internal>') {
@@ -2513,7 +2589,7 @@ class LLVM_ARM implements IToolchian {
                             }
                         } else {
                             // .a(aeabi_memset.c.o):(.text.__aeabi_memset)
-                            m_obj = /(?<libname>.+\.a)\((?<objname>[^)]+)\):\([^)]+\)$/.exec(text);
+                            m_obj = /(?<libname>.+\.a)\((?<objname>[^)]+)\):\([^)]+\)$/.exec(objtext);
                             if (m_obj && m_obj.groups) {
                                 object_name = m_obj.groups['libname'];
                                 // 我们只取库名的名字，不要父路径
@@ -2521,6 +2597,9 @@ class LLVM_ARM implements IToolchian {
                                 const parts = object_name.split(/\\|\//);
                                 const objname = m_obj.groups['objname'];
                                 object_name = `[lib]/${parts[parts.length - 1]}/${objname}`;
+                            } else if (/\.\s+=\s+ALIGN\(/.test(objtext)) {
+                                // ". = ALIGN(xx)" 这是一个 padding 填充，放置到 [fill]
+                                object_name = '[fill]';
                             } else {
                                 // 没有名字的的统一放置到 [anonymous] 杂项
                                 object_name = '[anonymous]';
@@ -2586,16 +2665,38 @@ class LLVM_ARM implements IToolchian {
         // push header
         let header: string[] = [];
         header.push('Module');
-        header.push('Size');
         header = header.concat(secList);
         tableRows.push(header);
+
+        // 确保新旧 objlist 是一样的，这样才能正确 diff
+        // 这样即使两次编译时的 .o 列表不一致，diff 结果也不会出现错误
+        for (const objpath in oldObjDic) {
+            // 在较新的 objDic 中查找已被删除的 obj, 将 obj 的所有 section 大小置零 
+            if (objDic[objpath] == undefined) {
+                objDic[objpath] = {};
+                for (const sec of secList)
+                    objDic[objpath][sec] = 0;
+            }
+        }
+
+        const isEmptyObject = (obj: any) => {
+            let size = 0;
+            for (const sec in obj)
+                size += obj[sec];
+            return size == 0;
+        }
 
         let objTotalSize: any = { new: 0, old: 0 };
         let secTotalSize: any = {};
         for (const objpath in objDic) {
 
             const objInfo = objDic[objpath];
-            const row: string[] = [objpath];
+            const row: string[] = [];
+
+            let objectDispName = objpath;
+            if (isEmptyObject(objInfo))
+                objectDispName += ' (removed)';
+            row.push(objectDispName);
 
             let totalSize = 0;
             for (const key in objInfo) {
@@ -2614,9 +2715,6 @@ class LLVM_ARM implements IToolchian {
 
             objTotalSize.new += totalSize;
             objTotalSize.old += oldTotalSize;
-
-            const diffSize = totalSize - oldTotalSize;
-            row.push(totalSize.toString() + `(${diffSize > 0 ? '+' : ''}${diffSize.toString()})`);
 
             for (const sec of secList) {
 
@@ -2641,9 +2739,6 @@ class LLVM_ARM implements IToolchian {
 
         const row_total: string[] = ['Subtotals'];
         {
-            const diffSize = objTotalSize.new - objTotalSize.old;
-            row_total.push(objTotalSize.new.toString() + `(${diffSize > 0 ? '+' : ''}${diffSize.toString()})`);
-
             for (const sec of secList) {
                 const oldSecSize = secTotalSize[sec].old ? secTotalSize[sec].old : 0;
                 const newSecSize = secTotalSize[sec].new ? secTotalSize[sec].new : 0;
@@ -2667,24 +2762,31 @@ class LLVM_ARM implements IToolchian {
             Total Static RAM memory (data + bss): 72796(-8) bytes
             Total Flash memory (text + data): 44940(-6640) bytes
         */
-        try {
-            const totalRAM_new: number  = secTotalSize['.data'].new + secTotalSize['.bss'].new;
-            const totalRAM_old: number  = secTotalSize['.data'].old + secTotalSize['.bss'].old;
-            const totalRAM_diff: number = totalRAM_new - totalRAM_old;
-            const RAM_diff_text = `${totalRAM_diff > 0 ? '+' : ''}${totalRAM_diff.toString()}`;
-            result.push(`Total Static RAM memory (data + bss): ${totalRAM_new.toString()}(${RAM_diff_text}) bytes`);
-            let totalROM_new: number  = secTotalSize['.text'].new + secTotalSize['.data'].new;
-            let totalROM_old: number  = secTotalSize['.text'].old + secTotalSize['.data'].old;
-            if (secTotalSize['.rodata']) {
-                totalROM_new += secTotalSize['.rodata'].new;
-                totalROM_old += secTotalSize['.rodata'].old;
+        const createTotalSizeDiff = (sections: string[]) => {
+            let total_new: number = 0;
+            let total_old: number = 0;
+            let sect_text: string = '';
+            for (const sec of sections) {
+                if (secTotalSize[sec]) {
+                    total_new += secTotalSize[sec].new;
+                    total_old += secTotalSize[sec].old;
+                    if (sect_text)
+                        sect_text += ` + ${sec}`
+                    else
+                        sect_text = sec
+                }
             }
-            const totalROM_diff: number = totalROM_new - totalROM_old;
-            const ROM_diff_text = `${totalROM_diff > 0 ? '+' : ''}${totalROM_diff.toString()}`;
-            result.push(`Total Flash memory (text + data): ${totalROM_new.toString()}(${ROM_diff_text}) bytes`);
-        } catch (err) {
-            // nothing todo
-        }
+            const diff = total_new - total_old;
+            const text = `${diff > 0 ? '+' : ''}${diff.toString()}`;
+            return {
+                sect_text,
+                diff_text: `${total_new.toString()}(${text})`
+            };
+        };
+        const ram_diff = createTotalSizeDiff(['.data', '.bss']);
+        result.push(`Total Static RAM memory (${ram_diff.sect_text}): ${ram_diff.diff_text} bytes`);
+        const rom_diff = createTotalSizeDiff(['.text', '.data', '.rodata', '.isr_vector', '.vector']);
+        result.push(`Total Flash memory (${rom_diff.sect_text}): ${rom_diff.diff_text} bytes`);
 
         return result;
     }
