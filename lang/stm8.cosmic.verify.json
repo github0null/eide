@@ -6,13 +6,7 @@
         "misc-controls": {
             "markdownDescription": "Other Options",
             "size": "huge",
-            "type": [
-                "string",
-                "array"
-            ],
-            "items": {
-                "type": "string"
-            },
+            "type": "string",
             "default": ""
         }
     },

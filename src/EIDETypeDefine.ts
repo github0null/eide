@@ -280,7 +280,7 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
         this.cfgFile = configFile;
         this.FILE_NAME = configFile.name;
         this.watcher = new FileWatcher(configFile, false);
-        this.watcher.on('error', (err) => GlobalEvent.emit('error', err));
+        this.watcher.on('error', (err) => GlobalEvent.log_error(err));
         this.watcher.OnChanged = () => this.InitConfig(this.watcher.file.Read());
         this.config = this.GetDefault(this.readTypeFromFile(configFile) || type);
     }

@@ -7,14 +7,8 @@
             "markdownDescription": "Options",
             "description.zh-cn": "选项",
             "size": "huge",
-            "type": [
-                "string",
-                "array"
-            ],
-            "items": {
-                "type": "string"
-            },
-            "default": []
+            "type": "string",
+            "default": ""
         }
     },
     "properties": {
@@ -162,14 +156,22 @@
                         "-O2(Faster)",
                         "-O3(Fastest)",
                         "-Os(Fastest, Smallest)",
-                        "-Oz(Smallest, More Size Optimize)",
-                        "-Ofast(Fastest, More Speed Optimize)",
-                        "-Og(Better For Debug)"
+                        "-Oz(Aggressive Size Optimize)",
+                        "-Ofast(Aggressive Speed Optimize)",
+                        "-Og(Keep Debug Info)"
                     ]
                 },
                 "optimization-lto": {
                     "markdownDescription": "Link-time Optimization (-flto)",
                     "description.zh-cn": "链接时优化 (-flto)",
+                    "type": "boolean"
+                },
+                "one-elf-section-per-function": {
+                    "markdownDescription": "Function Sections (-ffunction-sections)",
+                    "type": "boolean"
+                },
+                "one-elf-section-per-data": {
+                    "markdownDescription": "Data Sections (-fdata-sections)",
                     "type": "boolean"
                 },
                 "no-rtti": {
@@ -180,14 +182,6 @@
                 "no-exceptions": {
                     "markdownDescription": "Not use exceptions (-fno-exceptions)",
                     "description.zh-cn": "禁用异常处理 (-fno-exceptions)",
-                    "type": "boolean"
-                },
-                "one-elf-section-per-function": {
-                    "markdownDescription": "Function Sections (-ffunction-sections)",
-                    "type": "boolean"
-                },
-                "one-elf-section-per-data": {
-                    "markdownDescription": "Data Sections (-fdata-sections)",
                     "type": "boolean"
                 },
                 "C_FLAGS": {
