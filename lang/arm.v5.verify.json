@@ -272,26 +272,14 @@
                     "markdownDescription": "Other C Compiler Options",
                     "description.zh-cn": "C 编译器附加选项",
                     "size": "huge",
-                    "type": [
-                        "string",
-                        "array"
-                    ],
-                    "items": {
-                        "type": "string"
-                    },
+                    "type": "string",
                     "default": ""
                 },
                 "CXX_FLAGS": {
                     "markdownDescription": "Other C++ Compiler Options",
                     "description.zh-cn": "C++ 编译器附加选项",
                     "size": "huge",
-                    "type": [
-                        "string",
-                        "array"
-                    ],
-                    "items": {
-                        "type": "string"
-                    },
+                    "type": "string",
                     "default": ""
                 }
             }
@@ -364,13 +352,7 @@
                     "markdownDescription": "Other Assembler Options",
                     "description.zh-cn": "汇编器附加选项",
                     "size": "huge",
-                    "type": [
-                        "string",
-                        "array"
-                    ],
-                    "items": {
-                        "type": "string"
-                    },
+                    "type": "string",
                     "default": ""
                 }
             }
@@ -469,13 +451,7 @@
                     "markdownDescription": "Other Linker Options",
                     "description.zh-cn": "链接器附加选项",
                     "size": "huge",
-                    "type": [
-                        "string",
-                        "array"
-                    ],
-                    "items": {
-                        "type": "string"
-                    },
+                    "type": "string",
                     "default": ""
                 },
                 "object-order": {

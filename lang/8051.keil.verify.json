@@ -7,13 +7,7 @@
             "markdownDescription": "Custom Options",
             "description.zh-cn": "自定义选项",
             "size": "huge",
-            "type": [
-                "string",
-                "array"
-            ],
-            "items": {
-                "type": "string"
-            },
+            "type": "string",
             "default": ""
         }
     },

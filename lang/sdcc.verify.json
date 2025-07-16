@@ -7,27 +7,15 @@
             "markdownDescription": "Other Options",
             "description.zh-cn": "其他选项",
             "size": "huge",
-            "type": [
-                "string",
-                "array"
-            ],
-            "items": {
-                "type": "string"
-            },
+            "type": "string",
             "default": ""
         },
         "FLAGS": {
             "markdownDescription": "Options",
             "description.zh-cn": "选项",
             "size": "huge",
-            "type": [
-                "string",
-                "array"
-            ],
-            "items": {
-                "type": "string"
-            },
-            "default": []
+            "type": "string",
+            "default": ""
         }
     },
     "properties": {
