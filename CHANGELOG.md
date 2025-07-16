@@ -6,13 +6,15 @@ All notable version changes will be recorded in this file.
 
 ***
 
-### [v3.23.3] revision
+### [v3.23.4] revision
 
 **Fix**:
   - `Map View`: Fix in some cases, 'map.view' item's diff size is incorrect (LLVM_ARM Toolchain).
 
 **Improve**:
   - `Map View`: Improve COSMIC_STM8 'map.view' feature.
+  - `LLVM Arm Toolchain`: Add '-Oz' option.
+  - `Builder Options`: Better option description text.
 
 ***
 
