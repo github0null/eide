@@ -1109,7 +1109,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
         // init watcher for '.eide' folder
         this.eideDirWatcher = new FileWatcher(this.getEideDir(), false, false);
-        this.eideDirWatcher.on('error', err => GlobalEvent.emit('error', err));
+        this.eideDirWatcher.on('error', err => GlobalEvent.log_error(err));
         this.eideDirWatcher.OnChanged = f => this.onEideDirChanged('changed', f);
         this.eideDirWatcher.OnRename = f => this.onEideDirChanged('renamed', f);
 
