@@ -219,14 +219,14 @@
                         "level-debug"
                     ],
                     "enumDescriptions": [
-                        "-O0",
+                        "-O0(None)",
                         "-O1",
-                        "-O2",
-                        "-O3",
-                        "-Os",
-                        "-Oz",
-                        "-Ofast",
-                        "-Og"
+                        "-O2(Faster)",
+                        "-O3(Fastest)",
+                        "-Os(Fastest, Smallest)",
+                        "-Oz(Smallest, More Size Optimize)",
+                        "-Ofast(Fastest, More Speed Optimize)",
+                        "-Og(Better For Debug)"
                     ]
                 },
                 "optimization-lto": {

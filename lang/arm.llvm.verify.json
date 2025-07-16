@@ -214,15 +214,19 @@
                         "level-2",
                         "level-3",
                         "level-size",
-                        "level-fast"
+                        "level-size-Oz",
+                        "level-fast",
+                        "level-debug"
                     ],
                     "enumDescriptions": [
-                        "-O0",
+                        "-O0(None)",
                         "-O1",
-                        "-O2",
-                        "-O3",
-                        "-Os",
-                        "-Ofast"
+                        "-O2(Faster)",
+                        "-O3(Fastest)",
+                        "-Os(Fastest, Smallest)",
+                        "-Oz(Smallest, More Size Optimize)",
+                        "-Ofast(Fastest, More Speed Optimize)",
+                        "-Og(Better For Debug)"
                     ]
                 },
                 "optimization-lto": {
