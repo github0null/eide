@@ -215,7 +215,9 @@
                 "level-2": "-O2",
                 "level-3": "-O3",
                 "level-size": "-Os",
-                "level-fast": "-O3 -ffast-math"
+                "level-size-Oz": "-Oz",
+                "level-fast": "-O3 -ffast-math",
+                "level-debug": "-Og"
             },
             "group": [
                 "c",
