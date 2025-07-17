@@ -1581,8 +1581,8 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
                 toolchainId = 'LLVM_ARM';
 
         let fileDepth = SettingManager.GetInstance().getMapViewParserDepth();
-        if (fileDepth < 0)
-            fileDepth = 1;
+        if (fileDepth <= 0)
+            fileDepth = 100;
 
         let parser: MapViewParserType = 'memap';
 

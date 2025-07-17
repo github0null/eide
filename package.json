@@ -244,7 +244,7 @@
                         "type": "integer",
                         "scope": "resource",
                         "markdownDescription": "%settings.option.mapView.parser.depth%",
-                        "default": 5
+                        "default": 0
                     },
                     "EIDE.Option.DisableEditorContextMenu": {
                         "type": "boolean",
