@@ -2047,7 +2047,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
             let objs = libs[libname];
             let outname = `$(OUT_DIR)/${libname + AR_OUT_SUFFIX}`;
             let AR_CMD = AR_PARAMS
-                .replace('${in}', `$(lib${libname}_OBJS)`)
+                .replace('${in}', () => `$(lib${libname}_OBJS)`)
                 .replace('${out}', outname);
             let rule_tmp = `# ${libname}
 lib${libname}_OBJS += ${objs.join(AR_OBJ_SEP)}
