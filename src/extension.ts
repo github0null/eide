@@ -1735,6 +1735,9 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
                         }
                     }
 
+                    vInfo.vscWebview.options = {
+			            enableScripts: true
+		            };
                     vInfo.vscWebview.html = this.genMapViewHtml(vInfo.vscWebview, vInfo.title, lines.join('\n'));
 
                 } catch (error) {
