@@ -1319,6 +1319,12 @@ class COSMIC_STM8 implements IToolchian {
 
                 if (/\.\w+:$/.test(trimedLine)) {
                     currentFile = trimedLine.substr(0, trimedLine.length - 1);
+                    // 将路径名 './xx/xxx/.obj/' 之后的截断
+                    const parts = currentFile.split(/\\|\//);
+                    const idx = parts[0] == '.' ? 3 : 2;
+                    if (parts[idx] == '.obj') {
+                        currentFile = parts.slice(idx + 1).map(p => p == '__' ? '..' : p).join(File.sep);
+                    }
                     objDic[currentFile] = {};
                     continue; // go next line
                 }
