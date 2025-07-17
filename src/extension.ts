@@ -1751,14 +1751,18 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
         const resManager = ResManager.instance();
         const htmlFolder = File.fromArray([resManager.GetHTMLDir().path, 'map_report']);
         const htmlFile = File.fromArray([htmlFolder.path, 'index.html']);
-        return htmlFile.Read()
-            .replace('$EIDE_MAPVIEW_TITLE', title)
-            .replace('$EIDE_MAPVIEW_TEXT_CONTENT', JSON.stringify(cont))
+        // https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/String/replace
+        // str.replace 美元符号 $ 是特殊字符，因此需要使用 function 代替，否则会导致替换结果错误
+        //  - str.replace('abc', () => 'ab$c')
+        const html = htmlFile.Read()
             .replace(/"[\w\-\.\/]+?\.(?:css|js)"/ig, (str) => {
                 const fileName = str.substr(1, str.length - 2); // remove '"'
                 const absPath = File.normalize(htmlFolder.path + File.sep + fileName);
                 return `"${webview.asWebviewUri(vscode.Uri.file(absPath)).toString()}"`;
-            });
+            })
+            .replace('$EIDE_MAPVIEW_TITLE', title)
+            .replace('$EIDE_MAPVIEW_TEXT_CONTENT', () => JSON.stringify(cont));
+        return html;
     }
 
     private genErrorHtml(title: string, cont: string): string {

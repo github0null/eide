@@ -217,6 +217,7 @@ var __MAPVIEW_RAW_TEXT_LINES = __MAPVIEW_RAW_TEXT.split(/\r\n|\n/);
         if (m && m.groups) {
           __RAM_GRAPH_DATA.value = parseInt(m.groups['size']);
           __RAM_GRAPH_DATA.delta = parseInt(m.groups['delta']);
+          __RAM_GRAPH_DATA.name  = `RAM (size: ${__RAM_GRAPH_DATA.value}B, delta: ${__RAM_GRAPH_DATA.delta}B)`;
           // init sections
           __RAM_SECTIONS = m.groups['sec'].split('+')
             .map(t => t.trim())
@@ -229,6 +230,7 @@ var __MAPVIEW_RAW_TEXT_LINES = __MAPVIEW_RAW_TEXT.split(/\r\n|\n/);
         if (m && m.groups) {
           __ROM_GRAPH_DATA.value = parseInt(m.groups['size']);
           __ROM_GRAPH_DATA.delta = parseInt(m.groups['delta']);
+          __ROM_GRAPH_DATA.name  = `ROM (size: ${__ROM_GRAPH_DATA.value}B, delta: ${__ROM_GRAPH_DATA.delta}B)`;
           // init sections
           __ROM_SECTIONS = m.groups['sec'].split('+')
             .map(t => t.trim())
@@ -327,7 +329,7 @@ var __MAPVIEW_RAW_TEXT_LINES = __MAPVIEW_RAW_TEXT.split(/\r\n|\n/);
             return "#EE" + green + blue
         } else if (d.data.delta < 0) {
             ratio = d.data.value / (d.data.value - d.data.delta);
-            if (ratio < 0.4) ratio = 0.4;
+            if (ratio < 0.35) ratio = 0.35;
             green = ("0" + (Number(ratio * 0xFF | 0).toString(16))).slice(-2).toUpperCase();
             red   = ("0" + (Number(ratio * 0xFF | 0).toString(16))).slice(-2).toUpperCase();
             //console.log(d.data.name, red, green);
@@ -337,6 +339,10 @@ var __MAPVIEW_RAW_TEXT_LINES = __MAPVIEW_RAW_TEXT.split(/\r\n|\n/);
         }
     }
     var mapGraphShow = () => {
+
+      if (__RAM_GRAPH_DATA.value == 0 && __RAM_GRAPH_DATA.delta == 0 &&
+          __ROM_GRAPH_DATA.value == 0 && __ROM_GRAPH_DATA.delta == 0)
+          return; // Nothing to show.
 
       var rom_elem = d3.select("#chart-rom");
       var ram_elem = d3.select("#chart-ram");
