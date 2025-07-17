@@ -372,7 +372,7 @@ export class SettingManager {
     }
 
     getMapViewParserDepth(): number {
-        return this.getConfiguration().get<number>('Option.MapViewParserDepth') || 1;
+        return this.getConfiguration().get<number>('Option.MapViewParserDepth') || 0;
     }
 
     isDisplaySourceRefs(): boolean {

@@ -36,7 +36,7 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/MIPS/RISC-V",
-    "version": "3.23.5",
+    "version": "3.23.6",
     "preview": false,
     "engines": {
         "vscode": "^1.67.0"
@@ -244,7 +244,7 @@
                         "type": "integer",
                         "scope": "resource",
                         "markdownDescription": "%settings.option.mapView.parser.depth%",
-                        "default": 5
+                        "default": 0
                     },
                     "EIDE.Option.DisableEditorContextMenu": {
                         "type": "boolean",

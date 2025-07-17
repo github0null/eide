@@ -761,19 +761,19 @@ class ARMParser extends KeilParser<KeilARMOption> {
                 // P: Current project file name. 
                 const OUTNAME_KEY = env['KEIL_OUTPUT_NAME'] ? 'KEIL_OUTPUT_NAME' : 'ProjectName';
                 const replaceMdkEnv = (cmd: string) => cmd
-                    .replace(/%H\b/g, '${KEIL_OUTPUT_NAME}.hex')
-                    .replace(/%L\b/g, '${KEIL_OUTPUT_NAME}.axf')
+                    .replace(/%H\b/g, () => '${KEIL_OUTPUT_NAME}.hex')
+                    .replace(/%L\b/g, () => '${KEIL_OUTPUT_NAME}.axf')
                     .replace(/%P\b/g, this._file.name)
-                    .replace(/#H\b/g, '${KEIL_OUTPUT_DIR}\\${KEIL_OUTPUT_NAME}.hex')
-                    .replace(/#L\b/g, '${KEIL_OUTPUT_DIR}\\${KEIL_OUTPUT_NAME}.axf')
+                    .replace(/#H\b/g, () => '${KEIL_OUTPUT_DIR}\\${KEIL_OUTPUT_NAME}.hex')
+                    .replace(/#L\b/g, () => '${KEIL_OUTPUT_DIR}\\${KEIL_OUTPUT_NAME}.axf')
                     .replace(/#P\b/g, this._file.path)
-                    .replace(/@(H|L)\b/g, '${KEIL_OUTPUT_NAME}')
-                    .replace(/\$(H|L)\b/g, '${KEIL_OUTPUT_DIR}\\')
-                    .replace(/\$J\b/g, '${ToolchainRoot}\\include\\')
-                    .replace(/\$K\b/g, '${ToolchainRoot}\\')
-                    .replace(/\!H\b/g, '${KEIL_OUTPUT_DIR}\\${KEIL_OUTPUT_NAME}.hex')
-                    .replace(/\!L\b/g, '${KEIL_OUTPUT_DIR}\\${KEIL_OUTPUT_NAME}.axf')
-                    .replace(/\bKEIL_OUTPUT_NAME\b/g, OUTNAME_KEY);
+                    .replace(/@(H|L)\b/g, () => '${KEIL_OUTPUT_NAME}')
+                    .replace(/\$(H|L)\b/g, () => '${KEIL_OUTPUT_DIR}\\')
+                    .replace(/\$J\b/g, () => '${ToolchainRoot}\\include\\')
+                    .replace(/\$K\b/g, () => '${ToolchainRoot}\\')
+                    .replace(/\!H\b/g, () => '${KEIL_OUTPUT_DIR}\\${KEIL_OUTPUT_NAME}.hex')
+                    .replace(/\!L\b/g, () => '${KEIL_OUTPUT_DIR}\\${KEIL_OUTPUT_NAME}.axf')
+                    .replace(/\bKEIL_OUTPUT_NAME\b/g, () => OUTNAME_KEY);
 
                 // BeforeMake
                 const beforeMake = commonOption.BeforeMake;
@@ -819,7 +819,8 @@ class ARMParser extends KeilParser<KeilARMOption> {
                             "abortAfterFailed": true
                         };
                         if (!env['KEIL_OUTPUT_NAME']) {
-                            copyFilesCmd['command'] = copyFilesCmd['command'].replace('${KEIL_OUTPUT_NAME}', '${ProjectName}');
+                            copyFilesCmd['command'] = copyFilesCmd['command']
+                                .replace('${KEIL_OUTPUT_NAME}', () => '${ProjectName}');
                         }
                         eideOption.afterBuildTasks.splice(0, 0, copyFilesCmd);
                     }

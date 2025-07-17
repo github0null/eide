@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Map View Tool By Embedded IDE (https://em-ide.com) -->
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>$EIDE_MAPVIEW_TITLE</title>
+  <style>
+    body {
+      color: var(--vscode-editor-foreground);
+      background: var(--vscode-editor-background);
+      font-family: var(--vscode-editor-font-family);
+      font-size: var(--vscode-editor-font-size);
+    }
+    /* for tabs */
+    .tabs {
+      margin-top: 10px;
+      display: flex;
+      cursor: pointer;
+    }
+    .tab {
+      padding: 5px 10px;
+      color: var(--vscode-tab-inactiveForeground);
+      border: 1px solid var(--vscode-tab-border);
+      background-color: var(--vscode-tab-inactiveBackground);
+      margin-right: 5px;
+    }
+    .tab.active {
+      color: var(--vscode-tab-activeForeground);
+      background-color: var(--vscode-tab-activeBackground);
+      border-bottom: 2px solid var(--vscode-tab-activeBorderTop);
+    }
+    .tab-content {
+      display: none;
+      border: 1px solid var(--vscode-editor-background);
+      margin-top: -1px;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    /* for mapview table*/
+    pre {
+      font-family: var(--vscode-editor-font-family);
+      font-size: var(--vscode-editor-font-size);
+    }
+    .success {
+      color: var(--vscode-terminal-ansiGreen);
+    }
+    .error {
+      color: var(--vscode-errorForeground);
+    }
+    .info {
+      color: var(--vscode-editorInfo-foreground);
+    }
+    /* for mapview graph */
+    #chart-rom {
+      padding-top: 20px;
+      padding-bottom: 4px;
+    }
+    #chart-ram {
+      padding-top: 20px;
+      padding-bottom: 4px;
+    }
+    #chart-footer {
+      height: 40px;
+      margin-top: 40px;
+    }
+    #details {
+      text-align: left;
+    }
+    .d3-flame-graph rect {
+      stroke:var(--vscode-input-border);
+      fill-opacity:.8
+    }
+    .d3-flame-graph rect:hover {
+      stroke:var(--vscode-inputOption-activeBorder);
+      stroke-width:.5;
+      cursor:pointer
+    }
+    .d3-flame-graph .label {
+      pointer-events:none;
+      white-space:nowrap;
+      text-overflow:ellipsis;
+      overflow:hidden;
+      font-size:12px;
+      font-family:Verdana;
+      margin-left:4px;
+      margin-right:4px;
+      line-height:1.5;
+      padding:0;
+      font-weight:400;
+      color: #24292e;
+      text-align:left
+    }
+    .d3-flame-graph .fade {
+      opacity:.6!important
+    }
+    .d3-flame-graph .title {
+      font-size:20px;
+      font-family:Verdana
+    }
+    .d3-flame-graph-tip {
+      line-height:1;
+      font-family:Verdana;
+      font-size:12px;
+      padding:12px;
+      background:var(--vscode-editorWidget-background);
+      color:var(--vscode-editorWidget-foreground);
+      border-radius:2px;
+      pointer-events:none
+    }
+    .d3-flame-graph-tip:after {
+      box-sizing:border-box;
+      display:inline;
+      font-size:10px;
+      width:100%;
+      line-height:1;
+      color:var(--vscode-editorWidget-background);
+      position:absolute;
+      pointer-events:none
+    }
+    .d3-flame-graph-tip.n:after {
+      content:"\25BC";
+      margin:-1px 0 0;
+      top:100%;
+      left:0;
+      text-align:center
+    }
+    .d3-flame-graph-tip.e:after {
+      content:"\25C0";
+      margin:-4px 0 0;
+      top:50%;
+      left:-8px
+    }
+    .d3-flame-graph-tip.s:after {
+      content:"\25B2";
+      margin:0 0 1px;
+      top:-8px;
+      left:0;
+      text-align:center
+    }
+    .d3-flame-graph-tip.w:after {
+      content:"\25B6";
+      margin:-4px 0 0 -1px;
+      top:50%;
+      left:100%
+    }
+  </style>
+</head>
+<body>
+  <div class="tabs">
+    <div class="tab active" data-tab="1">Table</div>
+    <div class="tab"        data-tab="2">Graph</div>
+  </div>
+
+  <div id="content-1" class="tab-content active">
+    <section>
+        <pre id="mapview-table-data"></pre>
+    </section>
+  </div>
+  <div id="content-2" class="container tab-content">
+    <div id="chart-rom"></div>
+    <div id="chart-ram"></div>
+    <div id="chart-footer">
+      <div id="details"></div>
+    </div>
+  </div>
+
+  <script type="text/javascript" src="js/jquery-3.7.1.min.js"></script>
+  <script type="text/javascript" src="js/d3.min.js"></script>
+  <script type="text/javascript" src="js/d3-tip.min.js"></script>
+  <script type="text/javascript" src="js/d3.flameGraph.min.js"></script>
+
+  <!-- raw data -->
+  <script>
+var __MAPVIEW_RAW_TEXT = $EIDE_MAPVIEW_TEXT_CONTENT;
+var __MAPVIEW_RAW_TEXT_LINES = __MAPVIEW_RAW_TEXT.split(/\r\n|\n/);
+  </script>
+
+  <!-- table -->
+  <script type="text/javascript">
+    let __pre_text = __MAPVIEW_RAW_TEXT_LINES.map(line => {
+      return line
+        .replace(/\((\+[^0][\d\.]*)\)/g, `(<span class="success">$1</span>)`)
+        .replace(/\((\-[^0][\d\.]*)\)/g, `(<span class="error">$1</span>)`)
+        .replace(/\((\+0\.\d+)\)/g, `(<span class="success">$1</span>)`)
+        .replace(/\((\-0\.\d+)\)/g, `(<span class="error">$1</span>)`)
+        .replace(/^(\s*\|\s*)(Subtotals)/, `$1<span class="info">$2</span>`)
+        .replace(/^(\s*Total)/, `\n$1`);
+    }).join('\n');
+    $("#mapview-table-data").html(__pre_text);
+  </script>
+
+  <!-- graph -->
+  <script type="text/javascript">
+    // parse
+    let __RAM_GRAPH_DATA = {"name": "RAM", "value": 0, "delta": 0, "children":[]};
+    let __ROM_GRAPH_DATA = {"name": "ROM", "value": 0, "delta": 0, "children":[]};
+    let __RAM_SECTIONS = []; 
+    let __ROM_SECTIONS = [];
+    let __SECTION_DATA = {}; //{ '.data': null, '.bss' : null };
+    let __SECTION_IDXS = {};
+    let start_idx = -1;
+    __MAPVIEW_RAW_TEXT_LINES.forEach((line, line_idx) => {
+      if (/^\|\s+Module\s+/.test(line)) {
+        start_idx = line_idx + 1;
+        const sections = line.split('|').map(t => t.trim()).filter(t => t !== '').slice(1);
+        sections.forEach((v, i) => {
+          __SECTION_IDXS[v] = i + 1;
+          __SECTION_DATA[v] = { value: 0, delta: 0, children: [] };
+        });
+        console.log('[mapview] __SECTION_IDXS', __SECTION_IDXS);
+      }
+      else if (line.startsWith('Total Static RAM memory')) {
+        const m = /\((?<sec>[^\)]+)\):\s*(?<size>\d+)\s*\((?<delta>[-\+]?\d+)\) bytes/.exec(line);
+        if (m && m.groups) {
+          __RAM_GRAPH_DATA.value = parseInt(m.groups['size']);
+          __RAM_GRAPH_DATA.delta = parseInt(m.groups['delta']);
+          __RAM_GRAPH_DATA.name  = `RAM (size: ${__RAM_GRAPH_DATA.value}B, delta: ${__RAM_GRAPH_DATA.delta}B)`;
+          // init sections
+          __RAM_SECTIONS = m.groups['sec'].split('+')
+            .map(t => t.trim())
+            .map(t => t.startsWith('.') ? t : `.${t}`);
+          console.log('[mapview] __RAM_SECTIONS', __RAM_SECTIONS);
+        }
+      }
+      else if (line.startsWith('Total Flash memory')) {
+        const m = /\((?<sec>[^\)]+)\):\s*(?<size>\d+)\s*\((?<delta>[-\+]?\d+)\) bytes/.exec(line);
+        if (m && m.groups) {
+          __ROM_GRAPH_DATA.value = parseInt(m.groups['size']);
+          __ROM_GRAPH_DATA.delta = parseInt(m.groups['delta']);
+          __ROM_GRAPH_DATA.name  = `ROM (size: ${__ROM_GRAPH_DATA.value}B, delta: ${__ROM_GRAPH_DATA.delta}B)`;
+          // init sections
+          __ROM_SECTIONS = m.groups['sec'].split('+')
+            .map(t => t.trim())
+            .map(t => t.startsWith('.') ? t : `.${t}`);
+          console.log('[mapview] __ROM_SECTIONS', __ROM_SECTIONS);
+        }
+      }
+    });
+    const pushNode = (section, path, size, delta) => {
+      if (size == 0 && delta == 0)
+        return;
+      const root = __SECTION_DATA[section];
+      const path_arr = path.split(/\\|\//);
+      let parent = root;
+      for (const name of path_arr) {
+        const idx = parent.children.findIndex(obj => obj.name == name);
+        let node;
+        if (idx == -1) {
+          node = { name: name, value: 0, delta: 0, children: [] };
+          parent.children.push(node);
+        } else {
+          node = parent.children[idx];
+        }
+        node.value += size;
+        node.delta += delta;
+        parent = node;
+      }
+    };
+    let is_end = false;
+    const size_matcher = /(\d+)(?:\(([-\+]?\d+)\))?/;
+    __MAPVIEW_RAW_TEXT_LINES.forEach((line, idx) => {
+      if (is_end)
+        return; // skip
+      if (start_idx == -1 || idx < start_idx)
+        return; // skip
+      const cols = line.split('|').map(t => t.trim()).filter(t => t !== '');
+      const module_name = cols[0].replace('(removed)', '').trim();
+      // parse totals
+      if (module_name == 'Subtotals') {
+        is_end = true;
+        for (const k in __SECTION_IDXS) {
+          const sidx = __SECTION_IDXS[k];
+          const m = size_matcher.exec(cols[sidx]);
+          if (m) {
+            const size = parseInt(m[1]);
+            const delt = m[2] ? parseInt(m[2]) : 0;
+            __SECTION_DATA[k].value = size;
+            __SECTION_DATA[k].delta = delt;
+          }
+        }
+        return;
+      }
+      // parse modules
+      for (const k in __SECTION_IDXS) {
+        const sidx = __SECTION_IDXS[k];
+        const m = size_matcher.exec(cols[sidx]);
+        if (m) {
+          const size = parseInt(m[1]);
+          const delt = m[2] ? parseInt(m[2]) : 0;
+          pushNode(k, module_name, size, delt);
+        }
+      }
+    });
+    __RAM_SECTIONS.forEach(name => {
+      __RAM_GRAPH_DATA.children.push({
+        name,
+        value: __SECTION_DATA[name].value,
+        delta: __SECTION_DATA[name].delta,
+        children: __SECTION_DATA[name].children
+      });
+    });
+    __ROM_SECTIONS.forEach(name => {
+      __ROM_GRAPH_DATA.children.push({
+        name,
+        value: __SECTION_DATA[name].value,
+        delta: __SECTION_DATA[name].delta,
+        children: __SECTION_DATA[name].children
+      });
+    });
+
+    console.log('[mapview] __RAM_GRAPH_DATA', __RAM_GRAPH_DATA);
+    console.log('[mapview] __ROM_GRAPH_DATA', __ROM_GRAPH_DATA);
+
+    // show
+    var tip = d3.tip()
+      .direction("s")
+      .offset([8, 0])
+      .attr('class', 'd3-flame-graph-tip')
+      .html(function(d) { return "module: " + d.data.name + ", bytes: " + d.data.value + ", delta: " + d.data.delta; });
+    var colorizer = function (d) {
+        if (d.data.delta > 0) {
+            ratio = (d.data.value - d.data.delta) / d.data.value;
+            green = ("0" + (Number(ratio * 0xFF | 0).toString(16))).slice(-2).toUpperCase();
+            blue  = ("0" + (Number(ratio * 0xEE | 0).toString(16))).slice(-2).toUpperCase();
+            //console.log(d.data.name, green, blue);
+            return "#EE" + green + blue
+        } else if (d.data.delta < 0) {
+            ratio = d.data.value / (d.data.value - d.data.delta);
+            if (ratio < 0.35) ratio = 0.35;
+            green = ("0" + (Number(ratio * 0xFF | 0).toString(16))).slice(-2).toUpperCase();
+            red   = ("0" + (Number(ratio * 0xFF | 0).toString(16))).slice(-2).toUpperCase();
+            //console.log(d.data.name, red, green);
+            return "#" + red + green + "EE";
+        } else {
+            return "#FFFFEE";
+        }
+    }
+    var mapGraphShow = () => {
+
+      if (__RAM_GRAPH_DATA.value == 0 && __RAM_GRAPH_DATA.delta == 0 &&
+          __ROM_GRAPH_DATA.value == 0 && __ROM_GRAPH_DATA.delta == 0)
+          return; // Nothing to show.
+
+      var rom_elem = d3.select("#chart-rom");
+      var ram_elem = d3.select("#chart-ram");
+
+      rom_elem.selectAll("*").remove();
+      ram_elem.selectAll("*").remove();
+
+      var flameGraph_rom = d3.flameGraph()
+        .transitionDuration(250)
+        .transitionEase(d3.easeCubic)
+        .sort(true)
+        .color(colorizer)
+        .tooltip(tip);
+      var flameGraph_ram = d3.flameGraph()
+        .transitionDuration(250)
+        .transitionEase(d3.easeCubic)
+        .sort(true)
+        .color(colorizer)
+        .tooltip(tip);
+
+      flameGraph_rom.width(rom_elem.node().getBoundingClientRect().width);
+      rom_elem.datum(__ROM_GRAPH_DATA).call(flameGraph_rom);
+      flameGraph_ram.width(ram_elem.node().getBoundingClientRect().width);
+      ram_elem.datum(__RAM_GRAPH_DATA).call(flameGraph_ram);
+    };
+  </script>
+
+  <!-- tab switch -->
+  <script type="text/javascript">
+    const tabs = document.querySelectorAll('.tab');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.getAttribute('data-tab');
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        contents.forEach(c => c.classList.remove('active'));
+        document.getElementById(`content-${target}`).classList.add('active');
+        if (target == "2")
+          mapGraphShow();
+      });
+    });
+    window.resize_timer = null;
+    window.addEventListener("resize", () => {
+      if (window.resize_timer)
+        clearTimeout(window.resize_timer)
+      window.resize_timer = setTimeout(() => {
+        window.resize_timer = null;
+        console.log('[mapview] resize');
+        const target = $(".tab.active").data("tab");
+        if (target == "2")
+          mapGraphShow();
+      }, 500);
+    });
+  </script>
+</body>
+</html>
