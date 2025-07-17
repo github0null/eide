@@ -1552,11 +1552,11 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
         // init
         webviewPanel.title = title;
         webviewPanel.iconPath = vscode.Uri.file(ResManager.GetInstance().GetIconByName('Report_16x.svg').path);
-        webviewPanel.webview.html = this.genHtmlCont(title, 'No Content');
+        webviewPanel.webview.html = this.genErrorHtml(title, 'No Content');
         webviewPanel.onDidDispose(() => this.deleteRef(viewFile.path, uid));
 
         if (!viewFile.IsFile()) {
-            webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: Not found file '${viewFile.path}' !`);
+            webviewPanel.webview.html = this.genErrorHtml(title, `<span class="error">Error</span>: Not found file '${viewFile.path}' !`);
             return;
         }
 
@@ -1568,7 +1568,7 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
             compilerFullName?: string
         } = yaml.parse(viewFile.Read());
         if (!conf.tool) {
-            webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: Invalid toolchain type !`);
+            webviewPanel.webview.html = this.genErrorHtml(title, `<span class="error">Error</span>: Invalid toolchain type !`);
             return;
         }
 
@@ -1608,7 +1608,7 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
             }
 
             if (!isSupported) {
-                webviewPanel.webview.html = this.genHtmlCont(title,
+                webviewPanel.webview.html = this.genErrorHtml(title,
                     `<span class="error">Error</span>: We don't support this toolchain type: '${conf.tool}' yet !`);
                 return;
             }
@@ -1619,7 +1619,7 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
         const mapFile = File.fromArray([viewFile.dir, conf.fileName || defName]);
 
         if (!mapFile.IsFile()) {
-            webviewPanel.webview.html = this.genHtmlCont(title, `<span class="error">Error</span>: Not found file '${mapFile.path}' !`);
+            webviewPanel.webview.html = this.genErrorHtml(title, `<span class="error">Error</span>: Not found file '${mapFile.path}' !`);
             return;
         }
 
@@ -1735,28 +1735,30 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
                         }
                     }
 
-                    // append color
-                    for (let index = 0; index < lines.length; index++) {
-                        const line = lines[index];
-                        lines[index] = line
-                            .replace(/\((\+[^0][\d\.]*)\)/g, `(<span class="success">$1</span>)`)
-                            .replace(/\((\-[^0][\d\.]*)\)/g, `(<span class="error">$1</span>)`)
-                            .replace(/\((\+0\.\d+)\)/g, `(<span class="success">$1</span>)`)
-                            .replace(/\((\-0\.\d+)\)/g, `(<span class="error">$1</span>)`)
-                            .replace(/^(\s*\|\s*)(Subtotals)/, `$1<span class="info">$2</span>`)
-                            .replace(/^(\s*Total)/, `\n$1`);
-                    }
-
-                    vInfo.vscWebview.html = this.genHtmlCont(vInfo.title, lines.join('\n'));
+                    vInfo.vscWebview.html = this.genMapViewHtml(vInfo.vscWebview, vInfo.title, lines.join('\n'));
 
                 } catch (error) {
-                    vInfo.vscWebview.html = this.genHtmlCont(vInfo.title, `<span class="error">Parse error</span>: \r\n${error.message}`);
+                    vInfo.vscWebview.html = this.genErrorHtml(vInfo.title, `<span class="error">Parse error</span>: \r\n${error.message}`);
                 }
             }
         });
     }
 
-    private genHtmlCont(title: string, cont: string): string {
+    private genMapViewHtml(webview: vscode.Webview, title: string, cont: string): string {
+        const resManager = ResManager.instance();
+        const htmlFolder = File.fromArray([resManager.GetHTMLDir().path, 'map_report']);
+        const htmlFile = File.fromArray([htmlFolder.path, 'index.html']);
+        return htmlFile.Read()
+            .replace('$EIDE_MAPVIEW_TITLE', title)
+            .replace('$EIDE_MAPVIEW_TEXT_CONTENT', JSON.stringify(cont))
+            .replace(/"[\w\-\.\/]+?\.(?:css|js)"/ig, (str) => {
+                const fileName = str.substr(1, str.length - 2); // remove '"'
+                const absPath = File.normalize(htmlFolder.path + File.sep + fileName);
+                return `"${webview.asWebviewUri(vscode.Uri.file(absPath)).toString()}"`;
+            });
+    }
+
+    private genErrorHtml(title: string, cont: string): string {
         return `
         <!DOCTYPE html>
 			<html lang="en">
