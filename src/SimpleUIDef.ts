@@ -83,7 +83,8 @@ export interface SimpleUIConfigData_input extends SimpleUIConfigData {
 // options box
 //
 // all attrs:
-//  - 'disabled': [bool]    Prevents the user from interacting with the button––it cannot be pressed or focused.
+//  - 'disabled':   [bool]    Prevents the user from interacting with the button––it cannot be pressed or focused.
+//  - 'drop_style': [string]  CSS style for dropdown, like: 'width: 300px;'
 //
 export interface SimpleUIConfigData_options extends SimpleUIConfigData {
 
