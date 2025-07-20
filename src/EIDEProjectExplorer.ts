@@ -4015,11 +4015,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     //     .forEach(d => clangdCompileFlags.push(`-D${d}`));
                     // del repeat
                     cfg['CompileFlags']['Add'] = ArrayDelRepetition(clangdCompileFlags);
-
-                    // 排除掉 clangd 不支持的参数
-                    const removeArgs = <string[]>cfg['CompileFlags']['Remove'];
-                    removeArgs.push(`-f*`);
-                    cfg['CompileFlags']['Remove'] = ArrayDelRepetition(removeArgs);
                 }
                 // 其他不受 clangd 支持的编译器要自行设置 -I -D
                 else if (toolchain.name == 'AC5' || toolchain.name == 'SDCC') {

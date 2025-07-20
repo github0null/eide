@@ -98,8 +98,8 @@ function __cde_extensions(): { name: string, description: string }[] {
 }
 
 /**
- * 当使用 march 代替 mcpu 时，则无需指定 mfpu，而是通过添加 +<扩展名> 来增加扩展功能
- * 虽然 mcpu 也可以指定 +<扩展名>，但一般情况下我们不会这样使用，所以这里不考虑这种情况。
+ * 使用 march 代替 mcpu 时，则无需指定 mfpu，而是通过添加 +<扩展名> 来增加扩展功能
+ * 使用 mcpu 也可以指定 +<扩展名>，但一般情况下我们不会这样使用
  * @param toolchain 可用值：'GCC', 'AC6'
  * @note 该函数返回的 arch 扩展的别名 'name' 字段默认是使用 GCC 的命名方式。
  * 如果使用 AC6 的 armlink.exe, 则需要进行额外处理。
@@ -331,7 +331,7 @@ export function hasFpu(cpu: string, hasDp?: boolean) {
                 return false;
         }
     } else {
-        const cortex_dp_mcus = ['m7', 'm52', 'm55', 'r4', 'r5', 'r7'];
+        const cortex_dp_mcus = ['m7', 'm52', 'm55', 'm85', 'r4', 'r5', 'r7'];
         const cortex_sp_mcus = ['m33', 'm4', 'm35p'].concat(cortex_dp_mcus);
         cpu = cpu.toLowerCase();
         if (hasDp) { // check dp

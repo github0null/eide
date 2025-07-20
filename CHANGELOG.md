@@ -6,6 +6,14 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.23.7] revision
+
+**Improve**:
+  - `GNU Arm Toolchain`: Support new mcpu: `cortex-m52, cortex-m55, cortex-m85`.
+  - `unify_builder`: Optimize builder speed.
+
+***
+
 ### [v3.23.6] revision
 
 **Fix**:
