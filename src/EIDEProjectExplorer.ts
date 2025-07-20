@@ -35,7 +35,7 @@ import * as jsonc_parser from 'jsonc-parser';
 import { File } from '../lib/node-utility/File';
 import { ResManager } from './ResManager';
 import { GlobalEvent } from './GlobalEvents';
-import { AbstractProject, CheckError, DataChangeType, VirtualSource, SourceFileOptions } from './EIDEProject';
+import { AbstractProject, CheckError, DataChangeType, VirtualSource, SourceFileOptions, EIDE_FILE_OPTION_VERSION } from './EIDEProject';
 import { ToolchainName, ToolchainManager } from './ToolchainManager';
 import {
     BuilderOptions,
@@ -45,7 +45,9 @@ import {
 import {
     PackInfo, ComponentFileItem, DeviceInfo,
     getComponentKeyDescription, ArmBaseCompileData, ArmBaseCompileConfigModel,
-    RiscvCompileData, AnyGccCompileData
+    RiscvCompileData, AnyGccCompileData,
+    getRamRomName,
+    getRamRomRange
 } from "./EIDEProjectModules";
 import { WorkspaceManager } from './WorkspaceManager';
 import {
@@ -132,6 +134,7 @@ import { ShellFlasherIndexItem } from './WebInterface/WebInterface';
 import { jsonc } from 'jsonc';
 import { SimpleUIConfig, SimpleUIConfigData_input, SimpleUIConfigData_options, SimpleUIConfigData_text, SimpleUIConfigData_table, SimpleUIConfigData_boolean } from "./SimpleUIDef";
 import { StatusBarManager } from './StatusBarManager';
+import { compile, e, forEach, size } from 'mathjs';
 
 enum TreeItemType {
     SOLUTION,
@@ -3027,8 +3030,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         };
 
         // init source args
-        const srcOptsObj = <SourceFileOptions>{ version: '2.0', options: {} };
-        srcOptsObj.version = '2.0';
+        const srcOptsObj = <SourceFileOptions>{ version: EIDE_FILE_OPTION_VERSION, options: {} };
+        srcOptsObj.version = EIDE_FILE_OPTION_VERSION;
         const setupSourceOpts = (vFolderPath: string, srcFilePath: string) => {
             for (const keilTarget of targets) {
                 if (srcOptsObj.options[keilTarget.name] == undefined)
@@ -4238,7 +4241,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     switchTarget(prjItem?: ProjTreeItem) {
 
-        const prj = prjItem 
+        const prj = prjItem
             ? this.dataProvider.GetProjectByIndex(prjItem.val.projectIndex)
             : this.getActiveProject();
         if (!prj) { // not active project
@@ -5360,6 +5363,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     private async modifyExtraCompilerArgs_forFile(project: AbstractProject, item: ProjTreeItem) {
+        const isChinese = getLocalLanguageType() == LanguageIndexs.Chinese;
 
         let fspath: string | undefined;
         let virtpath: string | undefined;
@@ -5379,9 +5383,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (!extraArgs)
             return;
 
-        const argsMap    = project.getExtraArgsForSource(fspath, virtpath, extraArgs);
+        const argsMap = project.getExtraArgsForSource(fspath, virtpath, extraArgs);
         const absPattern = project.getExtraArgsAbsPatternForSource(fspath, virtpath, extraArgs);
-        const ccOptions  = absPattern ? (argsMap[absPattern] || '') : '';
+        const ccOptions = absPattern ? (argsMap[absPattern] || '') : '';
 
         // merge all inherited args
         let inheritedArgs: string = '';
@@ -5402,7 +5406,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             ui_cfg.items['inherit'] = {
                 type: 'input',
                 attrs: { readonly: true },
-                name: `Inherited Options (from other pattern, check your 'files.options.yml' file for details !)`,
+                name: isChinese ? `继承选项（从父对象继承，详细请看'file.option.yml'）` : `Inherited Options (from other pattern, check your 'files.options.yml' file for details !)`,
                 data: <SimpleUIConfigData_input>{
                     value: inheritedArgs,
                     default: inheritedArgs
@@ -5413,7 +5417,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         ui_cfg.items['args'] = {
             type: 'input',
             attrs: {},
-            name: 'Append Compiler Options',
+            name: isChinese ? '附加编译选项' : 'Append Compiler Options',
             data: <SimpleUIConfigData_input>{
                 placeHolder: [
                     `For Append   Options. e.g. " -Os -flto " ...`,
@@ -5432,12 +5436,139 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         ui_cfg.items['always_in_build'] = {
             type: 'bool',
             attrs: {},
-            name: 'Always In Build',
+            name: isChinese ? '总是编译' : 'Always In Build',
             data: <SimpleUIConfigData_boolean>{
                 value: isAlwaysInBuild,
                 default: isAlwaysInBuild,
             }
         };
+
+        // Only need in Cortex-M project and ARM Compiler.
+        let toolchainName = project.getToolchain().name;
+        if (toolchainName === 'AC5' || toolchainName === 'AC6') {
+            let compileConfig = project.GetConfiguration<ArmBaseCompileData>().config.compileConfig;
+            if (compileConfig.useCustomScatterFile) {
+                ui_cfg.items['assign_tip'] = {
+                    type: 'text',
+                    attrs: { style: 'color: red;' },
+                    name: 'Note',
+                    data: <SimpleUIConfigData_text>{
+                        value: isChinese ? '你使用了自定义sct文件，下面的修改不会生效！' : 'You are using custom scatter file, so the following options will not take effect! ',
+                    }
+                }
+            }
+
+            if (toolchainName === 'AC6') {
+                ui_cfg.items['lto_tip'] = {
+                    type: 'text',
+                    attrs: {},
+                    name: 'LTO_note',
+                    data: <SimpleUIConfigData_text>{
+                        value: isChinese ? '如果启用LTO，下面选项可能会失效。' : 'The following option may not take effect if you enable the LTO. '
+                    }
+                }
+            }
+
+            const ramLayout = compileConfig.storageLayout.RAM;
+            const romLayout = compileConfig.storageLayout.ROM;
+
+            // Use for config enum. 
+            let roList: string[] = ['default'];
+            let rwList: string[] = ['default'];
+
+            // Use for config enum Description. 
+            let roListDesc: string[] = ['default'];
+            let rwListDesc: string[] = ['default'];
+            romLayout.forEach((value) => {
+                roList.push(getRamRomName(value));
+                roListDesc.push(`${getRamRomName(value)} (${getRamRomRange(value)})`);
+            });
+
+            ramLayout.forEach((value) => {
+                roList.push(getRamRomName(value));
+                roListDesc.push(`${getRamRomName(value)} (${getRamRomRange(value)})`);
+
+                rwList.push(getRamRomName(value));
+                rwListDesc.push(`${getRamRomName(value)} (${getRamRomRange(value)})`);
+            });
+
+            // Find file memory assignment.
+            let memoryAssign = undefined;
+            if (extraArgs.memoryAssign) {
+                for (const filePath in extraArgs.memoryAssign) {
+                    if (virtpath && project.comparePath(filePath, <string>virtpath)) {
+                        // If item is virtual path, compare with virtual path first.
+                        memoryAssign = extraArgs.memoryAssign[filePath];
+                        break;
+                    } else if (project.comparePath(filePath, <string>fspath)) {
+                        // Don't have virtual path, compare with real file path.
+                        memoryAssign = extraArgs.memoryAssign[filePath];
+                        break;
+                    }
+                }
+            }
+
+            // Show in GUI config. 
+            let roValue = 0;
+            let rwValue = 0;
+            let ziValue = 0;
+
+            if (memoryAssign) {
+                if (memoryAssign.RO) {
+                    // Assign the RO memory.
+                    roValue = roList.indexOf(memoryAssign.RO);
+                    // No found, may it contains illegal vaule. Set it default.
+                    roValue = roValue === -1 ? 0 : roValue;
+                }
+                if (memoryAssign.RW) {
+                    rwValue = rwList.indexOf(memoryAssign.RW);
+                    // No found, may it contains illegal vaule. Set it default.
+                    rwValue = rwValue === -1 ? 0 : rwValue;
+                }
+                if (memoryAssign.ZI) {
+                    ziValue = rwList.indexOf(memoryAssign.ZI);
+                    // No found, may it contains illegal vaule. Set it default.
+                    ziValue = ziValue === -1 ? 0 : ziValue;
+                }
+            }
+
+
+            ui_cfg.items['ro_data_assign'] = {
+                type: 'options',
+                attrs: { drop_style: 'width: 300px;' },
+                name: isChinese ? '常量/代码分配' : 'Code / Const Data Assignment',
+                data: <SimpleUIConfigData_options>{
+                    value: roValue,
+                    default: 0,
+                    enum: roList,
+                    enumDescriptions: roListDesc,
+                }
+            };
+
+            ui_cfg.items['zi_data_assign'] = {
+                type: 'options',
+                attrs: { drop_style: 'width: 300px;' },
+                name: isChinese ? 'ZI数据分配' : 'Zero Initialized Data Assignment',
+                data: <SimpleUIConfigData_options>{
+                    value: ziValue,
+                    default: 0,
+                    enum: rwList,
+                    enumDescriptions: rwListDesc,
+                }
+            };
+
+            ui_cfg.items['rw_data_assign'] = {
+                type: 'options',
+                attrs: { drop_style: 'width: 300px;' },
+                name: isChinese ? '其他数据分配' : 'Other Data Assignment',
+                data: <SimpleUIConfigData_options>{
+                    value: rwValue,
+                    default: 0,
+                    enum: rwList,
+                    enumDescriptions: rwListDesc,
+                }
+            };
+        }
 
         try {
             const db = project.getSourceCompileDatabase(fspath);
@@ -5445,7 +5576,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 ui_cfg.items['current_commands'] = {
                     type: 'input',
                     attrs: { readonly: true },
-                    name: `Current Compiler Commands`,
+                    name: isChinese ? `当前编译命令` : `Current Compiler Commands`,
                     data: <SimpleUIConfigData_input>{
                         value: db.command,
                         default: db.command
@@ -5501,6 +5632,65 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             alwaysBuildSourceFiles = ArrayDelRepetition(alwaysBuildSourceFiles);
             fileOptions.alwaysBuildSourceFiles = alwaysBuildSourceFiles.length > 0 ? alwaysBuildSourceFiles : undefined;
 
+            // Only need in Cortex-M project and ARM Compiler.
+            let toolchainName = project.getToolchain().name;
+            if (toolchainName === 'AC5' || toolchainName === 'AC6') {
+                let memoryAssign = extraArgs.memoryAssign || {};
+
+                let new_cfg_item = <SimpleUIConfigData_options>new_cfg.items['ro_data_assign'].data;
+                const roAssign = new_cfg_item.value;
+                if (roAssign) {
+                    // Create item when it not exist. 
+                    memoryAssign[pattern] = memoryAssign[pattern] || {};
+                    memoryAssign[pattern].RO = new_cfg_item.enum[roAssign];
+                } else {
+                    // If RO assign is empty, remove it.
+                    if (memoryAssign[pattern] && memoryAssign[pattern].RO) {
+                        delete memoryAssign[pattern].RO;
+                    }
+                }
+
+                new_cfg_item = <SimpleUIConfigData_options>new_cfg.items['zi_data_assign'].data;
+                const ziAssign = new_cfg_item.value;
+                if (ziAssign) {
+                    // Create item when it not exist. 
+                    memoryAssign[pattern] = memoryAssign[pattern] || {};
+                    memoryAssign[pattern].ZI = new_cfg_item.enum[ziAssign];
+                } else {
+                    // If ZI assign is empty, remove it.
+                    if (memoryAssign[pattern] && memoryAssign[pattern].ZI) {
+                        delete memoryAssign[pattern].ZI;
+                    }
+                }
+
+                new_cfg_item = <SimpleUIConfigData_options>new_cfg.items['rw_data_assign'].data;
+                const rwAssign = new_cfg_item.value;
+                if (rwAssign) {
+                    // Create item when it not exist. 
+                    memoryAssign[pattern] = memoryAssign[pattern] || {};
+                    memoryAssign[pattern].RW = new_cfg_item.enum[rwAssign];
+                } else {
+                    // If RW assign is empty, remove it.
+                    if (memoryAssign[pattern] && memoryAssign[pattern].RW) {
+                        delete memoryAssign[pattern].RW;
+                    }
+                }
+
+                if (Object.keys(memoryAssign[pattern]).length === 0) {
+                    delete memoryAssign[pattern]; // remove empty assign
+                }
+
+                if (extraArgs.memoryAssign === undefined && Object.keys(memoryAssign).length > 0) {
+                    // Create memoryAssign when it not exist and has assigned memory.
+                    extraArgs.memoryAssign = memoryAssign;
+                }
+
+                if (extraArgs.memoryAssign && Object.keys(extraArgs.memoryAssign).length === 0) {
+                    // Remove memoryAssign when it is empty.
+                    delete extraArgs.memoryAssign;
+                }
+            }
+
             project.setSourceExtraArgsCfg(extraArgs);
             project.onSourceCompilerOptionsChanged();
 
@@ -5514,9 +5704,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     private async modifyExtraCompilerArgs_forFolder(project: AbstractProject, item: ProjTreeItem) {
-
         let folderpath: string | undefined;
         let isVirtpath: boolean | undefined;
+        const isChinese = getLocalLanguageType() == LanguageIndexs.Chinese;
 
         if (item.type == TreeItemType.V_FOLDER ||
             item.type == TreeItemType.V_FOLDER_ROOT) {
@@ -5535,9 +5725,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (!extraArgs)
             return;
 
-        const argsMap    = project.getExtraArgsForFolder(folderpath, isVirtpath, extraArgs);
+        const argsMap = project.getExtraArgsForFolder(folderpath, isVirtpath, extraArgs);
         const absPattern = project.getExtraArgsAbsPatternForFolder(folderpath, isVirtpath, extraArgs);
-        const ccOptions  = absPattern ? (argsMap[absPattern] || '') : '';
+        const ccOptions = absPattern ? (argsMap[absPattern] || '') : '';
 
         // merge all inherited args
         let inheritedOptions: string = '';
@@ -5558,7 +5748,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             ui_cfg.items['inherit'] = {
                 type: 'input',
                 attrs: { readonly: true },
-                name: `Inherited Options (from other args pattern, check your 'files.options.yml' file for details !)`,
+                name: isChinese ? `继承选项（从父对象继承，详细请看'file.option.yml'）` : `Inherited Options (from other pattern, check your 'files.options.yml' file for details !)`,
                 data: <SimpleUIConfigData_input>{
                     value: inheritedOptions,
                     default: inheritedOptions
@@ -5569,7 +5759,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         ui_cfg.items['args'] = {
             type: 'input',
             attrs: {},
-            name: 'Append Compiler Options',
+            name: isChinese ? '附加编译选项' : 'Append Compiler Options',
             data: <SimpleUIConfigData_input>{
                 placeHolder: [
                     `For Append   Options. e.g. " -Os -flto " ...`,
@@ -5586,7 +5776,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         ui_cfg.items['recursive'] = {
             type: 'bool',
             attrs: {},
-            name: 'Recurse All Children',
+            name: isChinese ? '递归所有子对象' : 'Recurse All Children',
             data: <SimpleUIConfigData_boolean>{
                 value: isRecursived,
                 default: isRecursived,
@@ -7489,7 +7679,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             if (prj.getUploaderType() == 'JLink') {
                 const jlinkUploadConf = <JLinkOptions>prj.GetConfiguration().config.uploadConfig;
                 debugConfig.interface = JLinkProtocolType[jlinkUploadConf.proType].toLowerCase();
-                debugConfig.device    = jlinkUploadConf.cpuInfo.cpuName;
+                debugConfig.device = jlinkUploadConf.cpuInfo.cpuName;
             }
 
             /* setup ui */
@@ -8339,7 +8529,7 @@ class ProjectExcSourceModifier implements ModifiableYamlConfigProvider {
             const diffOld2New = oldExcLi.filter(p => !newExcLi.includes(p));
             const needUpdateLi = ArrayDelRepetition(diffNew2Old.concat(diffOld2New))
                 .filter(p => !p.startsWith(VirtualSource.rootName));
-            needUpdateLi.forEach(dir => 
+            needUpdateLi.forEach(dir =>
                 prj.getNormalSourceManager().notifyUpdateFolder(prj.ToAbsolutePath(dir)));
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));

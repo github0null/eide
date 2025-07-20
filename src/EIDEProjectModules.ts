@@ -470,7 +470,7 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
     getOptions(targetName?: string, toolchainName?: ToolchainName): BuilderOptions {
 
         const _targetName = targetName || this.prjConfigData.mode;
-        const _toolchain  = toolchainName || this.prjConfigData.toolchain;
+        const _toolchain = toolchainName || this.prjConfigData.toolchain;
 
         if (this.prjConfigData.targets[_targetName] == undefined) {
             return ToolchainManager.getInstance()
@@ -525,6 +525,14 @@ export interface ARMRomItem {
     mem: Memory;
     isChecked: boolean;
     isStartup: boolean;
+}
+
+export function getRamRomName(item: ARMRamItem | ARMRomItem): string {
+    return `${item.tag}${item.id}`;
+}
+
+export function getRamRomRange(item: ARMRamItem | ARMRomItem): string {
+    return `0x${Number(item.mem.startAddr).toString(16).toUpperCase()} - 0x${(Number(item.mem.startAddr) + Number(item.mem.size)).toString(16).toUpperCase()}`
 }
 
 export interface ARMStorageLayout {
@@ -634,7 +642,7 @@ export abstract class ArmBaseCompileConfigModel
             this.data.cpuType = from_model.data.cpuType;
         } else { // not found, set default
             this.data.cpuType = 'Cortex-M3';
-            GlobalEvent.emit('msg', newMessage('Warning', 
+            GlobalEvent.emit('msg', newMessage('Warning',
                 `This toolchain not support "${from_model.data.cpuType}". Use default value.`));
         }
 
