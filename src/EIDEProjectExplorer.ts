@@ -5535,7 +5535,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
             ui_cfg.items['ro_data_assign'] = {
                 type: 'options',
-                attrs: { drop_style: 'width: 300px;' },
+                attrs: { style: 'width: 300px;' },
                 name: isChinese ? '常量/代码分配' : 'Code / Const Data Assignment',
                 data: <SimpleUIConfigData_options>{
                     value: roValue,
@@ -5547,7 +5547,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
             ui_cfg.items['zi_data_assign'] = {
                 type: 'options',
-                attrs: { drop_style: 'width: 300px;' },
+                attrs: { style: 'width: 300px;' },
                 name: isChinese ? 'ZI数据分配' : 'Zero Initialized Data Assignment',
                 data: <SimpleUIConfigData_options>{
                     value: ziValue,
@@ -5559,7 +5559,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
             ui_cfg.items['rw_data_assign'] = {
                 type: 'options',
-                attrs: { drop_style: 'width: 300px;' },
+                attrs: { style: 'width: 300px;' },
                 name: isChinese ? '其他数据分配' : 'Other Data Assignment',
                 data: <SimpleUIConfigData_options>{
                     value: rwValue,
