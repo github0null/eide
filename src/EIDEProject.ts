@@ -76,7 +76,7 @@ import { ExeCmd } from '../lib/node-utility/Executable';
 import { jsonc } from 'jsonc';
 import * as iconv from 'iconv-lite';
 import * as globmatch from 'micromatch'
-import { EventData, CurrentDevice, ArmBaseCompileConfigModel } from './EIDEProjectModules';
+import { EventData, CurrentDevice, ArmBaseCompileConfigModel, ArmBaseCompileData } from './EIDEProjectModules';
 import * as FileLock from '../lib/node-utility/FileLock';
 import { CompilerCommandsDatabaseItem, CodeBuilder } from './CodeBuilder';
 import { xpackRequireDevTools } from './XpackDevTools';
@@ -1915,6 +1915,15 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     //-------------------- other ------------------
 
+    supportArmccMemeoryAssignment(): boolean {
+        let isUseCustomScatterFile = false;
+        if (this.getProjectType() == 'ARM')
+            isUseCustomScatterFile = this.GetConfiguration<ArmBaseCompileData>().config
+                .compileConfig.useCustomScatterFile;
+        const toolchainName = this.getToolchain().name;
+        return (toolchainName === 'AC5' || toolchainName === 'AC6') && !isUseCustomScatterFile;
+    }
+
     getLibsGeneratorCfgFile(notCreate: boolean = false): File {
 
         const target = this.getCurrentTarget().toLowerCase();
@@ -2325,7 +2334,7 @@ $(OUT_DIR):
             }
         }
 
-        if (cfg.memoryAssign) {
+        if (cfg.memoryAssign && this.supportArmccMemeoryAssignment()) {
             for (const filePath in cfg.memoryAssign) {
                 if (virtpath && this.comparePath(filePath, <string>virtpath)) {
                     return true;

@@ -132,7 +132,7 @@ import * as iarParser from './IarProjectParser';
 import * as ArmCpuUtils from './ArmCpuUtils';
 import { ShellFlasherIndexItem } from './WebInterface/WebInterface';
 import { jsonc } from 'jsonc';
-import { SimpleUIConfig, SimpleUIConfigData_input, SimpleUIConfigData_options, SimpleUIConfigData_text, SimpleUIConfigData_table, SimpleUIConfigData_boolean } from "./SimpleUIDef";
+import { SimpleUIConfig, SimpleUIConfigData_input, SimpleUIConfigData_options, SimpleUIConfigData_text, SimpleUIConfigData_table, SimpleUIConfigData_boolean, SimpleUIConfigData_divider, SimpleUIConfigData_tag } from "./SimpleUIDef";
 import { StatusBarManager } from './StatusBarManager';
 
 enum TreeItemType {
@@ -5379,7 +5379,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         const argsMap    = project.getExtraArgsForSource(fspath, virtpath, extraArgs);
         const absPattern = project.getExtraArgsAbsPatternForSource(fspath, virtpath, extraArgs);
-        const ccOptions = absPattern ? (argsMap[absPattern] || '') : '';
+        const ccOptions  = absPattern ? (argsMap[absPattern] || '') : '';
 
         // merge all inherited args
         let inheritedArgs: string = '';
@@ -5392,15 +5392,34 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         inheritedArgs = inheritedArgs.trim();
 
         const ui_cfg: SimpleUIConfig = {
-            title: `Modify Compiler Options (file: ${NodePath.basename(fspath)})`,
+            title: isChinese 
+                ? `修改编译选项（文件：${NodePath.basename(fspath)}）`
+                : `Modify Compiler Options (file: ${NodePath.basename(fspath)})`,
             items: {},
+        };
+
+        // option: isAlwaysInBuild
+        let isAlwaysInBuild = false;
+        if (extraArgs.alwaysBuildSourceFiles)
+            isAlwaysInBuild = extraArgs.alwaysBuildSourceFiles
+                .findIndex(p => project.comparePath(p, <string>fspath)) !== -1;
+        ui_cfg.items['always_in_build'] = {
+            type: 'bool',
+            attrs: {},
+            name: isChinese ? '总是编译该文件' : 'Always In Build',
+            data: <SimpleUIConfigData_boolean>{
+                value: isAlwaysInBuild,
+                default: isAlwaysInBuild,
+            }
         };
 
         if (inheritedArgs) { // 继承于其他匹配模式
             ui_cfg.items['inherit'] = {
                 type: 'input',
                 attrs: { readonly: true },
-                name: isChinese ? `继承选项（从父对象继承，详细请看'file.option.yml'）` : `Inherited Options (from other pattern, check your 'files.options.yml' file for details !)`,
+                name: isChinese 
+                    ? `继承于其他匹配模式的选项（详见 'files.options.yml' 文件）` 
+                    : `Inherited Options (from other pattern, check your 'files.options.yml' file for details !)`,
                 data: <SimpleUIConfigData_input>{
                     value: inheritedArgs,
                     default: inheritedArgs
@@ -5423,46 +5442,60 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             },
         };
 
-        let isAlwaysInBuild = false;
-        if (extraArgs.alwaysBuildSourceFiles)
-            isAlwaysInBuild = extraArgs.alwaysBuildSourceFiles
-                .findIndex(p => project.comparePath(p, <string>fspath)) !== -1;
-        ui_cfg.items['always_in_build'] = {
-            type: 'bool',
-            attrs: {},
-            name: isChinese ? '总是编译' : 'Always In Build',
-            data: <SimpleUIConfigData_boolean>{
-                value: isAlwaysInBuild,
-                default: isAlwaysInBuild,
-            }
-        };
-
-        // Only need in Cortex-M project and ARM Compiler.
-        let toolchainName = project.getToolchain().name;
-        if (toolchainName === 'AC5' || toolchainName === 'AC6') {
-            let compileConfig = project.GetConfiguration<ArmBaseCompileData>().config.compileConfig;
-            if (compileConfig.useCustomScatterFile) {
-                ui_cfg.items['assign_tip'] = {
-                    type: 'text',
-                    attrs: { style: 'color: red;' },
-                    name: 'Note',
-                    data: <SimpleUIConfigData_text>{
-                        value: isChinese ? '你使用了自定义sct文件，下面的修改不会生效！' : 'You are using custom scatter file, so the following options will not take effect! ',
+        try {
+            const db = project.getSourceCompileDatabase(fspath);
+            if (db) {
+                ui_cfg.items['current_commands'] = {
+                    type: 'input',
+                    attrs: { readonly: true },
+                    name: isChinese ? `当前编译命令` : `Current Compiler Commands`,
+                    data: <SimpleUIConfigData_input>{
+                        value: db.command,
+                        default: db.command
                     }
-                }
+                };
             }
+        } catch (error) {
+            // nothing todo
+        }
 
+        // option: memoryAssign
+        //   Only for AC5 and AC6 Compiler
+        const supportMemeoryAssignment = project.supportArmccMemeoryAssignment();
+        if (supportMemeoryAssignment) {
+
+            ui_cfg.items['mem_assign_divider'] = {
+                type: 'divider',
+                attrs: {},
+                name: '',
+                data: <SimpleUIConfigData_divider>{}
+            };
+
+            ui_cfg.items['mem_assign_tag'] = {
+                type: 'text',
+                attrs: { 'style': 'font-weight: bold;' },
+                name: '',
+                data: <SimpleUIConfigData_text>{
+                    subType: 'raw',
+                    value: isChinese ? `存储器分配` : `Memory Assignment`
+                }
+            };
+
+            const toolchainName = project.getToolchain().name;
             if (toolchainName === 'AC6') {
                 ui_cfg.items['lto_tip'] = {
                     type: 'text',
                     attrs: {},
                     name: 'LTO_note',
                     data: <SimpleUIConfigData_text>{
-                        value: isChinese ? '如果启用LTO，下面选项可能会失效。' : 'The following option may not take effect if you enable the LTO. '
+                        value: isChinese 
+                            ? '请注意：如果启用了LTO，则存储器分配选项会失效。' 
+                            : 'Notice: The memory assignment options will not take effect if you enable the LTO. '
                     }
                 }
             }
 
+            const compileConfig = project.GetConfiguration<ArmBaseCompileData>().config.compileConfig;
             const ramLayout = compileConfig.storageLayout.RAM;
             const romLayout = compileConfig.storageLayout.ROM;
 
@@ -5564,23 +5597,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             };
         }
 
-        try {
-            const db = project.getSourceCompileDatabase(fspath);
-            if (db) {
-                ui_cfg.items['current_commands'] = {
-                    type: 'input',
-                    attrs: { readonly: true },
-                    name: isChinese ? `当前编译命令` : `Current Compiler Commands`,
-                    data: <SimpleUIConfigData_input>{
-                        value: db.command,
-                        default: db.command
-                    }
-                };
-            }
-        } catch (error) {
-            // nothing todo
-        }
-
         WebPanelManager.instance().showSimpleConfigUI(ui_cfg, async (new_cfg) => {
 
             const nArgs = (<SimpleUIConfigData_input>new_cfg.items['args'].data).value.replace(/\r\n|\n/g, ' ').trim();
@@ -5626,9 +5642,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             alwaysBuildSourceFiles = ArrayDelRepetition(alwaysBuildSourceFiles);
             fileOptions.alwaysBuildSourceFiles = alwaysBuildSourceFiles.length > 0 ? alwaysBuildSourceFiles : undefined;
 
-            // Only need in Cortex-M project and ARM Compiler.
-            let toolchainName = project.getToolchain().name;
-            if (toolchainName === 'AC5' || toolchainName === 'AC6') {
+            // option: memoryAssign
+            //   Only for AC5 and AC6 Compiler
+            if (supportMemeoryAssignment) {
                 let memoryAssign = extraArgs.memoryAssign || {};
 
                 let new_cfg_item = <SimpleUIConfigData_options>new_cfg.items['ro_data_assign'].data;
@@ -5735,7 +5751,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         inheritedOptions = inheritedOptions.trim();
 
         const ui_cfg: SimpleUIConfig = {
-            title: `Modify Compiler Options (dir: ${NodePath.basename(folderpath)})`,
+            title: isChinese 
+                ? `修改编译选项（目录：${NodePath.basename(folderpath)}）`
+                : `Modify Compiler Options (dir: ${NodePath.basename(folderpath)})`,
             items: {},
         };
 
@@ -5743,7 +5761,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             ui_cfg.items['inherit'] = {
                 type: 'input',
                 attrs: { readonly: true },
-                name: isChinese ? `继承选项（从父对象继承，详细请看'file.option.yml'）` : `Inherited Options (from other pattern, check your 'files.options.yml' file for details !)`,
+                name: isChinese 
+                    ? `继承于其他匹配模式的选项（详见 'files.options.yml' 文件）`
+                    : `Inherited Options (from other pattern, check your 'files.options.yml' file for details !)`,
                 data: <SimpleUIConfigData_input>{
                     value: inheritedOptions,
                     default: inheritedOptions
@@ -5771,7 +5791,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         ui_cfg.items['recursive'] = {
             type: 'bool',
             attrs: {},
-            name: isChinese ? '递归所有子对象' : 'Recurse All Children',
+            name: isChinese ? '递归应用到所有子目录和文件' : 'Recurse All Children',
             data: <SimpleUIConfigData_boolean>{
                 value: isRecursived,
                 default: isRecursived,
