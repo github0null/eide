@@ -470,7 +470,7 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
     getOptions(targetName?: string, toolchainName?: ToolchainName): BuilderOptions {
 
         const _targetName = targetName || this.prjConfigData.mode;
-        const _toolchain = toolchainName || this.prjConfigData.toolchain;
+        const _toolchain  = toolchainName || this.prjConfigData.toolchain;
 
         if (this.prjConfigData.targets[_targetName] == undefined) {
             return ToolchainManager.getInstance()
@@ -642,7 +642,7 @@ export abstract class ArmBaseCompileConfigModel
             this.data.cpuType = from_model.data.cpuType;
         } else { // not found, set default
             this.data.cpuType = 'Cortex-M3';
-            GlobalEvent.emit('msg', newMessage('Warning',
+            GlobalEvent.emit('msg', newMessage('Warning', 
                 `This toolchain not support "${from_model.data.cpuType}". Use default value.`));
         }
 

@@ -134,7 +134,6 @@ import { ShellFlasherIndexItem } from './WebInterface/WebInterface';
 import { jsonc } from 'jsonc';
 import { SimpleUIConfig, SimpleUIConfigData_input, SimpleUIConfigData_options, SimpleUIConfigData_text, SimpleUIConfigData_table, SimpleUIConfigData_boolean } from "./SimpleUIDef";
 import { StatusBarManager } from './StatusBarManager';
-import { compile, e, forEach, size } from 'mathjs';
 
 enum TreeItemType {
     SOLUTION,
@@ -4241,7 +4240,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     switchTarget(prjItem?: ProjTreeItem) {
 
-        const prj = prjItem
+        const prj = prjItem 
             ? this.dataProvider.GetProjectByIndex(prjItem.val.projectIndex)
             : this.getActiveProject();
         if (!prj) { // not active project
@@ -5383,7 +5382,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (!extraArgs)
             return;
 
-        const argsMap = project.getExtraArgsForSource(fspath, virtpath, extraArgs);
+        const argsMap    = project.getExtraArgsForSource(fspath, virtpath, extraArgs);
         const absPattern = project.getExtraArgsAbsPatternForSource(fspath, virtpath, extraArgs);
         const ccOptions = absPattern ? (argsMap[absPattern] || '') : '';
 
@@ -5704,6 +5703,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     private async modifyExtraCompilerArgs_forFolder(project: AbstractProject, item: ProjTreeItem) {
+
         let folderpath: string | undefined;
         let isVirtpath: boolean | undefined;
         const isChinese = getLocalLanguageType() == LanguageIndexs.Chinese;
@@ -5725,9 +5725,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (!extraArgs)
             return;
 
-        const argsMap = project.getExtraArgsForFolder(folderpath, isVirtpath, extraArgs);
+        const argsMap    = project.getExtraArgsForFolder(folderpath, isVirtpath, extraArgs);
         const absPattern = project.getExtraArgsAbsPatternForFolder(folderpath, isVirtpath, extraArgs);
-        const ccOptions = absPattern ? (argsMap[absPattern] || '') : '';
+        const ccOptions  = absPattern ? (argsMap[absPattern] || '') : '';
 
         // merge all inherited args
         let inheritedOptions: string = '';
@@ -7679,7 +7679,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             if (prj.getUploaderType() == 'JLink') {
                 const jlinkUploadConf = <JLinkOptions>prj.GetConfiguration().config.uploadConfig;
                 debugConfig.interface = JLinkProtocolType[jlinkUploadConf.proType].toLowerCase();
-                debugConfig.device = jlinkUploadConf.cpuInfo.cpuName;
+                debugConfig.device    = jlinkUploadConf.cpuInfo.cpuName;
             }
 
             /* setup ui */
@@ -8529,7 +8529,7 @@ class ProjectExcSourceModifier implements ModifiableYamlConfigProvider {
             const diffOld2New = oldExcLi.filter(p => !newExcLi.includes(p));
             const needUpdateLi = ArrayDelRepetition(diffNew2Old.concat(diffOld2New))
                 .filter(p => !p.startsWith(VirtualSource.rootName));
-            needUpdateLi.forEach(dir =>
+            needUpdateLi.forEach(dir => 
                 prj.getNormalSourceManager().notifyUpdateFolder(prj.ToAbsolutePath(dir)));
         } catch (error) {
             GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));

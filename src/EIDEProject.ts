@@ -1770,7 +1770,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         return dupList;
     }
 
-    installCmsisSourceCodePack(pList: { name: string; zippath: string; exportIncs?: string[] }[]) {
+    installCmsisSourceCodePack(pList: { name: string; zippath: string; exportIncs?: string[] } []) {
 
         if (pList.length == 0) {
             return;
@@ -2041,7 +2041,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         }
 
         if (cfg['$AR_PATH'])
-            AR_PATH = File.ToUnixPath(this.toAbsolutePath(cfg['$AR_PATH']));
+            AR_PATH   = File.ToUnixPath(this.toAbsolutePath(cfg['$AR_PATH']));
         if (cfg['$AR_CMD'])
             AR_PARAMS = cfg['$AR_CMD'];
 
@@ -2750,7 +2750,7 @@ $(OUT_DIR):
                         options: options,
                     });
                     // delete old builder options file, we don't need it anymore.
-                    try { fs.unlinkSync(file.path); } catch { };
+                    try { fs.unlinkSync(file.path); } catch {};
                 }
             }
 
@@ -2799,7 +2799,7 @@ $(OUT_DIR):
                     } else {
                         GlobalEvent.log_warn(`This options file ".eide/${file.name}" not match any target. remove it !`);
                     }
-                    try { fs.unlinkSync(file.path) } catch { } // delete file
+                    try { fs.unlinkSync(file.path) } catch {} // delete file
                 }
             }
             // merge all files options

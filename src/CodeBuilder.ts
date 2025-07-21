@@ -433,7 +433,7 @@ export abstract class CodeBuilder {
         }
 
         // select linker driver for gcc family toolchain
-        if (toolchain.categoryName.toLowerCase() == 'gcc' &&
+        if (toolchain.categoryName.toLowerCase() == 'gcc' && 
             toolchain.name != 'ANY_GCC') {
             let tool = builderOptions.options?.linker['$toolName'];
             // we need to detect source files type ?
@@ -460,7 +460,7 @@ export abstract class CodeBuilder {
         this.preHandleOptions(builderOptions.options);
 
         // gen libs.makefile
-        const mkfile_dir = new File(this.project.ToAbsolutePath(outDir + '/.lib'));
+        const mkfile_dir  = new File(this.project.ToAbsolutePath(outDir + '/.lib'));
         const mkfile_path = `${mkfile_dir.name}/Makefile`;
         const mkfile_cont = this.project.genLibsMakefileContent(mkfile_path);
         if (mkfile_cont) {
@@ -982,7 +982,7 @@ export class ARMCodeBuilder extends CodeBuilder {
          * unify_builder 会根据这些条目来匹配 options.global['microcontroller-cpu'] 传入的 cpu_id, 然后生成对应的编译参数
          */
         const cpu_id = config.compileConfig.cpuType.toLowerCase();
-        let fpu_suffix = ARMCodeBuilder.getFpuSuffix(config.compileConfig.cpuType,
+        let fpu_suffix = ARMCodeBuilder.getFpuSuffix(config.compileConfig.cpuType, 
             config.compileConfig.floatingPointHardware);
 
         /**
@@ -1000,8 +1000,8 @@ export class ARMCodeBuilder extends CodeBuilder {
                 fpu_suffix = ''; // 使用 arch 时，无需 fpu_suffix 标记
         }
 
-        options.global['microcontroller-cpu'] = cpu_id + fpu_suffix;
-        options.global['microcontroller-fpu'] = cpu_id + fpu_suffix;
+        options.global['microcontroller-cpu']   = cpu_id + fpu_suffix;
+        options.global['microcontroller-fpu']   = cpu_id + fpu_suffix;
         options.global['microcontroller-float'] = cpu_id + fpu_suffix;
 
         // ISA extensions
@@ -1016,7 +1016,7 @@ export class ARMCodeBuilder extends CodeBuilder {
             }
             // for armcc
             else if (toolchain.name == 'AC6') {
-                options.global['$clang-arch-extensions'] = opts.join('');
+                options.global['$clang-arch-extensions']   = opts.join('');
                 // 对于 linker 和 asm, 我们要将 '+' 替换成 '.' 字符
                 options.global['$armlink-arch-extensions'] = opts.map(v => v.replace('+', '.')).join('');
             }
