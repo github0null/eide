@@ -5473,7 +5473,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
             ui_cfg.items['mem_assign_tag'] = {
                 type: 'text',
-                attrs: { 'style': 'font-weight: bold;' },
+                attrs: { style: 'font-weight: bold;' },
                 name: '',
                 data: <SimpleUIConfigData_text>{
                     subType: 'raw',
@@ -7739,8 +7739,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 return '';
             };
 
-            const interface_enums = [''].concat(openocd_getConfigList('interface', prj.getRootDir()).map(c => c.name));
-            const target_enums = [''].concat(openocd_getConfigList('target', prj.getRootDir()).map(c => c.name));
+            const interface_enums = [''].concat(
+                openocd_getConfigList('interface', prj.getRootDir()).map(c => c.name).sort());
+            const target_enums = [''].concat(
+                openocd_getConfigList('target', prj.getRootDir()).map(c => c.name).sort());
 
             let inferface_default = 0;
             let target_default = 0;
@@ -7765,7 +7767,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             ui.items['interface'] = {
                 type: 'options',
                 name: isChinese ? '接口' : 'Interface',
-                attrs: {},
+                attrs: { style: 'width: 260px;' },
                 data: <SimpleUIConfigData_options>{
                     value: inferface_default,
                     default: inferface_default,
@@ -7776,7 +7778,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             ui.items['target'] = {
                 type: 'options',
                 name: isChinese ? '目标' : 'Target',
-                attrs: {},
+                attrs: { style: 'width: 260px;' },
                 data: <SimpleUIConfigData_options>{
                     value: target_default,
                     default: target_default,
@@ -7817,7 +7819,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 }
             }
 
-            const target_enums = await vscode.window.withProgress<string[] | Error>({
+            const pyocd_targets = await vscode.window.withProgress<string[] | Error>({
                 location: vscode.ProgressLocation.Notification,
                 title: 'Get pyOCD Targets List'
             }, () => {
@@ -7831,11 +7833,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 });
             });
 
-            if (target_enums instanceof Error)
-                throw target_enums;
-            if (target_enums == undefined)
+            if (pyocd_targets instanceof Error)
+                throw pyocd_targets;
+            if (pyocd_targets == undefined)
                 throw new Error(`pyocd_getTargetList -> target_enums is undefined`);
 
+            const target_enums = pyocd_targets.sort();
             const idx = target_enums.findIndex(t => t == debugConfig.targetId);
             if (idx != -1)
                 target_idx_default = idx;
@@ -7844,7 +7847,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             ui.items['target'] = {
                 type: 'options',
                 name: isChinese ? '目标' : 'Target',
-                attrs: {},
+                attrs: { style: 'width: 260px;' },
                 data: <SimpleUIConfigData_options>{
                     value: target_idx_default,
                     default: target_idx_default,
