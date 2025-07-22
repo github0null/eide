@@ -38,7 +38,8 @@ import { BuilderOptions, ProjectConfigData, ProjectConfiguration } from "./EIDET
 import {
     ArmBaseCompileData,
     Memory, ARMStorageLayout,
-    FloatingHardwareOption, C51BaseCompileData, RiscvCompileData, AnyGccCompileData, MipsCompileData
+    FloatingHardwareOption, C51BaseCompileData, RiscvCompileData, AnyGccCompileData, MipsCompileData,
+    getRamRomName
 } from './EIDEProjectModules';
 import { SettingManager } from "./SettingManager";
 import { GlobalEvent } from "./GlobalEvents";
@@ -561,12 +562,18 @@ interface MemorySize {
 interface RomItem {
     memInfo: Memory;
     selected: boolean;
+    name: string;
+    roFiles: string[];
 }
 
 interface RamItem {
     memInfo: Memory;
     selected: boolean;
     noInit: boolean;
+    name: string;
+    roFiles: string[];
+    rwFiles: string[];
+    ziFiles: string[];
 }
 
 interface MemoryScatter {
@@ -601,7 +608,9 @@ export class ARMCodeBuilder extends CodeBuilder {
                     startAddr: '0x00000000',
                     size: '0x00000000'
                 },
-                selected: false
+                selected: false,
+                name: '',
+                roFiles: [],
             });
             memScatter.ramList.push({
                 memInfo: {
@@ -609,7 +618,11 @@ export class ARMCodeBuilder extends CodeBuilder {
                     size: '0x00000000'
                 },
                 selected: false,
-                noInit: false
+                noInit: false,
+                name: '',
+                roFiles: [],
+                ziFiles: [],
+                rwFiles: []
             });
         }
 
@@ -653,6 +666,7 @@ export class ARMCodeBuilder extends CodeBuilder {
             memScatter.ramList[index].memInfo.size = this.FillHexNumber(storageLayout.RAM[i].mem.size);
             memScatter.ramList[index].selected = storageLayout.RAM[i].isChecked;
             memScatter.ramList[index].noInit = storageLayout.RAM[i].noInit;
+            memScatter.ramList[index].name = getRamRomName(storageLayout.RAM[i]);
         }
 
         for (let i = 0; i < storageLayout.ROM.length; i++) {
@@ -672,6 +686,7 @@ export class ARMCodeBuilder extends CodeBuilder {
             memScatter.romList[index].memInfo.startAddr = this.FillHexNumber(storageLayout.ROM[i].mem.startAddr);
             memScatter.romList[index].memInfo.size = this.FillHexNumber(storageLayout.ROM[i].mem.size);
             memScatter.romList[index].selected = storageLayout.ROM[i].isChecked;
+            memScatter.romList[index].name = getRamRomName(storageLayout.ROM[i]);
             memScatter.startUpIndex = storageLayout.ROM[i].isStartup ? index : memScatter.startUpIndex;
         }
 
@@ -723,13 +738,87 @@ export class ARMCodeBuilder extends CodeBuilder {
             child: []
         });
 
+        // Extra memory assign. 
+        const assignFileToMemory = (fileName: string, memoryName: string, memoryList: RomItem[] | RamItem[], attr: string) => {
+            memoryList.forEach((item) => {
+                if (item.name === memoryName && attr === 'RO') {
+                    item.roFiles.push(fileName);
+                    return;
+                }
+
+                if (item.name === memoryName && attr === 'RW') {
+                    (item as RamItem).rwFiles.push(fileName);
+                    return;
+                }
+
+                if (item.name === memoryName && attr === 'ZI') {
+                    (item as RamItem).ziFiles.push(fileName);
+                    return;
+                }
+            });
+        }
+
+        const options = this.project.getSourceExtraArgsCfg();
+        if (options && options.memoryAssign) {
+            const memoryAssign = options.memoryAssign;
+            Object.keys(memoryAssign).forEach((key) => {
+                const fileName = NodePath.basename(key).replace(/\.[^/.]+$/, '.o');
+                const item = memoryAssign[key];
+                if (item.RO) {
+                    assignFileToMemory(fileName, item.RO, memScatter.romList, 'RO');
+                    assignFileToMemory(fileName, item.RO, memScatter.ramList, 'RO');
+                }
+                if (item.RW) {
+                    assignFileToMemory(fileName, item.RW, memScatter.ramList, 'RW');
+                }
+                if (item.ZI) {
+                    assignFileToMemory(fileName, item.ZI, memScatter.ramList, 'ZI');
+                }
+            });
+        }
+
+        const InsertFileToScatter = (fileName: string, content: string, attr: string): string => {
+            if (content.search(fileName) === -1) {
+                content += `${fileName} (+${attr}) \r\n`;
+            } else {
+                // Insert the attribute only. e.g. "file.o (+RO)" => "file.o (+RO +RW)"
+                const regex = new RegExp(`(${fileName} \\(([^)]*)\\))`);
+                content = content.replace(regex, (match, p1, p2) => {
+                    // Don't add the same attribute again
+                    if (p2.includes(`+${attr}`)) return match;
+                    return `${fileName} (${p2} +${attr})`;
+                });
+            }
+
+            return content;
+        }
         //RAM
         memScatter.ramList.forEach((item, index) => {
+            let content = ''
+            if (item.roFiles.length > 0) {
+                item.roFiles.forEach((fileName) => {
+                    content = InsertFileToScatter(fileName, content, 'RO');
+                });
+            }
+            if (item.rwFiles.length > 0) {
+                item.rwFiles.forEach((fileName) => {
+                    content = InsertFileToScatter(fileName, content, 'RW');
+                });
+            }
+            if (item.ziFiles.length > 0) {
+                item.ziFiles.forEach((fileName) => {
+                    content = InsertFileToScatter(fileName, content, 'ZI');
+                });
+            }
             if (item.selected) {
+                content += '.ANY (+RW +ZI) \r\n';
+            }
+
+            if (content !== '') {
                 staUpTxt.child.push({
                     name: getRamName(index),
                     addr: ' ' + item.memInfo.startAddr + (item.noInit ? ' UNINIT ' : ' ') + item.memInfo.size + ' ',
-                    content: '.ANY (+RW +ZI) \r\n',
+                    content: content,
                     child: []
                 });
             }
@@ -737,8 +826,19 @@ export class ARMCodeBuilder extends CodeBuilder {
 
         memTxt.push(staUpTxt);
 
+        //ROM
         memScatter.romList.forEach((item, index) => {
+            let content = ''
+            if (item.roFiles.length > 0) {
+                item.roFiles.forEach((fileName) => {
+                    content = InsertFileToScatter(fileName, content, 'RO');
+                });
+            }
             if (item.selected && index !== memScatter.startUpIndex) {
+                content += '.ANY (+RO) \r\n';
+            }
+
+            if (content !== '') {
                 memTxt.push({
                     name: getRomName(index, false),
                     addr: ' ' + item.memInfo.startAddr + ' ' + item.memInfo.size + ' ',
@@ -746,7 +846,7 @@ export class ARMCodeBuilder extends CodeBuilder {
                     child: [{
                         name: getRomName(index, true),
                         addr: ' ' + item.memInfo.startAddr + ' ' + item.memInfo.size + ' ',
-                        content: '.ANY (+RO) \r\n',
+                        content: content,
                         child: []
                     }]
                 });

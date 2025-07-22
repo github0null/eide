@@ -527,6 +527,14 @@ export interface ARMRomItem {
     isStartup: boolean;
 }
 
+export function getRamRomName(item: ARMRamItem | ARMRomItem): string {
+    return `${item.tag}${item.id}`;
+}
+
+export function getRamRomRange(item: ARMRamItem | ARMRomItem): string {
+    return `0x${Number(item.mem.startAddr).toString(16).toUpperCase()} - 0x${(Number(item.mem.startAddr) + Number(item.mem.size)).toString(16).toUpperCase()}`
+}
+
 export interface ARMStorageLayout {
     RAM: ARMRamItem[];
     ROM: ARMRomItem[];

@@ -35,7 +35,7 @@ import * as jsonc_parser from 'jsonc-parser';
 import { File } from '../lib/node-utility/File';
 import { ResManager } from './ResManager';
 import { GlobalEvent } from './GlobalEvents';
-import { AbstractProject, CheckError, DataChangeType, VirtualSource, SourceFileOptions } from './EIDEProject';
+import { AbstractProject, CheckError, DataChangeType, VirtualSource, SourceFileOptions, EIDE_FILE_OPTION_VERSION } from './EIDEProject';
 import { ToolchainName, ToolchainManager } from './ToolchainManager';
 import {
     BuilderOptions,
@@ -45,7 +45,9 @@ import {
 import {
     PackInfo, ComponentFileItem, DeviceInfo,
     getComponentKeyDescription, ArmBaseCompileData, ArmBaseCompileConfigModel,
-    RiscvCompileData, AnyGccCompileData
+    RiscvCompileData, AnyGccCompileData,
+    getRamRomName,
+    getRamRomRange
 } from "./EIDEProjectModules";
 import { WorkspaceManager } from './WorkspaceManager';
 import {
@@ -130,7 +132,7 @@ import * as iarParser from './IarProjectParser';
 import * as ArmCpuUtils from './ArmCpuUtils';
 import { ShellFlasherIndexItem } from './WebInterface/WebInterface';
 import { jsonc } from 'jsonc';
-import { SimpleUIConfig, SimpleUIConfigData_input, SimpleUIConfigData_options, SimpleUIConfigData_text, SimpleUIConfigData_table, SimpleUIConfigData_boolean } from "./SimpleUIDef";
+import { SimpleUIConfig, SimpleUIConfigData_input, SimpleUIConfigData_options, SimpleUIConfigData_text, SimpleUIConfigData_table, SimpleUIConfigData_boolean, SimpleUIConfigData_divider, SimpleUIConfigData_tag } from "./SimpleUIDef";
 import { StatusBarManager } from './StatusBarManager';
 
 enum TreeItemType {
@@ -3027,8 +3029,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         };
 
         // init source args
-        const srcOptsObj = <SourceFileOptions>{ version: '2.0', options: {} };
-        srcOptsObj.version = '2.0';
+        const srcOptsObj = <SourceFileOptions>{ version: EIDE_FILE_OPTION_VERSION, options: {} };
+        srcOptsObj.version = EIDE_FILE_OPTION_VERSION;
         const setupSourceOpts = (vFolderPath: string, srcFilePath: string) => {
             for (const keilTarget of targets) {
                 if (srcOptsObj.options[keilTarget.name] == undefined)
@@ -5355,6 +5357,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     private async modifyExtraCompilerArgs_forFile(project: AbstractProject, item: ProjTreeItem) {
+        const isChinese = getLocalLanguageType() == LanguageIndexs.Chinese;
 
         let fspath: string | undefined;
         let virtpath: string | undefined;
@@ -5389,15 +5392,34 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         inheritedArgs = inheritedArgs.trim();
 
         const ui_cfg: SimpleUIConfig = {
-            title: `Modify Compiler Options (file: ${NodePath.basename(fspath)})`,
+            title: isChinese 
+                ? `修改编译选项（文件：${NodePath.basename(fspath)}）`
+                : `Modify Compiler Options (file: ${NodePath.basename(fspath)})`,
             items: {},
+        };
+
+        // option: isAlwaysInBuild
+        let isAlwaysInBuild = false;
+        if (extraArgs.alwaysBuildSourceFiles)
+            isAlwaysInBuild = extraArgs.alwaysBuildSourceFiles
+                .findIndex(p => project.comparePath(p, <string>fspath)) !== -1;
+        ui_cfg.items['always_in_build'] = {
+            type: 'bool',
+            attrs: {},
+            name: isChinese ? '总是编译该文件' : 'Always In Build',
+            data: <SimpleUIConfigData_boolean>{
+                value: isAlwaysInBuild,
+                default: isAlwaysInBuild,
+            }
         };
 
         if (inheritedArgs) { // 继承于其他匹配模式
             ui_cfg.items['inherit'] = {
                 type: 'input',
                 attrs: { readonly: true },
-                name: `Inherited Options (from other pattern, check your 'files.options.yml' file for details !)`,
+                name: isChinese 
+                    ? `继承于其他匹配模式的选项（详见 'files.options.yml' 文件）` 
+                    : `Inherited Options (from other pattern, check your 'files.options.yml' file for details !)`,
                 data: <SimpleUIConfigData_input>{
                     value: inheritedArgs,
                     default: inheritedArgs
@@ -5408,7 +5430,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         ui_cfg.items['args'] = {
             type: 'input',
             attrs: {},
-            name: 'Append Compiler Options',
+            name: isChinese ? '附加编译选项' : 'Append Compiler Options',
             data: <SimpleUIConfigData_input>{
                 placeHolder: [
                     `For Append   Options. e.g. " -Os -flto " ...`,
@@ -5420,27 +5442,13 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             },
         };
 
-        let isAlwaysInBuild = false;
-        if (extraArgs.alwaysBuildSourceFiles)
-            isAlwaysInBuild = extraArgs.alwaysBuildSourceFiles
-                .findIndex(p => project.comparePath(p, <string>fspath)) !== -1;
-        ui_cfg.items['always_in_build'] = {
-            type: 'bool',
-            attrs: {},
-            name: 'Always In Build',
-            data: <SimpleUIConfigData_boolean>{
-                value: isAlwaysInBuild,
-                default: isAlwaysInBuild,
-            }
-        };
-
         try {
             const db = project.getSourceCompileDatabase(fspath);
             if (db) {
                 ui_cfg.items['current_commands'] = {
                     type: 'input',
                     attrs: { readonly: true },
-                    name: `Current Compiler Commands`,
+                    name: isChinese ? `当前编译命令` : `Current Compiler Commands`,
                     data: <SimpleUIConfigData_input>{
                         value: db.command,
                         default: db.command
@@ -5449,6 +5457,144 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }
         } catch (error) {
             // nothing todo
+        }
+
+        // option: memoryAssign
+        //   Only for AC5 and AC6 Compiler
+        const supportMemeoryAssignment = project.supportArmccMemeoryAssignment();
+        if (supportMemeoryAssignment) {
+
+            ui_cfg.items['mem_assign_divider'] = {
+                type: 'divider',
+                attrs: {},
+                name: '',
+                data: <SimpleUIConfigData_divider>{}
+            };
+
+            ui_cfg.items['mem_assign_tag'] = {
+                type: 'text',
+                attrs: { style: 'font-weight: bold;' },
+                name: '',
+                data: <SimpleUIConfigData_text>{
+                    subType: 'raw',
+                    value: isChinese ? `存储器分配` : `Memory Assignment`
+                }
+            };
+
+            const toolchainName = project.getToolchain().name;
+            if (toolchainName === 'AC6') {
+                ui_cfg.items['lto_tip'] = {
+                    type: 'text',
+                    attrs: {},
+                    name: 'LTO_note',
+                    data: <SimpleUIConfigData_text>{
+                        value: isChinese 
+                            ? '请注意：如果启用了LTO，则存储器分配选项会失效。' 
+                            : 'Notice: The memory assignment options will not take effect if you enable the LTO. '
+                    }
+                }
+            }
+
+            const compileConfig = project.GetConfiguration<ArmBaseCompileData>().config.compileConfig;
+            const ramLayout = compileConfig.storageLayout.RAM;
+            const romLayout = compileConfig.storageLayout.ROM;
+
+            // Use for config enum. 
+            let roList: string[] = ['default'];
+            let rwList: string[] = ['default'];
+
+            // Use for config enum Description. 
+            let roListDesc: string[] = ['default'];
+            let rwListDesc: string[] = ['default'];
+            romLayout.forEach((value) => {
+                roList.push(getRamRomName(value));
+                roListDesc.push(`${getRamRomName(value)} (${getRamRomRange(value)})`);
+            });
+
+            ramLayout.forEach((value) => {
+                roList.push(getRamRomName(value));
+                roListDesc.push(`${getRamRomName(value)} (${getRamRomRange(value)})`);
+
+                rwList.push(getRamRomName(value));
+                rwListDesc.push(`${getRamRomName(value)} (${getRamRomRange(value)})`);
+            });
+
+            // Find file memory assignment.
+            let memoryAssign = undefined;
+            if (extraArgs.memoryAssign) {
+                for (const filePath in extraArgs.memoryAssign) {
+                    if (virtpath && project.comparePath(filePath, <string>virtpath)) {
+                        // If item is virtual path, compare with virtual path first.
+                        memoryAssign = extraArgs.memoryAssign[filePath];
+                        break;
+                    } else if (project.comparePath(filePath, <string>fspath)) {
+                        // Don't have virtual path, compare with real file path.
+                        memoryAssign = extraArgs.memoryAssign[filePath];
+                        break;
+                    }
+                }
+            }
+
+            // Show in GUI config. 
+            let roValue = 0;
+            let rwValue = 0;
+            let ziValue = 0;
+
+            if (memoryAssign) {
+                if (memoryAssign.RO) {
+                    // Assign the RO memory.
+                    roValue = roList.indexOf(memoryAssign.RO);
+                    // No found, may it contains illegal vaule. Set it default.
+                    roValue = roValue === -1 ? 0 : roValue;
+                }
+                if (memoryAssign.RW) {
+                    rwValue = rwList.indexOf(memoryAssign.RW);
+                    // No found, may it contains illegal vaule. Set it default.
+                    rwValue = rwValue === -1 ? 0 : rwValue;
+                }
+                if (memoryAssign.ZI) {
+                    ziValue = rwList.indexOf(memoryAssign.ZI);
+                    // No found, may it contains illegal vaule. Set it default.
+                    ziValue = ziValue === -1 ? 0 : ziValue;
+                }
+            }
+
+
+            ui_cfg.items['ro_data_assign'] = {
+                type: 'options',
+                attrs: { style: 'width: 300px;' },
+                name: isChinese ? '常量/代码分配' : 'Code / Const Data Assignment',
+                data: <SimpleUIConfigData_options>{
+                    value: roValue,
+                    default: 0,
+                    enum: roList,
+                    enumDescriptions: roListDesc,
+                }
+            };
+
+            ui_cfg.items['zi_data_assign'] = {
+                type: 'options',
+                attrs: { style: 'width: 300px;' },
+                name: isChinese ? 'ZI数据分配' : 'Zero Initialized Data Assignment',
+                data: <SimpleUIConfigData_options>{
+                    value: ziValue,
+                    default: 0,
+                    enum: rwList,
+                    enumDescriptions: rwListDesc,
+                }
+            };
+
+            ui_cfg.items['rw_data_assign'] = {
+                type: 'options',
+                attrs: { style: 'width: 300px;' },
+                name: isChinese ? '其他数据分配' : 'Other Data Assignment',
+                data: <SimpleUIConfigData_options>{
+                    value: rwValue,
+                    default: 0,
+                    enum: rwList,
+                    enumDescriptions: rwListDesc,
+                }
+            };
         }
 
         WebPanelManager.instance().showSimpleConfigUI(ui_cfg, async (new_cfg) => {
@@ -5496,6 +5642,65 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             alwaysBuildSourceFiles = ArrayDelRepetition(alwaysBuildSourceFiles);
             fileOptions.alwaysBuildSourceFiles = alwaysBuildSourceFiles.length > 0 ? alwaysBuildSourceFiles : undefined;
 
+            // option: memoryAssign
+            //   Only for AC5 and AC6 Compiler
+            if (supportMemeoryAssignment) {
+                let memoryAssign = extraArgs.memoryAssign || {};
+
+                let new_cfg_item = <SimpleUIConfigData_options>new_cfg.items['ro_data_assign'].data;
+                const roAssign = new_cfg_item.value;
+                if (roAssign) {
+                    // Create item when it not exist. 
+                    memoryAssign[pattern] = memoryAssign[pattern] || {};
+                    memoryAssign[pattern].RO = new_cfg_item.enum[roAssign];
+                } else {
+                    // If RO assign is empty, remove it.
+                    if (memoryAssign[pattern] && memoryAssign[pattern].RO) {
+                        delete memoryAssign[pattern].RO;
+                    }
+                }
+
+                new_cfg_item = <SimpleUIConfigData_options>new_cfg.items['zi_data_assign'].data;
+                const ziAssign = new_cfg_item.value;
+                if (ziAssign) {
+                    // Create item when it not exist. 
+                    memoryAssign[pattern] = memoryAssign[pattern] || {};
+                    memoryAssign[pattern].ZI = new_cfg_item.enum[ziAssign];
+                } else {
+                    // If ZI assign is empty, remove it.
+                    if (memoryAssign[pattern] && memoryAssign[pattern].ZI) {
+                        delete memoryAssign[pattern].ZI;
+                    }
+                }
+
+                new_cfg_item = <SimpleUIConfigData_options>new_cfg.items['rw_data_assign'].data;
+                const rwAssign = new_cfg_item.value;
+                if (rwAssign) {
+                    // Create item when it not exist. 
+                    memoryAssign[pattern] = memoryAssign[pattern] || {};
+                    memoryAssign[pattern].RW = new_cfg_item.enum[rwAssign];
+                } else {
+                    // If RW assign is empty, remove it.
+                    if (memoryAssign[pattern] && memoryAssign[pattern].RW) {
+                        delete memoryAssign[pattern].RW;
+                    }
+                }
+
+                if (Object.keys(memoryAssign[pattern]).length === 0) {
+                    delete memoryAssign[pattern]; // remove empty assign
+                }
+
+                if (extraArgs.memoryAssign === undefined && Object.keys(memoryAssign).length > 0) {
+                    // Create memoryAssign when it not exist and has assigned memory.
+                    extraArgs.memoryAssign = memoryAssign;
+                }
+
+                if (extraArgs.memoryAssign && Object.keys(extraArgs.memoryAssign).length === 0) {
+                    // Remove memoryAssign when it is empty.
+                    delete extraArgs.memoryAssign;
+                }
+            }
+
             project.setSourceExtraArgsCfg(extraArgs);
             project.onSourceCompilerOptionsChanged();
 
@@ -5512,6 +5717,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         let folderpath: string | undefined;
         let isVirtpath: boolean | undefined;
+        const isChinese = getLocalLanguageType() == LanguageIndexs.Chinese;
 
         if (item.type == TreeItemType.V_FOLDER ||
             item.type == TreeItemType.V_FOLDER_ROOT) {
@@ -5545,7 +5751,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         inheritedOptions = inheritedOptions.trim();
 
         const ui_cfg: SimpleUIConfig = {
-            title: `Modify Compiler Options (dir: ${NodePath.basename(folderpath)})`,
+            title: isChinese 
+                ? `修改编译选项（目录：${NodePath.basename(folderpath)}）`
+                : `Modify Compiler Options (dir: ${NodePath.basename(folderpath)})`,
             items: {},
         };
 
@@ -5553,7 +5761,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             ui_cfg.items['inherit'] = {
                 type: 'input',
                 attrs: { readonly: true },
-                name: `Inherited Options (from other args pattern, check your 'files.options.yml' file for details !)`,
+                name: isChinese 
+                    ? `继承于其他匹配模式的选项（详见 'files.options.yml' 文件）`
+                    : `Inherited Options (from other pattern, check your 'files.options.yml' file for details !)`,
                 data: <SimpleUIConfigData_input>{
                     value: inheritedOptions,
                     default: inheritedOptions
@@ -5564,7 +5774,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         ui_cfg.items['args'] = {
             type: 'input',
             attrs: {},
-            name: 'Append Compiler Options',
+            name: isChinese ? '附加编译选项' : 'Append Compiler Options',
             data: <SimpleUIConfigData_input>{
                 placeHolder: [
                     `For Append   Options. e.g. " -Os -flto " ...`,
@@ -5581,7 +5791,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         ui_cfg.items['recursive'] = {
             type: 'bool',
             attrs: {},
-            name: 'Recurse All Children',
+            name: isChinese ? '递归应用到所有子目录和文件' : 'Recurse All Children',
             data: <SimpleUIConfigData_boolean>{
                 value: isRecursived,
                 default: isRecursived,
@@ -7529,8 +7739,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 return '';
             };
 
-            const interface_enums = [''].concat(openocd_getConfigList('interface', prj.getRootDir()).map(c => c.name));
-            const target_enums = [''].concat(openocd_getConfigList('target', prj.getRootDir()).map(c => c.name));
+            const interface_enums = [''].concat(
+                openocd_getConfigList('interface', prj.getRootDir()).map(c => c.name).sort());
+            const target_enums = [''].concat(
+                openocd_getConfigList('target', prj.getRootDir()).map(c => c.name).sort());
 
             let inferface_default = 0;
             let target_default = 0;
@@ -7555,7 +7767,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             ui.items['interface'] = {
                 type: 'options',
                 name: isChinese ? '接口' : 'Interface',
-                attrs: {},
+                attrs: { style: 'width: 260px;' },
                 data: <SimpleUIConfigData_options>{
                     value: inferface_default,
                     default: inferface_default,
@@ -7566,7 +7778,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             ui.items['target'] = {
                 type: 'options',
                 name: isChinese ? '目标' : 'Target',
-                attrs: {},
+                attrs: { style: 'width: 260px;' },
                 data: <SimpleUIConfigData_options>{
                     value: target_default,
                     default: target_default,
@@ -7607,7 +7819,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 }
             }
 
-            const target_enums = await vscode.window.withProgress<string[] | Error>({
+            const pyocd_targets = await vscode.window.withProgress<string[] | Error>({
                 location: vscode.ProgressLocation.Notification,
                 title: 'Get pyOCD Targets List'
             }, () => {
@@ -7621,11 +7833,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 });
             });
 
-            if (target_enums instanceof Error)
-                throw target_enums;
-            if (target_enums == undefined)
+            if (pyocd_targets instanceof Error)
+                throw pyocd_targets;
+            if (pyocd_targets == undefined)
                 throw new Error(`pyocd_getTargetList -> target_enums is undefined`);
 
+            const target_enums = pyocd_targets.sort();
             const idx = target_enums.findIndex(t => t == debugConfig.targetId);
             if (idx != -1)
                 target_idx_default = idx;
@@ -7634,7 +7847,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             ui.items['target'] = {
                 type: 'options',
                 name: isChinese ? '目标' : 'Target',
-                attrs: {},
+                attrs: { style: 'width: 260px;' },
                 data: <SimpleUIConfigData_options>{
                     value: target_idx_default,
                     default: target_idx_default,

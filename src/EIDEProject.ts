@@ -76,7 +76,7 @@ import { ExeCmd } from '../lib/node-utility/Executable';
 import { jsonc } from 'jsonc';
 import * as iconv from 'iconv-lite';
 import * as globmatch from 'micromatch'
-import { EventData, CurrentDevice, ArmBaseCompileConfigModel } from './EIDEProjectModules';
+import { EventData, CurrentDevice, ArmBaseCompileConfigModel, ArmBaseCompileData } from './EIDEProjectModules';
 import * as FileLock from '../lib/node-utility/FileLock';
 import { CompilerCommandsDatabaseItem, CodeBuilder } from './CodeBuilder';
 import { xpackRequireDevTools } from './XpackDevTools';
@@ -778,10 +778,17 @@ export interface BaseProjectInfo {
     prjConfig: ProjectConfiguration<any>;
 }
 
+export interface SourceExtraMemoryAssignCfg {
+    RO?: string;
+    RW?: string;
+    ZI?: string;
+}
+
 export interface SourceExtraCompilerOptionsCfg {
     files?: { [key: string]: string };
     virtualPathFiles?: { [key: string]: string };
     alwaysBuildSourceFiles?: string[];
+    memoryAssign?: { [key: string]: SourceExtraMemoryAssignCfg };
 }
 
 export interface SourceFileOptions {
@@ -790,6 +797,7 @@ export interface SourceFileOptions {
 };
 
 export type DataChangeType = 'pack' | 'dependence' | 'compiler' | 'uploader' | 'files';
+export const EIDE_FILE_OPTION_VERSION = '2.1'
 
 export abstract class AbstractProject implements CustomConfigurationProvider, ProjectBaseApi {
 
@@ -1907,6 +1915,15 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     //-------------------- other ------------------
 
+    supportArmccMemeoryAssignment(): boolean {
+        let isUseCustomScatterFile = false;
+        if (this.getProjectType() == 'ARM')
+            isUseCustomScatterFile = this.GetConfiguration<ArmBaseCompileData>().config
+                .compileConfig.useCustomScatterFile;
+        const toolchainName = this.getToolchain().name;
+        return (toolchainName === 'AC5' || toolchainName === 'AC6') && !isUseCustomScatterFile;
+    }
+
     getLibsGeneratorCfgFile(notCreate: boolean = false): File {
 
         const target = this.getCurrentTarget().toLowerCase();
@@ -2235,8 +2252,8 @@ $(OUT_DIR):
 
         const optFile = File.fromArray([this.getEideDir().path, `files.options.yml`]);
         if (!optFile.IsFile() && !notCreate) {
-            const optsObj = <SourceFileOptions>{ version: '2.0', options: {} };
-            optsObj.version = '2.0';
+            const optsObj = <SourceFileOptions>{ version: EIDE_FILE_OPTION_VERSION, options: {} };
+            optsObj.version = EIDE_FILE_OPTION_VERSION;
             optsObj.options[this.getCurrentTarget()] = { files: {}, virtualPathFiles: {} };
             optFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(optsObj, { indent: 4 }));
         }
@@ -2262,7 +2279,7 @@ $(OUT_DIR):
         try {
             const optFile = this.getSourceExtraArgsCfgFile();
             const optsObj = <SourceFileOptions>yaml.parse(optFile.Read());
-            optsObj.version = '2.0';
+            optsObj.version = EIDE_FILE_OPTION_VERSION;
             optsObj.options[targetName || this.getCurrentTarget()] = cfg;
             optFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(optsObj, { indent: 4 }));
         } catch (error) {
@@ -2314,6 +2331,16 @@ $(OUT_DIR):
             const idx = cfg.alwaysBuildSourceFiles.findIndex(p => this.comparePath(p, fspath));
             if (idx !== -1) {
                 return true;
+            }
+        }
+
+        if (cfg.memoryAssign && this.supportArmccMemeoryAssignment()) {
+            for (const filePath in cfg.memoryAssign) {
+                if (virtpath && this.comparePath(filePath, <string>virtpath)) {
+                    return true;
+                } else if (this.comparePath(filePath, <string>fspath)) {
+                    return true;
+                }
             }
         }
 
@@ -2786,7 +2813,7 @@ $(OUT_DIR):
             }
             // merge all files options
             if (allFileOptions.length > 0) {
-                const optionsObj: SourceFileOptions = { 'version': '2.0', options: {} };
+                const optionsObj: SourceFileOptions = { 'version': EIDE_FILE_OPTION_VERSION, options: {} };
                 allFileOptions.forEach(opts => {
                     const obj = opts.fileOptions;
                     obj.version = undefined;
