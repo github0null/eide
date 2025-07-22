@@ -11,6 +11,7 @@ All notable version changes will be recorded in this file.
 **Improve**:
   - `GNU Arm Toolchain`: Support new mcpu: `cortex-m52, cortex-m55, cortex-m85`.
   - `unify_builder`: Optimize builder speed.
+
   - `File Options`: Add memory assignment feature for `AC5`, `AC6` toolchain. Thanks the contributor [Deadline039](https://github.com/Deadline039)
   - `File Options GUI`: Update the translation text. Optimize layout.
   - `DebugConfig Generator GUI`: Change gui element width. Sort the option result list.
