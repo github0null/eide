@@ -359,6 +359,9 @@
                 "useFile": true,
                 "body": "-f ${value}"
             },
+            "$includes": {
+                "body": "-I${value}"
+            },
             "$output": "-o ${out} ${in}",
             "$default": [
 				"-S",
