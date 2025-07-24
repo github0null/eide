@@ -131,7 +131,7 @@ export abstract class KeilParser<T> {
 
     protected parseIncludePaths(str: string): string[] {
         if (typeof str !== 'string') return [];
-        return this._splitPathSeparator(str, new RegExp(File.delimiter + '\\s*'))
+        return this._splitPathSeparator(str, /;\s*/)
             .map<string>((path) => this.ToAbsolutePath(path));
     }
 
@@ -538,7 +538,7 @@ class C51Parser extends KeilParser<KeilC51Option> {
         target.TargetOption.Target51.C51.VariousControls.IncludePath = mergedDep.incList
             .map(s => prj.resolveEnvVar(s))
             .map(inc => File.ToLocalPath(prj.toRelativePath(inc)))
-            .join(File.delimiter);
+            .join(';');
 
         target.TargetOption.Target51.C51.VariousControls.Define = mergedDep.defineList.join(",");
 
@@ -1362,7 +1362,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
         target.TargetOption.TargetArmAds.Cads.VariousControls.IncludePath = mergedDep.incList
             .map(s => prj.resolveEnvVar(s))
             .map(inc => File.ToLocalPath(prj.toRelativePath(inc)))
-            .join(File.delimiter);
+            .join(';');
 
         target.TargetOption.TargetArmAds.Cads.VariousControls.Define = mergedDep.defineList.join(","); // C/CPP
         target.TargetOption.TargetArmAds.Aads.VariousControls.Define = mergedDep.defineList.join(","); // ASM

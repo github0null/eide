@@ -55,6 +55,7 @@ import { exeSuffix, osType } from "./Platform";
 import { FileWatcher } from "../lib/node-utility/FileWatcher";
 import { STVPFlasherOptions } from './HexUploader';
 import * as ArmCpuUtils from './ArmCpuUtils';
+import { view_str$gen_sct_failed } from './StringTable';
 
 export interface BuildOptions {
 
@@ -658,7 +659,7 @@ export class ARMCodeBuilder extends CodeBuilder {
                     index = storageLayout.RAM[i].id - 1;
                     break;
                 default:
-                    throw Error('Unknown RAM Tag !');
+                    throw Error(`${view_str$gen_sct_failed}: Unknown RAM Tag !`);
             }
 
             memScatter.ramList[index].memInfo = storageLayout.RAM[i].mem;
@@ -679,7 +680,7 @@ export class ARMCodeBuilder extends CodeBuilder {
                     index = storageLayout.ROM[i].id - 1;
                     break;
                 default:
-                    throw Error('Unknown ROM Tag !');
+                    throw Error(`${view_str$gen_sct_failed}: Unknown ROM Tag !`);
             }
 
             memScatter.romList[index].memInfo = storageLayout.ROM[i].mem;
@@ -691,10 +692,10 @@ export class ARMCodeBuilder extends CodeBuilder {
         }
 
         if (memScatter.startUpIndex === -1) {
-            throw Error('MemScatter.startupIndex can\'t be -1');
+            throw Error(`${view_str$gen_sct_failed}: MemScatter.startupIndex can't be -1`);
         }
         else if (!memScatter.romList[memScatter.startUpIndex].selected) {
-            throw Error('the IROM' + (memScatter.startUpIndex - 2).toString() + ' is a startup ROM but it is not selected !');
+            throw Error(`${view_str$gen_sct_failed}: The IROM' + (memScatter.startUpIndex - 2).toString() + ' is a startup ROM but it is not selected !`);
         }
 
         return memScatter;
@@ -1046,8 +1047,12 @@ export class ARMCodeBuilder extends CodeBuilder {
                                 ldFileList.push(this.convLinkerScriptPathForCompiler(sctPath));
                             });
                     } else { // auto generate scatter file
-                        const sctPath = this.GenMemScatterFile(config).path;
-                        ldFileList.push(this.convLinkerScriptPathForCompiler(sctPath));
+                        try {
+                            const sctPath = this.GenMemScatterFile(config).path;
+                            ldFileList.push(this.convLinkerScriptPathForCompiler(sctPath));
+                        } catch (error) {
+                            GlobalEvent.emit('error', error);
+                        }
                     }
                 }
                 break;

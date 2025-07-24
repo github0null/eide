@@ -569,17 +569,21 @@ function toArray(obj: any): any[] {
 
 function detectProjectType(toolChain: any): EclipseProjectType | undefined {
 
-    const toolName = toolChain.$['name'];
+    const toolId   = toolChain.$['id'];
+    const toolName = toolChain.$['name'] || toolId;
 
-    if (/\bARM\b/i.test(toolName)) {
+    // <toolChain id="ilg.gnuarmeclipse.managedbuild.cross.toolchain.elf.debug.1201710416" name="ARM Cross GCC"
+    if (/\bARM\b/.test(toolName) || /gnuarmeclipse/.test(toolId)) {
         return 'arm';
     }
 
-    if (/\b(RISCV|RISC-V)\b/i.test(toolName)) {
+    // <toolChain id="ilg.gnumcueclipse.managedbuild.cross.riscv.toolchain.elf.release.231146001" name="RISC-V Cross GCC…
+    if (/\b(RISCV|RISC-V)\b/.test(toolName) || /\.riscv\./.test(toolId)) {
         return 'riscv';
     }
 
-    if (/\bSDCC\b/i.test(toolName)) {
+    // <toolChain errorParsers="" id="cdt.managedbuild.toolchain.sdcc.exe.release.1956586716" name="SDCC Tool Chain" 
+    if (/\bSDCC\b/.test(toolName) || /\.sdcc\./.test(toolId)) {
         return 'sdcc';
     }
 }
