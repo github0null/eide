@@ -529,7 +529,8 @@
                 },
                 {
                     "id": "cl.eide.view.operations",
-                    "name": "%eide.bar.operations%"
+                    "name": "%eide.bar.operations%",
+                    "visibility": "collapsed"
                 }
             ]
         },

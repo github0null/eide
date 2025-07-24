@@ -20,6 +20,9 @@ All notable version changes will be recorded in this file.
   - `Keil Project Import`: Force use ';' as the path delimiter on unix and windows.
   - `Eclipse Project Import`: Incorrect project type was detected.
 
+**Change**:
+  - `EIDE View Container`: By default, we will collapse the `Operations` view.
+
 ***
 
 ### [v3.23.6] revision
