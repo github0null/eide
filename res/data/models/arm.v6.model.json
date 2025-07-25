@@ -501,7 +501,11 @@
             },
             "defines": {
                 "type": "list",
-                "command": "--pd "
+                "command": "--pd ",
+                "mapper": {
+                    "^\\s*([\\w\\$]+)=(.+)": "\"$1 SETA $2\"",
+                    "^\\s*([\\w\\$]+)\\s*$": "\"$1 SETA 1\""
+                }
             },
             "use-microLIB": {
                 "type": "selectable",
