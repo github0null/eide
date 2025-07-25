@@ -24,6 +24,7 @@ All notable version changes will be recorded in this file.
 
 **Change**:
   - `EIDE View Container`: By default, we will collapse the `Operations` view.
+  - `Webpanel Views`: Starting from this version, we will use singleton pattern for `Builder Options View`, `Storage Layout View`, `Cmsis Header Config Wizard`, This means that for each view, only one page can be opened for each project.
 
 ***
 
