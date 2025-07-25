@@ -43,6 +43,10 @@ let _instance: WebPanelManager;
 
 export class WebPanelManager {
 
+    private builderOptionViewRef: Map<string, vscode.WebviewPanel> = new Map();
+    private memoryLayoutViewRef: Map<string, vscode.WebviewPanel> = new Map();
+    private cmsisHeaderViewRef: Map<string, vscode.WebviewPanel> = new Map();
+
     private constructor() {
     }
 
@@ -115,17 +119,25 @@ export class WebPanelManager {
 
     showStorageLayoutView(project: AbstractProject): void {
 
-        const resManager = ResManager.GetInstance();
+        const oldpanel = this.memoryLayoutViewRef.get(project.getUid());
+        if (oldpanel) {
+            oldpanel.reveal();
+            return;
+        }
 
+        const resManager = ResManager.GetInstance();
         const panel = vscode.window.createWebviewPanel('MemoryLayoutView',
             view_str$compile$storageLayout, vscode.ViewColumn.One,
             { enableScripts: true, retainContextWhenHidden: true });
+
+        this.memoryLayoutViewRef.set(project.getUid(), panel);
 
         // set web icon
         panel.iconPath = vscode.Uri.parse(resManager.GetIconByName('Memory_16x.svg').ToUri());
 
         panel.onDidDispose(() => {
-            //TODO
+            console.log(`[eide] onDidDispose memoryLayoutView for ${project.getRootDir().path}`);
+            this.memoryLayoutViewRef.delete(project.getUid());
         });
 
         const compileModel = <ArmBaseCompileConfigModel>project.GetConfiguration().compileConfigModel;
@@ -174,6 +186,12 @@ export class WebPanelManager {
 
     showBuilderOptions(project: AbstractProject): void {
 
+        const oldpanel = this.builderOptionViewRef.get(project.getUid());
+        if (oldpanel) {
+            oldpanel.reveal();
+            return;
+        }
+
         const projectConfig = project.GetConfiguration();
         const resManager = ResManager.GetInstance();
         const htmlFolder = File.fromArray([resManager.GetHTMLDir().path, 'builder_options']);
@@ -190,6 +208,8 @@ export class WebPanelManager {
             vscode.ViewColumn.One,
             panelOptions
         );
+
+        this.builderOptionViewRef.set(project.getUid(), panel);
 
         // init panel data
         panel.iconPath = vscode.Uri.parse(resManager.GetIconByName('Property_16x.svg').ToUri());
@@ -232,7 +252,8 @@ export class WebPanelManager {
         }
 
         panel.onDidDispose(() => {
-            // TODO
+            console.log(`[eide] onDidDispose builderOptionView for ${project.getRootDir().path}`);
+            this.builderOptionViewRef.delete(project.getUid());
         });
 
         panel.webview.onDidReceiveMessage(async (data) => {
@@ -305,6 +326,12 @@ export class WebPanelManager {
 
     showCmsisConfigWizard(uri: vscode.Uri): void {
 
+        const oldpanel = this.cmsisHeaderViewRef.get(uri.fsPath);
+        if (oldpanel) {
+            oldpanel.reveal();
+            return;
+        }
+
         // get current encoding for this file
         const fencoding = vscode.workspace.getConfiguration(undefined, uri).get<string>('files.encoding') || 'utf8';
         const inputFile = new File(uri.fsPath);
@@ -348,6 +375,8 @@ export class WebPanelManager {
             panelOptions
         );
 
+        this.cmsisHeaderViewRef.set(uri.fsPath, panel);
+
         // init panel data
         panel.iconPath = vscode.Uri.parse(resManager.GetIconByName('Property_16x.svg').ToUri());
 
@@ -358,7 +387,8 @@ export class WebPanelManager {
         };
 
         panel.onDidDispose(() => {
-            // TODO
+            console.log(`[eide] onDidDispose CmsisConfigWizard for ${uri.fsPath}`);
+            this.cmsisHeaderViewRef.delete(uri.fsPath);
         });
 
         panel.webview.onDidReceiveMessage((data) => {
