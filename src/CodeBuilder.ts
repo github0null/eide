@@ -1107,14 +1107,10 @@ export class ARMCodeBuilder extends CodeBuilder {
             if (['AC5', 'AC6'].includes(config.toolchain) &&
                 settingManager.IsConvertAxf2Elf() &&
                 options['linker']['$disableOutputTask'] != true) {
-
-                const tool_root_folder = this.project.getToolchainLocation().path;
-                const ouput_path = `\${outDir}${File.sep}${config.name}`;
-                const axf2elf_log = `\${outDir}${File.sep}axf2elf.log`;
-
+                const axf2elf_log = `\${OutDir}/axf2elf.log`;
                 extraCommands.push({
                     name: 'axf to elf',
-                    command: `axf2elf -d "${tool_root_folder}" -i "${ouput_path}.axf" -o "${ouput_path}.elf" > "${axf2elf_log}"`
+                    command: `axf2elf -d "\${ToolchainRoot}" -i "\${OutDir}/\${ProjectName}.axf" -o "\${OutDir}/\${ProjectName}.elf" > "${axf2elf_log}"`
                 });
             }
 
