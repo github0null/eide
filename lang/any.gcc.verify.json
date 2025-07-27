@@ -245,8 +245,9 @@
                     "markdownDescription": "Warning Level",
                     "description.zh-cn": "警告等级",
                     "type": "string",
-                    "default": "all-warnings",
+                    "default": "unspecified",
                     "enum": [
+                        "unspecified",
                         "no-warnings",
                         "all-warnings"
                     ]
@@ -322,6 +323,33 @@
                         "ELF",
                         "LIB"
                     ]
+                },
+                "$disableOutputTask": {
+                    "type": "boolean",
+                    "markdownDescription": "Don't Output Hex/Bin/S19 Files",
+                    "description.zh-cn": "不生成 Hex/Bin/S19 等二进制文件",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "$outputTaskExcludes": {
+                    "type": "array",
+                    "markdownDescription": "Don't Output Specific Binary Files",
+                    "description.zh-cn": "不生成指定的二进制文件",
+                    "default": [],
+                    "items": {
+                        "type": "string",
+                        "default": ".bin",
+                        "enum": [
+                            ".bin",
+                            ".hex"
+                        ],
+                        "enumDescriptions": [
+                            "*.bin file",
+                            "*.hex file"
+                        ]
+                    }
                 },
                 "remove-unused-input-sections": {
                     "markdownDescription": "Remove Unused Input Sections (-Wl,--gc-sections)",

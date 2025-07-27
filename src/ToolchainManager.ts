@@ -1758,6 +1758,7 @@ class AC5 implements IToolchian {
             },
             'asm-compiler': {},
             linker: {
+                "$outputTaskExcludes": [".bin"],
                 "output-format": 'elf'
             }
         };
@@ -1982,6 +1983,7 @@ class AC6 implements IToolchian {
                 "$use": "asm-auto"
             },
             linker: {
+                "$outputTaskExcludes": [".bin"],
                 "output-format": 'elf',
                 'misc-controls': '--diag_suppress=L6329'
             }
@@ -2234,6 +2236,7 @@ class GCC implements IToolchian {
                 "ASM_FLAGS": ""
             },
             linker: {
+                "$outputTaskExcludes": [".bin"],
                 "output-format": "elf",
                 "remove-unused-input-sections": true,
                 "LD_FLAGS": "",
@@ -2372,6 +2375,7 @@ class IARARM implements IToolchian {
                 "case-sensitive-user-symbols": true
             },
             'linker': {
+                "$outputTaskExcludes": [".bin"],
                 "output-format": 'elf',
                 "auto-search-runtime-lib": true,
                 "perform-cpp-virtual-func-elimination": "enable",
@@ -2901,6 +2905,7 @@ class LLVM_ARM implements IToolchian {
                 "ASM_FLAGS": ""
             },
             linker: {
+                "$outputTaskExcludes": [".bin"],
                 "output-format": "elf",
                 "remove-unused-input-sections": true,
                 "LD_FLAGS": "",
@@ -3582,6 +3587,7 @@ class RISCV_GCC implements IToolchian {
                 "ASM_FLAGS": "-Wl,-Bstatic"
             },
             linker: {
+                "$outputTaskExcludes": [".bin"],
                 "output-format": "elf",
                 "remove-unused-input-sections": true,
                 "LD_FLAGS": "-Wl,--cref -Wl,--no-relax -nostartfiles",
@@ -3815,6 +3821,7 @@ class AnyGcc implements IToolchian {
             options["c/cpp-compiler"]["language-c"] = "c11";
             options["c/cpp-compiler"]["language-cpp"] = "gnu++11";
             options["c/cpp-compiler"]["signed-char"] = true;
+            options["linker"]["$disableOutputTask"] = true;
             // remove -c -x options
             cflags = cflags
                 .replace('-c -xc', '').trim();
@@ -3825,7 +3832,7 @@ class AnyGcc implements IToolchian {
             // replace '--print-memory-usage'
             if (ldflags.includes('--print-memory-usage')) {
                 ldflags = ldflags.replace(/(-Wl,)?--print-memory-usage/, '').trim();
-                options.linker['print-mem-usage'] = true;
+                options["linker"]['print-mem-usage'] = true;
             }
         }
 
@@ -3840,20 +3847,7 @@ class AnyGcc implements IToolchian {
         return <BuilderOptions>{
             version: this.version,
             beforeBuildTasks: [],
-            afterBuildTasks: [
-                {
-                    "name": "output hex file",
-                    "disable": true,
-                    "abortAfterFailed": false,
-                    "command": "${CompilerPrefix}objcopy -O ihex \"${OutDir}/${ProjectName}.elf\" \"${OutDir}/${ProjectName}.hex\""
-                },
-                {
-                    "name": "output bin file",
-                    "disable": true,
-                    "abortAfterFailed": false,
-                    "command": "${CompilerPrefix}objcopy -O binary \"${OutDir}/${ProjectName}.elf\" \"${OutDir}/${ProjectName}.bin\""
-                }
-            ],
+            afterBuildTasks: [],
             global: {
                 "output-debug-info": "enable"
             },
@@ -3871,6 +3865,7 @@ class AnyGcc implements IToolchian {
             },
             linker: {
                 "output-format": "elf",
+                "$disableOutputTask": true,
                 "remove-unused-input-sections": true,
                 "print-mem-usage": true,
                 "LD_FLAGS": "",

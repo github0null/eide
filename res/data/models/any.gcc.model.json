@@ -123,6 +123,7 @@
             "type": "selectable",
             "command": {
                 "false": "",
+                "unspecified": "",
                 "no-warnings": "-w",
                 "all-warnings": "-Wall"
             },
@@ -271,7 +272,21 @@
             "LD_FLAGS": {
                 "type": "list",
                 "command": ""
-            }
+            },
+            "$outputBin": [
+                {
+                    "name": "output hex file",
+                    "toolPath": "bin/${toolPrefix}objcopy",
+                    "outputSuffix": ".hex",
+                    "command": "-O ihex ${linkerOutput} ${output}"
+                },
+                {
+                    "name": "output bin file",
+                    "toolPath": "bin/${toolPrefix}objcopy",
+                    "outputSuffix": ".bin",
+                    "command": "-O binary ${linkerOutput} ${output}"
+                }
+            ]
         },
         "linker-g++": {
             "$path": "bin/${toolPrefix}g++",
@@ -317,7 +332,21 @@
             "LD_FLAGS": {
                 "type": "list",
                 "command": ""
-            }
+            },
+            "$outputBin": [
+                {
+                    "name": "output hex file",
+                    "toolPath": "bin/${toolPrefix}objcopy",
+                    "outputSuffix": ".hex",
+                    "command": "-O ihex ${linkerOutput} ${output}"
+                },
+                {
+                    "name": "output bin file",
+                    "toolPath": "bin/${toolPrefix}objcopy",
+                    "outputSuffix": ".bin",
+                    "command": "-O binary ${linkerOutput} ${output}"
+                }
+            ]
         },
         "linker-ld": {
             "$path": "bin/${toolPrefix}ld",
@@ -363,7 +392,21 @@
             "LD_FLAGS": {
                 "type": "list",
                 "command": ""
-            }
+            },
+            "$outputBin": [
+                {
+                    "name": "output hex file",
+                    "toolPath": "bin/${toolPrefix}objcopy",
+                    "outputSuffix": ".hex",
+                    "command": "-O ihex ${linkerOutput} ${output}"
+                },
+                {
+                    "name": "output bin file",
+                    "toolPath": "bin/${toolPrefix}objcopy",
+                    "outputSuffix": ".bin",
+                    "command": "-O binary ${linkerOutput} ${output}"
+                }
+            ]
         },
         "linker-lib": {
             "$path": "bin/${toolPrefix}ar",
