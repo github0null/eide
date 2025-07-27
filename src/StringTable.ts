@@ -381,8 +381,8 @@ export const set_device_hint = [
 ][langIndex];
 
 export const switch_workspace_hint = [
-    '项目加载成功, 是否立即切换工作区 ?',
-    'The project load successfully, do you want to switch workspace immediately ?'
+    '项目加载成功, 是否立即切换工作区 ? （需要切换工作区才能加载工作区配置）',
+    'The project load successfully, do you want to switch workspace immediately ? Need to switch workspace so that the workspace configuration can be loaded.'
 ][langIndex];
 
 //--------------- env ---------------
