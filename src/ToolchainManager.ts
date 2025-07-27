@@ -1917,6 +1917,30 @@ class AC6 implements IToolchian {
         if (options['c/cpp-compiler'] && options['c/cpp-compiler']['link-time-optimization']) {
             options['linker']['link-time-optimization'] = options['c/cpp-compiler']['link-time-optimization'];
         }
+
+        // AC6 的汇编器模式：
+        //  - armclang （GNU Syntax）：使用 armclang 来编译汇编源代码（对应命令行选项 -masm=gnu），然后强制使用 GNU 汇编语法风格
+        //  - armclang （Arm Syntax）：使用armclang来编译汇编源代码（对应命令行选项 -masm=armasm），然后强制使用 UAL 汇编语法风格。
+        //  - armclang（Auto Select）：使用 armclang 来编译汇编源代码（对应命令行选项 -masm=auto）
+        //! 暂时废弃：因为使用 arm-clang -masm=auto 不能完全兼容旧的 .s 文件，
+        // --predefine 不等同于编译器选项 -Dname。--predefine 定义了一个全局变量，而 -Dname 定义了 C 预处理器扩展的宏。
+        // 见：https://developer.arm.com/documentation/dui0473/m/assembler-command-line-options/--predefine--directive-
+        // 一些汇编文件中存在 `IF :DEF:__MICROLIB` 这需要一个全局变量定义而不是宏定义，
+        //  - 对于 armasm 它提供 --pd "__MICROLIB SETA 1" 以设置变量 __MICROLIB
+        //  - 对于 armclang 它使用了预处理器定义 -D__MICROLIB 并替换宏定义为值 1，但 .s 需要一个变量，因此出现 Symbol missing 错误
+        // if (options['asm-compiler']) {
+        //     //  选择 asm-auto 将使用 `armclang（Auto Select）` 模式，与 MDK 相同
+        //     if (options['asm-compiler']['$use'] == 'asm-auto') {
+        //         options['asm-compiler']['$use'] = 'asm-clang';
+        //         options['asm-compiler']['masm'] = 'auto';
+        //     }
+        // } else {
+        //     // 默认情况下，使用 arm-clang + -masm=auto
+        //     options['asm-compiler'] = {
+        //         '$use': 'asm-clang',
+        //         'masm': 'auto'
+        //     };
+        // }
     }
 
     getToolchainDir(): File {
@@ -1980,7 +2004,8 @@ class AC6 implements IToolchian {
                 "link-time-optimization": false
             },
             'asm-compiler': {
-                "$use": "asm-auto"
+                "$use": "asm-auto",
+                "misc-controls": ""
             },
             linker: {
                 "$outputTaskExcludes": [".bin"],
