@@ -505,6 +505,20 @@
                     "false": "-Wl,--print-memory-usage"
                 }
             },
+            "use-float-printf": {
+                "type": "selectable",
+                "command": {
+                    "true": "-u _printf_float",
+                    "false": ""
+                }
+            },
+            "use-float-scanf": {
+                "type": "selectable",
+                "command": {
+                    "true": "-u _scanf_float",
+                    "false": ""
+                }
+            },
             "$outputBin": [
                 {
                     "name": "output hex file",

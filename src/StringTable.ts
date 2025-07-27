@@ -381,8 +381,8 @@ export const set_device_hint = [
 ][langIndex];
 
 export const switch_workspace_hint = [
-    '项目加载成功, 是否立即切换工作区 ?',
-    'The project load successfully, do you want to switch workspace immediately ?'
+    '项目加载成功, 是否立即切换工作区 ? （需要切换工作区才能加载工作区配置）',
+    'The project load successfully, do you want to switch workspace immediately ? Need to switch workspace so that the workspace configuration can be loaded.'
 ][langIndex];
 
 //--------------- env ---------------
@@ -549,8 +549,13 @@ export const view_str$prompt$select_file_or_folder = [
 ][langIndex];
 
 export const view_str$prompt$not_found_compiler = [
-    `无法找到编译器 '{}' 的安装位置 ！`,
+    `无法找到编译器 '{}' 的位置 ！`,
     `Not found the compiler '{}' location !`
+][langIndex];
+
+export const view_str$prompt$not_found_gcc_prompt_user_setup = [
+    `无法找到编译器 '{}' 的位置 ！\n请确保编译器已安装，并设置到系统环境变量 PATH 中。\n右击 '构建配置' 打开 '设置工具链' 检查编译器前缀是否已设置。`,
+    `Not found the compiler '{}' location ! \nPlease ensure that the compiler is installed and set to the system 'PATH' environment variable.\nRight-click on 'Builder Configuration' to open 'Setup Toolchain' and check if the compiler prefix has been set.`
 ][langIndex];
 
 export const view_str$prompt$install_tools_by_online = [

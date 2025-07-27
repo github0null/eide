@@ -84,8 +84,8 @@
     "eide.package.comp.uninstall": "Uninstall Component",
 
     "eide.builder.switch": "Select Toolchain",
-    "eide.builder.config": "Configure Toolchain",
-    "eide.builder.setup-toolchain-prefix": "Setup Compiler Prefix",
+    "eide.builder.setup-toochain": "Setup Toolchain",
+    "eide.builder.setup-toolchain-prefix": "Setup Toolchain Prefix",
 
     "eide.flash.switch": "Select Flasher",
     "eide.flash.gen.dbgconf": "Generate Debugger Configuration",

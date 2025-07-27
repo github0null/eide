@@ -122,9 +122,21 @@
             "description.zh-cn": "全局选项",
             "type": "object",
             "properties": {
+                "output-debug-info": {
+                    "markdownDescription": "Output debug information",
+                    "description.zh-cn": "输出调试信息",
+                    "type": "string",
+                    "default": "disable",
+                    "enum": [
+                        "disable",
+                        "enable",
+                        "dwarf-2",
+                        "dwarf-3"
+                    ]
+                },
                 "misc-control": {
-                    "markdownDescription": "Global Params",
-                    "description.zh-cn": "编译器全局参数",
+                    "markdownDescription": "Global Options",
+                    "description.zh-cn": "编译器全局选项",
                     "$ref": "#/definitions/FLAGS",
                     "default": ""
                 }
@@ -135,6 +147,46 @@
             "description.zh-cn": "C/C++ 编译器选项",
             "type": "object",
             "properties": {
+                "language-c": {
+                    "markdownDescription": "C Standard",
+                    "description.zh-cn": "C 标准",
+                    "type": "string",
+                    "default": "",
+                    "enum": [
+                        "c89",
+                        "c90",
+                        "c99",
+                        "c11",
+                        "c17",
+                        "c23",
+                        "gnu89",
+                        "gnu90",
+                        "gnu99",
+                        "gnu11",
+                        "gnu17",
+                        "gnu23"
+                    ]
+                },
+                "language-cpp": {
+                    "markdownDescription": "C++ Standard",
+                    "description.zh-cn": "C++ 标准",
+                    "type": "string",
+                    "default": "",
+                    "enum": [
+                        "c++98",
+                        "gnu++98",
+                        "c++11",
+                        "gnu++11",
+                        "c++14",
+                        "gnu++14",
+                        "c++17",
+                        "gnu++17",
+                        "c++20",
+                        "gnu++20",
+                        "c++23",
+                        "gnu++23"
+                    ]
+                },
                 "optimization": {
                     "markdownDescription": "Optimization Level",
                     "description.zh-cn": "代码优化级别",
@@ -174,6 +226,11 @@
                     "markdownDescription": "Data Sections (-fdata-sections)",
                     "type": "boolean"
                 },
+                "signed-char": {
+                    "markdownDescription": "Signed Char (-fsigned-char)",
+                    "description.zh-cn": "Signed Char (-fsigned-char)",
+                    "type": "boolean"
+                },
                 "no-rtti": {
                     "markdownDescription": "Not use RTTI (-fno-rtti)",
                     "description.zh-cn": "禁用运行时类型信息 (-fno-rtti)",
@@ -184,17 +241,33 @@
                     "description.zh-cn": "禁用异常处理 (-fno-exceptions)",
                     "type": "boolean"
                 },
+                "warnings": {
+                    "markdownDescription": "Warning Level",
+                    "description.zh-cn": "警告等级",
+                    "type": "string",
+                    "default": "unspecified",
+                    "enum": [
+                        "unspecified",
+                        "no-warnings",
+                        "all-warnings"
+                    ]
+                },
+                "turn-Warning-into-errors": {
+                    "markdownDescription": "Turn warnings into errors",
+                    "description.zh-cn": "将警告转化为错误",
+                    "type": "boolean"
+                },
                 "C_FLAGS": {
-                    "markdownDescription": "C Compiler Params",
-                    "description.zh-cn": "C 编译器参数",
+                    "markdownDescription": "C Compiler Options",
+                    "description.zh-cn": "C 编译器选项",
                     "$ref": "#/definitions/FLAGS",
-                    "default": "-c -x c"
+                    "default": ""
                 },
                 "CXX_FLAGS": {
-                    "markdownDescription": "C++ Compiler Params",
-                    "description.zh-cn": "C++ 编译器参数",
+                    "markdownDescription": "C++ Compiler Options",
+                    "description.zh-cn": "C++ 编译器选项",
                     "$ref": "#/definitions/FLAGS",
-                    "default": "-c -x c++"
+                    "default": ""
                 }
             }
         },
@@ -215,7 +288,7 @@
                 },
                 "ASM_FLAGS": {
                     "markdownDescription": "Assembler Options",
-                    "description.zh-cn": "汇编器参数",
+                    "description.zh-cn": "汇编器选项",
                     "$ref": "#/definitions/FLAGS",
                     "default": "-c -x assembler"
                 }
@@ -251,8 +324,39 @@
                         "LIB"
                     ]
                 },
+                "$disableOutputTask": {
+                    "type": "boolean",
+                    "markdownDescription": "Don't Output Hex/Bin/S19 Files",
+                    "description.zh-cn": "不生成 Hex/Bin/S19 等二进制文件",
+                    "enum": [
+                        true,
+                        false
+                    ]
+                },
+                "$outputTaskExcludes": {
+                    "type": "array",
+                    "markdownDescription": "Don't Output Specific Binary Files",
+                    "description.zh-cn": "不生成指定的二进制文件",
+                    "default": [],
+                    "items": {
+                        "type": "string",
+                        "default": ".bin",
+                        "enum": [
+                            ".bin",
+                            ".hex"
+                        ],
+                        "enumDescriptions": [
+                            "*.bin file",
+                            "*.hex file"
+                        ]
+                    }
+                },
                 "remove-unused-input-sections": {
                     "markdownDescription": "Remove Unused Input Sections (-Wl,--gc-sections)",
+                    "type": "boolean"
+                },
+                "print-mem-usage": {
+                    "markdownDescription": "Print Memory Usage For Each Section (-Wl,--print-memory-usage)",
                     "type": "boolean"
                 },
                 "elf-suffix": {
@@ -265,15 +369,15 @@
                     "default": ".elf"
                 },
                 "LD_FLAGS": {
-                    "readable_name": "Linker Flags",
-                    "readable_name.zh-cn": "链接器参数",
+                    "readable_name": "Linker Options",
+                    "readable_name.zh-cn": "链接器选项",
                     "markdownDescription": "Use '-Wl[,option]...' pass options to the linker",
                     "description.zh-cn": "使用 '-Wl[,option]...' 传递链接器选项",
                     "$ref": "#/definitions/FLAGS",
                     "default": ""
                 },
                 "LIB_FLAGS": {
-                    "readable_name": "Lib Flags",
+                    "readable_name": "Lib Options",
                     "readable_name.zh-cn": "链接库",
                     "markdownDescription": "Lib Flags, like: -lxxx",
                     "description.zh-cn": "链接库，例如：-lxxx",

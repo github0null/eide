@@ -30,14 +30,11 @@ import { GlobalEvent } from "./GlobalEvents";
 import { newMessage, ExceptionToMessage } from "./Message";
 import { ARMCodeBuilder } from "./CodeBuilder";
 import * as platform from './Platform';
-
 import * as child_process from 'child_process';
-import { CmdLineHandler } from "./CmdLineHandler";
 import * as fs from 'fs';
 import * as events from 'events';
 import * as NodePath from 'path';
-import * as os from 'os';
-import { ArmBaseBuilderConfigData, ArmBaseCompileData, RiscvBuilderConfigData } from "./EIDEProjectModules";
+import { ArmBaseBuilderConfigData } from "./EIDEProjectModules";
 import * as utility from "./utility";
 import * as ArmCpuUtils from "./ArmCpuUtils";
 
@@ -159,6 +156,11 @@ export interface IToolchian {
     preHandleOptions(prjInfo: IProjectInfo, options: BuilderOptions): void;
 
     getDefaultConfig(): BuilderOptions;
+
+    /**
+     * 用于配置项迁移，需要升级旧项目的 builder options 时，执行该方法
+    */
+    migrateOptions?: (oldOptions: BuilderOptions) => void;
 
     newInstance(): IToolchian;
 }
@@ -328,7 +330,7 @@ export class ToolchainManager {
 
     // 在 builder options 版本升级后，通过该函数对旧配置进行更新
     // @return 返回升级后配置，如果为空，则无需升级
-    upgradeBuilderOptions(curOption: BuilderOptions, toolchain: IToolchian): BuilderOptions | undefined {
+    migrateBuilderOptions(curOption: BuilderOptions, toolchain: IToolchian): BuilderOptions | undefined {
         try {
             // if exist
             if (curOption.version != undefined) {
@@ -336,9 +338,6 @@ export class ToolchainManager {
                 if (toolchain.version > curVersion) {
 
                     const defOptions: BuilderOptions = toolchain.getDefaultConfig();
-
-                    // update version
-                    curOption.version = defOptions.version;
 
                     // compatible some linker old params
                     if (curOption.linker) {
@@ -394,6 +393,13 @@ export class ToolchainManager {
                         }
                     }
 
+                    if (toolchain.migrateOptions)
+                        toolchain.migrateOptions(curOption);
+
+                    // update version
+                    curOption.version = defOptions.version;
+
+                    GlobalEvent.log_info('migrate builderOptions done.');
                     return curOption;
                 }
                 return undefined;
@@ -401,7 +407,10 @@ export class ToolchainManager {
                 return toolchain.getDefaultConfig();
             }
         } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            const msg = `Fail to migrate builderOptions. see log for details.`;
+            GlobalEvent.emit('msg', newMessage('Error', msg));
+            GlobalEvent.log_error(error);
+            GlobalEvent.log_show();
         }
     }
 
@@ -1749,6 +1758,7 @@ class AC5 implements IToolchian {
             },
             'asm-compiler': {},
             linker: {
+                "$outputTaskExcludes": [".bin"],
                 "output-format": 'elf'
             }
         };
@@ -1907,6 +1917,30 @@ class AC6 implements IToolchian {
         if (options['c/cpp-compiler'] && options['c/cpp-compiler']['link-time-optimization']) {
             options['linker']['link-time-optimization'] = options['c/cpp-compiler']['link-time-optimization'];
         }
+
+        // AC6 的汇编器模式：
+        //  - armclang （GNU Syntax）：使用 armclang 来编译汇编源代码（对应命令行选项 -masm=gnu），然后强制使用 GNU 汇编语法风格
+        //  - armclang （Arm Syntax）：使用armclang来编译汇编源代码（对应命令行选项 -masm=armasm），然后强制使用 UAL 汇编语法风格。
+        //  - armclang（Auto Select）：使用 armclang 来编译汇编源代码（对应命令行选项 -masm=auto）
+        //! 暂时废弃：因为使用 arm-clang -masm=auto 不能完全兼容旧的 .s 文件，
+        // --predefine 不等同于编译器选项 -Dname。--predefine 定义了一个全局变量，而 -Dname 定义了 C 预处理器扩展的宏。
+        // 见：https://developer.arm.com/documentation/dui0473/m/assembler-command-line-options/--predefine--directive-
+        // 一些汇编文件中存在 `IF :DEF:__MICROLIB` 这需要一个全局变量定义而不是宏定义，
+        //  - 对于 armasm 它提供 --pd "__MICROLIB SETA 1" 以设置变量 __MICROLIB
+        //  - 对于 armclang 它使用了预处理器定义 -D__MICROLIB 并替换宏定义为值 1，但 .s 需要一个变量，因此出现 Symbol missing 错误
+        // if (options['asm-compiler']) {
+        //     //  选择 asm-auto 将使用 `armclang（Auto Select）` 模式，与 MDK 相同
+        //     if (options['asm-compiler']['$use'] == 'asm-auto') {
+        //         options['asm-compiler']['$use'] = 'asm-clang';
+        //         options['asm-compiler']['masm'] = 'auto';
+        //     }
+        // } else {
+        //     // 默认情况下，使用 arm-clang + -masm=auto
+        //     options['asm-compiler'] = {
+        //         '$use': 'asm-clang',
+        //         'masm': 'auto'
+        //     };
+        // }
     }
 
     getToolchainDir(): File {
@@ -1970,9 +2004,11 @@ class AC6 implements IToolchian {
                 "link-time-optimization": false
             },
             'asm-compiler': {
-                "$use": "asm-auto"
+                "$use": "asm-auto",
+                "misc-controls": ""
             },
             linker: {
+                "$outputTaskExcludes": [".bin"],
                 "output-format": 'elf',
                 'misc-controls': '--diag_suppress=L6329'
             }
@@ -2225,6 +2261,7 @@ class GCC implements IToolchian {
                 "ASM_FLAGS": ""
             },
             linker: {
+                "$outputTaskExcludes": [".bin"],
                 "output-format": "elf",
                 "remove-unused-input-sections": true,
                 "LD_FLAGS": "",
@@ -2363,6 +2400,7 @@ class IARARM implements IToolchian {
                 "case-sensitive-user-symbols": true
             },
             'linker': {
+                "$outputTaskExcludes": [".bin"],
                 "output-format": 'elf',
                 "auto-search-runtime-lib": true,
                 "perform-cpp-virtual-func-elimination": "enable",
@@ -2412,6 +2450,8 @@ class LLVM_ARM implements IToolchian {
     }
 
     private getToolPrefix(): string {
+        // FIXME
+        // Not support yet.
         return '';
     }
 
@@ -2426,10 +2466,6 @@ class LLVM_ARM implements IToolchian {
             this.getToolchainDir().path, 'bin', 
             `${type == 'c++' ? 'clang++' : 'clang'}${platform.exeSuffix()}`);
         return gcc.path;
-    }
-
-    getToolchainPrefix(): string {
-        return this.getToolPrefix();
     }
 
     private getCompilerTargetArgs(cpuName: string, fpuType: string, archExt: string, builderOpts: BuilderOptions): string[] {
@@ -2892,6 +2928,7 @@ class LLVM_ARM implements IToolchian {
                 "ASM_FLAGS": ""
             },
             linker: {
+                "$outputTaskExcludes": [".bin"],
                 "output-format": "elf",
                 "remove-unused-input-sections": true,
                 "LD_FLAGS": "",
@@ -3573,6 +3610,7 @@ class RISCV_GCC implements IToolchian {
                 "ASM_FLAGS": "-Wl,-Bstatic"
             },
             linker: {
+                "$outputTaskExcludes": [".bin"],
                 "output-format": "elf",
                 "remove-unused-input-sections": true,
                 "LD_FLAGS": "-Wl,--cref -Wl,--no-relax -nostartfiles",
@@ -3584,7 +3622,7 @@ class RISCV_GCC implements IToolchian {
 
 class AnyGcc implements IToolchian {
 
-    readonly version = 1;
+    readonly version = 2;
 
     readonly settingName: string = 'EIDE.Toolchain.AnyGcc.InstallDirectory';
 
@@ -3686,6 +3724,14 @@ class AnyGcc implements IToolchian {
         // pass user compiler args
         if (builderOpts["c/cpp-compiler"]) {
 
+            if (builderOpts["c/cpp-compiler"]['language-c']) {
+                cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'];
+            }
+
+            if (builderOpts["c/cpp-compiler"]['language-cpp']) {
+                cppToolsConfig.cppStandard = builderOpts["c/cpp-compiler"]['language-cpp'];
+            }
+
             if (typeof builderOpts["c/cpp-compiler"]['C_FLAGS'] == 'string') {
                 const pList = builderOpts['c/cpp-compiler']['C_FLAGS'].trim().split(/\s+/);
                 cppToolsConfig.cCompilerArgs = pList;
@@ -3785,37 +3831,66 @@ class AnyGcc implements IToolchian {
         return [];
     }
 
+    migrateOptions(options: BuilderOptions) {
+
+        let cflags: string   = options["c/cpp-compiler"]['C_FLAGS'] || '';
+        let cxxflags: string = options["c/cpp-compiler"]['CXX_FLAGS'] || '';
+        let asmflags: string = options["asm-compiler"]['ASM_FLAGS'] || '';
+        let ldflags: string  = options.linker['LD_FLAGS'] || '';
+
+        if (options.version == 1) {
+            // setup default options
+            options["global"]["output-debug-info"] = "enable";
+            options["c/cpp-compiler"]["language-c"] = "c11";
+            options["c/cpp-compiler"]["language-cpp"] = "gnu++11";
+            options["c/cpp-compiler"]["signed-char"] = true;
+            options["linker"]["$disableOutputTask"] = true;
+            // remove -c -x options
+            cflags = cflags
+                .replace('-c -xc', '').trim();
+            cxxflags = cxxflags
+                .replace('-c -xc++', '').trim();
+            asmflags = asmflags
+                .replace('-c', '').trim();
+            // replace '--print-memory-usage'
+            if (ldflags.includes('--print-memory-usage')) {
+                ldflags = ldflags.replace(/(-Wl,)?--print-memory-usage/, '').trim();
+                options["linker"]['print-mem-usage'] = true;
+            }
+        }
+
+        // update
+        options["c/cpp-compiler"]['C_FLAGS'] = cflags;
+        options["c/cpp-compiler"]['CXX_FLAGS'] = cxxflags;
+        options["asm-compiler"]['ASM_FLAGS'] = asmflags;
+        options.linker['LD_FLAGS'] = ldflags;
+    }
+
     getDefaultConfig(): BuilderOptions {
         return <BuilderOptions>{
             version: this.version,
             beforeBuildTasks: [],
-            afterBuildTasks: [
-                {
-                    "name": "make hex",
-                    "disable": true,
-                    "abortAfterFailed": false,
-                    "command": "\"${CompilerFolder}/${CompilerPrefix}objcopy\" -O ihex \"${OutDir}/${TargetName}.elf\" \"${OutDir}/${TargetName}.hex\""
-                },
-                {
-                    "name": "make bin",
-                    "disable": true,
-                    "abortAfterFailed": false,
-                    "command": "\"${CompilerFolder}/${CompilerPrefix}objcopy\" -O binary \"${OutDir}/${TargetName}.elf\" \"${OutDir}/${TargetName}.bin\""
-                }
-            ],
-            global: {},
+            afterBuildTasks: [],
+            global: {
+                "output-debug-info": "enable"
+            },
             'c/cpp-compiler': {
+                "language-c": "c11",
+                "language-cpp": "gnu++11",
                 "one-elf-section-per-function": true,
                 "one-elf-section-per-data": true,
-                "C_FLAGS": "-c -xc",
-                "CXX_FLAGS": "-c -xc++"
+                "signed-char": true,
+                "C_FLAGS": "",
+                "CXX_FLAGS": ""
             },
             'asm-compiler': {
-                "ASM_FLAGS": "-c"
+                "ASM_FLAGS": ""
             },
             linker: {
                 "output-format": "elf",
+                "$disableOutputTask": true,
                 "remove-unused-input-sections": true,
+                "print-mem-usage": true,
                 "LD_FLAGS": "",
                 "LIB_FLAGS": ""
             }

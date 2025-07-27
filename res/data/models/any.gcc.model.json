@@ -8,6 +8,21 @@
         "matcher": "\\((?<name>.*?)\\) (?<version>[\\d\\.]+)"
     },
     "global": {
+        "output-debug-info": {
+            "type": "selectable",
+            "command": {
+                "enable": "-g",
+                "disable": "",
+                "dwarf-2": "-g -gdwarf-2",
+                "dwarf-3": "-g -gdwarf-3",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm"
+            ]
+        },
         "optimization": {
             "type": "selectable",
             "command": {
@@ -37,6 +52,17 @@
                 "cpp",
                 "linker",
                 "linker-g++"
+            ]
+        },
+        "signed-char": {
+            "type": "selectable",
+            "command": {
+                "true": "-fsigned-char",
+                "false": "-funsigned-char"
+            },
+            "group": [
+                "c",
+                "cpp"
             ]
         },
         "no-rtti": {
@@ -76,6 +102,30 @@
             "command": {
                 "true": "-fdata-sections",
                 "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "turn-Warning-into-errors": {
+            "type": "selectable",
+            "command": {
+                "true": "-Werror",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp"
+            ]
+        },
+        "warnings": {
+            "type": "selectable",
+            "command": {
+                "false": "",
+                "unspecified": "",
+                "no-warnings": "-w",
+                "all-warnings": "-Wall"
             },
             "group": [
                 "c",
@@ -127,7 +177,15 @@
                 "useFile": true,
                 "body": "@${value}"
             },
-            "$output": "-o ${out} -MMD ${in}"
+            "$output": "-o ${out} -MMD ${in}",
+            "$default": [
+                "-c",
+                "-xc"
+            ],
+            "$language-c": {
+                "type": "value",
+                "command": "-std="
+            }
         },
         "cpp": {
             "$path": "bin/${toolPrefix}g++",
@@ -142,7 +200,14 @@
                 "useFile": true,
                 "body": "@${value}"
             },
-            "$output": "-o ${out} -MMD ${in}"
+            "$output": "-o ${out} -MMD ${in}",
+            "$default": [
+                "-c"
+            ],
+            "$language-cpp": {
+                "type": "value",
+                "command": "-std="
+            }
         },
         "asm": {
             "$path": "bin/${toolPrefix}gcc",
@@ -154,6 +219,10 @@
                 "useFile": true,
                 "body": "@${value}"
             },
+            "$default": [
+                "-c",
+                "-x assembler-with-cpp"
+            ],
             "defines": {
                 "type": "list",
                 "command": "-D"
@@ -178,6 +247,13 @@
                 "type": "list",
                 "command": ""
             },
+            "print-mem-usage": {
+                "type": "selectable",
+                "command": {
+                    "true": "-Wl,--print-memory-usage",
+                    "false": ""
+                }
+            },
             "remove-unused-input-sections": {
                 "type": "selectable",
                 "command": {
@@ -196,7 +272,21 @@
             "LD_FLAGS": {
                 "type": "list",
                 "command": ""
-            }
+            },
+            "$outputBin": [
+                {
+                    "name": "output hex file",
+                    "toolPath": "bin/${toolPrefix}objcopy",
+                    "outputSuffix": ".hex",
+                    "command": "-O ihex ${linkerOutput} ${output}"
+                },
+                {
+                    "name": "output bin file",
+                    "toolPath": "bin/${toolPrefix}objcopy",
+                    "outputSuffix": ".bin",
+                    "command": "-O binary ${linkerOutput} ${output}"
+                }
+            ]
         },
         "linker-g++": {
             "$path": "bin/${toolPrefix}g++",
@@ -217,6 +307,13 @@
                 "type": "list",
                 "command": ""
             },
+            "print-mem-usage": {
+                "type": "selectable",
+                "command": {
+                    "true": "-Wl,--print-memory-usage",
+                    "false": ""
+                }
+            },
             "remove-unused-input-sections": {
                 "type": "selectable",
                 "command": {
@@ -235,7 +332,21 @@
             "LD_FLAGS": {
                 "type": "list",
                 "command": ""
-            }
+            },
+            "$outputBin": [
+                {
+                    "name": "output hex file",
+                    "toolPath": "bin/${toolPrefix}objcopy",
+                    "outputSuffix": ".hex",
+                    "command": "-O ihex ${linkerOutput} ${output}"
+                },
+                {
+                    "name": "output bin file",
+                    "toolPath": "bin/${toolPrefix}objcopy",
+                    "outputSuffix": ".bin",
+                    "command": "-O binary ${linkerOutput} ${output}"
+                }
+            ]
         },
         "linker-ld": {
             "$path": "bin/${toolPrefix}ld",
@@ -256,6 +367,13 @@
                 "type": "list",
                 "command": ""
             },
+            "print-mem-usage": {
+                "type": "selectable",
+                "command": {
+                    "true": "--print-memory-usage",
+                    "false": ""
+                }
+            },
             "remove-unused-input-sections": {
                 "type": "selectable",
                 "command": {
@@ -274,7 +392,21 @@
             "LD_FLAGS": {
                 "type": "list",
                 "command": ""
-            }
+            },
+            "$outputBin": [
+                {
+                    "name": "output hex file",
+                    "toolPath": "bin/${toolPrefix}objcopy",
+                    "outputSuffix": ".hex",
+                    "command": "-O ihex ${linkerOutput} ${output}"
+                },
+                {
+                    "name": "output bin file",
+                    "toolPath": "bin/${toolPrefix}objcopy",
+                    "outputSuffix": ".bin",
+                    "command": "-O binary ${linkerOutput} ${output}"
+                }
+            ]
         },
         "linker-lib": {
             "$path": "bin/${toolPrefix}ar",

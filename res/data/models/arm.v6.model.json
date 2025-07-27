@@ -499,6 +499,9 @@
                 "useFile": true,
                 "body": "--Via ${value}"
             },
+            "$default": [
+                "--diag_suppress=A1950"
+            ],
             "defines": {
                 "type": "list",
                 "command": "--pd ",
@@ -531,6 +534,10 @@
                 "-c",
                 "-x assembler-with-cpp"
             ],
+            "masm": {
+                "type": "value",
+                "command": "-masm="
+            },
             "defines": {
                 "type": "list",
                 "command": "-D"

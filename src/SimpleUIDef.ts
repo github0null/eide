@@ -4,6 +4,8 @@ export interface SimpleUIConfig {
 
     title: string; // title for this config
 
+    ref_id?: string; // 用于唯一地标识该配置，避免重复打开两个完全一样的配置
+
     readonly?: boolean;
 
     iconName?: string;

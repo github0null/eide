@@ -46,6 +46,7 @@ export class WebPanelManager {
     private builderOptionViewRef: Map<string, vscode.WebviewPanel> = new Map();
     private memoryLayoutViewRef: Map<string, vscode.WebviewPanel> = new Map();
     private cmsisHeaderViewRef: Map<string, vscode.WebviewPanel> = new Map();
+    private simpleConfigViewRef: Map<string, vscode.WebviewPanel> = new Map();
 
     private constructor() {
     }
@@ -61,6 +62,12 @@ export class WebPanelManager {
         onSubmit: (newCfg: SimpleUIConfig, thisPanel: vscode.WebviewPanel) => Promise<void | 'canceled'>,
         onMsg?: (msg: string, thisPanel: vscode.WebviewPanel) => void): vscode.WebviewPanel {
 
+        const oldpanel = cfg.ref_id ? this.simpleConfigViewRef.get(cfg.ref_id) : undefined;
+        if (oldpanel) {
+            oldpanel.reveal();
+            return oldpanel;
+        }
+
         const resManager = ResManager.GetInstance();
 
         let ViewCol = cfg.viewColumn;
@@ -73,6 +80,15 @@ export class WebPanelManager {
             cfg.title, 
             { viewColumn: ViewCol, preserveFocus: cfg.notTakeFocus }, 
             { enableScripts: true, retainContextWhenHidden: true });
+
+        if (cfg.ref_id) {
+            const uid = cfg.ref_id;
+            this.simpleConfigViewRef.set(uid, panel);
+            panel.onDidDispose(() => {
+                console.log(`[eide] onDidDispose simpleConfigView for ${uid}`);
+                this.simpleConfigViewRef.delete(uid);
+            });
+        }
 
         panel.iconPath = vscode.Uri.file(resManager.GetIconByName(cfg.iconName || 'Property_16x.svg').path);
 
