@@ -464,7 +464,7 @@ export class ResInstaller {
 
                         // update eide settings
                         if (toolInfo.setting_name) {
-                            let setting_val = ['${userRoot}', '.eide', 'tools', resourceName].join(File.sep);
+                            let setting_val = ['${userHome}', '.eide', 'tools', resourceName].join(File.sep);
                             setting_val = toolInfo.require_name ? `${setting_val}/${toolInfo.require_name}` : setting_val;
                             SettingManager.GetInstance().setConfigValue(toolInfo.setting_name, File.ToUnixPath(setting_val));
                         }

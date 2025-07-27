@@ -262,7 +262,7 @@
                         "type": "string",
                         "scope": "resource",
                         "markdownDescription": "%settings.cppcheck.exec.path%",
-                        "default": "${userRoot}/.eide/tools/cppcheck/cppcheck.exe"
+                        "default": "${userHome}/.eide/tools/cppcheck/cppcheck.exe"
                     },
                     "EIDE.Builder.ThreadNumber": {
                         "type": "integer",
@@ -381,13 +381,13 @@
                         "type": "string",
                         "scope": "resource",
                         "markdownDescription": "gnu sdcc for stm8 installation path",
-                        "default": "${userRoot}/.eide/tools/stm8_gnu_sdcc"
+                        "default": "${userHome}/.eide/tools/stm8_gnu_sdcc"
                     },
                     "EIDE.STM8.COSMIC.InstallDirectory": {
                         "type": "string",
                         "scope": "resource",
                         "markdownDescription": "COSMIC CXSTM8 root folder path",
-                        "default": "${userRoot}/.eide/tools/cosmic_stm8"
+                        "default": "${userHome}/.eide/tools/cosmic_stm8"
                     },
                     "EIDE.ARM.ARMCC5.InstallDirectory": {
                         "type": "string",
@@ -411,13 +411,13 @@
                         "type": "string",
                         "scope": "resource",
                         "markdownDescription": "%settings.arm.gcc.install.folder%",
-                        "default": "${userRoot}/.eide/tools/gcc_arm"
+                        "default": "${userHome}/.eide/tools/gcc_arm"
                     },
                     "EIDE.ARM.LLVM.InstallDirectory": {
                         "type": "string",
                         "scope": "resource",
                         "markdownDescription": "%settings.arm.llvm.install.folder%",
-                        "default": "${userRoot}/.eide/tools/llvm_arm"
+                        "default": "${userHome}/.eide/tools/llvm_arm"
                     },
                     "EIDE.ARM.INI.Path": {
                         "type": "string",
@@ -429,19 +429,19 @@
                         "type": "string",
                         "scope": "resource",
                         "markdownDescription": "%settings.jlink.install.folder%",
-                        "default": "${userRoot}/.eide/tools/jlink"
+                        "default": "${userHome}/.eide/tools/jlink"
                     },
                     "EIDE.OpenOCD.ExePath": {
                         "type": "string",
                         "scope": "resource",
                         "markdownDescription": "%settings.openocd.install.folder%",
-                        "default": "${userRoot}/.eide/tools/openocd/bin/openocd.exe"
+                        "default": "${userHome}/.eide/tools/openocd/bin/openocd.exe"
                     },
                     "EIDE.STLink.ExePath": {
                         "type": "string",
                         "scope": "resource",
                         "markdownDescription": "%settings.stlink.install.folder%",
-                        "default": "${userRoot}/.eide/tools/st_cube_programer/bin/STM32_Programmer_CLI.exe"
+                        "default": "${userHome}/.eide/tools/st_cube_programer/bin/STM32_Programmer_CLI.exe"
                     },
                     "EIDE.ARM.Option.AutoGenerateRTE_Components": {
                         "type": "boolean",
@@ -459,7 +459,7 @@
                         "type": "string",
                         "scope": "resource",
                         "markdownDescription": "%settings.stvp.path%",
-                        "default": "${userRoot}/.eide/tools/stvp/STVP_CmdLine.exe"
+                        "default": "${userHome}/.eide/tools/stvp/STVP_CmdLine.exe"
                     },
                     "EIDE.C51.INI.Path": {
                         "type": "string",
@@ -471,13 +471,13 @@
                         "type": "string",
                         "scope": "resource",
                         "markdownDescription": "%settings.sdcc.install.folder%",
-                        "default": "${userRoot}/.eide/tools/sdcc"
+                        "default": "${userHome}/.eide/tools/sdcc"
                     },
                     "EIDE.RISCV.InstallDirectory": {
                         "type": "string",
                         "scope": "resource",
                         "markdownDescription": "%settings.riscv.gcc.install.folder%",
-                        "default": "${userRoot}/.eide/tools/gcc_riscv"
+                        "default": "${userHome}/.eide/tools/gcc_riscv"
                     },
                     "EIDE.RISCV.ToolPrefix": {
                         "type": "string",
