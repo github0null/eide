@@ -5074,6 +5074,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         const cfg: SimpleUIConfig = {
             title: 'Project Variables',
+            ref_id: `<project-variables>:${prj.getUid()}`,
             readonly: true,
             btns: {
                 submit: {
@@ -5392,6 +5393,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         inheritedArgs = inheritedArgs.trim();
 
         const ui_cfg: SimpleUIConfig = {
+            ref_id: `<file-options>:${fspath}`,
             title: isChinese 
                 ? `修改编译选项（文件：${NodePath.basename(fspath)}）`
                 : `Modify Compiler Options (file: ${NodePath.basename(fspath)})`,
@@ -5751,6 +5753,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         inheritedOptions = inheritedOptions.trim();
 
         const ui_cfg: SimpleUIConfig = {
+            ref_id: `<folder-options>:${folderpath}`,
             title: isChinese 
                 ? `修改编译选项（目录：${NodePath.basename(folderpath)}）`
                 : `Modify Compiler Options (dir: ${NodePath.basename(folderpath)})`,
@@ -7349,6 +7352,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         let toolchainPath = setting.getConfiguration().get(toolchainPathSettingName) || '';
 
         let cfg: SimpleUIConfig = {
+            ref_id: `<toolchain-config>:${project.getUid()}`,
             title: 'Toolchain Configurations',
             items: {
                 'path': {
@@ -7358,7 +7362,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     },
                     name: 'Toolchain Path',
                     data: <SimpleUIConfigData_input>{
-                        placeHolder: 'toolchain dir, like: ${userRoot}/.eide/tools/<toolchain_id>',
+                        placeHolder: 'toolchain dir, like: ${userHome}/.eide/tools/<toolchain_id>',
                         value: toolchainPath,
                         default: toolchainPath
                     }
@@ -7648,7 +7652,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         const isChinese = getLocalLanguageType() == LanguageIndexs.Chinese;
         const ui: SimpleUIConfig = {
-            title: (isChinese ? '创建 Cortex-Debug ({}) 调试配置模板' : 'Create Cortex-Debug ({}) Configuration Template').replace('{}', type.toUpperCase()),
+            title: (isChinese 
+                ? '创建 Cortex-Debug ({}) 调试配置模板' 
+                : 'Create Cortex-Debug ({}) Configuration Template').replace('{}', type.toUpperCase()),
             viewColumn: vscode.ViewColumn.One,
             notTakeFocus: false,
             btns: {
