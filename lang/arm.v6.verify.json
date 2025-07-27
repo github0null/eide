@@ -309,7 +309,7 @@
                     ],
                     "enumDescriptions": [
                         "arm-asm (arm syntax)",
-                        "arm-auto (auto select)",
+                        "arm-auto (auto detect)",
                         "arm-clang (gnu syntax)"
                     ]
                 },

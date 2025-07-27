@@ -2450,6 +2450,8 @@ class LLVM_ARM implements IToolchian {
     }
 
     private getToolPrefix(): string {
+        // FIXME
+        // Not support yet.
         return '';
     }
 
@@ -2464,10 +2466,6 @@ class LLVM_ARM implements IToolchian {
             this.getToolchainDir().path, 'bin', 
             `${type == 'c++' ? 'clang++' : 'clang'}${platform.exeSuffix()}`);
         return gcc.path;
-    }
-
-    getToolchainPrefix(): string {
-        return this.getToolPrefix();
     }
 
     private getCompilerTargetArgs(cpuName: string, fpuType: string, archExt: string, builderOpts: BuilderOptions): string[] {

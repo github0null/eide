@@ -821,22 +821,6 @@ export class SettingManager {
         }
     }
 
-    getGccFamilyToolPrefix(id: ToolchainName): string | undefined {
-        switch (id) {
-            case 'GCC':
-                return this.getGCCPrefix();
-            case 'RISCV_GCC':
-                return this.getRiscvToolPrefix();
-            case 'ANY_GCC':
-                return this.getAnyGccToolPrefix();
-            case 'MIPS_GCC':
-            case 'MTI_GCC':
-                return this.getMipsToolPrefix();
-            default:
-                return undefined;
-        }
-    }
-
     //------------------------------- C51 ----------------------------------
 
     SetC51IniOrUv4Path(path: string) {

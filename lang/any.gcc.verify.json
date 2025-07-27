@@ -135,8 +135,8 @@
                     ]
                 },
                 "misc-control": {
-                    "markdownDescription": "Global Params",
-                    "description.zh-cn": "编译器全局参数",
+                    "markdownDescription": "Global Options",
+                    "description.zh-cn": "编译器全局选项",
                     "$ref": "#/definitions/FLAGS",
                     "default": ""
                 }
@@ -258,14 +258,14 @@
                     "type": "boolean"
                 },
                 "C_FLAGS": {
-                    "markdownDescription": "C Compiler Params",
-                    "description.zh-cn": "C 编译器参数",
+                    "markdownDescription": "C Compiler Options",
+                    "description.zh-cn": "C 编译器选项",
                     "$ref": "#/definitions/FLAGS",
                     "default": ""
                 },
                 "CXX_FLAGS": {
-                    "markdownDescription": "C++ Compiler Params",
-                    "description.zh-cn": "C++ 编译器参数",
+                    "markdownDescription": "C++ Compiler Options",
+                    "description.zh-cn": "C++ 编译器选项",
                     "$ref": "#/definitions/FLAGS",
                     "default": ""
                 }
@@ -288,7 +288,7 @@
                 },
                 "ASM_FLAGS": {
                     "markdownDescription": "Assembler Options",
-                    "description.zh-cn": "汇编器参数",
+                    "description.zh-cn": "汇编器选项",
                     "$ref": "#/definitions/FLAGS",
                     "default": "-c -x assembler"
                 }
@@ -369,15 +369,15 @@
                     "default": ".elf"
                 },
                 "LD_FLAGS": {
-                    "readable_name": "Linker Flags",
-                    "readable_name.zh-cn": "链接器参数",
+                    "readable_name": "Linker Options",
+                    "readable_name.zh-cn": "链接器选项",
                     "markdownDescription": "Use '-Wl[,option]...' pass options to the linker",
                     "description.zh-cn": "使用 '-Wl[,option]...' 传递链接器选项",
                     "$ref": "#/definitions/FLAGS",
                     "default": ""
                 },
                 "LIB_FLAGS": {
-                    "readable_name": "Lib Flags",
+                    "readable_name": "Lib Options",
                     "readable_name.zh-cn": "链接库",
                     "markdownDescription": "Lib Flags, like: -lxxx",
                     "description.zh-cn": "链接库，例如：-lxxx",

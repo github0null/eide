@@ -6,7 +6,7 @@ All notable version changes will be recorded in this file.
 
 ***
 
-### [v3.23.10] revision
+### [v3.23.11] revision
 
 **Improve**:
   - `GNU Arm Toolchain`: Support new mcpu: `cortex-m52, cortex-m55, cortex-m85`.
@@ -16,6 +16,7 @@ All notable version changes will be recorded in this file.
   - `DebugConfig Generator GUI`: Change gui element width. Sort the option result list.
   - `AC5/AC6 Assembler`: Support use `<key>=<val>` preprocessor format for AC5/AC6 armasm.
   - `Makefile Generator`: Improve makefile generator.
+  - `Builder Options`: Add more options for `arm-gcc` and `any-gcc` toolchain.
 
 **Fix**:
   - `IAR ARM Toolchain`: Miss auto-gen `-I` params for iar assembler.

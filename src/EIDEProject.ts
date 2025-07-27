@@ -62,7 +62,8 @@ import { ResInstaller } from './ResInstaller';
 import {
     view_str$prompt$filesOptionsComment,
     view_str$prompt$reloadForOldProject,
-    view_str$prompt$not_found_compiler, view_str$operation$name_can_not_be_blank,
+    view_str$prompt$not_found_compiler, view_str$prompt$not_found_gcc_prompt_user_setup,
+    view_str$operation$name_can_not_be_blank,
     view_str$operation$name_can_not_have_invalid_char,
     view_str$prompt$project_is_opened_by_another,
     WARNING,
@@ -2922,7 +2923,11 @@ $(OUT_DIR):
     }
 
     public checkAndNotifyInstallToolchain(): boolean {
+
         const toolchain = this.getToolchain();
+        const toolchainManager = ToolchainManager.getInstance();
+
+        // support xpack package.json
         if (isGccFamilyToolchain(toolchain.name) && toolchain.getToolchainPrefix) {
             try {
                 if (vscode.workspace.workspaceFile) {
@@ -2950,13 +2955,22 @@ $(OUT_DIR):
                 return false
             }
         }
-        const toolchainManager = ToolchainManager.getInstance();
+
         if (!toolchainManager.isToolchainPathReady(toolchain.name)) {
             const dir = toolchainManager.getToolchainExecutableFolder(toolchain.name);
-            const msg = view_str$prompt$not_found_compiler.replace('{}', toolchain.name) + `, [path]: '${dir?.path}'`;
-            ResInstaller.instance().setOrInstallTools(toolchain.name, msg, toolchain.settingName);
+            let tooldisplayname: string = toolchain.name;
+            if (isGccFamilyToolchain(toolchain.name) && toolchain.getToolchainPrefix)
+                tooldisplayname = `${toolchain.getToolchainPrefix()}gcc`;
+            if (toolchain.name == 'ANY_GCC') {
+                const msg = view_str$prompt$not_found_gcc_prompt_user_setup.replace('{}', tooldisplayname);
+                vscode.window.showWarningMessage(msg);
+            } else {
+                const msg = view_str$prompt$not_found_compiler.replace('{}', tooldisplayname) + `, [path]: '${dir?.path}'`;
+                ResInstaller.instance().setOrInstallTools(toolchain.name, msg, toolchain.settingName);
+            }
             return false;
         }
+
         return true;
     }
 

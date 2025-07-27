@@ -84,7 +84,7 @@
     "eide.package.comp.uninstall": "移除组件",
 
     "eide.builder.switch": "切换编译器",
-    "eide.builder.config": "编译器配置",
+    "eide.builder.setup-toochain": "设置编译器",
     "eide.builder.setup-toolchain-prefix": "设置编译器前缀",
 
     "eide.flash.switch": "切换烧录器",

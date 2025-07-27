@@ -7343,7 +7343,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
     }
 
-    async onConfigureToolchain(item: ProjTreeItem) {
+    async onSetupToolchain(item: ProjTreeItem) {
 
         const project = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
         const setting = SettingManager.GetInstance();
@@ -7351,38 +7351,60 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         let toolchainPathSettingName = setting.trimSettingTag(project.getToolchain().settingName);
         let toolchainPath = setting.getConfiguration().get(toolchainPathSettingName) || '';
 
-        let cfg: SimpleUIConfig = {
+        const toolchain = project.getToolchain();
+        const isChinese = getLocalLanguageType() == LanguageIndexs.Chinese;
+
+        const cfg: SimpleUIConfig = {
             ref_id: `<toolchain-config>:${project.getUid()}`,
-            title: 'Toolchain Configurations',
-            items: {
-                'path': {
-                    type: 'input',
-                    attrs: {
-                        singleLine: true,
-                    },
-                    name: 'Toolchain Path',
-                    data: <SimpleUIConfigData_input>{
-                        placeHolder: 'toolchain dir, like: ${userHome}/.eide/tools/<toolchain_id>',
-                        value: toolchainPath,
-                        default: toolchainPath
-                    }
-                }
-            }
+            title: isChinese 
+                ? `设置工具链 (项目：${project.getProjectName()})`
+                : `Setup Toolchain (Project: ${project.getProjectName()})`,
+            items: {}
         };
 
-        let toolchainPrefix = setting.getGccFamilyToolPrefix(project.getToolchain().name);
-        if (toolchainPrefix != undefined) {
+        if (isGccFamilyToolchain(toolchain.name) && toolchain.getToolchainPrefix) {
+            const toolchainPrefix = toolchain.getToolchainPrefix() || '';
             cfg.items['prefix'] = {
                 type: 'input',
                 attrs: {
                     singleLine: true,
                     size: 30,
                 },
-                name: 'Toolchain Prefix',
+                name: isChinese 
+                    ? '编译器前缀' 
+                    : 'Toolchain Prefix',
                 data: <SimpleUIConfigData_input>{
                     placeHolder: 'like: arm-none-eabi-',
                     value: toolchainPrefix,
                     default: toolchainPrefix
+                },
+            };
+        }
+
+        // toolchain path
+        cfg.items['path'] = {
+            type: 'input',
+            attrs: {
+                singleLine: true,
+            },
+            name: isChinese ? '编译器根目录位置' : 'Toolchain Path',
+            data: <SimpleUIConfigData_input>{
+                placeHolder: 'toolchain dir, like: ${userHome}/.eide/tools/<toolchain_id>',
+                value: toolchainPath,
+                default: toolchainPath
+            }
+        };
+
+        if (isGccFamilyToolchain(toolchain.name)) {
+            cfg.items['path_note'] = {
+                type: 'text',
+                attrs: {},
+                name: '',
+                data: <SimpleUIConfigData_text>{
+                    subType: 'raw',
+                    value: isChinese 
+                        ? `提示：如果您已经将编译器 bin 目录设置到系统环境变量中，则您无需设置上述路径，重启工作区，插件将自动搜索可用的路径` 
+                        : `Note: If you have already set the compiler bin directory to the system environment variables, you do not need to set the above path. Restart the workspace, and the plugin will automatically search for available paths.`
                 },
             };
         }
