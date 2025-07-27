@@ -122,6 +122,18 @@
             "description.zh-cn": "全局选项",
             "type": "object",
             "properties": {
+                "output-debug-info": {
+                    "markdownDescription": "Output debug information",
+                    "description.zh-cn": "输出调试信息",
+                    "type": "string",
+                    "default": "disable",
+                    "enum": [
+                        "disable",
+                        "enable",
+                        "dwarf-2",
+                        "dwarf-3"
+                    ]
+                },
                 "misc-control": {
                     "markdownDescription": "Global Params",
                     "description.zh-cn": "编译器全局参数",
@@ -135,6 +147,46 @@
             "description.zh-cn": "C/C++ 编译器选项",
             "type": "object",
             "properties": {
+                "language-c": {
+                    "markdownDescription": "C Standard",
+                    "description.zh-cn": "C 标准",
+                    "type": "string",
+                    "default": "",
+                    "enum": [
+                        "c89",
+                        "c90",
+                        "c99",
+                        "c11",
+                        "c17",
+                        "c23",
+                        "gnu89",
+                        "gnu90",
+                        "gnu99",
+                        "gnu11",
+                        "gnu17",
+                        "gnu23"
+                    ]
+                },
+                "language-cpp": {
+                    "markdownDescription": "C++ Standard",
+                    "description.zh-cn": "C++ 标准",
+                    "type": "string",
+                    "default": "",
+                    "enum": [
+                        "c++98",
+                        "gnu++98",
+                        "c++11",
+                        "gnu++11",
+                        "c++14",
+                        "gnu++14",
+                        "c++17",
+                        "gnu++17",
+                        "c++20",
+                        "gnu++20",
+                        "c++23",
+                        "gnu++23"
+                    ]
+                },
                 "optimization": {
                     "markdownDescription": "Optimization Level",
                     "description.zh-cn": "代码优化级别",
@@ -174,6 +226,11 @@
                     "markdownDescription": "Data Sections (-fdata-sections)",
                     "type": "boolean"
                 },
+                "signed-char": {
+                    "markdownDescription": "Signed Char (-fsigned-char)",
+                    "description.zh-cn": "Signed Char (-fsigned-char)",
+                    "type": "boolean"
+                },
                 "no-rtti": {
                     "markdownDescription": "Not use RTTI (-fno-rtti)",
                     "description.zh-cn": "禁用运行时类型信息 (-fno-rtti)",
@@ -184,17 +241,32 @@
                     "description.zh-cn": "禁用异常处理 (-fno-exceptions)",
                     "type": "boolean"
                 },
+                "warnings": {
+                    "markdownDescription": "Warning Level",
+                    "description.zh-cn": "警告等级",
+                    "type": "string",
+                    "default": "all-warnings",
+                    "enum": [
+                        "no-warnings",
+                        "all-warnings"
+                    ]
+                },
+                "turn-Warning-into-errors": {
+                    "markdownDescription": "Turn warnings into errors",
+                    "description.zh-cn": "将警告转化为错误",
+                    "type": "boolean"
+                },
                 "C_FLAGS": {
                     "markdownDescription": "C Compiler Params",
                     "description.zh-cn": "C 编译器参数",
                     "$ref": "#/definitions/FLAGS",
-                    "default": "-c -x c"
+                    "default": ""
                 },
                 "CXX_FLAGS": {
                     "markdownDescription": "C++ Compiler Params",
                     "description.zh-cn": "C++ 编译器参数",
                     "$ref": "#/definitions/FLAGS",
-                    "default": "-c -x c++"
+                    "default": ""
                 }
             }
         },
@@ -253,6 +325,10 @@
                 },
                 "remove-unused-input-sections": {
                     "markdownDescription": "Remove Unused Input Sections (-Wl,--gc-sections)",
+                    "type": "boolean"
+                },
+                "print-mem-usage": {
+                    "markdownDescription": "Print Memory Usage For Each Section (-Wl,--print-memory-usage)",
                     "type": "boolean"
                 },
                 "elf-suffix": {

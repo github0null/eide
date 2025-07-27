@@ -30,14 +30,11 @@ import { GlobalEvent } from "./GlobalEvents";
 import { newMessage, ExceptionToMessage } from "./Message";
 import { ARMCodeBuilder } from "./CodeBuilder";
 import * as platform from './Platform';
-
 import * as child_process from 'child_process';
-import { CmdLineHandler } from "./CmdLineHandler";
 import * as fs from 'fs';
 import * as events from 'events';
 import * as NodePath from 'path';
-import * as os from 'os';
-import { ArmBaseBuilderConfigData, ArmBaseCompileData, RiscvBuilderConfigData } from "./EIDEProjectModules";
+import { ArmBaseBuilderConfigData } from "./EIDEProjectModules";
 import * as utility from "./utility";
 import * as ArmCpuUtils from "./ArmCpuUtils";
 
@@ -159,6 +156,11 @@ export interface IToolchian {
     preHandleOptions(prjInfo: IProjectInfo, options: BuilderOptions): void;
 
     getDefaultConfig(): BuilderOptions;
+
+    /**
+     * 用于配置项迁移，需要升级旧项目的 builder options 时，执行该方法
+    */
+    migrateOptions?: (oldOptions: BuilderOptions) => void;
 
     newInstance(): IToolchian;
 }
@@ -328,7 +330,7 @@ export class ToolchainManager {
 
     // 在 builder options 版本升级后，通过该函数对旧配置进行更新
     // @return 返回升级后配置，如果为空，则无需升级
-    upgradeBuilderOptions(curOption: BuilderOptions, toolchain: IToolchian): BuilderOptions | undefined {
+    migrateBuilderOptions(curOption: BuilderOptions, toolchain: IToolchian): BuilderOptions | undefined {
         try {
             // if exist
             if (curOption.version != undefined) {
@@ -336,9 +338,6 @@ export class ToolchainManager {
                 if (toolchain.version > curVersion) {
 
                     const defOptions: BuilderOptions = toolchain.getDefaultConfig();
-
-                    // update version
-                    curOption.version = defOptions.version;
 
                     // compatible some linker old params
                     if (curOption.linker) {
@@ -394,6 +393,13 @@ export class ToolchainManager {
                         }
                     }
 
+                    if (toolchain.migrateOptions)
+                        toolchain.migrateOptions(curOption);
+
+                    // update version
+                    curOption.version = defOptions.version;
+
+                    GlobalEvent.log_info('migrate builderOptions done.');
                     return curOption;
                 }
                 return undefined;
@@ -401,7 +407,10 @@ export class ToolchainManager {
                 return toolchain.getDefaultConfig();
             }
         } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
+            const msg = `Fail to migrate builderOptions. see log for details.`;
+            GlobalEvent.emit('msg', newMessage('Error', msg));
+            GlobalEvent.log_error(error);
+            GlobalEvent.log_show();
         }
     }
 
@@ -3584,7 +3593,7 @@ class RISCV_GCC implements IToolchian {
 
 class AnyGcc implements IToolchian {
 
-    readonly version = 1;
+    readonly version = 2;
 
     readonly settingName: string = 'EIDE.Toolchain.AnyGcc.InstallDirectory';
 
@@ -3686,6 +3695,14 @@ class AnyGcc implements IToolchian {
         // pass user compiler args
         if (builderOpts["c/cpp-compiler"]) {
 
+            if (builderOpts["c/cpp-compiler"]['language-c']) {
+                cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'];
+            }
+
+            if (builderOpts["c/cpp-compiler"]['language-cpp']) {
+                cppToolsConfig.cppStandard = builderOpts["c/cpp-compiler"]['language-cpp'];
+            }
+
             if (typeof builderOpts["c/cpp-compiler"]['C_FLAGS'] == 'string') {
                 const pList = builderOpts['c/cpp-compiler']['C_FLAGS'].trim().split(/\s+/);
                 cppToolsConfig.cCompilerArgs = pList;
@@ -3785,37 +3802,77 @@ class AnyGcc implements IToolchian {
         return [];
     }
 
+    migrateOptions(options: BuilderOptions) {
+
+        let cflags: string   = options["c/cpp-compiler"]['C_FLAGS'] || '';
+        let cxxflags: string = options["c/cpp-compiler"]['CXX_FLAGS'] || '';
+        let asmflags: string = options["asm-compiler"]['ASM_FLAGS'] || '';
+        let ldflags: string  = options.linker['LD_FLAGS'] || '';
+
+        if (options.version == 1) {
+            // setup default options
+            options["global"]["output-debug-info"] = "enable";
+            options["c/cpp-compiler"]["language-c"] = "c11";
+            options["c/cpp-compiler"]["language-cpp"] = "gnu++11";
+            options["c/cpp-compiler"]["signed-char"] = true;
+            // remove -c -x options
+            cflags = cflags
+                .replace('-c -xc', '').trim();
+            cxxflags = cxxflags
+                .replace('-c -xc++', '').trim();
+            asmflags = asmflags
+                .replace('-c', '').trim();
+            // replace '--print-memory-usage'
+            if (ldflags.includes('--print-memory-usage')) {
+                ldflags = ldflags.replace(/(-Wl,)?--print-memory-usage/, '').trim();
+                options.linker['print-mem-usage'] = true;
+            }
+        }
+
+        // update
+        options["c/cpp-compiler"]['C_FLAGS'] = cflags;
+        options["c/cpp-compiler"]['CXX_FLAGS'] = cxxflags;
+        options["asm-compiler"]['ASM_FLAGS'] = asmflags;
+        options.linker['LD_FLAGS'] = ldflags;
+    }
+
     getDefaultConfig(): BuilderOptions {
         return <BuilderOptions>{
             version: this.version,
             beforeBuildTasks: [],
             afterBuildTasks: [
                 {
-                    "name": "make hex",
+                    "name": "output hex file",
                     "disable": true,
                     "abortAfterFailed": false,
-                    "command": "\"${CompilerFolder}/${CompilerPrefix}objcopy\" -O ihex \"${OutDir}/${TargetName}.elf\" \"${OutDir}/${TargetName}.hex\""
+                    "command": "${CompilerPrefix}objcopy -O ihex \"${OutDir}/${ProjectName}.elf\" \"${OutDir}/${ProjectName}.hex\""
                 },
                 {
-                    "name": "make bin",
+                    "name": "output bin file",
                     "disable": true,
                     "abortAfterFailed": false,
-                    "command": "\"${CompilerFolder}/${CompilerPrefix}objcopy\" -O binary \"${OutDir}/${TargetName}.elf\" \"${OutDir}/${TargetName}.bin\""
+                    "command": "${CompilerPrefix}objcopy -O binary \"${OutDir}/${ProjectName}.elf\" \"${OutDir}/${ProjectName}.bin\""
                 }
             ],
-            global: {},
+            global: {
+                "output-debug-info": "enable"
+            },
             'c/cpp-compiler': {
+                "language-c": "c11",
+                "language-cpp": "gnu++11",
                 "one-elf-section-per-function": true,
                 "one-elf-section-per-data": true,
-                "C_FLAGS": "-c -xc",
-                "CXX_FLAGS": "-c -xc++"
+                "signed-char": true,
+                "C_FLAGS": "",
+                "CXX_FLAGS": ""
             },
             'asm-compiler': {
-                "ASM_FLAGS": "-c"
+                "ASM_FLAGS": ""
             },
             linker: {
                 "output-format": "elf",
                 "remove-unused-input-sections": true,
+                "print-mem-usage": true,
                 "LD_FLAGS": "",
                 "LIB_FLAGS": ""
             }

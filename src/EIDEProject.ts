@@ -2538,7 +2538,7 @@ $(OUT_DIR):
         this.registerBuiltinVar('ToolchainRoot', () => toolchainRoot);
 
         const curOptions = prjConfig.compileConfigModel.getOptions();
-        const newOptions = toolManager.upgradeBuilderOptions(curOptions, this.toolchain);
+        const newOptions = toolManager.migrateBuilderOptions(curOptions, this.toolchain);
         if (newOptions) {
             prjConfig.compileConfigModel.setOptions(newOptions, undefined, this.toolchain.name);
         }

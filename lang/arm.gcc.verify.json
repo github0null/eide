@@ -380,6 +380,14 @@
                     "markdownDescription": "Not Print Memory Usage (disable: -Wl,--print-memory-usage)",
                     "type": "boolean"
                 },
+                "use-float-printf": {
+                    "markdownDescription": "Enable float-point for printf(...) function (-u _printf_float)",
+                    "type": "boolean"
+                },
+                "use-float-scanf": {
+                    "markdownDescription": "Enable float-point for scanf(...) function (-u _scanf_float)",
+                    "type": "boolean"
+                },
                 "LD_FLAGS": {
                     "readable_name": "Other Linker Options",
                     "readable_name.zh-cn": "链接器附加选项",
