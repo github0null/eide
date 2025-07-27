@@ -5686,7 +5686,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     }
                 }
 
-                if (Object.keys(memoryAssign[pattern]).length === 0) {
+                if (memoryAssign[pattern] && Object.keys(memoryAssign[pattern]).length === 0) {
                     delete memoryAssign[pattern]; // remove empty assign
                 }
 
