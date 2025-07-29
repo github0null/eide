@@ -28,7 +28,16 @@ import { ResManager } from "./ResManager";
 import { AbstractProject } from "./EIDEProject";
 import { ArmBaseCompileConfigModel } from "./EIDEProjectModules";
 import { GlobalEvent } from "./GlobalEvents";
-import { view_str$compile$options, view_str$compile$storageLayout, view_str$env_desc$builer_folder, view_str$env_desc$compiler_folder, view_str$env_desc$compiler_prefix, view_str$env_desc$output_dir, view_str$env_desc$project_name, view_str$env_desc$project_root, view_str$env_desc$toolchain_root, view_str$operation$done, view_str$project$cmsis_config_wizard } from "./StringTable";
+import { view_str$compile$options, view_str$compile$storageLayout, 
+    view_str$env_desc$builer_folder, view_str$env_desc$compiler_folder, 
+    view_str$env_desc$compiler_prefix, view_str$env_desc$output_dir, 
+    view_str$env_desc$project_name, view_str$env_desc$project_root, 
+    view_str$env_desc$toolchain_root, view_str$operation$done, 
+    view_str$project$cmsis_config_wizard, view_str$env_desc$py3_cmd, 
+    view_str$env_desc$cc_base_args, view_str$env_desc$cxx_base_args, 
+    view_str$env_desc$asm_base_args, view_str$env_desc$compiler_ver,
+    view_str$env_desc$compiler_full_name
+} from "./StringTable";
 import * as NodePath from 'path';
 import * as CmsisConfigParser from './CmsisConfigParser'
 import * as os from 'os'
@@ -232,11 +241,10 @@ export class WebPanelManager {
 
         const envList: any[] = [
             // unify_builder specific variables
-            { name: '${BuilderFolder}', desc: view_str$env_desc$builer_folder },
             { name: '${CompilerPrefix}', desc: view_str$env_desc$compiler_prefix },
-            { name: '${CompilerFolder}', desc: view_str$env_desc$compiler_folder }
+            { name: '${CompilerFullName}', desc: view_str$env_desc$compiler_full_name },
+            { name: '${CompilerVersion}', desc: view_str$env_desc$compiler_ver }
         ];
-
         const prjEnv = project.getProjectVariables();
         for (const key in prjEnv) {
             envList.push({
@@ -244,6 +252,12 @@ export class WebPanelManager {
                 desc: `${prjEnv[key]}`
             })
         }
+        // other EIDE_xx variables
+        [
+            { name: '${EIDE_CUR_COMPILER_CC_BASE_ARGS}', desc: view_str$env_desc$cc_base_args },
+            { name: '${EIDE_CUR_COMPILER_CXX_BASE_ARGS}', desc: view_str$env_desc$cxx_base_args },
+            { name: '${EIDE_CUR_COMPILER_AS_BASE_ARGS}', desc: view_str$env_desc$asm_base_args }
+        ].forEach(item => envList.push(item))
 
         const toolchain = project.getToolchain();
 

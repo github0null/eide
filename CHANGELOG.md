@@ -6,7 +6,7 @@ All notable version changes will be recorded in this file.
 
 ***
 
-### [v3.23.11] revision
+### [v3.23.12] revision
 
 **Improve**:
   - `GNU Arm Toolchain`: Support new mcpu: `cortex-m52, cortex-m55, cortex-m85`.

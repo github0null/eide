@@ -315,7 +315,7 @@ function postLaunchHook(extensionCtx: vscode.ExtensionContext) {
     if (isFirstLaunch) {
 
         // setup install time
-        resManager.setAppUsrData('InstallTime', Date.now().toString());
+        resManager.setAppUsrData('InstallTime', Date.now());
 
         // only enable github proxy for GMT+8:00 by default
         const timeZone = Math.floor((new Date().getTimezoneOffset() / 60) * -1);
@@ -328,10 +328,16 @@ function postLaunchHook(extensionCtx: vscode.ExtensionContext) {
     // not first launch
     else {
 
+        // fix type error for old version
+        if (typeof appUsrData['InstallTime'] === 'string') {
+            appUsrData['InstallTime'] = parseInt(appUsrData['InstallTime']) || 0;
+            resManager.setAppUsrData('InstallTime', appUsrData['InstallTime']);
+        }
+
         // A few days ago, show feedback message
-        const some_days = 7 * (24 * 3600 * 1000);
+        const some_days = 7 * utility.TIME_ONE_DAY;
         if (!appUsrData['Feedbacked'] &&
-            Date.now() - appUsrData['InstallTime'] > some_days) {
+            Date.now() > appUsrData['InstallTime'] + some_days) {
             resManager.setAppUsrData('Feedbacked', true);
             const msg = view_str$prompt$feedback;
             vscode.window.showInformationMessage(msg, rating_text, sponsor_author_text).then((ans) => {
@@ -433,9 +439,10 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
     }
 
     /* check eide binaries */
-    // if user force reinstall, delete old 'bin' dir
+
+    // force reinstall
     if (forceInstall) {
-        platform.DeleteDir(binFolder);
+        return await tryUpdateBinaries(binFolder, undefined);
     }
 
     // if binaries is installed, we need check binaries's version
@@ -461,12 +468,18 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
         // try fetch update after 5sec delay
         if (localVersion) {
             setTimeout(async (curLocalVersion: string) => {
-                const done = await tryUpdateBinaries(binFolder, curLocalVersion, true); // no prompt
-                if (!done) {
-                    const msg = `Update eide-binaries failed, please restart vscode to try again !`;
-                    const sel = await vscode.window.showErrorMessage(msg, 'Restart', 'Cancel');
-                    if (sel == 'Restart') {
-                        vscode.commands.executeCommand('workbench.action.reloadWindow');
+                const appUsrData = resManager.getAppUsrData() || {};
+                const lastCheckUpdateTime: number = appUsrData['LastCheckBinariesUpdateTime'] || 0;
+                if (Date.now() > lastCheckUpdateTime + (6 * utility.TIME_ONE_HOUR)) {
+                    const done = await tryUpdateBinaries(binFolder, curLocalVersion); // no prompt
+                    if (done) {
+                        resManager.setAppUsrData('LastCheckBinariesUpdateTime', Date.now());
+                    } else {
+                        const msg = `Update eide-binaries failed, please restart vscode to try again !`;
+                        const sel = await vscode.window.showErrorMessage(msg, 'Restart', 'Cancel');
+                        if (sel == 'Restart') {
+                            vscode.commands.executeCommand('workbench.action.reloadWindow');
+                        }
                     }
                 }
             }, 5 * 1000, localVersion);
@@ -476,7 +489,7 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
         // the binaries maybe damaged, we need to force reinstall it
         else {
             platform.DeleteDir(binFolder); // del existed folder
-            return await tryUpdateBinaries(binFolder, undefined, true);
+            return await tryUpdateBinaries(binFolder, undefined);
         }
 
         // export current binaries version
@@ -491,10 +504,13 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
     }
 
     // not found binaries folder, install it
-    return await tryUpdateBinaries(binFolder, undefined, true);
+    return await tryUpdateBinaries(binFolder, undefined);
 }
 
-async function tryUpdateBinaries(binFolder: File, localVer?: string, notConfirm?: boolean): Promise<boolean> {
+/**
+ * @param localVer 当前本地的版本号，通过比对版本号决定是否执行安装，如果为 undefined 则强制安装
+*/
+async function tryUpdateBinaries(binFolder: File, localVer?: string): Promise<boolean> {
 
     const eideCfg = ResManager.GetInstance().getAppConfig<any>();
     const minReqVersion = eideCfg['binary_min_version'];
@@ -578,15 +594,12 @@ async function tryUpdateBinaries(binFolder: File, localVer?: string, notConfirm?
     // check bin folder
     // show notify to user and request a confirm
     if (checkBinFolder(binFolder) && preinstallVersion) {
-
-        if (!notConfirm) {
-            const msg = `New update for eide binaries, version: '${preinstallVersion}', [ChangeLog](https://github.com/github0null/eide-resource/pulls?q=is%3Apr+is%3Aclosed), install now ?`;
-            const sel = await vscode.window.showInformationMessage(msg, 'Yes', 'Later');
-            if (sel != 'Yes') { return true; } // user canceled
-        }
-
-        // del old bin folder before install
-        platform.DeleteDir(binFolder);
+        //TODO
+        // if (!notConfirm) {
+        //     const msg = `New update for eide binaries, version: '${preinstallVersion}', [ChangeLog](https://github.com/github0null/eide-resource/pulls?q=is%3Apr+is%3Aclosed), install now ?`;
+        //     const sel = await vscode.window.showInformationMessage(msg, 'Yes', 'Later');
+        //     if (sel != 'Yes') { return true; } // user canceled
+        // }
     }
 
     return await tryInstallBinaries(binFolder, preinstallVersion);
@@ -614,9 +627,6 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
 
     try {
         const tmpFile = File.fromArray([os.tmpdir(), `eide-binaries-${binVersion}.${binType}`]);
-
-        /* make dir */
-        binFolder.CreateDir(true);
 
         const done = await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
@@ -665,6 +675,15 @@ async function tryInstallBinaries(binFolder: File, binVersion: string): Promise<
                     };
 
                     let prevPercent: number = 0;
+
+                    // del old binaries
+                    if (binFolder.IsDir()) {
+                        progress.report({ message: `Cleanup old files ...` });
+                        platform.DeleteAllChildren(binFolder);
+                    }
+
+                    // make dir
+                    binFolder.CreateDir(true);
 
                     // start unzip
                     node7z.extractFull(tmpFile.path, binFolder.path, {
@@ -899,6 +918,9 @@ function exportEnvToSysPath(context?: vscode.ExtensionContext) {
             process.env[env.key] = '';
         }
     }
+
+    /* setup python3 cmd */
+    process.env['EIDE_PY3_CMD'] = resManager.getPython3();
 
     // .NET 工具会收集用法数据，帮助我们改善你的体验。它由 Microsoft 收集并与社区共享。
     // 你可通过使用喜欢的 shell 将 DOTNET_CLI_TELEMETRY_OPTOUT 环境变量设置为 "1" 或 "true" 来选择退出遥测。

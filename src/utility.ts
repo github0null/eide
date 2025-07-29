@@ -45,6 +45,10 @@ import { SettingManager } from './SettingManager';
 import { ToolchainName } from './ToolchainManager';
 import { Time } from '../lib/node-utility/Time';
 
+export const TIME_ONE_MINUTE = 60 * 1000;
+export const TIME_ONE_HOUR = 3600 * 1000;
+export const TIME_ONE_DAY = 24 * 3600 * 1000;
+
 /**
  * @param len len必须是2的整数倍
  */

@@ -2141,20 +2141,18 @@ $(OUT_DIR):
     private getEnvFileDefCont(): string[] {
         return [
             `###########################################################`,
-            `#              project environment variables`,
+            `#              Project Environment Variables`,
             `###########################################################`,
+            ``,
+            `## Global Variables`,
             ``,
             `# append command prefix for toolchain`,
             `#COMPILER_CMD_PREFIX=`,
-            ``,
             `# mcu ram size (used to print memory usage)`,
             `#MCU_RAM_SIZE=0x00`,
-            ``,
             `# mcu rom size (used to print memory usage)`,
             `#MCU_ROM_SIZE=0x00`,
             ``,
-            `# put your global variables ...`,
-            `#GLOBAL_VAR=`,
             ``,
         ].map((line) => line);
     }
@@ -2639,6 +2637,7 @@ $(OUT_DIR):
                 this.registerBuiltinVar(key, () => process.env[key] || '');
             }
         }
+        this.registerBuiltinVar('EIDE_PY3_CMD', () => ResManager.instance().getPython3());
     }
 
     private RegisterEvent(): void {
