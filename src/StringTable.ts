@@ -413,13 +413,43 @@ export const view_str$env_desc$toolchain_root = [
 ][langIndex];
 
 export const view_str$env_desc$compiler_prefix = [
-    `编译器前缀，例如：arm-none-eabi-`,
-    `Compiler prefix, like: arm-none-eabi-`
+    `GCC编译器前缀 (非GCC则没有前缀,为空)，例如：arm-none-eabi-`,
+    `GCC Compiler Prefix (empty if it's not gcc). e.g. arm-none-eabi-`
 ][langIndex];
 
 export const view_str$env_desc$compiler_folder = [
     `编译器可执行文件目录`,
     `Compiler executable file's folder`
+][langIndex];
+
+export const view_str$env_desc$compiler_ver = [
+    `编译器版本号，如：'8.3.1'`,
+    `Compiler Version. e.g. 8.3.1`
+][langIndex];
+
+export const view_str$env_desc$compiler_full_name = [
+    `编译器全名 (可读名称)`,
+    `Compiler Full Name (Human-readable Name)`
+][langIndex];
+
+export const view_str$env_desc$cc_base_args = [
+    `C 编译器的基本参数 (CFLAGS)`,
+    `Base C Compiler Flags (CFLAGS)`
+][langIndex];
+
+export const view_str$env_desc$cxx_base_args = [
+    `C++ 编译器的基本参数 (CXXFLAGS)`,
+    `Base C++ Compiler Flags (CXXFLAGS)`
+][langIndex];
+
+export const view_str$env_desc$asm_base_args = [
+    `汇编器的基本参数 (ASMFLAGS)`,
+    `Base Assembler Flags (ASMFLAGS)`
+][langIndex];
+
+export const view_str$env_desc$py3_cmd = [
+    `插件内置的 python3 命令 (非windows平台则使用系统自带命令)`,
+    `The built-in python3 commands of the plugin (for non-Windows platforms, use the system's built-in commands)`
 ][langIndex];
 
 //---------------Other---------------

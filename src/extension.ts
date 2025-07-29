@@ -919,6 +919,9 @@ function exportEnvToSysPath(context?: vscode.ExtensionContext) {
         }
     }
 
+    /* setup python3 cmd */
+    process.env['EIDE_PY3_CMD'] = resManager.getPython3();
+
     // .NET 工具会收集用法数据，帮助我们改善你的体验。它由 Microsoft 收集并与社区共享。
     // 你可通过使用喜欢的 shell 将 DOTNET_CLI_TELEMETRY_OPTOUT 环境变量设置为 "1" 或 "true" 来选择退出遥测。
     // 阅读有关 .NET CLI 工具遥测的更多信息: https://aka.ms/dotnet-cli-telemetry
