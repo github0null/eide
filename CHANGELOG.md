@@ -6,6 +6,13 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.23.13] revision
+
+**Improve**:
+  - `Create Project`: Miscellaneous things. (init project files, init project settings ... etc.)
+
+***
+
 ### [v3.23.12] revision
 
 **Improve**:

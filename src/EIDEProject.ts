@@ -3620,6 +3620,14 @@ class EIDEProject extends AbstractProject {
 
             // --- vscode settings
 
+            // 避免 msys bash 出现 cygpath 问题
+            if (SettingManager.instance().isEnableMsys())
+                settings['terminal.integrated.shellIntegration.enabled'] = false;
+
+            // 默认不要自动插入 header
+            if (settings["clangd.arguments"] == undefined)
+                settings["clangd.arguments"] = ["--header-insertion=never"];
+
             if (settings['files.autoGuessEncoding'] === undefined) {
                 settings['files.autoGuessEncoding'] = true;
             }
@@ -3731,13 +3739,13 @@ class EIDEProject extends AbstractProject {
                 GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
             }
 
-            // gen default 'settings.json'
-            try {
-                const settingsFile = File.fromArray([this.GetRootDir().path, AbstractProject.vsCodeDir, 'settings.json']);
-                if (!settingsFile.IsFile()) { settingsFile.Write('{}'); }
-            } catch (error) {
-                // nothing todo
-            }
+            // // gen default 'settings.json'
+            // try {
+            //     const settingsFile = File.fromArray([this.GetRootDir().path, AbstractProject.vsCodeDir, 'settings.json']);
+            //     if (!settingsFile.IsFile()) { settingsFile.Write('{}'); }
+            // } catch (error) {
+            //     // nothing todo
+            // }
 
             // add extension recommendation
             {
@@ -3750,8 +3758,7 @@ class EIDEProject extends AbstractProject {
                     "redhat.vscode-yaml",
                     "IBM.output-colorizer",
                     "cschlosser.doxdocgen",
-                    "ms-vscode.vscode-serial-monitor",
-                    "alefragnani.project-manager"
+                    "ms-vscode.vscode-serial-monitor"
                 ];
 
                 const prjInfo = this.GetConfiguration().config;

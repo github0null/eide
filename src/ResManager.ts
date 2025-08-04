@@ -259,6 +259,9 @@ export class ResManager extends events.EventEmitter {
         }
     }
 
+    /**
+     * 按照文件名字，在 /tmp/EIDE 目录下寻找缓存的临时文件
+    */
     getCachedFileByName(name: string): File {
         return new File(this.GetTmpDir().path + File.sep + name);
     }

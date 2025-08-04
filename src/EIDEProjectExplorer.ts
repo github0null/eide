@@ -1373,6 +1373,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                         }
                     }
                     break;
+                // The edit setting value's callback is in @ref ModifyOtherSettings(...)
                 case TreeItemType.SETTINGS:
                     {
                         const config = project.GetConfiguration();
@@ -3986,7 +3987,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 //
                 cfg['CompileFlags']['CompilationDatabase'] = './' + File.ToUnixPath(prj.getOutputDir());
                 const toolchain = prj.getToolchain();
-                const gccLikePath = toolchain.getGccFamilyCompilerPathForCpptools('c++');
+                const gccLikePath = toolchain.getGccFamilyCompilerPathForCpptools('c');
                 if (gccLikePath) { // clangd 仅兼容gcc的编译器
                     cfg['CompileFlags']['Compiler'] = gccLikePath;
                     let clangdCompileFlags = <string[]>(cfg['CompileFlags']['Add']);
