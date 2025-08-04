@@ -169,7 +169,7 @@ export function GetUUID(): string {
             const list = buf.match(/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/);
             uuid = list ? list[0] : UUID_NULL;
         } else {
-            uuid = child_process.execSync(`cat /proc/sys/kernel/random/uuid`).toString().trim();
+            uuid = 'machine-id-' + child_process.execSync(`cat /etc/machine-id`).toString().trim();
         }
     } catch (error) {
         uuid = UUID_NULL;
