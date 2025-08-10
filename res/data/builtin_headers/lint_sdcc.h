@@ -42,8 +42,8 @@
 
 // internal value type
 
-#define __bit   bool
-#define __sbit  volatile bool
-#define __sfr   volatile unsigned char
-#define __sfr16 volatile unsigned short
-#define __sfr32 volatile unsigned long
+typedef _Bool __bit;
+typedef volatile _Bool __sbit;
+typedef volatile unsigned char __sfr;
+typedef volatile unsigned short __sfr16;
+typedef volatile unsigned long __sfr32;

@@ -39,8 +39,8 @@
 
 // internal value type
 
-typedef bit char;
-typedef sbit char;
-typedef sfr unsigned char;
-typedef sfr16 unsigned short;
-typedef sfr32 unsigned long;
+typedef _Bool bit;
+typedef volatile _Bool sbit;
+typedef volatile unsigned char sfr;
+typedef volatile unsigned short sfr16;
+typedef volatile unsigned long sfr32;
