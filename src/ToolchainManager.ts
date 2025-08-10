@@ -490,7 +490,7 @@ class KeilC51 implements IToolchian {
 
     getForceIncludeHeaders(): string[] | undefined {
         return [
-            ResManager.GetInstance().getC51ForceIncludeHeaders().path
+            ResManager.GetInstance().getKeilC51ForceIncludeHeaders().path
         ];
     }
 
@@ -1123,7 +1123,7 @@ class SDCC implements IToolchian {
 
     getForceIncludeHeaders(): string[] | undefined {
         return [
-            ResManager.GetInstance().getC51ForceIncludeHeaders().path
+            ResManager.GetInstance().getSdccForceIncludeHeaders().path
         ];
     }
 
