@@ -392,15 +392,15 @@ export class OperationExplorer {
                                 type: 'C51'
                             },
                             {
-                                label: '8051 Empty Project (Keil C51 Compiler)',
+                                label: '8051 Empty Project (SDCC)',
                                 detail: '8051 empty project',
-                                templateName: 'mcs51',
+                                templateName: 'mcs51_sdcc',
                                 type: 'C51'
                             },
                             {
                                 label: 'STM8 Empty Project (COSMIC Compiler)',
                                 detail: 'stm8 empty project',
-                                templateName: 'cosmic_stm8_empty',
+                                templateName: 'stm8_cosmic_empty',
                                 type: 'C51'
                             },
                         ];
@@ -414,21 +414,15 @@ export class OperationExplorer {
                 {
                     const itemList: ProjectTemplatePickItem[] = [
                         {
-                            label: '8051 Quickstart',
-                            detail: 'Universal 8051 quickstart project (Keil C51 Compiler)',
-                            templateName: 'mcs51',
+                            label: '8051 Quickstart (SDCC)',
+                            detail: 'Universal 8051 quickstart with SDCC',
+                            templateName: 'mcs51_sdcc',
                             type: 'C51'
                         },
                         {
-                            label: '89C52 SDCC Quickstart',
-                            detail: '89c52 quickstart project (SDCC)',
-                            templateName: '89c52_sdcc',
-                            type: 'C51'
-                        },
-                        {
-                            label: 'STC15 Keil_C51 Quickstart',
-                            detail: 'stc15 quickstart project (Keil C51 Compiler)',
-                            templateName: 'stc15',
+                            label: 'STC15 Quickstart (SDCC)',
+                            detail: 'stc15 quickstart project with SDCC',
+                            templateName: 'stc15_sdcc',
                             type: 'C51'
                         },
                         {
@@ -438,21 +432,15 @@ export class OperationExplorer {
                             type: 'ANY-GCC'
                         },
                         {
-                            label: 'STM8S COSMIC Quickstart',
-                            detail: 'stm8s quickstart project (STM8S003,STM8S005,STM8S103) (COSMIC STM8 Compiler)',
-                            templateName: 'stm8s_cosmic_quickstart',
+                            label: 'STM8S Quickstart (COSMIC STM8)',
+                            detail: 'stm8s quickstart project with COSMIC STM8 Compiler',
+                            templateName: 'stm8s_cosmic',
                             type: 'C51'
                         },
                         {
-                            label: 'STM8 IAR Quickstart',
-                            detail: 'stm8s103 quickstart project (IAR STM8 Compiler)',
-                            templateName: 'stm8s103f3',
-                            type: 'C51'
-                        },
-                        {
-                            label: 'STM8 SDCC Quickstart',
-                            detail: 'stm8s103 quickstart project (SDCC)',
-                            templateName: 'stm8s103_sdcc',
+                            label: 'STM8 Quickstart (SDCC)',
+                            detail: 'stm8s quickstart project with SDCC',
+                            templateName: 'stm8s_sdcc',
                             type: 'C51'
                         },
                         {
