@@ -377,12 +377,6 @@
                         "markdownDescription": "%settings.iar.arm.toolchain.install.folder%",
                         "default": ""
                     },
-                    "EIDE.STM8.GNU-SDCC.InstallDirectory": {
-                        "type": "string",
-                        "scope": "resource",
-                        "markdownDescription": "gnu sdcc for stm8 installation path",
-                        "default": "${userHome}/.eide/tools/stm8_gnu_sdcc"
-                    },
                     "EIDE.STM8.COSMIC.InstallDirectory": {
                         "type": "string",
                         "scope": "resource",

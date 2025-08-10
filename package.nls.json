@@ -173,5 +173,5 @@
     "string.eide.open_docs": "Learn More",
     "string.eide.open_docs.detail": "Click the link will open the home page that may help you learn more about usage.\n[Embedded IDE](https://em-ide.com/)",
 
-    "string.eide.project.welcome": "No projects in this workspace !\n[Open Project](command:eide.operation.open_project)\n[Create Project](command:eide.operation.new_project)\n[Import Project](command:eide.operation.import_project)"
+    "string.eide.project.welcome": "No eide projects in this workspace !\n[Open Project](command:eide.operation.open_project)\n[New Project](command:eide.operation.new_project)\n[Import Project](command:eide.operation.import_project)"
 }

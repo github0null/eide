@@ -1092,7 +1092,23 @@ export class OperationExplorer {
                             description: group.desc || ""
                         };
                     }
-                }).sort((a, b) => { return a.label.localeCompare(b.label); });
+                });
+
+                if (curTempGroup.name === '/') {
+                    category_sel_list = category_sel_list
+                        .sort((a, b) => {
+                            // 始终保证 'MCU' 分类处于第一个
+                            if (a.label === 'MCU')
+                                return -1;
+                            else if (b.label === 'MCU')
+                                return 1;
+                            else
+                                return a.label.localeCompare(b.label);
+                        });
+                } else {
+                    category_sel_list = category_sel_list
+                        .sort((a, b) => a.label.localeCompare(b.label));
+                }
 
                 if (prevGroupStack.length > 0) {
                     category_sel_list = <CategoryPickItem[]>[goBackItemForGroup].concat(category_sel_list);
