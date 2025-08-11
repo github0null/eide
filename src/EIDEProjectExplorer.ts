@@ -4962,6 +4962,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 `${AbstractProject.EIDE_DIR}${File.sep}*.dat`,
             ];
 
+            if (SettingManager.instance().isEnableClangdConfigGenerator())
+                defExcludeList.push('.clangd');
+
             // if this is a project, prehandle it
             let prj: AbstractProject | undefined;
             if (prjItem && isWorkspace == undefined) {
