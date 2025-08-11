@@ -392,15 +392,15 @@ export class OperationExplorer {
                                 type: 'C51'
                             },
                             {
-                                label: '8051 Empty Project (Keil C51 Compiler)',
+                                label: '8051 Empty Project (SDCC)',
                                 detail: '8051 empty project',
-                                templateName: 'mcs51',
+                                templateName: 'mcs51_sdcc',
                                 type: 'C51'
                             },
                             {
                                 label: 'STM8 Empty Project (COSMIC Compiler)',
                                 detail: 'stm8 empty project',
-                                templateName: 'cosmic_stm8_empty',
+                                templateName: 'stm8_cosmic_empty',
                                 type: 'C51'
                             },
                         ];
@@ -414,56 +414,44 @@ export class OperationExplorer {
                 {
                     const itemList: ProjectTemplatePickItem[] = [
                         {
-                            label: '8051 Quickstart',
-                            detail: 'Universal 8051 quickstart project (Keil C51 Compiler)',
-                            templateName: 'mcs51',
+                            label: '8051 Quick Start (SDCC)',
+                            detail: 'Universal 8051 example project with SDCC',
+                            templateName: 'mcs51_sdcc',
                             type: 'C51'
                         },
                         {
-                            label: '89C52 SDCC Quickstart',
-                            detail: '89c52 quickstart project (SDCC)',
-                            templateName: '89c52_sdcc',
+                            label: 'STC15 Quick Start (SDCC)',
+                            detail: 'stc15 example project with SDCC',
+                            templateName: 'stc15_sdcc',
                             type: 'C51'
                         },
                         {
-                            label: 'STC15 Keil_C51 Quickstart',
-                            detail: 'stc15 quickstart project (Keil C51 Compiler)',
-                            templateName: 'stc15',
-                            type: 'C51'
-                        },
-                        {
-                            label: 'AVR FreeRTOS Quickstart',
-                            detail: 'avr atmega128 quickstart project (FreeRTOS) (WinAVR-GCC)',
+                            label: 'AVR FreeRTOS Quick Start (WinAVR-GCC)',
+                            detail: 'avr atmega128 example project',
                             templateName: 'avr_atmega128_rtos',
                             type: 'ANY-GCC'
                         },
                         {
-                            label: 'STM8S COSMIC Quickstart',
-                            detail: 'stm8s quickstart project (STM8S003,STM8S005,STM8S103) (COSMIC STM8 Compiler)',
-                            templateName: 'stm8s_cosmic_quickstart',
+                            label: 'STM8S Quick Start (COSMIC STM8)',
+                            detail: 'stm8s example project with COSMIC STM8 Compiler',
+                            templateName: 'stm8s_cosmic',
                             type: 'C51'
                         },
                         {
-                            label: 'STM8 IAR Quickstart',
-                            detail: 'stm8s103 quickstart project (IAR STM8 Compiler)',
-                            templateName: 'stm8s103f3',
+                            label: 'STM8S Quick Start (SDCC)',
+                            detail: 'stm8s example project with SDCC',
+                            templateName: 'stm8s_sdcc',
                             type: 'C51'
                         },
                         {
-                            label: 'STM8 SDCC Quickstart',
-                            detail: 'stm8s103 quickstart project (SDCC)',
-                            templateName: 'stm8s103_sdcc',
-                            type: 'C51'
-                        },
-                        {
-                            label: 'STM32F103 Cortex-M3 Quickstart',
-                            detail: 'stm32f1xx gcc quickstart project (ARM GCC)',
+                            label: 'STM32F103 Cortex-M3 Quick Start (GCC)',
+                            detail: 'stm32f1xx gcc example project with gcc',
                             templateName: 'stm32f1xx_gcc',
                             type: 'ARM'
                         },
                         {
-                            label: 'GD32VF103 RISC-V Quickstart',
-                            detail: 'gd32vf103 riscv quickstart project (RISC-V GCC)',
+                            label: 'GD32VF103 RISC-V Quick Start',
+                            detail: 'gd32vf103 riscv example project',
                             templateName: 'gd32vf103_riscv',
                             type: 'RISC-V'
                         }
@@ -1104,7 +1092,23 @@ export class OperationExplorer {
                             description: group.desc || ""
                         };
                     }
-                }).sort((a, b) => { return a.label.localeCompare(b.label); });
+                });
+
+                if (curTempGroup.name === '/') {
+                    category_sel_list = category_sel_list
+                        .sort((a, b) => {
+                            // 始终保证 'MCU' 分类处于第一个
+                            if (a.label === 'MCU')
+                                return -1;
+                            else if (b.label === 'MCU')
+                                return 1;
+                            else
+                                return a.label.localeCompare(b.label);
+                        });
+                } else {
+                    category_sel_list = category_sel_list
+                        .sort((a, b) => a.label.localeCompare(b.label));
+                }
 
                 if (prevGroupStack.length > 0) {
                     category_sel_list = <CategoryPickItem[]>[goBackItemForGroup].concat(category_sel_list);

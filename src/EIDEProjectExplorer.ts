@@ -1842,7 +1842,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             dispType = 'show_all';
         }
 
-        return new Promise((resolve) => {
+        return new Promise(async (resolve) => {
 
             const uid = new File(uri.fsPath).noSuffixName;
             const prj = this.getProjectByUid(uid);
@@ -1958,7 +1958,26 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     throw new Error(`Not found elf tool: '${elftool}' !`);
                 }
 
-                let textLines = child_process.execFileSync(elftool, elfcmds).toString().split(/\r\n|\n/);
+                // Don't use 'child_process.execFileSync' because a huge file 
+                // will cause an ENOBUF Error.
+                const doReadSymbolLines = (toolpath: string, cmds: string[]): Promise<string[]> => {
+                    return new Promise((resolve) => {
+                        const executable = new ExeFile();
+                        const results: string[] = [];
+                        executable.on('line', (line) => {
+                            results.push(line);
+                        });
+                        executable.on('close', () => {
+                            resolve(results);
+                        });
+                        executable.on('error', (err) => {
+                            GlobalEvent.log_warn(err);
+                        });
+                        executable.Run(toolpath, cmds);
+                    });
+                };
+
+                let textLines = await doReadSymbolLines(elftool, elfcmds);
 
                 // filter lines
                 // notes:
@@ -2159,62 +2178,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 outputLines.push('');
 
                 resolve(outputLines.join(os.EOL));
-
-                //
-                // @deprecated Because this lib is too slow
-                //
-
-                // let maxLen = 0;
-                // for (const l of headerLines) {
-                //     if (l.length > maxLen) maxLen = l.length;
-                // }
-
-                // for (let i = 1; i < headerLines.length; i++) {
-                //     headerLines[i] = headerLines[i].padEnd(maxLen);
-                // }
-
-                // const tableCfg: TxtTable.TableUserConfig = {
-
-                //     header: {
-                //         alignment: 'center',
-                //         content: headerLines.join('\n')
-                //     },
-
-                //     drawHorizontalLine: (idx, rowCount) => idx <= 2 || idx === rowCount,
-
-                //     columns: {
-                //         0: { width: col_addr_maxLen },
-                //         1: { width: col_size_maxLen },
-                //         2: { width: col_type_maxLen },
-                //         3: { width: col_name_maxLen },
-                //         4: { width: col_loca_maxLen }
-                //     },
-
-                //     border: {
-                //         topBody: `─`,
-                //         topJoin: `┬`,
-                //         topLeft: `┌`,
-                //         topRight: `┐`,
-
-                //         bottomBody: `─`,
-                //         bottomJoin: `┴`,
-                //         bottomLeft: `└`,
-                //         bottomRight: `┘`,
-
-                //         bodyLeft: `│`,
-                //         bodyRight: `│`,
-                //         bodyJoin: `│`,
-
-                //         joinBody: `─`,
-                //         joinLeft: `├`,
-                //         joinRight: `┤`,
-                //         joinJoin: `┼`
-                //     }
-                // };
-
-                // const result = TxtTable.table(resultLines, tableCfg);
-
-                // resolve(result);
 
             } catch (error) {
                 resolve('Error: ' + (<Error>error).message);
@@ -4998,6 +4961,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 `${AbstractProject.EIDE_DIR}${File.sep}*.db3`,
                 `${AbstractProject.EIDE_DIR}${File.sep}*.dat`,
             ];
+
+            if (SettingManager.instance().isEnableClangdConfigGenerator())
+                defExcludeList.push('.clangd');
 
             // if this is a project, prehandle it
             let prj: AbstractProject | undefined;

@@ -36,7 +36,7 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/MIPS/RISC-V",
-    "version": "3.23.13",
+    "version": "3.23.14",
     "preview": false,
     "engines": {
         "vscode": "^1.67.0"
@@ -376,12 +376,6 @@
                         "scope": "resource",
                         "markdownDescription": "%settings.iar.arm.toolchain.install.folder%",
                         "default": ""
-                    },
-                    "EIDE.STM8.GNU-SDCC.InstallDirectory": {
-                        "type": "string",
-                        "scope": "resource",
-                        "markdownDescription": "gnu sdcc for stm8 installation path",
-                        "default": "${userHome}/.eide/tools/stm8_gnu_sdcc"
                     },
                     "EIDE.STM8.COSMIC.InstallDirectory": {
                         "type": "string",

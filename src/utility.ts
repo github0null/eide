@@ -570,14 +570,15 @@ export async function runShellCommand(title: string, commandLine: string, opts?:
             };
             if (platform.osType() == 'win32') {
                 shellOption.executable = 'cmd.exe';
-                shellOption.shellArgs = ['/C'];
+                shellOption.shellArgs = ['/D', '/C'];
+                // FIXME: https://github.com/microsoft/vscode/issues/260534
+                if (compareVersion(vscode.version, '1.103.0') < 0)
+                    commandLine = `"${commandLine}"`;
             } else {
                 shellOption.executable = '/bin/bash';
                 shellOption.shellArgs = ['-c'];
             }
             // init task
-            if (platform.osType() == 'win32')
-                commandLine = `"${commandLine}"`;
             const task = new vscode.Task({ type: 'shell', command: commandLine }, vscode.TaskScope.Global,
                 title, opts?.source || 'eide', new vscode.ShellExecution(commandLine, shellOption), []);
             task.isBackground = false;
