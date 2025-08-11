@@ -394,27 +394,31 @@ export class ResManager extends events.EventEmitter {
     /* ------- get internal headers ------ */
 
     getArmccForceIncludeHeaders(): File {
-        return File.fromArray([(<File>this.GetDir('include')).path, 'internal_headers', 'armcc_intr.h']);
+        return File.from(this.GetAppDataDir().path, 'builtin_headers', 'lint_armcc.h');
     }
 
     getArmclangForceIncludeHeaders(): File {
-        return File.fromArray([(<File>this.GetDir('include')).path, 'internal_headers', 'armclang_intr.h']);
+        return File.from(this.GetAppDataDir().path, 'builtin_headers', 'lint_armclang.h');
     }
 
     getGccForceIncludeHeaders(): File {
-        return File.fromArray([(<File>this.GetDir('include')).path, 'internal_headers', 'gcc_intr.h']);
+        return File.from(this.GetAppDataDir().path, 'builtin_headers', 'lint_armgcc.h');
     }
 
-    getC51ForceIncludeHeaders(): File {
-        return File.fromArray([(<File>this.GetDir('include')).path, 'internal_headers', 'c51_intr.h']);
+    getKeilC51ForceIncludeHeaders(): File {
+        return File.from(this.GetAppDataDir().path, 'builtin_headers', 'lint_keilc51.h');
+    }
+
+    getSdccForceIncludeHeaders(): File {
+        return File.from(this.GetAppDataDir().path, 'builtin_headers', 'lint_sdcc.h');
     }
 
     getIarStm8ForceIncludeHeaders(): File {
-        return File.fromArray([(<File>this.GetDir('include')).path, 'internal_headers', 'iar_stm8_intr.h']);
+        return File.from(this.GetAppDataDir().path, 'builtin_headers', 'lint_iarstm8.h');
     }
 
     getIarArmForceIncludeHeaders(): File {
-        return File.fromArray([(<File>this.GetDir('include')).path, 'internal_headers', 'iar_arm_intr.h']);
+        return File.from(this.GetAppDataDir().path, 'builtin_headers', 'lint_iararm.h');
     }
 
     /* ------------------ builder and runtime ----------------- */
