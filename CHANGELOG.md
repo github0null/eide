@@ -6,6 +6,22 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.23.14] revision
+
+**New**:
+  - `Project Templates Explorer`: New online project templates web site: https://templates.em-ide.com 
+
+**Fix**:
+  - `Task Execution Broken`: Fix build task not work on latest vscode.
+  - `Symbol Table`: Fix `ENOBUF` when dump symbol table from a big file.
+
+**Improve**:
+  - `Project Templates`: Update internal project templates.
+  - `C/C++`: Update builtin lint headers.
+  - `Other`: Miscellaneous things.
+
+***
+
 ### [v3.23.13] revision
 
 **Improve**:
