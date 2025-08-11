@@ -50,7 +50,10 @@ import { ArrayDelRepetition } from "../lib/node-utility/Utility";
 import { DependenceManager } from "./DependenceManager";
 import { WorkspaceManager } from "./WorkspaceManager";
 import { ToolchainName } from "./ToolchainManager";
-import { md5, sha256, copyObject, generateDotnetProgramCmd, generateRandomStr, isGccFamilyToolchain } from "./utility";
+import {
+    md5, sha256, copyObject, generateDotnetProgramCmd, generateRandomStr,
+    isGccFamilyToolchain, compareVersion 
+} from "./utility";
 import { exeSuffix, osType } from "./Platform";
 import { FileWatcher } from "../lib/node-utility/FileWatcher";
 import { STVPFlasherOptions } from './HexUploader';
@@ -300,12 +303,20 @@ export abstract class CodeBuilder {
         if (SettingManager.GetInstance().isUseTaskToBuild() &&
             WorkspaceManager.getInstance().hasWorkspaces()) { // use vscode task
             // setup shell
-            const shellOption: vscode.ShellExecutionOptions = {};
-            if (os.platform() == 'win32') { shellOption.executable = 'cmd.exe'; shellOption.shellArgs = ['/C']; }
-            else { shellOption.executable = '/bin/bash'; shellOption.shellArgs = ['-c']; }
-            shellOption.env = <any>process.env;
+            const shellOption: vscode.ShellExecutionOptions = {
+                env: <any>process.env
+            };
+            if (os.platform() == 'win32') {
+                shellOption.executable = 'cmd.exe'; 
+                shellOption.shellArgs = ['/D', '/C'];
+                // FIXME: https://github.com/microsoft/vscode/issues/260534
+                if (compareVersion(vscode.version, '1.103.0') < 0)
+                    commandLine = `"${commandLine}"`;
+            } else {
+                shellOption.executable = '/bin/bash';
+                shellOption.shellArgs = ['-c'];
+            }
             // setup task
-            if (os.platform() == 'win32') commandLine = `"${commandLine}"`;
             const task = new vscode.Task({ type: 'shell', command: commandLine }, vscode.TaskScope.Workspace,
                 title, 'eide.builder', new vscode.ShellExecution(commandLine, shellOption), []);
             task.group = vscode.TaskGroup.Build;
@@ -317,10 +328,12 @@ export abstract class CodeBuilder {
             }
             vscode.tasks.executeTask(task);
         } else { // use terminal
-            const index = vscode.window.terminals.findIndex((t) => { return t.name === title; });
-            if (index !== -1) { vscode.window.terminals[index].dispose(); }
+            const index = vscode.window.terminals.findIndex(t => t.name === title);
+            if (index !== -1)
+                vscode.window.terminals[index].dispose();
             const opts: vscode.TerminalOptions = { name: title, iconPath: new vscode.ThemeIcon('target') };
-            if (os.platform() == 'win32') { opts.shellPath = 'cmd.exe'; };
+            if (os.platform() == 'win32')
+                opts.shellPath = 'cmd.exe';
             opts.env = <any>process.env;
             const terminal = vscode.window.createTerminal(opts);
             if (!SettingManager.GetInstance().isSilentBuildOrFlash())
