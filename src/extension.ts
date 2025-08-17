@@ -40,7 +40,9 @@ import { ResInstaller } from './ResInstaller';
 import {
     ERROR, WARNING, INFORMATION,
     view_str$operation$serialport, view_str$operation$baudrate, view_str$operation$serialport_name,
-    txt_install_now, txt_yes, view_str$prompt$feedback, rating_text, later_text, sponsor_author_text
+    txt_install_now, txt_yes, view_str$prompt$feedback, rating_text, later_text, sponsor_author_text,
+    view_str$prompt$install_dotnet_and_restart_vscode,
+    view_str$prompt$install_dotnet_failed
 } from './StringTable';
 import { LogDumper } from './LogDumper';
 import { StatusBarManager } from './StatusBarManager';
@@ -1057,12 +1059,9 @@ async function checkAndInstallRuntime() {
             if (pkgReady && pkgFile.IsFile()) {
                 try {
                     ChildProcess.execFileSync(pkgFile.path);
-                    const sel = await vscode.window.showInformationMessage(`Ok ! Now you need to relaunch VsCode !`, txt_yes);
-                    if (sel) {
-                        vscode.commands.executeCommand('workbench.action.reloadWindow');
-                    }
+                    vscode.window.showInformationMessage(view_str$prompt$install_dotnet_and_restart_vscode);
                 } catch (error) {
-                    GlobalEvent.emit('msg', newMessage('Error', `Install [.NET6 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) failed, you need install it manually !`));
+                    GlobalEvent.emit('msg', newMessage('Error', view_str$prompt$install_dotnet_failed));
                 }
             } else {
                 vscode.window.showWarningMessage(`Install .NET6 runtime failed, you need install it manually !`);
@@ -1473,7 +1472,7 @@ class EideTerminalProvider implements vscode.TerminalProfileProvider {
                     shellName = 'cmd';
                     shellPath = cmd;
                 } else {
-                    GlobalEvent.emit('msg', newMessage('Error', `We can not found 'cmd.exe' in your pc !`));
+                    GlobalEvent.emit('msg', newMessage('Error', `Not found 'cmd.exe' on your pc !`));
                     return undefined;
                 }
             }

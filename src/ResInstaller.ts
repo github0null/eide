@@ -30,7 +30,10 @@ import * as NodePath from 'path';
 
 import { HexUploaderType } from "./HexUploader";
 import { SettingManager } from './SettingManager';
-import { txt_install_now, txt_jump2settings, view_str$prompt$install_tools_by_online } from './StringTable';
+import { txt_install_now, txt_jump2settings,
+    view_str$prompt$install_tools_by_online,
+    view_str$prompt$reload_workspace_to_refresh_env
+} from './StringTable';
 import { ToolchainName } from "./ToolchainManager";
 import * as utility from './utility';
 import { File } from '../lib/node-utility/File';
@@ -495,7 +498,7 @@ export class ResInstaller {
         this.unlock(name);
 
         if (installedDone) {
-            const msg = `You need to restart eide to refresh System Environment Variables !`;
+            const msg = view_str$prompt$reload_workspace_to_refresh_env;
             const sel = await vscode.window.showInformationMessage(msg, 'OK', 'Later');
             if (sel == 'OK') {
                 await vscode.commands.executeCommand('workbench.action.reloadWindow');
