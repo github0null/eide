@@ -454,6 +454,11 @@ export const view_str$env_desc$py3_cmd = [
 
 //---------------Other---------------
 
+export const view_str$prompt$loadws_cfg_failed = [
+    `加载VSCode工作区配置失败！请检查文件 {} 格式是否正确！`,
+    `Load workspace configuration failed ! Please check your {} file.`
+][langIndex];
+
 export const view_str$gen_sct_failed = [
     `生成.sct文件失败`,
     `Fail to generate .sct file`
