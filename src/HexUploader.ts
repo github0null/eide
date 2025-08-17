@@ -224,8 +224,10 @@ export abstract class HexUploader<InvokeParamsType> {
         // if 'bin' path is empty, use default program path 
         if (options.bin.trim() === '') {
 
-            const hexPath = NodePath.join(
-                '.', this.project.getOutputDir(), this.project.getProjectName() + '.hex');
+            // relative path with './' prefix
+            const hexPath = [
+                '.', this.project.getOutputDir(), this.project.getProjectName() + '.hex'
+            ].join(File.sep);
 
             return [{ path: formatBinFilePath(hexPath) }];
         }
