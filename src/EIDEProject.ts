@@ -1199,7 +1199,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         //prjConfig.config.srcDirs = prjConfig.config.srcDirs.filter(p => File.IsDir(p));
 
         // rm prefix for out dir
-        prjConfig.config.outDir = File.normalize(File.ToLocalPath(prjConfig.config.outDir));
+        prjConfig.config.outDir = File.normalize(prjConfig.config.outDir);
 
         // use unix path for source path
         if (this.isNewProject || this.isOldVersionProject) {
@@ -1406,7 +1406,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     ToAbsolutePath(path_: string, resolveEnv: boolean = true): string {
         const path = resolveEnv ? this.replacePathEnv(path_.trim()) : path_.trim();
         if (File.isAbsolute(path)) { return File.normalize(path); }
-        return File.normalize(File.ToLocalPath(this.GetRootDir().path + NodePath.sep + path));
+        return File.normalize(this.GetRootDir().path + NodePath.sep + path);
     }
 
     /**

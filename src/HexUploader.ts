@@ -215,7 +215,7 @@ export abstract class HexUploader<InvokeParamsType> {
         const formatBinFilePath = (p: string): string => {
             if (this.toolType == 'STLink') {
                 // 对于不支持中文路径的烧录器，暂时不要转换为绝对路径
-                return File.normalize(this.project.resolveEnvVar(p));
+                return this.project.resolveEnvVar(p);
             } else {
                 return this.project.toAbsolutePath(p);
             }
