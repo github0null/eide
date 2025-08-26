@@ -8022,9 +8022,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             // show armcc axf file
             if (suffix == '.axf') {
 
-                const fromelf = File.fromArray([
-                    SettingManager.GetInstance().getArmcc5Dir().path, 'bin', `fromelf${exeSuffix()}`
-                ]);
+                let fromelf = File.from(`fromelf${exeSuffix()}`);
+                if (SettingManager.GetInstance().getArmcc5Dir().IsDir()) {
+                    fromelf = File.from(SettingManager.GetInstance().getArmcc5Dir().path, 'bin', `fromelf${exeSuffix()}`);
+                } else if (SettingManager.GetInstance().getArmcc6Dir().IsDir()) {
+                    fromelf = File.from(SettingManager.GetInstance().getArmcc6Dir().path, 'bin', `fromelf${exeSuffix()}`);
+                }
 
                 let cont: string;
 
