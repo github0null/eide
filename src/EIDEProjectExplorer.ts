@@ -1946,6 +1946,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                         symMatcher = /^(?<addr>[0-9a-f]+)\s+(?<size>[0-9a-f]+\s+)?(?<type>\w)\s+(?<name>[^\s]+)\s+(?<loca>.*)/i;
                         symTypConv = (t) => this.convGnuSymbolType2ReadableString(t)
                         break;
+                    case 'GNU_SDCC_MCS51':
+                        elfpath = prj.getExecutablePath();
+                        elftool = [toolchain.getToolchainDir().path, 'bin', `i51-elf-nm${exeSuffix()}`].join(File.sep);
+                        elfcmds = sortType == 'size' ? ['-l', '-S', '--size-sort', elfpath] : ['-ln', '-S', elfpath];
+                        elfsort = true;
+                        symMatcher = /^(?<addr>[0-9a-f]+)\s+(?<size>[0-9a-f]+\s+)?(?<type>\w)\s+(?<name>[^\s]+)\s+(?<loca>.*)/i;
+                        symTypConv = (t) => this.convGnuSymbolType2ReadableString(t)
+                        break;
                     default:
                         throw new Error(`Not support symbol view for '${toolchain.name}' !`);
                 }
@@ -5867,6 +5875,11 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 if (!exeFile.IsFile()) throw Error(`Not found '${exeFile.name}' !`);
                 cmds = ['-S', '-l', elfPath, '>', dasmFile.path];
             }
+            else if (toolchainName == 'GNU_SDCC_MCS51') {
+                exeFile = File.from(prj.getToolchain().getToolchainDir().path, 'bin', `i51-elf-objdump${exeSuffix()}`);
+                if (!exeFile.IsFile()) throw Error(`Not found '${exeFile.name}' !`);
+                cmds = ['-S', '-l', elfPath, '>', dasmFile.path];
+            }
             else {
                 throw new Error(`Not support showDisassemblyForElf for toolchain: '${toolchainName}' !`);
             }
@@ -5975,6 +5988,11 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 exeFile = File.from(activePrj.getToolchain().getToolchainDir().path, 'bin', `llvm-objdump${exeSuffix()}`);
                 if (!exeFile.IsFile()) throw Error(`Not found '${exeFile.name}' !`);
                 cmds = ['-S', '-l', objPath, '>', tmpFile.path];
+            }
+            else if (toolchainName.includes('SDCC')) {
+                const outAsmFile = File.from(NodePath.dirname(objPath), NodePath.basename(objPath) + '.asm');
+                vscode.window.showTextDocument(vscode.Uri.file(outAsmFile.path), { preview: true });
+                return;
             }
             else { // Not support
                 throw new Error(`Not support showDisassembly for toolchain: '${toolchainName}' !`);
@@ -8070,6 +8088,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     else if (toolchain.name == 'LLVM_ARM') {
                         readelf = [toolchain.getToolchainDir().path, 'bin', `llvm-readelf`].join(File.sep);
                         elfsize = [toolchain.getToolchainDir().path, 'bin', `llvm-size`].join(File.sep);
+                    }
+                    else if (toolchain.name == 'GNU_SDCC_MCS51') {
+                        readelf = [toolchain.getToolchainDir().path, 'bin', `i51-elf-readelf`].join(File.sep);
+                        elfsize = [toolchain.getToolchainDir().path, 'bin', `i51-elf-size`].join(File.sep);
                     }
                 }
 

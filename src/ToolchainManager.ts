@@ -40,7 +40,7 @@ import * as ArmCpuUtils from "./ArmCpuUtils";
 
 //! 名称应该是大写，但由于历史因素，其中 'Keil_C51' 大小写暂时无法更正（避免旧的项目出现问题） 
 export type ToolchainName =
-    'SDCC' | 'Keil_C51' | 'IAR_STM8' | 'GNU_SDCC_STM8' | 'COSMIC_STM8' |
+    'GNU_SDCC_MCS51' | 'SDCC' | 'Keil_C51' | 'IAR_STM8' | 'GNU_SDCC_STM8' | 'COSMIC_STM8' |
     'AC5' | 'AC6' | 'GCC' | 'IAR_ARM' |
     'RISCV_GCC' | 'ANY_GCC' | 'MIPS_GCC' | 'MTI_GCC' | 'LLVM_ARM' | 'None';
 
@@ -174,7 +174,7 @@ interface ToolchainEnums {
 export class ToolchainManager {
 
     private readonly toolchainNames: ToolchainEnums = {
-        'C51': ['Keil_C51', 'SDCC', 'IAR_STM8', 'COSMIC_STM8'],
+        'C51': ['GNU_SDCC_MCS51', 'Keil_C51', 'SDCC', 'IAR_STM8', 'COSMIC_STM8'],
         'ARM': ['AC5', 'AC6', 'GCC', 'LLVM_ARM', 'IAR_ARM'],
         'RISC-V': ['RISCV_GCC'],
         'MIPS': ['MTI_GCC'],
@@ -201,6 +201,7 @@ export class ToolchainManager {
         // register toolchain
         this.add(new KeilC51());
         this.add(new SDCC());
+        this.add(new GNU_SDCC_MCS51());
         this.add(new AC5());
         this.add(new AC6());
         this.add(new GCC());
@@ -312,7 +313,9 @@ export class ToolchainManager {
             case 'IAR_STM8':
                 return 'IAR STM8 C/C++ Compiler';
             case 'GNU_SDCC_STM8':
-                return 'SDCC With GNU Patch For STM8';
+                return 'SDCC + Binutils For STM8';
+            case 'GNU_SDCC_MCS51':
+                return 'SDCC + Binutils For MCS51';
             case 'RISCV_GCC':
                 return 'GNU RISC-V Toolchain';
             case 'ANY_GCC':
@@ -441,6 +444,8 @@ export class ToolchainManager {
                 return File.fromArray([settingManager.getMipsToolFolder().path, 'bin']);
             case 'GNU_SDCC_STM8':
                 return File.fromArray([settingManager.getGnuSdccStm8Dir().path, 'bin']);
+            case 'GNU_SDCC_MCS51':
+                return File.from(settingManager.getGnuSdccMcs51Dir().path, 'bin');
             case 'ANY_GCC':
                 return File.fromArray([settingManager.getAnyGccToolFolder().path, 'bin']);
             case 'LLVM_ARM':
@@ -1152,6 +1157,180 @@ class SDCC implements IToolchian {
             linker: {
                 "$mainFileName": "main",
                 "output-format": "hex"
+            }
+        };
+    }
+}
+
+class GNU_SDCC_MCS51 implements IToolchian {
+
+    readonly version = 1;
+
+    readonly settingName: string = 'EIDE.SDCC.GNU_MCS51.InstallDirectory';
+
+    readonly categoryName: string = 'SDCC';
+
+    readonly name: ToolchainName = 'GNU_SDCC_MCS51';
+
+    readonly modelName: string = 'gnu_sdcc_mcs51.model.json';
+
+    readonly configName: string = 'null';
+
+    readonly verifyFileName: string = 'gnu_sdcc_mcs51.verify.json';
+
+    readonly elfSuffix = '.elf';
+
+    newInstance(): IToolchian {
+        return new GNU_SDCC_MCS51();
+    }
+
+    getGccFamilyCompilerPathForCpptools(type?: 'c' | 'c++'): string | undefined {
+        //const gcc = File.fromArray([this.getToolchainDir().path, 'bin', `sdcc${platform.exeSuffix()}`]);
+        //return gcc.path;
+        return undefined;
+    }
+
+    updateCppIntellisenceCfg(builderOpts: BuilderOptions, cppToolsConfig: CppConfigItem): void {
+
+        cppToolsConfig.cStandard = 'c99';
+        cppToolsConfig.cppStandard = 'c++98';
+
+        if (builderOpts["c/cpp-compiler"]) {
+            cppToolsConfig.cStandard = builderOpts["c/cpp-compiler"]['language-c'] || 'c99';
+        }
+    }
+
+    preHandleOptions(prjInfo: IProjectInfo, options: BuilderOptions): void {
+
+        /* init default */
+        if (options["linker"] == undefined)
+            options["linker"] = {}
+        if (options["asm-compiler"] == undefined)
+            options["asm-compiler"] = {}
+
+        /* convert output format */
+        if (options['linker'] && options['linker']['output-format'] === 'lib') {
+            options['linker']['$use'] = 'linker-lib';
+        }
+    }
+
+    private parseCodeModel(conf: string): string | undefined {
+        const mType = /\s*--model-(\w+)\s*/i.exec(conf);
+        if (mType && mType.length > 1) {
+            return mType[1];
+        }
+    }
+
+    getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): utility.CppMacroDefine[] {
+
+        const mList: utility.CppMacroDefine[] = [
+            { name: '__SDCC',               value: '1', type: 'var' },
+            { name: '__SDCC_VERSION_MAJOR', value: '4', type: 'var' },
+            { name: '__SDCC_VERSION_MINOR', value: '5', type: 'var' },
+            { name: '__SDCC_VERSION_PATCH', value: '0', type: 'var' },
+            { name: '__SDCC_GNU_AS',        value: '1', type: 'var' }
+        ];
+
+        // code model
+        const devName = 'mcs51';
+        let codeModel = 'small';
+
+        // global config
+        if (builderOpts.global) {
+            const conf = builderOpts.global;
+
+            mList.push({ name: `__SDCC_${devName}`, value: '1', type: 'var' });
+            mList.push({ name: `__SDCC_STACK_AUTO`, value: '1', type: 'var' });
+
+            // get model type
+            if (conf['misc-controls']) {
+                let t = this.parseCodeModel(conf['misc-controls']);
+                if (t)
+                    codeModel = t;
+            }
+
+            // int long reent
+            if (conf['int-long-reent']) {
+                mList.push({ name: `__SDCC_INT_LONG_REENT`, value: '1', type: 'var' });
+            }
+
+            // float reent
+            if (conf['float-reent']) {
+                mList.push({ name: `__SDCC_FLOAT_REENT`, value: '1', type: 'var' });
+            }
+        }
+
+        // cpp config
+        if (builderOpts["c/cpp-compiler"]) {
+            const conf = builderOpts["c/cpp-compiler"];
+            // get model type
+            if (conf['misc-controls']) {
+                codeModel = this.parseCodeModel(conf['misc-controls']) || codeModel;
+            }
+        }
+
+        if (codeModel) { // set code model
+            mList.push({ name: `__SDCC_MODEL_${codeModel.toUpperCase()}`, value: '1', type: 'var' });
+        }
+
+        return mList;
+    }
+
+    getCustomDefines(): string[] | undefined {
+        return undefined;
+    }
+
+    getToolchainDir(): File {
+        return SettingManager.GetInstance().getSdccDir();
+    }
+
+    getSystemIncludeList(builderOpts: BuilderOptions): string[] {
+
+        /**
+         * This will install sdcc binaries into: /usr/local/bin/
+         * header files into:                    /usr/local/share/sdcc/include/
+         * non-free header files into:           /usr/local/share/sdcc/non-free/include/
+         * library files into:                   /usr/local/share/sdcc/lib/
+         * non-free library files into:          /usr/local/share/sdcc/non-free/lib/
+         * and documentation into:               /usr/local/share/sdcc/doc/
+         * 
+         * Try `sdcc --print-search-dirs` if you have problems with header
+        */
+
+        return [
+            File.from(this.getToolchainDir().path, 'share', 'sdcc', 'include').path,
+            File.from(this.getToolchainDir().path, 'share', 'sdcc', 'include', 'mcs51').path
+        ];
+    }
+
+    getForceIncludeHeaders(): string[] | undefined {
+        return [
+            ResManager.GetInstance().getSdccForceIncludeHeaders().path
+        ];
+    }
+
+    getDefaultIncludeList(): string[] {
+        return [];
+    }
+
+    getLibDirs(): string[] {
+        return [File.fromArray([this.getToolchainDir().path, 'lib']).path];
+    }
+
+    getDefaultConfig(): BuilderOptions {
+        return <BuilderOptions>{
+            version: this.version,
+            beforeBuildTasks: [],
+            afterBuildTasks: [],
+            global: {
+                "optimize-type": "speed"
+            },
+            'c/cpp-compiler': {
+                "language-c": "c99"
+            },
+            'asm-compiler': {},
+            linker: {
+                "output-format": "elf"
             }
         };
     }

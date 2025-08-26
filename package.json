@@ -467,6 +467,12 @@
                         "markdownDescription": "%settings.sdcc.install.folder%",
                         "default": "${userHome}/.eide/tools/sdcc"
                     },
+                    "EIDE.SDCC.GNU_MCS51.InstallDirectory": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.sdcc.install.folder%",
+                        "default": "${userHome}/.eide/tools/sdcc"
+                    },
                     "EIDE.RISCV.InstallDirectory": {
                         "type": "string",
                         "scope": "resource",

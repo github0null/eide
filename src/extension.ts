@@ -1611,6 +1611,7 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
             case 'AC5':
             case 'AC6':
             case 'GCC':
+            case 'GNU_SDCC_MCS51':
                 parser = 'memap';
                 break;
             default:

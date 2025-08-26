@@ -47,3 +47,7 @@ typedef volatile _Bool __sbit;
 typedef volatile unsigned char __sfr;
 typedef volatile unsigned short __sfr16;
 typedef volatile unsigned long __sfr32;
+
+#if defined(__SDCC_GNU_AS)
+    extern void __delay_cycles(unsigned long x);
+#endif

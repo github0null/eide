@@ -724,6 +724,14 @@ export class SettingManager {
         return new File('null'); // disabled
     }
 
+    getGnuSdccMcs51Dir(): File {
+        return new File(
+            this.getFullPathByPluginConfig('SDCC.GNU_MCS51.InstallDirectory') ||
+            this.findGccCompilerRootInSystemEnv('i51-elf-as') ||
+            'null'
+        );
+    }
+
     //------------------------------- RISC-V ----------------------------------
 
     getRiscvToolFolder(): File {

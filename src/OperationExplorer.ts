@@ -720,6 +720,13 @@ export class OperationExplorer {
                     detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'SDCC')
                 },
                 {
+                    label: 'SDCC + Binutils For 8051 (sdcc + i51-elf-as)',
+                    type: 'GNU_SDCC_MCS51',
+                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('GNU_SDCC_MCS51'))
+                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('GNU_SDCC_MCS51')?.path}`,
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'SDCC + Binutils For 8051')
+                },
+                {
                     label: 'COSMIC STM8 C Compiler (cxstm8)',
                     type: 'COSMIC_STM8',
                     description: this.getStatusTxt(toolchainManager.isToolchainPathReady('COSMIC_STM8'))
