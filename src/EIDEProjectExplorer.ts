@@ -7383,7 +7383,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 toolchainPathSettingName, newCfg.items['path'].data.value, vscode.ConfigurationTarget.Workspace);
 
             // update toolchain prefix
-            setting.setGccFamilyToolPrefix(project.getToolchain().name, newCfg.items['prefix'].data.value);
+            if (newCfg.items['prefix'])
+                setting.setGccFamilyToolPrefix(
+                    project.getToolchain().name, newCfg.items['prefix'].data.value);
         });
     }
 
