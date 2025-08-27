@@ -34,10 +34,11 @@ import { File } from "../lib/node-utility/File";
 import { FileWatcher } from "../lib/node-utility/FileWatcher";
 import {
     include_desc, lib_desc, source_list_desc, definition_list_desc,
+    view_str$prompt$loadws_cfg_failed
 } from "./StringTable";
 import { ArrayDelRepetition } from "../lib/node-utility/Utility";
 import { GlobalEvent } from "./GlobalEvents";
-import { ExceptionToMessage } from "./Message";
+import { ExceptionToMessage, newMessage } from "./Message";
 import { ToolchainName } from './ToolchainManager';
 import { HexUploaderType } from "./HexUploader";
 import { VirtualSource } from "./EIDEProject";
@@ -555,7 +556,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
     private toAbsolutePath(path_: string): string {
         const path = path_.trim();
         if (File.isAbsolute(path)) { return File.normalize(path); }
-        return File.normalize(File.ToLocalPath(this.getRootDir().path + File.sep + path));
+        return File.normalize(this.getRootDir().path + File.sep + path);
     }
 
     private toRelativePath(path_: string): string {
@@ -1537,6 +1538,7 @@ export interface WorkspaceConfig {
 export class WorkspaceConfiguration extends Configuration<WorkspaceConfig> {
 
     isDelUnknownKeysWhenLoad = false;
+    isLoaded = false;
 
     protected readTypeFromFile(configFile: File): ProjectType | undefined {
         return undefined;
@@ -1544,10 +1546,14 @@ export class WorkspaceConfiguration extends Configuration<WorkspaceConfig> {
 
     protected Parse(jsonStr: string): WorkspaceConfig {
         try {
-            return <any>jsonc.parse(jsonStr);
+            const obj = <any>jsonc.parse(jsonStr);
+            this.isLoaded = true;
+            return obj;
         } catch (error) {
-            GlobalEvent.emit('msg', ExceptionToMessage(
-                new Error('parse workspace configuration error !'), 'Warning'));
+            GlobalEvent.log_error(error);
+            GlobalEvent.emit('msg', newMessage('Warning', 
+                view_str$prompt$loadws_cfg_failed.replace('{}', this.FILE_NAME)));
+            this.isLoaded = false;
             return this.GetDefault();
         }
     }
@@ -1559,8 +1565,9 @@ export class WorkspaceConfiguration extends Configuration<WorkspaceConfig> {
     // workspace only can be force save, because user will modify this file, 
     // so we can not override it
     Save(force?: boolean) {
-        if (force) {
-            super.Save();
+        if (this.isLoaded) {
+            if (force)
+                super.Save();
         }
     }
 

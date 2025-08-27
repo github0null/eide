@@ -36,7 +36,7 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/MIPS/RISC-V",
-    "version": "3.23.14",
+    "version": "3.24.0",
     "preview": false,
     "engines": {
         "vscode": "^1.67.0"
@@ -466,6 +466,12 @@
                         "scope": "resource",
                         "markdownDescription": "%settings.sdcc.install.folder%",
                         "default": "${userHome}/.eide/tools/sdcc"
+                    },
+                    "EIDE.SDCC.GNU_MCS51.InstallDirectory": {
+                        "type": "string",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.sdcc.install.folder%",
+                        "default": "${userHome}/.eide/tools/sdcc_mcs51"
                     },
                     "EIDE.RISCV.InstallDirectory": {
                         "type": "string",

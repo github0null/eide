@@ -30,7 +30,10 @@ import * as NodePath from 'path';
 
 import { HexUploaderType } from "./HexUploader";
 import { SettingManager } from './SettingManager';
-import { txt_install_now, txt_jump2settings, view_str$prompt$install_tools_by_online } from './StringTable';
+import { txt_install_now, txt_jump2settings,
+    view_str$prompt$install_tools_by_online,
+    view_str$prompt$reload_workspace_to_refresh_env
+} from './StringTable';
 import { ToolchainName } from "./ToolchainManager";
 import * as utility from './utility';
 import { File } from '../lib/node-utility/File';
@@ -51,13 +54,14 @@ export interface ExternalToolInfo {
     resource_name: string; // resource id (unique)
     readable_name: string;
     detail?: string;
-    is_third_party?: boolean;
+    use_external_index?: boolean;
+    preset?: boolean;
     getDrvInstaller?: () => string | undefined;
     postInstallCmd?: () => string | undefined;
 
     // for built-in tools
     setting_name?: string;
-    require_name?: string;
+    resource_repath_in_pack?: string; /* 表示资源在zip包中的相对路径，用于拼接安装路径用于得到最终路径 */
     no_binaries?: boolean;
 
     // for external tools
@@ -68,6 +72,27 @@ export interface ExternalToolInfo {
 
 export interface UtilToolInfo extends ExternalToolInfo {
     id: ExternalToolName;
+};
+
+interface ToolPlatformInfo {
+
+    [platform: string]: {
+
+        url: string; // zip, 7z direct download link (https), like: 'https://test.com/gcc.zip'
+
+        zip_type: string; // '7z' or 'zip'
+
+        bin_dir?: string; // bin dir relative path
+
+        detail?: string; // description
+
+        post_install_cmd?: string; // shell command
+
+        win_drv_path?: { // win32 driver exe path
+            // arch: 'x86' or 'x64'
+            [arch: string]: string;
+        };
+    }
 };
 
 export class ResInstaller {
@@ -83,10 +108,11 @@ export class ResInstaller {
     private constructor() {
 
         const no_binaries = os.platform() != 'win32'; // we not provide binaries for non-win32 platform.
+        const os_plat = os.platform();
 
         this.registerTool('SDCC', {
             resource_name: 'sdcc',
-            readable_name: 'Small Device C Compiler (SDCC) (latest version)',
+            readable_name: 'SDCC (latest version)',
             setting_name: 'SDCC.InstallDirectory',
             no_binaries: no_binaries
         });
@@ -129,7 +155,7 @@ export class ResInstaller {
             resource_name: 'stvp',
             readable_name: 'STVP Flasher For STM8',
             setting_name: 'STM8.STVP.CliExePath',
-            require_name: `STVP_CmdLine${platform.exeSuffix()}`,
+            resource_repath_in_pack: `STVP_CmdLine${platform.exeSuffix()}`,
             no_binaries: no_binaries,
             getDrvInstaller: () => {
                 if (platform.osType() == 'win32') {
@@ -145,7 +171,7 @@ export class ResInstaller {
             resource_name: 'st_cube_programer',
             readable_name: 'STM32 Cube Programmer CLI',
             setting_name: 'STLink.ExePath',
-            require_name: `bin/STM32_Programmer_CLI${platform.exeSuffix()}`,
+            resource_repath_in_pack: `bin/STM32_Programmer_CLI${platform.exeSuffix()}`,
             no_binaries: no_binaries,
             getDrvInstaller: () => {
                 if (platform.osType() == 'win32') {
@@ -159,7 +185,7 @@ export class ResInstaller {
             resource_name: 'openocd_7a1adfbec_mingw32',
             readable_name: 'OpenOCD Programmer (v0.12.0-rc2)',
             setting_name: 'OpenOCD.ExePath',
-            require_name: `bin/openocd${platform.exeSuffix()}`,
+            resource_repath_in_pack: `bin/openocd${platform.exeSuffix()}`,
             no_binaries: no_binaries
         });
 
@@ -167,9 +193,36 @@ export class ResInstaller {
             resource_name: 'cppcheck',
             readable_name: 'Cppcheck (Code Inspection)',
             setting_name: 'Cppcheck.ExecutablePath',
-            require_name: `cppcheck${platform.exeSuffix()}`,
+            resource_repath_in_pack: `cppcheck${platform.exeSuffix()}`,
             no_binaries: no_binaries
         });
+
+        const r_sdcc_mcs51: ToolPlatformInfo = {
+            'win32': {
+                url: 'https://github.com/github0null/sdcc-binutils-mcs51/releases/latest/download/sdcc-4.5.0-with-binutils-win32.zip',
+                zip_type: 'zip',
+                bin_dir: 'sdcc-4.5.0-with-binutils/bin'
+            },
+            'linux': {
+                url: 'https://github.com/github0null/sdcc-binutils-mcs51/releases/latest/download/sdcc-4.5.0-with-binutils-linux.tar.gz',
+                zip_type: 'tar.gz',
+                bin_dir: 'sdcc-4.5.0-with-binutils/bin'
+            }
+        };
+        if (r_sdcc_mcs51[os_plat]) {
+            this.registerTool('GNU_SDCC_MCS51', {
+                preset: true,
+                use_external_index: true,
+                resource_name: 'sdcc_mcs51',
+                readable_name: 'SDCC + Binutils For 8051',
+                setting_name: 'SDCC.GNU_MCS51.InstallDirectory',
+                resource_repath_in_pack: 'sdcc-4.5.0-with-binutils',
+                url: r_sdcc_mcs51[os_plat].url,
+                zip_type: r_sdcc_mcs51[os_plat].zip_type,
+                bin_dir: r_sdcc_mcs51[os_plat].bin_dir,
+                detail: r_sdcc_mcs51[os_plat].detail,
+            });
+        }
 
         for (const key of this.toolsMap.keys()) {
             this.builtin_tool_list.push(key.toLowerCase());
@@ -193,8 +246,8 @@ export class ResInstaller {
         if (tool) {
             const instDir = File.fromArray([ResManager.GetInstance().getEideToolsInstallDir(), tool.resource_name]);
             if (instDir.IsDir()) {
-                if (tool.require_name) {
-                    const p = File.normalize(instDir.path + File.sep + tool.require_name);
+                if (tool.resource_repath_in_pack) {
+                    const p = File.normalize(instDir.path + File.sep + tool.resource_repath_in_pack);
                     return File.IsExist(p);
                 } else {
                     return true;
@@ -214,17 +267,17 @@ export class ResInstaller {
                 resource_name: tool.resource_name,
                 readable_name: tool.readable_name,
                 setting_name: tool.setting_name,
-                require_name: tool.require_name,
+                resource_repath_in_pack: tool.resource_repath_in_pack,
                 no_binaries: tool.no_binaries,
-                is_third_party: tool.is_third_party,
+                use_external_index: tool.use_external_index,
                 url: tool.url,
                 detail: tool.detail
             });
         }
 
         res = res.sort((a, b) => {
-            if (!a.is_third_party && b.is_third_party) return -1;
-            if (a.is_third_party && !b.is_third_party) return 1;
+            if (!a.use_external_index && b.use_external_index) return -1;
+            if (a.use_external_index && !b.use_external_index) return 1;
             return a.resource_name.localeCompare(b.resource_name);
         });
 
@@ -281,7 +334,10 @@ export class ResInstaller {
 
         // clear old tools
         const del_keys: string[] = [];
-        this.toolsMap.forEach((val, key) => { if (val.is_third_party) del_keys.push(key); });
+        this.toolsMap.forEach((val, key) => {
+            if (val.use_external_index && !val.preset)
+                del_keys.push(key);
+        });
         del_keys.forEach(k => this.toolsMap.delete(k));
 
         const node_plat = os.platform();
@@ -289,7 +345,7 @@ export class ResInstaller {
             if (this.builtin_tool_list.includes(tool.id)) continue; // skip built-in tools
             if (!tool.resources[node_plat]) continue; // skip invalid platform
             this.registerTool(tool.id, {
-                is_third_party: true,
+                use_external_index: true,
                 resource_name: tool.id,
                 readable_name: tool.name,
                 url: tool.resources[node_plat].url,
@@ -333,7 +389,7 @@ export class ResInstaller {
 
         let resourceFile: File;
 
-        if (toolInfo.is_third_party) {
+        if (toolInfo.use_external_index) {
             resourceFile = File.fromArray([os.tmpdir(), `${resourceName}.${toolInfo.zip_type}`]);
         } else {
             resourceFile = File.fromArray([os.tmpdir(), `${resourceName}.${toolInfo.zip_type || '7z'}`])
@@ -350,7 +406,7 @@ export class ResInstaller {
                 let res: Buffer | undefined | Error = undefined;
 
                 // for built-in tools
-                if (!toolInfo.is_third_party) {
+                if (!toolInfo.use_external_index) {
 
                     /* random select the order of site */
                     if (Math.random() > 0.5) {
@@ -465,7 +521,7 @@ export class ResInstaller {
                         // update eide settings
                         if (toolInfo.setting_name) {
                             let setting_val = ['${userHome}', '.eide', 'tools', resourceName].join(File.sep);
-                            setting_val = toolInfo.require_name ? `${setting_val}/${toolInfo.require_name}` : setting_val;
+                            setting_val = toolInfo.resource_repath_in_pack ? `${setting_val}/${toolInfo.resource_repath_in_pack}` : setting_val;
                             SettingManager.GetInstance().setConfigValue(toolInfo.setting_name, File.ToUnixPath(setting_val));
                         }
 
@@ -495,7 +551,7 @@ export class ResInstaller {
         this.unlock(name);
 
         if (installedDone) {
-            const msg = `You need to restart eide to refresh System Environment Variables !`;
+            const msg = view_str$prompt$reload_workspace_to_refresh_env;
             const sel = await vscode.window.showInformationMessage(msg, 'OK', 'Later');
             if (sel == 'OK') {
                 await vscode.commands.executeCommand('workbench.action.reloadWindow');

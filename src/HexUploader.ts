@@ -94,7 +94,7 @@ export class HexUploaderManager {
             {
                 type: 'stcgal',
                 description: 'for STC chips',
-                filters: ['Keil_C51', 'SDCC']
+                filters: ['Keil_C51', 'SDCC', 'GNU_SDCC_MCS51']
             },
             {
                 type: 'STVP',
@@ -212,22 +212,31 @@ export abstract class HexUploader<InvokeParamsType> {
         const result: FlashProgramFile[] = [];
         const matcher = /(?<path>[^,]+)(?:,(?<addr>0x[a-f0-9]+))?/i;
 
+        const formatBinFilePath = (p: string): string => {
+            if (this.toolType == 'STLink') {
+                // 对于不支持中文路径的烧录器，暂时不要转换为绝对路径
+                return this.project.resolveEnvVar(p);
+            } else {
+                return this.project.toAbsolutePath(p);
+            }
+        };
+
         // if 'bin' path is empty, use default program path 
         if (options.bin.trim() === '') {
 
+            // relative path with './' prefix
             const hexPath = [
-                this.project.getOutputDir(),
-                this.project.GetConfiguration().config.name + '.hex'
+                '.', this.project.getOutputDir(), this.project.getProjectName() + '.hex'
             ].join(File.sep);
 
-            return [{ path: this.project.ToAbsolutePath(hexPath) }];
+            return [{ path: formatBinFilePath(hexPath) }];
         }
 
         options.bin.split(';').forEach((path) => {
             const m = matcher.exec(path);
             if (m && m.groups && m.groups['path']) {
                 result.push({
-                    path: this.project.ToAbsolutePath(m.groups['path']),
+                    path: formatBinFilePath(m.groups['path']),
                     addr: m.groups['addr']
                 });
             }
@@ -768,10 +777,11 @@ class STLinkUploader extends HexUploader<string[]> {
 
         // run
         let cmd = `${commandLine} ${options.otherCmds || ''}`.trimEnd();
-        if (osType() == 'win32' && exe.noSuffixName.toLowerCase().startsWith('stm32_programmer_cli')) {
-            cmd = 'chcp 437 && ' + cmd;
-        }
-        this.executeShellCommand(this.toolType, cmd);
+        if (osType() == 'win32' && exe.noSuffixName.toLowerCase().startsWith('stm32_programmer_cli'))
+            cmd = 'chcp 437 && ' + cmd; // chcp 437: 去除进度条乱码
+
+        this.executeShellCommand(this.toolType, cmd,
+            undefined, undefined, this.project.getRootDir().path);
     }
 }
 

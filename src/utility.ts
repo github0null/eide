@@ -752,7 +752,7 @@ export async function downloadFile(url: string): Promise<Buffer | Error | undefi
         if (res.success && res.content) { // received ok
             result = res.content;
         } else {
-            result = new Error(`Download file failed !, https errCode: ${res.statusCode}, msg: ${res.msg}`);
+            result = new Error(`Download file failed !, https code: ${res.statusCode}, msg: ${res.msg}`);
         }
 
         resolveIf(result);
@@ -805,8 +805,7 @@ export async function requestTxt(url: string): Promise<string | Error | undefine
 }
 
 export async function downloadFileWithProgress(url: string, fileLable: string,
-    progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken,
-    rejectUnauthorized: boolean = true): Promise<Buffer | Error | undefined> {
+    progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken): Promise<Buffer | Error | undefined> {
 
     return new Promise(async (resolve) => {
 
@@ -840,7 +839,7 @@ export async function downloadFileWithProgress(url: string, fileLable: string,
             host: hostName,
             path: path,
             headers: setProxyHeader({ 'User-Agent': 'Mozilla/5.0' }),
-            rejectUnauthorized: rejectUnauthorized
+            rejectUnauthorized: true
         }, 'https', (increment) => {
             curIncrement += increment;
             if (curIncrement > 1) { curIncrement = 1; } // limit to 100 %
@@ -855,7 +854,7 @@ export async function downloadFileWithProgress(url: string, fileLable: string,
         if (res.success && res.content) { // received ok
             result = res.content;
         } else if (token.isCancellationRequested === false) {
-            result = new Error(`Download file failed !, https errCode: ${res.statusCode}, msg: ${res.msg}`);
+            result = new Error(`Download file failed !, https code: ${res.statusCode}, msg: ${res.msg}`);
         }
 
         resolveIf(result);

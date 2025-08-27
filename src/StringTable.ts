@@ -454,6 +454,26 @@ export const view_str$env_desc$py3_cmd = [
 
 //---------------Other---------------
 
+export const view_str$prompt$install_dotnet_and_restart_vscode = [
+    `安装完.NET后，你需要完全重启VSCode以刷新系统环境变量`,
+    `After installed .NET. You need to close all VSCode instance and restart it to refresh System Environment Variables.`
+][langIndex];
+
+export const view_str$prompt$reload_workspace_to_refresh_env = [
+    `你需要重启插件以刷新环境变量`,
+    `You need to reload workspace to refresh Environment Variables !`
+][langIndex];
+
+export const view_str$prompt$install_dotnet_failed = [
+    `安装 [.NET6 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) 时失败，你需要手动安装它！`,
+    `Fail to install [.NET6 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0), you need install it manually !`
+][langIndex];
+
+export const view_str$prompt$loadws_cfg_failed = [
+    `加载VSCode工作区配置失败！请检查文件 {} 格式是否正确！`,
+    `Load workspace configuration failed ! Please check your {} file.`
+][langIndex];
+
 export const view_str$gen_sct_failed = [
     `生成.sct文件失败`,
     `Fail to generate .sct file`

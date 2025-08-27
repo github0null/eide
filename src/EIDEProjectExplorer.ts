@@ -1946,6 +1946,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                         symMatcher = /^(?<addr>[0-9a-f]+)\s+(?<size>[0-9a-f]+\s+)?(?<type>\w)\s+(?<name>[^\s]+)\s+(?<loca>.*)/i;
                         symTypConv = (t) => this.convGnuSymbolType2ReadableString(t)
                         break;
+                    case 'GNU_SDCC_MCS51':
+                        elfpath = prj.getExecutablePath();
+                        elftool = [toolchain.getToolchainDir().path, 'bin', `i51-elf-nm${exeSuffix()}`].join(File.sep);
+                        elfcmds = sortType == 'size' ? ['-l', '-S', '--size-sort', elfpath] : ['-ln', '-S', elfpath];
+                        elfsort = true;
+                        symMatcher = /^(?<addr>[0-9a-f]+)\s+(?<size>[0-9a-f]+\s+)?(?<type>\w)\s+(?<name>[^\s]+)\s+(?<loca>.*)/i;
+                        symTypConv = (t) => this.convGnuSymbolType2ReadableString(t)
+                        break;
                     default:
                         throw new Error(`Not support symbol view for '${toolchain.name}' !`);
                 }
@@ -3983,7 +3991,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     cfg['CompileFlags']['Add'] = ArrayDelRepetition(clangdCompileFlags);
                 }
                 // 其他不受 clangd 支持的编译器要自行设置 -I -D
-                else if (toolchain.name == 'AC5' || toolchain.name == 'SDCC') {
+                else if (toolchain.name == 'AC5' || toolchain.name == 'SDCC' || toolchain.name == 'GNU_SDCC_MCS51') {
                     const builderOpts = prj.getBuilderOptions();
                     const prjConfig = prj.GetConfiguration();
                     const compilerFlags: string[] = cfg['CompileFlags']['Add'] || [];
@@ -4427,6 +4435,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     diag_res = parseArmccCompilerLog(prj, logFile);
                     break;
                 case 'SDCC':
+                case 'GNU_SDCC_MCS51':
                     diag_res = parseSdccCompilerLog(prj, logFile);
                     break;
                 case 'COSMIC_STM8':
@@ -5867,6 +5876,11 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 if (!exeFile.IsFile()) throw Error(`Not found '${exeFile.name}' !`);
                 cmds = ['-S', '-l', elfPath, '>', dasmFile.path];
             }
+            else if (toolchainName == 'GNU_SDCC_MCS51') {
+                exeFile = File.from(prj.getToolchain().getToolchainDir().path, 'bin', `i51-elf-objdump${exeSuffix()}`);
+                if (!exeFile.IsFile()) throw Error(`Not found '${exeFile.name}' !`);
+                cmds = ['-S', '-l', elfPath, '>', dasmFile.path];
+            }
             else {
                 throw new Error(`Not support showDisassemblyForElf for toolchain: '${toolchainName}' !`);
             }
@@ -5975,6 +5989,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 exeFile = File.from(activePrj.getToolchain().getToolchainDir().path, 'bin', `llvm-objdump${exeSuffix()}`);
                 if (!exeFile.IsFile()) throw Error(`Not found '${exeFile.name}' !`);
                 cmds = ['-S', '-l', objPath, '>', tmpFile.path];
+            }
+            else if (toolchainName.includes('SDCC')) {
+                const objFile = File.from(objPath);
+                const outAsmPath = NodePath.join(objFile.dir, objFile.noSuffixName + '.asm');
+                vscode.window.showTextDocument(vscode.Uri.file(outAsmPath), { preview: true });
+                return;
             }
             else { // Not support
                 throw new Error(`Not support showDisassembly for toolchain: '${toolchainName}' !`);
@@ -7383,7 +7403,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 toolchainPathSettingName, newCfg.items['path'].data.value, vscode.ConfigurationTarget.Workspace);
 
             // update toolchain prefix
-            setting.setGccFamilyToolPrefix(project.getToolchain().name, newCfg.items['prefix'].data.value);
+            if (newCfg.items['prefix'])
+                setting.setGccFamilyToolPrefix(
+                    project.getToolchain().name, newCfg.items['prefix'].data.value);
         });
     }
 
@@ -8022,9 +8044,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             // show armcc axf file
             if (suffix == '.axf') {
 
-                const fromelf = File.fromArray([
-                    SettingManager.GetInstance().getArmcc5Dir().path, 'bin', `fromelf${exeSuffix()}`
-                ]);
+                let fromelf = File.from(`fromelf${exeSuffix()}`);
+                if (SettingManager.GetInstance().getArmcc5Dir().IsDir()) {
+                    fromelf = File.from(SettingManager.GetInstance().getArmcc5Dir().path, 'bin', `fromelf${exeSuffix()}`);
+                } else if (SettingManager.GetInstance().getArmcc6Dir().IsDir()) {
+                    fromelf = File.from(SettingManager.GetInstance().getArmcc6Dir().path, 'bin', `fromelf${exeSuffix()}`);
+                }
 
                 let cont: string;
 
@@ -8065,6 +8090,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     else if (toolchain.name == 'LLVM_ARM') {
                         readelf = [toolchain.getToolchainDir().path, 'bin', `llvm-readelf`].join(File.sep);
                         elfsize = [toolchain.getToolchainDir().path, 'bin', `llvm-size`].join(File.sep);
+                    }
+                    else if (toolchain.name == 'GNU_SDCC_MCS51') {
+                        readelf = [toolchain.getToolchainDir().path, 'bin', `i51-elf-readelf`].join(File.sep);
+                        elfsize = [toolchain.getToolchainDir().path, 'bin', `i51-elf-size`].join(File.sep);
                     }
                 }
 

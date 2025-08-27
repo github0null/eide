@@ -40,7 +40,9 @@ import { ResInstaller } from './ResInstaller';
 import {
     ERROR, WARNING, INFORMATION,
     view_str$operation$serialport, view_str$operation$baudrate, view_str$operation$serialport_name,
-    txt_install_now, txt_yes, view_str$prompt$feedback, rating_text, later_text, sponsor_author_text
+    txt_install_now, txt_yes, view_str$prompt$feedback, rating_text, later_text, sponsor_author_text,
+    view_str$prompt$install_dotnet_and_restart_vscode,
+    view_str$prompt$install_dotnet_failed
 } from './StringTable';
 import { LogDumper } from './LogDumper';
 import { StatusBarManager } from './StatusBarManager';
@@ -356,11 +358,53 @@ function postLaunchHook(extensionCtx: vscode.ExtensionContext) {
     ResInstaller.instance()
         .refreshExternalToolsIndex()
         .catch(err => GlobalEvent.log_warn(err));
+
+    // check py pkgs
+    checkAndInstallBuiltPyPkgs()
+        .catch(err => GlobalEvent.log_warn(err));
 }
 
 //////////////////////////////////////////////////
 // internal vsc-commands funcs
 //////////////////////////////////////////////////
+
+async function checkAndInstallBuiltPyPkgs() {
+
+    if (platform.osType() != 'win32')
+        return;
+
+    const resManager = ResManager.instance();
+    const py3 = resManager.getPython3();
+
+    const builtin_pkgs: { [name: string]: string } = {
+        'pyserial': 'pyserial-3.5-py2.py3-none-any.whl'
+    };
+
+    for (const name in builtin_pkgs) {
+        // check:
+        //  .\python3.exe -m pip show intelhex
+        ChildProcess.exec(`"${py3}" -m pip show ${name}`, (err, stdout) => {
+            if (!err) {
+                const lines = stdout.split(/\r\n|\n/);
+                const installed = lines.some(line => /^Version:\s+/.test(line));
+                if (installed)
+                    return;
+            }
+            // install
+            //  .\python3 -m pip --no-cache-dir install %*
+            GlobalEvent.log_info(`Installing python package: ${builtin_pkgs[name]} ...`);
+            const pkgFullPath = NodePath.join(resManager.getAppDataDir().path, builtin_pkgs[name]);
+            ChildProcess.exec(`"${py3}" -m pip install "${pkgFullPath}"`, (err) => {
+                if (!err) {
+                    GlobalEvent.log_info(`Done.`);
+                } else {
+                    GlobalEvent.log_warn(`Fail to install python package: ${builtin_pkgs[name]}`);
+                    GlobalEvent.log_warn(err);
+                }
+            });
+        });
+    }
+}
 
 function ShowUUID() {
     vscode.window.showInputBox({
@@ -1057,12 +1101,9 @@ async function checkAndInstallRuntime() {
             if (pkgReady && pkgFile.IsFile()) {
                 try {
                     ChildProcess.execFileSync(pkgFile.path);
-                    const sel = await vscode.window.showInformationMessage(`Ok ! Now you need to relaunch VsCode !`, txt_yes);
-                    if (sel) {
-                        vscode.commands.executeCommand('workbench.action.reloadWindow');
-                    }
+                    vscode.window.showInformationMessage(view_str$prompt$install_dotnet_and_restart_vscode);
                 } catch (error) {
-                    GlobalEvent.emit('msg', newMessage('Error', `Install [.NET6 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) failed, you need install it manually !`));
+                    GlobalEvent.emit('msg', newMessage('Error', view_str$prompt$install_dotnet_failed));
                 }
             } else {
                 vscode.window.showWarningMessage(`Install .NET6 runtime failed, you need install it manually !`);
@@ -1473,7 +1514,7 @@ class EideTerminalProvider implements vscode.TerminalProfileProvider {
                     shellName = 'cmd';
                     shellPath = cmd;
                 } else {
-                    GlobalEvent.emit('msg', newMessage('Error', `We can not found 'cmd.exe' in your pc !`));
+                    GlobalEvent.emit('msg', newMessage('Error', `Not found 'cmd.exe' on your pc !`));
                     return undefined;
                 }
             }
@@ -1612,6 +1653,7 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
             case 'AC5':
             case 'AC6':
             case 'GCC':
+            case 'GNU_SDCC_MCS51':
                 parser = 'memap';
                 break;
             default:
@@ -1722,6 +1764,7 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
                                 memapTyp = 'ARM_MICRO';
                                 break;
                             case 'GCC':
+                            case 'GNU_SDCC_MCS51':
                                 memapTyp = 'GCC_ARM';
                                 break;
                             default:

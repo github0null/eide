@@ -1,0 +1,197 @@
+{
+    "name": "SDCC + Binutils For MCS51",
+    "id": "GNU_SDCC_MCS51",
+    "useUnixPath": true,
+    "version": {
+        "args": "-v",
+        "matcher": "^\\s*(?<name>SDCC) .+? (?<version>\\d+\\.\\d+\\.\\d+)"
+    },
+    "global": {
+        "misc-controls": {
+            "type": "list",
+            "command": "",
+            "group": [
+                "c/cpp",
+                "linker"
+            ]
+        }
+    },
+    "groups": {
+        "c/cpp": {
+            "$path": "bin/sdcc",
+            "$includes": {
+                "body": "-I${value}"
+            },
+            "$defines": {
+                "body": "-D${key}=${value}",
+                "body_noval": "-D${key}"
+            },
+            "$invoke": {
+                "useFile": false,
+                "body": "${value}"
+            },
+            "$output": "-MMD -o ${out} ${in}",
+            "$outputSuffix": ".o",
+            "$default": [
+                "-c",
+                "-mmcs51",
+                "--stack-auto --nooverlay"
+            ],
+            "$language-c": {
+                "type": "selectable",
+                "command": {
+                    "c89": "--std-c89",
+                    "sdcc89": "--std-sdcc89",
+                    "c95": "--std-c95",
+                    "c99": "--std-c99",
+                    "sdcc99": "--std-sdcc99",
+                    "c11": "--std-c11",
+                    "sdcc11": "--std-sdcc11",
+                    "c2x": "--std-c2x",
+                    "sdcc2x": "--std-sdcc2x",
+                    "false": "--std-c99"
+                }
+            },
+            "mem-model": {
+                "type": "selectable",
+                "command": {
+                    "small": "--model-small",
+                    "large": "--model-large",
+                    "false": ""
+                }
+            },
+            "iram-size": {
+                "type": "list",
+                "command": "--iram-size "
+            },
+            "xram-size": {
+                "type": "list",
+                "command": "--xram-size "
+            },
+            "code-size": {
+                "type": "list",
+                "command": "--code-size "
+            },
+            "optimize-type": {
+                "type": "selectable",
+                "command": {
+                    "speed": "--opt-code-speed",
+                    "size": "--opt-code-size",
+                    "false": ""
+                }
+            },
+            "peep-asm": {
+                "type": "selectable",
+                "command": {
+                    "true": "--peep-asm",
+                    "false": ""
+                }
+            },
+            "peep-return": {
+                "type": "selectable",
+                "command": {
+                    "true": "--peep-return",
+                    "false": ""
+                }
+            },
+            "plain-char-is-signed": {
+                "type": "selectable",
+                "command": {
+                    "true": "--fsigned-char",
+                    "false": ""
+                }
+            },
+            "allow-unsafe-read": {
+                "type": "selectable",
+                "command": {
+                    "true": "--allow-unsafe-read",
+                    "false": ""
+                }
+            }
+        },
+        "asm": {
+            "$path": "bin/i51-elf-as",
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$output": "-o ${out} ${in}",
+            "$default": [
+                "-mmcs51"
+            ],
+            "defines": {
+                "type": "list",
+                "command": "--defsym "
+            },    
+            "ASM_FLAGS": {
+                "type": "list",
+                "command": ""
+            }
+        },
+        "linker": {
+            "$path": "bin/i51-elf-ld",
+            "$libs": {
+                "body": "-L${value}"
+            },
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$default": [
+                "--oformat=elf32-i51 --no-check-sections --print-memory-usage"
+            ],
+            "$output": "-o ${out} ${in} ${lib_flags} --start-group -lsdcc -lmcs51 -lint -llong -llonglong -lfloat --end-group",
+            "$outputSuffix": ".elf",
+            "$linkMap": {
+                "type": "value",
+                "command": "-Map ${mapPath}"
+            },
+            "$LIB_FLAGS": {
+                "type": "list",
+                "command": ""
+            },
+            "remove-unused-input-sections": {
+                "type": "selectable",
+                "command": {
+                    "true": "--gc-sections",
+                    "false": ""
+                }
+            },
+            "iram-size": {
+                "type": "list",
+                "command": "--defsym=__IDATA_SIZE__="
+            },
+            "xram-size": {
+                "type": "list",
+                "command": "--defsym=__XDATA_SIZE__="
+            },
+            "code-size": {
+                "type": "list",
+                "command": "--defsym=__FLASH_SIZE__="
+            },
+            "$outputBin": [
+                {
+                    "name": "output hex file",
+                    "toolPath": "bin/i51-elf-objcopy",
+                    "outputSuffix": ".hex",
+                    "command": "-O ihex ${linkerOutput} ${output}"
+                },
+                {
+                    "name": "output bin file",
+                    "toolPath": "bin/i51-elf-objcopy",
+                    "outputSuffix": ".bin",
+                    "command": "-O binary ${linkerOutput} ${output}"
+                }
+            ]
+        },
+        "linker-lib": {
+            "$path": "bin/i51-elf-ar",
+            "$invoke": {
+                "useFile": true,
+                "body": "@${value}"
+            },
+            "$output": "-rcv ${out} ${in}",
+            "$outputSuffix": ".a"
+        }
+    }
+}

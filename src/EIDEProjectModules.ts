@@ -458,6 +458,8 @@ export abstract class CompileConfigModel<T> extends ConfigModel<T> {
                 return <any>new AnyGccCompileConfigModel(prjConfigData);
             case 'GNU_SDCC_STM8':
                 return <any>new SdccGnuStm8CompileConfigModel(prjConfigData);
+            case 'GNU_SDCC_MCS51':
+                return <any>new SdccGnuMcs51CompileConfigModel(prjConfigData);
             case 'MTI_GCC':
                 return <any>new MipsCompileConfigModel(prjConfigData);
             case 'LLVM_ARM':
@@ -1731,6 +1733,20 @@ export class SdccCompileConfigModel extends C51BaseCompileConfigModel {
 
     GetDefault(): C51BaseCompileData {
         return SdccCompileConfigModel.getDefaultConfig();
+    }
+}
+
+class SdccGnuMcs51CompileConfigModel extends C51BaseCompileConfigModel {
+
+    static getDefaultConfig(): C51BaseCompileData {
+        return {
+            linkerScript: 'null',
+            options: 'null'
+        };
+    }
+
+    GetDefault(): C51BaseCompileData {
+        return SdccGnuMcs51CompileConfigModel.getDefaultConfig();
     }
 }
 
