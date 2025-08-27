@@ -6,6 +6,16 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.24.0] update
+
+**New**:
+  - `8051 Toolchain`: Support new SDCC + Binutils Toolchain for mcs51 https://github.com/github0null/sdcc-binutils-mcs51/blob/master/README_zh.md
+
+**Fix**:
+  - `ELF View`: Fix issue [461](https://github.com/github0null/eide/issues/461)
+
+***
+
 ### [v3.23.14] revision
 
 **New**:
