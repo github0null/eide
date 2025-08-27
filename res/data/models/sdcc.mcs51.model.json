@@ -1,75 +1,18 @@
 {
     "name": "SDCC + Binutils For MCS51",
     "id": "GNU_SDCC_MCS51",
+    "useUnixPath": true,
     "version": {
         "args": "-v",
         "matcher": "^\\s*(?<name>SDCC) .+? (?<version>\\d+\\.\\d+\\.\\d+)"
     },
     "global": {
-        "optimize-type": {
-            "type": "selectable",
-            "command": {
-                "speed": "--opt-code-speed",
-                "size": "--opt-code-size",
-                "false": ""
-            },
-            "group": [
-                "c/cpp"
-            ]
-        },
-        "peep-asm": {
-            "type": "selectable",
-            "command": {
-                "true": "--peep-asm",
-                "false": ""
-            },
-            "group": [
-                "c/cpp"
-            ]
-        },
-        "peep-return": {
-            "type": "selectable",
-            "command": {
-                "true": "--peep-return",
-                "false": ""
-            },
-            "group": [
-                "c/cpp"
-            ]
-        },
-        "plain-char-is-signed": {
-            "type": "selectable",
-            "command": {
-                "true": "--fsigned-char",
-                "false": ""
-            },
-            "group": [
-                "c/cpp"
-            ]
-        },
-        "allow-unsafe-read": {
-            "type": "selectable",
-            "command": {
-                "true": "--allow-unsafe-read",
-                "false": ""
-            },
-            "group": [
-                "c/cpp"
-            ]
-        },
         "misc-controls": {
             "type": "list",
             "command": "",
             "group": [
                 "c/cpp",
                 "linker"
-            ]
-        },
-        "ASM_FLAGS": {
-            "type": "list",
-            "command": "",
-            "group": [
-                "asm"
             ]
         }
     },
@@ -108,6 +51,62 @@
                     "sdcc2x": "--std-sdcc2x",
                     "false": "--std-c99"
                 }
+            },
+            "mem-model": {
+                "type": "selectable",
+                "command": {
+                    "small": "--model-small",
+                    "large": "--model-large",
+                    "false": ""
+                }
+            },
+            "iram-size": {
+                "type": "list",
+                "command": "--iram-size "
+            },
+            "xram-size": {
+                "type": "list",
+                "command": "--xram-size "
+            },
+            "code-size": {
+                "type": "list",
+                "command": "--code-size "
+            },
+            "optimize-type": {
+                "type": "selectable",
+                "command": {
+                    "speed": "--opt-code-speed",
+                    "size": "--opt-code-size",
+                    "false": ""
+                }
+            },
+            "peep-asm": {
+                "type": "selectable",
+                "command": {
+                    "true": "--peep-asm",
+                    "false": ""
+                }
+            },
+            "peep-return": {
+                "type": "selectable",
+                "command": {
+                    "true": "--peep-return",
+                    "false": ""
+                }
+            },
+            "plain-char-is-signed": {
+                "type": "selectable",
+                "command": {
+                    "true": "--fsigned-char",
+                    "false": ""
+                }
+            },
+            "allow-unsafe-read": {
+                "type": "selectable",
+                "command": {
+                    "true": "--allow-unsafe-read",
+                    "false": ""
+                }
             }
         },
         "asm": {
@@ -116,14 +115,17 @@
                 "useFile": true,
                 "body": "@${value}"
             },
-            "$output": "${out} ${in}",
-            "$outputSuffix": ".o",
+            "$output": "-o ${out} ${in}",
             "$default": [
                 "-mmcs51"
             ],
             "defines": {
                 "type": "list",
                 "command": "--defsym "
+            },    
+            "ASM_FLAGS": {
+                "type": "list",
+                "command": ""
             }
         },
         "linker": {

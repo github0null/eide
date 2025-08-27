@@ -3991,7 +3991,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     cfg['CompileFlags']['Add'] = ArrayDelRepetition(clangdCompileFlags);
                 }
                 // 其他不受 clangd 支持的编译器要自行设置 -I -D
-                else if (toolchain.name == 'AC5' || toolchain.name == 'SDCC') {
+                else if (toolchain.name == 'AC5' || toolchain.name == 'SDCC' || toolchain.name == 'GNU_SDCC_MCS51') {
                     const builderOpts = prj.getBuilderOptions();
                     const prjConfig = prj.GetConfiguration();
                     const compilerFlags: string[] = cfg['CompileFlags']['Add'] || [];
@@ -4435,6 +4435,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     diag_res = parseArmccCompilerLog(prj, logFile);
                     break;
                 case 'SDCC':
+                case 'GNU_SDCC_MCS51':
                     diag_res = parseSdccCompilerLog(prj, logFile);
                     break;
                 case 'COSMIC_STM8':

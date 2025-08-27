@@ -713,7 +713,7 @@ export class OperationExplorer {
                     detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'IAR For STM8')
                 },
                 {
-                    label: 'Small Device C Compiler (sdcc)',
+                    label: 'SDCC (sdcc)',
                     type: 'SDCC',
                     description: this.getStatusTxt(toolchainManager.isToolchainPathReady('SDCC'))
                         + ` Loc: ${toolchainManager.getToolchainExecutableFolder('SDCC')?.path}`,
@@ -1020,10 +1020,10 @@ export class OperationExplorer {
 
             const installed = resInstaller.isToolInstalled(t.id) || false;
 
-            if (!t.is_third_party && t.no_binaries)
+            if (!t.use_external_index && t.no_binaries)
                 return; // skip no_binaries built-in tools
 
-            if (!hasDiv && t.is_third_party) {
+            if (!hasDiv && t.use_external_index) {
                 hasDiv = true;
                 selections.push({
                     id: 'null',

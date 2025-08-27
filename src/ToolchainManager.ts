@@ -305,17 +305,17 @@ export class ToolchainManager {
             case 'Keil_C51':
                 return 'Keil C51 Compiler';
             case 'SDCC':
-                return 'Small Device C Compiler';
+                return 'SDCC';
+            case 'GNU_SDCC_STM8':
+                return 'SDCC + Binutils For STM8';
+            case 'GNU_SDCC_MCS51':
+                return 'SDCC + Binutils For MCS51';
             case 'GCC':
                 return 'GNU Arm Embedded Toolchain';
             case 'IAR_ARM':
                 return 'IAR ARM C/C++ Compiler';
             case 'IAR_STM8':
                 return 'IAR STM8 C/C++ Compiler';
-            case 'GNU_SDCC_STM8':
-                return 'SDCC + Binutils For STM8';
-            case 'GNU_SDCC_MCS51':
-                return 'SDCC + Binutils For MCS51';
             case 'RISCV_GCC':
                 return 'GNU RISC-V Toolchain';
             case 'ANY_GCC':
@@ -1172,11 +1172,11 @@ class GNU_SDCC_MCS51 implements IToolchian {
 
     readonly name: ToolchainName = 'GNU_SDCC_MCS51';
 
-    readonly modelName: string = 'gnu_sdcc_mcs51.model.json';
+    readonly modelName: string = 'sdcc.mcs51.model.json';
 
     readonly configName: string = 'null';
 
-    readonly verifyFileName: string = 'gnu_sdcc_mcs51.verify.json';
+    readonly verifyFileName: string = 'sdcc.mcs51.verify.json';
 
     readonly elfSuffix = '.elf';
 
@@ -1214,13 +1214,6 @@ class GNU_SDCC_MCS51 implements IToolchian {
         }
     }
 
-    private parseCodeModel(conf: string): string | undefined {
-        const mType = /\s*--model-(\w+)\s*/i.exec(conf);
-        if (mType && mType.length > 1) {
-            return mType[1];
-        }
-    }
-
     getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): utility.CppMacroDefine[] {
 
         const mList: utility.CppMacroDefine[] = [
@@ -1235,43 +1228,19 @@ class GNU_SDCC_MCS51 implements IToolchian {
         const devName = 'mcs51';
         let codeModel = 'small';
 
+        mList.push({ name: `__SDCC_${devName}`, value: '1', type: 'var' });
+        mList.push({ name: `__SDCC_STACK_AUTO`, value: '1', type: 'var' });
+        mList.push({ name: `__SDCC_INT_LONG_REENT`, value: '1', type: 'var' });
+        mList.push({ name: `__SDCC_FLOAT_REENT`, value: '1', type: 'var' });
+
         // global config
         if (builderOpts.global) {
             const conf = builderOpts.global;
-
-            mList.push({ name: `__SDCC_${devName}`, value: '1', type: 'var' });
-            mList.push({ name: `__SDCC_STACK_AUTO`, value: '1', type: 'var' });
-
             // get model type
-            if (conf['misc-controls']) {
-                let t = this.parseCodeModel(conf['misc-controls']);
-                if (t)
-                    codeModel = t;
-            }
-
-            // int long reent
-            if (conf['int-long-reent']) {
-                mList.push({ name: `__SDCC_INT_LONG_REENT`, value: '1', type: 'var' });
-            }
-
-            // float reent
-            if (conf['float-reent']) {
-                mList.push({ name: `__SDCC_FLOAT_REENT`, value: '1', type: 'var' });
-            }
+            if (conf['mem-model'])
+                codeModel = conf['mem-model'];
         }
-
-        // cpp config
-        if (builderOpts["c/cpp-compiler"]) {
-            const conf = builderOpts["c/cpp-compiler"];
-            // get model type
-            if (conf['misc-controls']) {
-                codeModel = this.parseCodeModel(conf['misc-controls']) || codeModel;
-            }
-        }
-
-        if (codeModel) { // set code model
-            mList.push({ name: `__SDCC_MODEL_${codeModel.toUpperCase()}`, value: '1', type: 'var' });
-        }
+        mList.push({ name: `__SDCC_MODEL_${codeModel.toUpperCase()}`, value: '1', type: 'var' });
 
         return mList;
     }
@@ -1281,7 +1250,7 @@ class GNU_SDCC_MCS51 implements IToolchian {
     }
 
     getToolchainDir(): File {
-        return SettingManager.GetInstance().getSdccDir();
+        return SettingManager.GetInstance().getGnuSdccMcs51Dir();
     }
 
     getSystemIncludeList(builderOpts: BuilderOptions): string[] {
@@ -1314,7 +1283,9 @@ class GNU_SDCC_MCS51 implements IToolchian {
     }
 
     getLibDirs(): string[] {
-        return [File.fromArray([this.getToolchainDir().path, 'lib']).path];
+        // share\sdcc\lib\large-stack-auto
+        // share\sdcc\lib\small-stack-auto
+        return [];
     }
 
     getDefaultConfig(): BuilderOptions {
@@ -1323,6 +1294,10 @@ class GNU_SDCC_MCS51 implements IToolchian {
             beforeBuildTasks: [],
             afterBuildTasks: [],
             global: {
+                "mem-model": "small",
+                "iram-size": "128",
+                "xram-size": "0",
+                "code-size": "8192",
                 "optimize-type": "speed"
             },
             'c/cpp-compiler': {
@@ -1330,7 +1305,8 @@ class GNU_SDCC_MCS51 implements IToolchian {
             },
             'asm-compiler': {},
             linker: {
-                "output-format": "elf"
+                "output-format": "elf",
+                "remove-unused-input-sections": true
             }
         };
     }

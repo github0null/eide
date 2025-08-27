@@ -94,7 +94,7 @@ export class HexUploaderManager {
             {
                 type: 'stcgal',
                 description: 'for STC chips',
-                filters: ['Keil_C51', 'SDCC']
+                filters: ['Keil_C51', 'SDCC', 'GNU_SDCC_MCS51']
             },
             {
                 type: 'STVP',

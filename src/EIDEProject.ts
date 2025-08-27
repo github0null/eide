@@ -3405,10 +3405,6 @@ class EIDEProject extends AbstractProject {
             case "IAR_ARM":
             case "IAR_STM8":
                 return this.ac5_parseRefLines(lines, 1);
-            case "SDCC":
-            case "AC6":
-            case "GCC":
-                return this.gnu_parseRefLines(lines);
             default:
                 return this.gnu_parseRefLines(lines);
         }

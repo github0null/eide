@@ -1722,6 +1722,7 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
                                 memapTyp = 'ARM_MICRO';
                                 break;
                             case 'GCC':
+                            case 'GNU_SDCC_MCS51':
                                 memapTyp = 'GCC_ARM';
                                 break;
                             default:

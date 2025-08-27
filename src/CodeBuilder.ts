@@ -1252,6 +1252,26 @@ class C51CodeBuilder extends CodeBuilder {
         return undefined;
     }
 
+    getLibDirs(): string[] {
+
+        const results = super.getLibDirs();
+        const toolchain = this.project.getToolchain();
+        const options: BuilderOptions = this.project.GetConfiguration().compileConfigModel.getOptions();
+
+        /* for sdcc + binutils toolchain, we need provide -L for ld */
+        if (toolchain.name == 'GNU_SDCC_MCS51') {
+            // "small": "-L${TOOL_DIR}/share/sdcc/lib/small-stack-auto",
+            // "large": "-L${TOOL_DIR}/share/sdcc/lib/large-stack-auto",
+            let model = 'small';
+            if (options.global && options.global["mem-model"])
+                model = options.global["mem-model"];
+            const p = [toolchain.getToolchainDir().path, `share/sdcc/lib/${model}-stack-auto`].join(File.sep);
+            results.push(this.project.ToAbsolutePath(p));
+        }
+
+        return ArrayDelRepetition(results);
+    }
+
     protected preHandleOptions(options: BuilderOptions) {
 
         const config = this.project.GetConfiguration<C51BaseCompileData>().config;
