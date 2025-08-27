@@ -358,11 +358,53 @@ function postLaunchHook(extensionCtx: vscode.ExtensionContext) {
     ResInstaller.instance()
         .refreshExternalToolsIndex()
         .catch(err => GlobalEvent.log_warn(err));
+
+    // check py pkgs
+    checkAndInstallBuiltPyPkgs()
+        .catch(err => GlobalEvent.log_warn(err));
 }
 
 //////////////////////////////////////////////////
 // internal vsc-commands funcs
 //////////////////////////////////////////////////
+
+async function checkAndInstallBuiltPyPkgs() {
+
+    if (platform.osType() != 'win32')
+        return;
+
+    const resManager = ResManager.instance();
+    const py3 = resManager.getPython3();
+
+    const builtin_pkgs: { [name: string]: string } = {
+        'pyserial': 'pyserial-3.5-py2.py3-none-any.whl'
+    };
+
+    for (const name in builtin_pkgs) {
+        // check:
+        //  .\python3.exe -m pip show intelhex
+        ChildProcess.exec(`"${py3}" -m pip show ${name}`, (err, stdout) => {
+            if (!err) {
+                const lines = stdout.split(/\r\n|\n/);
+                const installed = lines.some(line => /^Version:\s+/.test(line));
+                if (installed)
+                    return;
+            }
+            // install
+            //  .\python3 -m pip --no-cache-dir install %*
+            GlobalEvent.log_info(`Installing python package: ${builtin_pkgs[name]} ...`);
+            const pkgFullPath = NodePath.join(resManager.getAppDataDir().path, builtin_pkgs[name]);
+            ChildProcess.exec(`"${py3}" -m pip install "${pkgFullPath}"`, (err) => {
+                if (!err) {
+                    GlobalEvent.log_info(`Done.`);
+                } else {
+                    GlobalEvent.log_warn(`Fail to install python package: ${builtin_pkgs[name]}`);
+                    GlobalEvent.log_warn(err);
+                }
+            });
+        });
+    }
+}
 
 function ShowUUID() {
     vscode.window.showInputBox({
