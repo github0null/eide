@@ -5991,8 +5991,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 cmds = ['-S', '-l', objPath, '>', tmpFile.path];
             }
             else if (toolchainName.includes('SDCC')) {
-                const outAsmFile = File.from(NodePath.dirname(objPath), NodePath.basename(objPath) + '.asm');
-                vscode.window.showTextDocument(vscode.Uri.file(outAsmFile.path), { preview: true });
+                const objFile = File.from(objPath);
+                const outAsmPath = NodePath.join(objFile.dir, objFile.noSuffixName + '.asm');
+                vscode.window.showTextDocument(vscode.Uri.file(outAsmPath), { preview: true });
                 return;
             }
             else { // Not support

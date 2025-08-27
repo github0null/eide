@@ -752,7 +752,7 @@ export async function downloadFile(url: string): Promise<Buffer | Error | undefi
         if (res.success && res.content) { // received ok
             result = res.content;
         } else {
-            result = new Error(`Download file failed !, https errCode: ${res.statusCode}, msg: ${res.msg}`);
+            result = new Error(`Download file failed !, https code: ${res.statusCode}, msg: ${res.msg}`);
         }
 
         resolveIf(result);
@@ -854,7 +854,7 @@ export async function downloadFileWithProgress(url: string, fileLable: string,
         if (res.success && res.content) { // received ok
             result = res.content;
         } else if (token.isCancellationRequested === false) {
-            result = new Error(`Download file failed !, https errCode: ${res.statusCode}, msg: ${res.msg}`);
+            result = new Error(`Download file failed !, https code: ${res.statusCode}, msg: ${res.msg}`);
         }
 
         resolveIf(result);
