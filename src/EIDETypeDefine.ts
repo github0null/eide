@@ -1538,7 +1538,7 @@ export interface WorkspaceConfig {
 export class WorkspaceConfiguration extends Configuration<WorkspaceConfig> {
 
     isDelUnknownKeysWhenLoad = false;
-    isLoaded = false;
+    isLoadFailed = false;
 
     protected readTypeFromFile(configFile: File): ProjectType | undefined {
         return undefined;
@@ -1547,13 +1547,13 @@ export class WorkspaceConfiguration extends Configuration<WorkspaceConfig> {
     protected Parse(jsonStr: string): WorkspaceConfig {
         try {
             const obj = <any>jsonc.parse(jsonStr);
-            this.isLoaded = true;
+            this.isLoadFailed = false;
             return obj;
         } catch (error) {
             GlobalEvent.log_error(error);
             GlobalEvent.emit('msg', newMessage('Warning', 
                 view_str$prompt$loadws_cfg_failed.replace('{}', this.FILE_NAME)));
-            this.isLoaded = false;
+            this.isLoadFailed = true;
             return this.GetDefault();
         }
     }
@@ -1565,10 +1565,8 @@ export class WorkspaceConfiguration extends Configuration<WorkspaceConfig> {
     // workspace only can be force save, because user will modify this file, 
     // so we can not override it
     Save(force?: boolean) {
-        if (this.isLoaded) {
-            if (force)
-                super.Save();
-        }
+        if (force || !this.isLoadFailed)
+            super.Save();
     }
 
     GetDefault(): WorkspaceConfig {
