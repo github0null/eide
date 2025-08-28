@@ -199,12 +199,12 @@ export class ResInstaller {
 
         const r_sdcc_mcs51: ToolPlatformInfo = {
             'win32': {
-                url: 'https://github.com/github0null/sdcc-binutils-mcs51/releases/latest/download/sdcc-4.5.0-with-binutils-win32.zip',
+                url: 'https://em-ide.com/resource/sdcc-4.5.0-with-binutils-win32.zip',
                 zip_type: 'zip',
                 bin_dir: 'sdcc-4.5.0-with-binutils/bin'
             },
             'linux': {
-                url: 'https://github.com/github0null/sdcc-binutils-mcs51/releases/latest/download/sdcc-4.5.0-with-binutils-linux.tar.gz',
+                url: 'https://em-ide.com/resource/sdcc-4.5.0-with-binutils-linux.tar.gz',
                 zip_type: 'tar.gz',
                 bin_dir: 'sdcc-4.5.0-with-binutils/bin'
             }
