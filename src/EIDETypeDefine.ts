@@ -1565,7 +1565,7 @@ export class WorkspaceConfiguration extends Configuration<WorkspaceConfig> {
     // workspace only can be force save, because user will modify this file, 
     // so we can not override it
     Save(force?: boolean) {
-        if (force || !this.isLoadFailed)
+        if (force)
             super.Save();
     }
 

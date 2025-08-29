@@ -175,12 +175,6 @@
                     "toolPath": "bin/i51-elf-objcopy",
                     "outputSuffix": ".hex",
                     "command": "-O ihex ${linkerOutput} ${output}"
-                },
-                {
-                    "name": "output bin file",
-                    "toolPath": "bin/i51-elf-objcopy",
-                    "outputSuffix": ".bin",
-                    "command": "-O binary ${linkerOutput} ${output}"
                 }
             ]
         },

@@ -203,11 +203,6 @@
                         true,
                         false
                     ]
-                },
-                "misc-controls": {
-                    "markdownDescription": "Other Global Options",
-                    "description.zh-cn": "编译器附加选项（全局）",
-                    "$ref": "#/definitions/misc-controls"
                 }
             }
         },
