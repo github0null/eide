@@ -6,7 +6,7 @@ All notable version changes will be recorded in this file.
 
 ***
 
-### [v3.24.1] update
+### [v3.24.2] update
 
 **New**:
   - `8051 Toolchain`: Support new SDCC + Binutils Toolchain for mcs51 https://github.com/github0null/sdcc-binutils-mcs51/blob/master/README_zh.md
