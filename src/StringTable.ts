@@ -112,6 +112,11 @@ export const view_str$flasher$downloadSpeed = [
     'Download Speed'
 ][langIndex];
 
+export const view_str$flasher$eraseAll = [
+    '擦除所有',
+    'Erase All'
+][langIndex];
+
 export const view_str$flasher$binPath = [
     '程序文件',
     'Program File'
@@ -336,7 +341,7 @@ export const source_list_desc = [
 ][langIndex];
 
 export const definition_list_desc = [
-    '预处理宏定义',
+    '预处理器定义',
     'Preprocessor Definitions'
 ][langIndex];
 

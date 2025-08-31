@@ -33,14 +33,21 @@ import {
     view_str$flasher$resetMode,
     view_str$flasher$other_cmds,
     view_str$flasher$stcgalOptions,
-    view_str$compile$archExtensions
+    view_str$compile$archExtensions,
+    view_str$flasher$eraseAll
 } from "./StringTable";
 import { ResManager } from "./ResManager";
 import { ArrayDelRepetition } from "../lib/node-utility/Utility";
 import { GlobalEvent } from "./GlobalEvents";
 import { ExceptionToMessage, newMessage } from "./Message";
 import { ToolchainName, IToolchian, ToolchainManager } from './ToolchainManager';
-import { HexUploaderType, STLinkOptions, STVPFlasherOptions, StcgalFlashOption, JLinkOptions, JLinkProtocolType, PyOCDFlashOptions, OpenOCDFlashOptions, STLinkProtocolType, CustomFlashOptions } from "./HexUploader";
+import {
+    HexUploaderType, STLinkOptions, STVPFlasherOptions, 
+    StcgalFlashOption, JLinkOptions, JLinkProtocolType,
+    PyOCDFlashOptions, OpenOCDFlashOptions, STLinkProtocolType,
+    ProbeRSFlashOptions,
+    CustomFlashOptions 
+} from "./HexUploader";
 import { AbstractProject } from "./EIDEProject";
 import { SettingManager } from "./SettingManager";
 import { WorkspaceManager } from "./WorkspaceManager";
@@ -1932,6 +1939,8 @@ export abstract class UploadConfigModel<T> extends ConfigModel<T> {
                 return new OpenOCDUploadModel(api);
             case 'Custom':
                 return new CustomUploadModel(api);
+            case 'probe-rs':
+                return new ProbeRSUploadModel(api);
             default:
                 throw new Error('Invalid uploader type !');
         }
@@ -1955,6 +1964,9 @@ export abstract class UploadConfigModel<T> extends ConfigModel<T> {
         }
     }
 
+    /**
+     * @description 用于获取该选项的值（仅用于在UI中进行可读性显示）
+    */
     getKeyValue(key: string): string {
         switch (key) {
             case 'bin':
@@ -2840,6 +2852,135 @@ class OpenOCDUploadModel extends UploadConfigModel<OpenOCDFlashOptions> {
         };
     }
 }
+
+class ProbeRSUploadModel extends UploadConfigModel<ProbeRSFlashOptions> {
+
+    uploader: HexUploaderType = 'probe-rs';
+
+    GetKeyDescription(key: string): string {
+        switch (key) {
+            case 'target':
+                return view_str$flasher$targetName;
+            case 'protocol':
+                return view_str$flasher$interfaceType;
+            case 'baseAddr':
+                return view_str$flasher$baseAddr;
+            case 'speed':
+                return view_str$flasher$downloadSpeed;
+            case 'allowEraseAll':
+                return view_str$flasher$eraseAll;
+            case 'otherOptions':
+                return view_str$flasher$other_cmds;
+            default:
+                return super.GetKeyDescription(key);
+        }
+    }
+
+    getKeyValue(key: string): string {
+        switch (key) {
+            case 'bin':
+                return (<any>this.data)[key] || '${ExecutableName}.elf';
+            case 'speed':
+                return (<any>this.data)[key] > 0 ? `${(<any>this.data)[key]} KHz` : 'default';
+            case 'allowEraseAll':
+                return `${(<any>this.data)[key]}`;
+            default:
+                return super.getKeyValue(key);
+        }
+    }
+
+    isKeyEnable(key: string): boolean {
+        switch (key) {
+            case 'baseAddr':
+                return /\.bin\b/i.test(this.data.bin);
+            case 'allowEraseAll':
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    getKeyIcon(key: string): KeyIcon | undefined {
+        switch (key) {
+            case 'target':
+                return 'CPU_16x.svg';
+            case 'protocol':
+                return 'ConnectUnplugged_16x.svg';
+            case 'baseAddr':
+                return 'Property_16x.svg';
+            case 'otherOptions':
+                return 'ImmediateWindow_16x.svg';
+            default:
+                return super.getKeyIcon(key);
+        }
+    }
+
+    protected GetKeyType(key: string): FieldType {
+        switch (key) {
+            case 'target':
+            case 'protocol':
+            case 'allowEraseAll':
+                return 'SELECTION';
+            case 'baseAddr':
+            case 'otherOptions':
+                return 'INPUT';
+            case 'speed':
+                return 'INPUT_INTEGER';
+            default:
+                return super.GetKeyType(key);
+        }
+    }
+
+    protected VerifyString(key: string, input: string): string | undefined {
+        switch (key) {
+            case 'baseAddr':
+                return /^0x[0-9a-f]{1,8}$/i.test(input) ? undefined : 'must be a hex number, like: 0x08000000';
+            default:
+                return super.VerifyString(key, input);
+        }
+    }
+
+    protected GetSelectionList(key: string): CompileConfigPickItem[] | undefined {
+        switch (key) {
+            case 'target': 
+                return utility.probers_listchips().map(inf => {
+                    return {
+                        label: inf.name,
+                        description: inf.series
+                    }
+                });
+            case 'protocol':
+                return [
+                    { label: 'SWD', val: 'swd' },
+                    { label: 'JTAG', val: 'jtag' }
+                ];
+            case 'allowEraseAll':
+                return [
+                    { label: 'true', val: true },
+                    { label: 'false', val: false }
+                ];
+            default:
+                return super.GetSelectionList(key);
+        }
+    }
+
+    protected getEventData(key: string): EventData | undefined {
+        return super.getEventData(key);
+    }
+
+    GetDefault(): ProbeRSFlashOptions {
+        return {
+            bin: '',
+            target: 'STM32F103C8',
+            protocol: 'swd',
+            speed: 0,
+            baseAddr: '0x08000000',
+            allowEraseAll: false,
+            otherOptions: ''
+        };
+    }
+}
+
 
 class CustomUploadModel extends UploadConfigModel<CustomFlashOptions> {
 
