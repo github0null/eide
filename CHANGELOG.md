@@ -6,6 +6,13 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.25.0] update
+
+**New**:
+  - `Flasher`: Support new flasher [probe-rs](https://probe.rs/docs/overview/about-probe-rs/). Used for 'ARM', 'RISCV' chips.
+
+***
+
 ### [v3.24.2] update
 
 **New**:
