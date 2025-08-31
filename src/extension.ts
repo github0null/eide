@@ -1898,30 +1898,19 @@ function c51ToSDCC() {
         }
 
         const file = new File(vscode.window.activeTextEditor.document.uri.fsPath);
-        const bkFile = new File(file.path + '.bk');
-
         if (file.IsFile()) {
             try {
-                // backup
-                fs.copyFileSync(file.path, bkFile.path);
-
                 const res: string[] = [];
                 sfrMap.clear();
                 const lines = fs.readFileSync(file.path, 'utf8').split(/\n|\r\n/);
-
                 lines.forEach((_line, index) => {
                     res.push(handleLine(_line, index + 1));
                 });
-
                 fs.writeFileSync(file.path, res.join(os.EOL));
-
-                GlobalEvent.emit('msg', newMessage('Info', 'Convert finished !'));
-
+                GlobalEvent.emit('msg', newMessage('Info', 'Convertion finished !'));
             } catch (error) {
                 GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
             }
-        } else {
-            GlobalEvent.emit('msg', newMessage('Warning', 'not found file: \'' + file.path + '\''));
         }
     }
 }

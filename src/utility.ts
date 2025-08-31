@@ -49,6 +49,90 @@ export const TIME_ONE_MINUTE = 60 * 1000;
 export const TIME_ONE_HOUR = 3600 * 1000;
 export const TIME_ONE_DAY = 24 * 3600 * 1000;
 
+export async function probers_install(cwd?: string) {
+
+    let commandLine: string;
+    if (platform.osType() === 'win32') {
+        commandLine = `irm https://github.com/probe-rs/probe-rs/releases/latest/download/probe-rs-tools-installer.ps1 | iex`;
+    } else if (platform.osType() === 'linux' || platform.osType() === 'darwin') {
+        commandLine = `curl --proto '=https' --tlsv1.2 -LsSf https://github.com/probe-rs/probe-rs/releases/latest/download/probe-rs-tools-installer.sh | sh`;
+    } else {
+        GlobalEvent.emit('msg', newMessage('Warning', 
+            `Not support installer for '${platform.osType()}' platform ! Please goto https://probe.rs/docs/getting-started/installation/`));
+        return;
+    }
+
+    // clean old terminal
+    const title = 'install probe-rs';
+    const index = vscode.window.terminals.findIndex((t) => t.name === title);
+    if (index !== -1)
+        vscode.window.terminals[index].dispose();
+    // new terminal
+    const tOpts: vscode.TerminalOptions = {
+        name: title,
+        cwd: cwd
+    };
+    if (os.platform() == 'win32')
+        tOpts.shellPath = 'powershell.exe';
+    const terminal = vscode.window.createTerminal(tOpts);
+    // show terminal before sendtext
+    terminal.show(true);
+    terminal.sendText(commandLine);
+}
+
+export function probers_listchips(): { name: string, series?: string }[] {
+
+    const result: { name: string, series?: string }[] = [];
+
+    try {
+        const cmdEnv = deepCloneObject(process.env);
+        platform.prependToSysEnv(cmdEnv, [
+            NodePath.join(`${platform.userhome()}`, '.cargo', 'bin') // $HOME/.cargo/bin/
+        ]);
+        const lines = child_process.execSync(`probe-rs chip list`, {
+            env: cmdEnv,
+            maxBuffer: 10 * 1024 * 1024
+        }).toString().split(/\r\n|\n/);
+        let curSeries: string | undefined;
+        let variantsStarted: boolean = false;
+        for (const line of lines) {
+            if (line.startsWith(' ') || line.startsWith('\t')) {
+                if (line.trim() === 'Variants:') {
+                    variantsStarted = true;
+                } else if (variantsStarted) {
+                    result.push({
+                        name: line.trim(),
+                        series: curSeries
+                    });
+                }
+            } else {
+                curSeries = line.trimEnd();
+                variantsStarted = false;
+            }
+        }
+    } catch (error) {
+        try {
+            // PS C:\Users\Administrator> cargo-flash --version
+            // cargo flash 0.29.1 (git commit: 1cf182e)
+            const env = deepCloneObject(process.env);
+            platform.prependToSysEnv(env, [
+                NodePath.join(`${platform.userhome()}`, '.cargo', 'bin') // $HOME/.cargo/bin/
+            ]);
+            child_process.execSync(`cargo-flash --version`, { env });
+            GlobalEvent.log_warn(error);
+            GlobalEvent.log_show();
+        } catch (error) {
+            vscode.window.showWarningMessage(
+                `Not found 'cargo-flash' command. Install it now ?`, 'Yes', 'No').then(opt => {
+                    if (opt === 'Yes')
+                        probers_install();
+                });
+        }
+    }
+
+    return result;
+}
+
 /**
  * @param len len必须是2的整数倍
  */

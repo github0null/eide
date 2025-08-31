@@ -31,9 +31,10 @@ import { CmdLineHandler } from "./CmdLineHandler";
 import { gotoSet_text, view_str$download_software } from "./StringTable";
 import { EncodingConverter } from "./EncodingConverter";
 import { ToolchainName, ToolchainManager } from "./ToolchainManager";
-import { runShellCommand } from './utility';
+import { runShellCommand, deepCloneObject, probers_install } from './utility';
 import { WorkspaceManager } from "./WorkspaceManager";
 
+import * as child_process from "child_process";
 import * as vscode from "vscode";
 import * as NodePath from 'path';
 import * as os from "os";
@@ -41,12 +42,12 @@ import * as fs from 'fs';
 import * as ini from 'ini';
 import { ResInstaller } from "./ResInstaller";
 import { newMessage } from "./Message";
-import { concatSystemEnvPath, exeSuffix, prependToSysEnv, osType } from "./Platform";
+import { concatSystemEnvPath, exeSuffix, prependToSysEnv, osType, appendToSysEnv, userhome } from "./Platform";
 import { StatusBarManager } from "./StatusBarManager";
 
 let _mInstance: HexUploaderManager | undefined;
 
-export type HexUploaderType = 'JLink' | 'STVP' | 'STLink' | 'stcgal' | 'pyOCD' | 'OpenOCD' | 'Custom';
+export type HexUploaderType = 'JLink' | 'STVP' | 'STLink' | 'stcgal' | 'pyOCD' | 'OpenOCD' | 'probe-rs' | 'Custom';
 
 export interface UploadOption {
     // program file path
@@ -92,6 +93,12 @@ export class HexUploaderManager {
                 filters: arm_toolchains.concat(riscv_toolchains, ['ANY_GCC'])
             },
             {
+                type: 'probe-rs',
+                description: 'for ARM, RISC-V devices',
+                filters: arm_toolchains.concat(riscv_toolchains, ['ANY_GCC'])
+            },
+            // 8/16 bits mcus
+            {
                 type: 'stcgal',
                 description: 'for STC chips',
                 filters: ['Keil_C51', 'SDCC', 'GNU_SDCC_MCS51']
@@ -101,10 +108,11 @@ export class HexUploaderManager {
                 description: 'for STM8 chips, only STLink interface',
                 filters: ['IAR_STM8', 'SDCC', 'COSMIC_STM8']
             },
+            // custom
             {
                 type: 'Custom',
-                label: 'Shell',
-                description: 'download program by custom shell command'
+                label: 'Custom CLI',
+                description: 'download program by custom command-line'
             }
         ];
     }
@@ -142,6 +150,8 @@ export class HexUploaderManager {
                 return new PyOCDUploader(prj);
             case 'OpenOCD':
                 return new OpenOCDUploader(prj);
+            case 'probe-rs':
+                return new ProbeRSUploader(prj);
             case 'Custom':
                 return new CustomUploader(prj);
             default:
@@ -267,7 +277,7 @@ export abstract class HexUploader<InvokeParamsType> {
             }
         });
 
-        return commandLine
+        return commandLine;
     }
 
     getAllProgramFiles(): FlashProgramFile[] {
@@ -1087,6 +1097,154 @@ class OpenOCDUploader extends HexUploader<string[]> {
         this.executeShellCommand(this.toolType, commandLine);
     }
 }
+
+export interface ProbeRSFlashOptions extends UploadOption {
+
+    /*
+    --chip <CHIP>
+          [env: PROBE_RS_CHIP=]
+    */
+    target: string;
+
+    /*
+    --protocol <PROTOCOL>
+          Protocol used to connect to chip. Possible options: [swd, jtag]
+    */
+    protocol: string;
+
+    /*
+    --speed <SPEED>
+          The protocol speed in kHz
+    */
+    speed: number;
+
+    /*
+    --base-address <BASE_ADDRESS>
+          The address in memory where the binary will be put at. This is only considered when `bin` is selected as the format
+    */
+    baseAddr: string;
+
+    /*
+    --allow-erase-all
+          Use this flag to allow all memory, including security keys and 3rd party firmware, to be erased even when it has read-only protection
+    */
+    allowEraseAll: boolean;
+
+    /*
+    other user options pass to cli
+    */
+    otherOptions: string;
+}
+
+class ProbeRSUploader extends HexUploader<string[]> {
+
+    toolType: HexUploaderType = 'probe-rs';
+
+    private _getEnv(): any {
+        const env = deepCloneObject(process.env);
+        prependToSysEnv(env, [
+            NodePath.join(`${userhome()}`, '.cargo', 'bin') // $HOME/.cargo/bin/
+        ]);
+        return env;
+    }
+
+    protected parseProgramFiles<T extends UploadOption>(options: T): FlashProgramFile[] {
+
+        const result: FlashProgramFile[] = [];
+        const matcher = /(?<path>[^,]+)(?:,(?<addr>0x[a-f0-9]+))?/i;
+
+        // if 'bin' path is empty, use default program path 
+        if (options.bin.trim() === '') {
+            const elfPath = ['.', this.project.getOutputDir(), this.project.getProjectName() + '.elf'].join(File.sep);
+            return [
+                { path: elfPath }
+            ];
+        }
+
+        options.bin.split(';').forEach((path) => {
+            const m = matcher.exec(path);
+            if (m && m.groups && m.groups['path']) {
+                result.push({
+                    path: this.project.resolveEnvVar(m.groups['path']),
+                    addr: m.groups['addr']
+                });
+            }
+        });
+
+        return result;
+    }
+
+    protected async _prepare(eraseAll?: boolean): Promise<UploaderPreData<string[]>> {
+
+        try {
+            // PS C:\Users\Administrator> cargo-flash --version
+            // cargo flash 0.29.1 (git commit: 1cf182e)
+            child_process.execSync(`cargo-flash --version`, { env: this._getEnv() });
+        } catch (error) {
+            GlobalEvent.log_warn(error);
+            vscode.window.showWarningMessage(
+                `Not found 'cargo-flash' command. Install it now ?`, 'Yes', 'No').then(opt => {
+                    if (opt === 'Yes')
+                        probers_install();
+                });
+            return { isOk: false };
+        }
+
+        if (eraseAll) {
+            GlobalEvent.emit('msg', newMessage('Warning', `not support 'Erase Chip' for '${this.toolType}' flasher`));
+            return { isOk: false };
+        }
+
+        const option = this.getUploadOptions<ProbeRSFlashOptions>();
+        const programs = this.parseProgramFiles(option);
+
+        if (programs.length == 0) {
+            throw new Error(`no any program files !`);
+        }
+
+        const commands: string[] = [
+            `--chip ${option.target}`,
+            `--protocol ${option.protocol}`
+        ];
+
+        const wsFolder = WorkspaceManager.getInstance().getWorkspaceRoot();
+        if (wsFolder) {
+            commands.push(
+                `--work-dir "${wsFolder.path}"`
+            );
+        }
+
+        // just support one file
+        commands.push(`--path "${programs[0].path}"`);
+        // if (programs[0].path.endsWith('.bin')) {
+        //     if (programs[0].addr || option.baseAddr) {
+        //         const baseAddr = programs[0].addr || option.baseAddr;
+        //         commands.push(`--base-address ${baseAddr}`);
+        //     }
+        // }
+        commands.push(`--verify`);
+
+        if (option.speed)
+            commands.push(`--speed ${option.speed}`);
+        // if (option.allowEraseAll)
+        //     commands.push(`--allow-erase-all`);
+
+        // place otherOptions at the last, maybe user want to override some options.
+        if (option.otherOptions)
+            commands.push(option.otherOptions);
+
+        return {
+            isOk: true,
+            params: commands
+        };
+    }
+
+    protected _launch(commands: string[]): void {
+        const commandLine = `cargo-flash ${commands.join(' ')}`;
+        this.executeShellCommand(this.toolType, commandLine, this._getEnv());
+    }
+}
+
 /**
  * Custom flasher
 */
