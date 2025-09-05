@@ -22,7 +22,6 @@
 #define __interrupt(x)
 #define __using(x)
 #define __at(x)
-#define __asm__(x)
 #define __naked
 
 // for pic
