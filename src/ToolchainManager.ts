@@ -2400,7 +2400,9 @@ class GCC implements IToolchian {
             global: {
                 "$float-abi-type": 'hard',
                 "output-debug-info": 'enable',
-                "misc-control": "--specs=nosys.specs --specs=nano.specs"
+                "use-newlib-nano": true,
+                "not-use-syscalls": true,
+                "misc-control": ""
             },
             'c/cpp-compiler': {
                 "language-c": "c11",

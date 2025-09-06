@@ -299,6 +299,32 @@
                 "cpp"
             ]
         },
+        "use-newlib-nano": {
+            "type": "selectable",
+            "command": {
+                "true": "--specs=nano.specs",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ]
+        },
+        "not-use-syscalls": {
+            "type": "selectable",
+            "command": {
+                "true": "--specs=nosys.specs",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ]
+        },
         "misc-control": {
             "type": "list",
             "command": "",
