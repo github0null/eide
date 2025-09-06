@@ -2668,6 +2668,10 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 .map(d => ePrjRoot.ToRelativePath(d.path) || d.path);
         }
 
+        // init source args
+        const srcOptsObj = <SourceFileOptions>{ version: EIDE_FILE_OPTION_VERSION, options: {} };
+        srcOptsObj.version = EIDE_FILE_OPTION_VERSION;
+
         // init all target
         for (const eTarget of ePrjInfo.targets) {
 
@@ -2687,108 +2691,48 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 }
             };
 
-            nEideTarget.custom_dep.defineList = eTarget.globalArgs.cMacros;
-            nEideTarget.custom_dep.incList = eTarget.globalArgs.cIncDirs;
-
-            var getRootIncompatibleArgs = (t: eclipseParser.EclipseProjectTarget): string[] => {
-
-                const res: string[] = [];
-
-                if (!t.incompatibleArgs['/']) return res;
-                const bArgs: any = t.incompatibleArgs['/'];
-                for (const key in bArgs) {
-                    if (!isArray(bArgs[key])) continue;
-                    for (const arg of bArgs[key]) {
-                        res.push(arg);
-                    }
-                }
-
-                return res;
-            };
+            nEideTarget.custom_dep.defineList = eTarget.builldArgs.cMacros;
+            nEideTarget.custom_dep.incList = eTarget.builldArgs.cIncDirs;
+            nEideTarget.custom_dep.libList = eTarget.builldArgs.linkerLibSearchDirs;
 
             // for arm gcc toolchain
             if (nEideTarget.toolchain == 'GCC') {
 
-                var guessArmCpuType = (t: eclipseParser.EclipseProjectTarget): string | undefined => {
-
+                var guessArmCpuType = (archName?: string): string | undefined => {
+                    if (!archName)
+                        return undefined;
                     // @note: this list is trimed, not full
-                    const armCpuTypeList = [
-                        'Cortex-M0',
-                        'Cortex-M23',
-                        'Cortex-M33',
-                        'Cortex-M3',
-                        'Cortex-M4',
-                        'Cortex-M7'
-                    ];
-
-                    for (const arg of getRootIncompatibleArgs(t)) {
-                        const mRes = /(cortex-m[\w\+]+)/.exec(arg);
-                        if (mRes && mRes.length > 1) {
-                            const name = mRes[1].toLowerCase();
-                            const idx = armCpuTypeList.map(c => c.toLowerCase())
-                                .findIndex(c => name == c || name.startsWith(c));
-                            if (idx != -1) return armCpuTypeList[idx];
-                        }
-                    }
+                    const armCpuTypeMap: any = {
+                        'cortex-m0plus' : 'Cortex-M0+',
+                        'cortex-m0+'    : 'Cortex-M0+',
+                        'cortex-m23'    : 'Cortex-M23',
+                        'cortex-m33'    : 'Cortex-M33',
+                        'cortex-m35p'   : 'Cortex-M35P',
+                        'cortex-m55'    : 'Cortex-M55',
+                        'cortex-m85'    : 'Cortex-M85',
+                        'cortex-m0'     : 'Cortex-M0',
+                        'cortex-m3'     : 'Cortex-M3',
+                        'cortex-m4'     : 'Cortex-M4',
+                        'cortex-m7'     : 'Cortex-M7'
+                    };
+                    return armCpuTypeMap[archName.toLowerCase()];
                 };
 
                 const compilerOpt = <ArmBaseCompileData>nEideTarget.compileConfig;
-                compilerOpt.cpuType = guessArmCpuType(eTarget) || 'Cortex-M3';
+                compilerOpt.cpuType = guessArmCpuType(eTarget.archName) || 'Cortex-M3';
                 compilerOpt.floatingPointHardware = ArmCpuUtils.hasFpu(compilerOpt.cpuType) ? 'single' : 'none';
                 compilerOpt.useCustomScatterFile = true;
-                compilerOpt.scatterFilePath = '';
-
-                getRootIncompatibleArgs(eTarget).forEach(arg => {
-                    if (/linker script/i.test(arg)) {
-                        const mRes = /[^=]+=(.+)$/.exec(arg);
-                        if (mRes && mRes.length > 1) {
-                            const p = eclipseParser.formatFilePath(mRes[1].trim());
-                            if (/\.ld[s]?$/i.test(p)) {
-                                compilerOpt.scatterFilePath = p;
-                            }
-                        }
-                    }
-                });
+                compilerOpt.scatterFilePath = eTarget.linkerScriptPath || '';
             }
-
             // for riscv gcc toolchain
             else if (nEideTarget.toolchain == 'RISCV_GCC') {
-
                 const compilerOpt = <RiscvCompileData>nEideTarget.compileConfig;
-
-                compilerOpt.linkerScriptPath = '';
-
-                getRootIncompatibleArgs(eTarget).forEach(arg => {
-                    if (/linker script/i.test(arg)) {
-                        const mRes = /[^=]+=(.+)$/.exec(arg);
-                        if (mRes && mRes.length > 1) {
-                            const p = eclipseParser.formatFilePath(mRes[1].trim());
-                            if (/\.ld[s]?$/i.test(p)) {
-                                compilerOpt.linkerScriptPath = p;
-                            }
-                        }
-                    }
-                });
+                compilerOpt.linkerScriptPath = eTarget.linkerScriptPath || '';
             }
-
             // for any gcc toolchain
             else if (nEideTarget.toolchain == 'ANY_GCC') {
-
                 const compilerOpt = <AnyGccCompileData>nEideTarget.compileConfig;
-
-                compilerOpt.linkerScriptPath = '';
-
-                getRootIncompatibleArgs(eTarget).forEach(arg => {
-                    if (/linker script/i.test(arg)) {
-                        const mRes = /[^=]+=(.+)$/.exec(arg);
-                        if (mRes && mRes.length > 1) {
-                            const p = eclipseParser.formatFilePath(mRes[1].trim());
-                            if (/\.ld[s]?$/i.test(p)) {
-                                compilerOpt.linkerScriptPath = p;
-                            }
-                        }
-                    }
-                });
+                compilerOpt.linkerScriptPath = eTarget.linkerScriptPath || '';
             }
 
             // init compiler args for target
@@ -2797,7 +2741,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 const toolchainDefConf = toolchain.getDefaultConfig();
 
                 // glob
-                toolchainDefConf.global['misc-control'] = eTarget.globalArgs.globalArgs.filter(a => a.trim() != '');
+                toolchainDefConf.global['misc-control'] = eTarget.builldArgs.globalArgs.filter(a => a.trim() != '');
 
                 // asm
                 {
@@ -2805,8 +2749,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     const asmCfg = toolchainDefConf["asm-compiler"];
 
                     if (asmCfg['ASM_FLAGS']) flags.push(asmCfg['ASM_FLAGS']);
-                    eTarget.globalArgs.sMacros.forEach(m => flags.push(`-D${m}`));
-                    eTarget.globalArgs.assemblerArgs.forEach(arg => flags.push(arg));
+                    eTarget.builldArgs.sMacros.forEach(m => flags.push(`-D${m}`));
+                    eTarget.builldArgs.assemblerArgs.forEach(arg => flags.push(arg));
 
                     flags = flags.filter(p => p.trim() != '');
                     if (asmCfg['ASM_FLAGS'] != undefined) {
@@ -2822,12 +2766,24 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     let cxxFlags: string[] = [];
                     const ccCfg = toolchainDefConf["c/cpp-compiler"];
 
-                    if (ccCfg['C_FLAGS']) flags.push(ccCfg['C_FLAGS']);
-                    if (ccCfg['CXX_FLAGS']) cxxFlags.push(ccCfg['CXX_FLAGS']);
+                    if (eTarget.builldArgs.optimization)
+                        ccCfg['optimization'] = eTarget.builldArgs.optimization;
+                    if (eTarget.builldArgs.cLanguageStd)
+                        ccCfg['language-c'] = eTarget.builldArgs.cLanguageStd;
+                    if (eTarget.builldArgs.cppLanguageStd)
+                        ccCfg['language-cpp'] = eTarget.builldArgs.cppLanguageStd;
+                    if (eTarget.builldArgs.signedChar)
+                        ccCfg['signed-char'] = true;
 
-                    eTarget.globalArgs.cCompilerArgs.forEach(arg => {
+                    if (ccCfg['C_FLAGS'])
+                        flags.push(ccCfg['C_FLAGS']);
+                    if (ccCfg['CXX_FLAGS'])
+                        cxxFlags.push(ccCfg['CXX_FLAGS']);
+
+                    eTarget.builldArgs.cCompilerArgs.forEach(arg => {
                         flags.push(arg);
-                        cxxFlags.push(arg);
+                        //TODO not support C++ options now
+                        //cxxFlags.push(arg);
                     });
 
                     flags = flags.filter(p => p.trim() != '');
@@ -2845,19 +2801,57 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     if (!toolchainDefConf.linker) toolchainDefConf.linker = {};
                     const ldCfg = toolchainDefConf.linker;
 
-                    const flags: string[] = eTarget.globalArgs.linkerArgs.filter(a => a.trim() != '');
+                    const flags: string[] = eTarget.builldArgs.linkerArgs.filter(a => a.trim() != '');
                     if (ldCfg['LD_FLAGS'] != undefined) {
                         ldCfg['LD_FLAGS'] = flags.join(' ');
-                        const libFlags = eTarget.globalArgs.linkerLibArgs.filter(a => a.trim() != '');
+                        const libFlags = eTarget.builldArgs.linkerLibArgs.filter(a => a.trim() != '');
                         if (ldCfg['LIB_FLAGS'] != undefined) {
                             ldCfg['LIB_FLAGS'] = libFlags.join(' ');
                         }
                     } else {
                         ldCfg['misc-control'] = flags.join(' ');
                     }
+
+                    // setup link order
+                    if (eTarget.objsOrder.length) {
+                        const linkOrder: { pattern: string, order: number }[] = [];
+                        eTarget.objsOrder.forEach((e, idx) => {
+                            linkOrder.push({
+                                pattern: e,
+                                order: idx
+                            });
+                        });
+                        ldCfg['object-order'] = linkOrder;
+                    }
                 }
 
                 nEideTarget.builderOptions[toolchain.name] = toolchainDefConf;
+            }
+
+            // setup source options
+            if (eTarget.sourceArgs) {
+                srcOptsObj.options[eTarget.name] = { files: {} };
+                const srcOptions: any = srcOptsObj.options[eTarget.name].files;
+                const srcFilters = AbstractProject.getSourceFileFilter();
+                for (const fpath in eTarget.sourceArgs) {
+                    const flags: string[] = [];
+                    const sourceArgs = eTarget.sourceArgs[fpath];
+                    if (AbstractProject.asmfileFilter.test(fpath)) {
+                        sourceArgs.sIncDirs.forEach(arg => flags.push(`-I${arg}`));
+                        sourceArgs.sMacros.forEach(arg => flags.push(`-D${arg}`));
+                        sourceArgs.assemblerArgs.forEach(arg => flags.push(arg));
+                    } else {
+                        sourceArgs.cIncDirs.forEach(arg => flags.push(`-I${arg}`));
+                        sourceArgs.cMacros.forEach(arg => flags.push(`-D${arg}`));
+                        sourceArgs.cCompilerArgs.forEach(arg => flags.push(arg));
+                    }
+                    if (flags.length > 0) {
+                        if (srcFilters.some(r => r.test(fpath)))
+                            srcOptions[fpath] = ArrayDelRepetition(flags).join(' ');
+                        else
+                            srcOptions[fpath + '/*'] = ArrayDelRepetition(flags).join(' ');
+                    }
+                }
             }
 
             nPrjConfig.targets[eTarget.name] = nEideTarget;
@@ -2880,62 +2874,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
         // save all config
         basePrj.prjConfig.Save();
-
-        // show warning
-
-        var getAllKeys = (obj: any): string[] => {
-            if (typeof obj != 'object') return [];
-            const keys: string[] = [];
-            for (const key in obj) keys.push(key);
-            return keys;
-        };
-
-        if (getAllKeys(ePrjInfo.envs).length > 0 ||
-            ePrjInfo.targets.some(t => getAllKeys(t.incompatibleArgs).length > 0)) {
-
-            let warnLines = [
-                `!!! ${WARNING} !!!`,
-                '',
-                view_str$prompt$eclipse_imp_warning,
-                '',
-                '---',
-                ''
-            ];
-
-            if (getAllKeys(ePrjInfo.envs).length > 0) {
-                warnLines.push(
-                    `##### Eclipse Project Environment Variables #####`,
-                    ``,
-                    yaml.stringify({ 'Envs': ePrjInfo.envs }),
-                    ``
-                );
-            }
-
-            warnLines.push(
-                `##### Configurations For All Targets #####`,
-                ``
-            );
-
-            ePrjInfo.targets.forEach(target => {
-                warnLines.push(
-                    `//`,
-                    `///// Target: '${target.name}' /////`,
-                    `//`,
-                    '',
-                    yaml.stringify({ 'Incompatible Args': target.incompatibleArgs }),
-                    ''
-                );
-            });
-
-            const f = File.fromArray([ePrjRoot.path, `eclipse.${AbstractProject.importerWarningBaseName}`]);
-            f.Write(warnLines.join(os.EOL));
-            const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(f.ToUri()));
-
-            vscode.window.showTextDocument(doc, {
-                preview: false,
-                selection: doc.lineAt(0).range,
-            });
-        }
+        // save src options
+        const optFile = File.fromArray([basePrj.rootFolder.path, AbstractProject.EIDE_DIR, `files.options.yml`]);
+        optFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(srcOptsObj, { indent: 4 }));
 
         // switch project
         const selection = await vscode.window.showInformationMessage(
