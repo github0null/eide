@@ -114,6 +114,12 @@
         "yaml": "^1.10.2"
     },
     "contributes": {
+        "debuggers": [
+            {
+                "type": "eide.cortex-debug",
+                "label": "EIDE (Cortex-Debug)"
+            }
+        ],
         "terminal": {
             "profiles": [
                 {
@@ -541,6 +547,20 @@
             }
         ],
         "commands": [
+            {
+                "command": "eide.debug.start",
+                "category": "eide",
+                "title": "%eide.project.debug.start%",
+                "icon": {
+                    "dark": "./res/icon/Run_16x.svg",
+                    "light": "./res/icon/Run_16x.svg"
+                }
+            },
+            {
+                "command": "eide.refresh.external_tools_index",
+                "category": "eide",
+                "title": "Refresh External Tools Index"
+            },
             {
                 "command": "eide.open.makelibs.cfg",
                 "category": "eide",
@@ -1217,17 +1237,22 @@
                 {
                     "when": "cl.eide.projectActived && config.EIDE.Option.ShowToolbarInEditerTitle",
                     "command": "eide.project.build",
-                    "group": "navigation"
-                },
-                {
-                    "when": "cl.eide.projectActived && config.EIDE.Option.ShowToolbarInEditerTitle",
-                    "command": "eide.project.clean",
-                    "group": "navigation"
+                    "group": "navigation@1"
                 },
                 {
                     "when": "cl.eide.projectActived && config.EIDE.Option.ShowToolbarInEditerTitle",
                     "command": "eide.project.uploadToDevice",
-                    "group": "navigation"
+                    "group": "navigation@2"
+                },
+                {
+                    "when": "cl.eide.projectActived && config.EIDE.Option.ShowToolbarInEditerTitle",
+                    "command": "eide.debug.start",
+                    "group": "navigation@3"
+                },
+                {
+                    "when": "cl.eide.projectActived && config.EIDE.Option.ShowToolbarInEditerTitle",
+                    "command": "eide.project.clean",
+                    "group": "navigation@4"
                 }
             ],
             "editor/context": [
@@ -1291,8 +1316,13 @@
                     "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {
-                    "command": "eide.project.clean",
+                    "command": "eide.debug.start",
                     "group": "inline@4",
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
+                },
+                {
+                    "command": "eide.project.clean",
+                    "group": "inline@5",
                     "when": "viewItem == SOLUTION && view == cl.eide.view.projects"
                 },
                 {
@@ -1314,6 +1344,11 @@
                     "command": "eide.project.clean",
                     "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
                     "group": "2_build@2"
+                },
+                {
+                    "command": "eide.debug.start",
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
+                    "group": "2_build@3"
                 },
                 {
                     "command": "eide.project.uploadToDevice",

@@ -32,6 +32,7 @@
     "eide.project.modify.files.options": "Show Extra Options Of All Source Files",
     "eide.project.import.ext.project.src.struct": "Import SourceFile Tree From Other Project",
     "eide.project.generate_builder_params": "Generate builder.params",
+    "eide.project.debug.start": "Start Debugging (Cortex-Debug)",
 
     "eide.prj.menus.main.static-check": "Static Check",
     "eide.prj.menus.sub.static-check.cppcheck": "Run Cppcheck",

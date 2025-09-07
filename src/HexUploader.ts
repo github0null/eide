@@ -787,7 +787,7 @@ class STLinkUploader extends HexUploader<string[]> {
 
         // run
         let cmd = `${commandLine} ${options.otherCmds || ''}`.trimEnd();
-        if (osType() == 'win32' && exe.noSuffixName.toLowerCase().startsWith('stm32_programmer_cli'))
+        if (osType() == 'win32')
             cmd = 'chcp 437 && ' + cmd; // chcp 437: 去除进度条乱码
 
         this.executeShellCommand(this.toolType, cmd,

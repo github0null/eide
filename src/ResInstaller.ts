@@ -295,7 +295,7 @@ export class ResInstaller {
         this.locker.delete(name.toLowerCase());
     }
 
-    async refreshExternalToolsIndex() {
+    async refreshExternalToolsIndex(force?: boolean) {
 
         const indexCacheFile = File.from(ResManager.instance().GetTmpDir().path, 'eide_external_tools.index.json');
         const defIdxUrl = 'https://raw.githubusercontent.com/github0null/eide_default_external_tools_index/master/index.json';
@@ -304,6 +304,8 @@ export class ResInstaller {
 
         let cont: string | Error | undefined;
         try {
+            if (force)
+                throw Error();
             if (indexCacheFile.IsFile() && 
                 new Date().getTime() < fs.statSync(indexCacheFile.path).mtime.getTime() + (6 * 3600 * 1000))
                 cont = indexCacheFile.Read();
