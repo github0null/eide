@@ -42,7 +42,8 @@ import {
     view_str$operation$serialport, view_str$operation$baudrate, view_str$operation$serialport_name,
     txt_install_now, txt_yes, view_str$prompt$feedback, rating_text, later_text, sponsor_author_text,
     view_str$prompt$install_dotnet_and_restart_vscode,
-    view_str$prompt$install_dotnet_failed
+    view_str$prompt$install_dotnet_failed,
+    view_str$prompt$not_found_compiler
 } from './StringTable';
 import { LogDumper } from './LogDumper';
 import { StatusBarManager } from './StatusBarManager';
@@ -118,6 +119,19 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('eide.ReloadStm8Devs', () => reloadStm8Devices()));
     subscriptions.push(vscode.commands.registerCommand('eide.create.clang-format.file', () => newClangFormatFile()));
     subscriptions.push(vscode.commands.registerCommand('eide.cleanCache', () => cleanCache()));
+    subscriptions.push(vscode.commands.registerCommand('eide.refresh.external_tools_index', () => {
+        ResInstaller.instance()
+            .refreshExternalToolsIndex(true)
+            .then(() => GlobalEvent.emit('msg', newMessage('Info', 'Refresh Done.')))
+            .catch(err => {
+                GlobalEvent.log_warn(err);
+                GlobalEvent.log_show();
+            });
+    }));
+    subscriptions.push(vscode.commands.registerCommand('eide.debug.start', () => {
+        startDebugging()
+            .catch(err => GlobalEvent.emit('error', err));
+    }));
 
     // internal command
     // TODO
@@ -283,6 +297,8 @@ export async function activate(context: vscode.ExtensionContext) {
     // others
     vscode.workspace.registerTextDocumentContentProvider(VirtualDocument.scheme, VirtualDocument.instance());
     vscode.workspace.registerTaskProvider(EideTaskProvider.TASK_TYPE_BASH, new EideTaskProvider());
+    vscode.debug.registerDebugConfigurationProvider('eide.cortex-debug', new CortexDebugConfigProvider(),
+        vscode.DebugConfigurationProviderTriggerKind.Dynamic);
 
     // auto save project
     projectExplorer.enableAutoSave(true);
@@ -1573,6 +1589,8 @@ class EideTerminalProvider implements vscode.TerminalProfileProvider {
 
 import { FileWatcher } from '../lib/node-utility/FileWatcher';
 import { ToolchainManager, ToolchainName } from './ToolchainManager';
+import { JLinkOptions, JLinkProtocolType, OpenOCDFlashOptions, PyOCDFlashOptions, STLinkOptions } from './HexUploader';
+import { AbstractProject } from './EIDEProject';
 
 type MapViewParserType = 'memap' | 'builtin';
 
@@ -1865,6 +1883,275 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
 			</body>
 			</html>
         `;
+    }
+}
+
+//------------------------------------------------------------
+//- Debug Config Provider
+//------------------------------------------------------------
+
+class CortexDebugConfigProvider implements vscode.DebugConfigurationProvider {
+
+    provideDebugConfigurations(folder: vscode.WorkspaceFolder | undefined,
+        token?: vscode.CancellationToken): vscode.ProviderResult<vscode.DebugConfiguration[]> {
+
+        const result: vscode.DebugConfiguration[] = [];
+
+        if (!folder)
+            return result;
+
+        const prj = projectExplorer.getActiveProject();
+        if (!prj)
+            return result;
+
+        let wsDir = folder.uri.fsPath;
+        let prjDir = prj.getRootDir().path;
+        if (platform.osType() == 'win32') {
+            wsDir = wsDir.toLowerCase();
+            prjDir = prjDir.toLowerCase();
+        }
+        if (wsDir != prjDir)
+            return result;
+
+        const toolchain = prj.getToolchain();
+        const toolchainManager = ToolchainManager.getInstance();
+        const settingManager = SettingManager.instance();
+
+        switch (toolchain.name) {
+            case 'AC5':
+            case 'AC6':
+            case 'GCC':
+                if (!toolchainManager.isToolchainPathReady('GCC')) {
+                    const msg = view_str$prompt$not_found_compiler.replace('{}', 'arm-none-eabi-gcc');
+                    ResInstaller.instance().setOrInstallTools('GCC', msg, 'EIDE.ARM.GCC.InstallDirectory');
+                    return result;
+                }
+                break;
+            case 'RISCV_GCC':
+                if (!toolchainManager.isToolchainPathReady(toolchain.name)) {
+                    const msg = view_str$prompt$not_found_compiler.replace('{}', 'EIDE.RISCV.InstallDirectory');
+                    GlobalEvent.emit('msg', newMessage('Warning', msg));
+                    return result;
+                }
+                break;
+            case 'ANY_GCC':
+                if (!toolchainManager.isToolchainPathReady(toolchain.name)) {
+                    const msg = view_str$prompt$not_found_compiler.replace('{}', 'EIDE.Toolchain.AnyGcc.InstallDirectory');
+                    GlobalEvent.emit('msg', newMessage('Warning', msg));
+                    return result;
+                }
+                break;
+            default:
+                return result;
+        }
+
+        const newDebugCfg = (prj: AbstractProject) => {
+
+            const dbgCfg: vscode.DebugConfiguration = {
+                type: 'cortex-debug',
+                name: 'Debug',
+                request: 'launch'
+            };
+
+            const toolchain = prj.getToolchain();
+            const settingManager = SettingManager.instance();
+            switch (toolchain.name) {
+                case 'AC5':
+                case 'AC6':
+                case 'GCC':
+                    dbgCfg['toolchainPrefix'] = settingManager.getGCCPrefix().replace(/-$/, '');
+                    dbgCfg['armToolchainPath'] = NodePath.join(settingManager.getGCCDir().path, 'bin');
+                    break;
+                default:
+                    if (toolchain.getToolchainPrefix)
+                        dbgCfg['toolchainPrefix'] = toolchain.getToolchainPrefix().replace(/-$/, '');
+                    dbgCfg['armToolchainPath'] = NodePath.join(toolchain.getToolchainDir().path, 'bin');
+                    break;
+            }
+
+            dbgCfg['cwd'] = prj.getRootDir().path;
+            dbgCfg['executable'] = prj.getExecutablePathWithoutSuffix() + '.elf';
+            dbgCfg['runToEntryPoint'] = 'main';
+            dbgCfg['liveWatch'] = {
+                'enabled': true,
+                'samplesPerSecond': 4
+            };
+
+            const device = prj.GetPackManager().getCurrentDevInfo();
+            if (device && device.svdPath) {
+                dbgCfg['svdFile'] = prj.ToRelativePath(device.svdPath) || device.svdPath;
+                GlobalEvent.log_info(`[debug config] Use svd file: ${dbgCfg['svdFile']}`);
+            } else {
+                const searchDirs = [
+                    prj.getRootDir(),
+                    prj.getEideDir(),
+                    File.from(prj.getRootDir().path, 'tools')
+                ];
+                for (const d of searchDirs) {
+                    const r = d.GetList([/\.svd$/i], File.EXCLUDE_ALL_FILTER);
+                    if (r.length) {
+                        dbgCfg['svdFile'] = prj.ToRelativePath(r[0].path) || r[0].path;
+                        GlobalEvent.log_info(`[debug config] Use svd file: ${dbgCfg['svdFile']}`);
+                        break;
+                    }
+                }
+            }
+
+            return dbgCfg;
+        };
+
+        const fmtOpenocdCfgPath = (type: 'interface' | 'target', path: string) => {
+            let cfgpath = path.startsWith('${workspaceFolder}/') 
+                ? path.replace('${workspaceFolder}/', '')
+                : `${type}/${path}`;
+            if (cfgpath && !cfgpath.endsWith('.cfg'))
+                cfgpath += '.cfg';
+            return cfgpath;
+        };
+
+        const flasherOpts = prj.GetConfiguration().uploadConfigModel.data;
+        const flashertype = prj.getUploaderType();
+
+        if (flashertype == 'JLink') {
+            const dbgCfg = newDebugCfg(prj);
+            const flasherCfg = (<JLinkOptions>flasherOpts);
+            dbgCfg['name'] = 'Debug: JLINK';
+            dbgCfg['servertype'] = 'jlink';
+            dbgCfg['interface'] = flasherCfg.proType == JLinkProtocolType.JTAG ? 'jtag' : 'swd';
+            dbgCfg['device'] = flasherCfg.cpuInfo.cpuName;
+            dbgCfg['serverpath'] = NodePath.join(settingManager.getJlinkDir(),
+                platform.osType() == 'win32' ? 'JLinkGDBServerCL.exe' : 'JLinkGDBServerCLExe');
+            if (flasherCfg.otherCmds) {
+                // -IP <IP/Tunnel/SerialNo/Nickname> Selects a specific J-Link
+                let m = /-IP ([^\s]+)/.exec(flasherCfg.otherCmds);
+                if (m && m.length > 1)
+                    dbgCfg['ipAddress'] = m[1];
+                // -USB <SerialNo/Nickname> Selects a specific J-Link
+                m = /(?:-USB|-SelectEmuBySN) ([^\s]+)/.exec(flasherCfg.otherCmds);
+                if (m && m.length > 1)
+                    dbgCfg['serialNumber'] = m[1];
+            }
+            result.push(dbgCfg);
+        }
+
+        else if (flashertype == 'OpenOCD') {
+            const dbgCfg = newDebugCfg(prj);
+            const flasherCfg = (<OpenOCDFlashOptions>flasherOpts);
+            dbgCfg['name'] = 'Debug: OpenOCD';
+            dbgCfg['servertype'] = 'openocd';
+            const ocdCfgs: string[] = [];
+            if (flasherCfg.interface.trim())
+                ocdCfgs.push(fmtOpenocdCfgPath('interface', flasherCfg.interface));
+            if (flasherCfg.target.trim())
+                ocdCfgs.push(fmtOpenocdCfgPath('target', flasherCfg.target));
+            dbgCfg['configFiles'] = ocdCfgs;
+            dbgCfg['serverpath'] = settingManager.getOpenOCDExePath();
+            result.push(dbgCfg);
+        }
+
+        else if (flashertype == 'pyOCD') {
+            const dbgCfg = newDebugCfg(prj);
+            const flasherCfg = (<PyOCDFlashOptions>flasherOpts);
+            dbgCfg['name'] = 'Debug: pyOCD';
+            dbgCfg['servertype'] = 'pyocd';
+            dbgCfg['targetId'] = flasherCfg.targetName;
+            const cliArgs: string[] = [];
+            if (flasherCfg.config) {
+                const confFile = new File(prj.ToAbsolutePath(flasherCfg.config));
+                if (confFile.IsFile()) {
+                    cliArgs.push('--config');
+                    cliArgs.push(confFile.path);
+                }
+            }
+            if (flasherCfg.otherCmds)
+                cliArgs.push(flasherCfg.otherCmds);
+            if (flasherCfg.speed) {
+                cliArgs.push('-f');
+                cliArgs.push(flasherCfg.speed);
+            }
+            dbgCfg['serverArgs'] = cliArgs;
+            result.push(dbgCfg);
+        }
+
+        else if (flashertype == 'STLink') {
+            const resManager = ResManager.instance();
+            const flasherCfg = (<STLinkOptions>flasherOpts);
+            // find ST-LINK_gdbserver
+            let gdbserverPath: string | undefined;
+            if (platform.osType() == 'win32') {
+                const gdbserver = File.from(resManager.getEideToolsInstallDir(), 
+                    'stlink_gdb_server', 'bin', 'ST-LINK_gdbserver.exe');
+                if (!gdbserver.IsFile()) {
+                    ResInstaller.instance().setOrInstallTools('stlink_gdb_server', 'Not found ST-LINK_gdbserver.exe');
+                    return [];
+                }
+                gdbserverPath = gdbserver.path;
+            } else {
+                gdbserverPath = platform.find('ST-LINK_gdbserver');
+            }
+            // find STM32_Programmer_CLI
+            let cubeProgramerPath: string | undefined;
+            if (platform.osType() == 'win32') {
+                const cubeProgramerExe = File.from(resManager.getEideToolsInstallDir(), 
+                    'st_cube_programer', 'bin', 'STM32_Programmer_CLI.exe');
+                if (!cubeProgramerExe.IsFile()) {
+                    ResInstaller.instance().setOrInstallTools('STLink', 'Not found STM32_Programmer_CLI.exe');
+                    return [];
+                }
+                cubeProgramerPath = cubeProgramerExe.dir;
+            } else {
+                const p = platform.find('STM32_Programmer_CLI');
+                if (p)
+                    cubeProgramerPath = NodePath.dirname(p);
+            }
+            const dbgCfg = newDebugCfg(prj);
+            dbgCfg['name'] = 'Debug: STLink';
+            dbgCfg['servertype'] = 'stlink';
+            dbgCfg['interface'] = flasherCfg.proType == 'SWD' ? 'swd' : 'jtag';
+            dbgCfg['stlinkPath'] = gdbserverPath;
+            dbgCfg['stm32cubeprogrammer'] = cubeProgramerPath;
+            result.push(dbgCfg);
+        }
+
+        else {
+            GlobalEvent.emit('msg', newMessage('Warning',
+                `Only support 'jlink', 'stlink', 'openocd', 'pyocd'. Not support this flasher: '${flashertype}' !`));
+        }
+
+        // GlobalEvent.log_info(`provide Cortex-Debug DebugConfig`);
+        // GlobalEvent.log_info(yaml.stringify(result));
+        return result;
+    }
+}
+
+async function startDebugging() {
+
+    const prj = projectExplorer.getActiveProject();
+    if (!prj) {
+        GlobalEvent.show_msgbox('Warning', `No actived project to debug.`);
+        return;
+    }
+
+    const vscWorkspaceFolder: vscode.WorkspaceFolder = {
+        uri: vscode.Uri.file(prj.getRootDir().path),
+        name: prj.getRootDir().name,
+        index: 0
+    };
+
+    const cfgs = await (new CortexDebugConfigProvider())
+        .provideDebugConfigurations(vscWorkspaceFolder);
+    if (cfgs && cfgs.length > 0) {
+        let cfg = cfgs[0];
+        if (cfgs.length > 1) {
+            const val = await vscode.window.showQuickPick(cfgs.map(e => e.name), {
+                placeHolder: 'Select a debug configuration'
+            });
+            if (val == undefined)
+                return; // user canceled
+            const idx = cfgs.findIndex(v => v.name === val);
+            cfg = cfgs[idx];
+        }
+        await vscode.debug.startDebugging(vscWorkspaceFolder, cfg);
     }
 }
 

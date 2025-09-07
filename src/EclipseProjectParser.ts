@@ -7,6 +7,7 @@ import { VirtualSource, AbstractProject } from './EIDEProject';
 import { isArray } from 'util';
 import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import { File } from '../lib/node-utility/File';
+import { GlobalEvent } from './GlobalEvents';
 
 export type EclipseProjectType = 'arm' | 'sdcc' | 'riscv' | 'gcc';
 
@@ -21,6 +22,15 @@ export interface EclipseProjectInfo {
 
 export interface EclipseBuilderArgs {
 
+    // "level-0", "level-1", "level-2", "level-3", "level-size", "level-size-Oz", "level-fast", "level-debug"
+    optimization: string;
+    // "c89", "c90", "c99", "c11", "c17", "c23", "gnu89", "gnu90", "gnu99", "gnu11", "gnu17", "gnu23"
+    cLanguageStd: string;
+    // "c++98", "gnu++98", "c++11", "gnu++11", "c++14", "gnu++14", "c++17", "gnu++17", "c++20", "gnu++20", "c++23", "gnu++23"
+    cppLanguageStd: string;
+    // Signed Char (-fsigned-char)
+    signedChar: boolean;
+
     globalArgs: string[];
 
     cIncDirs: string[];
@@ -33,17 +43,25 @@ export interface EclipseBuilderArgs {
 
     linkerArgs: string[];
     linkerLibArgs: string[];
+    linkerLibSearchDirs: string[];
 }
 
 export interface EclipseProjectTarget {
     name: string;
     excList: string[];
-    globalArgs: EclipseBuilderArgs;
-    incompatibleArgs: { [path: string]: EclipseBuilderArgs }; // only use to show for user, not use in program
+    builldArgs: EclipseBuilderArgs;
+    sourceArgs: { [path: string]: EclipseBuilderArgs };
+    archName?: string;
+    linkerScriptPath?: string;
+    objsOrder: string[];
 }
 
 function newEclipseBuilderArgs(): EclipseBuilderArgs {
     return {
+        optimization: 'level-debug',
+        cLanguageStd: 'c11',
+        cppLanguageStd: 'c++11',
+        signedChar: false,
         globalArgs: [],
         cIncDirs: [],
         cMacros: [],
@@ -52,7 +70,8 @@ function newEclipseBuilderArgs(): EclipseBuilderArgs {
         sMacros: [],
         assemblerArgs: [],
         linkerArgs: [],
-        linkerLibArgs: []
+        linkerLibArgs: [],
+        linkerLibSearchDirs: []
     };
 }
 
@@ -84,12 +103,16 @@ export function formatFilePath(path: string): string {
         .replace('${ProjName}/', '')
         .replace('${ProjName}', '.')
         .replace('PROJECT_LOC/', '')
-        .replace('${PROJECT_LOC}/', '')
-        .replace(/^"+/, '')
-        .replace('${workspace_loc:/', '')
-        .replace(/"+$/, '')
-        .replace(/\}$/, '')
-        .replace(/\/+$/, '');
+        .replace('${PROJECT_LOC}/', '');
+
+    // remove leading and tailing '"'
+    if (path.charAt(0) == '"' && path.charAt(path.length - 1) == '"')
+        path = path.substr(1, path.length - 2);
+    // conv ${workspace_loc:/xxx} to xxx
+    if (path.startsWith('${workspace_loc:/') && path.charAt(path.length - 1) == '}')
+        path = path.substr(17, path.length - 18);
+    // remove tailing '/'
+    path = path.replace(/\/+$/, '');
 
     if (path.startsWith('/'))
         path = '.' + path;
@@ -127,6 +150,8 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
     if (!node) throw new Error(`not found: '<storageModule moduleId="org.eclipse.cdt.core.settings">'`);
     cprjDom = node;
 
+    GlobalEvent.log_info(`[EclipseParser] start parsing ${cprojectPath} ...`);
+
     const root_virtualsrcs: string[] = [];
     const root_srcdirs: string[] = [];
     const eclipseTargetList: string[] = [];
@@ -161,24 +186,24 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
         const tInfo: EclipseProjectTarget = {
             name: cTarget.$['name'].replace(/\s+/g, '_'),
             excList: [],
-            globalArgs: newEclipseBuilderArgs(),
-            incompatibleArgs: {}
+            builldArgs: newEclipseBuilderArgs(),
+            sourceArgs: {},
+            objsOrder: []
         };
 
         PROJ_INFO.targets.push(tInfo);
 
+        GlobalEvent.log_info(`[EclipseParser] target: "${cTarget.$['name']}"`);
+
         for (const resourceInfo of toArray(cTarget.folderInfo).concat(toArray(cTarget.fileInfo))) {
 
-            let builderArgs = tInfo.globalArgs;
-            let incompatibleArgs: EclipseBuilderArgs = newEclipseBuilderArgs();
-
-            const folderPath = (resourceInfo.$['resourcePath'] || '').trim();
+            const folderPath = formatFilePath(resourceInfo.$['resourcePath'] || '').trim();
             const isRootResource = folderPath == '';
-            if (folderPath != '') {
-                tInfo.incompatibleArgs[folderPath] = incompatibleArgs;
-                builderArgs = incompatibleArgs;
-            } else {
-                tInfo.incompatibleArgs['/'] = incompatibleArgs;
+
+            let builderArgs = tInfo.builldArgs;
+            if (folderPath) {
+                tInfo.sourceArgs[folderPath] = newEclipseBuilderArgs();
+                builderArgs = tInfo.sourceArgs[folderPath];
             }
 
             const toolchainInfo = resourceInfo.toolChain ? resourceInfo.toolChain[0] : resourceInfo;
@@ -188,11 +213,34 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
             }
 
             for (const globOpts of toArray(toolchainInfo['option'])) {
-                const opVal = parseToolOption(globOpts);
+                const opVal = parseToolOption(globOpts, PROJ_INFO.type);
                 if (opVal) {
-                    builderArgs.globalArgs = builderArgs.globalArgs.concat(opVal.val);
+                    if (opVal.type == 'linkerScriptPath') {
+                        if (isRootResource)
+                            tInfo.linkerScriptPath = opVal.val.join(',');
+                    } else if (opVal.type == 'archName') {
+                        if (isRootResource)
+                            tInfo.archName = opVal.val[0];
+                    } else if (opVal.type == 'linkerLibSearchDirs') {
+                        if (isRootResource)
+                            builderArgs.linkerLibSearchDirs = opVal.val;
+                    } else if (opVal.type == 'optimization') {
+                        if (isRootResource)
+                            builderArgs.optimization = opVal.val[0];
+                    } else if (opVal.type == 'cLanguageStd') {
+                        if (isRootResource)
+                            builderArgs.cLanguageStd = opVal.val[0];
+                    } else if (opVal.type == 'signedChar') {
+                        if (isRootResource)
+                            builderArgs.signedChar = opVal.val[0] == 'true';
+                    } else if (opVal.type == '<ignored>') {
+                        GlobalEvent.log_info(`[EclipseParser] skip option "${opVal.val[0]}" of path "${folderPath}"`);
+                    } else {
+                        builderArgs.globalArgs = builderArgs.globalArgs.concat(opVal.val);
+                    }
                 } else {
-                    incompatibleArgs.globalArgs.push(`<${globOpts.$['name']}> = ${globOpts.$['value']}`);
+                    GlobalEvent.log_info(
+                        `[EclipseParser] unknown option "${globOpts.$['name'] || globOpts.$['id']}" of path "${folderPath}"`);
                 }
             }
 
@@ -201,21 +249,34 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
                 const toolOptName: string = toolOpts.$['name'] || '';
 
                 // for c/c++
-                if (toolOptName.includes('Compiler')) {
+                if (toolOptName.includes('C Compiler')) {
                     toArray(toolOpts.option).forEach(op => {
-                        const opVal = parseToolOption(op);
+                        const opVal = parseToolOption(op, PROJ_INFO.type);
                         if (opVal) {
-                            if (opVal.type == 'definedSymbols') {
+                            if (opVal.type == 'linkerScriptPath') {
+                                if (isRootResource)
+                                    tInfo.linkerScriptPath = opVal.val.join(',');
+                            } else if (opVal.type == 'archName') {
+                                if (isRootResource)
+                                    tInfo.archName = opVal.val[0];
+                            } else if (opVal.type == 'definedSymbols') {
                                 builderArgs.cMacros = builderArgs.cMacros.concat(opVal.val);
-                            }
-                            else if (opVal.type == 'includePath') {
+                            } else if (opVal.type == 'includePath') {
                                 builderArgs.cIncDirs = builderArgs.cIncDirs.concat(opVal.val);
-                            }
-                            else {
+                            } else if (opVal.type == 'optimization') {
+                                builderArgs.optimization = opVal.val[0];
+                            } else if (opVal.type == 'cLanguageStd') {
+                                builderArgs.cLanguageStd = opVal.val[0];
+                            } else if (opVal.type == 'signedChar') {
+                                builderArgs.signedChar = opVal.val[0] == 'true';
+                            } else if (opVal.type == '<ignored>') {
+                                GlobalEvent.log_info(`[EclipseParser] skip option "${opVal.val[0]}" of path "${folderPath}"`);
+                            } else {
                                 builderArgs.cCompilerArgs = builderArgs.cCompilerArgs.concat(opVal.val);
                             }
                         } else {
-                            incompatibleArgs.cCompilerArgs.push(`<${op.$['name']}> = ${op.$['value']}`);
+                            GlobalEvent.log_info(
+                                `[EclipseParser] unknown option "${op.$['name'] || op.$['id']}" of path "${folderPath}"`);
                         }
                     });
                 }
@@ -223,35 +284,50 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
                 // for asm
                 else if (toolOptName.includes('Assembler')) {
                     toArray(toolOpts.option).forEach(op => {
-                        const opVal = parseToolOption(op);
+                        const opVal = parseToolOption(op, PROJ_INFO.type);
                         if (opVal) {
                             if (opVal.type == 'definedSymbols') {
                                 builderArgs.sMacros = builderArgs.sMacros.concat(opVal.val);
-                            }
-                            else if (opVal.type == 'includePath') {
+                            } else if (opVal.type == 'includePath') {
                                 builderArgs.sIncDirs = builderArgs.sIncDirs.concat(opVal.val);
-                            }
-                            else {
+                            } else if (opVal.type == '<ignored>') {
+                                GlobalEvent.log_info(`[EclipseParser] skip option "${opVal.val[0]}" of path "${folderPath}"`);
+                            } else {
                                 builderArgs.assemblerArgs = builderArgs.assemblerArgs.concat(opVal.val);
                             }
                         } else {
-                            incompatibleArgs.assemblerArgs.push(`<${op.$['name']}> = ${op.$['value']}`);
+                            GlobalEvent.log_info(
+                                `[EclipseParser] unknown option "${op.$['name'] || op.$['id']}" of path "${folderPath}"`);
                         }
                     });
                 }
 
                 // for linker
-                else if (toolOptName.includes('Linker')) {
+                else if (toolOptName.includes('C Linker')) {
                     toArray(toolOpts.option).forEach(op => {
-                        const opVal = parseToolOption(op);
+                        const opVal = parseToolOption(op, PROJ_INFO.type);
                         if (opVal) {
-                            if (opVal.type == 'libs' || opVal.type == 'userObjs') {
+                            if (opVal.type == 'linkerScriptPath') {
+                                if (isRootResource)
+                                    tInfo.linkerScriptPath = opVal.val.join(',');
+                            } else if (opVal.type == 'archName') {
+                                if (isRootResource)
+                                    tInfo.archName = opVal.val[0];
+                            } else if (opVal.type == 'objsOrder') {
+                                if (isRootResource)
+                                    tInfo.objsOrder = tInfo.objsOrder.concat(opVal.val);
+                            } else if (opVal.type == 'libs' || opVal.type == 'userObjs') {
                                 builderArgs.linkerLibArgs = builderArgs.linkerLibArgs.concat(opVal.val);
+                            } else if (opVal.type == 'linkerLibSearchDirs') {
+                                builderArgs.linkerLibSearchDirs = builderArgs.linkerLibSearchDirs.concat(opVal.val);
+                            } else if (opVal.type == '<ignored>') {
+                                GlobalEvent.log_info(`[EclipseParser] skip option "${opVal.val[0]}" of path "${folderPath}"`);
                             } else {
                                 builderArgs.linkerArgs = builderArgs.linkerArgs.concat(opVal.val);
                             }
                         } else {
-                            incompatibleArgs.linkerArgs.push(`<${op.$['name']}> = ${op.$['value']}`);
+                            GlobalEvent.log_info(
+                                `[EclipseParser] unknown option "${op.$['name'] || op.$['id']}" of path "${folderPath}"`);
                         }
                     });
                 }
@@ -402,46 +478,35 @@ export async function parseEclipseProject(cprojectPath: string): Promise<Eclipse
         target.excList = completeVirtualPaths(ArrayDelRepetition(target.excList));
 
         // resolve virtual include paths
-        target.globalArgs.cIncDirs = resolveVirtualPaths(target.globalArgs.cIncDirs);
-        target.globalArgs.sIncDirs = resolveVirtualPaths(target.globalArgs.sIncDirs);
+        target.builldArgs.cIncDirs = resolveVirtualPaths(target.builldArgs.cIncDirs);
+        target.builldArgs.sIncDirs = resolveVirtualPaths(target.builldArgs.sIncDirs);
 
-        for (const key in target.globalArgs) {
-            const obj: any = target.globalArgs;
+        for (const key in target.builldArgs) {
+            const obj: any = target.builldArgs;
             if (isArray(obj[key])) {
                 obj[key] = ArrayDelRepetition(obj[key]);
             }
         }
-
-        for (const pName in target.incompatibleArgs) {
-            const obj = <any>target.incompatibleArgs[pName];
-            for (const key in obj) {
-                if (isArray(obj[key])) {
-                    obj[key] = ArrayDelRepetition(obj[key]);
-                }
-            }
-        }
     }
 
+    GlobalEvent.log_info(`[EclipseParser] parse done.`);
     return PROJ_INFO;
 }
 
-function parseToolOption(optionObj: any): { type: string, val: string[] } | undefined {
+function parseToolOption(optionObj: any, prjtype: EclipseProjectType): { type: string, val: string[] } | undefined {
 
-    if (optionObj.$['id']) {
-        // skip output args
-        if (['.converthex', '.convertbin', '.convert']
-            .some(s => optionObj.$['id'].includes(s))) {
-            return;
-        }
-    }
+    if (!optionObj.$['id'])
+        return { type: '<ignored>', val: [optionObj.$['name'] || 'noid'] };
 
     //--
 
+    const VALUE_ID: string = optionObj.$['id'];
     const VALUE_NAME: string = optionObj.$['name'] || '';
-    const VALUE_VAL: string = optionObj.$['value'] || '';
+    const VALUE_VALS: string[] = [];
     const VALUE_TYPE: string | undefined = optionObj.$['valueType'];
+    const IGNORED_VAL = { type: '<ignored>', val: [VALUE_NAME || VALUE_ID] };
 
-    let makeResult = (value: string | string[], typ?: string): { type: string, val: string[] } | undefined => {
+    const makeResult = (value: string | string[], typ?: string): { type: string, val: string[] } | undefined => {
         if (value == '') return undefined;
         if (isArray(value) && value.length == 0) return undefined;
         return {
@@ -450,35 +515,75 @@ function parseToolOption(optionObj: any): { type: string, val: string[] } | unde
         };
     };
 
-    let formatArgs = (fmt: string, arg: string): string => {
-
-        if (fmt.includes('[option]')) {
+    const formatArgs = (fmt: string, arg: string): string => {
+        if (fmt.includes('[option]'))
             return fmt.replace('[option]', arg);
-        }
-
         return fmt + arg;
     }
 
-    //
-    // match by name
-    //
+    const cLangStds = [ "c89", "c90", "c99", "c11", "c17", "c23", "gnu89", "gnu90", "gnu99", "gnu11", "gnu17", "gnu23" ];
 
-    // <Language Standard> = option.std.gnu99
-    if (/Language Standard/i.test(VALUE_NAME)) {
-        const m = /std\.(\w+)/.exec(VALUE_VAL);
-        if (m && m.length > 1) {
-            const langStd = m[1];
-            return makeResult(`-std=${langStd}`, 'string');
-        }
+    // ----
+    // parse special type values
+    // ----
+
+    if (VALUE_TYPE == 'definedSymbols') {
+        toArray(optionObj.listOptionValue)
+            .forEach(item => VALUE_VALS.push(item.$['value']));
+        return makeResult(VALUE_VALS, 'definedSymbols');
+    } else if (VALUE_TYPE == 'includePath') {
+        toArray(optionObj.listOptionValue).forEach(item => {
+            let p = formatFilePath(item.$['value']);
+            if (p == '..') p = '.';
+            if (p.startsWith('../')) p = p.substr(3); // for eclipse, include path is base 'Debug' folder
+            VALUE_VALS.push(p);
+        });
+        return makeResult(VALUE_VALS, 'includePath');
+    } else if (VALUE_TYPE == 'libPaths') {
+        toArray(optionObj.listOptionValue).forEach(item => {
+            let p = formatFilePath(item.$['value']);
+            if (p == '..') p = '.';
+            if (p.startsWith('../')) p = p.substr(3); // for eclipse, include path is base 'Debug' folder
+            VALUE_VALS.push(p);
+        });
+        return makeResult(VALUE_VALS, 'linkerLibSearchDirs');
+    } else if (VALUE_TYPE == 'libs') {
+        toArray(optionObj.listOptionValue)
+            .forEach(item => VALUE_VALS.push(`-l${item.$['value']}`));
+        return makeResult(VALUE_VALS, 'libs');
+    } else if (VALUE_TYPE == 'userObjs') {
+        toArray(optionObj.listOptionValue)
+            .forEach(item => VALUE_VALS.push(formatFilePath(item.$['value'])));
+        return makeResult(VALUE_VALS, 'userObjs');
     }
 
-    if (VALUE_NAME.includes('(-D)')) {
+    // ----
+    // parse generic type values
+    // ----
+
+    if (VALUE_TYPE == 'boolean') {
+        VALUE_VALS.push(optionObj.$['value'] || 'false');
+    } else if (VALUE_TYPE == 'stringList') {
+        toArray(optionObj.listOptionValue)
+            .forEach(item => VALUE_VALS.push(formatFilePath(item.$['value'])));
+    } else { // string or enums
+        const val = optionObj.$['value']?.trim() || '';
+        VALUE_VALS.push(formatFilePath(val));
+    }
+
+    if (VALUE_VALS.length == 0)
+        return IGNORED_VAL;
+
+    // ----
+    // Eclipse Generic
+    // ----
+
+    if (VALUE_NAME.includes('(-D)') || /Defined symbols/i.test(VALUE_NAME)) {
         const li: string[] = [];
         toArray(optionObj.listOptionValue).forEach(item => li.push(item.$['value']));
         return makeResult(li, 'definedSymbols');
     }
-
-    if (VALUE_NAME.includes('(-I)')) {
+    if (VALUE_NAME.includes('(-I)') || VALUE_ID.includes('include.paths')) {
         const li: string[] = [];
         toArray(optionObj.listOptionValue).forEach(item => {
             let p = formatFilePath(item.$['value']);
@@ -488,77 +593,201 @@ function parseToolOption(optionObj: any): { type: string, val: string[] } | unde
         });
         return makeResult(li, 'includePath');
     }
+    // ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.scriptfile
+    if (VALUE_ID.includes('linker.script')) {
+        return makeResult(VALUE_VALS, 'linkerScriptPath');
+    }
+    // ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level = optimization.level.debug
+    if (VALUE_ID.includes('optimization.level')) {
+        if (/level\.none/.test(VALUE_VALS[0])) {
+            return makeResult(`level-0`, 'optimization');
+        } else if (/level\.debug/.test(VALUE_VALS[0])) {
+            return makeResult(`level-debug`, 'optimization');
+        } else if (/level\.optimize/.test(VALUE_VALS[0])) {
+            return makeResult(`level-1`, 'optimization');
+        } else if (/level\.more/.test(VALUE_VALS[0])) {
+            return makeResult(`level-2`, 'optimization');
+        } else if (/level\.most/.test(VALUE_VALS[0])) {
+            return makeResult(`level-3`, 'optimization');
+        } else if (/level\.size/.test(VALUE_VALS[0])) {
+            return makeResult(`level-size`, 'optimization');
+        } else {
+            return IGNORED_VAL;
+        }
+    }
+    // linker.nostdlibs = false
+    if (VALUE_ID.includes('linker.nostdlibs')) {
+        if (VALUE_VALS[0] === 'true')
+            return makeResult(`-nostdlib`, 'string');
+        return IGNORED_VAL;
+    }
+    // arm.target.family
+    if (VALUE_ID.includes('arm.target.family')) {
+        const m = /\.(cortex-m\w+)/.exec(VALUE_VALS[0]);
+        if (m && m.length > 1)
+            return makeResult(m[1], 'archName');
+        return IGNORED_VAL;
+    }
+    // option.c.linker.paths
+    if (VALUE_ID.includes('option.c.linker.paths')) {
+        toArray(optionObj.listOptionValue).forEach(item => {
+            let p = formatFilePath(item.$['value']);
+            if (p == '..') p = '.';
+            if (p.startsWith('../')) p = p.substr(3); // for eclipse, include path is base 'Debug' folder
+            VALUE_VALS.push(p);
+        });
+        return makeResult(VALUE_VALS, 'linkerLibSearchDirs');
+    }
+    // optimization.signedchar
+    if (VALUE_ID.includes('optimization.signedchar')) {
+        if (VALUE_VALS[0] === 'true')
+            return makeResult('true', 'signedChar');
+        return IGNORED_VAL;
+    }
+    // option.warnings.extrawarn
+    if (VALUE_ID.includes('option.warnings.extrawarn')) {
+        if (VALUE_VALS[0] === 'true')
+            return makeResult(`-Wextra`, 'string');
+        return IGNORED_VAL;
+    }
+    // option.warnings.allwarn
+    if (VALUE_ID.includes('option.warnings.allwarn')) {
+        if (VALUE_VALS[0] === 'true')
+            return makeResult(`-Wall`, 'string');
+        return IGNORED_VAL;
+    }
+    // option.c.compiler.otherwarnings
+    if (VALUE_ID.includes('option.c.compiler.otherwarnings')) {
+        if (VALUE_VALS[0])
+            return makeResult(VALUE_VALS[0], 'string');
+        return IGNORED_VAL;
+    }
+    // option.c.linker.nostart
+    if (VALUE_ID.includes('option.c.linker.nostart')) {
+        if (VALUE_VALS[0] === 'true')
+            return makeResult(`-nostartfiles`, 'string');
+        return IGNORED_VAL;
+    }
+    // ignore these options
+    if (VALUE_NAME.includes('-fno-rtti') || 
+        VALUE_NAME.includes('-fno-use-cxa-atexit') || 
+        VALUE_NAME.includes('-fno-threadsafe-statics') ||
+        VALUE_NAME.includes('-ffunction-sections') ||
+        VALUE_NAME.includes('-fdata-sections') ||
+        VALUE_NAME.includes('--gc-sections')) {
+        return IGNORED_VAL;
+    }
 
-    //
-    // match by type
-    //
+    // ----
+    // silabs
+    // ----
 
-    if (VALUE_TYPE == undefined)
-        return;
+    // <Short enums (-fshort-enums)> = false
+    if (VALUE_ID.includes('optimization.shortenums')) {
+        const v = VALUE_VALS[0];
+        if (v === "true")
+            return makeResult(`-fshort-enums`, 'string');
+        return IGNORED_VAL;
+    }
+    // <Language Standard> = option.std.gnu99
+    // compiler.misc.dialect = com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.misc.dialect.c99
+    if (/Language (?:Standard|Dialect)/i.test(VALUE_NAME)) {
+        let m = /std\.(\w+)/.exec(VALUE_VALS[0]);
+        if (m && m.length > 1) {
+            const langStd = m[1];
+            if (cLangStds.includes(langStd))
+                return makeResult(langStd, 'cLanguageStd');
+        }
+        m = /dialect\.(\w+)/.exec(VALUE_VALS[0]);
+        if (m && m.length > 1) {
+            const langStd = m[1];
+            if (cLangStds.includes(langStd))
+                return makeResult(langStd, 'cLanguageStd');
+        }
+        return IGNORED_VAL;
+    }
+    // <Linker input ordering> = ./platform/Device/SiliconLabs/EFR32BG22/Source/GCC/startup_efr32bg22.o;
+    if (VALUE_NAME.trim() == 'Linker input ordering') {
+        const paths = VALUE_VALS[0].split(';')
+            .filter(p => p.trim() !== '')
+            .map(p => '**/' + formatFilePath(p).replace(/^\.\//, ''));
+        if (paths.length == 0)
+            return IGNORED_VAL;
+        return makeResult(paths.slice(0, Math.min(5, paths.length)), 'objsOrder');
+    }
+    if (prjtype == 'arm') {
+        if (VALUE_NAME.includes('--specs=nano.specs') ||
+            VALUE_NAME.includes('--specs=nosys.specs'))
+            return IGNORED_VAL;
+    }
+
+    // ----
+    // STM32CubeIDE
+    // ----
+
+    // value="STM32F407VGTx" valueType="string"
+    if (VALUE_ID.includes('com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu')) {
+        const mcuName = VALUE_VALS[0].toLowerCase();
+        if (/stm32f0/.test(mcuName))
+            return makeResult('cortex-m0', 'archName');
+        else if (/stm32(g0|c0|l0|u0)/.test(mcuName))
+            return makeResult('cortex-m0+', 'archName');
+        else if (/stm32(f1|f2|l1)/.test(mcuName))
+            return makeResult('cortex-m3', 'archName');
+        else if (/stm32(f4|g4|f3|l4|wb[0-9]|wl)/.test(mcuName))
+            return makeResult('cortex-m4', 'archName');
+        else if (/stm32(h5|u5|u3|l5|wba)/.test(mcuName))
+            return makeResult('cortex-m33', 'archName');
+        else if (/stm32(h7|f7)/.test(mcuName))
+            return makeResult('cortex-m7', 'archName');
+        return IGNORED_VAL;
+    }
+
+    // value="${workspace_loc:/${ProjName}/STM32F407VGTX_FLASH.ld}" valueType="string"
+    if (VALUE_ID.includes('com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.linker.option.script')) {
+        if (VALUE_VALS[0])
+            return makeResult(formatFilePath(VALUE_VALS[0]), 'linkerScriptPath');
+    }
+
+    // ----
+    // match (-xxx) options by types
+    // ----
 
     if (VALUE_TYPE == 'boolean') {
-        if (VALUE_VAL == 'true') {
+        if (VALUE_VALS[0] == 'true') {
             const mRes = /\((\-.+)\)/.exec(VALUE_NAME);
             if (mRes && mRes.length > 1) {
                 return makeResult(mRes[1]);
             }
         }
     }
-
-    else if (VALUE_TYPE == 'definedSymbols') {
-        const li: string[] = [];
-        toArray(optionObj.listOptionValue).forEach(item => li.push(item.$['value']));
-        return makeResult(li);
-    }
-
-    else if (VALUE_TYPE == 'includePath') {
-        const li: string[] = [];
-        toArray(optionObj.listOptionValue).forEach(item => {
-            let p = formatFilePath(item.$['value']);
-            if (p == '..') p = '.';
-            if (p.startsWith('../')) p = p.substr(3); // for eclipse, include path is base 'Debug' folder
-            li.push(p);
-        });
-        return makeResult(li);
-    }
-
-    else if (VALUE_TYPE == 'string') {
+    if (VALUE_TYPE == 'string') {
         const mRes = /\((\-.+)\)/.exec(VALUE_NAME);
         if (mRes && mRes.length > 1) {
             const fmt = mRes[1];
-            const arg = formatArgs(fmt, formatFilePath(VALUE_VAL));
+            const arg = formatArgs(fmt, formatFilePath(VALUE_VALS[0]));
             return makeResult(arg);
-        }
-        else if (VALUE_VAL.startsWith('-')) {
-            return makeResult(VALUE_VAL);
+        } else if (VALUE_VALS[0].startsWith('-')) {
+            return makeResult(VALUE_VALS[0]);
         }
     }
-
-    else if (VALUE_TYPE == 'stringList') {
+    if (VALUE_TYPE == 'stringList') {
         const mRes = /\((\-.+)\)/.exec(VALUE_NAME);
         if (mRes && mRes.length > 1) {
             const fmt = mRes[1];
             const li: string[] = [];
-            toArray(optionObj.listOptionValue).forEach(item => li.push(formatArgs(fmt, formatFilePath(item.$['value']))));
+            toArray(optionObj.listOptionValue)
+                .forEach(item => li.push(formatArgs(fmt, formatFilePath(item.$['value']))));
             return makeResult(li);
         } else {
             const li: string[] = [];
-            toArray(optionObj.listOptionValue).forEach(item => li.push(formatFilePath(item.$['value'])));
+            toArray(optionObj.listOptionValue)
+                .forEach(item => li.push(formatFilePath(item.$['value'])));
             return makeResult(li);
         }
     }
 
-    else if (VALUE_TYPE == 'libs') {
-        const r: string[] = [];
-        toArray(optionObj.listOptionValue).forEach(item => r.push(`-l${item.$['value']}`));
-        return makeResult(r);
-    }
-
-    else if (VALUE_TYPE == 'userObjs') {
-        const r: string[] = [];
-        toArray(optionObj.listOptionValue).forEach(item => r.push(formatFilePath(item.$['value'])));
-        return makeResult(r);
-    }
+    return IGNORED_VAL;
 }
 
 function toArray(obj: any): any[] {

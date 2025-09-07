@@ -757,7 +757,7 @@ export const rating_text = [
 
 export const later_text = [
     '稍后',
-    'Later on'
+    'Later'
 ][langIndex];
 
 export const continue_text = [

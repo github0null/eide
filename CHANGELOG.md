@@ -6,6 +6,15 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.25.1] revision
+
+**Improve**:
+  - `Import Project`: Improve project parser when import an eclipse project.
+  - `Debug`: One-click to start debugging. NOT NEED ANY `launch.json`. [See Here](https://em-ide.com/docs/advance/debug_project)
+  - `Toolchain Options`: New option `use-newlib-nano`, `not-use-syscalls` for `arm-none-eabi-gcc` toolchain.
+
+***
+
 ### [v3.25.0] update
 
 **New**:

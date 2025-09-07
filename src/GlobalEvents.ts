@@ -23,7 +23,7 @@
 */
 
 import * as events from 'events';
-import { Message, ExceptionToMessage, newMessage } from './Message';
+import { Message, ExceptionToMessage, newMessage, MessageType } from './Message';
 
 let _globalEvent: GlobalEvent | undefined;
 
@@ -75,12 +75,23 @@ export class GlobalEvent {
 
     //msg
     static emit(event: 'error', error: Error): boolean;             // 错误弹框（vscode 右下角）
+    /**
+     * @deprecated 已废弃，改用 GlobalEvent.show_msgbox
+     */
     static emit(event: 'msg', msg: Message): boolean;               // 消息弹框（vscode 右下角）
     static emit(event: 'globalLog', msg: Message): boolean;         // 打印日志+换行 -> 输出面板
     static emit(event: 'globalLog.append', log: string): boolean;   // 打印原始日志字串 -> 输出面板
     static emit(event: 'globalLog.show'): boolean;                  // 向用户显示eide输出面板日志
     static emit(event: any, args?: any): boolean {
         return GlobalEvent.GetInstance()._emitter.emit(event, args);
+    }
+
+    //vscode notify
+    static show_msgbox(type: MessageType, msg: string | Error) {
+        if (msg instanceof Error)
+            return GlobalEvent.GetInstance()._emitter.emit('msg', ExceptionToMessage(msg, type));
+        else
+            return GlobalEvent.GetInstance()._emitter.emit('msg', newMessage(type, msg));
     }
 
     //log
