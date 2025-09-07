@@ -1973,8 +1973,8 @@ class CortexDebugConfigProvider implements vscode.DebugConfigurationProvider {
             dbgCfg['executable'] = prj.getExecutablePathWithoutSuffix() + '.elf';
             dbgCfg['runToEntryPoint'] = 'main';
             dbgCfg['liveWatch'] = {
-                'enable': true,
-                'samplesPerSecond': 5
+                'enabled': true,
+                'samplesPerSecond': 4
             };
 
             const device = prj.GetPackManager().getCurrentDevInfo();
