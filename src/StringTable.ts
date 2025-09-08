@@ -459,6 +459,16 @@ export const view_str$env_desc$py3_cmd = [
 
 //---------------Other---------------
 
+export const view_str$prompt$requireOtherExtension = [
+    `请先安装扩展 "{}"`,
+    `Please install extension "{}" first.`
+][langIndex];
+
+export const view_str$prompt$debugCfgNotSupported = [
+    `仅支持如下类型的动态调试配置 '{0}'. 当前类型 '{1}' 不受支持！`,
+    `Only the following type of dynamic debugging configurations '{0}' are supported. The current type '{1}' is not supported !`
+][langIndex];
+
 export const view_str$prompt$install_dotnet_and_restart_vscode = [
     `安装完.NET后，你需要完全重启VSCode以刷新系统环境变量`,
     `After installed .NET. You need to close all VSCode instance and restart it to refresh System Environment Variables.`

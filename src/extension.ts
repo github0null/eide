@@ -43,7 +43,8 @@ import {
     txt_install_now, txt_yes, view_str$prompt$feedback, rating_text, later_text, sponsor_author_text,
     view_str$prompt$install_dotnet_and_restart_vscode,
     view_str$prompt$install_dotnet_failed,
-    view_str$prompt$not_found_compiler
+    view_str$prompt$not_found_compiler, view_str$prompt$debugCfgNotSupported, not_support_no_arm_project,
+    view_str$prompt$requireOtherExtension
 } from './StringTable';
 import { LogDumper } from './LogDumper';
 import { StatusBarManager } from './StatusBarManager';
@@ -294,11 +295,17 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.build', () => projectExplorer.BuildSolution(undefined, { not_rebuild: true })));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.flash', () => projectExplorer.UploadToDevice(undefined)));
 
+    // debug config providers
+    vscode.debug.registerDebugConfigurationProvider('cortex-debug', new ExternalDebugConfigProvider('cortex-debug'),
+        vscode.DebugConfigurationProviderTriggerKind.Dynamic);
+    vscode.debug.registerDebugConfigurationProvider('probe-rs-debug', new ExternalDebugConfigProvider('probe-rs-debug'),
+        vscode.DebugConfigurationProviderTriggerKind.Dynamic);
+    // vscode.debug.registerDebugConfigurationProvider('stm8-debug', new ExternalDebugConfigProvider('stm8-debug'),
+    //     vscode.DebugConfigurationProviderTriggerKind.Dynamic);
+
     // others
     vscode.workspace.registerTextDocumentContentProvider(VirtualDocument.scheme, VirtualDocument.instance());
     vscode.workspace.registerTaskProvider(EideTaskProvider.TASK_TYPE_BASH, new EideTaskProvider());
-    vscode.debug.registerDebugConfigurationProvider('eide.cortex-debug', new CortexDebugConfigProvider(),
-        vscode.DebugConfigurationProviderTriggerKind.Dynamic);
 
     // auto save project
     projectExplorer.enableAutoSave(true);
@@ -1589,7 +1596,10 @@ class EideTerminalProvider implements vscode.TerminalProfileProvider {
 
 import { FileWatcher } from '../lib/node-utility/FileWatcher';
 import { ToolchainManager, ToolchainName } from './ToolchainManager';
-import { JLinkOptions, JLinkProtocolType, OpenOCDFlashOptions, PyOCDFlashOptions, STLinkOptions } from './HexUploader';
+import {
+    JLinkOptions, JLinkProtocolType, OpenOCDFlashOptions, 
+    PyOCDFlashOptions, STLinkOptions, ProbeRSFlashOptions, STVPFlasherOptions
+} from './HexUploader';
 import { AbstractProject } from './EIDEProject';
 
 type MapViewParserType = 'memap' | 'builtin';
@@ -1890,7 +1900,13 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
 //- Debug Config Provider
 //------------------------------------------------------------
 
-class CortexDebugConfigProvider implements vscode.DebugConfigurationProvider {
+class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
+
+    private debuggerType: string | undefined;
+
+    constructor(debugType?: string) {
+        this.debuggerType = debugType;
+    }
 
     provideDebugConfigurations(folder: vscode.WorkspaceFolder | undefined,
         token?: vscode.CancellationToken): vscode.ProviderResult<vscode.DebugConfiguration[]> {
@@ -1941,11 +1957,47 @@ class CortexDebugConfigProvider implements vscode.DebugConfigurationProvider {
                     return result;
                 }
                 break;
+            // case 'IAR_STM8':
+            // case 'COSMIC_STM8':
+            // case 'SDCC':
+            //     break;
             default:
                 return result;
         }
 
-        const newDebugCfg = (prj: AbstractProject) => {
+        const toFmtRelativePath = (abspath: string) => {
+            let path = prj.ToRelativePath(abspath);
+            if (path) {
+                path = File.ToLocalPath(path);
+                return path.startsWith('.') ? path : `.${File.sep}${path}`;
+            }
+            return File.ToLocalPath(abspath);
+        };
+
+        const getSvdFile = (prj: AbstractProject) => {
+            const device = prj.GetPackManager().getCurrentDevInfo();
+            if (device && device.svdPath) {
+                const svdpath = toFmtRelativePath(device.svdPath);
+                GlobalEvent.log_info(`[debug config] Use svd file: ${svdpath}`);
+                return svdpath;
+            } else {
+                const searchDirs = [
+                    prj.getRootDir(),
+                    prj.getEideDir(),
+                    File.from(prj.getRootDir().path, 'tools')
+                ];
+                for (const d of searchDirs) {
+                    const r = d.GetList([/\.svd$/i], File.EXCLUDE_ALL_FILTER);
+                    if (r.length) {
+                        const svdpath = toFmtRelativePath(r[0].path);
+                        GlobalEvent.log_info(`[debug config] Use svd file: ${svdpath}`);
+                        return svdpath;
+                    }
+                }
+            }
+        };
+
+        const newCortexDebugCfg = (prj: AbstractProject) => {
 
             const dbgCfg: vscode.DebugConfiguration = {
                 type: 'cortex-debug',
@@ -1970,32 +2022,14 @@ class CortexDebugConfigProvider implements vscode.DebugConfigurationProvider {
             }
 
             dbgCfg['cwd'] = prj.getRootDir().path;
-            dbgCfg['executable'] = prj.getExecutablePathWithoutSuffix() + '.elf';
+            dbgCfg['executable'] = toFmtRelativePath(prj.getExecutablePathWithoutSuffix() + '.elf');
             dbgCfg['runToEntryPoint'] = 'main';
             dbgCfg['liveWatch'] = {
                 'enabled': true,
                 'samplesPerSecond': 4
             };
 
-            const device = prj.GetPackManager().getCurrentDevInfo();
-            if (device && device.svdPath) {
-                dbgCfg['svdFile'] = prj.ToRelativePath(device.svdPath) || device.svdPath;
-                GlobalEvent.log_info(`[debug config] Use svd file: ${dbgCfg['svdFile']}`);
-            } else {
-                const searchDirs = [
-                    prj.getRootDir(),
-                    prj.getEideDir(),
-                    File.from(prj.getRootDir().path, 'tools')
-                ];
-                for (const d of searchDirs) {
-                    const r = d.GetList([/\.svd$/i], File.EXCLUDE_ALL_FILTER);
-                    if (r.length) {
-                        dbgCfg['svdFile'] = prj.ToRelativePath(r[0].path) || r[0].path;
-                        GlobalEvent.log_info(`[debug config] Use svd file: ${dbgCfg['svdFile']}`);
-                        break;
-                    }
-                }
-            }
+            dbgCfg['svdFile'] = getSvdFile(prj);
 
             return dbgCfg;
         };
@@ -2013,7 +2047,7 @@ class CortexDebugConfigProvider implements vscode.DebugConfigurationProvider {
         const flashertype = prj.getUploaderType();
 
         if (flashertype == 'JLink') {
-            const dbgCfg = newDebugCfg(prj);
+            const dbgCfg = newCortexDebugCfg(prj);
             const flasherCfg = (<JLinkOptions>flasherOpts);
             dbgCfg['name'] = 'Debug: JLINK';
             dbgCfg['servertype'] = 'jlink';
@@ -2035,7 +2069,7 @@ class CortexDebugConfigProvider implements vscode.DebugConfigurationProvider {
         }
 
         else if (flashertype == 'OpenOCD') {
-            const dbgCfg = newDebugCfg(prj);
+            const dbgCfg = newCortexDebugCfg(prj);
             const flasherCfg = (<OpenOCDFlashOptions>flasherOpts);
             dbgCfg['name'] = 'Debug: OpenOCD';
             dbgCfg['servertype'] = 'openocd';
@@ -2050,7 +2084,7 @@ class CortexDebugConfigProvider implements vscode.DebugConfigurationProvider {
         }
 
         else if (flashertype == 'pyOCD') {
-            const dbgCfg = newDebugCfg(prj);
+            const dbgCfg = newCortexDebugCfg(prj);
             const flasherCfg = (<PyOCDFlashOptions>flasherOpts);
             dbgCfg['name'] = 'Debug: pyOCD';
             dbgCfg['servertype'] = 'pyocd';
@@ -2104,7 +2138,7 @@ class CortexDebugConfigProvider implements vscode.DebugConfigurationProvider {
                 if (p)
                     cubeProgramerPath = NodePath.dirname(p);
             }
-            const dbgCfg = newDebugCfg(prj);
+            const dbgCfg = newCortexDebugCfg(prj);
             dbgCfg['name'] = 'Debug: STLink';
             dbgCfg['servertype'] = 'stlink';
             dbgCfg['interface'] = flasherCfg.proType == 'SWD' ? 'swd' : 'jtag';
@@ -2113,13 +2147,79 @@ class CortexDebugConfigProvider implements vscode.DebugConfigurationProvider {
             result.push(dbgCfg);
         }
 
-        else {
-            GlobalEvent.emit('msg', newMessage('Warning',
-                `Only support 'jlink', 'stlink', 'openocd', 'pyocd'. Not support this flasher: '${flashertype}' !`));
+        else if (flashertype == 'probe-rs') {
+            const flasherCfg = (<ProbeRSFlashOptions>flasherOpts);
+            const dbgCfg: any = {
+                "type": "probe-rs-debug",
+                "request": "launch",
+                "name": "Debug: probe-rs",
+                "cwd": prj.getRootDir().path,
+                "connectUnderReset": false,
+                "chip": flasherCfg.target,
+                "wireProtocol": flasherCfg.protocol.toLowerCase() == 'swd' ? 'Swd' : 'Jtag',
+                "allowEraseAll": flasherCfg.allowEraseAll,
+                "flashingConfig": {
+                    "flashingEnabled": true,
+                    "haltAfterReset": true
+                },
+                "coreConfigs": [
+                    {
+                        "coreIndex": 0,
+                        "svdFile": getSvdFile(prj),
+                        "programBinary": toFmtRelativePath(
+                            prj.getExecutablePathWithoutSuffix() + '.elf')
+                    }
+                ]
+            };
+            if (flasherCfg.speed)
+                dbgCfg['speed'] = flasherCfg.speed;
+            // parse '--probe VID:PID' or '--probe VID:PID:Serial'
+            if (flasherCfg.otherOptions) {
+                let m = /--probe (\w+\:\w+(?:\:\w+)?)/.exec(flasherCfg.otherOptions);
+                if (m && m.length > 1) {
+                    dbgCfg['probe'] = m[1];
+                }
+            }
+            result.push(dbgCfg);
         }
 
-        // GlobalEvent.log_info(`provide Cortex-Debug DebugConfig`);
-        // GlobalEvent.log_info(yaml.stringify(result));
+        // else if (flashertype == 'STVP') {
+        //     const flasherCfg = (<STVPFlasherOptions>flasherOpts);
+        //     const dbgCfg: any = {
+        //         "type": "stm8-debug",
+        //         "request": "launch",
+        //         "name": "Debug: STM8",
+        //         "serverType": "st7",
+        //         "executable": toFmtRelativePath(prj.getExecutablePath()),
+        //         "cpu": flasherCfg.deviceName
+        //     };
+        //     const searchDirs = [
+        //         prj.getRootDir(),
+        //         prj.getEideDir(),
+        //         File.from(prj.getRootDir().path, 'tools')
+        //     ];
+        //     for (const d of searchDirs) {
+        //         const r = d.GetList([/\.svd\.json$/i], File.EXCLUDE_ALL_FILTER);
+        //         if (r.length) {
+        //             const svdpath = toFmtRelativePath(r[0].path);
+        //             GlobalEvent.log_info(`[debug config] Use svd file: ${svdpath}`);
+        //             dbgCfg['svdFile'] = svdpath;
+        //         }
+        //     }
+        // }
+
+        else {
+            const supported = ['jlink', 'stlink', 'openocd', 'pyocd', 'probe-rs'];
+            const msg = view_str$prompt$debugCfgNotSupported
+                .replace('{0}', supported.join(','))
+                .replace('{1}', flashertype);
+            GlobalEvent.show_msgbox('Warning', msg);
+        }
+
+        // filter by debugType
+        if (this.debuggerType)
+            return result.filter(cfg => cfg.type == this.debuggerType);
+
         return result;
     }
 }
@@ -2138,7 +2238,7 @@ async function startDebugging() {
         index: 0
     };
 
-    const cfgs = await (new CortexDebugConfigProvider())
+    const cfgs = await (new ExternalDebugConfigProvider())
         .provideDebugConfigurations(vscWorkspaceFolder);
     if (cfgs && cfgs.length > 0) {
         let cfg = cfgs[0];
