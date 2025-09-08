@@ -6,6 +6,13 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.25.2] revision
+
+**Improve**:
+  - `Debug`: Support one-click to start debugging for `probe-rs` flasher. Require extension [probe-rs.probe-rs-debugger](https://marketplace.visualstudio.com/items?itemName=probe-rs.probe-rs-debugger)
+
+***
+
 ### [v3.25.1] revision
 
 **Improve**:
