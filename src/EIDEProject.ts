@@ -1685,10 +1685,14 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     //--
 
+    /**
+     * 检查文件是否已被排除
+     * @param path 要执行检查的源文件的路径，可以为虚拟路径，比如 '\<virual_root\>/abc.c'
+    */
     isExcluded(path: string): boolean {
-        const excList = this.GetConfiguration().config.excludeList.map((excpath) => this.resolveEnvVar(excpath));
-        const rePath = this.toRelativePath(path);
-        return excList.findIndex(excluded => rePath === excluded || rePath.startsWith(`${excluded}/`)) !== -1;
+        const excList = this.GetConfiguration().config.excludeList.map(p => this.resolveEnvVar(p));
+        const rePath = VirtualSource.isVirtualPath(path) ? path : this.toRelativePath(path);
+        return excList.findIndex(p => rePath === p || rePath.startsWith(`${p}/`)) !== -1;
     }
 
     protected addExclude(path: string): boolean {
