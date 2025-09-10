@@ -68,7 +68,7 @@
             ]
         },
         "oscFreq": {
-            "markdownDescription": "`[可忽略]` 芯片时钟速度 KHz，**只用于 STC15 系列**",
+            "markdownDescription": "`[可忽略]` 芯片时钟速度 KHz",
             "anyOf": [
                 {
                     "type": "string",

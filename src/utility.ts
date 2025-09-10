@@ -49,6 +49,45 @@ export const TIME_ONE_MINUTE = 60 * 1000;
 export const TIME_ONE_HOUR = 3600 * 1000;
 export const TIME_ONE_DAY = 24 * 3600 * 1000;
 
+export function parseCliArgs(cliStr: string): string[] {
+
+    let argsLi: string[] = [];
+    let inQuote = false;
+    let curArg = '';
+
+    for(let char_ of cliStr) {
+        // is a "..." start or end
+        if (char_ === '"' && (curArg.length === 0 || curArg[curArg.length - 1] !== '\\')) {
+            if (inQuote) {
+                inQuote = false;
+                if (curArg && curArg.trim() !== '')
+                    argsLi.push(curArg);
+                curArg = '';
+            } else {
+                inQuote = true;
+            }
+            continue; // skip '"'
+        }
+        // in "..." region
+        if (inQuote)  {
+            curArg += char_;
+        } else { // out "..." region
+            if (char_ === ' ' || char_ === '\t') {
+                if (curArg && curArg.trim() !== '')
+                    argsLi.push(curArg);
+                curArg = '';
+            } else {
+                curArg += char_;
+            }
+        }
+    }
+
+    if (curArg && curArg.trim() !== '')
+        argsLi.push(curArg);
+
+    return argsLi;
+}
+
 export async function probers_install(cwd?: string) {
 
     let commandLine: string;
