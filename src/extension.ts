@@ -133,6 +133,10 @@ export async function activate(context: vscode.ExtensionContext) {
         startDebugging()
             .catch(err => GlobalEvent.emit('error', err));
     }));
+    subscriptions.push(vscode.commands.registerCommand('eide.debug.start.attach', () => {
+        startDebugging(true)
+            .catch(err => GlobalEvent.emit('error', err));
+    }));
 
     // internal command
     // TODO
@@ -1911,7 +1915,7 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
     provideDebugConfigurations(folder: vscode.WorkspaceFolder | undefined,
         token?: vscode.CancellationToken): vscode.ProviderResult<vscode.DebugConfiguration[]> {
 
-        const result: vscode.DebugConfiguration[] = [];
+        let result: vscode.DebugConfiguration[] = [];
 
         if (!folder)
             return result;
@@ -2034,6 +2038,16 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
             return dbgCfg;
         };
 
+        const newAttachDebugCfg = (cfgtocopy: any) => {
+            const nCfg = JSON.parse(JSON.stringify(cfgtocopy));
+            nCfg['name'] += '(attach)';
+            nCfg['request'] = 'attach';
+            if (nCfg['type'] === 'cortex-debug') {
+                nCfg['runToEntryPoint'] = undefined;
+            }
+            return nCfg;
+        };
+
         const fmtOpenocdCfgPath = (type: 'interface' | 'target', path: string) => {
             let cfgpath = path.startsWith('${workspaceFolder}/') 
                 ? path.replace('${workspaceFolder}/', '')
@@ -2066,6 +2080,7 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
                     dbgCfg['serialNumber'] = m[1];
             }
             result.push(dbgCfg);
+            result.push(newAttachDebugCfg(dbgCfg));
         }
 
         else if (flashertype == 'OpenOCD') {
@@ -2081,6 +2096,7 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
             dbgCfg['configFiles'] = ocdCfgs;
             dbgCfg['serverpath'] = settingManager.getOpenOCDExePath();
             result.push(dbgCfg);
+            result.push(newAttachDebugCfg(dbgCfg));
         }
 
         else if (flashertype == 'pyOCD') {
@@ -2104,7 +2120,10 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
                 cliArgs.push(flasherCfg.speed);
             }
             dbgCfg['serverArgs'] = cliArgs;
+            // pyocd not support livewatch
+            dbgCfg['liveWatch']['enabled'] = false;
             result.push(dbgCfg);
+            result.push(newAttachDebugCfg(dbgCfg));
         }
 
         else if (flashertype == 'STLink') {
@@ -2145,6 +2164,7 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
             dbgCfg['stlinkPath'] = gdbserverPath;
             dbgCfg['stm32cubeprogrammer'] = cubeProgramerPath;
             result.push(dbgCfg);
+            result.push(newAttachDebugCfg(dbgCfg));
         }
 
         else if (flashertype == 'probe-rs') {
@@ -2181,6 +2201,7 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
                 }
             }
             result.push(dbgCfg);
+            result.push(newAttachDebugCfg(dbgCfg));
         }
 
         // else if (flashertype == 'STVP') {
@@ -2218,13 +2239,13 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
 
         // filter by debugType
         if (this.debuggerType)
-            return result.filter(cfg => cfg.type == this.debuggerType);
+            result = result.filter(cfg => cfg.type == this.debuggerType);
 
         return result;
     }
 }
 
-async function startDebugging() {
+async function startDebugging(attach?: boolean) {
 
     const prj = projectExplorer.getActiveProject();
     if (!prj) {
@@ -2238,8 +2259,10 @@ async function startDebugging() {
         index: 0
     };
 
-    const cfgs = await (new ExternalDebugConfigProvider())
-        .provideDebugConfigurations(vscWorkspaceFolder);
+    const provider = new ExternalDebugConfigProvider();
+    let cfgs = await provider.provideDebugConfigurations(vscWorkspaceFolder);
+    if (cfgs && attach)
+        cfgs = cfgs.filter(cfg => cfg.request === 'attach');
     if (cfgs && cfgs.length > 0) {
         let cfg = cfgs[0];
         if (cfgs.length > 1) {

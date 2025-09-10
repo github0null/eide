@@ -6,6 +6,13 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.25.3] revision
+
+**Improve**:
+  - `Debug`: Support 'attach' mode for 'one-click' debugging.
+
+***
+
 ### [v3.25.2] revision
 
 **Improve**:

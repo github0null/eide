@@ -32,7 +32,8 @@
     "eide.project.modify.files.options": "查看所有源文件的附加编译参数",
     "eide.project.import.ext.project.src.struct": "从其他 IDE 的项目中导入源文件树",
     "eide.project.generate_builder_params": "生成 builder.params",
-    "eide.project.debug.start": "启动调试(Cortex-Debug)",
+    "eide.project.debug.start": "启动调试",
+    "eide.project.debug.start.attach": "启动调试 (附加)",
 
     "eide.prj.menus.main.static-check": "静态检查",
     "eide.prj.menus.sub.static-check.cppcheck": "执行 Cppcheck",
