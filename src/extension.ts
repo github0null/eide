@@ -2262,9 +2262,15 @@ async function startDebugging(attach?: boolean) {
 
     const provider = new ExternalDebugConfigProvider();
     let cfgs = await provider.provideDebugConfigurations(vscWorkspaceFolder);
-    if (cfgs && attach)
+    if (!cfgs)
+        return;
+
+    if (attach)
         cfgs = cfgs.filter(cfg => cfg.request === 'attach');
-    if (cfgs && cfgs.length > 0) {
+    else
+        cfgs = cfgs.filter(cfg => cfg.request === 'launch');
+
+    if (cfgs.length > 0) {
         let cfg = cfgs[0];
         if (cfgs.length > 1) {
             const val = await vscode.window.showQuickPick(cfgs.map(e => e.name), {
