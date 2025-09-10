@@ -2114,7 +2114,8 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
                 }
             }
             if (flasherCfg.otherCmds)
-                cliArgs.push(flasherCfg.otherCmds);
+                utility.parseCliArgs(flasherCfg.otherCmds)
+                    .forEach(s => cliArgs.push(s))
             if (flasherCfg.speed) {
                 cliArgs.push('-f');
                 cliArgs.push(flasherCfg.speed);
