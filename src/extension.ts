@@ -2078,6 +2078,10 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
                 m = /(?:-USB|-SelectEmuBySN) ([^\s]+)/.exec(flasherCfg.otherCmds);
                 if (m && m.length > 1)
                     dbgCfg['serialNumber'] = m[1];
+                // -JLinkScriptFile <ScriptFilePath>
+                m = /-JLinkScriptFile ([^\s"]+|"[^"]+")/.exec(flasherCfg.otherCmds);
+                if (m && m.length > 1)
+                    dbgCfg['jlinkscript'] = m[1];
             }
             result.push(dbgCfg);
             result.push(newAttachDebugCfg(dbgCfg));
