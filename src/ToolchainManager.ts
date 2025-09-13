@@ -319,7 +319,7 @@ export class ToolchainManager {
             case 'RISCV_GCC':
                 return 'GNU RISC-V Toolchain';
             case 'ANY_GCC':
-                return 'GNU Toolchain';
+                return 'Generic GNU Toolchain';
             case 'COSMIC_STM8':
                 return 'COSMIC STM8 C Compiler';
             case 'MTI_GCC':

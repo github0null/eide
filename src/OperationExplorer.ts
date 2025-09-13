@@ -415,7 +415,7 @@ export class OperationExplorer {
                     const itemList: ProjectTemplatePickItem[] = [
                         {
                             label: '8051 Quick Start (SDCC)',
-                            detail: 'Universal 8051 example project with SDCC',
+                            detail: 'Generic 8051 example project with SDCC',
                             templateName: 'mcs51_sdcc',
                             type: 'C51'
                         },
@@ -692,6 +692,14 @@ export class OperationExplorer {
             const toolchainManager = ToolchainManager.getInstance();
             const resManager = ResManager.GetInstance();
 
+            const makeToolchainDespTxt = (id: ToolchainName): string => {
+                const dir = toolchainManager.getToolchainExecutableFolder(id);
+                if (dir && dir.IsDir())
+                    return this.getStatusTxt(true) + ` Loc: ${dir.path}`;
+                else
+                    return this.getStatusTxt(false) + ` Loc: ${dir?.path || ''}`
+            };
+
             const toolchainPickItems: ToolchainDespPickItem[] = [
                 {
                     type: 'None',
@@ -701,37 +709,32 @@ export class OperationExplorer {
                 {
                     label: 'Keil C51 (cx51) (ide path)',
                     type: 'Keil_C51',
-                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('Keil_C51'))
-                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('Keil_C51')?.path}`,
+                    description: makeToolchainDespTxt('Keil_C51'),
                     detail: view_str$operation$setKeil51Path
                 },
                 {
                     label: 'IAR For STM8 (iccstm8) (ide path)',
                     type: 'IAR_STM8',
-                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('IAR_STM8'))
-                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('IAR_STM8')?.path}`,
+                    description: makeToolchainDespTxt('IAR_STM8'),
                     detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'IAR For STM8')
                 },
                 {
                     label: 'SDCC (sdcc)',
                     type: 'SDCC',
-                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('SDCC'))
-                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('SDCC')?.path}`,
+                    description: makeToolchainDespTxt('SDCC'),
                     detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'SDCC')
                 },
                 {
                     label: 'SDCC + Binutils For 8051 (sdcc + i51-elf-as)',
                     type: 'GNU_SDCC_MCS51',
-                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('GNU_SDCC_MCS51'))
-                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('GNU_SDCC_MCS51')?.path}`,
+                    description: makeToolchainDespTxt('GNU_SDCC_MCS51'),
                     detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'SDCC + Binutils For 8051')
                 },
                 {
                     label: 'COSMIC STM8 C Compiler (cxstm8)',
                     type: 'COSMIC_STM8',
-                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('COSMIC_STM8'))
-                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('COSMIC_STM8')?.path}`,
-                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'COSMIC_STM8'),
+                    description: makeToolchainDespTxt('COSMIC_STM8'),
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'COSMIC STM8'),
                     buttons: [
                         {
                             iconPath: vscode.Uri.file(resManager.GetIconByName('Login_16x.svg').path),
@@ -761,22 +764,19 @@ export class OperationExplorer {
                 {
                     label: 'ARMCC V5 (armcc) (standalone toolchain)',
                     type: 'AC5',
-                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC5'))
-                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('AC5')?.path}`,
-                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V5 Toolchain')
+                    description: makeToolchainDespTxt('AC5'),
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V5')
                 },
                 {
                     label: 'ARMCC V6 (armclang) (standalone toolchain)',
                     type: 'AC6',
-                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('AC6'))
-                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('AC6')?.path}`,
-                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V6 Toolchain')
+                    description: makeToolchainDespTxt('AC6'),
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'ARMCC V6')
                 },
                 {
                     label: 'IAR ARM C/C++ Compiler (iccarm) (standalone toolchain)',
                     type: 'IAR_ARM',
-                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('IAR_ARM'))
-                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('IAR_ARM')?.path}`,
+                    description: makeToolchainDespTxt('IAR_ARM'),
                     detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'IAR ARM C/C++ Compiler')
                 },
 
@@ -789,8 +789,7 @@ export class OperationExplorer {
                 {
                     label: `GNU Arm Embedded Toolchain (${toolchainManager.getToolchainPrefix('GCC')}gcc)`,
                     type: 'GCC',
-                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('GCC'))
-                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('GCC')?.path}`,
+                    description: makeToolchainDespTxt('GCC'),
                     detail: view_str$operation$setToolchainInstallDir.replace('${name}', `GNU Arm Embedded Toolchain`),
                     buttons: [
                         {
@@ -802,8 +801,7 @@ export class OperationExplorer {
                 {
                     label: `RISC-V GCC Toolchain (${toolchainManager.getToolchainPrefix('RISCV_GCC')}gcc)`,
                     type: 'RISCV_GCC',
-                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('RISCV_GCC'))
-                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('RISCV_GCC')?.path}`,
+                    description: makeToolchainDespTxt('RISCV_GCC'),
                     detail: view_str$operation$setToolchainInstallDir.replace('${name}', `RISC-V GCC Toolchain`),
                     buttons: [
                         {
@@ -815,16 +813,14 @@ export class OperationExplorer {
                 {
                     label: 'MIPS MTI GCC Compiler',
                     type: 'MTI_GCC',
-                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('MTI_GCC'))
-                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('MTI_GCC')?.path}`,
+                    description: makeToolchainDespTxt('MTI_GCC'),
                     detail: view_str$operation$setToolchainInstallDir.replace('${name}', 'MTI_GCC'),
                 },
                 {
-                    label: `Universal GCC Toolchain (${toolchainManager.getToolchainPrefix('ANY_GCC')}gcc)`,
+                    label: `Generic GCC Toolchain (${toolchainManager.getToolchainPrefix('ANY_GCC')}gcc)`,
                     type: 'ANY_GCC',
-                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('ANY_GCC'))
-                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('ANY_GCC')?.path}`,
-                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', `ANY GCC Toolchain`),
+                    description: makeToolchainDespTxt('ANY_GCC'),
+                    detail: view_str$operation$setToolchainInstallDir.replace('${name}', `Generic GCC Toolchain`),
                     buttons: [
                         {
                             iconPath: vscode.Uri.file(resManager.GetIconByName('EditTitleString_16x.svg').path),
@@ -842,8 +838,7 @@ export class OperationExplorer {
                 {
                     label: `LLVM Embedded Toolchain For Arm (clang)`,
                     type: 'LLVM_ARM',
-                    description: this.getStatusTxt(toolchainManager.isToolchainPathReady('LLVM_ARM'))
-                        + ` Loc: ${toolchainManager.getToolchainExecutableFolder('LLVM_ARM')?.path}`,
+                    description: makeToolchainDespTxt('LLVM_ARM'),
                     detail: view_str$operation$setToolchainInstallDir.replace('${name}', `LLVM Embedded Toolchain For Arm`)
                 }
             ];

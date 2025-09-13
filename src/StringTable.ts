@@ -895,7 +895,7 @@ export const view_str$operation$empty_mips_prj = [
 
 export const view_str$operation$empty_anygcc_prj = [
     '通用的 GCC 项目',
-    'Universal GCC Project'
+    'Generic GCC Project'
 ][langIndex];
 
 export const view_str$operation$open_serialport = [
