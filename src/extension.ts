@@ -2081,7 +2081,9 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
                 // -JLinkScriptFile <ScriptFilePath>
                 m = /-JLinkScriptFile ([^\s"]+|"[^"]+")/.exec(flasherCfg.otherCmds);
                 if (m && m.length > 1)
-                    dbgCfg['jlinkscript'] = m[1];
+                    dbgCfg['jlinkscript'] = m[1].startsWith('"')
+                        ? m[1].substring(1, m[1].length - 1)
+                        : m[1];
             }
             result.push(dbgCfg);
             result.push(newAttachDebugCfg(dbgCfg));
