@@ -162,6 +162,11 @@ export interface IToolchian {
     */
     migrateOptions?: (oldOptions: BuilderOptions) => void;
 
+    /**
+     * 导出额外的系统搜索路径（如果有的话）
+    */
+    exportSystemSearchPath?: (builderOptions: BuilderOptions) => string[];
+
     newInstance(): IToolchian;
 }
 
@@ -1212,6 +1217,14 @@ class GNU_SDCC_MCS51 implements IToolchian {
         if (options['linker'] && options['linker']['output-format'] === 'lib') {
             options['linker']['$use'] = 'linker-lib';
         }
+    }
+
+    exportSystemSearchPath(builderOptions: BuilderOptions): string[] {
+        const r: string[] = [];
+        // to fix: sdcpp.exe: fatal error: cannot execute 'cc1': CreateProcess: No such file or directory
+        if (platform.osType() == 'win32')
+            r.push(File.ToLocalPath(NodePath.join(this.getToolchainDir().path, 'libexec', 'sdcc', 'x86_64-w64-mingw32', '12.1.0')));
+        return r;
     }
 
     getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): utility.CppMacroDefine[] {
