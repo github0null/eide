@@ -6,6 +6,15 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.25.5] revision
+
+**Fix**:
+  - `Flasher`: fix flasher crashed when enumSerialPort failed.
+  - `Setup Toolchain`: fix performace issue for OnSetToolchainPath(). update toolchain descriptions.
+  - `sdcc+binutils Toolchain`: fix "fatal error: cannot execute 'cc1'" for Win32 platform.
+
+***
+
 ### [v3.25.3] revision
 
 **Improve**:
