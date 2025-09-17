@@ -470,6 +470,12 @@ export abstract class CodeBuilder {
             getOutDir: () => { return this.project.ToAbsolutePath(outDir); }
         }, builderOptions.options);
 
+        // add extra system search path
+        if (toolchain.exportSystemSearchPath) {
+            toolchain.exportSystemSearchPath(builderOptions.options)
+                .forEach(p => builderOptions.sysPaths?.push(p));
+        }
+
         // handle options
         this.preHandleOptions(builderOptions.options);
 

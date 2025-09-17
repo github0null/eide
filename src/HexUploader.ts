@@ -257,12 +257,21 @@ export abstract class HexUploader<InvokeParamsType> {
 
     resolveHexFilePathEnvs(input: string, programs: FlashProgramFile[]): string {
 
-        const portList = ResManager.GetInstance().enumSerialPort();
+        let portList: string[] = [];
+        try {
+            portList = ResManager.GetInstance().enumSerialPort();
+        } catch (error) {
+            GlobalEvent.log_error(error);
+        }
 
         let commandLine = input
             .replace(/\$\{hexFile\}|\$\{binFile\}|\$\{programFile\}/ig, programs[0].path)
             .replace(/\$\{port\}/ig, portList[0] || '')
-            .replace(/\$\{portList\}/ig, portList.join(' '));
+            .replace(/\$\{portList\}/ig, portList.join(' '))
+            .replace('${port[0]}', portList[0] || '')
+            .replace('${port[1]}', portList[1] || '')
+            .replace('${port[2]}', portList[2] || '')
+            .replace('${port[3]}', portList[3] || '');
 
         programs.forEach((file, index) => {
 
