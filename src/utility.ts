@@ -695,7 +695,7 @@ export async function runShellCommand(title: string, commandLine: string, opts?:
                 shellOption.executable = 'cmd.exe';
                 shellOption.shellArgs = ['/D', '/C'];
                 // FIXME: https://github.com/microsoft/vscode/issues/260534
-                if (compareVersion(vscode.version, '1.103.0') < 0)
+                if (!/^1\.103\./.test(vscode.version))
                     commandLine = `"${commandLine}"`;
             } else {
                 shellOption.executable = '/bin/bash';
