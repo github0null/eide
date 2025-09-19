@@ -6,12 +6,13 @@ All notable version changes will be recorded in this file.
 
 ***
 
-### [v3.25.5] revision
+### [v3.25.6] revision
 
 **Fix**:
   - `Flasher`: fix flasher crashed when enumSerialPort failed.
   - `Setup Toolchain`: fix performace issue for OnSetToolchainPath(). update toolchain descriptions.
   - `sdcc+binutils Toolchain`: fix "fatal error: cannot execute 'cc1'" for Win32 platform.
+  - `Misc`: Compatibility improvement for [vscode task issue 260534](https://github.com/microsoft/vscode/issues/260534)
 
 ***
 
