@@ -2291,10 +2291,18 @@ class GCC implements IToolchian {
         cppToolsConfig.cStandard = 'c11';
         cppToolsConfig.cppStandard = 'c++11';
 
-        cppToolsConfig.compilerArgs = ['-std=${c_cppStandard}', '-mthumb'];
+        cppToolsConfig.compilerArgs = ['-std=${c_cppStandard}'];
+
+        if (builderOpts.global && builderOpts.global['arm-thumb-mode'] === 'arm')
+            cppToolsConfig.compilerArgs.push('-marm');
+        else
+            cppToolsConfig.compilerArgs.push('-mthumb');
 
         // pass global args for cpptools
         if (builderOpts.global) {
+
+            if (builderOpts.global['arm-thumb-interwork'])
+                cppToolsConfig.compilerArgs.push('-mthumb-interwork');
 
             const cpuName = builderOpts.global['_cpuName'] || 'cortex-m3';
             const fpuType = builderOpts.global['_fpuType'] || '';
@@ -2350,6 +2358,10 @@ class GCC implements IToolchian {
         // should be specified at compile time and during the final link.
         options['global']['optimization-lto'] = options['c/cpp-compiler']['optimization-lto'];
         options['c/cpp-compiler']['optimization-lto'] = undefined;
+
+        // 默认状态下是 thumb 模式，以兼容旧的项目
+        if (!options.global['arm-thumb-mode'])
+            options.global['arm-thumb-mode'] = 'thumb';
     }
 
     getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): utility.CppMacroDefine[] {
@@ -2482,7 +2494,7 @@ class IARARM implements IToolchian {
     preHandleOptions(prjInfo: IProjectInfo, options: BuilderOptions): void {
 
         // init null options
-        for (const key of ['linker', 'c/cpp-compiler']) {
+        for (const key of ['global', 'linker', 'c/cpp-compiler']) {
             if ((<any>options)[key] === undefined) {
                 (<any>options)[key] = Object.create(null);
             }
@@ -2492,6 +2504,10 @@ class IARARM implements IToolchian {
         if (options['linker']['output-format'] === 'lib') {
             options['linker']['$use'] = 'linker-lib';
         }
+
+        // 默认状态下是 thumb 模式，以兼容旧的项目
+        if (!options.global['arm-thumb-mode'])
+            options.global['arm-thumb-mode'] = 'thumb';
     }
 
     getToolchainDir(): File {

@@ -6,6 +6,13 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.25.7] revision
+
+**Improve**:
+  - `Builder Options`: Support ARM/Thumb Mode select options. Fix [issues 475](https://github.com/github0null/eide/issues/475)
+
+***
+
 ### [v3.25.6] revision
 
 **Fix**:

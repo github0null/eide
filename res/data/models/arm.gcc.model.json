@@ -32,6 +32,35 @@
                 "linker"
             ]
         },
+        "arm-thumb-interwork": {
+            "type": "selectable",
+            "command": {
+                "true": "-mthumb-interwork",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ],
+            "location": "first"
+        },
+        "arm-thumb-mode": {
+            "type": "selectable",
+            "command": {
+                "arm"  : "-marm",
+                "thumb": "-mthumb",
+                "false": "-mthumb"
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm",
+                "linker"
+            ],
+            "location": "first"
+        },
         "microcontroller-float": {
             "type": "selectable",
             "command": {
@@ -381,8 +410,7 @@
             "$output": "-o ${out} -MMD ${in}",
             "$default": [
                 "-c",
-                "-xc",
-                "-mthumb"
+                "-xc"
             ],
             "$language-c": {
                 "type": "value",
@@ -433,8 +461,7 @@
             },
             "$output": "-o ${out} -MMD ${in}",
             "$default": [
-                "-c",
-                "-mthumb"
+                "-c"
             ],
             "$language-cpp": {
                 "type": "value",
@@ -482,8 +509,7 @@
             },
             "$default": [
                 "-c",
-                "-x assembler-with-cpp",
-                "-mthumb"
+                "-x assembler-with-cpp"
             ],
             "defines": {
                 "type": "list",
@@ -500,9 +526,7 @@
                 "useFile": true,
                 "body": "@${value}"
             },
-            "$default": [
-                "-mthumb"
-            ],
+            "$default": [],
             "$output": "-o ${out} ${in} ${lib_flags}",
             "$outputSuffix": ".elf",
             "$linkMap": {

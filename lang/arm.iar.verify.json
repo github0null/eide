@@ -122,6 +122,21 @@
             "description.zh-cn": "全局选项",
             "type": "object",
             "properties": {
+                "arm-thumb-mode": {
+                    "readable_name": "ARM/Thumb Mode",
+                    "readable_name.zh-cn": "ARM/Thumb Mode",
+                    "markdownDescription": "Select between generating code that executes in ARM and Thumb states.",
+                    "type": "string",
+                    "default": "thumb",
+                    "enum": [
+                        "arm",
+                        "thumb"
+                    ],
+                    "enumDescriptions": [
+                        "ARM Mode",
+                        "Thumb Mode"
+                    ]
+                },
                 "endian-mode": {
                     "description": "Endian Mode",
                     "type": "string",
