@@ -2286,17 +2286,20 @@ class GCC implements IToolchian {
         return result;
     }
 
+    private getThumbOptionStr(builderOpts: BuilderOptions): string {
+        if (builderOpts.global && builderOpts.global['arm-thumb-mode'] === 'arm')
+            return '-marm';
+        else
+            return '-mthumb';
+    }
+
     updateCppIntellisenceCfg(builderOpts: BuilderOptions, cppToolsConfig: CppConfigItem): void {
 
         cppToolsConfig.cStandard = 'c11';
         cppToolsConfig.cppStandard = 'c++11';
 
-        cppToolsConfig.compilerArgs = ['-std=${c_cppStandard}'];
-
-        if (builderOpts.global && builderOpts.global['arm-thumb-mode'] === 'arm')
-            cppToolsConfig.compilerArgs.push('-marm');
-        else
-            cppToolsConfig.compilerArgs.push('-mthumb');
+        cppToolsConfig.compilerArgs = [
+            '-std=${c_cppStandard}', this.getThumbOptionStr(builderOpts)];
 
         // pass global args for cpptools
         if (builderOpts.global) {
@@ -2373,7 +2376,7 @@ class GCC implements IToolchian {
         const compilerArgs = this.getCompilerTargetArgs(cpuName, fpuType, archExt, builderOpts);
 
         if (compilerArgs.length > 0) {
-            compilerArgs.push('-mthumb');
+            compilerArgs.push(this.getThumbOptionStr(builderOpts));
             const gccpath = <string>this.getGccFamilyCompilerPathForCpptools('c');
             const defines = utility.getGccInternalDefines(gccpath, compilerArgs);
             if (defines) {
