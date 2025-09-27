@@ -29,6 +29,7 @@ import * as vscode from 'vscode';
 import * as NodePath from 'path';
 import { jsonc } from 'jsonc';
 import * as child_process from 'child_process';
+import * as yaml from "yaml";
 
 import { File } from "../lib/node-utility/File";
 import { FileWatcher } from "../lib/node-utility/FileWatcher";
@@ -50,7 +51,7 @@ import { CompileConfigModel, UploadConfigModel, SdccCompileConfigModel, GccCompi
 // ----------------------------------------------------------
 
 // !! eide project config file version !!
-export const EIDE_CONF_VERSION = '3.6';
+export const EIDE_CONF_VERSION = '4.0';
 
 //
 //  'C51': 8BIT MCU Project (like: mcs51, stm8, ...)
@@ -112,19 +113,21 @@ export const MAPPED_KEYS_IN_TARGET_INFO = [
     'excludeList',
     'toolchain',
     'compileConfig',
+    'compileConfigMap',
     'uploader',
     'uploadConfig',
     'uploadConfigMap',
-    'custom_dep',
+    'cppPreprocessAttrs',
 ];
 export interface ProjectTargetInfo {
     excludeList: string[];
     toolchain: ToolchainName;
     compileConfig: any;
+    compileConfigMap: { [toolchain: string]: any };
     uploader: HexUploaderType;
     uploadConfig: any | null;
     uploadConfigMap: { [uploader: string]: any };
-    custom_dep: Dependence;
+    cppPreprocessAttrs: Dependence;
     builderOptions: { [toolchain: string]: BuilderOptions };
 }
 
@@ -150,10 +153,12 @@ const EXCL_KEYS_IN_EIDE_JSON = [
     'excludeList',
     'toolchain',
     'compileConfig',
+    'compileConfigMap',
     'uploader',
     'uploadConfig',
     'uploadConfigMap'
 ];
+
 export interface ProjectConfigData<T extends BuilderConfigData> {
 
     name: string;
@@ -164,6 +169,7 @@ export interface ProjectConfigData<T extends BuilderConfigData> {
     excludeList: string[];
     toolchain: ToolchainName;
     compileConfig: T; //【历史遗留属性】用于储存一些 公共的 编译相关的 属性
+    compileConfigMap: { [toolchain: string]: any };
     uploader: HexUploaderType;
     uploadConfig: any | null;
     uploadConfigMap: { [uploader: string]: any };
@@ -282,7 +288,7 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
         this.FILE_NAME = configFile.name;
         this.watcher = new FileWatcher(configFile, false);
         this.watcher.on('error', (err) => GlobalEvent.log_error(err));
-        this.watcher.OnChanged = () => this.InitConfig(this.watcher.file.Read());
+        this.watcher.OnChanged = () => this.loadConfig(this.watcher.file.Read());
         this.config = this.GetDefault(this.readTypeFromFile(configFile) || type);
     }
 
@@ -296,7 +302,7 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
         }
 
         if (this.cfgFile.IsFile()) {
-            this.InitConfig(this.cfgFile.Read());
+            this.loadConfig(this.cfgFile.Read());
         } else {
             this.Save(true);
         }
@@ -361,9 +367,9 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
         this._eventMergeFlag = false;
     }
 
-    protected InitConfig(json: string | object): void {
+    protected loadConfig(json: string): void {
 
-        const _configFromFile: any = (typeof json === 'string') ? this.Parse(json) : json;
+        const _configFromFile: any = this.parse(json);
 
         // clear invalid property
         if (this.isDelUnknownKeysWhenLoad) {
@@ -378,54 +384,38 @@ export abstract class Configuration<ConfigType = any, EventType = any> {
         this.config = _configFromFile;
 
         //
-        this.afterInitConfigData();
+        this.postLoadConfig();
 
         this._event.emit('dataChanged');
-    }
-
-    private _json_equal(str1: string, str2: string): boolean {
-
-        try {
-            const s1 = jsonc.uglify(str1);
-            const s2 = jsonc.uglify(str2);
-            return s1 == s2;
-        } catch (error) {
-            // nothing todo
-        }
-
-        return str1 == str2;
     }
 
     Save(force?: boolean): void {
 
         let oldContent: string | undefined;
-        let newContent: string = this.ToJson();
+        let newContent: string = this.toString();
 
         try {
-            if (this.cfgFile.IsExist()) oldContent = this.cfgFile.Read();
+            if (this.cfgFile.IsExist())
+                oldContent = this.cfgFile.Read();
         } catch (error) {
             GlobalEvent.log_error(error);
         }
 
-        // ! 注意这里比较两个 json 字符串是否相等，需要去除空白字符，不要直接比较字符串，
-        // ! 不同平台上项目文件中的 \n 可能不同，会导致 git 提示有更改
-        if (oldContent == undefined || !this._json_equal(oldContent, newContent)) {
+        if (oldContent == undefined || !this.compare(oldContent, newContent)) {
             this.lastSaveTime = Date.now();
             this.cfgFile.Write(newContent);
         }
     }
 
-    protected afterInitConfigData() {
+    protected postLoadConfig() {
         // TODO
     }
 
-    protected Parse(jsonStr: string): ConfigType {
-        return <ConfigType>JSON.parse(jsonStr);
-    }
+    protected abstract parse(jsonStr: string): ConfigType;
 
-    protected ToJson(): string {
-        return JSON.stringify(this.config, undefined, 4);
-    }
+    protected abstract toString(): string;
+
+    protected abstract compare(old_str: string, new_str: string): boolean;
 
     protected abstract readTypeFromFile(configFile: File): ProjectType | undefined;
 
@@ -516,6 +506,14 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         this.watcher.OnRename = _cb;
     }
 
+    static parseProjectFile<T>(input: string): ProjectConfigData<T> {
+        return yaml.parse(input);
+    }
+
+    static dumpProjectFile<T>(obj: ProjectConfigData<T>): string {
+        return yaml.stringify(obj, { indent: 2, lineWidth: 1000 });
+    }
+
     private __fileChgEvtEmitDelayTimer: NodeJS.Timeout | undefined;
     private onProjectFileChanged() {
         if (this.__fileChgEvtEmitDelayTimer) {
@@ -592,7 +590,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
     protected readTypeFromFile(configFile: File): ProjectType | undefined {
         if (configFile.IsFile()) {
             try {
-                const prjObj = JSON.parse(configFile.Read());
+                const prjObj = ProjectConfiguration.parseProjectFile(configFile.Read());
                 return <ProjectType>prjObj['type'];
             } catch (error) {
                 GlobalEvent.emit('msg', ExceptionToMessage(error, 'Hidden'));
@@ -604,6 +602,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         switch (type) {
             case 'C51':
                 return {
+                    version: EIDE_CONF_VERSION,
                     name: 'undefined',
                     type: type,
                     mode: 'Debug',
@@ -611,6 +610,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
                     uploader: 'Custom',
                     dependenceList: [],
                     compileConfig: SdccCompileConfigModel.getDefaultConfig(),
+                    compileConfigMap: {},
                     srcDirs: [],
                     virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
                     excludeList: [],
@@ -620,17 +620,18 @@ export class ProjectConfiguration<T extends BuilderConfigData>
                     uploadConfig: null,
                     uploadConfigMap: {},
                     miscInfo: <any>{},
-                    targets: {},
-                    version: EIDE_CONF_VERSION
+                    targets: {}
                 };
             case 'ARM':
                 return {
+                    version: EIDE_CONF_VERSION,
                     name: 'undefined',
                     type: type,
                     mode: 'Debug',
                     toolchain: 'GCC',
                     dependenceList: [],
                     compileConfig: GccCompileConfigModel.getDefaultConfig(),
+                    compileConfigMap: {},
                     uploader: 'JLink',
                     srcDirs: [],
                     virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
@@ -641,17 +642,18 @@ export class ProjectConfiguration<T extends BuilderConfigData>
                     uploadConfig: null,
                     uploadConfigMap: {},
                     miscInfo: <any>{},
-                    targets: {},
-                    version: EIDE_CONF_VERSION
+                    targets: {}
                 };
             case 'RISC-V':
                 return {
+                    version: EIDE_CONF_VERSION,
                     name: 'undefined',
                     type: type,
                     mode: 'Debug',
                     toolchain: 'RISCV_GCC',
                     dependenceList: [],
                     compileConfig: RiscvCompileConfigModel.getDefaultConfig(),
+                    compileConfigMap: {},
                     uploader: 'JLink',
                     srcDirs: [],
                     virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
@@ -662,17 +664,18 @@ export class ProjectConfiguration<T extends BuilderConfigData>
                     uploadConfig: null,
                     uploadConfigMap: {},
                     miscInfo: <any>{},
-                    targets: {},
-                    version: EIDE_CONF_VERSION
+                    targets: {}
                 };
             case 'MIPS':
                 return {
+                    version: EIDE_CONF_VERSION,
                     name: 'undefined',
                     type: type,
                     mode: 'Debug',
                     toolchain: 'MTI_GCC',
                     dependenceList: [],
                     compileConfig: MipsCompileConfigModel.getDefaultConfig(),
+                    compileConfigMap: {},
                     uploader: 'Custom',
                     srcDirs: [],
                     virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
@@ -683,17 +686,18 @@ export class ProjectConfiguration<T extends BuilderConfigData>
                     uploadConfig: null,
                     uploadConfigMap: {},
                     miscInfo: <any>{},
-                    targets: {},
-                    version: EIDE_CONF_VERSION
+                    targets: {}
                 };
             case 'ANY-GCC':
                 return {
+                    version: EIDE_CONF_VERSION,
                     name: 'undefined',
                     type: type,
                     mode: 'Debug',
                     toolchain: 'ANY_GCC',
                     dependenceList: [],
                     compileConfig: AnyGccCompileConfigModel.getDefaultConfig(),
+                    compileConfigMap: {},
                     uploader: 'JLink',
                     srcDirs: [],
                     virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
@@ -704,8 +708,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
                     uploadConfig: null,
                     uploadConfigMap: {},
                     miscInfo: <any>{},
-                    targets: {},
-                    version: EIDE_CONF_VERSION
+                    targets: {}
                 };
             default:
                 throw new Error(`not support this project type: '${type}'`);
@@ -716,10 +719,8 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
         const oldModel = this.uploadConfigModel;
 
-        // save as old config
+        // save and recover config
         this.config.uploadConfigMap[oldModel.uploader] = utility.copyObject(oldModel.data);
-
-        // get old config from map
         const oldCfg = this.config.uploadConfigMap[uploader];
         if (oldCfg && oldCfg.bin == null) {
             oldCfg.bin = ''; // compat old cfg
@@ -728,7 +729,8 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         // update new config
         this.uploadConfigModel = UploadConfigModel.getInstance(uploader, this.project);
         this.config.uploader = uploader;
-        this.uploadConfigModel.data = utility.copyObject(oldCfg) || this.uploadConfigModel.data;
+        if (oldCfg)
+            this.uploadConfigModel.data = utility.copyObject(oldCfg);
         this.config.uploadConfig = this.uploadConfigModel.data; // bind obj
 
         // update listeners
@@ -743,9 +745,15 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         const oldModel = this.compileConfigModel;
         const oldToolchain = this.config.toolchain;
 
+        // save and recover config
+        this.config.compileConfigMap[oldToolchain] = utility.copyObject(oldModel.data);
+        const oldCfg = this.config.compileConfigMap[toolchain];
+
         // bind
         this.config.toolchain = toolchain; // update toolchain name
         this.compileConfigModel = CompileConfigModel.getInstance(this.config);
+        if (oldCfg)
+            this.compileConfigModel.data = utility.copyObject(oldCfg);
         this.config.compileConfig = this.compileConfigModel.data; // bind obj
 
         // update
@@ -1318,10 +1326,11 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             excludeList: Array.from(target.excludeList),
             toolchain: target.toolchain,
             compileConfig: utility.deepCloneObject(target.compileConfig),
+            compileConfigMap: utility.deepCloneObject(target.compileConfigMap),
             uploader: target.uploader,
             uploadConfig: utility.deepCloneObject(target.uploadConfig),
             uploadConfigMap: utility.deepCloneObject(target.uploadConfigMap),
-            custom_dep: custom_dep,
+            cppPreprocessAttrs: custom_dep,
             builderOptions: builderOpts
         };
     }
@@ -1343,22 +1352,23 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         const target = this.config.targets[targetName];
 
         if (!target)
-            throw new Error(`not found target: '${targetName}' in 'eide.json' !`);
+            throw new Error(`not found target: '${targetName}' in 'eide.yml' !`);
 
         this.config.mode = targetName;
         this.config.excludeList = Array.from(target.excludeList);
 
         this.config.toolchain = target.toolchain;
         this.config.compileConfig = utility.deepCloneObject(target.compileConfig);
+        this.config.compileConfigMap = utility.deepCloneObject(target.compileConfigMap);
 
         this.config.uploader = target.uploader;
         this.config.uploadConfig = utility.deepCloneObject(target.uploadConfig);
         this.config.uploadConfigMap = utility.deepCloneObject(target.uploadConfigMap);
 
         const custom_dep = this.CustomDep_getDependence();
-        custom_dep.incList = Array.from(target.custom_dep.incList);
-        custom_dep.libList = Array.from(target.custom_dep.libList);
-        custom_dep.defineList = Array.from(target.custom_dep.defineList);
+        custom_dep.incList = Array.from(target.cppPreprocessAttrs.incList);
+        custom_dep.libList = Array.from(target.cppPreprocessAttrs.libList);
+        custom_dep.defineList = Array.from(target.cppPreprocessAttrs.defineList);
     }
 
     getProjectUsrCtx(): ProjectUserContextData {
@@ -1385,7 +1395,73 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
     //---
 
-    protected afterInitConfigData() {
+    protected parse<T extends BuilderConfigData>(str: string): ProjectConfigData<T> {
+        const cfg: ProjectConfigData<T> = ProjectConfiguration.parseProjectFile(str);
+        for (const key in cfg.targets) {
+            const target = cfg.targets[key];
+            target.builderOptions = {};
+            for (const toolchain in target.compileConfigMap) {
+                target.builderOptions[toolchain] = target.compileConfigMap[toolchain].options;
+                target.compileConfigMap[toolchain].options = '';
+            }
+            target.compileConfig = target.compileConfigMap[target.toolchain];
+            target.uploadConfig = target.uploadConfigMap[target.uploader];
+        }
+        return cfg;
+    }
+
+    protected toString(): string {
+
+        const eidePrjObj = <ProjectConfigData<T>>utility.deepCloneObject(this.config);
+
+        // store target 
+        eidePrjObj.targets[eidePrjObj.mode] = this.cloneCurrentTarget();
+        for (const key in eidePrjObj.targets) {
+            const target = eidePrjObj.targets[key];
+            target.compileConfigMap[target.toolchain] = target.compileConfig;
+            target.compileConfig = undefined;
+            target.uploadConfigMap[target.uploader] = target.uploadConfig;
+            target.uploadConfig = undefined;
+            for (const toolchain in target.builderOptions) {
+                if (target.compileConfigMap[toolchain])
+                    target.compileConfigMap[toolchain].options = target.builderOptions[toolchain];
+            }
+            target.builderOptions = <any>undefined;
+        }
+
+        // convert abspath to relative path before save to file
+        eidePrjObj.srcDirs = eidePrjObj.srcDirs.map((path) => this.toRelativePath(path));
+
+        // ignore some 'dynamic' dependence
+        eidePrjObj.dependenceList = eidePrjObj.dependenceList.filter((g) => {
+            return g.groupName !== ProjectConfiguration.BUILD_IN_GROUP_NAME
+                && g.groupName !== ProjectConfiguration.CUSTOM_GROUP_NAME;
+        });
+
+        for (const depGroup of eidePrjObj.dependenceList) {
+            for (const dep of depGroup.depList) {
+                dep.incList = dep.incList.map((path) => this.toRelativePath(path));
+                dep.libList = dep.libList.map((path) => this.toRelativePath(path));
+            }
+        }
+
+        for (const key in eidePrjObj) {
+            if (EXCL_KEYS_IN_EIDE_JSON.includes(key))
+                (<any>eidePrjObj)[key] = undefined;
+        }
+
+        return ProjectConfiguration.dumpProjectFile(eidePrjObj);
+    }
+
+    // ! 注意这里比较两个 json 字符串是否相等，需要去除空白字符，不要直接比较字符串，
+    // ! 不同平台上项目文件中的 \n 可能不同，会导致 git 提示有更改
+    protected compare(s1: string, s2: string): boolean {
+        const a = yaml.parse(s1);
+        const b = yaml.parse(s2);
+        return JSON.stringify(a) === JSON.stringify(b);
+    }
+
+    protected postLoadConfig() {
 
         //
         // load target
@@ -1441,38 +1517,6 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         }
     }
 
-    protected ToJson(): string {
-
-        const eidePrjObj = <ProjectConfigData<T>>utility.deepCloneObject(this.config);
-
-        //
-        // store target 
-        //
-
-        eidePrjObj.targets[eidePrjObj.mode] = this.cloneCurrentTarget();
-
-        //
-        // convert abspath to relative path before save to file
-        //
-
-        eidePrjObj.srcDirs = eidePrjObj.srcDirs.map((path) => this.toRelativePath(path));
-
-        // ignore some 'dynamic' dependence
-        eidePrjObj.dependenceList = eidePrjObj.dependenceList.filter((g) => {
-            return g.groupName !== ProjectConfiguration.BUILD_IN_GROUP_NAME
-                && g.groupName !== ProjectConfiguration.CUSTOM_GROUP_NAME;
-        });
-
-        for (const depGroup of eidePrjObj.dependenceList) {
-            for (const dep of depGroup.depList) {
-                dep.incList = dep.incList.map((path) => this.toRelativePath(path));
-                dep.libList = dep.libList.map((path) => this.toRelativePath(path));
-            }
-        }
-
-        return utility.ToJsonStringExclude(eidePrjObj, EXCL_KEYS_IN_EIDE_JSON, 2);
-    }
-
     Save(force?: boolean) {
         const usrCtx = this.getProjectUsrCtx();
         usrCtx.target = this.config.mode; // save current target
@@ -1525,7 +1569,7 @@ export class WorkspaceConfiguration extends Configuration<WorkspaceConfig> {
         return undefined;
     }
 
-    protected Parse(jsonStr: string): WorkspaceConfig {
+    protected parse(jsonStr: string): WorkspaceConfig {
         try {
             const obj = <any>jsonc.parse(jsonStr);
             this.isLoadFailed = false;
@@ -1539,8 +1583,12 @@ export class WorkspaceConfiguration extends Configuration<WorkspaceConfig> {
         }
     }
 
-    protected ToJson(): string {
+    protected toString(): string {
         return jsonc.stringify(this.config, undefined, 4);
+    }
+
+    protected compare(s1: string, s2: string): boolean {
+        return s1 === s2;
     }
 
     // workspace only can be force save, because user will modify this file, 

@@ -61,11 +61,6 @@ const extension_deps: string[] = [];
 let projectExplorer: ProjectExplorer;
 let operationExplorer: OperationExplorer;
 
-// set yaml global style
-yaml.scalarOptions.str.fold.lineWidth = 1000;
-yaml.defaultOptions.indent = 4;
-yaml.defaultOptions.indentSeq = true;
-
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export async function activate(context: vscode.ExtensionContext) {

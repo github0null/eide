@@ -1013,7 +1013,7 @@ export abstract class ArmBaseCompileConfigModel
                     }
                 ]
             },
-            options: 'null'
+            options: ''
         };
     }
 
@@ -1133,7 +1133,7 @@ export class GccCompileConfigModel extends ArmBaseCompileConfigModel {
             scatterFilePath: '<YOUR_LINKER_SCRIPT>.lds',
             useCustomScatterFile: true,
             storageLayout: { RAM: [], ROM: [] },
-            options: 'null'
+            options: ''
         };
     }
 
@@ -1193,7 +1193,7 @@ export class LLVMArmCompileConfigModel extends ArmBaseCompileConfigModel {
             scatterFilePath: '<YOUR_LINKER_SCRIPT>.lds',
             useCustomScatterFile: true,
             storageLayout: { RAM: [], ROM: [] },
-            options: 'null'
+            options: ''
         };
     }
 
@@ -1293,7 +1293,7 @@ class IarArmCompileConfigModel extends ArmBaseCompileConfigModel {
             scatterFilePath: '${ToolchainRoot}/config/<YOUR_LINKER_CFG>.icf',
             useCustomScatterFile: true,
             storageLayout: { RAM: [], ROM: [] },
-            options: 'null'
+            options: ''
         };
     }
 
@@ -1397,7 +1397,7 @@ export class RiscvCompileConfigModel extends CompileConfigModel<RiscvCompileData
     static getDefaultConfig(): RiscvCompileData {
         return {
             linkerScriptPath: 'undefined.lds',
-            options: 'null'
+            options: ''
         };
     }
 
@@ -1497,7 +1497,7 @@ export class MipsCompileConfigModel extends CompileConfigModel<MipsCompileData> 
     static getDefaultConfig(): MipsCompileData {
         return {
             linkerScriptPath: '',
-            options: 'null'
+            options: ''
         };
     }
 
@@ -1601,7 +1601,7 @@ export class AnyGccCompileConfigModel extends CompileConfigModel<AnyGccCompileDa
     static getDefaultConfig(): AnyGccCompileData {
         return {
             linkerScriptPath: 'undefined.lds',
-            options: 'null'
+            options: ''
         };
     }
 
@@ -1721,7 +1721,7 @@ abstract class C51BaseCompileConfigModel extends CompileConfigModel<C51BaseCompi
     static getDefaultConfig(): C51BaseCompileData {
         return {
             linkerScript: 'null',
-            options: 'null'
+            options: ''
         };
     }
 
@@ -1734,7 +1734,7 @@ export class SdccCompileConfigModel extends C51BaseCompileConfigModel {
 
     static getDefaultConfig(): C51BaseCompileData {
         return {
-            options: 'null'
+            options: ''
         };
     }
 
@@ -1748,7 +1748,7 @@ class SdccGnuMcs51CompileConfigModel extends C51BaseCompileConfigModel {
     static getDefaultConfig(): C51BaseCompileData {
         return {
             linkerScript: 'null',
-            options: 'null'
+            options: ''
         };
     }
 
@@ -1762,7 +1762,7 @@ class SdccGnuStm8CompileConfigModel extends C51BaseCompileConfigModel {
     static getDefaultConfig(): C51BaseCompileData {
         return {
             linkerScript: 'null',
-            options: 'null'
+            options: ''
         };
     }
 
@@ -1779,7 +1779,7 @@ class Keil51CompileConfigModel extends C51BaseCompileConfigModel {
 
     static getDefaultConfig(): C51BaseCompileData {
         return {
-            options: 'null'
+            options: ''
         };
     }
 
@@ -1792,7 +1792,7 @@ class Iarstm8CompileConfigModel extends C51BaseCompileConfigModel {
 
     static getDefaultConfig(): C51BaseCompileData {
         return {
-            options: 'null'
+            options: ''
         };
     }
 
@@ -1899,7 +1899,7 @@ class CosmicStm8CompileConfigModel extends C51BaseCompileConfigModel {
     static getDefaultConfig(): C51BaseCompileData {
         return {
             linkerScript: 'null',
-            options: 'null'
+            options: ''
         };
     }
 

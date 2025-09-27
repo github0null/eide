@@ -8,6 +8,7 @@ vsc-extension-quickstart.md
 ./lib
 /dist
 /doc
+/note.md
 pack.js
 test.js
 *.js.map
