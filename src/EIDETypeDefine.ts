@@ -477,17 +477,19 @@ export class ProjectConfiguration<T extends BuilderConfigData>
     static readonly BUILD_IN_GROUP_NAME = 'build-in';
     static readonly CUSTOM_GROUP_NAME = 'custom';
     static readonly MERGE_DEP_NAME = 'merge';
-    static readonly USR_CTX_FILE_NAME = '.eide.usr.ctx.json';
 
     compileConfigModel: CompileConfigModel<any> = <any>null;
     uploadConfigModel: UploadConfigModel<any> = <any>null;
 
     protected project: ProjectBaseApi;
     protected rootDir: File;
+    protected workspaceState: vscode.Memento;
 
-    constructor(eideJsonFile: File, type?: ProjectType) {
+    constructor(eideJsonFile: File, workspaceState: vscode.Memento, type?: ProjectType) {
 
         super(eideJsonFile, type);
+
+        this.workspaceState = workspaceState;
 
         this.rootDir = new File(NodePath.dirname(this.cfgFile.dir));
 
@@ -1359,46 +1361,25 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         custom_dep.defineList = Array.from(target.custom_dep.defineList);
     }
 
-    getProjectUsrCtxFile(): File {
-        return File.fromArray([this.getRootDir().path, ProjectConfiguration.USR_CTX_FILE_NAME]);
-    }
-
     getProjectUsrCtx(): ProjectUserContextData {
-
-        const f = this.getProjectUsrCtxFile();
-
-        if (f.IsFile()) {
-            try {
-                return JSON.parse(f.Read());
-            } catch (error) {
-                GlobalEvent.log_error(error);
-                return {}; // empty obj
-            }
+        const key = `eide.user-ctx.${this.config.miscInfo.uid || 'tmp'}`;
+        const val = this.workspaceState.get<string>(key);
+        if (!val)
+            return {};
+        try {
+            return JSON.parse(val);
+        } catch (error) {
+            GlobalEvent.log_error(error);
+            return {}; // empty obj
         }
-
-        return {}; // empty obj
     };
 
     setProjectUsrCtx(data: ProjectUserContextData) {
-
-        const usrCtxFile = this.getProjectUsrCtxFile();
-
-        let oldUsrCtxCont: string | undefined;
-        if (usrCtxFile.IsExist()) {
-            try {
-                oldUsrCtxCont = usrCtxFile.Read();
-            } catch (error) {
-                GlobalEvent.log_error(error);
-            }
-        }
-
-        try {
-            let newUsrCtxCont = JSON.stringify(data, undefined, 4);
-            if (oldUsrCtxCont != newUsrCtxCont) {
-                usrCtxFile.Write(newUsrCtxCont);
-            }
-        } catch (error) {
-            GlobalEvent.log_error(error);
+        const key = `eide.user-ctx.${this.config.miscInfo.uid || 'tmp'}`;
+        const val = this.workspaceState.get<string>(key);
+        const saveVal = JSON.stringify(data);
+        if (val !== saveVal) {
+            this.workspaceState.update(key, saveVal);
         }
     }
 

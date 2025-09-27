@@ -22,6 +22,7 @@
     SOFTWARE.
 */
 
+import * as vscode from 'vscode';
 import * as child_process from 'child_process';
 import * as NodePath from 'path';
 import * as os from 'os';
@@ -48,6 +49,24 @@ const ARCH_ID_MAP: { [id: string]: string[] } = {
     'arm64': ['arm64', 'aarch64'],
 };
 
+// platform info, default value is for 'Windows-x64'
+let runtimeId: string = 'win32';
+let archId: string = 'x86_64';
+
+// platform requirements
+const SUPPORTED_OS_TYPE: NodeJS.Platform[] = ['win32', 'linux', 'darwin'];
+const SUPPORTED_ARCH_TYPE: string[] = ARCH_ID_MAP['x86_64'].concat(ARCH_ID_MAP['arm64']);
+
+let globalState: vscode.Memento & {
+    setKeysForSync(keys: readonly string[]): void;
+};
+
+export function getGlobalState(): vscode.Memento & {
+    setKeysForSync(keys: readonly string[]): void;
+} {
+    return globalState;
+}
+
 function fmtArchId(n: string): string {
     n = n.toLowerCase();
     for (const key in ARCH_ID_MAP) {
@@ -58,15 +77,9 @@ function fmtArchId(n: string): string {
     return n;
 }
 
-// platform info, default value is for 'Windows-x64'
-let runtimeId: string = 'win32';
-let archId: string = 'x86_64';
+export function init(context: vscode.ExtensionContext) {
 
-// platform requirements
-const SUPPORTED_OS_TYPE: NodeJS.Platform[] = ['win32', 'linux', 'darwin'];
-const SUPPORTED_ARCH_TYPE: string[] = ARCH_ID_MAP['x86_64'].concat(ARCH_ID_MAP['arm64']);
-
-export function init() {
+    globalState = context.globalState;
 
     if (!SUPPORTED_OS_TYPE.includes(os.platform())) {
         const msg = `${ERROR} : This plug-in is only for '${SUPPORTED_OS_TYPE.join('/')}' platform, but your OS is '${os.platform()}' !`;

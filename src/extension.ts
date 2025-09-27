@@ -78,7 +78,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // init platform
     try {
-        platform.init();
+        platform.init(context);
     } catch (error) {
         const msg = (<Error>error).message;
         vscode.window.showErrorMessage(msg);
@@ -315,7 +315,7 @@ export async function activate(context: vscode.ExtensionContext) {
     projectExplorer.enableAutoSave(true);
 
     // load project in this workspace
-    projectExplorer.loadWorkspace();
+    projectExplorer.loadWorkspace(context.workspaceState);
 
     // hook
     postLaunchHook(context);
