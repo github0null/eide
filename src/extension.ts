@@ -310,7 +310,7 @@ export async function activate(context: vscode.ExtensionContext) {
     projectExplorer.enableAutoSave(true);
 
     // load project in this workspace
-    projectExplorer.loadWorkspace(context.workspaceState);
+    projectExplorer.loadWorkspace(context.globalState);
 
     // hook
     postLaunchHook(context);
