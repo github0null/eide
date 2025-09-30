@@ -197,7 +197,7 @@ export abstract class KeilParser<T> {
         return result;
     }
 
-    protected JudgeFileType(f: File): number {
+    protected getFileType(f: File): number {
 
         if (AbstractProject.cppfileFilter.test(f.name)) {
             if (f.suffix.toLowerCase() == '.c')
@@ -208,6 +208,10 @@ export abstract class KeilParser<T> {
 
         else if (AbstractProject.asmfileFilter.test(f.name)) {
             return 2;
+        }
+
+        else if (AbstractProject.libFileFilter.test(f.name)) {
+            return 4;
         }
 
         return 5;
@@ -558,7 +562,7 @@ class C51Parser extends KeilParser<KeilC51Option> {
 
                 const fileElement = {
                     FileName: _f.file.name,
-                    FileType: this.JudgeFileType(_f.file).toString(),
+                    FileType: this.getFileType(_f.file).toString(),
                     FilePath: prj.ToRelativePath(_f.file.path) || _f.file.path
                 };
 
@@ -1383,7 +1387,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
 
                 const fileElement = {
                     FileName: _f.file.name,
-                    FileType: this.JudgeFileType(_f.file).toString(),
+                    FileType: this.getFileType(_f.file).toString(),
                     FilePath: prj.ToRelativePath(_f.file.path) || _f.file.path
                 };
 
