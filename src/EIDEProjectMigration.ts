@@ -4,6 +4,8 @@ import * as fs from "fs";
 import { File } from "../lib/node-utility/File";
 import { EIDE_CONF_VERSION, ProjectConfiguration } from "./EIDETypeDefine";
 import { compareVersion } from "./utility";
+import { view_str$prompt$migrationFailed } from "./StringTable";
+import { GlobalEvent } from "./GlobalEvents";
 
 export function detectProject(dir: File): boolean {
     if (File.IsExist(NodePath.join(dir.path, '.eide', 'eide.yml')))
@@ -13,7 +15,7 @@ export function detectProject(dir: File): boolean {
     return false;
 }
 
-export async function doMigration(projectRootDir: File) {
+async function _doMigration(projectRootDir: File) {
 
     // move eide.json to eide.yml
     const eideJsonFile = File.from(projectRootDir.path, '.eide', 'eide.json');
@@ -25,22 +27,30 @@ export async function doMigration(projectRootDir: File) {
 
     const prjCfg = ProjectConfiguration.parseProjectFile(projCfgFile.Read());
 
-    // version < 4.0 ?
     if (compareVersion(prjCfg.version, '4.0') < 0) {
         for (const key in prjCfg.targets) {
             const target = prjCfg.targets[key];
-            // compile config
-            if (target.compileConfigMap == undefined)
-                target.compileConfigMap = {};
-            if (target.compileConfig) {
-                target.compileConfigMap[target.toolchain] = target.compileConfig;
-                target.compileConfig = undefined;
+            // rename compileConfig to toolchainConfig
+            if ((<any>target).compileConfig) {
+                (<any>target).toolchainConfig = (<any>target).compileConfig;
+                (<any>target).compileConfig = undefined;
+            }
+            if ((<any>target).compileConfigMap) {
+                (<any>target).toolchainConfigMap = (<any>target).compileConfigMap;
+                (<any>target).compileConfigMap = undefined;
+            }
+            // toolchain config
+            if (target.toolchainConfigMap == undefined)
+                target.toolchainConfigMap = {};
+            if (target.toolchainConfig) {
+                target.toolchainConfigMap[target.toolchain] = target.toolchainConfig;
+                target.toolchainConfig = undefined;
             }
             if (target.builderOptions) {
                 for (const key in target.builderOptions) {
                     const opts = target.builderOptions[key];
-                    if (target.compileConfigMap[key])
-                        target.compileConfigMap[key].options = opts;
+                    if (target.toolchainConfigMap[key])
+                        target.toolchainConfigMap[key].options = opts;
                 }
                 target.builderOptions = <any>undefined;
             }
@@ -57,11 +67,6 @@ export async function doMigration(projectRootDir: File) {
                 (<any>target)['custom_dep'] = undefined;
             }
         }
-    }
-
-    // save
-    if (compareVersion(prjCfg.version, EIDE_CONF_VERSION) < 0) {
-        prjCfg.version = EIDE_CONF_VERSION;
         projCfgFile.Write(ProjectConfiguration.dumpProjectFile(prjCfg));
     }
 
@@ -69,8 +74,15 @@ export async function doMigration(projectRootDir: File) {
     const p = NodePath.join(projectRootDir.path, '.eide.usr.ctx.json');
     if (File.IsFile(p))
         try { fs.unlinkSync(p); } catch (error) {}
+}
 
-    // rm old eide.json file
-    if (eideJsonFile.IsExist())
-        fs.unlinkSync(eideJsonFile.path);
+export async function doMigration(projectRootDir: File) {
+    try {
+        await _doMigration(projectRootDir);
+    } catch (error) {
+        GlobalEvent.log_error(view_str$prompt$migrationFailed.replace('{}', projectRootDir.path));
+        GlobalEvent.log_error(error);
+        GlobalEvent.log_show();
+        throw error;
+    }
 }

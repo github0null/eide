@@ -71,6 +71,7 @@ import {
     view_str$prompt$userCanceledOperation,
     continue_text,
     cancel_text,
+    view_str$prompt$migrationFailed,
 } from './StringTable';
 import { SettingManager } from './SettingManager';
 import { ExeCmd } from '../lib/node-utility/Executable';
@@ -81,7 +82,6 @@ import { EventData, CurrentDevice, ArmBaseCompileConfigModel, ArmBaseCompileData
 import * as FileLock from '../lib/node-utility/FileLock';
 import { CompilerCommandsDatabaseItem, CodeBuilder } from './CodeBuilder';
 import { xpackRequireDevTools } from './XpackDevTools';
-import { doMigration } from './EIDEProjectMigration';
 
 export class CheckError extends Error {
 }
@@ -1604,16 +1604,16 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
                 continue;
             }
 
-            if (name === 'compileConfig') {
-                const compileConfig = prjConfig.compileConfigModel.data;
+            if (name === 'toolchainConfig') {
+                const toolchainConfig = prjConfig.toolchainConfigModel.data;
                 const oldCompileConfig = oldTarget[name];
                 // delete all properties
-                for (const key in compileConfig) {
-                    delete compileConfig[key];
+                for (const key in toolchainConfig) {
+                    delete toolchainConfig[key];
                 }
                 // update properties
                 for (const key in oldCompileConfig) {
-                    compileConfig[key] = copyObject(oldCompileConfig[key]);
+                    toolchainConfig[key] = copyObject(oldCompileConfig[key]);
                 }
                 continue;
             }
@@ -1639,9 +1639,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         }
 
         // copy source options if not exist
-        const opts = this.getSourceExtraArgsCfg(prevTargetName);
-        if (opts) {
-            this.setSourceExtraArgsCfg(opts, targetName);
+        if (isNewTarget) {
+            const opts = this.getSourceExtraArgsCfg(prevTargetName);
+            if (opts)
+                this.setSourceExtraArgsCfg(opts, targetName);
         }
 
         this.sourceRoots.forceUpdateAllFolders();
@@ -1887,7 +1888,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
                         .filter(f => keywords.some(k => f.name.toLowerCase().includes(k)));
                     // matched dirs, filter files
                     if (subdirs.length > 0) {
-                        const cpuTyp = (<ArmBaseCompileConfigModel>this.GetConfiguration().compileConfigModel).data.cpuType;
+                        const cpuTyp = (<ArmBaseCompileConfigModel>this.GetConfiguration().toolchainConfigModel).data.cpuType;
                         const allfiles = subdirs[0].GetList(undefined, File.EXCLUDE_ALL_FILTER);
                         const unusedFiles = allfiles.filter(f => !matchLibFileAndCpuTyp(f.name, cpuTyp));
                         libPaths.push(subdirs[0].path);
@@ -1918,7 +1919,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         let isUseCustomScatterFile = false;
         if (this.getProjectType() == 'ARM')
             isUseCustomScatterFile = this.GetConfiguration<ArmBaseCompileData>().config
-                .compileConfig.useCustomScatterFile;
+                .toolchainConfig.useCustomScatterFile;
         const toolchainName = this.getToolchain().name;
         return (toolchainName === 'AC5' || toolchainName === 'AC6') && !isUseCustomScatterFile;
     }
@@ -2520,7 +2521,7 @@ $(OUT_DIR):
     }
 
     getBuilderOptions(): BuilderOptions {
-        return this.GetConfiguration().compileConfigModel.getOptions();
+        return this.GetConfiguration().toolchainConfigModel.getOptions();
     }
 
     //---
@@ -2534,10 +2535,10 @@ $(OUT_DIR):
         let toolchainRoot = this.toolchain.getToolchainDir().path;
         this.registerBuiltinVar('ToolchainRoot', () => toolchainRoot);
 
-        const curOptions = prjConfig.compileConfigModel.getOptions();
+        const curOptions = prjConfig.toolchainConfigModel.getOptions();
         const newOptions = toolManager.migrateBuilderOptions(curOptions, this.toolchain);
         if (newOptions) {
-            prjConfig.compileConfigModel.setOptions(newOptions, undefined, this.toolchain.name);
+            prjConfig.toolchainConfigModel.setOptions(newOptions, undefined, this.toolchain.name);
         }
     }
 
@@ -2648,7 +2649,7 @@ $(OUT_DIR):
 
         prjConfig.on('dataChanged', (type) => this.onPrjConfigChanged(type));
 
-        prjConfig.compileConfigModel.on('event', (eDat) => this.onConfigurationEvent(eDat));
+        prjConfig.toolchainConfigModel.on('event', (eDat) => this.onConfigurationEvent(eDat));
 
         prjConfig.uploadConfigModel.on('event', (eDat) => this.onConfigurationEvent(eDat));
 
@@ -2740,24 +2741,29 @@ $(OUT_DIR):
             }
 
             // get all builder options
-            const allOptions: { target_l: string, toolchain: string, options: BuilderOptions }[] = [];
+            const allOptions: {
+                target_l: string,
+                toolchain: string,
+                options: BuilderOptions,
+                file: File,
+                notCleanup?: boolean
+            }[] = [];
             for (const file of eideDir.GetList(undefined, File.EXCLUDE_ALL_FILTER)) {
                 const tidx = toolchainInfos.findIndex(info => file.name.endsWith(info.configFileName));
                 if (tidx != -1) {
                     const toolInfo = toolchainInfos[tidx];
                     // get lower case target name
-                    let targetName_l: string = file.name.replace(toolInfo.configFileName, '');
-                    if (targetName_l == '') targetName_l = 'release';
-                    else targetName_l = targetName_l.substr(0, targetName_l.length - 1);
+                    const t = file.name.replace(toolInfo.configFileName, '');
+                    const targetName_l = t === '' 
+                        ? 'release' : t.substr(0, t.length - 1); // use 't.length - 1' remove tailing '.'
                     // append in list
                     const options = jsonc.parse(file.Read());
                     allOptions.push({
                         target_l: targetName_l,
                         toolchain: toolInfo.name,
                         options: options,
+                        file: file
                     });
-                    // delete old builder options file, we don't need it anymore.
-                    try { fs.unlinkSync(file.path); } catch {};
                 }
             }
 
@@ -2769,9 +2775,21 @@ $(OUT_DIR):
                 if (idx != -1) {
                     const targetName = allTargetNames[idx];
                     const target = conf.targets[targetName];
-                    if (target.builderOptions == undefined) target.builderOptions = {};
-                    target.builderOptions[optionsInfo.toolchain] = optionsInfo.options;
+                    if (target.toolchainConfigMap && 
+                        target.toolchainConfigMap[optionsInfo.toolchain]) {
+                        target.toolchainConfigMap[optionsInfo.toolchain].options = optionsInfo.options;
+                    } else {
+                        optionsInfo.notCleanup = true;
+                        GlobalEvent.log_warn(`No options for toolchain ${optionsInfo.toolchain} in toolchainConfigMap`);
+                        GlobalEvent.log_show();
+                    }
                 }
+            }
+
+            // delete old builder options file, we don't need it anymore.
+            for (const optionsInfo of allOptions) {
+                if (!optionsInfo.notCleanup)
+                    try { fs.unlinkSync(optionsInfo.file.path); } catch {};
             }
         }
 
@@ -2830,7 +2848,11 @@ $(OUT_DIR):
         /* udpate project version to lastest */
         if (this.isOldVersionProject) {
             conf.version = EIDE_CONF_VERSION;
-            eideFile.Write(JSON.stringify(conf, undefined, 2));
+            eideFile.Write(ProjectConfiguration.dumpProjectFile(conf));
+            // rm old eide.json file
+            const eideJsonFile = File.from(wsFile.dir, AbstractProject.EIDE_DIR, 'eide.json');
+            if (eideJsonFile.IsExist())
+                fs.unlinkSync(eideJsonFile.path);
         }
     }
 
@@ -3163,7 +3185,7 @@ class EIDEProject extends AbstractProject {
     protected onDeviceChanged(oldDevice?: CurrentDevice | undefined): void {
 
         const prjConfig = this.GetConfiguration();
-        const cConfig = prjConfig.compileConfigModel;
+        const cConfig = prjConfig.toolchainConfigModel;
 
         // project type is ARM
         if (cConfig instanceof ArmBaseCompileConfigModel) {
@@ -3976,7 +3998,7 @@ class EIDEProject extends AbstractProject {
         // get project includes and defines
         const depMerge = prjConfig.GetAllMergeDep();
         const defMacros: string[] = ['__VSCODE_CPPTOOL']; // it's for internal force include header
-        const intrDefs = this._getCompilerIntrDefsForCpptools(toolchain, <any>prjConfig.config.compileConfig, builderOpts);
+        const intrDefs = this._getCompilerIntrDefsForCpptools(toolchain, <any>prjConfig.config.toolchainConfig, builderOpts);
         const defLi = defMacros.concat(depMerge.defineList, intrDefs);
         depMerge.incList = depMerge.incList.concat(this.getSourceIncludeList()).map(p => this.ToAbsolutePath(p));
 
@@ -3992,11 +4014,11 @@ class EIDEProject extends AbstractProject {
             this.cppToolsConfig.cppCompilerArgs = undefined;
 
             // preset cpu info for arm project
-            if (prjConfig.compileConfigModel instanceof ArmBaseCompileConfigModel) {
+            if (prjConfig.toolchainConfigModel instanceof ArmBaseCompileConfigModel) {
                 builderOpts.global = builderOpts.global || {};
-                const cpuName: string = prjConfig.compileConfigModel.data.cpuType.toLowerCase();
-                const fpuName: string = prjConfig.compileConfigModel.data.floatingPointHardware;
-                const archExt: string = prjConfig.compileConfigModel.data.archExtensions || '';
+                const cpuName: string = prjConfig.toolchainConfigModel.data.cpuType.toLowerCase();
+                const fpuName: string = prjConfig.toolchainConfigModel.data.floatingPointHardware;
+                const archExt: string = prjConfig.toolchainConfigModel.data.archExtensions || '';
                 // 将 cpu 信息作为上下文传递给 updateCppIntellisenceCfg，
                 // 以便 toolchain 能够生成合适的 compiler args 用于执行 Intellisence
                 builderOpts.global['_cpuName'] = cpuName;

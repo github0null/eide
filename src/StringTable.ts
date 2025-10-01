@@ -459,6 +459,11 @@ export const view_str$env_desc$py3_cmd = [
 
 //---------------Other---------------
 
+export const view_str$prompt$migrationFailed = [
+    `迁移旧项目失败！路径：{}`,
+    `Migrate Old Project Failed ! Path: {}`
+][langIndex];
+
 export const view_str$prompt$requireOtherExtension = [
     `请先安装扩展 "{}"`,
     `Please install extension "{}" first.`

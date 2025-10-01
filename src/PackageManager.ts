@@ -145,7 +145,7 @@ export class PackageManager {
                     packManager.LoadPackage(packDir);
                     const devName = prjConfig.deviceName;
                     if (devName) {
-                        packManager.SetDeviceInfo(devName, prjConfig.compileConfig.cpuType);
+                        packManager.SetDeviceInfo(devName, prjConfig.toolchainConfig.cpuType);
                     }
                 } catch (error) {
                     GlobalEvent.emit('msg', newMessage('Error', 'Fail to load chip package for this project !'));

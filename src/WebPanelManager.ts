@@ -165,7 +165,7 @@ export class WebPanelManager {
             this.memoryLayoutViewRef.delete(project.getUid());
         });
 
-        const compileModel = <ArmBaseCompileConfigModel>project.GetConfiguration().compileConfigModel;
+        const compileModel = <ArmBaseCompileConfigModel>project.GetConfiguration().toolchainConfigModel;
         panel.webview.onDidReceiveMessage((_data: any) => {
 
             /* it's a message */
@@ -264,7 +264,7 @@ export class WebPanelManager {
         /* prepare page-init event data */
         const initMsg = <any>{
             model: JSON.parse(File.from(resManager.getAppRootFolder().path, 'lang', toolchain.verifyFileName).Read()),
-            data: projectConfig.compileConfigModel.getOptions(),
+            data: projectConfig.toolchainConfigModel.getOptions(),
             info: {
                 lang: vscode.env.language,
                 envList: envList,
@@ -291,27 +291,6 @@ export class WebPanelManager {
             // it's a event from web view
             if (typeof data === 'string') {
                 switch (data) {
-                    // require open config file
-                    case 'open-config': {
-                        const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(project.getEideProjectFile().path));
-                        // get builder options location in file
-                        let docSelection: vscode.Range | undefined;
-                        const rootNode = jsonc_parser.parseTree(project.getEideProjectFile().Read());
-                        if (rootNode) {
-                            const targetName = project.getCurrentTarget();
-                            const toolchainName = project.getToolchain().name;
-                            const node = jsonc_parser.findNodeAtLocation(rootNode, 
-                                ['targets', targetName, 'builderOptions', toolchainName]);
-                            if (node) {
-                                let s = doc.positionAt(node.offset);
-                                let e = doc.positionAt(node.offset + node.length);
-                                docSelection = new vscode.Range(s, e);
-                            }
-                        }
-                        // open document
-                        vscode.window.showTextDocument(doc, { preview: true, selection: docSelection });
-                        break;
-                    }
                     /* post page-init event */
                     case 'eide.options_view.launched':
                         panel.webview.postMessage(initMsg);
@@ -329,7 +308,7 @@ export class WebPanelManager {
                 };
 
                 try {
-                    projectConfig.compileConfigModel.setOptions(data);
+                    projectConfig.toolchainConfigModel.setOptions(data);
                     status.success = true;
                     status.msg = view_str$operation$done;
                     project.onBuilderConfigChanged();

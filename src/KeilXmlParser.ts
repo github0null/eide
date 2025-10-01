@@ -456,7 +456,7 @@ class C51Parser extends KeilParser<KeilC51Option> {
     private setOption(targetOptionObj: any, prj: AbstractProject) {
 
         const target51 = targetOptionObj.Target51;
-        const options = prj.GetConfiguration().compileConfigModel.getOptions();
+        const options = prj.GetConfiguration().toolchainConfigModel.getOptions();
 
         if (target51.Target51Misc) {
             switch (options.global['ram-mode']) {
@@ -1162,10 +1162,10 @@ class ARMParser extends KeilParser<KeilARMOption> {
 
         const armAdsObj = targetOptionObj.TargetArmAds;
         const prjConfig = <ProjectConfiguration<ArmBaseCompileData>>prj.GetConfiguration();
-        const config = prjConfig.config.compileConfig;
+        const config = prjConfig.config.toolchainConfig;
 
         const eidePath = prj.getEideDir().path;
-        const compileModel = <ArmBaseCompileConfigModel>prjConfig.compileConfigModel;
+        const compileModel = <ArmBaseCompileConfigModel>prjConfig.toolchainConfigModel;
 
         try {
             if (!armAdsObj) {
@@ -1332,7 +1332,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
             }
         } else {
             const buildOpts = prj.GetConfiguration<ArmBaseCompileData>().config;
-            const cpuname = buildOpts.compileConfig.cpuType.toLowerCase();
+            const cpuname = buildOpts.toolchainConfig.cpuType.toLowerCase();
             const valMap = [
                 ['Cortex-M35P.Dsp', 'ARMCM35P_DSP_FP'],
                 ['Cortex-M33.Dsp', 'ARMCM33_DSP_FP'],

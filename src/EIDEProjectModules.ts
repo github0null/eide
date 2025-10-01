@@ -2274,7 +2274,7 @@ class STLinkUploadModel extends UploadConfigModel<STLinkOptions> {
         super(api);
         this.on('NotifyUpdate', (prjConfig) => {
             // update start address
-            const model = <ArmBaseCompileConfigModel>prjConfig.compileConfigModel;
+            const model = <ArmBaseCompileConfigModel>prjConfig.toolchainConfigModel;
             if (prjConfig.config.uploader === 'STLink' && !model.data.useCustomScatterFile) {
                 const mem = model.getIROMx(1);
                 if (mem) { (<STLinkOptions>prjConfig.uploadConfigModel.data).address = mem.startAddr; }

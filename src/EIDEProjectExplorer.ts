@@ -1268,7 +1268,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     break;
                 case TreeItemType.COMPILE_CONFIGURATION:
                     {
-                        const cConfig = project.GetConfiguration().compileConfigModel;
+                        const cConfig = project.GetConfiguration().toolchainConfigModel;
                         const keyMap = <any>cConfig.GetDefault();
                         const excludeKeys = project.getToolchain().excludeViewList || [];
 
@@ -2183,9 +2183,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             return undefined;
         }
 
-        await doMigration(File.from(wsFile.dir));
-
         try {
+            await doMigration(File.from(wsFile.dir));
             const prj = AbstractProject.NewProject(workspaceState);
             await prj.Load(wsFile);
             this.registerProject(prj);
@@ -2397,8 +2396,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 const nEideTarget: ProjectTargetInfo = {
                     excludeList: iarTarget.excludeList,
                     toolchain: eidePrjCfg.toolchain,
-                    compileConfig: copyObject(eidePrjCfg.compileConfig),
-                    compileConfigMap: copyObject(eidePrjCfg.compileConfigMap),
+                    toolchainConfig: copyObject(eidePrjCfg.toolchainConfig),
+                    toolchainConfigMap: copyObject(eidePrjCfg.toolchainConfigMap),
                     uploader: eidePrjCfg.uploader,
                     uploadConfig: copyObject(eidePrjCfg.uploadConfig),
                     uploadConfigMap: copyObject(eidePrjCfg.uploadConfigMap),
@@ -2418,8 +2417,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 //
                 // compiler base config
                 //
-                const compilerMod = <ArmBaseCompileConfigModel>basePrj.prjConfig.compileConfigModel;
-                const compilerOpt = <ArmBaseCompileData>nEideTarget.compileConfig;
+                const compilerMod = <ArmBaseCompileConfigModel>basePrj.prjConfig.toolchainConfigModel;
+                const compilerOpt = <ArmBaseCompileData>nEideTarget.toolchainConfig;
 
                 if (iarTarget.core) {
                     const expname = iarTarget.core;
@@ -2635,8 +2634,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             const nEideTarget: ProjectTargetInfo = {
                 excludeList: eTarget.excList,
                 toolchain: nPrjConfig.toolchain,
-                compileConfig: copyObject(nPrjConfig.compileConfig),
-                compileConfigMap: copyObject(nPrjConfig.compileConfigMap),
+                toolchainConfig: copyObject(nPrjConfig.toolchainConfig),
+                toolchainConfigMap: copyObject(nPrjConfig.toolchainConfigMap),
                 uploader: nPrjConfig.uploader,
                 uploadConfig: copyObject(nPrjConfig.uploadConfig),
                 uploadConfigMap: copyObject(nPrjConfig.uploadConfigMap),
@@ -2676,7 +2675,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     return armCpuTypeMap[archName.toLowerCase()];
                 };
 
-                const compilerOpt = <ArmBaseCompileData>nEideTarget.compileConfig;
+                const compilerOpt = <ArmBaseCompileData>nEideTarget.toolchainConfig;
                 compilerOpt.cpuType = guessArmCpuType(eTarget.archName) || 'Cortex-M3';
                 compilerOpt.floatingPointHardware = ArmCpuUtils.hasFpu(compilerOpt.cpuType) ? 'single' : 'none';
                 compilerOpt.useCustomScatterFile = true;
@@ -2684,12 +2683,12 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             }
             // for riscv gcc toolchain
             else if (nEideTarget.toolchain == 'RISCV_GCC') {
-                const compilerOpt = <RiscvCompileData>nEideTarget.compileConfig;
+                const compilerOpt = <RiscvCompileData>nEideTarget.toolchainConfig;
                 compilerOpt.linkerScriptPath = eTarget.linkerScriptPath || '';
             }
             // for any gcc toolchain
             else if (nEideTarget.toolchain == 'ANY_GCC') {
-                const compilerOpt = <AnyGccCompileData>nEideTarget.compileConfig;
+                const compilerOpt = <AnyGccCompileData>nEideTarget.toolchainConfig;
                 compilerOpt.linkerScriptPath = eTarget.linkerScriptPath || '';
             }
 
@@ -3108,8 +3107,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             const defIncList: string[] = [];
 
             // copy from cur proj info
-            newTarget.compileConfig = copyObject(projectInfo.compileConfig);
-            newTarget.compileConfigMap = copyObject(projectInfo.compileConfigMap);
+            newTarget.toolchainConfig = copyObject(projectInfo.toolchainConfig);
+            newTarget.toolchainConfigMap = copyObject(projectInfo.toolchainConfigMap);
             newTarget.uploader = projectInfo.uploader;
             newTarget.uploadConfig = copyObject(projectInfo.uploadConfig);
             newTarget.uploadConfigMap = copyObject(projectInfo.uploadConfigMap);
@@ -3138,7 +3137,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             // ARM project
             else {
                 const keilCompileConf = <KeilARMOption>keilTarget.compileOption;
-                const prjCompileOption = (<ArmBaseCompileData>newTarget.compileConfig);
+                const prjCompileOption = (<ArmBaseCompileData>newTarget.toolchainConfig);
                 // base config
                 newTarget.toolchain = keilCompileConf.toolchain;
                 prjCompileOption.cpuType = keilCompileConf.cpuType;
@@ -3271,9 +3270,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                     if (!detectProject(targetDir))
                                         throw Error(`No found any project in this workspace.`);
 
-                                    await doMigration(targetDir);
-
                                     try {
+                                        await doMigration(targetDir);
                                         const pfile = File.from(targetDir.path, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName);
                                         const prjConf = ProjectConfiguration.parseProjectFile(pfile.Read());
                                         prjConf.name = option.name; // set project name
@@ -3895,7 +3893,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     const compilerFlags: string[] = cfg['CompileFlags']['Add'] || [];
                     toolchain.getSystemIncludeList(builderOpts)
                         .forEach(p => compilerFlags.push(`-I"${p}"`));
-                    toolchain.getInternalDefines(<any>prjConfig.config.compileConfig, builderOpts)
+                    toolchain.getInternalDefines(<any>prjConfig.config.toolchainConfig, builderOpts)
                         .forEach(d => compilerFlags.push(`-D"${d.name}=${d.value}"`));
                     cfg['CompileFlags']['Add'] = ArrayDelRepetition(compilerFlags);
                     // 禁用所有诊断错误，因为 clangd 不支持这些编译器
@@ -5371,9 +5369,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 }
             }
 
-            const compileConfig = project.GetConfiguration<ArmBaseCompileData>().config.compileConfig;
-            const ramLayout = compileConfig.storageLayout.RAM;
-            const romLayout = compileConfig.storageLayout.ROM;
+            const toolchainConfig = project.GetConfiguration<ArmBaseCompileData>().config.toolchainConfig;
+            const ramLayout = toolchainConfig.storageLayout.RAM;
+            const romLayout = toolchainConfig.storageLayout.ROM;
 
             // Use for config enum. 
             let roList: string[] = ['default'];
@@ -6075,7 +6073,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const toolchain = prj.getToolchain();
         const prjConfig = prj.GetConfiguration();
         const depMerge = prjConfig.GetAllMergeDep();
-        const builderOpts = prjConfig.compileConfigModel.getOptions();
+        const builderOpts = prjConfig.toolchainConfigModel.getOptions();
         const defMacros: string[] = ['__VSCODE_CPPTOOL']; /* it's for internal force include header */
         let defList: string[] = defMacros.concat(depMerge.defineList);
         depMerge.incList = ArrayDelRepetition(depMerge.incList.concat(prj.getSourceIncludeList()));
@@ -6113,7 +6111,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             return;
         }
 
-        toolchain.getInternalDefines(<any>prjConfig.config.compileConfig, builderOpts).forEach(d => {
+        toolchain.getInternalDefines(<any>prjConfig.config.toolchainConfig, builderOpts).forEach(d => {
             if (d.type === 'var')
                 defList.push(`${d.name}=${d.value}`);
         });
@@ -6377,7 +6375,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     ModifyCompileConfig(item: ProjTreeItem) {
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
-        prj.GetConfiguration().compileConfigModel.ShowModifyWindow(<string>item.val.key, prj.GetRootDir());
+        prj.GetConfiguration().toolchainConfigModel.ShowModifyWindow(<string>item.val.key, prj.GetRootDir());
     }
 
     async ModifyCompileConfig_openFile(item: ProjTreeItem) {
@@ -7912,7 +7910,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
                 // try to show it by eide, if failed, show it 
                 // by vscode default api
-                if (this.showBinaryFiles(file, isPreview)) return;
+                if (this.showBinaryFiles(file, isPreview))
+                    return;
 
                 if (item.val.isVirtualFile) {
                     const uri = vscode.Uri.parse(VirtualDocument.instance().getUriByPath(file.path));

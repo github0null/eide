@@ -51,7 +51,7 @@ import { CompileConfigModel, UploadConfigModel, SdccCompileConfigModel, GccCompi
 // ----------------------------------------------------------
 
 // !! eide project config file version !!
-export const EIDE_CONF_VERSION = '4.0';
+export const EIDE_CONF_VERSION = '4.1';
 
 //
 //  'C51': 8BIT MCU Project (like: mcs51, stm8, ...)
@@ -112,8 +112,8 @@ export interface BuilderOptions {
 export const MAPPED_KEYS_IN_TARGET_INFO = [
     'excludeList',
     'toolchain',
-    'compileConfig',
-    'compileConfigMap',
+    'toolchainConfig',
+    'toolchainConfigMap',
     'uploader',
     'uploadConfig',
     'uploadConfigMap',
@@ -122,8 +122,8 @@ export const MAPPED_KEYS_IN_TARGET_INFO = [
 export interface ProjectTargetInfo {
     excludeList: string[];
     toolchain: ToolchainName;
-    compileConfig: any;
-    compileConfigMap: { [toolchain: string]: any };
+    toolchainConfig: any;
+    toolchainConfigMap: { [toolchain: string]: any };
     uploader: HexUploaderType;
     uploadConfig: any | null;
     uploadConfigMap: { [uploader: string]: any };
@@ -152,8 +152,8 @@ const EXCL_KEYS_IN_EIDE_JSON = [
     'mode',
     'excludeList',
     'toolchain',
-    'compileConfig',
-    'compileConfigMap',
+    'toolchainConfig',
+    'toolchainConfigMap',
     'uploader',
     'uploadConfig',
     'uploadConfigMap'
@@ -168,8 +168,8 @@ export interface ProjectConfigData<T extends BuilderConfigData> {
     mode: string; // target name (And for historical reasons, that's what it's called)
     excludeList: string[];
     toolchain: ToolchainName;
-    compileConfig: T; //【历史遗留属性】用于储存一些 公共的 编译相关的 属性
-    compileConfigMap: { [toolchain: string]: any };
+    toolchainConfig: T; //【历史遗留属性】用于储存一些 公共的 编译相关的 属性
+    toolchainConfigMap: { [toolchain: string]: any };
     uploader: HexUploaderType;
     uploadConfig: any | null;
     uploadConfigMap: { [uploader: string]: any };
@@ -468,7 +468,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
     static readonly CUSTOM_GROUP_NAME = 'custom';
     static readonly MERGE_DEP_NAME = 'merge';
 
-    compileConfigModel: CompileConfigModel<any> = <any>null;
+    toolchainConfigModel: CompileConfigModel<any> = <any>null;
     uploadConfigModel: UploadConfigModel<any> = <any>null;
 
     protected project: ProjectBaseApi;
@@ -559,19 +559,19 @@ export class ProjectConfiguration<T extends BuilderConfigData>
 
         super.load();
 
-        this.compileConfigModel = CompileConfigModel.getInstance(this.config);
+        this.toolchainConfigModel = CompileConfigModel.getInstance(this.config);
         this.uploadConfigModel = UploadConfigModel.getInstance(this.config.uploader, this.project);
 
-        this.compileConfigModel.Update(this.config.compileConfig);
-        this.config.compileConfig = this.compileConfigModel.data;
-        this.compileConfigModel.on('dataChanged', () => this.emit('dataChanged', { type: 'compiler' }));
+        this.toolchainConfigModel.Update(this.config.toolchainConfig);
+        this.config.toolchainConfig = this.toolchainConfigModel.data;
+        this.toolchainConfigModel.on('dataChanged', () => this.emit('dataChanged', { type: 'compiler' }));
 
         this.uploadConfigModel.Update(this.config.uploadConfig);
         this.config.uploadConfig = this.uploadConfigModel.data;
         this.uploadConfigModel.on('dataChanged', () => this.emit('dataChanged', { type: 'uploader' }));
 
         // update upload model
-        this.compileConfigModel.on('dataChanged', () => this.uploadConfigModel.emit('NotifyUpdate', this));
+        this.toolchainConfigModel.on('dataChanged', () => this.uploadConfigModel.emit('NotifyUpdate', this));
 
         this.Watch();
 
@@ -638,8 +638,8 @@ export class ProjectConfiguration<T extends BuilderConfigData>
                     toolchain: 'SDCC',
                     uploader: 'Custom',
                     dependenceList: [],
-                    compileConfig: SdccCompileConfigModel.getDefaultConfig(),
-                    compileConfigMap: {},
+                    toolchainConfig: SdccCompileConfigModel.getDefaultConfig(),
+                    toolchainConfigMap: {},
                     srcDirs: [],
                     virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
                     excludeList: [],
@@ -659,8 +659,8 @@ export class ProjectConfiguration<T extends BuilderConfigData>
                     mode: 'Debug',
                     toolchain: 'GCC',
                     dependenceList: [],
-                    compileConfig: GccCompileConfigModel.getDefaultConfig(),
-                    compileConfigMap: {},
+                    toolchainConfig: GccCompileConfigModel.getDefaultConfig(),
+                    toolchainConfigMap: {},
                     uploader: 'JLink',
                     srcDirs: [],
                     virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
@@ -681,8 +681,8 @@ export class ProjectConfiguration<T extends BuilderConfigData>
                     mode: 'Debug',
                     toolchain: 'RISCV_GCC',
                     dependenceList: [],
-                    compileConfig: RiscvCompileConfigModel.getDefaultConfig(),
-                    compileConfigMap: {},
+                    toolchainConfig: RiscvCompileConfigModel.getDefaultConfig(),
+                    toolchainConfigMap: {},
                     uploader: 'JLink',
                     srcDirs: [],
                     virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
@@ -703,8 +703,8 @@ export class ProjectConfiguration<T extends BuilderConfigData>
                     mode: 'Debug',
                     toolchain: 'MTI_GCC',
                     dependenceList: [],
-                    compileConfig: MipsCompileConfigModel.getDefaultConfig(),
-                    compileConfigMap: {},
+                    toolchainConfig: MipsCompileConfigModel.getDefaultConfig(),
+                    toolchainConfigMap: {},
                     uploader: 'Custom',
                     srcDirs: [],
                     virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
@@ -725,8 +725,8 @@ export class ProjectConfiguration<T extends BuilderConfigData>
                     mode: 'Debug',
                     toolchain: 'ANY_GCC',
                     dependenceList: [],
-                    compileConfig: AnyGccCompileConfigModel.getDefaultConfig(),
-                    compileConfigMap: {},
+                    toolchainConfig: AnyGccCompileConfigModel.getDefaultConfig(),
+                    toolchainConfigMap: {},
                     uploader: 'JLink',
                     srcDirs: [],
                     virtualFolder: { name: VirtualSource.rootName, files: [], folders: [] },
@@ -765,30 +765,30 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         // update listeners
         this.uploadConfigModel.copyListenerFrom(oldModel);
 
-        // update compileConfigModel listener
-        this.compileConfigModel.on('dataChanged', () => this.uploadConfigModel.emit('NotifyUpdate', this));
+        // update toolchainConfigModel listener
+        this.toolchainConfigModel.on('dataChanged', () => this.uploadConfigModel.emit('NotifyUpdate', this));
     }
 
     setToolchain(toolchain: ToolchainName) {
 
-        const oldModel = this.compileConfigModel;
+        const oldModel = this.toolchainConfigModel;
         const oldToolchain = this.config.toolchain;
 
         // save and recover config
-        this.config.compileConfigMap[oldToolchain] = utility.copyObject(oldModel.data);
-        const oldCfg = this.config.compileConfigMap[toolchain];
+        this.config.toolchainConfigMap[oldToolchain] = utility.copyObject(oldModel.data);
+        const oldCfg = this.config.toolchainConfigMap[toolchain];
 
         // bind
         this.config.toolchain = toolchain; // update toolchain name
-        this.compileConfigModel = CompileConfigModel.getInstance(this.config);
+        this.toolchainConfigModel = CompileConfigModel.getInstance(this.config);
         if (oldCfg)
-            this.compileConfigModel.data = utility.copyObject(oldCfg);
-        this.config.compileConfig = this.compileConfigModel.data; // bind obj
+            this.toolchainConfigModel.data = utility.copyObject(oldCfg);
+        this.config.toolchainConfig = this.toolchainConfigModel.data; // bind obj
 
         // update
         if (!oldCfg)
-            this.compileConfigModel.copyCommonCompileConfigFrom(oldToolchain, oldModel);
-        this.compileConfigModel.copyListenerFrom(oldModel);
+            this.toolchainConfigModel.copyCommonCompileConfigFrom(oldToolchain, oldModel);
+        this.toolchainConfigModel.copyListenerFrom(oldModel);
     }
 
     //---
@@ -1355,8 +1355,8 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         return {
             excludeList: Array.from(target.excludeList),
             toolchain: target.toolchain,
-            compileConfig: utility.deepCloneObject(target.compileConfig),
-            compileConfigMap: utility.deepCloneObject(target.compileConfigMap),
+            toolchainConfig: utility.deepCloneObject(target.toolchainConfig),
+            toolchainConfigMap: utility.deepCloneObject(target.toolchainConfigMap),
             uploader: target.uploader,
             uploadConfig: utility.deepCloneObject(target.uploadConfig),
             uploadConfigMap: utility.deepCloneObject(target.uploadConfigMap),
@@ -1388,8 +1388,8 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         this.config.excludeList = Array.from(target.excludeList);
 
         this.config.toolchain = target.toolchain;
-        this.config.compileConfig = utility.deepCloneObject(target.compileConfig);
-        this.config.compileConfigMap = utility.deepCloneObject(target.compileConfigMap);
+        this.config.toolchainConfig = utility.deepCloneObject(target.toolchainConfig);
+        this.config.toolchainConfigMap = utility.deepCloneObject(target.toolchainConfigMap);
 
         this.config.uploader = target.uploader;
         this.config.uploadConfig = utility.deepCloneObject(target.uploadConfig);
@@ -1430,11 +1430,11 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         for (const key in cfg.targets) {
             const target = cfg.targets[key];
             target.builderOptions = {};
-            for (const toolchain in target.compileConfigMap) {
-                target.builderOptions[toolchain] = target.compileConfigMap[toolchain].options;
-                target.compileConfigMap[toolchain].options = '';
+            for (const toolchain in target.toolchainConfigMap) {
+                target.builderOptions[toolchain] = target.toolchainConfigMap[toolchain].options;
+                target.toolchainConfigMap[toolchain].options = '';
             }
-            target.compileConfig = target.compileConfigMap[target.toolchain];
+            target.toolchainConfig = target.toolchainConfigMap[target.toolchain];
             target.uploadConfig = target.uploadConfigMap[target.uploader];
             target.cppPreprocessAttrs.name = 'default';
         }
@@ -1449,13 +1449,13 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         eidePrjObj.targets[eidePrjObj.mode] = this.cloneCurrentTarget();
         for (const key in eidePrjObj.targets) {
             const target = eidePrjObj.targets[key];
-            target.compileConfigMap[target.toolchain] = target.compileConfig;
-            target.compileConfig = undefined;
+            target.toolchainConfigMap[target.toolchain] = target.toolchainConfig;
+            target.toolchainConfig = undefined;
             target.uploadConfigMap[target.uploader] = target.uploadConfig;
             target.uploadConfig = undefined;
             for (const toolchain in target.builderOptions) {
-                if (target.compileConfigMap[toolchain])
-                    target.compileConfigMap[toolchain].options = target.builderOptions[toolchain];
+                if (target.toolchainConfigMap[toolchain])
+                    target.toolchainConfigMap[toolchain].options = target.builderOptions[toolchain];
             }
             target.builderOptions = <any>undefined;
             target.cppPreprocessAttrs.name = <any>undefined;

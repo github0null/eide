@@ -370,7 +370,7 @@ export abstract class CodeBuilder {
         const toolchain = this.project.getToolchain();
 
         const outDir = File.ToUnixPath(this.project.getOutputDir());
-        const compileOptions: BuilderOptions = this.project.GetConfiguration().compileConfigModel.getOptions();
+        const compileOptions: BuilderOptions = this.project.GetConfiguration().toolchainConfigModel.getOptions();
         const memMaxSize = this.getMcuMemorySize();
         const sourceInfo = this.genSourceInfo();
         const builderModeList: string[] = []; // build mode
@@ -882,7 +882,7 @@ export class ARMCodeBuilder extends CodeBuilder {
             + File.sep + config.name + '.sct'));
 
         let data = '';
-        const memTxt = this.GenMemTxtBySct(this.GetMemoryScatter(config.compileConfig.storageLayout));
+        const memTxt = this.GenMemTxtBySct(this.GetMemoryScatter(config.toolchainConfig.storageLayout));
 
         memTxt.forEach(tItem => {
             let str = tItem.name + tItem.addr + '{\r\n';
@@ -946,9 +946,9 @@ export class ARMCodeBuilder extends CodeBuilder {
 
         const prjConfig = this.project.GetConfiguration<ArmBaseCompileData>();
 
-        if (!prjConfig.config.compileConfig.useCustomScatterFile) {
+        if (!prjConfig.config.toolchainConfig.useCustomScatterFile) {
 
-            const memLayout: ARMStorageLayout = JSON.parse(JSON.stringify(prjConfig.config.compileConfig.storageLayout));
+            const memLayout: ARMStorageLayout = JSON.parse(JSON.stringify(prjConfig.config.toolchainConfig.storageLayout));
             const res: MemorySize = {};
 
             try {
@@ -1001,9 +1001,9 @@ export class ARMCodeBuilder extends CodeBuilder {
          * 
          * unify_builder 会根据这些条目来匹配 options.global['microcontroller-cpu'] 传入的 cpu_id, 然后生成对应的编译参数
          */
-        const cpu_id = config.compileConfig.cpuType.toLowerCase();
-        let fpu_suffix = ARMCodeBuilder.getFpuSuffix(config.compileConfig.cpuType, 
-            config.compileConfig.floatingPointHardware);
+        const cpu_id = config.toolchainConfig.cpuType.toLowerCase();
+        let fpu_suffix = ARMCodeBuilder.getFpuSuffix(config.toolchainConfig.cpuType, 
+            config.toolchainConfig.floatingPointHardware);
 
         /**
          * 某些情况下，fpu是通过添加 +<扩展名> 来开启，因此无需 fpu_suffix 标记
@@ -1029,7 +1029,7 @@ export class ARMCodeBuilder extends CodeBuilder {
         options.global['$clang-arch-extensions'] = '';
         options.global['$armlink-arch-extensions'] = '';
         if (ArmCpuUtils.getArchExtensions(cpu_id, toolchain.name).length > 0) {
-            const opts = (config.compileConfig.archExtensions || '').split(',');
+            const opts = (config.toolchainConfig.archExtensions || '').split(',');
             // for gcc
             if (isGccFamilyToolchain(toolchain.name)) {
                 options.global['$arch-extensions'] = opts.join('');
@@ -1051,7 +1051,7 @@ export class ARMCodeBuilder extends CodeBuilder {
 
         const ldFileList: string[] = [];
 
-        let scatterFilePath: string = config.compileConfig.scatterFilePath;
+        let scatterFilePath: string = config.toolchainConfig.scatterFilePath;
 
         switch (toolchain.name) {
 
@@ -1059,7 +1059,7 @@ export class ARMCodeBuilder extends CodeBuilder {
             case 'AC5':
             case 'AC6':
                 {
-                    if (config.compileConfig.useCustomScatterFile) { // use custom linker script files
+                    if (config.toolchainConfig.useCustomScatterFile) { // use custom linker script files
                         scatterFilePath.split(',')
                             .filter(s => s.trim() != '')
                             .forEach((sctPath) => {
@@ -1154,7 +1154,7 @@ class RiscvCodeBuilder extends CodeBuilder {
         const config = this.project.GetConfiguration<RiscvCompileData>().config;
 
         const ldFileList: string[] = [];
-        config.compileConfig.linkerScriptPath.split(',')
+        config.toolchainConfig.linkerScriptPath.split(',')
             .filter(s => s.trim() != '')
             .forEach((sctPath) => {
                 ldFileList.push(this.convLinkerScriptPathForCompiler(sctPath));
@@ -1180,7 +1180,7 @@ class MipsCodeBuilder extends CodeBuilder {
         const config = this.project.GetConfiguration<MipsCompileData>().config;
 
         const ldFileList: string[] = [];
-        config.compileConfig.linkerScriptPath.split(',')
+        config.toolchainConfig.linkerScriptPath.split(',')
             .filter(s => s.trim() != '')
             .forEach((sctPath) => {
                 ldFileList.push(this.convLinkerScriptPathForCompiler(sctPath));
@@ -1210,7 +1210,7 @@ class AnyGccCodeBuilder extends CodeBuilder {
         }
 
         // set linker script
-        options.linker['linker-script'] = config.compileConfig.linkerScriptPath.split(',')
+        options.linker['linker-script'] = config.toolchainConfig.linkerScriptPath.split(',')
             .filter(s => s.trim() != '')
             .map((sctPath) => {
                 return this.convLinkerScriptPathForCompiler(sctPath);
@@ -1262,7 +1262,7 @@ class C51CodeBuilder extends CodeBuilder {
 
         const results = super.getLibDirs();
         const toolchain = this.project.getToolchain();
-        const options: BuilderOptions = this.project.GetConfiguration().compileConfigModel.getOptions();
+        const options: BuilderOptions = this.project.GetConfiguration().toolchainConfigModel.getOptions();
 
         /* for sdcc + binutils toolchain, we need provide -L for ld */
         if (toolchain.name == 'GNU_SDCC_MCS51') {
@@ -1284,11 +1284,11 @@ class C51CodeBuilder extends CodeBuilder {
         const toolchain = this.project.getToolchain();
 
         /* set linker script if it's existed */
-        if (config.compileConfig.linkerScript) {
+        if (config.toolchainConfig.linkerScript) {
 
             const ldFileList: string[] = [];
 
-            config.compileConfig.linkerScript.split(',')
+            config.toolchainConfig.linkerScript.split(',')
                 .filter(s => s.trim() != '')
                 .forEach((sctPath) => {
                     ldFileList.push(this.convLinkerScriptPathForCompiler(sctPath, true));

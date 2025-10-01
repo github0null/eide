@@ -550,7 +550,7 @@ export class DependenceManager implements ManagerInterface {
 
         const toolchain = this.project.getToolchain();
         const prjConfig = this.project.GetConfiguration();
-        const builderOpts = prjConfig.compileConfigModel.getOptions();
+        const builderOpts = prjConfig.toolchainConfigModel.getOptions();
 
         const incList = ArrayDelRepetition(toolchain.getSystemIncludeList(builderOpts)
             .concat(toolchain.getDefaultIncludeList()));
