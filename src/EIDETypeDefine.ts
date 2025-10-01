@@ -511,7 +511,36 @@ export class ProjectConfiguration<T extends BuilderConfigData>
     }
 
     static dumpProjectFile<T>(obj: ProjectConfigData<T>): string {
-        return yaml.stringify(obj, { indent: 2, lineWidth: 1000 });
+        const keyOrder = [
+            'version',
+            'name',
+            'type',
+            'deviceName',
+            'packDir',
+            'srcDirs',
+            'virtualFolder',
+            'dependenceList',
+            'outDir',
+            'miscInfo',
+            'targets'
+        ];
+        return yaml.stringify(obj, {
+            indent: 2,
+            lineWidth: 1000,
+            sortMapEntries: (a: any, b: any) => {
+                const i_a = keyOrder.findIndex(e => e == a.key);
+                const i_b = keyOrder.findIndex(e => e == b.key);
+                if (i_a == -1 && i_b == -1) {
+                    return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
+                } else if (i_a == -1) {
+                    return 1;
+                } else if (i_b == -1) {
+                    return -1;
+                } else {
+                    return i_a - i_b;
+                }
+            } 
+        });
     }
 
     private __fileChgEvtEmitDelayTimer: NodeJS.Timeout | undefined;
@@ -757,7 +786,8 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         this.config.compileConfig = this.compileConfigModel.data; // bind obj
 
         // update
-        this.compileConfigModel.copyCommonCompileConfigFrom(oldToolchain, oldModel);
+        if (!oldCfg)
+            this.compileConfigModel.copyCommonCompileConfigFrom(oldToolchain, oldModel);
         this.compileConfigModel.copyListenerFrom(oldModel);
     }
 
@@ -1372,7 +1402,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
     }
 
     getProjectUsrCtx(): ProjectUserContextData {
-        const key = `eide.user-ctx.${this.config.miscInfo.uid || 'tmp'}`;
+        const key = `project.${this.config.miscInfo.uid || 'unknown'}`;
         const val = this.workspaceState.get<string>(key);
         if (!val)
             return {};
@@ -1385,7 +1415,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
     };
 
     setProjectUsrCtx(data: ProjectUserContextData) {
-        const key = `eide.user-ctx.${this.config.miscInfo.uid || 'tmp'}`;
+        const key = `project.${this.config.miscInfo.uid || 'unknown'}`;
         const val = this.workspaceState.get<string>(key);
         const saveVal = JSON.stringify(data);
         if (val !== saveVal) {

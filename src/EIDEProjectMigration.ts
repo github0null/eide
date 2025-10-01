@@ -24,6 +24,8 @@ export async function doMigration(projectRootDir: File) {
     }
 
     const prjCfg = ProjectConfiguration.parseProjectFile(projCfgFile.Read());
+
+    // version < 4.0 ?
     if (compareVersion(prjCfg.version, '4.0') < 0) {
         for (const key in prjCfg.targets) {
             const target = prjCfg.targets[key];
@@ -55,6 +57,10 @@ export async function doMigration(projectRootDir: File) {
                 (<any>target)['custom_dep'] = undefined;
             }
         }
+    }
+
+    // save
+    if (compareVersion(prjCfg.version, EIDE_CONF_VERSION) < 0) {
         prjCfg.version = EIDE_CONF_VERSION;
         projCfgFile.Write(ProjectConfiguration.dumpProjectFile(prjCfg));
     }
