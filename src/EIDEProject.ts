@@ -2780,7 +2780,7 @@ $(OUT_DIR):
                         target.toolchainConfigMap[optionsInfo.toolchain].options = optionsInfo.options;
                     } else {
                         optionsInfo.notCleanup = true;
-                        GlobalEvent.log_warn(`No options for toolchain ${optionsInfo.toolchain} in toolchainConfigMap`);
+                        GlobalEvent.log_warn(`No config for toolchain "${optionsInfo.toolchain}" for target "${targetName}"`);
                         GlobalEvent.log_show();
                     }
                 }
