@@ -14,6 +14,9 @@ All notable version changes will be recorded in this file.
 **Fix**:
   - `Target Switch`: Fix file's options was overrided when switch to other target.
 
+**Improve**:
+  - `Project Templates`: Add local cache for fetching remote templates repository.
+
 **Notice:** This version contains important changes. After the automatic migration is completed, you will no longer be able to open your project using the old version of the plugin.
 
 ***
