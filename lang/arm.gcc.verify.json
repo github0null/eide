@@ -122,6 +122,27 @@
             "description.zh-cn": "全局选项",
             "type": "object",
             "properties": {
+                "arm-thumb-mode": {
+                    "readable_name": "ARM/Thumb Mode",
+                    "readable_name.zh-cn": "ARM/Thumb Mode",
+                    "markdownDescription": "Select between generating code that executes in ARM and Thumb states.",
+                    "type": "string",
+                    "default": "thumb",
+                    "enum": [
+                        "arm",
+                        "thumb"
+                    ],
+                    "enumDescriptions": [
+                        "ARM Mode",
+                        "Thumb Mode"
+                    ]
+                },
+                "arm-thumb-interwork": {
+                    "readable_name": "Thumb Interwork",
+                    "readable_name.zh-cn": "Thumb Interwork",
+                    "markdownDescription": "Generate code that supports calling between the ARM and Thumb instruction sets.",
+                    "type": "boolean"
+                },
                 "$float-abi-type": {
                     "markdownDescription": "Hardware floating-point ABI",
                     "description.zh-cn": "硬件浮点 ABI",

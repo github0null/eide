@@ -180,8 +180,8 @@ export class ToolchainManager {
 
     private readonly toolchainNames: ToolchainEnums = {
         'C51': ['GNU_SDCC_MCS51', 'Keil_C51', 'SDCC', 'IAR_STM8', 'COSMIC_STM8'],
-        'ARM': ['AC5', 'AC6', 'GCC', 'LLVM_ARM', 'IAR_ARM'],
-        'RISC-V': ['RISCV_GCC'],
+        'ARM': ['AC5', 'AC6', 'GCC', 'LLVM_ARM', 'IAR_ARM', 'ANY_GCC'],
+        'RISC-V': ['RISCV_GCC', 'ANY_GCC'],
         'MIPS': ['MTI_GCC'],
         'ANY-GCC': ['ANY_GCC']
     };
@@ -2286,15 +2286,26 @@ class GCC implements IToolchian {
         return result;
     }
 
+    private getThumbOptionStr(builderOpts: BuilderOptions): string {
+        if (builderOpts.global && builderOpts.global['arm-thumb-mode'] === 'arm')
+            return '-marm';
+        else
+            return '-mthumb';
+    }
+
     updateCppIntellisenceCfg(builderOpts: BuilderOptions, cppToolsConfig: CppConfigItem): void {
 
         cppToolsConfig.cStandard = 'c11';
         cppToolsConfig.cppStandard = 'c++11';
 
-        cppToolsConfig.compilerArgs = ['-std=${c_cppStandard}', '-mthumb'];
+        cppToolsConfig.compilerArgs = [
+            '-std=${c_cppStandard}', this.getThumbOptionStr(builderOpts)];
 
         // pass global args for cpptools
         if (builderOpts.global) {
+
+            if (builderOpts.global['arm-thumb-interwork'])
+                cppToolsConfig.compilerArgs.push('-mthumb-interwork');
 
             const cpuName = builderOpts.global['_cpuName'] || 'cortex-m3';
             const fpuType = builderOpts.global['_fpuType'] || '';
@@ -2350,6 +2361,10 @@ class GCC implements IToolchian {
         // should be specified at compile time and during the final link.
         options['global']['optimization-lto'] = options['c/cpp-compiler']['optimization-lto'];
         options['c/cpp-compiler']['optimization-lto'] = undefined;
+
+        // 默认状态下是 thumb 模式，以兼容旧的项目
+        if (!options.global['arm-thumb-mode'])
+            options.global['arm-thumb-mode'] = 'thumb';
     }
 
     getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): utility.CppMacroDefine[] {
@@ -2361,7 +2376,7 @@ class GCC implements IToolchian {
         const compilerArgs = this.getCompilerTargetArgs(cpuName, fpuType, archExt, builderOpts);
 
         if (compilerArgs.length > 0) {
-            compilerArgs.push('-mthumb');
+            compilerArgs.push(this.getThumbOptionStr(builderOpts));
             const gccpath = <string>this.getGccFamilyCompilerPathForCpptools('c');
             const defines = utility.getGccInternalDefines(gccpath, compilerArgs);
             if (defines) {
@@ -2482,7 +2497,7 @@ class IARARM implements IToolchian {
     preHandleOptions(prjInfo: IProjectInfo, options: BuilderOptions): void {
 
         // init null options
-        for (const key of ['linker', 'c/cpp-compiler']) {
+        for (const key of ['global', 'linker', 'c/cpp-compiler']) {
             if ((<any>options)[key] === undefined) {
                 (<any>options)[key] = Object.create(null);
             }
@@ -2492,6 +2507,10 @@ class IARARM implements IToolchian {
         if (options['linker']['output-format'] === 'lib') {
             options['linker']['$use'] = 'linker-lib';
         }
+
+        // 默认状态下是 thumb 模式，以兼容旧的项目
+        if (!options.global['arm-thumb-mode'])
+            options.global['arm-thumb-mode'] = 'thumb';
     }
 
     getToolchainDir(): File {

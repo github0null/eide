@@ -197,7 +197,7 @@ export abstract class KeilParser<T> {
         return result;
     }
 
-    protected JudgeFileType(f: File): number {
+    protected getFileType(f: File): number {
 
         if (AbstractProject.cppfileFilter.test(f.name)) {
             if (f.suffix.toLowerCase() == '.c')
@@ -208,6 +208,10 @@ export abstract class KeilParser<T> {
 
         else if (AbstractProject.asmfileFilter.test(f.name)) {
             return 2;
+        }
+
+        else if (AbstractProject.libFileFilter.test(f.name)) {
+            return 4;
         }
 
         return 5;
@@ -452,7 +456,7 @@ class C51Parser extends KeilParser<KeilC51Option> {
     private setOption(targetOptionObj: any, prj: AbstractProject) {
 
         const target51 = targetOptionObj.Target51;
-        const options = prj.GetConfiguration().compileConfigModel.getOptions();
+        const options = prj.GetConfiguration().toolchainConfigModel.getOptions();
 
         if (target51.Target51Misc) {
             switch (options.global['ram-mode']) {
@@ -558,7 +562,7 @@ class C51Parser extends KeilParser<KeilC51Option> {
 
                 const fileElement = {
                     FileName: _f.file.name,
-                    FileType: this.JudgeFileType(_f.file).toString(),
+                    FileType: this.getFileType(_f.file).toString(),
                     FilePath: prj.ToRelativePath(_f.file.path) || _f.file.path
                 };
 
@@ -1158,10 +1162,10 @@ class ARMParser extends KeilParser<KeilARMOption> {
 
         const armAdsObj = targetOptionObj.TargetArmAds;
         const prjConfig = <ProjectConfiguration<ArmBaseCompileData>>prj.GetConfiguration();
-        const config = prjConfig.config.compileConfig;
+        const config = prjConfig.config.toolchainConfig;
 
         const eidePath = prj.getEideDir().path;
-        const compileModel = <ArmBaseCompileConfigModel>prjConfig.compileConfigModel;
+        const compileModel = <ArmBaseCompileConfigModel>prjConfig.toolchainConfigModel;
 
         try {
             if (!armAdsObj) {
@@ -1328,7 +1332,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
             }
         } else {
             const buildOpts = prj.GetConfiguration<ArmBaseCompileData>().config;
-            const cpuname = buildOpts.compileConfig.cpuType.toLowerCase();
+            const cpuname = buildOpts.toolchainConfig.cpuType.toLowerCase();
             const valMap = [
                 ['Cortex-M35P.Dsp', 'ARMCM35P_DSP_FP'],
                 ['Cortex-M33.Dsp', 'ARMCM33_DSP_FP'],
@@ -1383,7 +1387,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
 
                 const fileElement = {
                     FileName: _f.file.name,
-                    FileType: this.JudgeFileType(_f.file).toString(),
+                    FileType: this.getFileType(_f.file).toString(),
                     FilePath: prj.ToRelativePath(_f.file.path) || _f.file.path
                 };
 

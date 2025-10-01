@@ -6,6 +6,28 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.26.0] update
+
+**Change**:
+  - `Project File`: Use yaml instead of json and update project data schema. Rename `eide.json` to `eide.yml`.
+
+**Fix**:
+  - `Target Switch`: Fix file's options was overrided when switch to other target.
+
+**Improve**:
+  - `Project Templates`: Add local cache for fetching remote templates repository.
+
+**Notice:** This version contains important changes. After the automatic migration is completed, you will no longer be able to open your project using the old version of the plugin.
+
+***
+
+### [v3.25.7] revision
+
+**Improve**:
+  - `Builder Options`: Support ARM/Thumb Mode select options. Fix [issues 475](https://github.com/github0null/eide/issues/475)
+
+***
+
 ### [v3.25.6] revision
 
 **Fix**:

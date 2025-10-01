@@ -36,7 +36,7 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/MIPS/RISC-V",
-    "version": "3.25.6",
+    "version": "3.26.0",
     "preview": false,
     "engines": {
         "vscode": "^1.67.0"
@@ -54,9 +54,6 @@
     },
     "qna": "https://discuss.em-ide.com/t/FAQ",
     "activationEvents": [
-        "workspaceContains:.eide/eide.json",
-        "workspaceContains:.eide/EIDE.json",
-        "workspaceContains:.EIDE/EIDE.json",
         "onStartupFinished"
     ],
     "icon": "res/icon/icon.png",
@@ -111,7 +108,7 @@
         "x2js": "^3.4.1",
         "xml-formatter": "^2.6.1",
         "xml2js": "^0.6.2",
-        "yaml": "^1.10.2"
+        "yaml": "2.8.1"
     },
     "contributes": {
         "terminal": {

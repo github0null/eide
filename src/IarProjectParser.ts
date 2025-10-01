@@ -225,11 +225,11 @@ function parseTarget(proj: IarProjectInfo, configNodes: any) {
             if (settingName == 'BUILDACTION') {
                 if (isArray(dataNode.prebuild)) {
                     nTarget.builderActions.prebuild =
-                        formatEnvNameAndPathSep(dataNode.prebuild[0]);
+                        formatEnvNameAndPathSep(dataNode.prebuild[0], true);
                 }
                 if (isArray(dataNode.postbuild)) {
                     nTarget.builderActions.postbuild =
-                        formatEnvNameAndPathSep(dataNode.postbuild[0]);
+                        formatEnvNameAndPathSep(dataNode.postbuild[0], true);
                 }
             }
         }
@@ -300,9 +300,10 @@ function tryGetIarChipInfo(iarToolRoot: File, rawChipNameStr: string): { [key: s
     }
 }
 
-export function formatEnvNameAndPathSep(str: string): string {
-    return str.replace(/\\/g, '/')
-        .replace(/\/$/, '')
+export function formatEnvNameAndPathSep(str: string, notFormatPathSep?: boolean): string {
+    if (!notFormatPathSep)
+        str = str.replace(/\\/g, '/');
+    return str.replace(/(\/|\\)$/, '')
         .replace(/\$TOOLKIT_DIR\$/g, () => '${ToolchainRoot}')
         .replace(/\$(\w+)\$/g, '$${$1}');
 }

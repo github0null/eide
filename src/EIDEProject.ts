@@ -71,6 +71,7 @@ import {
     view_str$prompt$userCanceledOperation,
     continue_text,
     cancel_text,
+    view_str$prompt$migrationFailed,
 } from './StringTable';
 import { SettingManager } from './SettingManager';
 import { ExeCmd } from '../lib/node-utility/Executable';
@@ -807,7 +808,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     static readonly EIDE_DIR = '.eide';
 
     static readonly cppConfigName = 'c_cpp_properties.json';
-    static readonly prjConfigName = 'eide.json';
+    static readonly prjConfigName = 'eide.yml';
 
     static readonly importerWarningBaseName = 'importer.warning.txt';
 
@@ -837,6 +838,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     protected toolchain: IToolchian | undefined;
     protected prevToolchain: IToolchian | undefined;
     protected eideDirWatcher: FileWatcher | undefined;
+    protected workspaceState: vscode.Memento;
 
     // sources
     protected sourceRoots: SourceRootList;
@@ -846,7 +848,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     private lock_handle: number | undefined;
 
-    ////////////////////////////////// cpptools provider interface ///////////////////////////////////
+    //-----------------------------------------------------------
+    //- cpptools provider interface
+    //-----------------------------------------------------------
 
     name: string = 'eide';
     extensionId: string = 'cl.eide';
@@ -859,7 +863,9 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     abstract dispose(): void;
     abstract forceUpdateCpptoolsConfig(): void;
 
-    ////////////////////////////////// Base Api ///////////////////////////////////////////
+    //-----------------------------------------------------------
+    //- Base Api
+    //-----------------------------------------------------------
 
     public getProjectName(): string {
         return this.GetConfiguration().config.name;
@@ -887,20 +893,6 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     */
     public getExecutablePath(): string {
         return this.getExecutablePathWithoutSuffix() + this.getToolchain().elfSuffix;
-        // @discard parse from file
-        // ------------------------------
-        // let suffix = '.axf';
-        // try {
-        //     let fpath = `${ResManager.GetInstance().getBuilderModelsDir().path}/${this.getToolchain().modelName}`;
-        //     let model = JSON.parse(fs.readFileSync(fpath).toString());
-        //     if (model['groups']['linker'] &&
-        //         model['groups']['linker']['$outputSuffix'] != undefined) {
-        //         suffix = model['groups']['linker']['$outputSuffix'];
-        //     }
-        // } catch (error) {
-        //     GlobalEvent.log_error(error);
-        // }
-        // return this.getExecutablePathWithoutSuffix() + suffix;
     }
 
     public getUid(): string {
@@ -979,6 +971,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
     public getProjectFile(): File {
         return File.from(this.getEideDir().path, AbstractProject.prjConfigName);
     }
+
     public getEideProjectFile(): File {
         return this.getProjectFile();
     }
@@ -1045,7 +1038,8 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     ////////////////////////////////// Abstract Project ///////////////////////////////////
 
-    constructor() {
+    constructor(workspaceState: vscode.Memento) {
+        this.workspaceState = workspaceState;
         this._event = new events.EventEmitter();
         this.sourceRoots = new SourceRootList(this);
         this.virtualSource = new VirtualSource(this);
@@ -1600,7 +1594,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         // update project data
         for (const name in oldTarget) {
 
-            if (name === 'custom_dep') {
+            if (name === 'cppPreprocessAttrs') {
                 const curDep = this.GetConfiguration().CustomDep_getDependence();
                 const oldDep = oldTarget[name];
                 for (const key in curDep) { (<any>curDep)[key] = copyObject(oldDep[key]); }
@@ -1610,16 +1604,16 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
                 continue;
             }
 
-            if (name === 'compileConfig') {
-                const compileConfig = prjConfig.compileConfigModel.data;
+            if (name === 'toolchainConfig') {
+                const toolchainConfig = prjConfig.toolchainConfigModel.data;
                 const oldCompileConfig = oldTarget[name];
                 // delete all properties
-                for (const key in compileConfig) {
-                    delete compileConfig[key];
+                for (const key in toolchainConfig) {
+                    delete toolchainConfig[key];
                 }
                 // update properties
                 for (const key in oldCompileConfig) {
-                    compileConfig[key] = copyObject(oldCompileConfig[key]);
+                    toolchainConfig[key] = copyObject(oldCompileConfig[key]);
                 }
                 continue;
             }
@@ -1645,9 +1639,10 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         }
 
         // copy source options if not exist
-        const opts = this.getSourceExtraArgsCfg(prevTargetName);
-        if (opts) {
-            this.setSourceExtraArgsCfg(opts, targetName);
+        if (isNewTarget) {
+            const opts = this.getSourceExtraArgsCfg(prevTargetName);
+            if (opts)
+                this.setSourceExtraArgsCfg(opts, targetName);
         }
 
         this.sourceRoots.forceUpdateAllFolders();
@@ -1893,7 +1888,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
                         .filter(f => keywords.some(k => f.name.toLowerCase().includes(k)));
                     // matched dirs, filter files
                     if (subdirs.length > 0) {
-                        const cpuTyp = (<ArmBaseCompileConfigModel>this.GetConfiguration().compileConfigModel).data.cpuType;
+                        const cpuTyp = (<ArmBaseCompileConfigModel>this.GetConfiguration().toolchainConfigModel).data.cpuType;
                         const allfiles = subdirs[0].GetList(undefined, File.EXCLUDE_ALL_FILTER);
                         const unusedFiles = allfiles.filter(f => !matchLibFileAndCpuTyp(f.name, cpuTyp));
                         libPaths.push(subdirs[0].path);
@@ -1924,7 +1919,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         let isUseCustomScatterFile = false;
         if (this.getProjectType() == 'ARM')
             isUseCustomScatterFile = this.GetConfiguration<ArmBaseCompileData>().config
-                .compileConfig.useCustomScatterFile;
+                .toolchainConfig.useCustomScatterFile;
         const toolchainName = this.getToolchain().name;
         return (toolchainName === 'AC5' || toolchainName === 'AC6') && !isUseCustomScatterFile;
     }
@@ -2258,7 +2253,7 @@ $(OUT_DIR):
             const optsObj = <SourceFileOptions>{ version: EIDE_FILE_OPTION_VERSION, options: {} };
             optsObj.version = EIDE_FILE_OPTION_VERSION;
             optsObj.options[this.getCurrentTarget()] = { files: {}, virtualPathFiles: {} };
-            optFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(optsObj, { indent: 4 }));
+            optFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(optsObj, { indent: 4, lineWidth: 1000 }));
         }
 
         return optFile;
@@ -2284,7 +2279,7 @@ $(OUT_DIR):
             const optsObj = <SourceFileOptions>yaml.parse(optFile.Read());
             optsObj.version = EIDE_FILE_OPTION_VERSION;
             optsObj.options[targetName || this.getCurrentTarget()] = cfg;
-            optFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(optsObj, { indent: 4 }));
+            optFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(optsObj, { indent: 4, lineWidth: 1000 }));
         } catch (error) {
             GlobalEvent.log_error(error);
         }
@@ -2526,7 +2521,7 @@ $(OUT_DIR):
     }
 
     getBuilderOptions(): BuilderOptions {
-        return this.GetConfiguration().compileConfigModel.getOptions();
+        return this.GetConfiguration().toolchainConfigModel.getOptions();
     }
 
     //---
@@ -2540,10 +2535,10 @@ $(OUT_DIR):
         let toolchainRoot = this.toolchain.getToolchainDir().path;
         this.registerBuiltinVar('ToolchainRoot', () => toolchainRoot);
 
-        const curOptions = prjConfig.compileConfigModel.getOptions();
+        const curOptions = prjConfig.toolchainConfigModel.getOptions();
         const newOptions = toolManager.migrateBuilderOptions(curOptions, this.toolchain);
         if (newOptions) {
-            prjConfig.compileConfigModel.setOptions(newOptions, undefined, this.toolchain.name);
+            prjConfig.toolchainConfigModel.setOptions(newOptions, undefined, this.toolchain.name);
         }
     }
 
@@ -2594,7 +2589,7 @@ $(OUT_DIR):
     protected LoadConfigurations(wsFile: File) {
 
         ////////////////////////////////////
-        // load eide.json, init project
+        // init project
 
         // init folders
         this.rootDir = new File(wsFile.dir);
@@ -2602,8 +2597,8 @@ $(OUT_DIR):
 
         // init cfgs
         this.configMap.Set(new WorkspaceConfiguration(wsFile).load(), AbstractProject.workspaceSuffix);
-        const eideJsonFile = File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
-        this.configMap.Set(new ProjectConfiguration(eideJsonFile).load());
+        const eideJsonFile = File.from(wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName);
+        this.configMap.Set(new ProjectConfiguration(eideJsonFile, this.workspaceState).load());
 
         // create '.vscode' folder if it's not existed
         File.fromArray([wsFile.dir, AbstractProject.vsCodeDir]).CreateDir(true);
@@ -2654,7 +2649,7 @@ $(OUT_DIR):
 
         prjConfig.on('dataChanged', (type) => this.onPrjConfigChanged(type));
 
-        prjConfig.compileConfigModel.on('event', (eDat) => this.onConfigurationEvent(eDat));
+        prjConfig.toolchainConfigModel.on('event', (eDat) => this.onConfigurationEvent(eDat));
 
         prjConfig.uploadConfigModel.on('event', (eDat) => this.onConfigurationEvent(eDat));
 
@@ -2695,7 +2690,7 @@ $(OUT_DIR):
 
         // check project version
         const eideFile = File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
-        const conf = <ProjectConfigData<any>>JSON.parse(eideFile.Read());
+        const conf = ProjectConfiguration.parseProjectFile(eideFile.Read());
         if (conf.version) {
             const prj_version = conf.version;
             const eide_conf_v = EIDE_CONF_VERSION;
@@ -2729,7 +2724,7 @@ $(OUT_DIR):
             }
         }
 
-        // move old builder config files into eide.json
+        // move old builder config files into eide.yml
         if (this.isOldVersionProject) {
             const eideDir = File.from(eideFile.dir);
             const toolchainManager = ToolchainManager.getInstance();
@@ -2746,28 +2741,33 @@ $(OUT_DIR):
             }
 
             // get all builder options
-            const allOptions: { target_l: string, toolchain: string, options: BuilderOptions }[] = [];
+            const allOptions: {
+                target_l: string,
+                toolchain: string,
+                options: BuilderOptions,
+                file: File,
+                notCleanup?: boolean
+            }[] = [];
             for (const file of eideDir.GetList(undefined, File.EXCLUDE_ALL_FILTER)) {
                 const tidx = toolchainInfos.findIndex(info => file.name.endsWith(info.configFileName));
                 if (tidx != -1) {
                     const toolInfo = toolchainInfos[tidx];
                     // get lower case target name
-                    let targetName_l: string = file.name.replace(toolInfo.configFileName, '');
-                    if (targetName_l == '') targetName_l = 'release';
-                    else targetName_l = targetName_l.substr(0, targetName_l.length - 1);
+                    const t = file.name.replace(toolInfo.configFileName, '');
+                    const targetName_l = t === '' 
+                        ? 'release' : t.substr(0, t.length - 1); // use 't.length - 1' remove tailing '.'
                     // append in list
                     const options = jsonc.parse(file.Read());
                     allOptions.push({
                         target_l: targetName_l,
                         toolchain: toolInfo.name,
                         options: options,
+                        file: file
                     });
-                    // delete old builder options file, we don't need it anymore.
-                    try { fs.unlinkSync(file.path); } catch {};
                 }
             }
 
-            // copy all builder options into eide.json
+            // copy all builder options into eide.yml
             const allTargetNames = Object.keys(conf.targets);
             for (const optionsInfo of allOptions) {
                 const idx = allTargetNames.findIndex(
@@ -2775,9 +2775,21 @@ $(OUT_DIR):
                 if (idx != -1) {
                     const targetName = allTargetNames[idx];
                     const target = conf.targets[targetName];
-                    if (target.builderOptions == undefined) target.builderOptions = {};
-                    target.builderOptions[optionsInfo.toolchain] = optionsInfo.options;
+                    if (target.toolchainConfigMap && 
+                        target.toolchainConfigMap[optionsInfo.toolchain]) {
+                        target.toolchainConfigMap[optionsInfo.toolchain].options = optionsInfo.options;
+                    } else {
+                        optionsInfo.notCleanup = true;
+                        GlobalEvent.log_warn(`No config for toolchain "${optionsInfo.toolchain}" for target "${targetName}"`);
+                        GlobalEvent.log_show();
+                    }
                 }
+            }
+
+            // delete old builder options file, we don't need it anymore.
+            for (const optionsInfo of allOptions) {
+                if (!optionsInfo.notCleanup)
+                    try { fs.unlinkSync(optionsInfo.file.path); } catch {};
             }
         }
 
@@ -2785,9 +2797,9 @@ $(OUT_DIR):
         if (this.isOldVersionProject) {
             for (const name in conf.targets) {
                 const target = conf.targets[name];
-                if (target.custom_dep) {
-                    if ((<any>target.custom_dep)['sourceDirList'] != undefined) {
-                        (<any>target.custom_dep)['sourceDirList'] = undefined;
+                if (target.cppPreprocessAttrs) {
+                    if ((<any>target.cppPreprocessAttrs)['sourceDirList'] != undefined) {
+                        (<any>target.cppPreprocessAttrs)['sourceDirList'] = undefined;
                     }
                 }
             }
@@ -2829,14 +2841,18 @@ $(OUT_DIR):
                         optionsObj.options[opts.targetName] = obj;
                 });
                 // write to file
-                optionsFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(optionsObj, { indent: 4 }));
+                optionsFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(optionsObj, { indent: 4, lineWidth: 1000 }));
             }
         }
 
         /* udpate project version to lastest */
         if (this.isOldVersionProject) {
             conf.version = EIDE_CONF_VERSION;
-            eideFile.Write(JSON.stringify(conf, undefined, 2));
+            eideFile.Write(ProjectConfiguration.dumpProjectFile(conf));
+            // rm old eide.json file
+            const eideJsonFile = File.from(wsFile.dir, AbstractProject.EIDE_DIR, 'eide.json');
+            if (eideJsonFile.IsExist())
+                fs.unlinkSync(eideJsonFile.path);
         }
     }
 
@@ -3059,8 +3075,8 @@ $(OUT_DIR):
 
     abstract ExportToKeilProject(): File | undefined;
 
-    static NewProject(): AbstractProject {
-        return new EIDEProject();
+    static NewProject(workspaceState: vscode.Memento): AbstractProject {
+        return new EIDEProject(workspaceState);
     }
 }
 
@@ -3169,7 +3185,7 @@ class EIDEProject extends AbstractProject {
     protected onDeviceChanged(oldDevice?: CurrentDevice | undefined): void {
 
         const prjConfig = this.GetConfiguration();
-        const cConfig = prjConfig.compileConfigModel;
+        const cConfig = prjConfig.toolchainConfigModel;
 
         // project type is ARM
         if (cConfig instanceof ArmBaseCompileConfigModel) {
@@ -3435,7 +3451,7 @@ class EIDEProject extends AbstractProject {
 
         const wsConfig = new WorkspaceConfiguration(wsFile).load();
         const eideFile = File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
-        const prjConfig = new ProjectConfiguration(eideFile, option.type).load();
+        const prjConfig = new ProjectConfiguration(eideFile, this.workspaceState, option.type).load();
 
         // set project name
         prjConfig.config.name = option.projectName || AbstractProject.formatProjectName(option.name);
@@ -3793,7 +3809,7 @@ class EIDEProject extends AbstractProject {
                     '/.vscode/launch.json',
                     '/.settings',
                     '/.eide/log',
-                    '/' + ProjectConfiguration.USR_CTX_FILE_NAME,
+                    '/.eide.usr.ctx.json',
                     '',
                     '# project out',
                     '/build', '/bin', '/obj', '/out',
@@ -3982,7 +3998,7 @@ class EIDEProject extends AbstractProject {
         // get project includes and defines
         const depMerge = prjConfig.GetAllMergeDep();
         const defMacros: string[] = ['__VSCODE_CPPTOOL']; // it's for internal force include header
-        const intrDefs = this._getCompilerIntrDefsForCpptools(toolchain, <any>prjConfig.config.compileConfig, builderOpts);
+        const intrDefs = this._getCompilerIntrDefsForCpptools(toolchain, <any>prjConfig.config.toolchainConfig, builderOpts);
         const defLi = defMacros.concat(depMerge.defineList, intrDefs);
         depMerge.incList = depMerge.incList.concat(this.getSourceIncludeList()).map(p => this.ToAbsolutePath(p));
 
@@ -3998,11 +4014,11 @@ class EIDEProject extends AbstractProject {
             this.cppToolsConfig.cppCompilerArgs = undefined;
 
             // preset cpu info for arm project
-            if (prjConfig.compileConfigModel instanceof ArmBaseCompileConfigModel) {
+            if (prjConfig.toolchainConfigModel instanceof ArmBaseCompileConfigModel) {
                 builderOpts.global = builderOpts.global || {};
-                const cpuName: string = prjConfig.compileConfigModel.data.cpuType.toLowerCase();
-                const fpuName: string = prjConfig.compileConfigModel.data.floatingPointHardware;
-                const archExt: string = prjConfig.compileConfigModel.data.archExtensions || '';
+                const cpuName: string = prjConfig.toolchainConfigModel.data.cpuType.toLowerCase();
+                const fpuName: string = prjConfig.toolchainConfigModel.data.floatingPointHardware;
+                const archExt: string = prjConfig.toolchainConfigModel.data.archExtensions || '';
                 // 将 cpu 信息作为上下文传递给 updateCppIntellisenceCfg，
                 // 以便 toolchain 能够生成合适的 compiler args 用于执行 Intellisence
                 builderOpts.global['_cpuName'] = cpuName;

@@ -112,7 +112,7 @@ import {
     generateDotnetProgramCmd,
     isGccFamilyToolchain
 } from './utility';
-import { concatSystemEnvPath, DeleteDir, exeSuffix, kill, osType, DeleteAllChildren, userhome } from './Platform';
+import { concatSystemEnvPath, DeleteDir, exeSuffix, kill, osType, DeleteAllChildren, userhome, getGlobalState } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
 import { VirtualDocument } from './VirtualDocsProvider';
 import { ResInstaller } from './ResInstaller';
@@ -134,6 +134,7 @@ import { ShellFlasherIndexItem } from './WebInterface/WebInterface';
 import { jsonc } from 'jsonc';
 import { SimpleUIConfig, SimpleUIConfigData_input, SimpleUIConfigData_options, SimpleUIConfigData_text, SimpleUIConfigData_table, SimpleUIConfigData_boolean, SimpleUIConfigData_divider, SimpleUIConfigData_tag } from "./SimpleUIDef";
 import { StatusBarManager } from './StatusBarManager';
+import { doMigration, detectProject } from './EIDEProjectMigration';
 
 enum TreeItemType {
     SOLUTION,
@@ -828,30 +829,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         prj.Save(false, 1000); // save project file with a delay
     }
 
-    private toLowercaseEIDEFolder(wsFolder: File) {
-
-        if (wsFolder.IsDir()) {
-
-            // rename eide folder name
-            const folderList = wsFolder.GetList(File.EXCLUDE_ALL_FILTER, [/^\.EIDE$/]);
-            if (folderList.length > 0) {
-                const oldEideFolder = folderList[0];
-                fs.renameSync(oldEideFolder.path, `${oldEideFolder.dir}${File.sep}${AbstractProject.EIDE_DIR}`);
-            }
-
-            // rename eide conf file
-            const eideFolder = File.fromArray([wsFolder.path, AbstractProject.EIDE_DIR]);
-            if (eideFolder.IsDir()) {
-                const fList = eideFolder.GetList([/^EIDE\.json$/], File.EXCLUDE_ALL_FILTER);
-                if (fList.length > 0) {
-                    const oldEideConfFile = fList[0];
-                    fs.renameSync(oldEideConfFile.path, `${oldEideConfFile.dir}${File.sep}${AbstractProject.prjConfigName}`);
-                }
-            }
-        }
-    }
-
-    LoadWorkspaceProject() {
+    LoadWorkspaceProject(workspaceState: vscode.Memento) {
 
         const workspaceManager = WorkspaceManager.getInstance();
 
@@ -866,12 +844,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         for (const wsDir of wsFolders) {
             const wsList = wsDir.GetList([/.code-workspace$/i], File.EXCLUDE_ALL_FILTER);
             if (wsList.length > 0) {
-
-                // convert .EIDE to .eide
-                this.toLowercaseEIDEFolder(wsDir);
-
-                const eideConfigFile = File.fromArray([wsDir.path, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
-                if (eideConfigFile.IsFile()) {
+                if (detectProject(wsDir)) {
                     validList.push(wsList[0]);
                 }
             }
@@ -890,7 +863,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         }
 
         for (const wsFile of validList) {
-            this._OpenProject(wsFile.path);
+            this._OpenProject(wsFile.path, workspaceState);
         }
     }
 
@@ -1295,7 +1268,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     break;
                 case TreeItemType.COMPILE_CONFIGURATION:
                     {
-                        const cConfig = project.GetConfiguration().compileConfigModel;
+                        const cConfig = project.GetConfiguration().toolchainConfigModel;
                         const keyMap = <any>cConfig.GetDefault();
                         const excludeKeys = project.getToolchain().excludeViewList || [];
 
@@ -2193,7 +2166,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         });
     }
 
-    private async _OpenProject(workspaceFilePath: string): Promise<AbstractProject | undefined> {
+    private async _OpenProject(workspaceFilePath: string, workspaceState: vscode.Memento): Promise<AbstractProject | undefined> {
 
         const wsFile: File = new File(workspaceFilePath);
         if (!wsFile.IsFile()) {
@@ -2205,28 +2178,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             return undefined;
         }
 
-        const eideConfigFile = File.fromArray([wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
-        if (!eideConfigFile.IsFile()) {
-            GlobalEvent.emit('msg', newMessage('Warning', `File not existed, [path]: ${eideConfigFile.path}`));
-            return undefined;
-        }
-
-        let eideProjInfo: ProjectConfigData<any>;
-        try {
-            eideProjInfo = jsonc.parse(eideConfigFile.Read());
-        } catch (error) {
-            GlobalEvent.emit('msg', newMessage('Warning', `Load '${eideConfigFile.path}' failed !`));
-            GlobalEvent.log_error(error);
-        }
-
-        const existedPrjIdx = this.prjList.findIndex((prj) => prj.getWsPath() == workspaceFilePath || prj.getUid() == eideProjInfo.miscInfo.uid);
-        if (existedPrjIdx != -1) {
-            GlobalEvent.emit('msg', newMessage('Warning', project_is_opened));
+        if (!detectProject(File.from(wsFile.dir))) {
+            GlobalEvent.emit('msg', newMessage('Warning', `File not existed, [path]: ${wsFile.dir}`));
             return undefined;
         }
 
         try {
-            const prj = AbstractProject.NewProject();
+            await doMigration(File.from(wsFile.dir));
+            const prj = AbstractProject.NewProject(workspaceState);
             await prj.Load(wsFile);
             this.registerProject(prj);
             GlobalEvent.emit('project.opened', prj);
@@ -2253,12 +2212,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
         const wsFolder = new File(NodePath.dirname(workspaceFilePath));
 
-        // convert .EIDE to .eide
-        this.toLowercaseEIDEFolder(wsFolder);
-
         // check workspace
-        const prjFile = File.fromArray([wsFolder.path, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
-        if (!prjFile.IsFile()) { // not found project file, open workspace ?
+        if (!detectProject(wsFolder)) { // not found project file, open workspace ?
             const msg = `Not found eide project in this workspace !, Open this workspace directly ?`;
             const selection = await vscode.window.showInformationMessage(msg, continue_text, cancel_text);
             if (selection === continue_text) { WorkspaceManager.getInstance().openWorkspace(new File(workspaceFilePath)); }
@@ -2270,7 +2225,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             location: vscode.ProgressLocation.Notification,
         }, (progress) => {
             progress.report({ message: `${workspaceFilePath}` });
-            return this._OpenProject(workspaceFilePath);
+            return this._OpenProject(workspaceFilePath, getGlobalState());
         });
         if (prj) {
             this.SwitchProject(prj, switchWorkspaceImmediately);
@@ -2292,7 +2247,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         }
 
         try {
-            const prj = AbstractProject.NewProject();
+            const prj = AbstractProject.NewProject(getGlobalState());
             await prj.Create(option);
             this.registerProject(prj);
             this.SwitchProject(prj);
@@ -2384,7 +2339,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             const iarPrjRoot = new File(NodePath.dirname(path_));
 
             const needCreateNewDir = File.normalize(iarPrjRoot.path) == File.normalize(ewwRoot.path);
-            const basePrj = AbstractProject.NewProject().createBase({
+            const basePrj = AbstractProject.NewProject(getGlobalState()).createBase({
                 name: iarproj.name,
                 projectName: iarproj.name,
                 type: 'ARM',
@@ -2441,11 +2396,12 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 const nEideTarget: ProjectTargetInfo = {
                     excludeList: iarTarget.excludeList,
                     toolchain: eidePrjCfg.toolchain,
-                    compileConfig: copyObject(eidePrjCfg.compileConfig),
+                    toolchainConfig: copyObject(eidePrjCfg.toolchainConfig),
+                    toolchainConfigMap: copyObject(eidePrjCfg.toolchainConfigMap),
                     uploader: eidePrjCfg.uploader,
                     uploadConfig: copyObject(eidePrjCfg.uploadConfig),
                     uploadConfigMap: copyObject(eidePrjCfg.uploadConfigMap),
-                    custom_dep: {
+                    cppPreprocessAttrs: {
                         name: 'default',
                         incList: [],
                         defineList: [],
@@ -2455,14 +2411,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 };
                 eidePrjCfg.targets[targetName] = nEideTarget;
 
-                nEideTarget.custom_dep.defineList = toArray(iarTarget.settings['ICCARM.CCDefines']);
-                nEideTarget.custom_dep.incList = toArray(iarTarget.settings['ICCARM.CCIncludePath2']);
+                nEideTarget.cppPreprocessAttrs.defineList = toArray(iarTarget.settings['ICCARM.CCDefines']);
+                nEideTarget.cppPreprocessAttrs.incList = toArray(iarTarget.settings['ICCARM.CCIncludePath2']);
 
                 //
                 // compiler base config
                 //
-                const compilerMod = <ArmBaseCompileConfigModel>basePrj.prjConfig.compileConfigModel;
-                const compilerOpt = <ArmBaseCompileData>nEideTarget.compileConfig;
+                const compilerMod = <ArmBaseCompileConfigModel>basePrj.prjConfig.toolchainConfigModel;
+                const compilerOpt = <ArmBaseCompileData>nEideTarget.toolchainConfig;
 
                 if (iarTarget.core) {
                     const expname = iarTarget.core;
@@ -2599,7 +2555,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             const curTarget: any = eidePrjCfg.targets[tname];
             eidePrjCfg.mode = tname; // set current target name
             for (const key in curTarget) {
-                if (key === 'custom_dep') {
+                if (key === 'cppPreprocessAttrs') {
                     eidePrjCfg.dependenceList =
                         [{ groupName: 'custom', depList: [curTarget[key]] }];
                     continue;
@@ -2647,7 +2603,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 break;
         }
 
-        const basePrj = AbstractProject.NewProject().createBase({
+        const basePrj = AbstractProject.NewProject(getGlobalState()).createBase({
             name: ePrjInfo.name,
             projectName: ePrjInfo.name,
             type: nPrjType,
@@ -2678,12 +2634,13 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             const nEideTarget: ProjectTargetInfo = {
                 excludeList: eTarget.excList,
                 toolchain: nPrjConfig.toolchain,
-                compileConfig: copyObject(nPrjConfig.compileConfig),
+                toolchainConfig: copyObject(nPrjConfig.toolchainConfig),
+                toolchainConfigMap: copyObject(nPrjConfig.toolchainConfigMap),
                 uploader: nPrjConfig.uploader,
                 uploadConfig: copyObject(nPrjConfig.uploadConfig),
                 uploadConfigMap: copyObject(nPrjConfig.uploadConfigMap),
                 builderOptions: {},
-                custom_dep: {
+                cppPreprocessAttrs: {
                     name: 'default',
                     incList: [],
                     defineList: [],
@@ -2691,9 +2648,9 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 }
             };
 
-            nEideTarget.custom_dep.defineList = eTarget.builldArgs.cMacros;
-            nEideTarget.custom_dep.incList = eTarget.builldArgs.cIncDirs;
-            nEideTarget.custom_dep.libList = eTarget.builldArgs.linkerLibSearchDirs;
+            nEideTarget.cppPreprocessAttrs.defineList = eTarget.builldArgs.cMacros;
+            nEideTarget.cppPreprocessAttrs.incList = eTarget.builldArgs.cIncDirs;
+            nEideTarget.cppPreprocessAttrs.libList = eTarget.builldArgs.linkerLibSearchDirs;
 
             // for arm gcc toolchain
             if (nEideTarget.toolchain == 'GCC') {
@@ -2718,7 +2675,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     return armCpuTypeMap[archName.toLowerCase()];
                 };
 
-                const compilerOpt = <ArmBaseCompileData>nEideTarget.compileConfig;
+                const compilerOpt = <ArmBaseCompileData>nEideTarget.toolchainConfig;
                 compilerOpt.cpuType = guessArmCpuType(eTarget.archName) || 'Cortex-M3';
                 compilerOpt.floatingPointHardware = ArmCpuUtils.hasFpu(compilerOpt.cpuType) ? 'single' : 'none';
                 compilerOpt.useCustomScatterFile = true;
@@ -2726,12 +2683,12 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             }
             // for riscv gcc toolchain
             else if (nEideTarget.toolchain == 'RISCV_GCC') {
-                const compilerOpt = <RiscvCompileData>nEideTarget.compileConfig;
+                const compilerOpt = <RiscvCompileData>nEideTarget.toolchainConfig;
                 compilerOpt.linkerScriptPath = eTarget.linkerScriptPath || '';
             }
             // for any gcc toolchain
             else if (nEideTarget.toolchain == 'ANY_GCC') {
-                const compilerOpt = <AnyGccCompileData>nEideTarget.compileConfig;
+                const compilerOpt = <AnyGccCompileData>nEideTarget.toolchainConfig;
                 compilerOpt.linkerScriptPath = eTarget.linkerScriptPath || '';
             }
 
@@ -2861,7 +2818,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         const curTarget: any = nPrjConfig.targets[ePrjInfo.targets[0].name];
         nPrjConfig.mode = ePrjInfo.targets[0].name; // set current target name
         for (const name in curTarget) {
-            if (name === 'custom_dep') {
+            if (name === 'cppPreprocessAttrs') {
                 nPrjConfig.dependenceList = [{
                     groupName: 'custom', depList: [curTarget[name]]
                 }];
@@ -2876,7 +2833,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         basePrj.prjConfig.Save();
         // save src options
         const optFile = File.fromArray([basePrj.rootFolder.path, AbstractProject.EIDE_DIR, `files.options.yml`]);
-        optFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(srcOptsObj, { indent: 4 }));
+        optFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(srcOptsObj, { indent: 4, lineWidth: 1000 }));
 
         // switch project
         const selection = await vscode.window.showInformationMessage(
@@ -2898,7 +2855,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
         const nPrjOutDir = <File>option.outDir;
 
-        const baseInfo = AbstractProject.NewProject().createBase({
+        const baseInfo = AbstractProject.NewProject(getGlobalState()).createBase({
             name: nPrjOutDir.name,
             projectName: keilPrjFile.noSuffixName,
             type: targets[0].type,
@@ -3150,7 +3107,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             const defIncList: string[] = [];
 
             // copy from cur proj info
-            newTarget.compileConfig = copyObject(projectInfo.compileConfig);
+            newTarget.toolchainConfig = copyObject(projectInfo.toolchainConfig);
+            newTarget.toolchainConfigMap = copyObject(projectInfo.toolchainConfigMap);
             newTarget.uploader = projectInfo.uploader;
             newTarget.uploadConfig = copyObject(projectInfo.uploadConfig);
             newTarget.uploadConfigMap = copyObject(projectInfo.uploadConfigMap);
@@ -3179,7 +3137,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             // ARM project
             else {
                 const keilCompileConf = <KeilARMOption>keilTarget.compileOption;
-                const prjCompileOption = (<ArmBaseCompileData>newTarget.compileConfig);
+                const prjCompileOption = (<ArmBaseCompileData>newTarget.toolchainConfig);
                 // base config
                 newTarget.toolchain = keilCompileConf.toolchain;
                 prjCompileOption.cpuType = keilCompileConf.cpuType;
@@ -3204,11 +3162,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             }
 
             // init custom dependence after specific configs done
-            newTarget.custom_dep = <any>{ name: 'default' };
+            newTarget.cppPreprocessAttrs = <any>{ name: 'default' };
             const incList = keilTarget.incList.map((path) => baseInfo.rootFolder.ToRelativePath(path) || path);
-            newTarget.custom_dep.incList = defIncList.concat(incList);
-            newTarget.custom_dep.defineList = keilTarget.defineList;
-            newTarget.custom_dep.libList = [];
+            newTarget.cppPreprocessAttrs.incList = defIncList.concat(incList);
+            newTarget.cppPreprocessAttrs.defineList = keilTarget.defineList;
+            newTarget.cppPreprocessAttrs.libList = [];
 
             // fill exclude list
             newTarget.excludeList = [];
@@ -3234,7 +3192,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         const curTarget: any = projectInfo.targets[targets[0].name];
         projectInfo.mode = targets[0].name; // current target name
         for (const name in curTarget) {
-            if (name === 'custom_dep') {
+            if (name === 'cppPreprocessAttrs') {
                 projectInfo.dependenceList = [{
                     groupName: 'custom', depList: [curTarget[name]]
                 }];
@@ -3256,7 +3214,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
         // save src options
         const optFile = File.fromArray([baseInfo.rootFolder.path, AbstractProject.EIDE_DIR, `files.options.yml`]);
-        optFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(srcOptsObj, { indent: 4 }));
+        optFile.Write(view_str$prompt$filesOptionsComment + yaml.stringify(srcOptsObj, { indent: 4, lineWidth: 1000 }));
 
         // switch project
         const selection = await vscode.window.showInformationMessage(
@@ -3308,22 +3266,19 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                 // rename project
                                 if (templateFile.suffix != '.ewt') { // ignore eide workspace project
 
-                                    // convert .EIDE to .eide
-                                    this.toLowercaseEIDEFolder(targetDir);
-
                                     // init project
-                                    {
-                                        const prjFile = File.fromArray([targetDir.path, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName]);
-                                        if (!prjFile.IsFile()) throw Error(`project file: '${prjFile.path}' is not exist !`);
+                                    if (!detectProject(targetDir))
+                                        throw Error(`No found any project in this workspace.`);
 
-                                        try {
-                                            const prjConf: ProjectConfigData<any> = JSON.parse(prjFile.Read());
-                                            prjConf.name = option.name; // set project name
-                                            if (prjConf.miscInfo) prjConf.miscInfo.uid = undefined; // reset uid
-                                            prjFile.Write(JSON.stringify(prjConf, undefined, 2));
-                                        } catch (error) {
-                                            throw Error(`Init project failed !, msg: ${error.message}`);
-                                        }
+                                    try {
+                                        await doMigration(targetDir);
+                                        const pfile = File.from(targetDir.path, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName);
+                                        const prjConf = ProjectConfiguration.parseProjectFile(pfile.Read());
+                                        prjConf.name = option.name; // set project name
+                                        if (prjConf.miscInfo) prjConf.miscInfo.uid = undefined; // reset uid
+                                        pfile.Write(ProjectConfiguration.dumpProjectFile(prjConf));
+                                    } catch (error) {
+                                        throw Error(`Init project failed !, msg: ${error.message}`);
                                     }
                                 }
                             }
@@ -3622,8 +3577,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         this.dataProvider.onDispose();
     }
 
-    loadWorkspace() {
-        this.dataProvider.LoadWorkspaceProject();
+    loadWorkspace(workspaceState: vscode.Memento) {
+        this.dataProvider.LoadWorkspaceProject(workspaceState);
     }
 
     enableAutoSave(enable: boolean) {
@@ -3938,7 +3893,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     const compilerFlags: string[] = cfg['CompileFlags']['Add'] || [];
                     toolchain.getSystemIncludeList(builderOpts)
                         .forEach(p => compilerFlags.push(`-I"${p}"`));
-                    toolchain.getInternalDefines(<any>prjConfig.config.compileConfig, builderOpts)
+                    toolchain.getInternalDefines(<any>prjConfig.config.toolchainConfig, builderOpts)
                         .forEach(d => compilerFlags.push(`-D"${d.name}=${d.value}"`));
                     cfg['CompileFlags']['Add'] = ArrayDelRepetition(compilerFlags);
                     // 禁用所有诊断错误，因为 clangd 不支持这些编译器
@@ -5414,9 +5369,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 }
             }
 
-            const compileConfig = project.GetConfiguration<ArmBaseCompileData>().config.compileConfig;
-            const ramLayout = compileConfig.storageLayout.RAM;
-            const romLayout = compileConfig.storageLayout.ROM;
+            const toolchainConfig = project.GetConfiguration<ArmBaseCompileData>().config.toolchainConfig;
+            const ramLayout = toolchainConfig.storageLayout.RAM;
+            const romLayout = toolchainConfig.storageLayout.ROM;
 
             // Use for config enum. 
             let roList: string[] = ['default'];
@@ -6118,7 +6073,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const toolchain = prj.getToolchain();
         const prjConfig = prj.GetConfiguration();
         const depMerge = prjConfig.GetAllMergeDep();
-        const builderOpts = prjConfig.compileConfigModel.getOptions();
+        const builderOpts = prjConfig.toolchainConfigModel.getOptions();
         const defMacros: string[] = ['__VSCODE_CPPTOOL']; /* it's for internal force include header */
         let defList: string[] = defMacros.concat(depMerge.defineList);
         depMerge.incList = ArrayDelRepetition(depMerge.incList.concat(prj.getSourceIncludeList()));
@@ -6156,7 +6111,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             return;
         }
 
-        toolchain.getInternalDefines(<any>prjConfig.config.compileConfig, builderOpts).forEach(d => {
+        toolchain.getInternalDefines(<any>prjConfig.config.toolchainConfig, builderOpts).forEach(d => {
             if (d.type === 'var')
                 defList.push(`${d.name}=${d.value}`);
         });
@@ -6420,7 +6375,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     ModifyCompileConfig(item: ProjTreeItem) {
         const prj = this.dataProvider.GetProjectByIndex(item.val.projectIndex);
-        prj.GetConfiguration().compileConfigModel.ShowModifyWindow(<string>item.val.key, prj.GetRootDir());
+        prj.GetConfiguration().toolchainConfigModel.ShowModifyWindow(<string>item.val.key, prj.GetRootDir());
     }
 
     async ModifyCompileConfig_openFile(item: ProjTreeItem) {
@@ -7955,7 +7910,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
                 // try to show it by eide, if failed, show it 
                 // by vscode default api
-                if (this.showBinaryFiles(file, isPreview)) return;
+                if (this.showBinaryFiles(file, isPreview))
+                    return;
 
                 if (item.val.isVirtualFile) {
                     const uri = vscode.Uri.parse(VirtualDocument.instance().getUriByPath(file.path));

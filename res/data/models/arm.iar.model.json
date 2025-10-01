@@ -33,6 +33,20 @@
             ],
             "location": "first"
         },
+        "arm-thumb-mode": {
+            "type": "selectable",
+            "command": {
+                "arm"  : "--arm",
+                "thumb": "--thumb",
+                "false": "--thumb"
+            },
+            "group": [
+                "c",
+                "cpp",
+                "asm"
+            ],
+            "location": "first"
+        },
         "microcontroller-cpu": {
             "type": "keyValue",
             "command": "",
@@ -169,7 +183,6 @@
             },
             "$output": "--dependencies=m + -o ${out} ${in}",
             "$default": [
-                "--thumb",
                 "--silent"
             ],
             "$listPath": {
@@ -271,7 +284,6 @@
             },
             "$output": "--dependencies=m + -o ${out} ${in}",
             "$default": [
-                "--thumb",
                 "--silent"
             ],
             "$listPath": {
@@ -365,7 +377,6 @@
             "$output": "-o ${out} ${in}",
             "$default": [
 				"-S",
-                "--thumb",
                 "-w+"
             ],
             "$listPath": {

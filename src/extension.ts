@@ -61,11 +61,6 @@ const extension_deps: string[] = [];
 let projectExplorer: ProjectExplorer;
 let operationExplorer: OperationExplorer;
 
-// set yaml global style
-yaml.scalarOptions.str.fold.lineWidth = 1000;
-yaml.defaultOptions.indent = 4;
-yaml.defaultOptions.indentSeq = true;
-
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export async function activate(context: vscode.ExtensionContext) {
@@ -78,7 +73,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // init platform
     try {
-        platform.init();
+        platform.init(context);
     } catch (error) {
         const msg = (<Error>error).message;
         vscode.window.showErrorMessage(msg);
@@ -315,7 +310,7 @@ export async function activate(context: vscode.ExtensionContext) {
     projectExplorer.enableAutoSave(true);
 
     // load project in this workspace
-    projectExplorer.loadWorkspace();
+    projectExplorer.loadWorkspace(context.globalState);
 
     // hook
     postLaunchHook(context);
