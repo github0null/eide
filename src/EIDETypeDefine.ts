@@ -1406,6 +1406,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             }
             target.compileConfig = target.compileConfigMap[target.toolchain];
             target.uploadConfig = target.uploadConfigMap[target.uploader];
+            target.cppPreprocessAttrs.name = 'default';
         }
         return cfg;
     }
@@ -1427,6 +1428,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
                     target.compileConfigMap[toolchain].options = target.builderOptions[toolchain];
             }
             target.builderOptions = <any>undefined;
+            target.cppPreprocessAttrs.name = <any>undefined;
         }
 
         // convert abspath to relative path before save to file

@@ -21,7 +21,6 @@ export async function doMigration(projectRootDir: File) {
     if (eideJsonFile.IsExist()) {
         const obj = ProjectConfiguration.parseProjectFile(eideJsonFile.Read());
         projCfgFile.Write(ProjectConfiguration.dumpProjectFile(obj));
-        fs.unlinkSync(eideJsonFile.path);
     }
 
     const prjCfg = ProjectConfiguration.parseProjectFile(projCfgFile.Read());
@@ -64,4 +63,8 @@ export async function doMigration(projectRootDir: File) {
     const p = NodePath.join(projectRootDir.path, '.eide.usr.ctx.json');
     if (File.IsFile(p))
         try { fs.unlinkSync(p); } catch (error) {}
+
+    // rm old eide.json file
+    if (eideJsonFile.IsExist())
+        fs.unlinkSync(eideJsonFile.path);
 }
