@@ -28,6 +28,7 @@ async function _doMigration(projectRootDir: File) {
     const prjCfg = ProjectConfiguration.parseProjectFile(projCfgFile.Read());
 
     if (compareVersion(prjCfg.version, '4.0') < 0) {
+        GlobalEvent.log_info(`migration ${projCfgFile.path} from ${prjCfg.version} to 4.0`);
         for (const key in prjCfg.targets) {
             const target = prjCfg.targets[key];
             // rename compileConfig to toolchainConfig
