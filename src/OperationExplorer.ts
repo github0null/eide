@@ -1209,55 +1209,71 @@ export class OperationExplorer {
 
             try {
 
+                const resManager = ResManager.GetInstance();
                 const pathArr = (remoteUrl).split('/');
                 const hostName = pathArr[0];
                 const path = '/' + pathArr.slice(1).join('/');
 
-                const res = await vscode.window.withProgress({
-                    location: vscode.ProgressLocation.Notification,
-                    title: `Connect repo '${rawUrl}' ...`,
-                    cancellable: true
-                }, (_, token): Thenable<NetResponse<any>> => {
-                    return new Promise(async (resolve) => {
+                let repoFileList: GitFileInfo[];
 
-                        token.onCancellationRequested(() => {
-                            netReq.emit('abort');
-                        });
-
-                        const headers: any = utility.setProxyHeader({
-                            'User-Agent': 'Mozilla/5.0'
-                        });
-
-                        if (acToken) { // if token is enabled, use it
-                            headers['Authorization'] = `token ${acToken}`;
-                        }
-
-                        const res = await netReq.Request<any, any>({
-                            host: hostName,
-                            path: path,
-                            timeout: 3000,
-                            headers: headers
-                        }, 'https');
-
-                        resolve(res);
-                    });
-                });
-
-                if (!res.success) {
-                    GlobalEvent.emit('msg', newMessage('Warning', `Can't connect to Github repository !, msg: ${res.msg || 'null'}`));
-                    this.locked = false;
-                    return;
-                } else if (res.content === undefined) {
-                    GlobalEvent.emit('msg', newMessage('Warning', `Can't get content from Github repository !, msg: ${res.msg || 'null'}`));
-                    this.locked = false;
-                    return;
+                const cache = resManager.getCache('eide-template-list.json');
+                if (cache && (cache.lastUpdateTime || 0) + (10 * utility.TIME_ONE_MINUTE) > Date.now() &&
+                    resManager.getCachedFileByName(cache.name).IsFile()) {
+                    repoFileList = JSON.parse(resManager.getCachedFileByName(cache.name).Read());
                 }
+                // if no cache, fetch it.
+                else {
+                    const res = await vscode.window.withProgress({
+                        location: vscode.ProgressLocation.Notification,
+                        title: `Connect repo '${rawUrl}' ...`,
+                        cancellable: true
+                    }, (_, token): Thenable<NetResponse<any>> => {
+                        return new Promise(async (resolve) => {
 
-                const resManager = ResManager.GetInstance();
+                            token.onCancellationRequested(() => {
+                                netReq.emit('abort');
+                            });
+
+                            const headers: any = utility.setProxyHeader({
+                                'User-Agent': 'Mozilla/5.0'
+                            });
+
+                            if (acToken) { // if token is enabled, use it
+                                headers['Authorization'] = `token ${acToken}`;
+                            }
+
+                            const res = await netReq.Request<any, any>({
+                                host: hostName,
+                                path: path,
+                                timeout: 3000,
+                                headers: headers
+                            }, 'https');
+
+                            resolve(res);
+                        });
+                    });
+
+                    if (!res.success) {
+                        GlobalEvent.emit('msg', newMessage('Warning', `Can't connect to Github repository !, msg: ${res.msg || 'null'}`));
+                        this.locked = false;
+                        return;
+                    } else if (res.content === undefined) {
+                        GlobalEvent.emit('msg', newMessage('Warning', `Can't get content from Github repository !, msg: ${res.msg || 'null'}`));
+                        this.locked = false;
+                        return;
+                    }
+
+                    repoFileList = res.content;
+
+                    resManager.addCache({
+                        name: 'eide-template-list.json',
+                        lastUpdateTime: Date.now()
+                    }, JSON.stringify(repoFileList, undefined, 2));
+                }
 
                 // get file list
                 const file_list = new Map<string, GitFileInfo>();
-                (<GitFileInfo[]>res.content)
+                repoFileList
                     .filter((obj) => { return obj.type === 'file'; })
                     .forEach((fInfo) => { file_list.set(fInfo.name, fInfo); });
 
@@ -1275,32 +1291,46 @@ export class OperationExplorer {
                     return;
                 }
 
-                // load index.json
-                const indexFileBuf = await vscode.window.withProgress({
-                    location: vscode.ProgressLocation.Notification,
-                    title: 'Fetching templates index ...',
-                    cancellable: false
-                }, (_, __): Thenable<Buffer | Error | undefined> => {
-                    return new Promise(async (resolve) => {
-                        if (indexFileInfo.download_url) {
-                            resolve(await utility.downloadFile(indexFileInfo.download_url));
-                        } else {
-                            resolve(new Error('download url is null !'));
-                        }
-                    });
-                });
-
                 let templateIndexInfo: TemplateIndexDef = <any>null;
                 let templateInfoList: TemplateInfo[] = <any>null;
 
-                if (indexFileBuf instanceof Buffer) {
-                    templateIndexInfo = JSON.parse(indexFileBuf.toString());
+                const idxCache = resManager.getCache('template.index.json');
+                if (idxCache && (idxCache.lastUpdateTime || 0) + (15 * utility.TIME_ONE_MINUTE) > Date.now() &&
+                    resManager.getCachedFileByName(idxCache.name).IsFile()) {
+                    templateIndexInfo = JSON.parse(resManager.getCachedFileByName(idxCache.name).Read());
                     templateInfoList = templateIndexInfo.template_list;
-                } else {
-                    const msg: string = indexFileBuf instanceof Error ? `, msg: ${indexFileBuf.message}` : '';
-                    GlobalEvent.emit('msg', newMessage('Warning', `Download template 'index.json' failed !${msg}`));
-                    this.locked = false;
-                    return;
+                }
+                // if no cache, fetch it.
+                else {
+                    // load index.json
+                    const indexFileBuf = await vscode.window.withProgress({
+                        location: vscode.ProgressLocation.Notification,
+                        title: 'Fetching templates index ...',
+                        cancellable: false
+                    }, (_, __): Thenable<Buffer | Error | undefined> => {
+                        return new Promise(async (resolve) => {
+                            if (indexFileInfo.download_url) {
+                                resolve(await utility.downloadFile(indexFileInfo.download_url));
+                            } else {
+                                resolve(new Error('download url is null !'));
+                            }
+                        });
+                    });
+
+                    if (indexFileBuf instanceof Buffer) {
+                        templateIndexInfo = JSON.parse(indexFileBuf.toString());
+                        templateInfoList = templateIndexInfo.template_list;
+                    } else {
+                        const msg: string = indexFileBuf instanceof Error ? `, msg: ${indexFileBuf.message}` : '';
+                        GlobalEvent.emit('msg', newMessage('Warning', `Download template 'index.json' failed !${msg}`));
+                        this.locked = false;
+                        return;
+                    }
+
+                    resManager.addCache({
+                        name: 'template.index.json',
+                        lastUpdateTime: Date.now()
+                    }, indexFileBuf.toString());
                 }
 
                 const rootTemplateGroup: TemplateGroup = {

@@ -72,10 +72,10 @@ const cacheName = 'eide.cache';
 
 export interface FileCacheInfo {
     name: string;
-    size: number;
-    version: string;
+    size?: number;
+    version?: string;
     sha?: string;
-    lastUpdateTime?: string;
+    lastUpdateTime?: number;
 }
 
 export interface HostInfo {
@@ -266,7 +266,7 @@ export class ResManager extends events.EventEmitter {
         return new File(this.GetTmpDir().path + File.sep + name);
     }
 
-    addCache(cacheInfo: FileCacheInfo) {
+    addCache(cacheInfo: FileCacheInfo, content?: Buffer | string) {
         const oldCache = this.getCache(cacheInfo.name);
         if (oldCache === undefined) {
             this.cacheInfoList.push(cacheInfo);
@@ -274,6 +274,10 @@ export class ResManager extends events.EventEmitter {
             for (const key in cacheInfo) {
                 (<any>oldCache)[key] = (<any>cacheInfo)[key];
             }
+        }
+        if (content) {
+            const f = this.getCachedFileByName(cacheInfo.name);
+            fs.writeFileSync(f.path, content);
         }
     }
 
