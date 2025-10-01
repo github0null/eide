@@ -6,6 +6,18 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.26.0] update
+
+**Change**:
+  - `Project File`: Use yaml instead of json and update project data schema. Rename `eide.json` to `eide.yml`.
+
+**Fix**:
+  - `Target Switch`: Fix file's options was overrided when switch to other target.
+
+**Notice:** This version contains important changes. After the automatic migration is completed, you will no longer be able to open your project using the old version of the plugin.
+
+***
+
 ### [v3.25.7] revision
 
 **Improve**:
