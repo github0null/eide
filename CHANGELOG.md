@@ -6,6 +6,14 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.26.1] revision
+
+**Fix**:
+  - `Project Toolchain`: Revert commit 'support generic gcc for arm or riscv projects.'
+  - `Project Migration`: Fix user context data not migrated. [issues 479](https://github.com/github0null/eide/issues/479)
+
+***
+
 ### [v3.26.0] update
 
 **Change**:

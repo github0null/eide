@@ -6,6 +6,7 @@ import { EIDE_CONF_VERSION, ProjectConfiguration } from "./EIDETypeDefine";
 import { compareVersion } from "./utility";
 import { view_str$prompt$migrationFailed } from "./StringTable";
 import { GlobalEvent } from "./GlobalEvents";
+import { getGlobalState } from "./Platform";
 
 export function detectProject(dir: File): boolean {
     if (File.IsExist(NodePath.join(dir.path, '.eide', 'eide.yml')))
@@ -73,8 +74,23 @@ async function _doMigration(projectRootDir: File) {
 
     // rm .eide.usr.ctx.json
     const p = NodePath.join(projectRootDir.path, '.eide.usr.ctx.json');
-    if (File.IsFile(p))
-        try { fs.unlinkSync(p); } catch (error) {}
+    if (File.IsFile(p)) {
+        try {
+            if (prjCfg.miscInfo && prjCfg.miscInfo.uid) {
+                const ctx = JSON.parse(fs.readFileSync(p, 'utf8'));
+                const key = `project.${prjCfg.miscInfo.uid}`;
+                const val = getGlobalState().get<string>(key);
+                const saveVal = JSON.stringify(ctx);
+                if (val !== saveVal)
+                    getGlobalState().update(key, saveVal);
+            }
+            fs.unlinkSync(p);
+        } catch (error) {
+            const errMsg = `${(<Error>error).name} ${(<Error>error).message}`;
+            GlobalEvent.log_warn(`Fail to migrate user context '${p}'. msg: ${errMsg}`);
+            GlobalEvent.log_show();
+        }
+    }
 }
 
 export async function doMigration(projectRootDir: File) {
