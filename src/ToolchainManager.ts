@@ -180,8 +180,8 @@ export class ToolchainManager {
 
     private readonly toolchainNames: ToolchainEnums = {
         'C51': ['GNU_SDCC_MCS51', 'Keil_C51', 'SDCC', 'IAR_STM8', 'COSMIC_STM8'],
-        'ARM': ['AC5', 'AC6', 'GCC', 'LLVM_ARM', 'IAR_ARM', 'ANY_GCC'],
-        'RISC-V': ['RISCV_GCC', 'ANY_GCC'],
+        'ARM': ['AC5', 'AC6', 'GCC', 'LLVM_ARM', 'IAR_ARM'],
+        'RISC-V': ['RISCV_GCC'],
         'MIPS': ['MTI_GCC'],
         'ANY-GCC': ['ANY_GCC']
     };
