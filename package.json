@@ -805,6 +805,14 @@
                 "title": "%eide.explorer.folder.modify.extraArgs%"
             },
             {
+                "command": "_cl.eide.project.source.copyPath",
+                "title": "%eide.explorer.copyPath%"
+            },
+            {
+                "command": "_cl.eide.project.source.copyRelativePath",
+                "title": "%eide.explorer.copyRelativePath%"
+            },
+            {
                 "command": "_cl.eide.project.refresh",
                 "title": "%eide.project.refresh%",
                 "icon": {
@@ -1496,6 +1504,16 @@
                     "command": "_cl.eide.project.source.file.compile",
                     "when": "viewItem == FILE_ITEM || viewItem == V_FILE_ITEM && view == cl.eide.view.projects",
                     "group": "1_file@0"
+                },
+                {
+                    "command": "_cl.eide.project.source.copyPath",
+                    "when": "viewItem == FOLDER_ROOT || viewItem == FOLDER || viewItem == EXCFOLDER || viewItem == FILE_ITEM || viewItem == EXCFILE_ITEM || viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM || viewItem == OUTPUT_FILE_ITEM || viewItem == V_FOLDER || viewItem == V_FOLDER_ROOT || viewItem == V_EXCFOLDER && view == cl.eide.view.projects",
+                    "group": "2_file@0"
+                },
+                {
+                    "command": "_cl.eide.project.source.copyRelativePath",
+                    "when": "viewItem == FOLDER_ROOT || viewItem == FOLDER || viewItem == EXCFOLDER || viewItem == FILE_ITEM || viewItem == EXCFILE_ITEM || viewItem == V_FILE_ITEM || viewItem == V_EXCFILE_ITEM || viewItem == OUTPUT_FILE_ITEM && view == cl.eide.view.projects",
+                    "group": "2_file@1"
                 },
                 {
                     "command": "_cl.eide.project.source.file.modify.extraArgs",

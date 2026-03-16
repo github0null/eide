@@ -74,6 +74,8 @@
     "eide.explorer.file.compile": "编译",
     "eide.explorer.file.modify.extraArgs": "查看/修改此文件的编译选项",
     "eide.explorer.folder.modify.extraArgs": "查看/修改此文件夹的编译选项",
+    "eide.explorer.copyPath": "复制路径",
+    "eide.explorer.copyRelativePath": "复制相对路径",
 
     "eide.source.show_cmsis_config_wizard": "CMSIS Configuration Wizard",
     "eide.source.show.disassembly": "查看反汇编",

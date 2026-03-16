@@ -5410,6 +5410,48 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
     }
 
+    async copyPath(type: 'abs' | 'relative', item: ProjTreeItem) {
+
+        const project = this.getProjectByTreeItem(item);
+        let copiedPath: string | undefined;
+
+        if (item.type === TreeItemType.FOLDER || 
+            item.type === TreeItemType.FOLDER_ROOT ||
+            item.type === TreeItemType.EXCFOLDER) {
+            const dir = <File>item.val.obj;
+            if (type === 'abs') {
+                copiedPath = dir.path;
+            } else {
+                copiedPath = project?.toRelativePath(dir.path) || dir.path;
+            }
+        }
+        else if (item.type === TreeItemType.V_FOLDER || 
+            item.type === TreeItemType.V_FOLDER_ROOT ||
+            item.type === TreeItemType.V_EXCFOLDER) {
+            const vinfo = <VirtualFolderInfo>item.val.obj;
+            copiedPath = vinfo.path;
+        }
+        else if (item.type === TreeItemType.V_FILE_ITEM || 
+            item.type === TreeItemType.V_EXCFILE_ITEM) {
+            const vinfo = <VirtualFileInfo>item.val.obj;
+            if (type === 'abs') {
+                copiedPath = project?.toAbsolutePath(vinfo.vFile.path) || vinfo.vFile.path;
+            } else {
+                copiedPath = vinfo.path;
+            }
+        } 
+        else if (item.val.value instanceof File) { // if value is a file, use it
+            if (type === 'abs') {
+                copiedPath = item.val.value.path;
+            } else {
+                copiedPath = project?.toRelativePath(item.val.value.path) || item.val.value.path;
+            }
+        }
+
+        if (copiedPath)
+            vscode.env.clipboard.writeText(copiedPath);
+    }
+
     private async showDisassemblyForElf(elfPath: string, prj: AbstractProject) {
 
         try {

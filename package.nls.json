@@ -74,6 +74,8 @@
     "eide.explorer.file.compile": "Compile",
     "eide.explorer.file.modify.extraArgs": "Show/Modify Compiler Options",
     "eide.explorer.folder.modify.extraArgs": "Show/Modify Compiler Options",
+    "eide.explorer.copyPath": "Copy Path",
+    "eide.explorer.copyRelativePath": "Copy Relative Path",
 
     "eide.source.show_cmsis_config_wizard": "CMSIS Configuration Wizard",
     "eide.source.show.disassembly": "Show Disassembly",
