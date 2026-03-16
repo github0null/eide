@@ -1524,6 +1524,13 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         }
     }
 
+    clearPendingSave() {
+        if (this.__saveDelayTimer) {
+            clearTimeout(this.__saveDelayTimer);
+            this.__saveDelayTimer = undefined;
+        }
+    }
+
     InstallPack(packFile: File, reporter?: (progress?: number, message?: string) => void) {
         return this.packManager.Install(packFile, reporter);
     }
