@@ -210,6 +210,8 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.file.modify.extraArgs', (item) => projectExplorer.modifyExtraCompilerArgs('file', item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.file.compile', (item) => projectExplorer.compileSingleFile(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.folder.modify.extraArgs', (item) => projectExplorer.modifyExtraCompilerArgs('folder', item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.copyPath', (item) => projectExplorer.copyPath('abs', item)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.source.copyRelativePath', (item) => projectExplorer.copyPath('relative', item)));
 
     // file other operations
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.excludeSource', (item, items) => projectExplorer.ExcludeSourceFile(item, items)));

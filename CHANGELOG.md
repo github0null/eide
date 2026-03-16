@@ -6,6 +6,14 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.26.5] revision
+
+**Improve**:
+  - `Project Explorer`: Add `copyPath` context menu in explorer ui.
+  - `Project AutoSave`: When the project file is being modified, cancel the pending save operation. This avoids accidental file overwriting.
+
+***
+
 ### [v3.26.4] revision
 
 **Improve**:

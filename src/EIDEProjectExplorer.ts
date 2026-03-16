@@ -828,7 +828,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                 break;
         }
 
-        prj.Save(false, 1000); // save project file with a delay
+        prj.Save(false, 2500); // save project file with a delay
     }
 
     LoadWorkspaceProject(workspaceState: vscode.Memento) {
@@ -3589,9 +3589,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const uid = prj.getUid();
         const wsf = prj.getWorkspaceFile();
 
-        //
+        prj.clearPendingSave();
+
         // disable autosave
-        //
         this.enableAutoSave(false);
 
         if (this.__autosaveDisableTimeoutTimer) {
@@ -3603,9 +3603,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }, 5 * 60 * 1000, this);
         }
 
-        //
-        // do something
-        //
+        // ask user to reload project
         const msg = view_str$prompt$need_reload_project.replace('{}', prj.getProjectName());
         const ans = await vscode.window.showInformationMessage(msg, 'Yes', 'No');
         if (ans == 'Yes') {
@@ -3617,9 +3615,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             this.__autosaveDisableTimeoutTimer = undefined;
         }
 
-        //
         // enable auto save
-        //
         this.enableAutoSave(true);
     }
 
@@ -5412,6 +5408,48 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         else { // folder
             this.modifyExtraCompilerArgs_forFolder(project, item);
         }
+    }
+
+    async copyPath(type: 'abs' | 'relative', item: ProjTreeItem) {
+
+        const project = this.getProjectByTreeItem(item);
+        let copiedPath: string | undefined;
+
+        if (item.type === TreeItemType.FOLDER || 
+            item.type === TreeItemType.FOLDER_ROOT ||
+            item.type === TreeItemType.EXCFOLDER) {
+            const dir = <File>item.val.obj;
+            if (type === 'abs') {
+                copiedPath = dir.path;
+            } else {
+                copiedPath = project?.toRelativePath(dir.path) || dir.path;
+            }
+        }
+        else if (item.type === TreeItemType.V_FOLDER || 
+            item.type === TreeItemType.V_FOLDER_ROOT ||
+            item.type === TreeItemType.V_EXCFOLDER) {
+            const vinfo = <VirtualFolderInfo>item.val.obj;
+            copiedPath = vinfo.path;
+        }
+        else if (item.type === TreeItemType.V_FILE_ITEM || 
+            item.type === TreeItemType.V_EXCFILE_ITEM) {
+            const vinfo = <VirtualFileInfo>item.val.obj;
+            if (type === 'abs') {
+                copiedPath = project?.toAbsolutePath(vinfo.vFile.path) || vinfo.vFile.path;
+            } else {
+                copiedPath = vinfo.path;
+            }
+        } 
+        else if (item.val.value instanceof File) { // if value is a file, use it
+            if (type === 'abs') {
+                copiedPath = item.val.value.path;
+            } else {
+                copiedPath = project?.toRelativePath(item.val.value.path) || item.val.value.path;
+            }
+        }
+
+        if (copiedPath)
+            vscode.env.clipboard.writeText(copiedPath);
     }
 
     private async showDisassemblyForElf(elfPath: string, prj: AbstractProject) {
