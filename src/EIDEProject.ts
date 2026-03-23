@@ -3860,7 +3860,7 @@ class EIDEProject extends AbstractProject {
                     halFiles = halFiles.concat(group.files);
                 } else {
                     fileGroups.push(<FileGroup>{
-                        name: File.ToUnixPath(<string>rePath).toUpperCase(),
+                        name: File.ToUnixPath(<string>rePath),
                         files: group.files,
                         disabled: group.disabled
                     });
