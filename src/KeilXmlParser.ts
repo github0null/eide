@@ -1367,6 +1367,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
         }
 
         target.TargetName = prjConfig.config.name;
+        target.uAC6 = prj.getToolchain().name === 'AC6' ? '1' : '0';
         target.TargetOption.TargetCommonOption.Device = devName;
         target.TargetOption.TargetCommonOption.Vendor = vendor;
 
