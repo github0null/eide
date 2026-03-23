@@ -3414,7 +3414,7 @@ $(OUT_DIR):
 
     protected abstract create(option: CreateOptions): File;
 
-    abstract ExportToKeilProject(): File | undefined;
+    abstract ExportToKeilProject(saveFile?: File): File | undefined;
 
     static NewProject(workspaceState: vscode.Memento): AbstractProject {
         return new EIDEProject(workspaceState);
@@ -3813,7 +3813,7 @@ class EIDEProject extends AbstractProject {
         return baseInfo.workspaceFile;
     }
 
-    ExportToKeilProject(): File | undefined {
+    ExportToKeilProject(saveFile?: File): File | undefined {
 
         let keilFile: File;
 
@@ -3826,8 +3826,8 @@ class EIDEProject extends AbstractProject {
         const keilSuffix = prjConfig.type === 'C51' ? 'uvproj' : 'uvprojx';
         const suffixFilter = [new RegExp('\\.' + keilSuffix + '$', 'i')];
 
-        // local keil file
-        const localKeilFile = File.fromArray([this.GetRootDir().path, `${prjConfig.name}.${keilSuffix}`]);
+        // use user-specified save path, or fall back to project root
+        const localKeilFile = saveFile ?? File.fromArray([this.GetRootDir().path, `${prjConfig.name}.${keilSuffix}`]);
 
         // get from project root folder
         if (localKeilFile.IsFile()) {
@@ -3892,10 +3892,13 @@ class EIDEProject extends AbstractProject {
         // rm empty file groups for MDK
         fileGroups = fileGroups.filter(g => g.files.length > 0);
 
-        // set keil xml
-        keilParser.SetKeilXml(this, fileGroups, cDevice);
+        const outDir = saveFile ? new File(NodePath.dirname(saveFile.path)) : this.GetRootDir();
+        const outName = saveFile ? saveFile.noSuffixName : localKeilFile.noSuffixName;
 
-        return keilParser.Save(this.GetRootDir(), localKeilFile.noSuffixName);
+        // set keil xml
+        keilParser.SetKeilXml(this, fileGroups, outDir, cDevice);
+
+        return keilParser.Save(outDir, outName);
     }
 
     //////////////////////////////// overrride ///////////////////////////////////

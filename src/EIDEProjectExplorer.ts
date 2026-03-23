@@ -4203,7 +4203,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
     }
 
-    ExportKeilXml(prjItem: ProjTreeItem) {
+    async ExportKeilXml(prjItem: ProjTreeItem) {
         try {
             const prj = this.getProjectByTreeItem(prjItem);
             if (!prj)
@@ -4221,7 +4221,26 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 return;
             }
 
-            const xmlFile = prj.ExportToKeilProject();
+            const prjConfig = prj.GetConfiguration().config;
+            const keilSuffix = prjConfig.type === 'C51' ? 'uvproj' : 'uvprojx';
+            const defaultUri = vscode.Uri.file(NodePath.join(prj.GetRootDir().path, `${prjConfig.name}.${keilSuffix}`));
+
+            const uri = await vscode.window.showSaveDialog({
+                defaultUri: defaultUri,
+                filters: { 'Keil Project': [keilSuffix] }
+            });
+            if (!uri) return;
+
+            // warn if the chosen save path is on a different drive from the project root;
+            // in that case, cross-drive paths cannot be made relative and will be written as absolute paths
+            const saveDrive = NodePath.parse(uri.fsPath).root.toLowerCase();
+            const prjDrive = NodePath.parse(prj.GetRootDir().path).root.toLowerCase();
+            if (saveDrive !== prjDrive) {
+                GlobalEvent.emit('msg', newMessage('Warning',
+                    `导出路径 (${saveDrive}) 与项目根目录 (${prjDrive}) 不在同一驱动器，此行为可能导致移动或复制项目后 Keil 无法正确识别文件。`));
+            }
+
+            const xmlFile = prj.ExportToKeilProject(new File(uri.fsPath));
 
             if (xmlFile) {
                 GlobalEvent.emit('msg', newMessage('Info', export_keil_xml_ok + prj.toRelativePath(xmlFile.path)));
