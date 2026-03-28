@@ -89,7 +89,8 @@ import {
     remove_this_item,
     view_str$prompt$filesOptionsComment,
     view_str$virual_doc_provider_banner,
-    view_str$missed_stubs_added
+    view_str$missed_stubs_added,
+    view_str$keil_export_path_warning
 } from './StringTable';
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
@@ -4236,8 +4237,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             const saveDrive = NodePath.parse(uri.fsPath).root.toLowerCase();
             const prjDrive = NodePath.parse(prj.GetRootDir().path).root.toLowerCase();
             if (saveDrive !== prjDrive) {
-                GlobalEvent.emit('msg', newMessage('Warning',
-                    `导出路径 (${saveDrive}) 与项目根目录 (${prjDrive}) 不在同一驱动器，此行为可能导致移动或复制项目后 Keil 无法正确识别文件。`));
+                GlobalEvent.emit('msg', newMessage('Warning', view_str$keil_export_path_warning
+                    .replace('{0}', saveDrive)
+                    .replace('{1}', prjDrive)));
             }
 
             const xmlFile = prj.ExportToKeilProject(new File(uri.fsPath));
