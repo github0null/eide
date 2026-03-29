@@ -306,7 +306,7 @@ export abstract class KeilParser<T> {
 
     abstract ParseData(): KeilParserResult<T>[];
 
-    abstract SetKeilXml(prj: AbstractProject, fileGroups: FileGroup[], deviceInfo?: CurrentDevice): void;
+    abstract SetKeilXml(prj: AbstractProject, fileGroups: FileGroup[], keilOutputDir: File, deviceInfo?: CurrentDevice): void;
 }
 
 //----
@@ -504,7 +504,7 @@ class C51Parser extends KeilParser<KeilC51Option> {
         }
     }
 
-    SetKeilXml(prj: AbstractProject, fileGroups: FileGroup[], deviceInfo?: CurrentDevice): void {
+    SetKeilXml(prj: AbstractProject, fileGroups: FileGroup[], keilOutputDir: File, deviceInfo?: CurrentDevice): void {
 
         const prjConfig: ProjectConfiguration<any> = prj.GetConfiguration();
         const target = this.doc.Project.Targets.Target[0];
@@ -534,14 +534,15 @@ class C51Parser extends KeilParser<KeilC51Option> {
         target.TargetOption.TargetCommonOption.Device = devName;
         target.TargetOption.TargetCommonOption.Vendor = vendor;
 
-        const outFolder = File.normalize(prjConfig.config.outDir);
-        target.TargetOption.TargetCommonOption.OutputDirectory = `.\\${outFolder}\\Keil\\`;
-        target.TargetOption.TargetCommonOption.ListingPath = `.\\${outFolder}\\Keil\\`;
+        const outFolderAbs = prj.ToAbsolutePath(prjConfig.config.outDir);
+        const outFolder = File.ToLocalPath(keilOutputDir.ToRelativePath(outFolderAbs) || outFolderAbs);
+        target.TargetOption.TargetCommonOption.OutputDirectory = `${outFolder}\\Keil\\`;
+        target.TargetOption.TargetCommonOption.ListingPath = `${outFolder}\\Keil\\`;
         target.TargetOption.TargetCommonOption.OutputName = target.TargetName;
 
         target.TargetOption.Target51.C51.VariousControls.IncludePath = mergedDep.incList
             .map(s => prj.resolveEnvVar(s))
-            .map(inc => File.ToLocalPath(prj.toRelativePath(inc)))
+            .map(inc => { const abs = File.isAbsolute(inc) ? inc : prj.ToAbsolutePath(inc); return File.ToLocalPath(keilOutputDir.ToRelativePath(abs) || abs); })
             .join(';');
 
         target.TargetOption.Target51.C51.VariousControls.Define = mergedDep.defineList.join(",");
@@ -563,7 +564,7 @@ class C51Parser extends KeilParser<KeilC51Option> {
                 const fileElement = {
                     FileName: _f.file.name,
                     FileType: this.getFileType(_f.file).toString(),
-                    FilePath: prj.ToRelativePath(_f.file.path) || _f.file.path
+                    FilePath: File.ToLocalPath(keilOutputDir.ToRelativePath(_f.file.path) || _f.file.path)
                 };
 
                 this.setFileDisableFlag(fileElement, _f.disabled);
@@ -845,9 +846,10 @@ class ARMParser extends KeilParser<KeilARMOption> {
                         eideOption.linker['output-format'] = 'lib';
                     }
                     if (!mdk_CreateHexFile) {
-                        // Make eide Don't output hex/bin
+                        // Make eide Don't output s19/bin
                         if (eideOption.linker == undefined) eideOption.linker = {};
-                        eideOption.linker['$disableOutputTask'] = true;
+                        eideOption.linker['$disableOutputTask'] = false;
+                        eideOption.linker['$outputTaskExcludes'] = ['.bin', '.s19'];
                     }
                 }
             }
@@ -1169,7 +1171,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
         return result;
     }
 
-    private setOption(targetOptionObj: any, prj: AbstractProject) {
+    private setOption(targetOptionObj: any, prj: AbstractProject, keilOutputDir: File) {
 
         const armAdsObj = targetOptionObj.TargetArmAds;
         const prjConfig = <ProjectConfiguration<ArmBaseCompileData>>prj.GetConfiguration();
@@ -1213,7 +1215,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
                 LDads.umfTarg = config.useCustomScatterFile ? '0' : '1';
                 if (config.scatterFilePath) {
                     const absPath = prj.ToAbsolutePath(config.scatterFilePath);
-                    LDads.ScatterFile = this.ToRelativePath(absPath);
+                    LDads.ScatterFile = File.ToLocalPath(keilOutputDir.ToRelativePath(absPath) || absPath);
                 } else {
                     LDads.ScatterFile = '';
                 }
@@ -1317,7 +1319,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
         }
     }
 
-    SetKeilXml(prj: AbstractProject, fileGroups: FileGroup[], deviceInfo?: CurrentDevice): void {
+    SetKeilXml(prj: AbstractProject, fileGroups: FileGroup[], keilOutputDir: File, deviceInfo?: CurrentDevice): void {
 
         const prjConfig: ProjectConfiguration<any> = prj.GetConfiguration();
         const target = this.doc.Project.Targets.Target[0];
@@ -1366,17 +1368,19 @@ class ARMParser extends KeilParser<KeilARMOption> {
         }
 
         target.TargetName = prjConfig.config.name;
+        target.uAC6 = prj.getToolchain().name === 'AC6' ? '1' : '0';
         target.TargetOption.TargetCommonOption.Device = devName;
         target.TargetOption.TargetCommonOption.Vendor = vendor;
 
-        const outFolder = File.normalize(prjConfig.config.outDir);
-        target.TargetOption.TargetCommonOption.OutputDirectory = `.\\${outFolder}\\Keil\\`;
-        target.TargetOption.TargetCommonOption.ListingPath = `.\\${outFolder}\\Keil\\`;
+        const outFolderAbs = prj.ToAbsolutePath(prjConfig.config.outDir);
+        const outFolder = File.ToLocalPath(keilOutputDir.ToRelativePath(outFolderAbs) || outFolderAbs);
+        target.TargetOption.TargetCommonOption.OutputDirectory = `${outFolder}\\Keil\\`;
+        target.TargetOption.TargetCommonOption.ListingPath = `${outFolder}\\Keil\\`;
         target.TargetOption.TargetCommonOption.OutputName = target.TargetName;
 
         target.TargetOption.TargetArmAds.Cads.VariousControls.IncludePath = mergedDep.incList
             .map(s => prj.resolveEnvVar(s))
-            .map(inc => File.ToLocalPath(prj.toRelativePath(inc)))
+            .map(inc => { const abs = File.isAbsolute(inc) ? inc : prj.ToAbsolutePath(inc); return File.ToLocalPath(keilOutputDir.ToRelativePath(abs) || abs); })
             .join(';');
 
         target.TargetOption.TargetArmAds.Cads.VariousControls.Define = mergedDep.defineList.join(","); // C/CPP
@@ -1387,7 +1391,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
             target.TargetOption.TargetArmAds.Aads.VariousControls.Define = defines.join(","); // ASM
         }
 
-        this.setOption(target.TargetOption, prj);
+        this.setOption(target.TargetOption, prj, keilOutputDir);
 
         const nGroups: any[] = [];
 
@@ -1404,7 +1408,7 @@ class ARMParser extends KeilParser<KeilARMOption> {
                 const fileElement = {
                     FileName: _f.file.name,
                     FileType: this.getFileType(_f.file).toString(),
-                    FilePath: prj.ToRelativePath(_f.file.path) || _f.file.path
+                    FilePath: File.ToLocalPath(keilOutputDir.ToRelativePath(_f.file.path) || _f.file.path)
                 };
 
                 this.setFileDisableFlag(fileElement, _f.disabled);

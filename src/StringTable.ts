@@ -65,6 +65,11 @@ export const view_str$settings$outFolderName = [
     'Output Folder Name'
 ][langIndex];
 
+export const view_str$settings$debugger = [
+    '调试器',
+    'Debugger'
+][langIndex];
+
 export const view_str$settings$prj_name = [
     '项目名称',
     'Project Name'
@@ -458,6 +463,11 @@ export const view_str$env_desc$py3_cmd = [
 ][langIndex];
 
 //---------------Other---------------
+
+export const view_str$keil_export_path_warning = [
+    '导出路径 ({0}) 与项目根目录 ({1}) 不在同一驱动器，此行为可能导致移动或复制项目后 Keil 无法正确识别文件。',
+    'The export path ({0}) is not on the same drive as the project root directory ({1}). This behavior may cause Keil to fail to correctly recognize files after moving or copying the project.',
+][langIndex];
 
 export const view_str$missed_stubs_added = [
     '桩函数源文件 {} 已经添加到项目。',

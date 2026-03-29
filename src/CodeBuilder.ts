@@ -1126,17 +1126,18 @@ export class ARMCodeBuilder extends CodeBuilder {
 
             const extraCommands: any[] = [];
 
+            //! deprecated. 现在我们可以通过在调试配置中设置 'loadFiles' 和 'symbolFiles' 来实现同样效果
             // convert axf to elf
             // why we need this ? see: https://stackoverflow.com/questions/49508277/warning-loadable-section-my-section-outside-of-elf-segments
-            if (['AC5', 'AC6'].includes(config.toolchain) &&
-                settingManager.IsConvertAxf2Elf() &&
-                options['linker']['$disableOutputTask'] != true) {
-                const axf2elf_log = `\${OutDir}/axf2elf.log`;
-                extraCommands.push({
-                    name: 'axf to elf',
-                    command: `axf2elf -d "\${ToolchainRoot}" -i "\${OutDir}/\${ProjectName}.axf" -o "\${OutDir}/\${ProjectName}.elf" > "${axf2elf_log}"`
-                });
-            }
+            // if (['AC5', 'AC6'].includes(config.toolchain) &&
+            //     settingManager.IsConvertAxf2Elf() &&
+            //     options['linker']['$disableOutputTask'] != true) {
+            //     const axf2elf_log = `\${OutDir}/axf2elf.log`;
+            //     extraCommands.push({
+            //         name: 'axf to elf',
+            //         command: `axf2elf -d "\${ToolchainRoot}" -i "\${OutDir}/\${ProjectName}.axf" -o "\${OutDir}/\${ProjectName}.elf" > "${axf2elf_log}"`
+            //     });
+            // }
 
             // insert command lines
             if (settingManager.isInsertCommandsAtBegin()) {

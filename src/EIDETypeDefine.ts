@@ -129,6 +129,10 @@ export interface ProjectTargetInfo {
     uploadConfigMap: { [uploader: string]: any };
     cppPreprocessAttrs: Dependence;
     builderOptions: { [toolchain: string]: BuilderOptions };
+    settings: {
+        debugger?: string; // @ref DEBUGGER_MAPS
+        [name: string]: any;
+    };
 }
 
 export interface VirtualFile {
@@ -1352,6 +1356,12 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             builderOpts = utility.deepCloneObject(target.targets[target.mode].builderOptions);
         }
 
+        let settings: any = {};
+        if (target.targets[target.mode] &&
+            target.targets[target.mode].settings) {
+            settings = utility.deepCloneObject(target.targets[target.mode].settings);
+        }
+
         return {
             excludeList: Array.from(target.excludeList),
             toolchain: target.toolchain,
@@ -1361,7 +1371,8 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             uploadConfig: utility.deepCloneObject(target.uploadConfig),
             uploadConfigMap: utility.deepCloneObject(target.uploadConfigMap),
             cppPreprocessAttrs: custom_dep,
-            builderOptions: builderOpts
+            builderOptions: builderOpts,
+            settings: settings
         };
     }
 
@@ -1516,6 +1527,34 @@ export class ProjectConfiguration<T extends BuilderConfigData>
                 files: [],
                 folders: this.config.virtualFolder
             };
+        }
+
+        // init targets default value
+        const defTargetInfo: ProjectTargetInfo = {
+            excludeList: [],
+            toolchain: this.config.toolchain,
+            toolchainConfig: {},
+            toolchainConfigMap: {},
+            uploader: this.config.uploader,
+            uploadConfig: {},
+            uploadConfigMap: {},
+            cppPreprocessAttrs: {
+                name: 'default',
+                incList: [],
+                libList: [],
+                defineList: []
+            },
+            builderOptions: {},
+            settings: {
+                debugger: this.config.type === 'C51' ? 'unknown' : 'cortex-debug'
+            }
+        };
+        for (const name in this.config.targets) {
+            const target = this.config.targets[name];
+            for (const key in defTargetInfo) {
+                if ((<any>target)[key] === undefined)
+                    (<any>target)[key] = utility.deepCloneObject((<any>defTargetInfo)[key]);
+            }
         }
 
         //  old project(ver < 3.3) have 'mode' field
