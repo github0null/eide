@@ -6,6 +6,17 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.26.6] revision
+
+**New**:
+  - `One-Click Debug`: Support new debugger `eclipse-cdt.cdt-gdb-vscode`. You can select it in project settings.
+
+**Changes**:
+  - `axf2elf Removed`: This function now is deprecated because we can use 'loadFiles', 'symbolFiles' options to load ac5/ac6 axf.
+  - `Project Export`: Check [PR 511](https://github.com/github0null/eide/pull/511) for more details.
+
+***
+
 ### [v3.26.5] revision
 
 **Improve**:
