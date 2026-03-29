@@ -291,6 +291,8 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.DebugConfigurationProviderTriggerKind.Dynamic);
     vscode.debug.registerDebugConfigurationProvider('probe-rs-debug', new ExternalDebugConfigProvider('probe-rs-debug'),
         vscode.DebugConfigurationProviderTriggerKind.Dynamic);
+    vscode.debug.registerDebugConfigurationProvider('gdbtarget', new ExternalDebugConfigProvider('gdbtarget'),
+        vscode.DebugConfigurationProviderTriggerKind.Dynamic);
     // vscode.debug.registerDebugConfigurationProvider('stm8-debug', new ExternalDebugConfigProvider('stm8-debug'),
     //     vscode.DebugConfigurationProviderTriggerKind.Dynamic);
 
@@ -1948,6 +1950,9 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
         const toolchain = prj.getToolchain();
         const toolchainManager = ToolchainManager.getInstance();
         const settingManager = SettingManager.instance();
+        const outFullName = prj.toRelativePath(prj.getExecutablePathWithoutSuffix());
+
+        let gdbPath = 'arm-none-eabi-gdb';
 
         switch (toolchain.name) {
             case 'AC5':
@@ -1958,6 +1963,9 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
                     ResInstaller.instance().setOrInstallTools('GCC', msg, 'EIDE.ARM.GCC.InstallDirectory');
                     return result;
                 }
+                gdbPath = NodePath.join(
+                    settingManager.getGCCDir().path, 'bin', 
+                    settingManager.getGCCPrefix() + `gdb${platform.exeSuffix()}`);
                 break;
             case 'RISCV_GCC':
                 if (!toolchainManager.isToolchainPathReady(toolchain.name)) {
@@ -1965,6 +1973,9 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
                     GlobalEvent.emit('msg', newMessage('Warning', msg));
                     return result;
                 }
+                gdbPath = NodePath.join(
+                    settingManager.getRiscvToolFolder().path, 'bin', 
+                    settingManager.getRiscvToolPrefix() + `gdb${platform.exeSuffix()}`);
                 break;
             case 'ANY_GCC':
                 if (!toolchainManager.isToolchainPathReady(toolchain.name)) {
@@ -1972,6 +1983,9 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
                     GlobalEvent.emit('msg', newMessage('Warning', msg));
                     return result;
                 }
+                gdbPath = NodePath.join(
+                    settingManager.getAnyGccToolFolder().path, 'bin', 
+                    settingManager.getAnyGccToolPrefix() + `gdb${platform.exeSuffix()}`);
                 break;
             // case 'IAR_STM8':
             // case 'COSMIC_STM8':
@@ -2038,7 +2052,16 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
             }
 
             dbgCfg['cwd'] = prj.getRootDir().path;
-            dbgCfg['executable'] = toFmtRelativePath(prj.getExecutablePathWithoutSuffix() + '.elf');
+            if (toolchain.name == 'AC5' || toolchain.name == 'AC6') {
+                //"loadFiles": [ ".\\build\\xxxx.hex" ],
+                //"symbolFiles": [ ".\\build\\xxx.elf" ],
+                dbgCfg['loadFiles'] = [
+                    toFmtRelativePath(prj.getExecutablePathWithoutSuffix() + '.hex')];
+                dbgCfg['symbolFiles'] = [
+                    toFmtRelativePath(prj.getExecutablePathWithoutSuffix() + '.axf')];
+            } else {
+                dbgCfg['executable'] = toFmtRelativePath(prj.getExecutablePathWithoutSuffix() + '.elf');
+            }
             dbgCfg['runToEntryPoint'] = 'main';
             dbgCfg['liveWatch'] = {
                 'enabled': true,
@@ -2050,12 +2073,34 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
             return dbgCfg;
         };
 
+        const newCdtDebugCfg = (prj: AbstractProject) => {
+            return <vscode.DebugConfiguration>{
+                "type": "gdbtarget",
+                "request": "launch",
+                "name": "CDT GDB Debug: xxx",
+                "cwd": prj.getRootDir().path,
+                "program": outFullName + toolchain.elfSuffix,
+                "gdb": gdbPath,
+                "definitionPath": getSvdFile(prj),
+                "auxiliaryGdb": true,
+                "initCommands": [
+                    "monitor halt",
+                    "monitor reset",
+                    `load "${outFullName}.hex"`,
+                    "monitor reset",
+                    "tbreak main"
+                ]
+            };
+        };
+
         const newAttachDebugCfg = (cfgtocopy: any) => {
             const nCfg = JSON.parse(JSON.stringify(cfgtocopy));
             nCfg['name'] += '(attach)';
             nCfg['request'] = 'attach';
             if (nCfg['type'] === 'cortex-debug') {
                 nCfg['runToEntryPoint'] = undefined;
+            } else if (nCfg['type'] === 'gdbtarget') {
+                nCfg['initCommands'] = undefined;
             }
             return nCfg;
         };
@@ -2071,16 +2116,19 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
 
         const flasherOpts = prj.GetConfiguration().uploadConfigModel.data;
         const flashertype = prj.getUploaderType();
+        const projectCwd = prj.getRootDir().path;
 
         if (flashertype == 'JLink') {
+            const jlinkGdbServerPath = NodePath.join(settingManager.getJlinkDir(),
+                platform.osType() == 'win32' ? 'JLinkGDBServerCL.exe' : 'JLinkGDBServerCLExe');
+            // For cortex-debug
             const dbgCfg = newCortexDebugCfg(prj);
             const flasherCfg = (<JLinkOptions>flasherOpts);
-            dbgCfg['name'] = 'Debug: JLINK';
+            dbgCfg['name'] = 'Cortex-Debug: JLINK';
             dbgCfg['servertype'] = 'jlink';
             dbgCfg['interface'] = flasherCfg.proType == JLinkProtocolType.JTAG ? 'jtag' : 'swd';
             dbgCfg['device'] = flasherCfg.cpuInfo.cpuName;
-            dbgCfg['serverpath'] = NodePath.join(settingManager.getJlinkDir(),
-                platform.osType() == 'win32' ? 'JLinkGDBServerCL.exe' : 'JLinkGDBServerCLExe');
+            dbgCfg['serverpath'] = jlinkGdbServerPath;
             if (flasherCfg.otherCmds) {
                 // -IP <IP/Tunnel/SerialNo/Nickname> Selects a specific J-Link
                 let m = /-IP ([^\s]+)/.exec(flasherCfg.otherCmds);
@@ -2099,12 +2147,38 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
             }
             result.push(dbgCfg);
             result.push(newAttachDebugCfg(dbgCfg));
+            // For CDT GDB Debug Adapter
+            const cdtDbgCfg = newCdtDebugCfg(prj);
+            cdtDbgCfg["name"] = "CDT GDB Debug: JLINK";
+            cdtDbgCfg["customResetCommands"] = [
+                "maintenance flush register-cache",
+                "maintenance flush dcache",
+                "monitor halt",
+                "monitor reset",
+                "tbreak main",
+                "continue"
+            ];
+            cdtDbgCfg["target"] = {
+                "server": jlinkGdbServerPath,
+                "port": "50100",
+                "automaticallyKillServer": true,
+                "cwd": projectCwd,
+                "serverParameters": [
+                    "-singlerun", "-nogui",
+                    "-if", flasherCfg.proType == JLinkProtocolType.JTAG ? 'jtag' : 'swd',
+                    "-port", "50100",
+                    // "-swoport", "50101",
+                    // "-telnetport", "50102",
+                    "-device", flasherCfg.cpuInfo.cpuName
+                ].concat(utility.parseCliArgs(flasherCfg.otherCmds))
+            };
+            result.push(cdtDbgCfg);
         }
 
         else if (flashertype == 'OpenOCD') {
             const dbgCfg = newCortexDebugCfg(prj);
             const flasherCfg = (<OpenOCDFlashOptions>flasherOpts);
-            dbgCfg['name'] = 'Debug: OpenOCD';
+            dbgCfg['name'] = 'Cortex-Debug: OpenOCD';
             dbgCfg['servertype'] = 'openocd';
             const ocdCfgs: string[] = [];
             if (flasherCfg.interface.trim())
@@ -2115,12 +2189,46 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
             dbgCfg['serverpath'] = settingManager.getOpenOCDExePath();
             result.push(dbgCfg);
             result.push(newAttachDebugCfg(dbgCfg));
+            // For CDT GDB Debug Adapter
+            const cdtDbgCfg = newCdtDebugCfg(prj);
+            cdtDbgCfg["name"] = "CDT GDB Debug: OpenOCD";
+            const fArgs: string[] = [];
+            ocdCfgs.forEach(p => fArgs.push('-f', p));
+            cdtDbgCfg["initCommands"] = [
+                "monitor reset halt",
+                `load "${outFullName}.hex"`,
+                "monitor reset halt",
+                "tbreak main"
+            ];
+            cdtDbgCfg["customResetCommands"] = [
+                "maintenance flush register-cache",
+                "maintenance flush dcache",
+                "monitor reset halt",
+                "tbreak main",
+                "continue"
+            ];
+            cdtDbgCfg["target"] = {
+                "server": settingManager.getOpenOCDExePath(),
+                "port": "50100",
+                "automaticallyKillServer": true,
+                "cwd": projectCwd,
+                "serverParameters": [
+                    "-c", "gdb_port 50100",
+                    "-c", "tcl_port 50101",
+                    // "-c", "\"telnet_port 50102\"",
+                    "-s", projectCwd,
+                    "-f", NodePath.join(ResManager.instance().getAppDataDir().path, 'openocd-helpers.tcl')
+                ].concat(fArgs).concat([
+                    "-c", "CDLiveWatchSetup"
+                ])
+            };
+            result.push(cdtDbgCfg);
         }
 
         else if (flashertype == 'pyOCD') {
             const dbgCfg = newCortexDebugCfg(prj);
             const flasherCfg = (<PyOCDFlashOptions>flasherOpts);
-            dbgCfg['name'] = 'Debug: pyOCD';
+            dbgCfg['name'] = 'Cortex-Debug: pyOCD';
             dbgCfg['servertype'] = 'pyocd';
             dbgCfg['targetId'] = flasherCfg.targetName;
             const cliArgs: string[] = [];
@@ -2143,6 +2251,39 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
             dbgCfg['liveWatch']['enabled'] = false;
             result.push(dbgCfg);
             result.push(newAttachDebugCfg(dbgCfg));
+            // For CDT GDB Debug Adapter
+            const cdtDbgCfg = newCdtDebugCfg(prj);
+            cdtDbgCfg["name"] = "CDT GDB Debug: pyOCD";
+            cdtDbgCfg["initCommands"] = [
+                "monitor reset halt",
+                `load "${outFullName}.hex"`,
+                "monitor reset halt",
+                "tbreak main"
+            ];
+            cdtDbgCfg["customResetCommands"] = [
+                "maintenance flush register-cache",
+                "maintenance flush dcache",
+                "monitor reset halt",
+                "tbreak main",
+                "continue"
+            ];
+            cdtDbgCfg["target"] = {
+                "server": "pyocd",
+                "port": "50100",
+                "automaticallyKillServer": true,
+                "cwd": projectCwd,
+                "environment": {
+                    "PYTHONUTF8": "1",
+                    "PYTHONIOENCODING": "utf-8"
+                },
+                "serverParameters": [
+                    "gdbserver",
+                    "--port", "50100",
+                    // "--telnet-port", "50102",
+                    "--target", flasherCfg.targetName
+                ].concat(cliArgs)
+            };
+            result.push(cdtDbgCfg);
         }
 
         else if (flashertype == 'STLink') {
@@ -2177,13 +2318,29 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
                     cubeProgramerPath = NodePath.dirname(p);
             }
             const dbgCfg = newCortexDebugCfg(prj);
-            dbgCfg['name'] = 'Debug: STLink';
+            dbgCfg['name'] = 'Cortex-Debug: STLink';
             dbgCfg['servertype'] = 'stlink';
             dbgCfg['interface'] = flasherCfg.proType == 'SWD' ? 'swd' : 'jtag';
             dbgCfg['stlinkPath'] = gdbserverPath;
             dbgCfg['stm32cubeprogrammer'] = cubeProgramerPath;
             result.push(dbgCfg);
             result.push(newAttachDebugCfg(dbgCfg));
+            // For CDT GDB Debug Adapter
+            const cdtDbgCfg = newCdtDebugCfg(prj);
+            cdtDbgCfg["name"] = "CDT GDB Debug: STLink";
+            cdtDbgCfg["target"] = {
+                "server": gdbserverPath,
+                "port": "50100",
+                "automaticallyKillServer": true,
+                "cwd": projectCwd,
+                "serverParameters": [
+                    "-p", "50100",
+                    "-cp", cubeProgramerPath,
+                    `--${flasherCfg.proType == 'SWD' ? 'swd' : 'jtag'}`,
+                    "--halt"
+                ]
+            };
+            result.push(cdtDbgCfg);
         }
 
         else if (flashertype == 'probe-rs') {
@@ -2191,8 +2348,8 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
             const dbgCfg: any = {
                 "type": "probe-rs-debug",
                 "request": "launch",
-                "name": "Debug: probe-rs",
-                "cwd": prj.getRootDir().path,
+                "name": "Debugger for probe-rs",
+                "cwd": projectCwd,
                 "connectUnderReset": false,
                 "chip": flasherCfg.target,
                 "wireProtocol": flasherCfg.protocol.toLowerCase() == 'swd' ? 'Swd' : 'Jtag',
@@ -2299,6 +2456,9 @@ async function startDebugging(attach?: boolean) {
         cfgs = cfgs.filter(cfg => cfg.request === 'attach');
     else
         cfgs = cfgs.filter(cfg => cfg.request === 'launch');
+
+    const debuggerId = prj.getTargetInfo().settings.debugger || 'unknown';
+    cfgs = cfgs.filter(cfg => utility.DEBUGGER_MAPS[debuggerId].types.includes(cfg.type));
 
     if (cfgs.length > 0) {
         let cfg = cfgs[0];

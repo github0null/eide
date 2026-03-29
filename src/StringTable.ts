@@ -65,6 +65,11 @@ export const view_str$settings$outFolderName = [
     'Output Folder Name'
 ][langIndex];
 
+export const view_str$settings$debugger = [
+    '调试器',
+    'Debugger'
+][langIndex];
+
 export const view_str$settings$prj_name = [
     '项目名称',
     'Project Name'

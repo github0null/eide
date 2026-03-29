@@ -49,6 +49,35 @@ export const TIME_ONE_MINUTE = 60 * 1000;
 export const TIME_ONE_HOUR = 3600 * 1000;
 export const TIME_ONE_DAY = 24 * 3600 * 1000;
 
+export interface debuggerInfo {
+    name: string;
+    extension_id: string;
+    types: string[];
+};
+
+export const DEBUGGER_MAPS: { [id: string]: debuggerInfo } = {
+    'cdt-gdb-debug': {
+        name: 'CDT GDB Debug',
+        extension_id: 'eclipse-cdt.cdt-gdb-vscode',
+        types: [
+            'gdbtarget',
+            'gdb'
+        ]
+    },
+    'cortex-debug': {
+        name: 'Cortex Debug',
+        extension_id: 'marus25.cortex-debug',
+        types: [
+            'cortex-debug'
+        ]
+    },
+    'unknown': {
+        name: 'Unknown',
+        extension_id: '',
+        types: []
+    },
+};
+
 /**
  * It's a symbol demangler that can be used as a replacement for the GNU c++filt tool. 
  * It takes a series of symbol names and prints their demangled form on the standard output stream. 

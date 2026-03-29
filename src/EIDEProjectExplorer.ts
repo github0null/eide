@@ -90,7 +90,8 @@ import {
     view_str$prompt$filesOptionsComment,
     view_str$virual_doc_provider_banner,
     view_str$missed_stubs_added,
-    view_str$keil_export_path_warning
+    view_str$keil_export_path_warning,
+    view_str$settings$debugger
 } from './StringTable';
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
@@ -113,7 +114,8 @@ import {
     pyocd_getTargetList,
     generateDotnetProgramCmd,
     isGccFamilyToolchain,
-    cxxDemangle
+    cxxDemangle,
+    DEBUGGER_MAPS
 } from './utility';
 import { concatSystemEnvPath, DeleteDir, exeSuffix, kill, osType, DeleteAllChildren, userhome, getGlobalState } from './Platform';
 import { KeilARMOption, KeilC51Option, KeilParser, KeilRteDependence } from './KeilXmlParser';
@@ -1372,6 +1374,16 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                             projectIndex: element.val.projectIndex
                         }));
 
+                        // setting: debugger
+                        const debuggerId = project.getTargetInfo().settings.debugger || 'unknown';
+                        iList.push(new ProjTreeItem(TreeItemType.SETTINGS_ITEM, {
+                            key: 'debugger',
+                            value: DEBUGGER_MAPS[debuggerId].name,
+                            keyAlias: view_str$settings$debugger,
+                            tooltip: newMarkdownString(`**${view_str$settings$debugger}**: \`${DEBUGGER_MAPS[debuggerId].name}\``),
+                            projectIndex: element.val.projectIndex
+                        }));
+
                         // setting: project env
                         iList.push(new ProjTreeItem(TreeItemType.SETTINGS_ITEM, {
                             key: 'project.env',
@@ -1970,6 +1982,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                         libList: []
                     },
                     builderOptions: {},
+                    settings: {}
                 };
                 eidePrjCfg.targets[targetName] = nEideTarget;
 
@@ -2207,7 +2220,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                     incList: [],
                     defineList: [],
                     libList: []
-                }
+                },
+                settings: {}
             };
 
             nEideTarget.cppPreprocessAttrs.defineList = eTarget.builldArgs.cMacros;
@@ -6213,6 +6227,36 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     }
                 }
                 break;
+            case 'debugger':
+                {
+                    const selections: any[] = [];
+
+                    if (prj.getProjectType() !== 'C51') {
+
+                        selections.push({
+                            value: 'cortex-debug',
+                            label: DEBUGGER_MAPS['cortex-debug'].name,
+                            detail: `extension id: ${DEBUGGER_MAPS['cortex-debug'].extension_id}`
+                        });
+
+                        selections.push({
+                            value: 'cdt-gdb-debug',
+                            label: DEBUGGER_MAPS['cdt-gdb-debug'].name,
+                            detail: `extension id: ${DEBUGGER_MAPS['cdt-gdb-debug'].extension_id}`
+                        });
+                    }
+
+                    const res = await vscode.window.showQuickPick(selections, {placeHolder: 'Select debugger type'});
+                    if (res) {
+                        const targetInfo = prj.getTargetInfo();
+                        if (targetInfo.settings.debugger !== res.value) {
+                            targetInfo.settings.debugger = res.value;
+                            this.updateSettingsView(prj);
+                            prj.Save(true);
+                        }
+                    }
+                }
+                break;
             // 'project.env'
             case 'project.env':
                 {
@@ -7243,7 +7287,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         type: 'jlink' | 'openocd' | 'pyocd',
         prj: AbstractProject, old_cfgs: any[]): Promise<{ debug_config: any, override_idx: number } | undefined> {
 
-        const _elfPath = File.ToUnixPath(prj.getOutputDir()) + '/' + `${prj.getProjectName()}.elf`;
+        const _outFullName = File.ToUnixPath(prj.getOutputDir()) + '/' + `${prj.getProjectName()}`
+        const _elfPath = `${_outFullName}.elf`;
         const _debugConfigTemplates = {
             'jlink': {
                 cwd: '${workspaceRoot}',
@@ -7281,9 +7326,15 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         };
 
         const debugConfig: any = _debugConfigTemplates[type];
+        const toolchain = prj.getToolchain();
+
+        if (toolchain.name == 'AC5' || toolchain.name == 'AC6') {
+            debugConfig['executable'] = undefined;
+            debugConfig['loadFiles'] = [ `${_outFullName}.hex` ];
+            debugConfig['symbolFiles'] = [ `${_outFullName}.axf` ];
+        }
 
         /* set gdb toolchain */
-        const toolchain = prj.getToolchain();
         if (toolchain.getToolchainPrefix) {
             debugConfig.toolchainPrefix = toolchain.getToolchainPrefix().trim().replace(/-$/, '');
         } else if (debugConfig.toolchainPrefix) {

@@ -556,9 +556,10 @@ export class SettingManager {
         return num;
     }
 
-    IsConvertAxf2Elf(): boolean {
-        return this.getConfiguration().get<boolean>('ARM.Option.AxfToElf') || false;
-    }
+    //! deprecated.
+    // IsConvertAxf2Elf(): boolean {
+    //     return this.getConfiguration().get<boolean>('ARM.Option.AxfToElf') || false;
+    // }
 
     IsAutoGenerateRTEHeader(): boolean {
         return this.getConfiguration().get<boolean>('ARM.Option.AutoGenerateRTE_Components') || false;

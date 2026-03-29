@@ -1541,6 +1541,11 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
 
     //////////////////////// project targets //////////////////////////
 
+    getTargetInfo(): ProjectTargetInfo {
+        const prjConfig = this.GetConfiguration<any>().config;
+        return prjConfig.targets[prjConfig.mode];
+    }
+
     getCurrentTarget(): string {
         return this.GetConfiguration().config.mode;
     }

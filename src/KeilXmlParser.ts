@@ -846,9 +846,10 @@ class ARMParser extends KeilParser<KeilARMOption> {
                         eideOption.linker['output-format'] = 'lib';
                     }
                     if (!mdk_CreateHexFile) {
-                        // Make eide Don't output hex/bin
+                        // Make eide Don't output s19/bin
                         if (eideOption.linker == undefined) eideOption.linker = {};
-                        eideOption.linker['$disableOutputTask'] = true;
+                        eideOption.linker['$disableOutputTask'] = false;
+                        eideOption.linker['$outputTaskExcludes'] = ['.bin', '.s19'];
                     }
                 }
             }
