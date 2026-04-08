@@ -37,6 +37,7 @@ import * as NodePath from 'path';
 import { ArmBaseBuilderConfigData } from "./EIDEProjectModules";
 import * as utility from "./utility";
 import * as ArmCpuUtils from "./ArmCpuUtils";
+import * as os from "os";
 
 //! 名称应该是大写，但由于历史因素，其中 'Keil_C51' 大小写暂时无法更正（避免旧的项目出现问题） 
 export type ToolchainName =
@@ -2474,6 +2475,57 @@ class IARARM implements IToolchian {
 
     readonly elfSuffix = '.elf';
 
+    readonly mcpuMap: { [name: string]: string } = {
+        "arm7ej-s": "--cpu=ARM7EJ-S",
+        "arm7tdmi": "--cpu=ARM7TDMI",
+        "arm720t": "--cpu=ARM720T",
+        "arm7tdmi-s": "--cpu=ARM7TDMI-S",
+        "arm9tdmi": "--cpu=ARM9TDMI",
+        "arm920t": "--cpu=ARM920T",
+        "arm922t": "--cpu=ARM922T",
+        "arm9e-s": "--cpu=ARM9E-S",
+        "arm926ej-s": "--cpu=ARM926EJ-S",
+        "arm946e-s": "--cpu=ARM946E-S",
+        "arm966e-s": "--cpu=ARM966E-S",
+        "cortex-m0": "--cpu=Cortex-M0",
+        "cortex-m0+": "--cpu=Cortex-M0+",
+        "cortex-m3": "--cpu=Cortex-M3",
+        "cortex-m4": "--cpu=Cortex-M4 --fpu=None",
+        "cortex-m4-sp": "--cpu=Cortex-M4 --fpu=VFPv4_sp",
+        "cortex-m7": "--cpu=Cortex-M7 --fpu=None",
+        "cortex-m7-sp": "--cpu=Cortex-M7 --fpu=VFPv5_sp",
+        "cortex-m7-dp": "--cpu=Cortex-M7 --fpu=VFPv5_d16",
+        "sc000": "--cpu=SC000",
+        "sc300": "--cpu=SC300",
+        "cortex-m4f": "--cpu=Cortex-M4F --fpu=None",
+        "cortex-m4f-sp": "--cpu=Cortex-M4F --fpu=VFPv4_sp",
+        "cortex-m23": "--cpu=Cortex-M23",
+        "cortex-m23.no_se": "--cpu=Cortex-M23.no_se",
+        "cortex-m33": "--cpu=Cortex-M33",
+        "cortex-m33.fp": "--cpu=Cortex-M33.fp",
+        "cortex-m33.no_dsp": "--cpu=Cortex-M33.no_dsp",
+        "cortex-m33.fp.no_dsp": "--cpu=Cortex-M33.fp.no_dsp",
+        "cortex-m35p": "--cpu=Cortex-M35P",
+        "cortex-m35p.fp": "--cpu=Cortex-M35P.fp",
+        "cortex-m35p.no_dsp": "--cpu=Cortex-M35P.no_dsp",
+        "cortex-m35p.fp.no_dsp": "--cpu=Cortex-M35P.fp.no_dsp",
+        "cortex-r4": "--cpu=Cortex-R4",
+        "cortex-r4f": "--cpu=Cortex-R4F",
+        "cortex-r4.vfp": "--cpu=Cortex-R4.vfp",
+        "cortex-r5": "--cpu=Cortex-R5",
+        "cortex-r5f": "--cpu=Cortex-R5F",
+        "cortex-r5.vfp": "--cpu=Cortex-R5.vfp",
+        "cortex-r7": "--cpu=Cortex-R7",
+        "cortex-r7f": "--cpu=Cortex-R7F",
+        "cortex-r7.vfp": "--cpu=Cortex-R7.vfp"
+    };
+
+    private randomPlaceholder: string;
+
+    constructor() {
+        this.randomPlaceholder = utility.generateRandomStr();
+    }
+
     newInstance(): IToolchian {
         return new IARARM();
     }
@@ -2517,7 +2569,64 @@ class IARARM implements IToolchian {
         return SettingManager.GetInstance().getIarForArmDir();
     }
 
+    private getThumbOptionStr(builderOpts: BuilderOptions): string {
+        if (builderOpts.global && builderOpts.global['arm-thumb-mode'] === 'arm')
+            return '--arm';
+        else
+            return '--thumb';
+    }
+
+    private getCompilerTargetArgs(cpuName: string, fpuType: string, archExt: string, builderOpts: BuilderOptions): string[] {
+
+        let mcpu_id: string;
+
+        cpuName = cpuName.toLowerCase();
+        if (fpuType == 'single')
+            mcpu_id = cpuName + '-sp';
+        else if (fpuType == 'double')
+            mcpu_id = cpuName + '-dp';
+        else
+            mcpu_id = cpuName;
+
+        if (this.mcpuMap[mcpu_id] == undefined)
+            return [];
+
+        return [
+            this.mcpuMap[mcpu_id], this.getThumbOptionStr(builderOpts)
+        ];
+    }
+
     getInternalDefines<T extends BuilderConfigData>(builderCfg: T, builderOpts: BuilderOptions): utility.CppMacroDefine[] {
+        try {
+            const cfg: ArmBaseBuilderConfigData = <any>builderCfg;
+            const cpuName = cfg.cpuType.toLowerCase();
+            const fpuType = cfg.floatingPointHardware;
+            const archExt = cfg.archExtensions || '';
+            const compilerArgs = this.getCompilerTargetArgs(cpuName, fpuType, archExt, builderOpts);
+            if (compilerArgs.length > 0) {
+                // example:
+                //  D:\IAR_ARM\arm\bin\iccarm.exe --cpu=Cortex-M3 --thumb --predef_macros "C:\Users\Administrator\Desktop\tmp.txt"
+                const tmpCfile = File.from(os.tmpdir(),  `foo_${this.randomPlaceholder}.c`);
+                tmpCfile.Write('int foo(int a) { return a * a; }');
+                const predefsfile = File.from(os.tmpdir(), `foo_${this.randomPlaceholder}.defs`);
+                const cmdArgs = compilerArgs.concat(['--predef_macros', predefsfile.path, tmpCfile.path]);
+                const iccarm = File.from(this.getToolchainDir().path, 'bin', `iccarm${platform.exeSuffix()}`).path;
+                child_process.execFileSync(iccarm, cmdArgs, { cwd: tmpCfile.dir });
+                const outputs = predefsfile.Read().split(/\r\n|\n/);
+                const results: utility.CppMacroDefine[] = [];
+                outputs.filter((line) => { return line.trim() !== ''; })
+                    .forEach((line) => {
+                        const value = utility.CppMacroParser.parse(line);
+                        if (value) {
+                            results.push(value);
+                        }
+                    });
+                return results;
+            }
+        } catch (error) {
+            GlobalEvent.log_warn(error);
+        }
+
         return [
             { name: '__ICCARM__', value: '1',  type: 'var' },
         ];
