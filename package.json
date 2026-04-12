@@ -96,6 +96,7 @@
         "webpack-cli": "^5.1.4"
     },
     "dependencies": {
+        "@clangd/vscode-clangd": "^0.0.0",
         "iconv-lite": "^0.5.0",
         "ini": "^2.0.0",
         "jsonc": "^2.0.0",
