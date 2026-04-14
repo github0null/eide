@@ -127,7 +127,8 @@
                 "false": "",
                 "unspecified": "",
                 "no-warnings": "-w",
-                "all-warnings": "-Wall"
+                "all-warnings": "-Wall",
+                "more-strict-warnings": "-Wall -Wextra -Wpedantic -Wshadow -Wconversion"
             },
             "group": [
                 "c",

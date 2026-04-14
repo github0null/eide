@@ -260,8 +260,16 @@
                     "type": "string",
                     "default": "all-warnings",
                     "enum": [
+                        "unspecified",
                         "no-warnings",
-                        "all-warnings"
+                        "all-warnings",
+                        "more-strict-warnings"
+                    ],
+                    "enumDescriptions": [
+                        "unspecified",
+                        "no warnings",
+                        "all warnings",
+                        "all warnings (strict)"
                     ]
                 },
                 "turn-warning-into-errors": {

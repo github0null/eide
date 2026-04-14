@@ -259,7 +259,14 @@
                     "enum": [
                         "unspecified",
                         "no-warnings",
-                        "all-warnings"
+                        "all-warnings",
+                        "more-strict-warnings"
+                    ],
+                    "enumDescriptions": [
+                        "unspecified",
+                        "no warnings",
+                        "all warnings",
+                        "all warnings (strict)"
                     ]
                 },
                 "turn-Warning-into-errors": {
