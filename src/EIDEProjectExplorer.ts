@@ -5441,9 +5441,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 cmds = ['-S', '-l', elfPath, '>', dasmFile.path];
                 // https://interrupt.memfault.com/blog/gnu-binutils#new-feature-visualize-jumps
                 const binutilsVer = getGccBinutilsVersion(exeFile.dir, toolPrefix, 'objdump');
-                if (binutilsVer && compareVersion(binutilsVer, '2.34') > 0) {
-                    cmds = ['--visualize-jumps'].concat(cmds);
-                }
+                // if (binutilsVer && compareVersion(binutilsVer, '2.34') > 0) {
+                //     cmds = ['--visualize-jumps'].concat(cmds);
+                // }
             }
             else if (toolchainName.startsWith('AC')) { // armcc
                 exeFile = File.fromArray([prj.getToolchain().getToolchainDir().path, 'bin', `fromelf${exeSuffix()}`]);
@@ -5555,9 +5555,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 cmds = ['-S', '-l', objPath, '>', tmpFile.path];
                 // https://interrupt.memfault.com/blog/gnu-binutils#new-feature-visualize-jumps
                 const binutilsVer = getGccBinutilsVersion(exeFile.dir, toolPrefix, 'objdump');
-                if (binutilsVer && compareVersion(binutilsVer, '2.34') > 0) {
-                    cmds = ['--visualize-jumps'].concat(cmds);
-                }
+                // if (binutilsVer && compareVersion(binutilsVer, '2.34') > 0) {
+                //     cmds = ['--visualize-jumps'].concat(cmds);
+                // }
             }
             else if (toolchainName.startsWith('AC')) { // armcc
                 exeFile = File.fromArray([activePrj.getToolchain().getToolchainDir().path, 'bin', `fromelf${exeSuffix()}`]);
