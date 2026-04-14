@@ -6,6 +6,18 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.26.7] revision
+
+**Improve**:
+  - `IAR C/C++ Intellisense`: Export IAR internal preprocessor defines for cpptools extension.
+  - `ELF Map View`: Add `.rodata` section for map view. Support map view for IAR_ARM toolchain.
+  - `Compiler Options`: Add `dwarf-4/5` options. Add `-Wextra -Wpedantic -Wshadow -Wconversion` options for `all-warnings` options.
+
+**Changes**:
+  - `Disassembly View`: Remove `--visualize-jumps` options (because it will interfere with your vision in most cases).
+
+***
+
 ### [v3.26.6] revision
 
 **New**:
