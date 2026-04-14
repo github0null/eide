@@ -512,6 +512,9 @@ export class ResManager extends events.EventEmitter {
     GetAppDataDir(): File {
         return <File>this.GetDir('data');
     }
+    /**
+     * get plug-in's built-in data dir
+    */
     getAppDataDir(): File {
         return <File>this.GetDir('data');
     }
