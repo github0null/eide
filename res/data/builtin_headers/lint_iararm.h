@@ -22,9 +22,7 @@
 // preprocessors
 //
 
-#define __IAR_SYSTEMS_ICC__ 8
 #define __ICCarm__ 1
-#define __VER__ 7080002
 
 //
 // extended keywords

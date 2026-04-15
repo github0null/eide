@@ -388,11 +388,35 @@ function postLaunchHook(extensionCtx: vscode.ExtensionContext) {
 
 async function checkAndInstallBuiltPyPkgs() {
 
-    if (platform.osType() != 'win32')
-        return;
-
     const resManager = ResManager.instance();
     const py3 = resManager.getPython3();
+
+    // ---- for all platforms
+
+    const patchesDir = File.from(resManager.getAppDataDir().path, 'patches');
+
+    // memap patch
+    const memapPath = platform.osType() === 'win32' 
+        ? NodePath.join(NodePath.dirname(py3), 'Lib', 'site-packages', 'memap')
+        : NodePath.join(resManager.getLegacyBuilderDir().path, 'utils', 'memap');
+    if (File.IsDir(memapPath)) {
+        const patchVer = 1;
+        const patchFile = File.from(memapPath, '.patch');
+        let curVer = -1;
+        if (patchFile.IsFile())
+            curVer = parseInt(patchFile.Read().trim());
+        if (isNaN(curVer) || curVer < patchVer) {
+            const dstF = File.from(memapPath, '__main__.py');
+            const srcF = File.from(patchesDir.path, 'memap.py');
+            dstF.Write(srcF.Read());
+            patchFile.Write(patchVer.toString());
+        }
+    }
+
+    // ---- only for Win32
+
+    if (platform.osType() != 'win32')
+        return;
 
     // python3 builtin pkg patch
     const usrData = resManager.getAppUsrData() || {};
@@ -1698,6 +1722,7 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
             case 'AC6':
             case 'GCC':
             case 'GNU_SDCC_MCS51':
+            case 'IAR_ARM':
                 parser = 'memap';
                 break;
             default:
@@ -1810,6 +1835,9 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
                             case 'GCC':
                             case 'GNU_SDCC_MCS51':
                                 memapTyp = 'GCC_ARM';
+                                break;
+                            case 'IAR_ARM':
+                                memapTyp = 'IAR';
                                 break;
                             default:
                                 throw new Error(`We don't support this toolchain type: '${vInfo.toolchainId}' yet !`);

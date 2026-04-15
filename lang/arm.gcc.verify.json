@@ -162,7 +162,17 @@
                         "disable",
                         "enable",
                         "dwarf-2",
-                        "dwarf-3"
+                        "dwarf-3",
+                        "dwarf-4",
+                        "dwarf-5"
+                    ],
+                    "enumDescriptions": [
+                        "disable",
+                        "enable",
+                        "enable with dwarf-2",
+                        "enable with dwarf-3",
+                        "enable with dwarf-4",
+                        "enable with dwarf-5"
                     ]
                 },
                 "use-newlib-nano": {
@@ -296,8 +306,16 @@
                     "type": "string",
                     "default": "all-warnings",
                     "enum": [
+                        "unspecified",
                         "no-warnings",
-                        "all-warnings"
+                        "all-warnings",
+                        "more-strict-warnings"
+                    ],
+                    "enumDescriptions": [
+                        "unspecified",
+                        "no warnings",
+                        "all warnings",
+                        "all warnings (strict)"
                     ]
                 },
                 "turn-Warning-into-errors": {
