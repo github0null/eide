@@ -420,11 +420,12 @@ class C51Parser extends KeilParser<KeilC51Option> {
 
             if (groups !== undefined && groups.Group !== undefined) {
 
-                groups.Group.forEach((group: { GroupName: string, Files: any[] }) => {
+                groups.Group.forEach((group: { GroupName: string, Files: any[], GroupOption?: any }) => {
                     const fGroup = <FileGroup>{ name: '', files: [] };
 
                     fGroup.name = this.FixGroupName(group.GroupName);
                     fGroup.disabled = this.isGroupDisabled(group);
+                    if (group.GroupOption) { fGroup.groupOption = group.GroupOption; }
 
                     if (group.Files && group.Files.length > 0) {
 
@@ -1047,11 +1048,12 @@ class ARMParser extends KeilParser<KeilARMOption> {
 
             if (groups !== undefined && groups.Group !== undefined) {
 
-                groups.Group.forEach((group: { GroupName: string, Files: any[] }) => {
+                groups.Group.forEach((group: { GroupName: string, Files: any[], GroupOption?: any }) => {
                     const fGroup = <FileGroup>{ name: '', files: [] };
 
                     fGroup.name = this.FixGroupName(group.GroupName);
                     fGroup.disabled = this.isGroupDisabled(group);
+                    if (group.GroupOption) { fGroup.groupOption = group.GroupOption; }
 
                     if (group.Files && group.Files.length > 0) {
 
