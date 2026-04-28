@@ -32,7 +32,7 @@ import * as yaml from 'yaml';
 
 import { GlobalEvent } from './GlobalEvents';
 import { OperationExplorer } from './OperationExplorer';
-import { ProjectExplorer } from './EIDEProjectExplorer';
+import { ProjectExplorer, ProjTreeItem } from './EIDEProjectExplorer';
 import { ResManager } from './ResManager';
 import { LogAnalyzer } from './LogAnalyzer';
 import { ResInstaller } from './ResInstaller';
@@ -124,12 +124,12 @@ export async function activate(context: vscode.ExtensionContext) {
                 GlobalEvent.log_show();
             });
     }));
-    subscriptions.push(vscode.commands.registerCommand('eide.debug.start', () => {
-        startDebugging()
+    subscriptions.push(vscode.commands.registerCommand('eide.debug.start', (item) => {
+        startDebugging(item)
             .catch(err => GlobalEvent.emit('error', err));
     }));
-    subscriptions.push(vscode.commands.registerCommand('eide.debug.start.attach', () => {
-        startDebugging(true)
+    subscriptions.push(vscode.commands.registerCommand('eide.debug.start.attach', (item) => {
+        startDebugging(item, true)
             .catch(err => GlobalEvent.emit('error', err));
     }));
 
@@ -2461,9 +2461,11 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
     }
 }
 
-async function startDebugging(attach?: boolean) {
+async function startDebugging(viewItem?: ProjTreeItem, attach?: boolean) {
 
-    const prj = projectExplorer.getActiveProject();
+    const prj = viewItem 
+        ? projectExplorer.getProjectByTreeItem(viewItem) 
+        : projectExplorer.getActiveProject();
     if (!prj) {
         GlobalEvent.show_msgbox('Warning', `No actived project to debug.`);
         return;
