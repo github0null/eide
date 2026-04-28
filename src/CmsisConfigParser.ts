@@ -254,7 +254,7 @@ export function parse(lines: string[]): CmsisConfiguration | undefined {
         }
 
         // 解析宏定义或者赋值语句
-        const macroMatcher = /^\s*#define\s+(?<key>\w+)\s*(?<value>.+)?/;
+        const macroMatcher = /^\s*#\s*define\s+(?<key>\w+)\s*(?<value>.+)?/;
         let match = macroMatcher.exec(cur_line);
         if (!match || match.groups == undefined) {
             if (cur_line.trim().startsWith('//') || 
@@ -429,7 +429,7 @@ interface NumberValueInfo {
     fmtStr?: string;
 }
 
-const numberMatcher = /\b(0x[0-9a-f]+|[\d\.]+)\b/i;
+const numberMatcher = /(0x[0-9a-f]+|[+-]?[\d\.]+f?)\b/i;
 function parseNumber(str: string): NumberValueInfo {
     const m = numberMatcher.exec(str);
     if (m && m.length > 1) {
