@@ -372,6 +372,10 @@
                     "markdownDescription": "Remove Unused Input Sections (-Wl,--gc-sections)",
                     "type": "boolean"
                 },
+                "use-linker-plugin": {
+                    "markdownDescription": "Enable the linker plugin during LTO (-fuse-linker-plugin)",
+                    "type": "boolean"
+                },
                 "print-mem-usage": {
                     "markdownDescription": "Print Memory Usage For Each Section (-Wl,--print-memory-usage)",
                     "type": "boolean"

@@ -322,6 +322,13 @@
                     "false": ""
                 }
             },
+            "use-linker-plugin": {
+                "type": "selectable",
+                "command": {
+                    "true": "-fuse-linker-plugin",
+                    "false": ""
+                }
+            },
             "not-print-mem-usage": {
                 "type": "selectable",
                 "command": {
