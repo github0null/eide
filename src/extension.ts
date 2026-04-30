@@ -1949,9 +1949,11 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
 class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
 
     private debuggerType: string | undefined;
+    private project: AbstractProject | undefined;
 
-    constructor(debugType?: string) {
+    constructor(debugType?: string, project?: AbstractProject) {
         this.debuggerType = debugType;
+        this.project = project;
     }
 
     provideDebugConfigurations(folder: vscode.WorkspaceFolder | undefined,
@@ -1962,7 +1964,7 @@ class ExternalDebugConfigProvider implements vscode.DebugConfigurationProvider {
         if (!folder)
             return result;
 
-        const prj = projectExplorer.getActiveProject();
+        const prj = this.project || projectExplorer.getActiveProject();
         if (!prj)
             return result;
 
@@ -2477,7 +2479,7 @@ async function startDebugging(viewItem?: ProjTreeItem, attach?: boolean) {
         index: 0
     };
 
-    const provider = new ExternalDebugConfigProvider();
+    const provider = new ExternalDebugConfigProvider(undefined, prj);
     let cfgs = await provider.provideDebugConfigurations(vscWorkspaceFolder);
     if (!cfgs)
         return;
