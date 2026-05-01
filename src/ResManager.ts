@@ -431,15 +431,19 @@ export class ResManager extends events.EventEmitter {
         return <File>this.GetDir('builder');
     }
 
-    getMsysBash(): File | undefined {
+    getUnixBash(): string {
         if (os.platform() == 'win32') {
-            return File.fromArray([this.getLegacyBuilderDir().path, 'msys', 'bin', `bash${exeSuffix()}`]);
+            return File.from(this.getLegacyBuilderDir().path, 'msys', 'bin', `bash${exeSuffix()}`).path;
+        } else {
+            const bash = '/bin/bash';
+            const sh = '/bin/sh';
+            return File.IsExist(bash) ? bash : sh;
         }
     }
 
-    getMsysBinToolPath(toolname: string): string {
+    getUnixTool(toolname: string): string {
         if (os.platform() == 'win32') {
-            return File.fromArray([this.getLegacyBuilderDir().path, 'msys', 'bin', `${toolname}${exeSuffix()}`]).path;
+            return File.from(this.getLegacyBuilderDir().path, 'msys', 'bin', `${toolname}${exeSuffix()}`).path;
         } else {
             return `${toolname}${exeSuffix()}`;
         }
@@ -462,12 +466,6 @@ export class ResManager extends events.EventEmitter {
 
     /* ----------------------------------- */
 
-    /**
-     * @deprecated
-    */
-    GetBinDir(): File {
-        return <File>this.GetDir('bin');
-    }
     getBinDir(): File {
         return <File>this.GetDir('bin');
     }

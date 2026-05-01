@@ -707,7 +707,7 @@ export interface ShellCommandOptions {
     source?: string;
 }
 
-export async function runShellCommand(title: string, commandLine: string, opts?: ShellCommandOptions) {
+export async function sendCommandToTerminal(title: string, commandLine: string, opts?: ShellCommandOptions) {
     try {
 
         // use terminal

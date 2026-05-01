@@ -6,6 +6,15 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.26.9] revision
+
+**Fix**:
+  - `Compatibility Of Compiler Options`: Use `-flto` instead of `-flto=auto` when LTO options is enabled.
+  - `One-click Debug`: Not as expected in multi-project workspace.
+  - `Cmsis Config View`: Fix cmsis config parser bug (float number, `#define` macro).
+
+***
+
 ### [v3.26.7] revision
 
 **Improve**:

@@ -102,7 +102,7 @@ import { DependenceManager } from './DependenceManager';
 import { ArrayDelRepetition } from '../lib/node-utility/Utility';
 import {
     copyObject, downloadFileWithProgress,
-    runShellCommand, redirectHost, readGithubRepoFolder, FileCache,
+    sendCommandToTerminal, redirectHost, readGithubRepoFolder, FileCache,
     genGithubHash, md5, toArray, newMarkdownString, newFileTooltipString, FileTooltipInfo, escapeXml,
     readGithubRepoTxtFile, downloadFile, notifyReloadWindow, formatPath, execInternalCommand,
     copyAndMakeObjectKeysToLowerCase,
@@ -4058,7 +4058,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         /* launch */
         const commandLine = generateDotnetProgramCmd(
             ResManager.instance().getUnifyBuilderExe(), ['-r', paramsFile.path]);
-        runShellCommand('build workspace', commandLine);
+        sendCommandToTerminal('build workspace', commandLine);
     }
 
     openWorkspaceConfig() {
@@ -4083,12 +4083,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         const outDir = prj.ToAbsolutePath(prj.getOutputDir());
         if (os.platform() == 'win32') {
-            runShellCommand('clean', `cmd /E:ON /C del /S /Q "${outDir}"`);
+            sendCommandToTerminal('clean', `cmd /E:ON /C del /S /Q "${outDir}"`);
         } else {
             if (outDir == '/' || outDir == userhome()) {
                 GlobalEvent.emit('msg', newMessage('Error', `Cannot delete ${outDir} !`));
             } else {
-                runShellCommand('clean', `rm -rf -v "${outDir}"`);
+                sendCommandToTerminal('clean', `rm -rf -v "${outDir}"`);
             }
         }
 
@@ -4136,7 +4136,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             const srcPath = item.val.value.path;
             const dbinfo = project.getSourceCompileDatabase(srcPath);
             if (dbinfo) {
-                runShellCommand(`compile: ${NodePath.basename(srcPath)}`, dbinfo.command, {
+                sendCommandToTerminal(`compile: ${NodePath.basename(srcPath)}`, dbinfo.command, {
                     useTerminal: true,
                     cwd: dbinfo.directory
                 });
@@ -6207,7 +6207,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             //
             // select importer
             //
-            const scriptRoot = File.fromArray([ResManager.GetInstance().GetBinDir().path, 'scripts']);
+            const scriptRoot = File.fromArray([ResManager.GetInstance().getBinDir().path, 'scripts']);
             const imptrFolder = File.fromArray([scriptRoot.path, 'importer']);
             const items: any[] = [];
 

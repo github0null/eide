@@ -46,7 +46,7 @@
         "optimization-lto": {
             "type": "selectable",
             "command": {
-                "true": "-flto=auto",
+                "true": "-flto",
                 "false": ""
             },
             "group": [
@@ -264,6 +264,13 @@
                     "false": ""
                 }
             },
+            "use-linker-plugin": {
+                "type": "selectable",
+                "command": {
+                    "true": "-fuse-linker-plugin",
+                    "false": ""
+                }
+            },
             "linker-script": {
                 "type": "list",
                 "command": "-T "
@@ -321,6 +328,13 @@
                 "type": "selectable",
                 "command": {
                     "true": "-Wl,--gc-sections",
+                    "false": ""
+                }
+            },
+            "use-linker-plugin": {
+                "type": "selectable",
+                "command": {
+                    "true": "-fuse-linker-plugin",
                     "false": ""
                 }
             },

@@ -229,7 +229,7 @@
         "optimization-lto": {
             "type": "selectable",
             "command": {
-                "true": "-flto=auto",
+                "true": "-flto",
                 "false": ""
             },
             "group": [
@@ -454,6 +454,13 @@
                 "type": "selectable",
                 "command": {
                     "true": "-Wl,--gc-sections",
+                    "false": ""
+                }
+            },
+            "use-linker-plugin": {
+                "type": "selectable",
+                "command": {
+                    "true": "-fuse-linker-plugin",
                     "false": ""
                 }
             },

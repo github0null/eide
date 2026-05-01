@@ -4,7 +4,7 @@ import { newMessage } from "./Message";
 import { view_str$prompt$requestAndActivateLicence_warn_setupPath, getLocalLanguageType, LanguageIndexs } from "./StringTable";
 import { SimpleUIConfig, SimpleUIConfigData_tag, SimpleUIConfigData_divider, SimpleUIConfigData_input, SimpleUIConfigData_button } from './SimpleUIDef';
 import { WebPanelManager } from "./WebPanelManager";
-import { runShellCommand, openUrl } from "./utility";
+import { sendCommandToTerminal, openUrl } from "./utility";
 import { File } from "../lib/node-utility/File";
 
 import * as path from "path";
@@ -171,7 +171,7 @@ function requestAndActivate_COSMIC_STM8(toolchain: IToolchian) {
 
             if (msg == 'btn.show-host-id') {
 
-                runShellCommand('(COSMIC) show host id', 'LmregFSE', {
+                sendCommandToTerminal('(COSMIC) show host id', 'LmregFSE', {
                     useTerminal: true,
                     cwd: toolchainRootDir.path
                 });

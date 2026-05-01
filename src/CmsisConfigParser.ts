@@ -254,7 +254,7 @@ export function parse(lines: string[]): CmsisConfiguration | undefined {
         }
 
         // 解析宏定义或者赋值语句
-        const macroMatcher = /^\s*#define\s+(?<key>\w+)\s*(?<value>.+)?/;
+        const macroMatcher = /^\s*#\s*define\s+(?<key>\w+)\s*(?<value>.+)?/;
         let match = macroMatcher.exec(cur_line);
         if (!match || match.groups == undefined) {
             if (cur_line.trim().startsWith('//') || 
@@ -424,25 +424,42 @@ function parseVarName(str: string): string | undefined {
 }
 
 interface NumberValueInfo {
+    typ: 'int' | 'hex' | 'float',
     num: number;
-    isHex?: boolean;
     fmtStr?: string;
 }
 
-const numberMatcher = /\b(0x[0-9a-f]+|[\d\.]+)\b/i;
+const _numberMatchers = [
+    /**
+     * 匹配优先级：
+     * 1. float
+     * 2. 负数
+    */
+    { typ: 'float', pattern: /(-\d+\.\d+)(f)?\b/i             , replacer: '<num>$2' },
+    { typ: 'float', pattern: /\b(\d+\.\d+)(f)?\b/i            , replacer: '<num>$2' },
+    { typ: 'int',   pattern: /(-\d+)(l|ll)?f?\b/i             , replacer: '<num>$2' },
+    { typ: 'hex',   pattern: /\b(0x[0-9a-f]+)\b/i },
+    { typ: 'int',   pattern: /\b(\d+)(u|l|ll|ul|ull)?f?\b/i   , replacer: '<num>$2' },
+];
 function parseNumber(str: string): NumberValueInfo {
-    const m = numberMatcher.exec(str);
-    if (m && m.length > 1) {
-        const numVal = m[1];
-        const isHex = numVal.toLowerCase().startsWith('0x');
-        const isFloat = !isHex && numVal.includes('.');
-        return {
-            num: isFloat ? parseFloat(numVal) : parseInt(numVal, isHex ? 16 : 10),
-            isHex: isHex,
-            fmtStr: str.replace(numberMatcher, '<num>') // in UI, '<num>' will be replace to real value
-        };
+    for (const e of _numberMatchers) {
+        const m = e.pattern.exec(str);
+        if (m && m.length > 1) {
+            let numVal: number;
+            if (e.typ === 'hex')
+                numVal = parseInt(m[1], 16);
+            else if (e.typ === 'int')
+                numVal = parseInt(m[1], 10);
+            else
+                numVal = parseFloat(m[1]);
+            return {
+                typ: <any>e.typ,
+                num: numVal,
+                fmtStr: str.replace(e.pattern, e.replacer || '<num>') // in UI, '<num>' will be replace to real value
+            };
+        }
     }
-    return { num: NaN }
+    return { typ: 'int', num: NaN }
 }
 
 function toNumber(numStr: string): number {
@@ -666,7 +683,12 @@ function updateElementDispVal(item: CmsisConfigItem) {
 
     if (item.type == 'section') {
 
-        let { num, isHex, fmtStr } = parseNumber(item.var_value);
+        let { typ, num, fmtStr } = parseNumber(item.var_value);
+
+        if (typ === 'float') {
+            const msg = `Syntax Error: Section must be a bool value, not float !\nAt line: ${item.location?.start}`;
+            throw Error(msg);
+        }
 
         // raw value
         {
@@ -690,7 +712,7 @@ function updateElementDispVal(item: CmsisConfigItem) {
 
     else if (item.type == 'bool') {
 
-        let { num, isHex, fmtStr } = parseNumber(item.var_value);
+        let { typ, num, fmtStr } = parseNumber(item.var_value);
 
         // raw value
         {
@@ -701,16 +723,16 @@ function updateElementDispVal(item: CmsisConfigItem) {
 
     else if (item.type == 'option') {
 
-        let { num, isHex, fmtStr } = parseNumber(item.var_value);
+        let { typ, num, fmtStr } = parseNumber(item.var_value);
 
         // 处理选项的值是非数字的情况
         // 注意：只有使用 <o key-identifier> 标签才能使用非数字的选项值，否则应该抛出错误
         /*
-            //   <o TIMESTAMP_SRC>Time Stamp Source
-            //      <dwt=>     DWT Cycle Counter
-            //      <systick=> SysTick
-            //      <user=>    User Timer 
-            //   <i>Selects source for 32-bit time stamp
+            <o TIMESTAMP_SRC>Time Stamp Source
+                <dwt=>     DWT Cycle Counter
+                <systick=> SysTick
+                <user=>    User Timer 
+            <i>Selects source for 32-bit time stamp
             #define TIMESTAMP_SRC  dwt
         */
         if (isNaN(num)) {
@@ -729,29 +751,31 @@ function updateElementDispVal(item: CmsisConfigItem) {
 
         // normal val
         {
-            item.var_disp_value = isHex ? `0x${num.toString(16)}` : num.toString();
+            item.var_disp_value = typ === 'hex' ? `0x${num.toString(16)}` : num.toString();
             item.var_fmt_value = fmtStr;
         }
 
         // apply bits
-        if (item.var_mod_bit) {
+        if (item.var_mod_bit && !isNaN(num)) {
 
-            if (!isNaN(num)) {
-
-                let mask = get_mask(item.var_mod_bit.start, item.var_mod_bit.end) >>> item.var_mod_bit.start
-
-                num >>= item.var_mod_bit.start
-                num &= mask
-
-                if (isHex) {
-                    num >>>= 0
-                    item.var_disp_value = `0x${align_hex_val(num.toString(16))}`
-                } else {
-                    item.var_disp_value = num.toString()
-                }
-
-                item.var_fmt_value = fmtStr;
+            if (typ === 'float') {
+                const msg = `Syntax Error: Float number not support modifies a specific bits !\nAt line: ${item.location?.start}`;
+                throw Error(msg);
             }
+
+            let mask = get_mask(item.var_mod_bit.start, item.var_mod_bit.end) >>> item.var_mod_bit.start
+
+            num >>= item.var_mod_bit.start
+            num &= mask
+
+            if (typ === 'hex') {
+                num >>>= 0
+                item.var_disp_value = `0x${align_hex_val(num.toString(16))}`
+            } else {
+                item.var_disp_value = num.toString()
+            }
+
+            item.var_fmt_value = fmtStr;
         }
 
         // fmt disp val
@@ -777,11 +801,11 @@ function updateElementDispVal(item: CmsisConfigItem) {
             }
 
             let var_val = item.var_disp_value || item.var_value;
-            let { num, isHex, fmtStr } = parseNumber(var_val);
+            let { typ, num, fmtStr } = parseNumber(var_val);
             let disp_val = eval(`${num}${operator}${item.var_disp_inf.operate.val}`)
 
             if (typeof (disp_val) == 'string') {
-                let { num, isHex, fmtStr } = parseNumber(item.var_value);
+                let { typ, num, fmtStr } = parseNumber(item.var_value);
                 disp_val = num;
             }
 
@@ -791,7 +815,7 @@ function updateElementDispVal(item: CmsisConfigItem) {
 
             if (!isNaN(disp_val)) {
 
-                if (isHex) {
+                if (typ === 'hex') {
                     disp_val >>>= 0
                     item.var_disp_value = `0x${align_hex_val(disp_val.toString(16))}`
                 } else {
