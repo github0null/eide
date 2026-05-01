@@ -109,7 +109,7 @@
         "x2js": "^3.4.1",
         "xml-formatter": "^2.6.1",
         "xml2js": "^0.6.2",
-        "yaml": "2.8.1"
+        "yaml": "2.8.3"
     },
     "contributes": {
         "terminal": {
