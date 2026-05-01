@@ -7355,7 +7355,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         type: 'jlink' | 'openocd' | 'pyocd',
         prj: AbstractProject, old_cfgs: any[]): Promise<{ debug_config: any, override_idx: number } | undefined> {
 
-        const _outFullName = File.ToUnixPath(prj.getOutputDir()) + '/' + `${prj.getProjectName()}`
+        // Fix: Use prj.getExecutablePathWithoutSuffix() to unify output file path calculation.
+        //   Previously called getExecutablePathWithoutSuffix() as a standalone function (no prj. prefix),
+        //   which would fail at runtime since it's a method on AbstractProject.
+        const _outFullName = File.ToUnixPath(prj.getExecutablePathWithoutSuffix())
         const _elfPath = `${_outFullName}.elf`;
         const _debugConfigTemplates = {
             'jlink': {
