@@ -119,7 +119,7 @@ export class ResInstaller {
 
         this.registerTool('GCC', {
             resource_name: 'gcc_arm',
-            readable_name: 'GNU Arm Embedded Toolchain (14.x)',
+            readable_name: 'GNU Arm Embedded Toolchain (15.x)',
             setting_name: 'ARM.GCC.InstallDirectory',
             no_binaries: no_binaries
         });
