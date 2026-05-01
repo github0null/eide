@@ -381,7 +381,12 @@ export abstract class CodeBuilder {
         const builderModeList: string[] = []; // build mode
 
         const builderOptions: BuilderParams = {
-            name: config.name,
+            // Fix#1: Builder's 'name' field determines the output filename (e.g., ${name}.axf).
+            //   Must use the current selected target name (config.mode) so the generated
+            //   axf file is named after the target (e.g., "Debug.axf") instead of the
+            //   project name ("myProject.axf"). The ExecutableName variable is correct
+            //   but the builder uses 'name' (not the env var) for ${out} resolution.
+            name: this.project.getCurrentTarget(),
             target: this.project.getCurrentTarget(),
             toolchain: toolchain.name,
             toolchainLocation: this.project.getToolchainLocation().path,
