@@ -59,7 +59,7 @@ import { DependenceManager } from './DependenceManager';
 import * as platform from './Platform';
 import {
     md5, copyObject, compareVersion, isGccFamilyToolchain, deepCloneObject, 
-    notifyReloadWindow, copyAndMakeObjectKeysToLowerCase, runShellCommand, 
+    notifyReloadWindow, copyAndMakeObjectKeysToLowerCase, sendCommandToTerminal, 
     execInternalCommand, cxxDemangle
 } from './utility';
 import { ResInstaller } from './ResInstaller';
@@ -3311,7 +3311,7 @@ $(OUT_DIR):
                 vscode.window.showErrorMessage(msg, 'Install', 'Later')
                     .then((value) => {
                         if (value == 'Install') {
-                            runShellCommand('xpm install', 'xpm install', {
+                            sendCommandToTerminal('xpm install', 'xpm install', {
                                 useTerminal: true,
                                 cwd: this.getRootDir().path
                             });

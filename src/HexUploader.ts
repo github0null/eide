@@ -31,7 +31,7 @@ import { CmdLineHandler } from "./CmdLineHandler";
 import { gotoSet_text, view_str$download_software } from "./StringTable";
 import { EncodingConverter } from "./EncodingConverter";
 import { ToolchainName, ToolchainManager } from "./ToolchainManager";
-import { runShellCommand, deepCloneObject, probers_install } from './utility';
+import { sendCommandToTerminal, deepCloneObject, probers_install } from './utility';
 import { WorkspaceManager } from "./WorkspaceManager";
 
 import * as child_process from "child_process";
@@ -295,7 +295,7 @@ export abstract class HexUploader<InvokeParamsType> {
 
     async executeShellCommand(title: string, commandLine: string, env?: any, useTerminal?: boolean, cwd?: string) {
         const silent = SettingManager.GetInstance().isSilentBuildOrFlash();
-        const etask = await runShellCommand(title, commandLine, {
+        const etask = await sendCommandToTerminal(title, commandLine, {
             source: 'eide.flasher',
             env: env,
             useTerminal: useTerminal,
