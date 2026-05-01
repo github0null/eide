@@ -527,7 +527,7 @@ async function checkAndInstallBinaries(forceInstall?: boolean): Promise<boolean>
 
     const resManager = ResManager.GetInstance();
 
-    const binFolder = resManager.GetBinDir();
+    const binFolder = resManager.getBinDir();
     const eideCfg = resManager.getAppConfig<any>();
     const minReqVersion = eideCfg['binary_min_version'];
 
@@ -854,7 +854,7 @@ function onBinariesInstallDone() {
 
         // get exe file list from folders
         for (const dir of [
-            File.fromArray([resManager.GetBinDir().path, 'scripts']),
+            File.fromArray([resManager.getBinDir().path, 'scripts']),
             File.fromArray([resManager.getLegacyBuilderDir().path, 'utils'])
         ]) {
             dir.GetList(undefined, File.EXCLUDE_ALL_FILTER)
@@ -892,6 +892,9 @@ function cleanLegacyUnifyBuilder() {
     }
 }
 
+async function patchBinaries() {
+}
+
 //////////////////////////////////////////////////
 // environment sutup
 //////////////////////////////////////////////////
@@ -913,7 +916,7 @@ function exportEnvToSysPath(context?: vscode.ExtensionContext) {
         File.normalize(`${resManager.getBuiltInToolsDir().path}/utils`) // builtin util tools
     ];
 
-    //
+    // create ~/.eide/tools dir
     const eideToolsFolder = new File(File.normalize(`${platform.userhome()}/.eide/tools`));
     if (!eideToolsFolder.IsDir()) {
         try {
@@ -1220,6 +1223,9 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
     const done = await checkAndInstallBinaries();
     if (!done) { return false; } /* exit if failed */
 
+    // binaries patchs
+    await patchBinaries();
+
     // check and install .NET6 runtime
     await checkAndInstallRuntime();
 
@@ -1257,10 +1263,10 @@ async function InitComponents(context: vscode.ExtensionContext): Promise<boolean
         bar_flash.tooltip = `Upload binary file to device`;
     }
 
-    // register msys bash profile for windows
+    // register bash profile for windows
     if (os.platform() == 'win32') {
-        context.subscriptions.push(vscode.window.registerTerminalProfileProvider(EideTerminalProvider.MSYS_BASH_ID,
-            new EideTerminalProvider(EideTerminalProvider.MSYS_BASH_ID)));
+        context.subscriptions.push(vscode.window.registerTerminalProfileProvider(EideTerminalProvider.UNIX_BASH_ID,
+            new EideTerminalProvider(EideTerminalProvider.UNIX_BASH_ID)));
     }
 
     context.subscriptions.push(
@@ -1379,7 +1385,7 @@ class EideTaskProvider implements vscode.TaskProvider {
 
             if (platform.osType() == 'win32') {
                 if (SettingManager.GetInstance().isEnableMsys()) {
-                    bash_executable = `${process.env['EIDE_MSYS']}/bash.exe`;
+                    bash_executable = ResManager.instance().getUnixBash();
                 } else {
                     bash_executable = `bash.exe`;
                 }
@@ -1524,7 +1530,7 @@ class EideTerminalLinkProvider implements vscode.TerminalLinkProvider<EideTermin
 
 class EideTerminalProvider implements vscode.TerminalProfileProvider {
 
-    public static readonly MSYS_BASH_ID = 'eide.msys.bash';
+    public static readonly UNIX_BASH_ID = 'eide.unix.bash';
     public static readonly SYSTEM_SHELL_ID = 'eide.system.shell';
 
     private type: string;
@@ -1536,8 +1542,8 @@ class EideTerminalProvider implements vscode.TerminalProfileProvider {
     provideTerminalProfile(token: vscode.CancellationToken): vscode.ProviderResult<vscode.TerminalProfile> {
 
         switch (this.type) {
-            case EideTerminalProvider.MSYS_BASH_ID:
-                return this.provideMsysTerminal();
+            case EideTerminalProvider.UNIX_BASH_ID:
+                return this.provideBashTerminal();
             case EideTerminalProvider.SYSTEM_SHELL_ID:
                 return this.provideSystemTerminal();
             default:
@@ -1602,25 +1608,19 @@ class EideTerminalProvider implements vscode.TerminalProfileProvider {
         });
     }
 
-    private provideMsysTerminal(): vscode.ProviderResult<vscode.TerminalProfile> {
+    private provideBashTerminal(): vscode.ProviderResult<vscode.TerminalProfile> {
 
         // welcome msg
         const welcome = [
             `--------------------------------------------`,
-            `          \x1b[32;22m welcome to msys bash \x1b[0m`,
+            `          \x1b[32;22m welcome to bash \x1b[0m`,
             `--------------------------------------------`,
             ``
         ];
 
-        // check bash folder
-        if (!process.env['EIDE_MSYS'] ||
-            !File.IsDir(process.env['EIDE_MSYS'])) {
-            return undefined;
-        }
-
         return new vscode.TerminalProfile({
             name: 'msys bash',
-            shellPath: `${process.env['EIDE_MSYS']}/bash.exe`,
+            shellPath: ResManager.instance().getUnixBash(),
             cwd: this.cwd(true),
             env: process.env,
             strictEnv: true,

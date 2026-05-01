@@ -160,7 +160,7 @@ export class SevenZipper {
 
     private _tar_path(): string {
         if (platform.osType() == 'win32') {
-            return ResManager.instance().getMsysBinToolPath('tar');
+            return ResManager.instance().getUnixTool('tar');
         } else {
             return 'tar';
         }

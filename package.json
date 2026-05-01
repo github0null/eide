@@ -115,8 +115,8 @@
         "terminal": {
             "profiles": [
                 {
-                    "id": "eide.msys.bash",
-                    "title": "Eide Msys Bash"
+                    "id": "eide.unix.bash",
+                    "title": "Eide Bash"
                 },
                 {
                     "id": "eide.system.shell",

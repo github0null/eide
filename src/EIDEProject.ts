@@ -3911,8 +3911,8 @@ class EIDEProject extends AbstractProject {
     private async runInstallScript(prjRoot: File, scriptName: string, title?: string): Promise<boolean> {
 
         const script = File.fromArray([prjRoot.path, AbstractProject.EIDE_DIR, scriptName]);
-        const bash = ResManager.GetInstance().getMsysBash();
-        if (!script.IsFile()) return true; // not found script, exit
+        if (!script.IsFile())
+            return true; // not found script, exit
 
         try {
 
@@ -3942,7 +3942,7 @@ class EIDEProject extends AbstractProject {
                         resolve(exitInf.code == 0);
                     });
 
-                    proc.Run(cmd, undefined, { cwd: prjRoot.path, shell: bash?.path });
+                    proc.Run(cmd, undefined, { cwd: prjRoot.path, shell: ResManager.GetInstance().getUnixBash() });
                 });
             });
 
