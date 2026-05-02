@@ -2448,6 +2448,12 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             folders: []
         };
 
+        // Fix: Store the Keil project file's directory in miscInfo.keilPrjDir.
+        //   This allows LoadConfigurations to set rootDir = keilPrjDir on next load,
+        //   so all path resolution uses the Keil project directory as the base.
+        //   The path is relative to user-selected folder (or absolute if cross-drive).
+        const keilPrjRelPath = baseInfo.rootFolder.ToRelativePath(keilPrjFile.dir);
+        projectInfo.miscInfo.keilPrjDir = keilPrjRelPath || keilPrjFile.dir;
         const getVirtualFolder = (path: string, noCreate?: boolean): VirtualFolder | undefined => {
 
             if (!path.startsWith(`${VirtualSource.rootName}/`)) {

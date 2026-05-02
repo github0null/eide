@@ -436,8 +436,13 @@ class C51Parser extends KeilParser<KeilC51Option> {
                         group.Files[0].File.forEach((node: { FileName: string, FileType: string, FilePath: string }) => {
                             const fPath = node.FilePath;
                             if (fPath !== undefined) {
+                                // Fix: Use raw XML path directly as-is (relative to keilPrjDir).
+                                //   Previously called this.ToAbsolutePath(fPath) which converted the
+                                //   XML relative path to absolute, then ImportKeilProject immediately
+                                //   converted it back to relative. This round-trip was redundant.
+                                //   The XML path is already relative to keilPrjFile.dir (= keilPrjDir).
                                 fGroup.files.push({
-                                    file: new File(this.ToAbsolutePath(fPath)),
+                                    file: new File(fPath),
                                     disabled: this.isFileDisabled(node)
                                 });
                             }
@@ -1082,8 +1087,9 @@ class ARMParser extends KeilParser<KeilARMOption> {
                         }) => {
                             const fPath = node.FilePath;
                             if (fPath !== undefined) {
+                                // Fix: Use raw XML path directly (relative to keilPrjDir).
                                 fGroup.files.push({
-                                    file: new File(this.ToAbsolutePath(fPath)),
+                                    file: new File(fPath),
                                     disabled: this.isFileDisabled(node)
                                 });
                                 // parse file options

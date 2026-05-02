@@ -2937,17 +2937,36 @@ $(OUT_DIR):
         ////////////////////////////////////
         // init project
 
-        // init folders
-        this.rootDir = new File(wsFile.dir);
-        this.eideDir = new File(this.rootDir.path + File.sep + AbstractProject.EIDE_DIR);
+        // Fix: Decouple eideDir from rootDir so .eide/ config files can stay in the
+        //   user-selected workspace folder while rootDir can point to the Keil project
+        //   directory (for Keil imported projects). This ensures:
+        //   1) .eide/ config folder and .code-workspace are in the user-chosen location
+        //   2) rootDir (= project root for path resolution) is the Keil project directory
+        //   3) All relative paths resolve correctly relative to the Keil project folder
+        const wsDir = new File(wsFile.dir);
+        this.eideDir = new File(wsDir.path + File.sep + AbstractProject.EIDE_DIR);
 
-        // init cfgs
+        // init cfgs — load config BEFORE setting rootDir, so we can check miscInfo.keilPrjDir
         this.configMap.Set(new WorkspaceConfiguration(wsFile).load(), AbstractProject.workspaceSuffix);
-        const eideJsonFile = File.from(wsFile.dir, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName);
+        const eideJsonFile = File.from(wsDir.path, AbstractProject.EIDE_DIR, AbstractProject.prjConfigName);
         this.configMap.Set(new ProjectConfiguration(eideJsonFile, this.workspaceState).load());
 
-        // create '.vscode' folder if it's not existed
-        File.fromArray([wsFile.dir, AbstractProject.vsCodeDir]).CreateDir(true);
+        // After config is loaded, determine rootDir:
+        // - For Keil imported projects: rootDir = keilPrjDir (the Keil project file's directory)
+        // - For normal projects: rootDir = wsFile.dir (the user-selected workspace folder)
+        // Fix: Cannot use this.ToAbsolutePath() here because rootDir is not yet set.
+        //   ToAbsolutePath internally calls GetRootDir() which returns this.rootDir (undefined).
+        //   Resolve keilPrjDir against wsDir directly instead.
+        const cfg = this.GetConfiguration().config;
+        const keilPrjDir = cfg.miscInfo?.keilPrjDir;
+        if (keilPrjDir) {
+            this.rootDir = new File(File.normalize(NodePath.resolve(wsDir.path, keilPrjDir)));
+        } else {
+            this.rootDir = wsDir;
+        }
+
+        // create '.vscode' folder if it's not existed — always next to .code-workspace
+        File.fromArray([wsDir.path, AbstractProject.vsCodeDir]).CreateDir(true);
 
         /////////////////////////////////////
         // init base builtin env
