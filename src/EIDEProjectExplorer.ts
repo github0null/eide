@@ -2526,17 +2526,53 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             }
         };
 
+        // Helper: extract group options directly from Keil XML raw document.
+        //   This is a fallback when x2js-parsed groupOption is unavailable.
+        //   Reference: migrateKeilGroup2Eide.py
+        const rawKeilDoc = keilParser.getRawDoc();
+        const getRawGroupOpts = (groupName: string): { cads?: any, aads?: any } | undefined => {
+            try {
+                // Find the group in the raw XML document by name
+                for (const target of rawKeilDoc.Project.Targets.Target) {
+                    const groups = target.Groups;
+                    if (!groups || !groups.Group) continue;
+                    const rawGroup = groups.Group.find((g: any) => {
+                        const rawName = typeof g.GroupName === 'string' ? g.GroupName : g.GroupName?.__text;
+                        return KeilParser.FixGroupNameStatic(rawName) === groupName;
+                    });
+                    if (!rawGroup || !rawGroup.GroupOption) continue;
+                    const grpArmAds = rawGroup.GroupOption.GroupArmAds;
+                    if (!grpArmAds) continue;
+                    return {
+                        cads: grpArmAds.Cads,
+                        aads: grpArmAds.Aads
+                    };
+                }
+            } catch (e) {
+                // ignore parse errors
+            }
+        };
+
         const setupGroupOpts = (vFolderPath: string, groupName: string) => {
             for (const keilTarget of targets) {
                 if (srcOptsObj.options[keilTarget.name] == undefined)
                     srcOptsObj.options[keilTarget.name] = { files: {}, virtualPathFiles: {} };
                 const targetSrcOpts = srcOptsObj.options[keilTarget.name];
-                
+
                 const tGroup = keilTarget.fileGroups.find((g: any) => g.name === groupName);
-                const grpArmAds = tGroup?.groupOption?.GroupArmAds;
-                
-                GlobalEvent.log_info(`[Debug] Checking group: '${groupName}' for target '${keilTarget.name}'`);
-                GlobalEvent.log_info(`[Debug] > tGroup?.groupOption: ${JSON.stringify(tGroup?.groupOption || null)}`);
+                let grpArmAds = tGroup?.groupOption?.GroupArmAds;
+
+                // Fallback: if x2js didn't parse GroupOption, read raw XML directly
+                if (!grpArmAds) {
+                    const rawOpts = getRawGroupOpts(groupName);
+                    if (rawOpts) {
+                        // Wrap raw opts in getFirst-compatible structure (x2js may create arrays)
+                        grpArmAds = {
+                            Cads: rawOpts.cads,
+                            Aads: rawOpts.aads
+                        };
+                    }
+                }
 
                 if (!grpArmAds) continue;
 
