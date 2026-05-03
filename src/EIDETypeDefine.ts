@@ -28,6 +28,7 @@ import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as NodePath from 'path';
 import { jsonc } from 'jsonc';
+import * as jsonc_parser from 'jsonc-parser';
 import * as child_process from 'child_process';
 import * as yaml from "yaml";
 
@@ -1641,17 +1642,20 @@ export class WorkspaceConfiguration extends Configuration<WorkspaceConfig> {
     }
 
     protected parse(jsonStr: string): WorkspaceConfig {
-        try {
-            const obj = <any>jsonc.parse(jsonStr);
-            this.isLoadFailed = false;
-            return obj;
-        } catch (error) {
-            GlobalEvent.log_error(error);
-            GlobalEvent.emit('msg', newMessage('Warning', 
+        const errors: jsonc_parser.ParseError[] = [];
+        const obj = <any>jsonc_parser.parse(jsonStr, errors, { allowTrailingComma: true });
+        if (errors.length > 0 || obj == undefined) {
+            const err = new Error(errors.map(e =>
+                `${jsonc_parser.printParseErrorCode(e.error)} at offset ${e.offset}`).join('; ')
+                || 'invalid workspace config');
+            GlobalEvent.log_error(err);
+            GlobalEvent.emit('msg', newMessage('Warning',
                 view_str$prompt$loadws_cfg_failed.replace('{}', this.FILE_NAME)));
             this.isLoadFailed = true;
             return this.GetDefault();
         }
+        this.isLoadFailed = false;
+        return obj;
     }
 
     protected toString(): string {
