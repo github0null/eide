@@ -144,20 +144,31 @@ export async function onRegisterClangdProvider(prj: AbstractProject) {
                 cfg['CompileFlags']['Compiler'] = gccLikePath;
                 let clangdCompileFlags = <string[]>(cfg['CompileFlags']['Add']);
                 let compilerArgs = prj.getCpptoolsConfig().cppCompilerArgs;
+                // 用 -isystem 引入系统头文件，避免 clangd 对系统头进行诊断；
+                // 兼容历史遗留的 -I 入口，便于切换工具链时清理旧路径。
+                const stripIncludePrefix = (s: string): string | undefined => {
+                    if (s.startsWith('-isystem')) return s.substring('-isystem'.length);
+                    if (s.startsWith('-I')) return s.substring(2);
+                    return undefined;
+                };
                 if (isGccFamilyToolchain(toolchain.name)) {
                     const tRoot = toolchain.getToolchainDir().path;
-                    clangdCompileFlags = clangdCompileFlags.filter(p => !File.isSubPathOf(tRoot, p.substr(2)));
+                    clangdCompileFlags = clangdCompileFlags.filter(p => {
+                        const incPath = stripIncludePrefix(p);
+                        if (incPath === undefined) return true;
+                        return !File.isSubPathOf(tRoot, incPath);
+                    });
                     let li = getGccSystemSearchList(File.ToLocalPath(gccLikePath), ['-xc++'].concat(compilerArgs || []));
                     if (li) {
                         li.forEach(p => {
-                            clangdCompileFlags.push(`-I${File.normalize(p)}`);
+                            clangdCompileFlags.push(`-isystem${File.normalize(p)}`);
                         });
                     }
                 } else if (toolchain.name == 'LLVM_ARM') {
                     // nothing todo. This is llvm.
                 } else {
-                    clangdCompileFlags.push(`-I${toolchain.getToolchainDir().path}/include`);
-                    clangdCompileFlags.push(`-I${toolchain.getToolchainDir().path}/include/libcxx`);
+                    clangdCompileFlags.push(`-isystem${toolchain.getToolchainDir().path}/include`);
+                    clangdCompileFlags.push(`-isystem${toolchain.getToolchainDir().path}/include/libcxx`);
                 }
                 // // add flags
                 // if (compilerArgs)
@@ -177,7 +188,7 @@ export async function onRegisterClangdProvider(prj: AbstractProject) {
                 const prjConfig = prj.GetConfiguration();
                 const compilerFlags: string[] = cfg['CompileFlags']['Add'] || [];
                 toolchain.getSystemIncludeList(builderOpts)
-                    .forEach(p => compilerFlags.push(`-I"${p}"`));
+                    .forEach(p => compilerFlags.push(`-isystem"${p}"`));
                 toolchain.getInternalDefines(<any>prjConfig.config.toolchainConfig, builderOpts)
                     .forEach(d => compilerFlags.push(`-D"${d.name}=${d.value}"`));
                 cfg['CompileFlags']['Add'] = ArrayDelRepetition(compilerFlags);
