@@ -93,6 +93,7 @@ export interface DependenceGroup {
 
 export interface ProjectMiscInfo {
     uid: string | undefined;
+    keilPrjDir?: string; // Keil project file directory (relative to workspace root, or absolute if cross-drive)
 }
 
 export interface BuilderOptions {
