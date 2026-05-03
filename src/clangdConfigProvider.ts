@@ -124,69 +124,70 @@ export async function onRegisterClangdProvider(prj: AbstractProject) {
             return;
         }
 
-        // ----------------------
-        // setup clangd config
-        // ----------------------
         try {
-            let cfg: any = {};
-            const fclangd = File.fromArray([prj.getProjectRoot().path, '.clangd']);
-            if (fclangd.IsFile()) {
-                cfg = yaml.parse(fclangd.Read());
-            }
-            if (!cfg['CompileFlags']) cfg['CompileFlags'] = {};
-            if (!cfg['CompileFlags']['Add']) cfg['CompileFlags']['Add'] = []
-            if (!cfg['CompileFlags']['Remove']) cfg['CompileFlags']['Remove'] = [];
-            //
-            cfg['CompileFlags']['CompilationDatabase'] = './' + File.ToUnixPath(prj.getOutputDir());
-            const toolchain = prj.getToolchain();
-            const gccLikePath = toolchain.getGccFamilyCompilerPathForCpptools('c');
-            if (gccLikePath) { // clangd 仅兼容gcc的编译器
-                cfg['CompileFlags']['Compiler'] = gccLikePath;
-                let clangdCompileFlags = <string[]>(cfg['CompileFlags']['Add']);
-                let compilerArgs = prj.getCpptoolsConfig().cppCompilerArgs;
-                if (isGccFamilyToolchain(toolchain.name)) {
-                    const tRoot = toolchain.getToolchainDir().path;
-                    clangdCompileFlags = clangdCompileFlags.filter(p => !File.isSubPathOf(tRoot, p.substr(2)));
-                    let li = getGccSystemSearchList(File.ToLocalPath(gccLikePath), ['-xc++'].concat(compilerArgs || []));
-                    if (li) {
-                        li.forEach(p => {
-                            clangdCompileFlags.push(`-I${File.normalize(p)}`);
-                        });
-                    }
-                } else if (toolchain.name == 'LLVM_ARM') {
-                    // nothing todo. This is llvm.
-                } else {
-                    clangdCompileFlags.push(`-I${toolchain.getToolchainDir().path}/include`);
-                    clangdCompileFlags.push(`-I${toolchain.getToolchainDir().path}/include/libcxx`);
-                }
-                // // add flags
-                // if (compilerArgs)
-                //     compilerArgs.forEach(arg => clangdCompileFlags.push(arg));
-                // // add user includes
-                // prj.getCpptoolsConfig().includePath
-                //     .forEach(path => clangdCompileFlags.push(`-I${path}`));
-                // // add user defines
-                // prj.getCpptoolsConfig().defines
-                //     .forEach(d => clangdCompileFlags.push(`-D${d}`));
-                // del repeat
-                cfg['CompileFlags']['Add'] = ArrayDelRepetition(clangdCompileFlags);
-            }
-            // 其他不受 clangd 支持的编译器要自行设置 -I -D
-            else if (toolchain.name == 'AC5' || toolchain.name == 'SDCC' || toolchain.name == 'GNU_SDCC_MCS51') {
-                const builderOpts = prj.getBuilderOptions();
-                const prjConfig = prj.GetConfiguration();
-                const compilerFlags: string[] = cfg['CompileFlags']['Add'] || [];
-                toolchain.getSystemIncludeList(builderOpts)
-                    .forEach(p => compilerFlags.push(`-I"${p}"`));
-                toolchain.getInternalDefines(<any>prjConfig.config.toolchainConfig, builderOpts)
-                    .forEach(d => compilerFlags.push(`-D"${d.name}=${d.value}"`));
-                cfg['CompileFlags']['Add'] = ArrayDelRepetition(compilerFlags);
-                // 禁用所有诊断错误，因为 clangd 不支持这些编译器
-                cfg['Diagnostics'] = { 'Suppress': '*' }
-            }
-            fclangd.Write(yaml.stringify(cfg));
+            generateClangdConfig(prj);
         } catch (error) {
             GlobalEvent.log_error(error);
         }
     });
+}
+
+export function generateClangdConfig(prj: AbstractProject): void {
+    let cfg: any = {};
+    const fclangd = File.fromArray([prj.getProjectRoot().path, '.clangd']);
+    if (fclangd.IsFile()) {
+        cfg = yaml.parse(fclangd.Read());
+    }
+    if (!cfg['CompileFlags']) cfg['CompileFlags'] = {};
+    if (!cfg['CompileFlags']['Add']) cfg['CompileFlags']['Add'] = []
+    if (!cfg['CompileFlags']['Remove']) cfg['CompileFlags']['Remove'] = [];
+    //
+    cfg['CompileFlags']['CompilationDatabase'] = './' + File.ToUnixPath(prj.getOutputDir());
+    const toolchain = prj.getToolchain();
+    const gccLikePath = toolchain.getGccFamilyCompilerPathForCpptools('c');
+    if (gccLikePath) { // clangd 仅兼容gcc的编译器
+        cfg['CompileFlags']['Compiler'] = gccLikePath;
+        let clangdCompileFlags = <string[]>(cfg['CompileFlags']['Add']);
+        let compilerArgs = prj.getCpptoolsConfig().cppCompilerArgs;
+        if (isGccFamilyToolchain(toolchain.name)) {
+            const tRoot = toolchain.getToolchainDir().path;
+            clangdCompileFlags = clangdCompileFlags.filter(p => !File.isSubPathOf(tRoot, p.substr(2)));
+            let li = getGccSystemSearchList(File.ToLocalPath(gccLikePath), ['-xc++'].concat(compilerArgs || []));
+            if (li) {
+                li.forEach(p => {
+                    clangdCompileFlags.push(`-I${File.normalize(p)}`);
+                });
+            }
+        } else if (toolchain.name == 'LLVM_ARM') {
+            // nothing todo. This is llvm.
+        } else {
+            clangdCompileFlags.push(`-I${toolchain.getToolchainDir().path}/include`);
+            clangdCompileFlags.push(`-I${toolchain.getToolchainDir().path}/include/libcxx`);
+        }
+        // // add flags
+        // if (compilerArgs)
+        //     compilerArgs.forEach(arg => clangdCompileFlags.push(arg));
+        // // add user includes
+        // prj.getCpptoolsConfig().includePath
+        //     .forEach(path => clangdCompileFlags.push(`-I${path}`));
+        // // add user defines
+        // prj.getCpptoolsConfig().defines
+        //     .forEach(d => clangdCompileFlags.push(`-D${d}`));
+        // del repeat
+        cfg['CompileFlags']['Add'] = ArrayDelRepetition(clangdCompileFlags);
+    }
+    // 其他不受 clangd 支持的编译器要自行设置 -I -D
+    else if (toolchain.name == 'AC5' || toolchain.name == 'SDCC' || toolchain.name == 'GNU_SDCC_MCS51') {
+        const builderOpts = prj.getBuilderOptions();
+        const prjConfig = prj.GetConfiguration();
+        const compilerFlags: string[] = cfg['CompileFlags']['Add'] || [];
+        toolchain.getSystemIncludeList(builderOpts)
+            .forEach(p => compilerFlags.push(`-I"${p}"`));
+        toolchain.getInternalDefines(<any>prjConfig.config.toolchainConfig, builderOpts)
+            .forEach(d => compilerFlags.push(`-D"${d.name}=${d.value}"`));
+        cfg['CompileFlags']['Add'] = ArrayDelRepetition(compilerFlags);
+        // 禁用所有诊断错误，因为 clangd 不支持这些编译器
+        cfg['Diagnostics'] = { 'Suppress': '*' }
+    }
+    fclangd.Write(yaml.stringify(cfg));
 }

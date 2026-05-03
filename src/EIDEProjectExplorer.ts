@@ -140,7 +140,7 @@ import { jsonc } from 'jsonc';
 import { SimpleUIConfig, SimpleUIConfigData_input, SimpleUIConfigData_options, SimpleUIConfigData_text, SimpleUIConfigData_table, SimpleUIConfigData_boolean, SimpleUIConfigData_divider, SimpleUIConfigData_tag } from "./SimpleUIDef";
 import { StatusBarManager } from './StatusBarManager';
 import { doMigration, detectProject } from './EIDEProjectMigration';
-import { onRegisterClangdProvider } from './clangdConfigProvider';
+import { onRegisterClangdProvider, generateClangdConfig } from './clangdConfigProvider';
 
 enum TreeItemType {
     SOLUTION,
@@ -3468,6 +3468,29 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         GlobalEvent.emit('project.closed', uid);
     }
 
+    GenerateClangdConfig(item?: ProjTreeItem) {
+        const prj = this.getProjectByTreeItem(item);
+        if (prj == undefined) {
+            GlobalEvent.emit('msg', newMessage('Warning', 'No activated project !'));
+            return;
+        }
+        try {
+            generateClangdConfig(prj);
+            GlobalEvent.emit('msg', newMessage('Info', `.clangd config generated for '${prj.getProjectName()}'`));
+        } catch (error) {
+            GlobalEvent.emit('msg', ExceptionToMessage(error, 'Warning'));
+        }
+    }
+
+    async ReloadProject(item?: ProjTreeItem): Promise<void> {
+        const prj = this.getProjectByTreeItem(item);
+        if (prj == undefined) {
+            GlobalEvent.emit('msg', newMessage('Warning', 'No activated project !'));
+            return;
+        }
+        await this.reloadProject(prj.getUid(), prj.getWorkspaceFile());
+    }
+
     SaveAll() {
         this.dataProvider.SaveAll();
     }
@@ -3564,7 +3587,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         this.enableAutoSave(true);
     }
 
-    private async reloadProject(uid: string, workspaceFile: File): Promise<boolean> {
+    async reloadProject(uid: string, workspaceFile: File): Promise<boolean> {
 
         const idx = this.dataProvider.getIndexByProjectUid(uid);
         if (idx == -1) {

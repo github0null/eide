@@ -539,6 +539,16 @@
                 "title": "Create gcc system stubs for project"
             },
             {
+                "command": "eide.project.generateClangdConfig",
+                "category": "eide",
+                "title": "%eide.project.generateClangdConfig%"
+            },
+            {
+                "command": "eide.project.reload",
+                "category": "eide",
+                "title": "%eide.project.reload%"
+            },
+            {
                 "command": "eide.debug.start",
                 "category": "eide",
                 "title": "%eide.project.debug.start%",
@@ -1346,6 +1356,16 @@
                     "command": "_cl.eide.project.close",
                     "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
                     "group": "4_group@2"
+                },
+                {
+                    "command": "eide.project.reload",
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
+                    "group": "4_group@3"
+                },
+                {
+                    "command": "eide.project.generateClangdConfig",
+                    "when": "viewItem == SOLUTION && view == cl.eide.view.projects",
+                    "group": "4_group@4"
                 },
                 {
                     "command": "_cl.eide.project.switchMode",

@@ -171,6 +171,8 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('eide.project.genBuilderParams', (item) => projectExplorer.BuildSolution(item, { not_rebuild: true, onlyDumpBuilderParams: true })));
     subscriptions.push(vscode.commands.registerCommand('eide.open.makelibs.cfg', (item) => projectExplorer.openLibsGeneratorConfig(item)));
     subscriptions.push(vscode.commands.registerCommand('eide.project.create_sys_stubs', (projuid) => projectExplorer.createSysStubs(projuid)));
+    subscriptions.push(vscode.commands.registerCommand('eide.project.generateClangdConfig', (item) => projectExplorer.GenerateClangdConfig(item)));
+    subscriptions.push(vscode.commands.registerCommand('eide.project.reload', (item) => projectExplorer.ReloadProject(item)));
 
     // operations bar
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.historyRecord', () => projectExplorer.openHistoryRecords()));
