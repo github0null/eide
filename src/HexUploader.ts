@@ -234,9 +234,9 @@ export abstract class HexUploader<InvokeParamsType> {
         // if 'bin' path is empty, use default program path 
         if (options.bin.trim() === '') {
 
-            // relative path with './' prefix
+            // Fix: Use this.project.getExecutablePathWithoutSuffix() to unify output file path calculation.
             const hexPath = [
-                '.', this.project.getOutputDir(), this.project.getProjectName() + '.hex'
+                '.', this.project.getExecutablePathWithoutSuffix() + '.hex'
             ].join(File.sep);
 
             return [{ path: formatBinFilePath(hexPath) }];
@@ -1163,8 +1163,9 @@ class ProbeRSUploader extends HexUploader<string[]> {
         const matcher = /(?<path>[^,]+)(?:,(?<addr>0x[a-f0-9]+))?/i;
 
         // if 'bin' path is empty, use default program path 
-        if (options.bin.trim() === '') {
-            const elfPath = ['.', this.project.getOutputDir(), this.project.getProjectName() + '.elf'].join(File.sep);
+        if (options.bin.trim() === '') { 
+            // Fix: Use this.project.getExecutablePathWithoutSuffix() to unify output file path calculation.
+            const elfPath = ['.', this.project.getExecutablePathWithoutSuffix() + '.elf'].join(File.sep);
             return [
                 { path: elfPath }
             ];

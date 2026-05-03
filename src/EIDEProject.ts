@@ -895,8 +895,11 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         return this.GetRootDir();
     }
 
+    // Fix#3: The generated axf filename should be the currently selected target name (config.mode),
+    //   NOT the project name (config.name). Previously used getProjectName() which produced
+    //   incorrect output filename like "myProject.axf" instead of "Debug.axf".
     public getExecutablePathWithoutSuffix(): string {
-        return [this.getRootDir().path, this.getOutputDir(), this.getProjectName()].join(File.sep);
+        return [this.getOutputFolder().path, this.getCurrentTarget()].join(File.sep);
     }
 
     /**
