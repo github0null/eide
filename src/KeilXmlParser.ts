@@ -230,10 +230,17 @@ export abstract class KeilParser<T> {
         return this._folder.ToRelativePath(path) || path;
     }
 
-    protected FixGroupName(groupName: string): string {
+    /**
+     * Normalize a Keil group name: trim, strip leading slashes, replace \ with /
+     */
+    static FixGroupNameStatic(groupName: string): string {
         return groupName.trim()
-            .replace(/^(?:\\|\/){1,}/, '')  // '/TEST' -> 'TEST'
-            .replace(/\\{1,}/g, '/');       // 'TEST\\A' -> 'TEST/A'
+            .replace(/^(?:\\|\/){1,}/, '')
+            .replace(/\\{1,}/g, '/');
+    }
+
+    protected FixGroupName(groupName: string): string {
+        return KeilParser.FixGroupNameStatic(groupName);
     }
 
     protected isFileDisabled(fileObj: any): boolean | undefined {
@@ -305,6 +312,14 @@ export abstract class KeilParser<T> {
     }
 
     abstract ParseData(): KeilParserResult<T>[];
+
+    /**
+     * Get the raw x2js-parsed XML document for direct access to elements
+     * that may not have been captured in ParseData() results.
+     */
+    getRawDoc(): any {
+        return this.doc;
+    }
 
     abstract SetKeilXml(prj: AbstractProject, fileGroups: FileGroup[], keilOutputDir: File, deviceInfo?: CurrentDevice): void;
 }
@@ -420,11 +435,12 @@ class C51Parser extends KeilParser<KeilC51Option> {
 
             if (groups !== undefined && groups.Group !== undefined) {
 
-                groups.Group.forEach((group: { GroupName: string, Files: any[] }) => {
+                groups.Group.forEach((group: { GroupName: string, Files: any[], GroupOption?: any }) => {
                     const fGroup = <FileGroup>{ name: '', files: [] };
 
                     fGroup.name = this.FixGroupName(group.GroupName);
                     fGroup.disabled = this.isGroupDisabled(group);
+                    if (group.GroupOption) { fGroup.groupOption = group.GroupOption; }
 
                     if (group.Files && group.Files.length > 0) {
 
@@ -1042,11 +1058,12 @@ class ARMParser extends KeilParser<KeilARMOption> {
 
             if (groups !== undefined && groups.Group !== undefined) {
 
-                groups.Group.forEach((group: { GroupName: string, Files: any[] }) => {
+                groups.Group.forEach((group: { GroupName: string, Files: any[], GroupOption?: any }) => {
                     const fGroup = <FileGroup>{ name: '', files: [] };
 
                     fGroup.name = this.FixGroupName(group.GroupName);
                     fGroup.disabled = this.isGroupDisabled(group);
+                    if (group.GroupOption) { fGroup.groupOption = group.GroupOption; }
 
                     if (group.Files && group.Files.length > 0) {
 

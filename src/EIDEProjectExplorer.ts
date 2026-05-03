@@ -2520,10 +2520,142 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             }
         };
 
+        // Helper: extract group options directly from Keil XML raw document.
+        //   This is a fallback when x2js-parsed groupOption is unavailable.
+        //   Reference: migrateKeilGroup2Eide.py
+        const rawKeilDoc = keilParser.getRawDoc();
+        const getRawGroupOpts = (groupName: string): { cads?: any, aads?: any } | undefined => {
+            try {
+                // Find the group in the raw XML document by name
+                for (const target of rawKeilDoc.Project.Targets.Target) {
+                    const groups = target.Groups;
+                    if (!groups || !groups.Group) continue;
+                    const rawGroup = groups.Group.find((g: any) => {
+                        const rawName = typeof g.GroupName === 'string' ? g.GroupName : g.GroupName?.__text;
+                        return KeilParser.FixGroupNameStatic(rawName) === groupName;
+                    });
+                    if (!rawGroup || !rawGroup.GroupOption) continue;
+                    const grpArmAds = rawGroup.GroupOption.GroupArmAds;
+                    if (!grpArmAds) continue;
+                    return {
+                        cads: grpArmAds.Cads,
+                        aads: grpArmAds.Aads
+                    };
+                }
+            } catch (e) {
+                // ignore parse errors
+            }
+        };
+
+        const setupGroupOpts = (vFolderPath: string, groupName: string) => {
+            for (const keilTarget of targets) {
+                if (srcOptsObj.options[keilTarget.name] == undefined)
+                    srcOptsObj.options[keilTarget.name] = { files: {}, virtualPathFiles: {} };
+                const targetSrcOpts = srcOptsObj.options[keilTarget.name];
+
+                const tGroup = keilTarget.fileGroups.find((g: any) => g.name === groupName);
+                let grpArmAds = tGroup?.groupOption?.GroupArmAds;
+
+                // Fallback: if x2js didn't parse GroupOption, read raw XML directly
+                if (!grpArmAds) {
+                    const rawOpts = getRawGroupOpts(groupName);
+                    if (rawOpts) {
+                        // Wrap raw opts in getFirst-compatible structure (x2js may create arrays)
+                        grpArmAds = {
+                            Cads: rawOpts.cads,
+                            Aads: rawOpts.aads
+                        };
+                    }
+                }
+
+                if (!grpArmAds) continue;
+
+                // Helper to extract first item if it is an array, else return the object itself
+                const getFirst = (obj: any) => Array.isArray(obj) ? obj[0] : obj;
+
+                // Process Cads
+                const cads = getFirst(grpArmAds.Cads);
+                if (cads && cads.VariousControls) {
+                    const c_fopts = getFirst(cads.VariousControls);
+                    if (c_fopts) {
+                        const optLi: string[] = [];
+                        const incText = getFirst(c_fopts.IncludePath);
+                        if (incText && typeof incText === 'string') {
+                            incText.split(';').map((s: string) => s.trim()).filter((s: string) => s).forEach((s: string) => {
+                                const rep = baseInfo.rootFolder.ToRelativePath(s) || s;
+                                if (keilTarget.type === 'C51') optLi.push(`INCDIR(${rep})`);
+                                else optLi.push(`-I${rep}`);
+                            });
+                        }
+                        const defText = getFirst(c_fopts.Define);
+                        if (defText && typeof defText === 'string') {
+                            defText.replace(/,/g, ' ').split(/\s+/).map((s: string) => s.trim()).filter((s: string) => s).forEach((item: string) => {
+                                if (keilTarget.type === 'C51') {
+                                    if (item.includes('=')) optLi.push(`DEFINE(${item})`);
+                                    else optLi.push(`DEFINE(${item}=1)`);
+                                } else optLi.push(`-D${item}`);
+                            });
+                        }
+                        const undefText = getFirst(c_fopts.Undefine);
+                        if (undefText && typeof undefText === 'string') {
+                            undefText.replace(/,/g, ' ').split(/\s+/).map((s: string) => s.trim()).filter((s: string) => s).forEach((item: string) => {
+                                if (keilTarget.type !== 'C51') optLi.push(`-U${item}`);
+                            });
+                        }
+                        const miscText = getFirst(c_fopts.MiscControls);
+                        if (miscText && typeof miscText === 'string') {
+                            const replMisc = miscText.replace(/(-imacros|-include)\s+([^\s]+)/g, (match: string, p1: string, p2: string) => {
+                                const relp = baseInfo.rootFolder.ToRelativePath(p2) || p2;
+                                return `${p1} ${relp}`;
+                            });
+                            optLi.push(replMisc.trim());
+                        }
+                        if (optLi.length > 0) {
+                            targetSrcOpts.virtualPathFiles = targetSrcOpts.virtualPathFiles || {};
+                            targetSrcOpts.virtualPathFiles[`${vFolderPath}/**/*.c`] = optLi.join(' ');
+                        }
+                    }
+                }
+                // Process Aads
+                const aads = getFirst(grpArmAds.Aads);
+                if (aads && aads.VariousControls && keilTarget.type !== 'C51') {
+                    const a_fopts = getFirst(aads.VariousControls);
+                    if (a_fopts) {
+                        const optLi: string[] = [];
+                        const incText = getFirst(a_fopts.IncludePath);
+                        if (incText && typeof incText === 'string') {
+                            incText.split(';').map((s: string) => s.trim()).filter((s: string) => s).forEach((s: string) => {
+                                optLi.push(`-I${baseInfo.rootFolder.ToRelativePath(s) || s}`);
+                            });
+                        }
+                        const defText = getFirst(a_fopts.Define);
+                        if (defText && typeof defText === 'string') {
+                            defText.replace(/,/g, ' ').split(/\s+/).map((s: string) => s.trim()).filter((s: string) => s).forEach((item: string) => {
+                                optLi.push(`-D${item}`);
+                            });
+                        }
+                        const miscText = getFirst(a_fopts.MiscControls);
+                        if (miscText && typeof miscText === 'string') {
+                            const replMisc = miscText.replace(/(-imacros|-include)\s+([^\s]+)/g, (match: string, p1: string, p2: string) => {
+                                const relp = baseInfo.rootFolder.ToRelativePath(p2) || p2;
+                                return `${p1} ${relp}`;
+                            });
+                            optLi.push(replMisc.trim());
+                        }
+                        if (optLi.length > 0) {
+                            targetSrcOpts.virtualPathFiles = targetSrcOpts.virtualPathFiles || {};
+                            targetSrcOpts.virtualPathFiles[`${vFolderPath}/**/*.{s,S}`] = optLi.join(' ');
+                        }
+                    }
+                }
+            }
+        };
+
         // init file group
         targets[0].fileGroups.forEach((group) => {
             const vPath = `${VirtualSource.rootName}/${File.ToUnixPath(group.name)}`;
             const VFolder = <VirtualFolder>getVirtualFolder(vPath);
+            setupGroupOpts(vPath, group.name);
             group.files.forEach((fileItem) => {
                 // add source file
                 VFolder.files.push({
