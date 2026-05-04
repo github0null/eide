@@ -189,7 +189,18 @@ export async function onRegisterClangdProvider(prj: AbstractProject) {
             else if (toolchain.name == 'AC5' || toolchain.name == 'SDCC' || toolchain.name == 'GNU_SDCC_MCS51') {
                 const builderOpts = prj.getBuilderOptions();
                 const prjConfig = prj.GetConfiguration();
-                const compilerFlags: string[] = cfg['CompileFlags']['Add'] || [];
+                let compilerFlags: string[] = cfg['CompileFlags']['Add'] ?? [];
+                // 删除旧版本错误使用了引号的 flag
+                const flagPrefixesToRemove = ['-I"', '-D"'];
+                compilerFlags = compilerFlags.filter(f => {
+                    for (const prefix of flagPrefixesToRemove) {
+                        if (f.startsWith(prefix) && f.endsWith('"')) {
+                            return false;
+                        }
+                    }
+                    return true;
+                });
+                // 重新添加系统头路径和预定义宏
                 toolchain.getSystemIncludeList(builderOpts)
                     .forEach(p => compilerFlags.push(sysIncPrefix + p));
                 toolchain.getInternalDefines(<any>prjConfig.config.toolchainConfig, builderOpts)
