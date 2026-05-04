@@ -205,7 +205,30 @@ export async function onRegisterClangdProvider(prj: AbstractProject) {
                     .forEach(p => compilerFlags.push(sysIncPrefix + p));
                 toolchain.getInternalDefines(<any>prjConfig.config.toolchainConfig, builderOpts)
                     .forEach(d => compilerFlags.push(`-D${d.name}=${d.value}`));
+                // 移除错误数量限制，避免 fatal_too_many_errors 错误
+                compilerFlags.push("-ferror-limit=0");
                 cfg['CompileFlags']['Add'] = ArrayDelRepetition(compilerFlags);
+                // 移除 AC5 的专有参数，避免 clang 报错
+                let removeFlags = <string[]>cfg['CompileFlags']['Remove'] ?? [];
+                removeFlags = removeFlags.concat([
+                    "--apcs=interwork",
+                    "--cpu",
+                    "--li",
+                    "--c99",
+                    "--split_sections",
+                    "--diag_suppress=*",
+                    "--no_depend_system_headers",
+                    "--depend",
+                    "--strict",
+                    "--enum_is_int",
+                    "--gnu",
+                    "--apcs=*",
+                    "--signed_chars",
+                    "--split_ldm",
+                    "--execute_only",
+                    "-Otime",
+                ]);
+                cfg['CompileFlags']['Remove'] = ArrayDelRepetition(removeFlags);
                 // 禁用所有诊断错误，因为 clangd 不支持这些编译器
                 cfg['Diagnostics'] = { 'Suppress': '*' }
             }
