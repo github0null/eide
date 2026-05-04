@@ -153,16 +153,18 @@ export async function onRegisterClangdProvider(prj: AbstractProject) {
                 };
                 if (isGccFamilyToolchain(toolchain.name)) {
                     const tRoot = toolchain.getToolchainDir().path;
+                    // 移除旧的系统头路径
                     clangdCompileFlags = clangdCompileFlags.filter(p => {
                         const incPath = stripIncludePrefix(p);
+                        // 保留非 include 路径相关的 flag
                         if (incPath === undefined) return true;
+                        // 移除工具链目录下的 include 路径（系统头路径）
                         return !File.isSubPathOf(tRoot, incPath);
                     });
                     let li = getGccSystemSearchList(File.ToLocalPath(gccLikePath), ['-xc++'].concat(compilerArgs || []));
                     if (li) {
-                        li.forEach(p => {
-                            clangdCompileFlags.push(`-isystem${File.normalize(p)}`);
-                        });
+                        // 重新添加系统头路径。使用 -isystem 前缀，避免 clangd 对系统头进行诊断
+                        li.forEach(p => { clangdCompileFlags.push(`-isystem${File.normalize(p)}`); });
                     }
                 } else if (toolchain.name == 'LLVM_ARM') {
                     // nothing todo. This is llvm.
