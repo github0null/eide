@@ -146,8 +146,9 @@ export async function onRegisterClangdProvider(prj: AbstractProject) {
                 let compilerArgs = prj.getCpptoolsConfig().cppCompilerArgs;
                 // 用 -isystem 引入系统头文件，避免 clangd 对系统头进行诊断；
                 // 兼容历史遗留的 -I 入口，便于切换工具链时清理旧路径。
+                const sysIncPrefix = '-isystem';
                 const stripIncludePrefix = (s: string): string | undefined => {
-                    if (s.startsWith('-isystem')) return s.substring('-isystem'.length);
+                    if (s.startsWith(sysIncPrefix)) return s.substring(sysIncPrefix.length);
                     if (s.startsWith('-I')) return s.substring(2);
                     return undefined;
                 };
@@ -164,13 +165,13 @@ export async function onRegisterClangdProvider(prj: AbstractProject) {
                     let li = getGccSystemSearchList(File.ToLocalPath(gccLikePath), ['-xc++'].concat(compilerArgs || []));
                     if (li) {
                         // 重新添加系统头路径。使用 -isystem 前缀，避免 clangd 对系统头进行诊断
-                        li.forEach(p => { clangdCompileFlags.push(`-isystem${File.normalize(p)}`); });
+                        li.forEach(p => { clangdCompileFlags.push(sysIncPrefix + File.normalize(p)); });
                     }
                 } else if (toolchain.name == 'LLVM_ARM') {
                     // nothing todo. This is llvm.
                 } else {
-                    clangdCompileFlags.push(`-isystem${toolchain.getToolchainDir().path}/include`);
-                    clangdCompileFlags.push(`-isystem${toolchain.getToolchainDir().path}/include/libcxx`);
+                    clangdCompileFlags.push(`${sysIncPrefix}${toolchain.getToolchainDir().path}/include`);
+                    clangdCompileFlags.push(`${sysIncPrefix}${toolchain.getToolchainDir().path}/include/libcxx`);
                 }
                 // // add flags
                 // if (compilerArgs)
