@@ -191,9 +191,9 @@ export async function onRegisterClangdProvider(prj: AbstractProject) {
                 const prjConfig = prj.GetConfiguration();
                 const compilerFlags: string[] = cfg['CompileFlags']['Add'] || [];
                 toolchain.getSystemIncludeList(builderOpts)
-                    .forEach(p => compilerFlags.push(`${sysIncPrefix}"${p}"`));
+                    .forEach(p => compilerFlags.push(sysIncPrefix + p));
                 toolchain.getInternalDefines(<any>prjConfig.config.toolchainConfig, builderOpts)
-                    .forEach(d => compilerFlags.push(`-D"${d.name}=${d.value}"`));
+                    .forEach(d => compilerFlags.push(`-D${d.name}=${d.value}`));
                 cfg['CompileFlags']['Add'] = ArrayDelRepetition(compilerFlags);
                 // 禁用所有诊断错误，因为 clangd 不支持这些编译器
                 cfg['Diagnostics'] = { 'Suppress': '*' }
