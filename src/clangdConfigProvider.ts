@@ -211,7 +211,6 @@ export async function onRegisterClangdProvider(prj: AbstractProject) {
                 // 移除 AC5 的专有参数，避免 clang 报错
                 let removeFlags = <string[]>cfg['CompileFlags']['Remove'] ?? [];
                 removeFlags = removeFlags.concat([
-                    "--apcs=interwork",
                     "--cpu",
                     "--li",
                     "--c99",
