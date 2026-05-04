@@ -140,13 +140,13 @@ export async function onRegisterClangdProvider(prj: AbstractProject) {
             cfg['CompileFlags']['CompilationDatabase'] = './' + File.ToUnixPath(prj.getOutputDir());
             const toolchain = prj.getToolchain();
             const gccLikePath = toolchain.getGccFamilyCompilerPathForCpptools('c');
+            const sysIncPrefix = '-isystem'; // 用 -isystem 引入系统头文件
             if (gccLikePath) { // clangd 仅兼容gcc的编译器
                 cfg['CompileFlags']['Compiler'] = gccLikePath;
                 let clangdCompileFlags = <string[]>(cfg['CompileFlags']['Add']);
                 let compilerArgs = prj.getCpptoolsConfig().cppCompilerArgs;
                 // 用 -isystem 引入系统头文件，避免 clangd 对系统头进行诊断；
                 // 兼容历史遗留的 -I 入口，便于切换工具链时清理旧路径。
-                const sysIncPrefix = '-isystem';
                 const stripIncludePrefix = (s: string): string | undefined => {
                     if (s.startsWith(sysIncPrefix)) return s.substring(sysIncPrefix.length);
                     if (s.startsWith('-I')) return s.substring(2);
@@ -191,7 +191,7 @@ export async function onRegisterClangdProvider(prj: AbstractProject) {
                 const prjConfig = prj.GetConfiguration();
                 const compilerFlags: string[] = cfg['CompileFlags']['Add'] || [];
                 toolchain.getSystemIncludeList(builderOpts)
-                    .forEach(p => compilerFlags.push(`-I"${p}"`));
+                    .forEach(p => compilerFlags.push(`${sysIncPrefix}"${p}"`));
                 toolchain.getInternalDefines(<any>prjConfig.config.toolchainConfig, builderOpts)
                     .forEach(d => compilerFlags.push(`-D"${d.name}=${d.value}"`));
                 cfg['CompileFlags']['Add'] = ArrayDelRepetition(compilerFlags);
