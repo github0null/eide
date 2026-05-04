@@ -188,7 +188,7 @@ export async function onRegisterClangdProvider(prj: AbstractProject) {
                 const prjConfig = prj.GetConfiguration();
                 const compilerFlags: string[] = cfg['CompileFlags']['Add'] || [];
                 toolchain.getSystemIncludeList(builderOpts)
-                    .forEach(p => compilerFlags.push(`-isystem"${p}"`));
+                    .forEach(p => compilerFlags.push(`-I"${p}"`));
                 toolchain.getInternalDefines(<any>prjConfig.config.toolchainConfig, builderOpts)
                     .forEach(d => compilerFlags.push(`-D"${d.name}=${d.value}"`));
                 cfg['CompileFlags']['Add'] = ArrayDelRepetition(compilerFlags);
