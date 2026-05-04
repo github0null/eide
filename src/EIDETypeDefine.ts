@@ -544,7 +544,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
                 } else {
                     return i_a - i_b;
                 }
-            } 
+            }
         });
     }
 
@@ -1642,20 +1642,26 @@ export class WorkspaceConfiguration extends Configuration<WorkspaceConfig> {
     }
 
     protected parse(jsonStr: string): WorkspaceConfig {
-        const errors: jsonc_parser.ParseError[] = [];
-        const obj = <any>jsonc_parser.parse(jsonStr, errors, { allowTrailingComma: true });
-        if (errors.length > 0 || obj == undefined) {
-            const err = new Error(errors.map(e =>
-                `${jsonc_parser.printParseErrorCode(e.error)} at offset ${e.offset}`).join('; ')
-                || 'invalid workspace config');
-            GlobalEvent.log_error(err);
-            GlobalEvent.emit('msg', newMessage('Warning',
-                view_str$prompt$loadws_cfg_failed.replace('{}', this.FILE_NAME)));
+        try {
+            const errors: jsonc_parser.ParseError[] = [];
+            const obj = <any>jsonc_parser.parse(jsonStr, errors, { allowTrailingComma: true });
+            if (errors.length > 0 || obj == undefined) {
+                throw new Error(
+                    errors.map(e => `${jsonc_parser.printParseErrorCode(e.error)} at offset ${e.offset}`)
+                        .join('; ')
+                    || 'invalid workspace config'
+                );
+            }
+            this.isLoadFailed = false;
+            return obj;
+        } catch (error) {
+            GlobalEvent.log_error(error);
+            GlobalEvent.emit('msg', newMessage(
+                'Warning', view_str$prompt$loadws_cfg_failed.replace('{}', this.FILE_NAME)
+            ));
             this.isLoadFailed = true;
             return this.GetDefault();
         }
-        this.isLoadFailed = false;
-        return obj;
     }
 
     protected toString(): string {
