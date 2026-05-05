@@ -1,9 +1,10 @@
-.git
+**/.git
 .github
 .vscode
 .vscode-test
 out
 src
+node_modules
 .EIDE
 doc
 **/*.log
