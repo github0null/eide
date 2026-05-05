@@ -98,7 +98,7 @@
         "micromatch": "^4.0.4",
         "node-7z": "^3.0.0",
         "table": "^6.8.1",
-        "ts-loader": "^6.2.1",
+        "ts-loader": "^9.5.7",
         "tslint": "^5.20.1",
         "typescript": "^3.7.3",
         "vscode-cpptools": "^5.0.0",
@@ -109,7 +109,6 @@
         "xml2js": "^0.6.2",
         "yaml": "2.8.1"
     },
-    "dependencies": {},
     "contributes": {
         "terminal": {
             "profiles": [
