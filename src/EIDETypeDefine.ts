@@ -748,6 +748,28 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         }
     }
 
+    getDefaultTargetInfo(): ProjectTargetInfo {
+        return {
+            excludeList: [],
+            toolchain: this.config.toolchain,
+            toolchainConfig: {},
+            toolchainConfigMap: {},
+            uploader: this.config.uploader,
+            uploadConfig: {},
+            uploadConfigMap: {},
+            cppPreprocessAttrs: {
+                name: 'default',
+                incList: [],
+                libList: [],
+                defineList: []
+            },
+            builderOptions: {},
+            settings: {
+                debugger: this.config.type === 'C51' ? 'unknown' : 'cortex-debug'
+            }
+        };
+    }
+
     setHexUploader(uploader: HexUploaderType) {
 
         const oldModel = this.uploadConfigModel;
@@ -1345,18 +1367,19 @@ export class ProjectConfiguration<T extends BuilderConfigData>
     cloneCurrentTarget(): ProjectTargetInfo {
 
         const target = this.config;
+        const defTarget = this.getDefaultTargetInfo();
 
         const custom_dep = <Dependence>utility.deepCloneObject(this.CustomDep_getDependence());
         custom_dep.incList = custom_dep.incList.map((path) => this.toRelativePath(path));
         custom_dep.libList = custom_dep.libList.map((path) => this.toRelativePath(path));
 
-        let builderOpts: any = {};
+        let builderOpts = defTarget.builderOptions;
         if (target.targets[target.mode] &&
             target.targets[target.mode].builderOptions !== undefined) {
             builderOpts = utility.deepCloneObject(target.targets[target.mode].builderOptions);
         }
 
-        let settings: any = {};
+        let settings = defTarget.settings;
         if (target.targets[target.mode] &&
             target.targets[target.mode].settings) {
             settings = utility.deepCloneObject(target.targets[target.mode].settings);
@@ -1530,25 +1553,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         }
 
         // init targets default value
-        const defTargetInfo: ProjectTargetInfo = {
-            excludeList: [],
-            toolchain: this.config.toolchain,
-            toolchainConfig: {},
-            toolchainConfigMap: {},
-            uploader: this.config.uploader,
-            uploadConfig: {},
-            uploadConfigMap: {},
-            cppPreprocessAttrs: {
-                name: 'default',
-                incList: [],
-                libList: [],
-                defineList: []
-            },
-            builderOptions: {},
-            settings: {
-                debugger: this.config.type === 'C51' ? 'unknown' : 'cortex-debug'
-            }
-        };
+        const defTargetInfo: ProjectTargetInfo = this.getDefaultTargetInfo();
         for (const name in this.config.targets) {
             const target = this.config.targets[name];
             for (const key in defTargetInfo) {
