@@ -59,7 +59,7 @@ export class SevenZipper {
         }
     }
 
-    private _unzip_tar(zipFile: File, outDir?: File): Promise<Error | null> {
+    private _unzip_tar(zipFile: File, outDir?: File): Promise<Error | void> {
 
         return new Promise((resolve) => {
 
@@ -106,7 +106,7 @@ export class SevenZipper {
         });
     }
 
-    private _unzip_zip_7z(zipFile: File, outDir?: File): Promise<Error | null> {
+    private _unzip_zip_7z(zipFile: File, outDir?: File): Promise<Error | void> {
 
         return new Promise((resolve) => {
 
@@ -166,7 +166,7 @@ export class SevenZipper {
         }
     }
 
-    Unzip(zipFile: File, outDir?: File): Promise<Error | null> {
+    Unzip(zipFile: File, outDir?: File): Promise<Error | void> {
 
         if (!zipFile.IsFile()) {
             throw new Error('\'' + zipFile.path + '\' is not exist');
@@ -212,7 +212,7 @@ export class SevenZipper {
         }
     }
 
-    Zip(dirOrFile: File, option: CompressOption, outDir?: File): Promise<Error | null> {
+    Zip(dirOrFile: File, option: CompressOption, outDir?: File): Promise<Error | void> {
 
         if (!dirOrFile.IsExist()) {
             throw new Error('\'' + dirOrFile.path + '\' is not exist');

@@ -511,11 +511,11 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         this.watcher.OnRename = _cb;
     }
 
-    static parseProjectFile<T>(input: string): ProjectConfigData<T> {
+    static parseProjectFile<T extends BuilderConfigData>(input: string): ProjectConfigData<T> {
         return yaml.parse(input);
     }
 
-    static dumpProjectFile<T>(obj: ProjectConfigData<T>): string {
+    static dumpProjectFile<T extends BuilderConfigData>(obj: ProjectConfigData<T>): string {
         const keyOrder = [
             'version',
             'name',

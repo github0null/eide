@@ -1648,7 +1648,7 @@ interface MapViewRef {
 
     uid: string;
 
-    vscWebview: vscode.Webview;
+    vscWebview?: vscode.Webview;
 
     title: string;
 
@@ -1874,13 +1874,17 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
                         }
                     }
 
-                    vInfo.vscWebview.options = {
-			            enableScripts: true
-		            };
-                    vInfo.vscWebview.html = this.genMapViewHtml(vInfo.vscWebview, vInfo.title, lines.join('\n'));
+                    if (vInfo.vscWebview) {
+                        vInfo.vscWebview.options = {
+                            enableScripts: true
+                        };
+                        vInfo.vscWebview.html = this.genMapViewHtml(vInfo.vscWebview, vInfo.title, lines.join('\n'));
+                    }
 
                 } catch (error) {
-                    vInfo.vscWebview.html = this.genErrorHtml(vInfo.title, `<span class="error">Parse error</span>: \r\n${error.message}`);
+                    if (vInfo.vscWebview)
+                        vInfo.vscWebview.html = this.genErrorHtml(
+                            vInfo.title, `<span class="error">Parse error</span>: \r\n${error.message}`);
                 }
             }
         });

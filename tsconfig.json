@@ -1,14 +1,15 @@
 {
 	"compilerOptions": {
 		"module": "commonjs",
-		"target": "es6",
+		"target": "es2018",
 		"outDir": "out",
-		"lib": [
-			"es6"
-		],
+		"lib": [ "ES2018" ],
 		"sourceMap": true,
 		//"rootDir": "./",
-		"strict": true   /* enable all strict type-checking options */
+		"strict": true,   /* enable all strict type-checking options */
+		"types": ["node"], /* 引入 Node.js 类型定义 */
+		"moduleResolution": "node", /* 明确模块解析策略 */
+		"useUnknownInCatchVariables": false,
 		/* Additional Checks */
 		// "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
 		// "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */

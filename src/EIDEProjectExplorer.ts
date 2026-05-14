@@ -2817,7 +2817,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             const err = await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
                 title: `Creating project`
-            }, async (progress): Promise<Error> => {
+            }, async (progress): Promise<Error | void> => {
 
                 progress.report({ message: 'Unzip template', increment: 10 });
 
@@ -2860,7 +2860,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                 }
                             }
 
-                            resolve(undefined);
+                            resolve();
 
                         } catch (error) {
                             resolve(error);
@@ -4038,7 +4038,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             // make default order is 100
             if (buildCfg.order == undefined ||
                 buildCfg.order == null ||
-                buildCfg.order == NaN) {
+                Number.isNaN(buildCfg.order)) {
                 buildCfg.order = 100;
             }
 
@@ -4551,7 +4551,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 location: vscode.ProgressLocation.Notification,
                 title: isWorkspace ? `Packing workspace` : `Packing project`,
                 cancellable: false
-            }, (progress, __): Thenable<Error | null> => {
+            }, (progress, __): Thenable<Error | void> => {
                 return new Promise(async (resolve) => {
 
                     progress.report({ message: 'zipping ...' });
@@ -5469,17 +5469,17 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 location: vscode.ProgressLocation.Notification,
                 title: 'Disassemble program',
                 cancellable: false,
-            }, async (progress): Promise<Error | undefined> => {
+            }, async (progress): Promise<Error | void> => {
                 try {
                     progress.report({ message: elfPath });
-                    await new Promise((resolve) => { setTimeout(() => resolve(), 500); });
+                    await new Promise<void>((resolve) => { setTimeout(() => resolve(), 500); });
 
                     // run
                     const cmdLine = CmdLineHandler.getCommandLine(exeFile.path, cmds, false);
                     child_process.execSync(cmdLine, { encoding: 'ascii' });
 
                     progress.report({ message: 'Done !' });
-                    await new Promise((resolve) => { setTimeout(() => resolve(), 500); });
+                    await new Promise<void>((resolve) => { setTimeout(() => resolve(), 500); });
                 } catch (error) {
                     return error;
                 }
@@ -6257,7 +6257,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     // show progress message
                     //
                     progress.report({ message: `running importer ...` });
-                    await new Promise((resolve) => {
+                    await new Promise<void>((resolve) => {
                         setTimeout(() => resolve(), 500);
                     });
 
@@ -6387,7 +6387,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
                     prj.Save();
 
-                    await new Promise((resolve) => {
+                    await new Promise<void>((resolve) => {
                         setTimeout(() => resolve(), 1000);
                     });
 

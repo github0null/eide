@@ -101,9 +101,9 @@ Supported Platforms:
 You can build this project by your self.
 
 > [!IMPORTANT]  
-> The required version of NodeJS is **16** because of some historical reasons for this extension.
+> The required version of NodeJS is **18** because of some historical reasons for this extension.
 
-1. Install `NodeJS 16` (recommanded v16.20.2). You can use `nvm` to manage your NodeJS.
+1. Install `NodeJS 18` (recommanded v18.18.2). You can use `nvm` to manage your NodeJS.
    Install `vsce` by `npm install -g cheerio@1.0.0-rc.9 vsce@2.15.0`
 
 2. Clone this repo, Open folder by vscode and then run command: 
@@ -120,7 +120,7 @@ You can build this project by your self.
 
 
 > [!NOTE]  
-> There may be syntax errors when opening project source code using VSCode, this is because the project uses an older Version of TypeScript, please press `Ctrl+Shift+P` to execute `TypeScript: Select TypeScript Version...` and select version: `v3.9.x`.
+> There may be syntax errors when opening project source code using VSCode, this is because the project uses an older Version of TypeScript, please press `Ctrl+Shift+P` to execute `TypeScript: Select TypeScript Version...` and select version: `v5.8.2`.
 
 ## Contribution Guidelines
 

@@ -1491,7 +1491,7 @@ export abstract class AbstractProject implements CustomConfigurationProvider, Pr
         }
     }
 
-    GetConfiguration<T>(): ProjectConfiguration<T> {
+    GetConfiguration<T extends BuilderConfigData>(): ProjectConfiguration<T> {
         return <ProjectConfiguration<T>>this.configMap.Get<ProjectConfigData<any>>(AbstractProject.prjConfigName);
     }
 
