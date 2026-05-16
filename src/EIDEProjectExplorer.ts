@@ -5873,8 +5873,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         /* prepare cppcheck */
         const cmds: string[] = [];
-        const confRootDir: File = File.fromArray([prj.ToAbsolutePath(prj.getOutputRoot()), '.cppcheck']);
-        const confFile: File = File.fromArray([confRootDir.path, 'tmp.cppcheck']);
+        const confRootDir: File = prj.getOutputFolder();
+        const confFile: File = File.from(confRootDir.path, 'tmp.cppcheck');
         confRootDir.CreateDir(true);
         let cppcheckConf: string = confTmpFile.Read();
 
@@ -5884,7 +5884,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const depMerge = prjConfig.GetAllMergeDep();
         const builderOpts = prjConfig.toolchainConfigModel.getOptions();
         const defMacros: string[] = ['__VSCODE_CPPTOOL']; /* it's for internal force include header */
-        let defList: string[] = defMacros.concat(depMerge.defineList);
         depMerge.incList = ArrayDelRepetition(depMerge.incList.concat(prj.getSourceIncludeList()));
         const includeList: string[] = depMerge.incList.map(p => prj.resolveEnvVar(p)).map(p => File.ToUnixPath(confRootDir.ToRelativePath(p) || p));
         const intrHeader: string[] | undefined = toolchain.getForceIncludeHeaders();
@@ -5920,9 +5919,26 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             return;
         }
 
+        const macroDefines: { name: string; value?: string; }[] = defMacros.concat(depMerge.defineList)
+            .map(item => {
+                const s = item.indexOf('=');
+                if (s !== -1) {
+                    return {
+                        name: item.substring(0, s),
+                        value: item.substring(s + 1)
+                    };
+                } else {
+                    return {
+                        name: item
+                    }
+                }
+            });
         toolchain.getInternalDefines(<any>prjConfig.config.toolchainConfig, builderOpts).forEach(d => {
             if (d.type === 'var')
-                defList.push(`${d.name}=${d.value}`);
+                macroDefines.push({
+                    name: d.name,
+                    value: d.value
+                });
         });
 
         if (toolchain.name == 'ANY_GCC' && toolchain.getToolchainPrefix) {
@@ -5933,8 +5949,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 cfgList.push('std');
             }
         }
-
-        const fixedDefList = defList.map((str) => str.replace(/"/g, '&quot;'));
 
         let cppcheck_plat: string = 'unix32';
         if (is8bit) {
@@ -5950,7 +5964,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             .replace('${platform}', cppcheck_plat)
             .replace('${lib_list}', cfgList.map((str) => `<library>${escapeXml(str)}</library>`).join(os.EOL + '\t\t'))
             .replace('${include_list}', includeList.map((str) => `<dir name="${escapeXml(str)}/"/>`).join(os.EOL + '\t\t'))
-            .replace('${macro_list}', fixedDefList.map((str) => `<define name="${escapeXml(str)}"/>`).join(os.EOL + '\t\t'))
+            .replace('${macro_list}', macroDefines.map((item) => 
+                `<define name="${item.name}" value="${escapeXml(item.value ?? '')}"/>`).join(os.EOL + '\t\t'))
             .replace('${source_list}', sourceList.map((str) => `<dir name="${escapeXml(str)}"/>`).join(os.EOL + '\t\t'));
 
         confFile.Write(cppcheckConf);
