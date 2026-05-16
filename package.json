@@ -190,7 +190,7 @@
                         "type": "boolean",
                         "scope": "resource",
                         "markdownDescription": "%settings.mcp.server.enable%",
-                        "default": true
+                        "default": false
                     },
                     "EIDE.MCP.Server.Port": {
                         "type": "number",
