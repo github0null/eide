@@ -7,7 +7,7 @@
   "targets": {
     ".NETCoreApp,Version=v6.0": {},
     ".NETCoreApp,Version=v6.0/win-x64": {
-      "unify_builder/3.11.0": {
+      "unify_builder/3.11.1": {
         "dependencies": {
           "CommandLineParser": "2.9.1",
           "ConsoleTableExt": "3.1.9",
@@ -122,7 +122,7 @@
     }
   },
   "libraries": {
-    "unify_builder/3.11.0": {
+    "unify_builder/3.11.1": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
