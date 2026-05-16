@@ -62,6 +62,12 @@ export interface HexUploaderInfo {
     filters?: ToolchainName[]; // if undefined, not have filter
 }
 
+export interface FlashCommandResult {
+    success: boolean;
+    message: string;
+    error?: Error;
+}
+
 export class HexUploaderManager {
 
     private uploaderList: HexUploaderInfo[] = [];
@@ -191,26 +197,42 @@ export abstract class HexUploader<InvokeParamsType> {
 
     protected project: AbstractProject;
     protected shellPath: string | undefined;
+    protected notUseTerminal: boolean;
 
     constructor(prj: AbstractProject) {
         this.project = prj;
         this.shellPath = ResManager.checkWindowsShell() ? undefined : ResManager.GetInstance().getCMDPath();
+        this.notUseTerminal = false;
     }
 
-    async upload(eraseAll?: boolean) {
+    async upload(eraseAll?: boolean): Promise<FlashCommandResult | void> {
 
         const dat = await this._prepare(eraseAll);
 
-        if (dat.isOk === false) { // canceled
-            return;
-        }
-
-        else if (dat.isOk instanceof Error) { // has a error
-            throw dat.isOk;
+        if (this.notUseTerminal) {
+            if (dat.isOk === false) { // canceled
+                return {
+                    success: false,
+                    message: 'prepare operation failed.'
+                }
+            } else if (dat.isOk instanceof Error) { // has a error
+                const err = dat.isOk;
+                return {
+                    success: false,
+                    message: 'prepare operation failed.',
+                    error: err
+                }
+            }
+        } else {
+            if (dat.isOk === false) { // canceled
+                return;
+            } else if (dat.isOk instanceof Error) { // has a error
+                throw dat.isOk;
+            }
         }
 
         // start program
-        this._launch(dat.params);
+        return this._launch(dat.params);
     }
 
     protected getUploadOptions<T extends UploadOption>(): T {
@@ -293,19 +315,54 @@ export abstract class HexUploader<InvokeParamsType> {
         return this.parseProgramFiles(this.getUploadOptions<any>());
     }
 
-    async executeShellCommand(title: string, commandLine: string, env?: any, useTerminal?: boolean, cwd?: string) {
-        const silent = SettingManager.GetInstance().isSilentBuildOrFlash();
-        const etask = await sendCommandToTerminal(title, commandLine, {
-            source: 'eide.flasher',
-            env: env,
-            useTerminal: useTerminal,
-            cwd: cwd,
-            silent: silent
-        });
-        const bar = StatusBarManager.getInstance().get('flash');
-        if (etask && bar) {
-            bar.text = `$(loading~spin) Flashing`;
-            bar.tooltip = `Command: ${commandLine}`;
+    /**
+     * if called, the command will not be sent to vscode terminal, rather than run it by internal call.
+    */
+    disableTerminal() {
+        this.notUseTerminal = true;
+    }
+
+    /**
+     * @returns If disableTerminal called, return @FlashCommandResult otherwise return @void
+    */
+    async executeShellCommand(title: string, commandLine: string, env?: any, useTerminal?: boolean, cwd?: string): Promise<FlashCommandResult | void> {
+        if (this.notUseTerminal) {
+            return new Promise<FlashCommandResult | void>((resolve) => {
+                child_process.exec(commandLine, { env, cwd }, (error, stdout, stderr) => {
+                    if (error) {
+                        resolve({
+                            success: false,
+                            message: stdout.toString() + '\n\n' + stderr.toString(),
+                            error
+                        });
+                    } else {
+                        resolve({
+                            success: true,
+                            message: stdout.toString() + '\n\n' + stderr.toString(),
+                        });
+                    }
+                });
+            }).catch((reason) => {
+                return {
+                    success: false,
+                    message: 'Command Error.',
+                    error: reason
+                }
+            });
+        } else {
+            const silent = SettingManager.instance().isSilentBuildOrFlash();
+            const etask = await sendCommandToTerminal(title, commandLine, {
+                source: 'eide.flasher',
+                env: env,
+                useTerminal: useTerminal,
+                cwd: cwd,
+                silent: silent
+            });
+            const bar = StatusBarManager.getInstance().get('flash');
+            if (etask && bar) {
+                bar.text = `$(loading~spin) Flashing`;
+                bar.tooltip = `Command: ${commandLine}`;
+            }
         }
     }
 
@@ -316,7 +373,7 @@ export abstract class HexUploader<InvokeParamsType> {
 
     protected abstract _prepare(eraseAll?: boolean): Promise<UploaderPreData<InvokeParamsType>>;
 
-    protected abstract _launch(params: InvokeParamsType | undefined): void;
+    protected abstract _launch(params: InvokeParamsType | undefined): Promise<FlashCommandResult | void>;
 }
 
 //======================== uploader implement ==============================
@@ -449,11 +506,11 @@ class JLinkUploader extends HexUploader<any> {
         };
     }
 
-    protected _launch(commandLines: string[]): void {
+    protected _launch(commandLines: string[]): Promise<FlashCommandResult | void> {
         const jlinkExePath = SettingManager.instance().getJlinkExePath();
         const option = this.getUploadOptions<JLinkOptions>();
         const commandLine = CmdLineHandler.getCommandLine(jlinkExePath, commandLines);
-        this.executeShellCommand(this.toolType, `${commandLine} ${option.otherCmds || ''}`.trimEnd());
+        return this.executeShellCommand(this.toolType, `${commandLine} ${option.otherCmds || ''}`.trimEnd());
     }
 }
 
@@ -569,7 +626,7 @@ class StcgalUploader extends HexUploader<string[]> {
         };
     }
 
-    protected _launch(commands: string[]): void {
+    protected _launch(commands: string[]): Promise<FlashCommandResult | void> {
 
         const option = this.getUploadOptions<StcgalFlashOption>();
         const programs = this.parseProgramFiles(option);
@@ -586,7 +643,7 @@ class StcgalUploader extends HexUploader<string[]> {
         }
 
         // run
-        this.executeShellCommand(this.toolType, `stcgal ${option.extraOptions} ${commands.join(' ')}`);
+        return this.executeShellCommand(this.toolType, `stcgal ${option.extraOptions} ${commands.join(' ')}`);
     }
 }
 
@@ -788,9 +845,9 @@ class STLinkUploader extends HexUploader<string[]> {
         };
     }
 
-    protected _launch(commands: string[]): void {
+    protected _launch(commands: string[]): Promise<FlashCommandResult | void> {
 
-        const exe = new File(SettingManager.GetInstance().getSTLinkExePath());
+        const exe = new File(SettingManager.instance().getSTLinkExePath());
         const commandLine = CmdLineHandler.getCommandLine(exe.path, commands);
         const options = this.getUploadOptions<STLinkOptions>();
 
@@ -799,7 +856,7 @@ class STLinkUploader extends HexUploader<string[]> {
         if (osType() == 'win32')
             cmd = 'chcp 437 && ' + cmd; // chcp 437: 去除进度条乱码
 
-        this.executeShellCommand(this.toolType, cmd,
+        return this.executeShellCommand(this.toolType, cmd,
             undefined, undefined, this.project.getRootDir().path);
     }
 }
@@ -901,7 +958,7 @@ class STVPHexUploader extends HexUploader<string[]> {
         };
     }
 
-    protected _launch(commands: string[]): void {
+    protected _launch(commands: string[]): Promise<FlashCommandResult | void> {
 
         const eraseAll: boolean | undefined = this.isEraseMode;
 
@@ -911,7 +968,7 @@ class STVPHexUploader extends HexUploader<string[]> {
         if (!eraseAll) {
             const commandLine = CmdLineHandler.getCommandLine(
                 SettingManager.GetInstance().getStvpExePath(), commands, false, true);
-            this.executeShellCommand(this.toolType, commandLine);
+            return this.executeShellCommand(this.toolType, commandLine);
         }
 
         // erase all mode
@@ -924,7 +981,7 @@ class STVPHexUploader extends HexUploader<string[]> {
             envs['EIDE_STM8_CPU'] = options.deviceName;
             envs['EIDE_DAT_ROOT'] = datDir.path;
             prependToSysEnv(envs, [stvpDir, ResManager.GetInstance().getStvpToolsDir().path]);
-            this.executeShellCommand(this.toolType, cli, envs, undefined, datDir.path);
+            return this.executeShellCommand(this.toolType, cli, envs, undefined, datDir.path);
         }
     }
 }
@@ -1007,7 +1064,7 @@ class PyOCDUploader extends HexUploader<string[]> {
         };
     }
 
-    protected _launch(commands: string[]): void {
+    protected _launch(commands: string[]): Promise<FlashCommandResult | void> {
 
         let commandLine: string = 'pyocd ' +
             commands.map((line) => CmdLineHandler.quoteString(line, '"')).join(' ');
@@ -1019,7 +1076,7 @@ class PyOCDUploader extends HexUploader<string[]> {
         }
 
         // run
-        this.executeShellCommand(this.toolType, commandLine);
+        return this.executeShellCommand(this.toolType, commandLine);
     }
 }
 
@@ -1100,10 +1157,10 @@ class OpenOCDUploader extends HexUploader<string[]> {
         };
     }
 
-    protected _launch(commands: string[]): void {
-        const exePath = SettingManager.GetInstance().getOpenOCDExePath();
+    protected _launch(commands: string[]): Promise<FlashCommandResult | void> {
+        const exePath = SettingManager.instance().getOpenOCDExePath();
         const commandLine = `${CmdLineHandler.quoteString(exePath, '"')} ${commands.join(' ')}`;
-        this.executeShellCommand(this.toolType, commandLine);
+        return this.executeShellCommand(this.toolType, commandLine);
     }
 }
 
@@ -1248,9 +1305,9 @@ class ProbeRSUploader extends HexUploader<string[]> {
         };
     }
 
-    protected _launch(commands: string[]): void {
+    protected _launch(commands: string[]): Promise<FlashCommandResult | void> {
         const commandLine = `cargo-flash ${commands.join(' ')}`;
-        this.executeShellCommand(this.toolType, commandLine, this._getEnv());
+        return this.executeShellCommand(this.toolType, commandLine, this._getEnv());
     }
 }
 
@@ -1305,7 +1362,7 @@ class CustomUploader extends HexUploader<string> {
         };
     }
 
-    protected _launch(commandLine: string): void {
+    protected _launch(commandLine: string): Promise<FlashCommandResult | void> {
 
         let env = process.env;
 
@@ -1327,6 +1384,6 @@ class CustomUploader extends HexUploader<string> {
             }
         }
 
-        this.executeShellCommand(this.toolType, commandLine, env);
+        return this.executeShellCommand(this.toolType, commandLine, env);
     }
 }

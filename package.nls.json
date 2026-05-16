@@ -102,6 +102,9 @@
     "eide.deps.macro.show": "Display All Macros",
     "eide.deps.macro.add": "Add Macro",
 
+    "settings.mcp.server.enable": "Enable built-in mcp server. Used to enhance the interaction between AI and EIDE",
+    "settings.mcp.server.port": "The local port number for mcp server",
+
     "settings.msys.enable": "Determine whether to enable the built-in **MSYS environment and tools** on Win32 platform",
 
     "settings.enable.telemetry": "Enable telemetry for extension. We will collect information from the logs to help improve the functionality of this extension.",

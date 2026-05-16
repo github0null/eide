@@ -186,6 +186,18 @@
             {
                 "title": "Embedded IDE",
                 "properties": {
+                    "EIDE.MCP.Server.Enable": {
+                        "type": "boolean",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.mcp.server.enable%",
+                        "default": true
+                    },
+                    "EIDE.MCP.Server.Port": {
+                        "type": "number",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.mcp.server.port%",
+                        "default": 8940
+                    },
                     "EIDE.Win32.Msys.Enable": {
                         "type": "boolean",
                         "scope": "resource",

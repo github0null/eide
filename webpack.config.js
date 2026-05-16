@@ -17,12 +17,13 @@ const config = {
     externals: {
         vscode: 'commonjs vscode',
         x2js: 'x2js',
-        iconv_lite: 'iconv-lite',
         jsonc: 'jsonc',
         ini: 'ini',
         yaml: 'yaml',
         unzipper: 'unzipper',
-        jsonc_parser: 'jsonc-parser'
+        'iconv-lite': 'iconv-lite',
+        'jsonc-parser': 'jsonc-parser',
+        '@modelcontextprotocol/sdk': '@modelcontextprotocol/sdk'
     },
     resolve: {
         // support reading TypeScript and JavaScript files, 📖 -> https://github.com/TypeStrong/ts-loader

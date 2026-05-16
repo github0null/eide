@@ -216,7 +216,17 @@ export class SettingManager {
         await vscode.commands.executeCommand('workbench.action.openSettings', name);
     }
 
-    // --- source tree
+    //------------------------- MCP --------------------------
+
+    isMcpServerEnable(): boolean {
+        return this.getConfiguration().get<boolean>('MCP.Server.Enable') || false;
+    }
+
+    getMcpServerPort(): number {
+        return this.getConfiguration().get<number>('MCP.Server.Port') || 8940;
+    }
+
+    //------------------------- source tree --------------------------
 
     isAutoSearchIncludePath(): boolean {
         return this.getConfiguration().get<boolean>('SourceTree.AutoSearchIncludePath') || false;

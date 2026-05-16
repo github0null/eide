@@ -102,6 +102,9 @@
     "eide.deps.macro.show": "显示所有宏定义",
     "eide.deps.macro.add": "添加宏定义",
 
+    "settings.mcp.server.enable": "是否启用内置的MCP服务。用于增强AI与EIDE之间的交互",
+    "settings.mcp.server.port": "MCP服务的端口号",
+
     "settings.msys.enable": "确定是否在Windows平台上启用内置的 **MSYS环境和工具**",
 
     "settings.enable.telemetry": "启用遥测功能。我们将收集日志中的信息，帮助改进该扩展的功能",

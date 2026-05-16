@@ -96,7 +96,7 @@ import {
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
 import { SettingManager } from './SettingManager';
-import { HexUploaderManager, HexUploaderType, JLinkOptions, JLinkProtocolType, OpenOCDFlashOptions, PyOCDFlashOptions } from './HexUploader';
+import { FlashCommandResult, HexUploaderManager, HexUploaderType, JLinkOptions, JLinkProtocolType, OpenOCDFlashOptions, PyOCDFlashOptions } from './HexUploader';
 import { SevenZipper, CompressOption } from './Compress';
 import { DependenceManager } from './DependenceManager';
 import { ArrayDelRepetition } from '../lib/node-utility/Utility';
@@ -132,7 +132,12 @@ import {
 } from 'vscode-cpptools';
 import * as eclipseParser from './EclipseProjectParser';
 import { isArray } from 'util';
-import { parseIarCompilerLog, CompilerDiagnostics, parseGccCompilerLog, parseArmccCompilerLog, parseKeilc51CompilerLog, parseSdccCompilerLog, parseCosmicStm8CompilerLog, EideDiagnosticCode } from './ProblemMatcher';
+import {
+    parseIarCompilerLog, 
+    CompilerDiagnostics, parseGccCompilerLog, parseArmccCompilerLog, 
+    parseKeilc51CompilerLog, parseSdccCompilerLog, parseCosmicStm8CompilerLog, 
+    EideDiagnosticCode
+} from './ProblemMatcher';
 import * as iarParser from './IarProjectParser';
 import * as ArmCpuUtils from './ArmCpuUtils';
 import { ShellFlasherIndexItem } from './WebInterface/WebInterface';
@@ -873,7 +878,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         }
     }
 
+    /**
+     * @deprecated please use getProjectByIndex
+    */
     GetProjectByIndex(index: number): AbstractProject {
+        return this.prjList[index];
+    }
+
+    getProjectByIndex(index: number): AbstractProject {
         return this.prjList[index];
     }
 
@@ -3450,6 +3462,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             this.getActiveProject();
     }
 
+    getProjectByUid(uid: string): AbstractProject | undefined {
+        return this.dataProvider.getProjectByUid(uid);
+    }
+
     getActiveProject(): AbstractProject | undefined {
         return this.dataProvider.getActiveProject();
     }
@@ -3532,7 +3548,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         const nam = prj.getProjectName();
         const uid = prj.getUid();
-        const wsf = prj.getWorkspaceFile();
 
         prj.clearPendingSave();
 
@@ -3552,7 +3567,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const msg = view_str$prompt$need_reload_project.replace('{}', prj.getProjectName());
         const ans = await vscode.window.showInformationMessage(msg, 'Yes', 'No');
         if (ans == 'Yes') {
-            await this.reloadProject(uid, wsf);
+            await this.reloadProject(uid);
         }
 
         if (this.__autosaveDisableTimeoutTimer) {
@@ -3564,14 +3579,15 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         this.enableAutoSave(true);
     }
 
-    private async reloadProject(uid: string, workspaceFile: File): Promise<boolean> {
+    async reloadProject(uid: string): Promise<boolean> {
 
         const idx = this.dataProvider.getIndexByProjectUid(uid);
         if (idx == -1) {
-            GlobalEvent.emit('msg', newMessage('Error', `Project '${uid}' is not actived !`));
+            GlobalEvent.show_msgbox('Error', `Project '${uid}' is not actived !`);
             return false;
         }
 
+        const workspaceFile = this.dataProvider.getProjectByIndex(idx).getWorkspaceFile();
         this.dataProvider.Close(idx);
 
         return new Promise((resolve) => {
@@ -3797,59 +3813,116 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     private _buildLock: boolean = false;
-    BuildSolution(prjItem?: ProjTreeItem, options?: BuildOptions) {
+    async buildProject(prj?: AbstractProject, options?: BuildOptions, noTerminal?: boolean): Promise<{ success: boolean; message: string; }> {
+
+        if (prj === undefined) {
+            GlobalEvent.show_msgbox('Warning', 'No active project !');
+            return {
+                success: false,
+                message: 'No active project !'
+            };
+        }
+
+        if (this._buildLock) {
+            GlobalEvent.show_msgbox('Warning', 'Busy ! Please wait !');
+            return {
+                success: false,
+                message: 'Busy ! Please wait !'
+            };
+        }
 
         try {
-
-            const prj = this.getProjectByTreeItem(prjItem);
-
-            if (prj === undefined) {
-                GlobalEvent.emit('msg', newMessage('Warning', 'No active project !'));
-                return;
-            }
-
-            if (this._buildLock) {
-                GlobalEvent.emit('msg', newMessage('Warning', 'build busy !, please wait !'));
-                return;
-            }
-
             this._buildLock = true;
 
             // save project before build
             prj.Save(true);
 
-            const codeBuilder = CodeBuilder.NewBuilder(prj);
+            const builder = CodeBuilder.NewBuilder(prj);
             const toolchain = prj.getToolchain().name;
 
-            // build launched event
-            codeBuilder.on('launched', () => {
-                if (this.compiler_diags.has(prj.getUid())) {
-                    this.compiler_diags.get(prj.getUid())?.clear();
-                }
-                const buildbar = StatusBarManager.getInstance().get('build');
-                if (buildbar) {
-                    buildbar.text = `$(loading~spin) Building`;
+            return new Promise((resolve) => {
+
+                if (noTerminal) {
+                    const commandLine = builder.genBuildCommand(options);
+                    if (commandLine) {
+                        // launched
+                        if (this.compiler_diags.has(prj.getUid())) {
+                            this.compiler_diags.get(prj.getUid())?.clear();
+                        }
+                        const buildbar = StatusBarManager.getInstance().get('build');
+                        if (buildbar) {
+                            buildbar.text = `$(loading~spin) Building`;
+                        }
+                        child_process.exec(commandLine, { cwd: prj.getProjectRoot().path }, (error, stdout, stderr) => {
+                            prj.notifyUpdateSourceRefs(toolchain);
+                            this.notifyUpdateOutputFolder(prj);
+                            this.updateCompilerDiagsAfterBuild(prj);
+                            this.dataProvider.updateStatusBarForActiveProjects();
+                            if (error) {
+                                resolve({
+                                    success: false,
+                                    message: `Failed.\n\nError: ${error.message}\n\nBuilder log:\n\n${stdout.toString()}`
+                                });
+                            } else {
+                                resolve({
+                                    success: true,
+                                    message: `Succeed.\n\nBuilder log:\n\n${stdout.toString()}`
+                                });
+                            }
+                        });
+                        this._buildLock = false;
+                    } else {
+                        resolve({
+                            success: false,
+                            message: 'Error: builder.genBuildCommand return null.'
+                        });
+                    }
+                } else {
+                    // build launched event
+                    builder.on('launched', () => {
+                        if (this.compiler_diags.has(prj.getUid())) {
+                            this.compiler_diags.get(prj.getUid())?.clear();
+                        }
+                        const buildbar = StatusBarManager.getInstance().get('build');
+                        if (buildbar) {
+                            buildbar.text = `$(loading~spin) Building`;
+                        }
+                    });
+
+                    // build finish event
+                    builder.on('finished', (done) => {
+                        prj.notifyUpdateSourceRefs(toolchain);
+                        this.notifyUpdateOutputFolder(prj);
+                        this.updateCompilerDiagsAfterBuild(prj);
+                        if (options?.flashAfterBuild && done)
+                            this.programFlashProject(prj);
+                        this.dataProvider.updateStatusBarForActiveProjects();
+                        if (done) {
+                            resolve({
+                                success: true,
+                                message: 'Succeed.'
+                            });
+                        } else {
+                            resolve({
+                                success: false,
+                                message: 'Failed.'
+                            });
+                        }
+                    });
+
+                    // start build
+                    builder.build(options);
+
+                    setTimeout(() => this._buildLock = false, 1000);
                 }
             });
-
-            // build finish event
-            codeBuilder.on('finished', (done) => {
-                prj.notifyUpdateSourceRefs(toolchain);
-                this.notifyUpdateOutputFolder(prj);
-                this.updateCompilerDiagsAfterBuild(prj);
-                if (options?.flashAfterBuild && done) this.UploadToDevice(prjItem);
-                this.dataProvider.updateStatusBarForActiveProjects();
-            });
-
-            // start build
-            codeBuilder.build(options);
-
-            setTimeout(() => {
-                this._buildLock = false;
-            }, 500);
-
         } catch (error) {
+            this._buildLock = false;
             GlobalEvent.emit('error', error);
+            return {
+                success: false,
+                message: `${ExceptionToMessage(error).type}:${ExceptionToMessage(error).content}`
+            };
         }
     }
 
@@ -4044,7 +4117,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
             /* gen command */
             const builder = CodeBuilder.NewBuilder(project);
-            const cmdLine = builder.genBuildCommand({ not_rebuild: !rebuild }, true);
+            const cmdLine = builder.genBuildCommand({ notRebuild: !rebuild });
             if (cmdLine) {
                 buildCfg.command = cmdLine || '';
                 cmdList.push(buildCfg);
@@ -4072,56 +4145,109 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
     }
 
-    BuildClean(prjItem?: ProjTreeItem) {
-
-        const prj = this.getProjectByTreeItem(prjItem);
+    async cleanProject(prj?: AbstractProject, noTerminal?: boolean): Promise<{ success: boolean; message: string; }> {
 
         if (prj === undefined) {
-            GlobalEvent.emit('msg', newMessage('Warning', 'No active project !'));
-            return;
-        }
-
-        const outDir = prj.ToAbsolutePath(prj.getOutputDir());
-        if (os.platform() == 'win32') {
-            sendCommandToTerminal('clean', `cmd /E:ON /C del /S /Q "${outDir}"`);
-        } else {
-            if (outDir == '/' || outDir == userhome()) {
-                GlobalEvent.emit('msg', newMessage('Error', `Cannot delete ${outDir} !`));
-            } else {
-                sendCommandToTerminal('clean', `rm -rf -v "${outDir}"`);
+            GlobalEvent.show_msgbox('Warning', 'No active project !');
+            return {
+                success: false,
+                message: 'No active project !'
             }
         }
 
-        setTimeout(() => {
-            this.notifyUpdateOutputFolder(prj);
-        }, 1500);
+        return new Promise((resolve) => {
+
+            if (noTerminal) {
+                const outDir = prj.ToAbsolutePath(prj.getOutputDir());
+                let commandLine: string;
+                if (os.platform() == 'win32') {
+                    commandLine = `cmd /E:ON /C del /S /Q "${outDir}"`;
+                } else {
+                    if (outDir == '/' || outDir == userhome()) {
+                        resolve({
+                            success: false,
+                            message: `Cannot delete ${outDir} !`
+                        });
+                        return;
+                    } else {
+                        commandLine = `rm -rf -v "${outDir}"`;
+                    }
+                }
+                child_process.exec(commandLine, { cwd: prj.getProjectRoot().path }, (error, stdout, stderr) => {
+                    this.notifyUpdateOutputFolder(prj);
+                    if (error) {
+                        resolve({
+                            success: false,
+                            message: `Failed.\n\nError: ${error.message}\n\n${stdout.toString()}\n${stderr.toString()}`
+                        });
+                    } else {
+                        resolve({
+                            success: true,
+                            message: `Succeed.\n\n${stdout.toString()}`
+                        });
+                    }
+                });
+            } else {
+                const outDir = prj.ToAbsolutePath(prj.getOutputDir());
+                if (os.platform() == 'win32') {
+                    sendCommandToTerminal('clean', `cmd /E:ON /C del /S /Q "${outDir}"`);
+                } else {
+                    if (outDir == '/' || outDir == userhome()) {
+                        GlobalEvent.show_msgbox('Error', `Cannot delete ${outDir} !`);
+                    } else {
+                        sendCommandToTerminal('clean', `rm -rf -v "${outDir}"`);
+                    }
+                }
+                setTimeout(() => {
+                    this.notifyUpdateOutputFolder(prj);
+                    resolve({
+                        success: true,
+                        message: ''
+                    });
+                }, 1500);
+            }
+        });
     }
 
     private _uploadLock: boolean = false;
-    async UploadToDevice(prjItem?: ProjTreeItem, eraseAll?: boolean) {
-
-        const prj = this.getProjectByTreeItem(prjItem);
+    async programFlashProject(prj?: AbstractProject, eraseAll?: boolean, noTerminal?: boolean): Promise<FlashCommandResult | void> {
 
         if (prj === undefined) {
-            GlobalEvent.emit('msg', newMessage('Warning', 'No active project !'));
-            return;
+            GlobalEvent.show_msgbox('Warning', 'No active project !');
+            return {
+                success: false,
+                message: 'No active project !'
+            }
         }
 
         if (this._uploadLock) {
-            GlobalEvent.emit('msg', newMessage('Warning', 'upload busy !, please wait !'));
-            return;
+            GlobalEvent.show_msgbox('Warning', 'Busy ! Please wait.');
+            return {
+                success: false,
+                message: 'Busy ! Please wait.'
+            }
         }
 
         this._uploadLock = true;
-        const uploader = HexUploaderManager.getInstance().createUploader(prj);
 
+        let result: FlashCommandResult | void;
         try {
-            await uploader.upload(eraseAll);
+            const uploader = HexUploaderManager.getInstance().createUploader(prj);
+            if (noTerminal)
+                uploader.disableTerminal();
+            result = await uploader.upload(eraseAll);
         } catch (error) {
             GlobalEvent.emit('error', error);
+            result = {
+                success: false,
+                message: (<Error>error).message,
+                error
+            };
         }
 
         this._uploadLock = false;
+
+        return result;
     }
 
     compileSingleFile(item: ProjTreeItem) {
