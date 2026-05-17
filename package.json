@@ -72,7 +72,8 @@
         "webpack": "webpack --mode development",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
-        "test": "npm run compile && node ./node_modules/vscode/bin/test"
+        "test": "npm run compile && node ./node_modules/vscode/bin/test",
+        "build:callgraph-view": "npm --prefix src/html/callgraph_view run build"
     },
     "devDependencies": {
         "@babel/core": "^7.24.7",

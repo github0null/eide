@@ -78,6 +78,14 @@ export const DEBUGGER_MAPS: { [id: string]: debuggerInfo } = {
     },
 };
 
+export function reverseStringMap(original: Map<string, string>): Map<string, string> {
+    const revMap = new Map<string, string>();
+    for (const [key, value] of Object.entries(original)) {
+        revMap.set(value, key);
+    }
+    return revMap;
+}
+
 /**
  * It's a symbol demangler that can be used as a replacement for the GNU c++filt tool. 
  * It takes a series of symbol names and prints their demangled form on the standard output stream. 

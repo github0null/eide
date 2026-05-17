@@ -146,6 +146,7 @@ import { SimpleUIConfig, SimpleUIConfigData_input, SimpleUIConfigData_options, S
 import { StatusBarManager } from './StatusBarManager';
 import { doMigration, detectProject } from './EIDEProjectMigration';
 import { onRegisterClangdProvider } from './clangdConfigProvider';
+import * as hooks from './Hooks';
 
 enum TreeItemType {
     SOLUTION,
@@ -1612,6 +1613,19 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                     projectIndex: element.val.projectIndex,
                                     tooltip: `Symbols Of Program`,
                                     icon: `Table_16x.svg`
+                                }));
+                            }
+
+                            // Callgraph View
+                            if (isGccFamilyToolchain(project.getToolchain().name)) {
+                                iList.push(new ProjTreeItem(TreeItemType.OUTPUT_FILE_ITEM, {
+                                    label: `Callgraph View`,
+                                    value: File.from(`${project.getUid()}.elf-callgraph`),
+                                    isVirtualFile: true,
+                                    collapsibleState: vscode.TreeItemCollapsibleState.None,
+                                    projectIndex: element.val.projectIndex,
+                                    tooltip: `Callgraph View`,
+                                    icon: `ShowCallGraph_16x.svg`
                                 }));
                             }
                         }
@@ -3858,6 +3872,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                             this.notifyUpdateOutputFolder(prj);
                             this.updateCompilerDiagsAfterBuild(prj);
                             this.dataProvider.updateStatusBarForActiveProjects();
+                            hooks.onProjectBuildFinished(prj, error ? false : true);
                             if (error) {
                                 resolve({
                                     success: false,
@@ -3897,6 +3912,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                         if (options?.flashAfterBuild && done)
                             this.programFlashProject(prj);
                         this.dataProvider.updateStatusBarForActiveProjects();
+                        hooks.onProjectBuildFinished(prj, done);
                         if (done) {
                             resolve({
                                 success: true,
@@ -7779,6 +7795,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     const prj = this.getProjectByTreeItem(item);
                     if (prj)
                         WebPanelManager.instance().showSymbolTable(prj);
+                } else if (item.label == 'Callgraph View') {
+                    const prj = this.getProjectByTreeItem(item);
+                    if (prj)
+                        WebPanelManager.instance().showCallgraphView(prj);
                 } else if (item.val.isVirtualFile && vdoc.hasDocument(file.path)) {
                     const uri = vscode.Uri.parse(vdoc.getUriByPath(file.path));
                     vdoc.updateDocument(file.path);

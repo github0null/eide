@@ -464,6 +464,16 @@ export const view_str$env_desc$py3_cmd = [
 
 //---------------Other---------------
 
+export const view_str$callgraph_data_file_fmt_err = [
+    '调用图数据文件 "{}" 已经损坏！请检查构建器选项 "callgraph info" 是否启用并重新构建项目。',
+    'Callgraph data file "{}" is damaged ! Please check builder options "callgraph info" is enabled and build project.',
+][langIndex];
+
+export const view_str$callgraph_data_file_missed = [
+    '未找到调用图数据文件！请检查构建器选项 "callgraph info" 是否启用并重新构建项目。',
+    'Callgraph data not found! Please check builder options "callgraph info" is enabled and build project.',
+][langIndex];
+
 export const view_str$keil_export_path_warning = [
     '导出路径 ({0}) 与项目根目录 ({1}) 不在同一驱动器，此行为可能导致移动或复制项目后 Keil 无法正确识别文件。',
     'The export path ({0}) is not on the same drive as the project root directory ({1}). This behavior may cause Keil to fail to correctly recognize files after moving or copying the project.',

@@ -37,5 +37,7 @@ dotnet-runtime*.exe
 # shell script
 /*.sh
 
-# test
-test
+# html
+/src/html/**/node_modules
+/src/html/callgraph_view/dist
+/src/html/callgraph_view/fixtures

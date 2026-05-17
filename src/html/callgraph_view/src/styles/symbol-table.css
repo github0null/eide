@@ -1,0 +1,151 @@
+.table-wrapper {
+  flex: 1;
+  border-radius: 3px;
+  border: 1px solid var(--vscode-editorWidget-border, #3c3c3c);
+  background: var(--vscode-editorWidget-background, #252526);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.stack-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.stack-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--vscode-editorWidget-background, #252526);
+  z-index: 10;
+}
+
+.stack-table th,
+.stack-table td {
+  padding: 6px 10px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.stack-table th {
+  font-weight: 500;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  user-select: none;
+  position: sticky;
+  top: 0;
+  background: var(--vscode-editorWidget-background, #252526);
+  z-index: 11;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.stack-table th:hover {
+  background: var(--vscode-list-hoverBackground, #2a2d2e);
+}
+
+.stack-table th .sort-indicator {
+  margin-left: 4px;
+  opacity: 0.6;
+  font-size: 10px;
+  display: inline-block;
+  width: 1.2em;
+  text-align: center;
+}
+
+.stack-table th.sorted {
+  color: var(--vscode-list-activeSelectionForeground, #ffffff);
+  border-bottom: 1px solid var(--vscode-list-activeSelectionBackground, #094771);
+}
+
+.stack-table tbody tr:hover {
+  background: var(--vscode-list-hoverBackground, #2a2d2e);
+}
+
+.stack-table tbody tr.selected {
+  background: var(--vscode-list-activeSelectionBackground, #094771);
+  color: var(--vscode-list-activeSelectionForeground, #ffffff);
+}
+
+.col-stack {
+  position: relative;
+  padding: 0 10px;
+  text-align: right;
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 11px;
+  overflow: hidden;
+  min-width: 100px;
+}
+
+.col-stack::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 3px;
+  bottom: 3px;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    rgba(14, 99, 156, 0.65),
+    rgba(0, 122, 204, 0.7)
+  );
+  opacity: 0.45;
+  transform-origin: left center;
+  transform: scaleX(var(--size-fill, 0));
+}
+
+.col-stack span {
+  position: relative;
+  z-index: 1;
+}
+
+.col-fn {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.col-loc,
+.col-type,
+.col-src {
+  font-size: 11px;
+  opacity: 0.85;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-footer {
+  padding: 4px 10px;
+  font-size: 11px;
+  opacity: 0.7;
+  border-top: 1px solid var(--vscode-editorWidget-border, #3c3c3c);
+  display: flex;
+  justify-content: space-between;
+}
+
+.table-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+  background: var(--vscode-scrollbarSlider-background, rgba(121, 121, 121, 0.4));
+  border-radius: 4px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--vscode-scrollbarSlider-hoverBackground, rgba(100, 100, 100, 0.7));
+}

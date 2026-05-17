@@ -36,7 +36,8 @@ import { view_str$compile$options, view_str$compile$storageLayout,
     view_str$project$cmsis_config_wizard, view_str$env_desc$py3_cmd, 
     view_str$env_desc$cc_base_args, view_str$env_desc$cxx_base_args, 
     view_str$env_desc$asm_base_args, view_str$env_desc$compiler_ver,
-    view_str$env_desc$compiler_full_name
+    view_str$env_desc$compiler_full_name, view_str$callgraph_data_file_missed,
+    view_str$callgraph_data_file_fmt_err
 } from "./StringTable";
 import * as NodePath from 'path';
 import * as CmsisConfigParser from './CmsisConfigParser'
@@ -518,6 +519,74 @@ export class WebPanelManager {
             if (msg.id === 'symbol.gotoDefinition') {
                 const inf = <{abspath: string, line?: number}>msg.data;
                 showTextDocumentAtLine(inf.abspath, inf.line);
+            }
+        });
+
+        webviewPanel.reveal();
+    }
+
+    async showCallgraphView(project: AbstractProject) {
+
+        const dataJsonFile = File.from(project.getOutputFolder().path, 'statistic.json');
+        if (!dataJsonFile.IsFile()) {
+            vscode.window.showErrorMessage(view_str$callgraph_data_file_missed);
+            return;
+        }
+        let dataJson: any = {};
+        try {
+            dataJson = JSON.parse(dataJsonFile.Read());
+        } catch (error) {
+            vscode.window.showErrorMessage(
+                view_str$callgraph_data_file_fmt_err.replace('{}', dataJsonFile.path));
+            return;
+        }
+
+        const panelOptions: vscode.WebviewPanelOptions & vscode.WebviewOptions = {
+            enableScripts: true,
+            retainContextWhenHidden: true
+        };
+
+        const webviewPanel = vscode.window.createWebviewPanel(
+            'callgraph_view',
+            `Callgraph View (${NodePath.basename(project.getExecutablePath())})`,
+            vscode.ViewColumn.Active,
+            panelOptions
+        );
+
+        const resManager = ResManager.GetInstance();
+        const htmlFolder = File.from(resManager.getHTMLDir().path, 'callgraph_view');
+        const htmlTemplate = File.from(htmlFolder.path, 'index.html');
+
+        const gotoDefinition = (filepath: string, line: number, column?: number) => {
+            let range: vscode.Range | undefined;
+            if (line !== undefined) {
+                range = new vscode.Range(
+                    new vscode.Position(line - 1, column ? column : 0),
+                    new vscode.Position(line - 1, column ? column : 0));
+            }
+            vscode.window.showTextDocument(vscode.Uri.file(filepath), {
+                preview: true,
+                selection: range
+            });
+        };
+
+        webviewPanel.iconPath = vscode.Uri.file(ResManager.GetInstance().GetIconByName('ShowCallGraph_16x.svg').path);
+        webviewPanel.webview.html = htmlTemplate.Read()
+            .replace(/"[\w\-\.\/]+?\.(?:css|js)"/ig, (str) => {
+                const fileName = str.substring(1, str.length - 1); // remove '"'
+                const absPath = File.normalize(htmlFolder.path + NodePath.sep + fileName);
+                return `"${webviewPanel.webview.asWebviewUri(vscode.Uri.file(absPath)).toString()}"`;
+            });
+        webviewPanel.webview.onDidReceiveMessage(async (_message: any) => {
+            const msg: {id: string, data: any} = <any>_message;
+            if (msg.id === 'callgraph.gotoDefinition') {
+                const inf = <{file: string; line?: number; column?: number;}>msg.data;
+                const fspath = project.toAbsolutePath(inf.file);
+                if (File.IsFile(fspath))
+                    gotoDefinition(fspath, inf.line ?? 0, inf.column ?? 0);
+            }
+            else if (msg.id === 'eide.callgraph_view.launched') {
+                webviewPanel.webview.postMessage({ id: 'eide.callgraph_view.init', data: dataJson });
             }
         });
 
