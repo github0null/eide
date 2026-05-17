@@ -18,11 +18,7 @@ const config = {
         vscode: 'commonjs vscode',
         x2js: 'x2js',
         jsonc: 'jsonc',
-        ini: 'ini',
-        yaml: 'yaml',
-        unzipper: 'unzipper',
         'iconv-lite': 'iconv-lite',
-        'jsonc-parser': 'jsonc-parser',
         '@modelcontextprotocol/sdk': '@modelcontextprotocol/sdk'
     },
     resolve: {
