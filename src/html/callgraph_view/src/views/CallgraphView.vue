@@ -71,16 +71,18 @@ watch([selectedIndex, layoutDirection], () => {
   selectedEdgeFlowId.value = null;
 });
 
-const graphOptions = computed(() => [
-  {
-    label: `Merged (${mergedCallgraphGraph.value?.nodes.length ?? 0})`,
-    value: ALL_CALLGRAPH_GRAPHS,
-  },
-  ...callgraphGraphs.value.map((g) => ({
-    label: `${g.title} (${g.nodes.length})`,
-    value: g.index,
-  })),
-]);
+const graphOptions = computed(() => {
+  const mergedLabel = `Merged (${mergedCallgraphGraph.value?.nodes.length ?? 0})`;
+  const others = callgraphGraphs.value
+    .map((g) => ({
+      label: `${g.title} (${g.nodes.length})`,
+      value: g.index,
+    }))
+    .sort((a, b) =>
+      a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
+    );
+  return [{ label: mergedLabel, value: ALL_CALLGRAPH_GRAPHS }, ...others];
+});
 
 const currentGraphMeta = computed(() => {
   if (selectedIndex.value === ALL_CALLGRAPH_GRAPHS) {
