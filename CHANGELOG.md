@@ -6,6 +6,21 @@ All notable version changes will be recorded in this file.
 
 ***
 
+### [v3.26.10] preview
+
+**New**:
+  - `MCP Server`: Add mcp server to export eide built-in functions. settings: `EIDE.MCP.Server.Enable`, `EIDE.MCP.Server.Port`
+  - `Callgraph View`: Add callgraph view and new options `-fcallgraph-info`, `-fstack-usage` for gcc toolchain.
+
+**Fix**:
+  - `Cppcheck`: Fixed cppcheck config generate.
+  - `Symbol Table`: Fixed size column override table header.
+
+**Changes**:
+  - `Devtools`: Update node version to **v18** and vscode api reference to **v1.89.0**.
+
+***
+
 ### [v3.26.9] revision
 
 **Fix**:
