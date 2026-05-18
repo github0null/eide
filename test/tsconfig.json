@@ -8,7 +8,8 @@
         "types": ["node"],
         "moduleResolution": "node",
         "esModuleInterop": true,
-        "skipLibCheck": true
+        "skipLibCheck": true,
+		"useUnknownInCatchVariables": false,
     },
     "include": [
         "../src/GccCallgraphParser.ts",

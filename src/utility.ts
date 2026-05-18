@@ -78,6 +78,19 @@ export const DEBUGGER_MAPS: { [id: string]: debuggerInfo } = {
     },
 };
 
+export function checkGccFFlag(cmdline: string, fname: string): boolean {
+    let idx = cmdline.indexOf(`-f${fname}`);
+    if (idx !== -1) {
+        let nidx = cmdline.indexOf(`-fno-${fname}`);
+        if (nidx !== -1 && nidx > idx) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+    return false;
+};
+
 export function reverseStringMap(original: Map<string, string>): Map<string, string> {
     const revMap = new Map<string, string>();
     for (const [key, value] of Object.entries(original)) {

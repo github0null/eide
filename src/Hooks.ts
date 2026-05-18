@@ -4,7 +4,7 @@ import { AbstractProject } from "./EIDEProject";
 import { CallgraphVcg, parseCallgraphVcgFile } from './GccCallgraphParser';
 import { parseStackUsageFile, StackUsageDocument } from './GccStackUsageParser';
 import { GlobalEvent } from './GlobalEvents';
-import { reverseStringMap } from './utility';
+import { checkGccFFlag, reverseStringMap } from './utility';
 import * as NodePath from 'node:path';
 
 interface BuildFlags {
@@ -21,20 +21,9 @@ function checkflags(cli: string): BuildFlags {
         flto: false
     };
 
-    if (cli.includes('-fcallgraph-info'))
-        flags.fcallgraphInfo = true;
-    if (cli.includes('-fstack-usage'))
-        flags.fstackUsage = true;
-
-    let idx = cli.indexOf('-flto');
-    if (idx !== -1) {
-        let nidx = cli.indexOf('-fno-lto');
-        if (nidx !== -1 && nidx > idx) {
-            flags.flto = false;
-        } else {
-            flags.flto = true;
-        }
-    }
+    flags.fcallgraphInfo = checkGccFFlag(cli, 'callgraph-info');
+    flags.fstackUsage = checkGccFFlag(cli, 'stack-usage');
+    flags.flto = checkGccFFlag(cli, 'lto');
 
     return flags;
 }

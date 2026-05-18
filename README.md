@@ -105,7 +105,7 @@ You can build this project by your self.
 > The required version of NodeJS is **18** because of some historical reasons for this extension.
 
 1. Install `NodeJS 18` (recommanded v18.18.2). You can use `nvm` to manage your NodeJS.
-   Install `vsce` by `npm install -g cheerio@1.0.0-rc.9 vsce@2.15.0`
+   Install `vsce` by `npm install -g cheerio@1.0.0-rc.9 @vscode/vsce@2.15.0`
 
 2. Clone this repo, Open folder by vscode and then run command: 
 

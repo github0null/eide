@@ -81,7 +81,7 @@
 > 由于这个扩展有一些历史原因，因此要求的 node 版本是 18。
 
 1. 安装 `NodeJS 18`（建议版本：v18.18.2）；推荐使用 nvm 工具管理 NodeJS 版本
-   安装 `vsce`; 执行：`npm install -g cheerio@1.0.0-rc.9 vsce@2.15.0`
+   安装 `vsce`; 执行：`npm install -g cheerio@1.0.0-rc.9 @vscode/vsce@2.15.0`
 
 2. 克隆该仓库，用 VSCode 打开该项目，并执行如下命令
 
