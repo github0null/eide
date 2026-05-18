@@ -3,7 +3,6 @@ import { Background } from '@vue-flow/background';
 import CallgraphControls from './CallgraphControls.vue';
 import CallgraphViewportSync from './CallgraphViewportSync.vue';
 import '@vue-flow/core/dist/style.css';
-import '@vue-flow/core/dist/theme-default.css';
 import '@vue-flow/controls/dist/style.css';
 import { computed, markRaw, nextTick, ref, watch } from 'vue';
 import type { Edge, Node } from '@vue-flow/core';
@@ -29,6 +28,9 @@ interface CallgraphEdgeData {
   vcgEdge?: VcgEdge;
 }
 
+const NODE_WIDTH = 180;
+const NODE_HEIGHT = 52;
+
 const props = defineProps<{
   graph: CallgraphVcg | null;
   graphKey: string;
@@ -36,6 +38,7 @@ const props = defineProps<{
   layoutDirection: 'TB' | 'LR';
   selectedNodeTitle: string | null;
   selectedEdgeId: string | null;
+  focusNodeTitle: string | null;
   paneVisible?: boolean;
 }>();
 
@@ -46,6 +49,7 @@ const emit = defineEmits<{
 
 const nodes = ref<Node[]>([]);
 const edges = ref<Edge[]>([]);
+const nodeCenterByTitle = ref(new Map<string, { x: number; y: number }>());
 
 const nodeTypes = {
   callgraph: markRaw(CallgraphNode),
@@ -87,6 +91,31 @@ function tryScheduleAutoFit(): void {
     return;
   }
   scheduleFitView();
+}
+
+function focusOnNode(title: string | null, attempt = 0): void {
+  if (!title || attempt >= 12) {
+    return;
+  }
+  type FlowApi = {
+    setCenter?: (
+      x: number,
+      y: number,
+      options?: { zoom?: number; duration?: number },
+    ) => void;
+  };
+  const flow = vueFlowRef.value as FlowApi | null;
+  const setCenter = flow?.setCenter;
+  if (!setCenter) {
+    window.setTimeout(() => focusOnNode(title, attempt + 1), 80);
+    return;
+  }
+  const center = nodeCenterByTitle.value.get(title);
+  if (!center) {
+    window.setTimeout(() => focusOnNode(title, attempt + 1), 80);
+    return;
+  }
+  setCenter(center.x, center.y, { zoom: 0.85, duration: 200 });
 }
 
 const highlightedIds = computed(() => {
@@ -152,6 +181,11 @@ function applyHighlights() {
     if (q) {
       highlighted = highlightedIds.value.has(nodeTitle);
       dimmed = !highlighted;
+      if (props.focusNodeTitle === nodeTitle) {
+        highlighted = true;
+        dimmed = false;
+        highlightRole = 'selected';
+      }
     }
 
     if (neighborhood) {
@@ -229,6 +263,18 @@ function applyGraph() {
   );
   nodes.value = elements.nodes;
   edges.value = elements.edges;
+  const centers = new Map<string, { x: number; y: number }>();
+  for (const n of elements.nodes) {
+    const data = n.data as CallgraphNodeData | undefined;
+    const nodeTitle = data?.title;
+    if (nodeTitle && n.position) {
+      centers.set(nodeTitle, {
+        x: n.position.x + NODE_WIDTH / 2,
+        y: n.position.y + NODE_HEIGHT / 2,
+      });
+    }
+  }
+  nodeCenterByTitle.value = centers;
   applyHighlights();
   void nextTick(() => {
     tryScheduleAutoFit();
@@ -245,9 +291,24 @@ watch(
 
 watch(
   () =>
-    [props.searchText, props.selectedNodeTitle, props.selectedEdgeId] as const,
+    [
+      props.searchText,
+      props.selectedNodeTitle,
+      props.selectedEdgeId,
+      props.focusNodeTitle,
+    ] as const,
   () => {
     applyHighlights();
+  },
+);
+
+watch(
+  () => props.focusNodeTitle,
+  (title) => {
+    if (!title) {
+      return;
+    }
+    void nextTick(() => focusOnNode(title));
   },
 );
 

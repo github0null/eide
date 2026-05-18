@@ -4,6 +4,7 @@ import { initBuildReport } from './composables/useBuildReport';
 import { isInVsCodeWebview, readInlineInit } from './host-bridge';
 import type { BuildReport } from './types/build-report';
 import './styles/vscode-theme.css';
+import './styles/naive-vscode-bridge.css';
 import './styles/symbol-table.css';
 
 function isBuildReport(value: unknown): value is BuildReport {
@@ -35,11 +36,16 @@ async function ensureFallbackInlineData(): Promise<void> {
 }
 
 async function bootstrap(): Promise<void> {
+  try {
+    await ensureFallbackInlineData();
+  } catch (err) {
+    console.warn('[Callgraph View] Failed to load fallback data:', err);
+  }
+
   const app = createApp(App);
   app.mount('#app');
 
   try {
-    await ensureFallbackInlineData();
     await initBuildReport();
   } catch (err) {
     console.error('[Callgraph View] Failed to init:', err);

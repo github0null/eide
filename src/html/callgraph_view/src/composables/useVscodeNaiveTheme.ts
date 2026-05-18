@@ -1,4 +1,4 @@
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { darkTheme, type GlobalThemeOverrides } from 'naive-ui';
 
 function readCssVar(name: string, fallback: string): string {
@@ -17,54 +17,178 @@ function isDarkBackground(hexOrRgb: string): boolean {
   return true;
 }
 
+function buildOverrides(): GlobalThemeOverrides {
+  const bg = readCssVar('--vscode-editor-background', '#1e1e1e');
+  const fg = readCssVar('--vscode-editor-foreground', '#d4d4d4');
+  const widgetBg = readCssVar('--vscode-editorWidget-background', '#252526');
+  const border = readCssVar('--vscode-editorWidget-border', '#3c3c3c');
+  const hover = readCssVar('--vscode-list-hoverBackground', '#2a2d2e');
+  const activeBg = readCssVar('--vscode-list-activeSelectionBackground', '#094771');
+  const activeFg = readCssVar('--vscode-list-activeSelectionForeground', '#ffffff');
+  const primary = readCssVar('--vscode-button-background', '#0e639c');
+  const primaryHover = readCssVar('--vscode-button-hoverBackground', '#1177bb');
+  const inputBg = readCssVar('--vscode-input-background', '#3c3c3c');
+  const inputFg = readCssVar('--vscode-input-foreground', '#f0f0f0');
+  const placeholder = readCssVar(
+    '--vscode-input-placeholderForeground',
+    '#cccccc80',
+  );
+  const sideBarBg = readCssVar('--vscode-sideBar-background', '#252526');
+
+  return {
+    common: {
+      bodyColor: bg,
+      cardColor: widgetBg,
+      modalColor: widgetBg,
+      popoverColor: widgetBg,
+      textColorBase: fg,
+      textColor1: fg,
+      textColor2: fg,
+      textColor3: readCssVar('--vscode-descriptionForeground', '#ccccccb3'),
+      borderColor: border,
+      dividerColor: border,
+      hoverColor: hover,
+      primaryColor: primary,
+      primaryColorHover: primaryHover,
+      primaryColorPressed: primaryHover,
+      inputColor: inputBg,
+      inputColorDisabled: inputBg,
+      placeholderColor: placeholder,
+      iconColor: readCssVar('--vscode-icon-foreground', '#cccccc'),
+      iconColorHover: fg,
+      iconColorPressed: fg,
+      iconColorDisabled: placeholder,
+    },
+    Layout: {
+      color: bg,
+      siderColor: sideBarBg,
+      headerColor: widgetBg,
+    },
+    Menu: {
+      color: sideBarBg,
+      itemColor: 'transparent',
+      itemColorActive: activeBg,
+      itemColorActiveHover: activeBg,
+      itemColorHover: hover,
+      itemTextColor: fg,
+      itemTextColorActive: activeFg,
+      itemTextColorHover: fg,
+      itemTextColorChildActive: activeFg,
+      itemIconColor: fg,
+      itemIconColorActive: activeFg,
+      itemIconColorHover: fg,
+    },
+    Select: {
+      peers: {
+        InternalSelection: {
+          textColor: inputFg,
+          color: inputBg,
+          colorActive: inputBg,
+          border: `1px solid ${border}`,
+          borderActive: `1px solid ${readCssVar('--vscode-focusBorder', '#007acc')}`,
+          borderHover: `1px solid ${border}`,
+          borderFocus: `1px solid ${readCssVar('--vscode-focusBorder', '#007acc')}`,
+          boxShadowFocus: `0 0 0 1px ${readCssVar('--vscode-focusBorder', '#007acc')}`,
+          arrowColor: fg,
+        },
+        InternalSelectMenu: {
+          color: widgetBg,
+          optionTextColor: fg,
+          optionTextColorActive: activeFg,
+          optionColorPending: hover,
+          optionColorActive: activeBg,
+          optionColorActivePending: activeBg,
+        },
+      },
+    },
+    Input: {
+      color: inputBg,
+      colorFocus: inputBg,
+      textColor: inputFg,
+      border: `1px solid ${border}`,
+      borderHover: `1px solid ${border}`,
+      borderFocus: `1px solid ${readCssVar('--vscode-focusBorder', '#007acc')}`,
+      boxShadowFocus: `0 0 0 1px ${readCssVar('--vscode-focusBorder', '#007acc')}`,
+      placeholderColor: placeholder,
+    },
+    Button: {
+      textColor: readCssVar('--vscode-button-foreground', '#ffffff'),
+      color: primary,
+      colorHover: primaryHover,
+      colorPressed: primaryHover,
+      colorFocus: primaryHover,
+      border: `1px solid ${border}`,
+      borderHover: `1px solid ${border}`,
+      borderPressed: `1px solid ${border}`,
+      borderFocus: `1px solid ${readCssVar('--vscode-focusBorder', '#007acc')}`,
+    },
+    Dropdown: {
+      color: widgetBg,
+      optionTextColor: fg,
+      optionTextColorHover: fg,
+      optionTextColorActive: activeFg,
+      optionColorHover: hover,
+      optionColorActive: activeBg,
+    },
+    Empty: {
+      textColor: fg,
+      iconColor: readCssVar('--vscode-icon-foreground', '#cccccc'),
+      extraTextColor: readCssVar('--vscode-descriptionForeground', '#ccccccb3'),
+    },
+    Scrollbar: {
+      color: readCssVar(
+        '--vscode-scrollbarSlider-background',
+        'rgba(121, 121, 121, 0.4)',
+      ),
+      colorHover: readCssVar(
+        '--vscode-scrollbarSlider-hoverBackground',
+        'rgba(100, 100, 100, 0.7)',
+      ),
+    },
+    Spin: {
+      color: primary,
+      textColor: fg,
+    },
+    Result: {
+      textColor: fg,
+      titleTextColor: fg,
+    },
+    Tooltip: {
+      color: widgetBg,
+      textColor: fg,
+    },
+  };
+}
+
 export function useVscodeNaiveTheme() {
   const isDark = ref(true);
   const overrides = ref<GlobalThemeOverrides>({});
 
   const refresh = () => {
     const bg = readCssVar('--vscode-editor-background', '#1e1e1e');
-    const fg = readCssVar('--vscode-editor-foreground', '#d4d4d4');
-    const widgetBg = readCssVar('--vscode-editorWidget-background', '#252526');
-    const border = readCssVar('--vscode-editorWidget-border', '#3c3c3c');
-    const hover = readCssVar('--vscode-list-hoverBackground', '#2a2d2e');
-    const primary = readCssVar('--vscode-button-background', '#0e639c');
-
     isDark.value = isDarkBackground(bg);
-    overrides.value = {
-      common: {
-        bodyColor: bg,
-        cardColor: widgetBg,
-        modalColor: widgetBg,
-        popoverColor: widgetBg,
-        textColorBase: fg,
-        textColor1: fg,
-        textColor2: fg,
-        borderColor: border,
-        dividerColor: border,
-        hoverColor: hover,
-        primaryColor: primary,
-        primaryColorHover: readCssVar('--vscode-button-hoverBackground', '#1177bb'),
-        inputColor: readCssVar('--vscode-input-background', '#3c3c3c'),
-        placeholderColor: readCssVar(
-          '--vscode-input-placeholderForeground',
-          '#cccccc80',
-        ),
-      },
-      Layout: {
-        color: bg,
-        siderColor: widgetBg,
-        headerColor: widgetBg,
-      },
-      Menu: {
-        itemColorActive: hover,
-        itemColorActiveHover: hover,
-        itemTextColorActive: fg,
-      },
-    };
+    overrides.value = buildOverrides();
   };
+
+  let themeObserver: MutationObserver | undefined;
 
   onMounted(() => {
     refresh();
+    requestAnimationFrame(() => refresh());
+
+    themeObserver = new MutationObserver(() => refresh());
+    themeObserver.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['class', 'data-vscode-theme', 'data-vscode-theme-kind'],
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'data-vscode-theme', 'data-vscode-theme-kind'],
+    });
+  });
+
+  onUnmounted(() => {
+    themeObserver?.disconnect();
   });
 
   const theme = computed(() => (isDark.value ? darkTheme : null));

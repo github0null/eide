@@ -4,12 +4,12 @@ import {
   NIcon,
   NMenu,
   NResult,
-  NSpin,
   type MenuOption,
 } from 'naive-ui';
 import { GraphIcon, TableIcon } from './icons';
 import { computed, h, ref } from 'vue';
 import { useBuildReport } from './composables/useBuildReport';
+import { callgraphSession } from './composables/usePageSessionState';
 import { useVscodeNaiveTheme } from './composables/useVscodeNaiveTheme';
 import CallgraphView from './views/CallgraphView.vue';
 import StackUsageView from './views/StackUsageView.vue';
@@ -37,10 +37,19 @@ const menuOptions: MenuOption[] = [
 const pageTitle = computed(() =>
   activePage.value === 'callgraph' ? 'Callgraph' : 'Stack Usage',
 );
+
+const callgraphGraphStats = computed(
+  () => callgraphSession.graphStats.value,
+);
 </script>
 
 <template>
-  <NConfigProvider :theme="theme" :theme-overrides="overrides">
+  <NConfigProvider
+    :theme="theme"
+    :theme-overrides="overrides"
+    inline-theme-disabled
+    preflight-style-disabled
+  >
     <div class="app-root" :class="{ 'app-root--sider-collapsed': menuCollapsed }">
       <aside class="app-sider">
         <NMenu
@@ -61,6 +70,13 @@ const pageTitle = computed(() =>
       <div class="app-main">
         <header class="page-header">
           <span class="page-title">{{ pageTitle }}</span>
+          <span
+            v-if="activePage === 'callgraph' && callgraphGraphStats"
+            class="badge page-header-stats"
+          >
+            {{ callgraphGraphStats.nodes }} nodes ·
+            {{ callgraphGraphStats.edges }} edges
+          </span>
         </header>
         <main class="app-body">
           <NResult
@@ -70,18 +86,27 @@ const pageTitle = computed(() =>
             :description="loadError.message"
           />
           <div v-else class="app-pages">
-            <CallgraphView
-              v-show="activePage === 'callgraph'"
-              class="app-page"
-              :pane-visible="activePage === 'callgraph'"
-            />
-            <StackUsageView
-              v-show="activePage === 'stackusage'"
-              class="app-page"
-              :pane-visible="activePage === 'stackusage'"
-            />
-            <div v-if="loading" class="app-pages-overlay">
-              <NSpin size="large" />
+            <template v-if="!loading">
+              <CallgraphView
+                v-show="activePage === 'callgraph'"
+                class="app-page"
+                :pane-visible="activePage === 'callgraph'"
+              />
+              <StackUsageView
+                v-show="activePage === 'stackusage'"
+                class="app-page"
+                :pane-visible="activePage === 'stackusage'"
+              />
+            </template>
+            <div
+              v-if="loading"
+              class="app-pages-overlay"
+              role="status"
+              aria-live="polite"
+              aria-label="Loading"
+            >
+              <div class="app-loading-spinner" />
+              <span class="app-loading-text">Loading…</span>
             </div>
           </div>
         </main>
@@ -177,12 +202,37 @@ const pageTitle = computed(() =>
   inset: 0;
   z-index: 20;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 12px;
   background: color-mix(
     in srgb,
     var(--vscode-editor-background, #1e1e1e) 72%,
     transparent
   );
+}
+
+.app-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--vscode-editorWidget-border, #3c3c3c);
+  border-top-color: var(
+    --vscode-progressBar-background,
+    var(--vscode-focusBorder, #007acc)
+  );
+  border-radius: 50%;
+  animation: app-loading-spin 0.75s linear infinite;
+}
+
+.app-loading-text {
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground, #ccccccb3);
+}
+
+@keyframes app-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

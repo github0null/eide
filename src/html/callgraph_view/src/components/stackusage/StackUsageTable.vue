@@ -173,7 +173,7 @@ defineExpose({ filterText });
 
 <template>
   <div class="table-wrapper" @click="hideMenu">
-    <div class="page-toolbar" style="padding: 8px 10px 0">
+    <div class="page-toolbar" style="padding: 8px 10px">
       <input
         v-model="filterText"
         class="search-input"

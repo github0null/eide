@@ -47,7 +47,45 @@ body,
     border-radius: 999px;
     background: var(--vscode-badge-background, #4d4d4d);
     color: var(--vscode-badge-foreground, #ffffff);
-    font-size: 11px;
+    font-size: 12px;
+}
+
+.btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 10px;
+    border: 1px solid var(--vscode-button-border, var(--vscode-editorWidget-border, #3c3c3c));
+    border-radius: 2px;
+    background: transparent;
+    color: var(--vscode-foreground);
+    font-size: 12px;
+    line-height: 1.4;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn-outline:hover:not(:disabled) {
+    background: var(--vscode-toolbar-hoverBackground, #2a2d2e);
+}
+
+.btn-outline:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.btn-outline:focus-visible {
+    outline: 1px solid var(--vscode-focusBorder, #007acc);
+    outline-offset: 1px;
+}
+
+.btn-outline.btn-outline--tiny {
+    font-size: 12px;
+}
+
+.btn-outline.btn-outline--icon {
+    min-width: 24px;
+    padding: 2px 2px;
 }
 
 .page-view {
@@ -106,6 +144,65 @@ body,
 .callgraph-page .page-toolbar {
     grid-row: 1;
     padding-bottom: 8px;
+    overflow: visible;
+    position: relative;
+    z-index: 2;
+}
+
+.callgraph-toolbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.callgraph-toolbar .toolbar-start {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
+.callgraph-toolbar .layout-select {
+    flex-shrink: 0;
+    width: 140px;
+    margin-left: auto;
+}
+
+.n-base-select-menu-option-wrapper {
+    padding: 4px 8px !important;
+}
+.v-binder-follower-content {
+    max-width: 800px;
+}
+
+.graph-select-wrap {
+    flex-shrink: 0;
+    max-width: 400px;
+}
+
+.graph-select-wrap .graph-select {
+    width: 400px;
+    max-width: 400px;
+}
+
+.callgraph-page .graph-select-wrap :deep(.n-base-selection-label) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.callgraph-page :deep(.n-base-select-menu .n-base-select-option .n-base-select-option__content) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 320px;
+}
+
+.callgraph-page :deep(.n-base-select-menu) {
+    max-width: 400px;
 }
 
 .callgraph-flow-wrap,
@@ -144,13 +241,21 @@ body,
     height: 100%;
 }
 
+.vue-flow {
+    --vf-node-bg: var(--vscode-editorWidget-background, #252526);
+    --vf-node-text: var(--vscode-editor-foreground, #d4d4d4);
+    --vf-connection-path: rgba(212, 212, 212, 0.75);
+    --vf-handle: var(--vscode-foreground, #cccccc);
+    --vf-box-shadow: var(--vscode-focusBorder, #007acc);
+}
+
 .vue-flow__node.callgraph-flow-node,
 .vue-flow__node-callgraph {
     width: 180px !important;
     height: 52px !important;
     min-width: 180px;
     min-height: 52px;
-    font-size: 11px;
+    font-size: 12px;
     box-sizing: border-box;
     visibility: visible;
 }

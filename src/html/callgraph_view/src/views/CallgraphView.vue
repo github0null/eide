@@ -1,28 +1,28 @@
 <script setup lang="ts">
-import {
-  NButton,
-  NEmpty,
-  NSelect,
-  NSpace,
-  NText,
-  NTooltip,
-} from 'naive-ui';
+import { NEmpty, NSelect, NSpace, NText, NTooltip, type SelectOption } from 'naive-ui';
 
 const maxStackUsageTooltip =
   'Max Stack Usage = 本函数局部栈（GCC -fstack-usage）+ 被调用函数中最大的 Max Stack Usage。' +
   '仅沿当前调用图向下累计，不含调用方栈帧；多个被调函数取子链最大值（非相加）。';
-import { computed, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import CallgraphCanvas from '../components/callgraph/CallgraphCanvas.vue';
 import {
   ALL_CALLGRAPH_GRAPHS,
   useBuildReport,
 } from '../composables/useBuildReport';
+import { useCallgraphKeyboard } from '../composables/useCallgraphKeyboard';
+import { useCallgraphSearch } from '../composables/useCallgraphSearch';
 import { callgraphSession } from '../composables/usePageSessionState';
 import { hostBridge } from '../host-bridge';
 import { parseCallsiteLabel } from '../utils/callgraph-edge';
 import { buildStackUsageIndex } from '../utils/stack-usage-lookup';
 import { computeMaxStackUseByTitle } from '../utils/max-stack-usage';
 import type { VcgEdge, VcgNode } from '../types/build-report';
+
+interface GraphSelectOption extends SelectOption {
+  value: number;
+  fullLabel: string;
+}
 
 const props = defineProps<{
   paneVisible?: boolean;
@@ -71,18 +71,42 @@ watch([selectedIndex, layoutDirection], () => {
   selectedEdgeFlowId.value = null;
 });
 
-const graphOptions = computed(() => {
-  const mergedLabel = `Merged (${mergedCallgraphGraph.value?.nodes.length ?? 0})`;
+const graphOptions = computed((): GraphSelectOption[] => {
+  const mergedFull = `Merged (${mergedCallgraphGraph.value?.nodes.length ?? 0})`;
   const others = callgraphGraphs.value
-    .map((g) => ({
-      label: `${g.title} (${g.nodes.length})`,
-      value: g.index,
-    }))
+    .map((g) => {
+      const fullLabel = `${g.title} (${g.nodes.length})`;
+      return {
+        label: fullLabel,
+        value: g.index,
+        fullLabel,
+      };
+    })
     .sort((a, b) =>
-      a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
+      a.fullLabel.localeCompare(b.fullLabel, undefined, { sensitivity: 'base' }),
     );
-  return [{ label: mergedLabel, value: ALL_CALLGRAPH_GRAPHS }, ...others];
+  return [
+    {
+      label: mergedFull,
+      value: ALL_CALLGRAPH_GRAPHS,
+      fullLabel: mergedFull,
+    },
+    ...others,
+  ];
 });
+
+const selectedGraphFullLabel = computed(() => {
+  const opt = graphOptions.value.find((o) => o.value === selectedIndex.value);
+  return opt?.fullLabel ?? '';
+});
+
+function graphOptionNodeProps(option: unknown) {
+  const o = option as GraphSelectOption;
+  const full =
+    o.fullLabel ??
+    (typeof o.label === 'string' ? o.label : '');
+  return full ? { title: full } : {};
+}
 
 const currentGraphMeta = computed(() => {
   if (selectedIndex.value === ALL_CALLGRAPH_GRAPHS) {
@@ -90,6 +114,21 @@ const currentGraphMeta = computed(() => {
   }
   return callgraphGraphs.value[selectedIndex.value] ?? null;
 });
+
+watch(
+  [currentGraphMeta, hasCallgraph],
+  ([meta, hasGraph]) => {
+    if (!hasGraph || !meta) {
+      callgraphSession.graphStats.value = null;
+      return;
+    }
+    callgraphSession.graphStats.value = {
+      nodes: meta.nodes.length,
+      edges: meta.edges.length,
+    };
+  },
+  { immediate: true },
+);
 
 const graphCanvasKey = computed(() =>
   selectedIndex.value === ALL_CALLGRAPH_GRAPHS
@@ -108,6 +147,48 @@ const currentGraph = computed(() => {
     edges: meta.edges,
   };
 });
+
+const currentGraphNodes = computed(() => currentGraphMeta.value?.nodes ?? []);
+
+const {
+  matches: searchMatches,
+  activeIndex: searchActiveIndex,
+  activeMatch: searchActiveMatch,
+  hasMatches: hasSearchMatches,
+  setActiveIndex: setSearchActiveIndex,
+  goPrev: goSearchPrev,
+  goNext: goSearchNext,
+} = useCallgraphSearch(searchText, currentGraphNodes);
+
+const keyboardPanTitle = ref<string | null>(null);
+
+const focusNodeTitle = computed(() => {
+  if (searchText.value.trim() && searchActiveMatch.value) {
+    return searchActiveMatch.value.title;
+  }
+  return keyboardPanTitle.value;
+});
+
+watch(searchActiveMatch, (match) => {
+  if (match) {
+    selectedNodeId.value = match.title;
+    selectedEdge.value = null;
+    selectedEdgeFlowId.value = null;
+    keyboardPanTitle.value = match.title;
+  }
+});
+
+watch(searchActiveIndex, () => {
+  void nextTick(() => {
+    document
+      .querySelector('.search-results-item.active')
+      ?.scrollIntoView({ block: 'nearest' });
+  });
+});
+
+function onSearchResultClick(index: number) {
+  setSearchActiveIndex(index);
+}
 
 const selectedNode = computed((): VcgNode | null => {
   if (!selectedNodeId.value || !currentGraph.value) {
@@ -156,12 +237,42 @@ function onNodeSelect(title: string | null) {
   selectedNodeId.value = title;
   selectedEdge.value = null;
   selectedEdgeFlowId.value = null;
+  // 鼠标点击不触发画布平移，仅搜索/键盘导航会设置 keyboardPanTitle
+  if (!searchText.value.trim()) {
+    keyboardPanTitle.value = null;
+  }
 }
 
 function onEdgeSelect(payload: { edge: VcgEdge; flowId: string } | null) {
   selectedEdge.value = payload?.edge ?? null;
   selectedEdgeFlowId.value = payload?.flowId ?? null;
   selectedNodeId.value = null;
+}
+
+const currentGraphEdges = computed(() => currentGraph.value?.edges ?? []);
+
+const paneVisibleRef = computed(() => props.paneVisible ?? true);
+
+const { onSearchKeydown, clearLrStack } = useCallgraphKeyboard({
+  paneVisible: paneVisibleRef,
+  searchText,
+  hasSearchMatches,
+  goSearchPrev,
+  goSearchNext,
+  selectedNodeId,
+  graphEdges: currentGraphEdges,
+  graphNodes: currentGraphNodes,
+  onSelectNode(title) {
+    onNodeSelect(title);
+  },
+  onPanToNode(title) {
+    keyboardPanTitle.value = title;
+  },
+});
+
+function onNodeSelectByMouse(title: string | null) {
+  clearLrStack();
+  onNodeSelect(title);
 }
 
 const layoutOptions = [
@@ -213,30 +324,79 @@ function gotoSelectedEdge() {
     </NEmpty>
   </div>
   <div v-else class="page-view callgraph-page">
-    <div class="page-toolbar">
-      <NSelect
-        v-model:value="selectedIndex"
-        :options="graphOptions"
-        style="min-width: 280px; max-width: 480px"
-        size="small"
-      />
-      <input
-        v-model="searchText"
-        class="search-input"
-        type="text"
-        placeholder="Search function ..."
-      />
+    <div class="page-toolbar callgraph-toolbar">
+      <div class="toolbar-start">
+        <div class="graph-select-wrap" :title="selectedGraphFullLabel">
+          <NSelect
+            v-model:value="selectedIndex"
+            class="graph-select"
+            :options="graphOptions"
+            :node-props="graphOptionNodeProps"
+            :consistent-menu-width="false"
+            size="small"
+          />
+        </div>
+        <div class="search-block">
+        <div class="search-row">
+          <input
+            v-model="searchText"
+            class="search-input"
+            type="text"
+            placeholder="Search function ..."
+            @keydown="onSearchKeydown"
+          />
+          <button
+            :disabled="!searchText"
+            type="button"
+            class="btn-outline btn-outline--icon search-clear-btn"
+            title="Clear search"
+            aria-label="Clear search"
+            @click="clearSearch"
+          >
+            ×
+          </button>
+          <button
+            type="button"
+            class="btn-outline btn-outline--icon"
+            :disabled="!hasSearchMatches"
+            title="Previous match"
+            @click="goSearchPrev"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            class="btn-outline btn-outline--icon"
+            :disabled="!hasSearchMatches"
+            title="Next match"
+            @click="goSearchNext"
+          >
+            ›
+          </button>
+          <span v-if="hasSearchMatches" class="search-counter">
+            {{ searchActiveIndex + 1 }} / {{ searchMatches.length }}
+          </span>
+        </div>
+        <ul v-if="hasSearchMatches" class="search-results-dropdown">
+          <li
+            v-for="(match, index) in searchMatches"
+            :key="match.title"
+            class="search-results-item"
+            :class="{ active: index === searchActiveIndex }"
+            :title="match.label"
+            @click="onSearchResultClick(index)"
+          >
+            {{ match.label }}
+          </li>
+        </ul>
+        </div>
+      </div>
       <NSelect
         v-model:value="layoutDirection"
+        class="layout-select"
         :options="layoutOptions"
-        style="width: 140px"
         size="small"
       />
-      <NButton v-if="searchText" size="small" @click="clearSearch">Clear filter</NButton>
-      <span class="badge">
-        {{ currentGraphMeta?.nodes.length ?? 0 }} nodes ·
-        {{ currentGraphMeta?.edges.length ?? 0 }} edges
-      </span>
     </div>
     <div v-if="currentGraphMeta?.isEmpty" class="empty-center">
       <NEmpty description="No callgraph data" />
@@ -249,8 +409,9 @@ function gotoSelectedEdge() {
         :layout-direction="layoutDirection"
         :selected-node-title="selectedNodeId"
         :selected-edge-id="selectedEdgeFlowId"
+        :focus-node-title="focusNodeTitle"
         :pane-visible="props.paneVisible ?? true"
-        @node-select="onNodeSelect"
+        @node-select="onNodeSelectByMouse"
         @edge-select="onEdgeSelect"
       />
     </div>
@@ -260,13 +421,14 @@ function gotoSelectedEdge() {
           <NText strong>
             {{ selectedEdgeSourceLabel }} → {{ selectedEdgeTargetLabel }}
           </NText>
-          <NButton
+          <button
             v-if="selectedEdgeCallsite"
-            size="tiny"
+            type="button"
+            class="btn-outline btn-outline--tiny"
             @click="gotoSelectedEdge"
           >
             Go To Definition
-          </NButton>
+          </button>
         </NSpace>
         <NText v-if="selectedEdge.label" depth="3" style="font-size: 11px">
           {{ selectedEdge.label }}
@@ -290,7 +452,13 @@ function gotoSelectedEdge() {
             </template>
             {{ maxStackUsageTooltip }}
           </NTooltip>
-          <NButton size="tiny" @click="gotoSelectedNode">Go To Definition</NButton>
+          <button
+            type="button"
+            class="btn-outline btn-outline--tiny"
+            @click="gotoSelectedNode"
+          >
+            Go To Definition
+          </button>
         </NSpace>
         <NText v-if="selectedNode.location" depth="3" style="font-size: 12px; padding: 4px 0px;">
           {{ selectedNode.location.file }}
@@ -342,6 +510,19 @@ function gotoSelectedEdge() {
   outline-offset: 1px;
 }
 
+.search-block {
+  position: relative;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.search-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
 .search-input {
   padding: 4px 8px;
   border-radius: 2px;
@@ -349,6 +530,62 @@ function gotoSelectedEdge() {
   background: var(--vscode-input-background, #3c3c3c);
   color: var(--vscode-input-foreground, #f0f0f0);
   font-size: 12px;
-  min-width: 180px;
+  width: 180px;
+  min-width: 140px;
+}
+
+.search-input:focus {
+  outline: 1px solid var(--vscode-focusBorder, #007acc);
+  outline-offset: -1px;
+}
+
+.search-counter {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground, #ccccccb3);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.search-results-dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  z-index: 100;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(420px, 50vw);
+  max-height: 160px;
+  overflow-y: auto;
+  border: 1px solid var(--vscode-editorWidget-border, #3c3c3c);
+  border-radius: 3px;
+  background: var(--vscode-editorWidget-background, #252526);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.search-results-item {
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.search-clear-btn {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.search-results-item:hover {
+  background: var(--vscode-list-hoverBackground, #2a2d2e);
+}
+
+.search-results-item.active {
+  background: var(--vscode-list-activeSelectionBackground, #094771);
+  color: var(--vscode-list-activeSelectionForeground, #ffffff);
 }
 </style>

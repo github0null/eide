@@ -11,15 +11,12 @@ export const callgraphSession = {
   selectedNodeId: ref<string | null>(null),
   selectedEdge: ref<VcgEdge | null>(null),
   selectedEdgeFlowId: ref<string | null>(null),
+  /** 标题栏右侧展示的当前图统计 */
+  graphStats: ref<{ nodes: number; edges: number } | null>(null),
 };
 
 /** flowInstanceKey → 画布视口 */
 export const callgraphViewportByFlowKey = new Map<string, ViewportTransform>();
-
-/** 跨侧栏切换保留的 Stack Usage UI 状态 */
-export const stackUsageSession = {
-  selectedDoc: ref(-1),
-};
 
 /** scrollKey（文档 id）→ 表格 scrollTop */
 export const stackUsageScrollByKey = new Map<string, number>();
