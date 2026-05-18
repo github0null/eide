@@ -6,7 +6,7 @@ All notable version changes will be recorded in this file.
 
 ***
 
-### [v3.26.11] preview
+### [v3.26.12] preview
 
 **New**:
   - `MCP Server`: Add mcp server to export eide built-in functions. settings: `EIDE.MCP.Server.Enable`, `EIDE.MCP.Server.Port`
@@ -15,6 +15,7 @@ All notable version changes will be recorded in this file.
 **Fix**:
   - `Cppcheck`: Fixed cppcheck config generate.
   - `Symbol Table`: Fixed size column override table header.
+  - `Clangd Config`: See ![PR 532](https://github.com/github0null/eide/pull/532) . Thanks [inaku-Gyan](https://github.com/inaku-Gyan)
 
 **Changes**:
   - `Devtools`: Update node version to **v18** and min vscode version require **v1.89.0**.
