@@ -36,7 +36,7 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/MIPS/RISC-V",
-    "version": "3.26.10",
+    "version": "3.26.11",
     "preview": false,
     "engines": {
         "vscode": "^1.89.0"
@@ -85,12 +85,14 @@
         "@types/ini": "^1.3.30",
         "@types/micromatch": "^4.0.2",
         "@types/mocha": "^5.2.7",
+        "@types/mock-require": "^3.0.0",
         "@types/node": "^18.18.2",
         "@types/node-7z": "^2.1.4",
         "@types/vscode": "^1.89.0",
         "@types/x2js": "^3.1.0",
         "@types/xml2js": "^0.4.11",
         "babel-loader": "^8.3.0",
+        "mock-require": "^3.0.3",
         "ts-loader": "^9.5.1",
         "typescript": "^5.8.2",
         "webpack": "^5.93.0",
