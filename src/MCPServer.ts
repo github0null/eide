@@ -285,7 +285,7 @@ const getServer = () => {
                 };
             }
 
-            const ok = await projectExplorer.reloadProject(prj.getUid());
+            const ok = await projectExplorer.reloadProject(prj.getUid(), false);
 
             return new Promise((resolve) => {
                 const result: CallToolResult = {

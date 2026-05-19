@@ -1767,7 +1767,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         return iList;
     }
 
-    private async _OpenProject(workspaceFilePath: string, workspaceState: vscode.Memento): Promise<AbstractProject | undefined> {
+    async _OpenProject(workspaceFilePath: string, workspaceState: vscode.Memento): Promise<AbstractProject | undefined> {
 
         const wsFile: File = new File(workspaceFilePath);
         if (!wsFile.IsFile()) {
@@ -3581,7 +3581,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const msg = view_str$prompt$need_reload_project.replace('{}', prj.getProjectName());
         const ans = await vscode.window.showInformationMessage(msg, 'Yes', 'No');
         if (ans == 'Yes') {
-            await this.reloadProject(uid);
+            await this.reloadProject(uid, true);
         }
 
         if (this.__autosaveDisableTimeoutTimer) {
@@ -3593,7 +3593,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         this.enableAutoSave(true);
     }
 
-    async reloadProject(uid: string): Promise<boolean> {
+    async reloadProject(uid: string, restartWorkspace: boolean): Promise<boolean> {
 
         const idx = this.dataProvider.getIndexByProjectUid(uid);
         if (idx == -1) {
@@ -3607,9 +3607,14 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         return new Promise((resolve) => {
             setTimeout(async () => {
                 try {
-                    await this.dataProvider.OpenProject(workspaceFile.path, true);
+                    let p: AbstractProject | undefined;
+                    if (restartWorkspace) {
+                        p = await this.dataProvider.OpenProject(workspaceFile.path, true);
+                    } else {
+                        p = await this.dataProvider._OpenProject(workspaceFile.path, getGlobalState());
+                    }
                     this.Refresh();
-                    resolve(true);
+                    resolve(p !== undefined);
                 } catch (error) {
                     GlobalEvent.emit('error', error);
                     resolve(false);
