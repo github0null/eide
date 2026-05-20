@@ -448,11 +448,22 @@ class SourceRootList implements SourceProvider {
 
     private _add(dir: File): SourceRootInfo {
         const key: string = this.project.toRelativePath(dir.path);
+        if (this.srcFolderMaps.has(key)) // skip existed
+            return <SourceRootInfo>this.srcFolderMaps.get(key);
         const watcher = platform.createSafetyFileWatcher(dir, true);
         watcher.on('error', (err) => GlobalEvent.log_error(err));
         const sourceInfo = this.newSourceInfo(key, watcher);
         this.srcFolderMaps.set(key, sourceInfo);
         return sourceInfo;
+    }
+
+    verify(absPath: string): { valid: boolean; message: string } {
+        const rePath = this.project.ToRelativePath(absPath);
+        if (rePath === undefined || rePath.trim() === '')
+            return { valid: false, message: `cannot calculate relative path for '${absPath}'` };
+        if (rePath === '.' || rePath.split('/').every(p => p == '..'))
+            return { valid: false, message: `source folder can not be '${rePath}'` };
+        return { valid: true, message: '' };
     }
 
     add(absPath: string): boolean {

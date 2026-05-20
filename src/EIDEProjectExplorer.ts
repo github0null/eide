@@ -4806,24 +4806,13 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             });
 
             if (folderList && folderList.length > 0) {
-
                 for (const folderUri of folderList) {
-
-                    const folderPath = folderUri.fsPath;
-                    const rePath = prj.ToRelativePath(folderPath);
-
-                    // if can't calculate repath, skip
-                    if (rePath === undefined || rePath.trim() === '') {
-                        GlobalEvent.emit('msg', newMessage('Warning', `Can't calculate relative path for '${folderPath}' !`));
+                    const res = prj.getNormalSourceManager().verify(folderUri.fsPath);
+                    if (!res.valid) {
+                        GlobalEvent.show_msgbox(`Warning`, res.message);
                         continue;
                     }
-
-                    if (rePath === '.' || rePath.split('/').every(p => p == '..')) { // ignore these folders
-                        GlobalEvent.emit('msg', newMessage('Warning', `source folder can not be '${rePath}' !`));
-                        continue;
-                    }
-
-                    prj.GetConfiguration().AddSrcDir(folderPath);
+                    prj.GetConfiguration().AddSrcDir(folderUri.fsPath);
                 }
             }
         }
