@@ -42,7 +42,7 @@ function resolveProject(
     if (uid) {
         return explorer.getProjectByUid(uid);
     }
-    return explorer.getActiveProject();
+    return undefined;
 }
 
 function projectNotFound(uid: string | null | undefined): CallToolResult {
