@@ -324,6 +324,7 @@ export function deactivate() {
     ResManager.instance().onDispose();
     LogDumper.getInstance().onDispose();
     StatusBarManager.getInstance().disposeAll();
+    mcp.mcpServerStop().catch(err => GlobalEvent.log_error(err));
 }
 
 function postLaunchHook(extensionCtx: vscode.ExtensionContext) {
@@ -388,7 +389,8 @@ function postLaunchHook(extensionCtx: vscode.ExtensionContext) {
         const port = settingManager.getMcpServerPort();
         try {
             mcp.mcpServerInit(port, projectExplorer);
-            mcp.mcpServerStart(port);
+            mcp.mcpServerStart(port, extensionCtx.extensionPath)
+                .catch(error => GlobalEvent.log_error(error));
         } catch (error) {
             GlobalEvent.log_error(error);
         }

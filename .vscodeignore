@@ -23,6 +23,8 @@ vsc-extension-quickstart.md
 **/*.pdb
 **/ARM/*.xml
 *.js
+!dist/extension.js
+!dist/mcp_server.js
 *.cpuprofile
 *.vscodeignore
 
