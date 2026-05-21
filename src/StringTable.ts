@@ -573,6 +573,11 @@ export const view_str$prompt$needReloadToUpdateEnv = [
     `We need relaunch plug-in to refresh internal environment variables, relaunch now ?`
 ][langIndex];
 
+export const view_str$prompt$needReload = [
+    `完成该操作需要重启插件，立即重启？`,
+    `To complete this operation, you need to restart the plugin. Do you want to restart it immediately ?`
+][langIndex];
+
 export const view_str$prompt$reloadForOldProject = [
     `项目文件版本过旧，需要重载项目以更新项目数据！现在重启插件吗？`,
     `Project file version is too old, we need to reload the project to update the project file ! Restart the plugin now ?`
