@@ -34,12 +34,12 @@ export function mcpServerInit(_mcpPort: number, prjExplorer: ProjectExplorer): v
     GlobalEvent.log_info('Init mcp client.');
 }
 
-export async function mcpServerStart(mcpPort: number, extensionPath: string): Promise<void> {
+export async function mcpServerStart(mcpPort: number, extensionPath: string, extensionVersion: string): Promise<void> {
     if (started) {
         return;
     }
     GlobalEvent.log_info('Connect to mcp proxy.');
-    await mcpClientConnect(mcpPort, extensionPath);
+    await mcpClientConnect(mcpPort, extensionPath, extensionVersion);
     started = true;
 }
 

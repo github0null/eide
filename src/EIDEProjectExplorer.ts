@@ -3831,7 +3831,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         prj.Save();
     }
 
-    private _buildLock: boolean = false;
+    private _builderLock: boolean = false;
     async buildProject(prj?: AbstractProject, options?: BuildOptions, noTerminal?: boolean): Promise<{ success: boolean; message: string; }> {
 
         if (prj === undefined) {
@@ -3842,16 +3842,16 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             };
         }
 
-        if (this._buildLock) {
-            GlobalEvent.show_msgbox('Warning', 'Busy ! Please wait !');
+        if (this._builderLock) {
+            GlobalEvent.show_msgbox('Warning', 'Builder busy ! Please wait !');
             return {
                 success: false,
-                message: 'Busy ! Please wait !'
+                message: 'Builder busy ! Please wait !'
             };
         }
 
         try {
-            this._buildLock = true;
+            this._builderLock = true;
 
             // save project before build
             prj.Save(true);
@@ -3859,8 +3859,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             const builder = CodeBuilder.NewBuilder(prj);
             const toolchain = prj.getToolchain().name;
 
-            return new Promise((resolve) => {
-
+            const res = await new Promise<{ success: boolean; message: string; }>((resolve) => {
                 if (noTerminal) {
                     const commandLine = builder.genBuildCommand(options);
                     if (commandLine) {
@@ -3890,7 +3889,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                                 });
                             }
                         });
-                        this._buildLock = false;
                     } else {
                         resolve({
                             success: false,
@@ -3934,11 +3932,15 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     // start build
                     builder.build(options);
 
-                    setTimeout(() => this._buildLock = false, 1000);
+                    this._builderLock = false;
                 }
             });
+
+            this._builderLock = false;
+            return res;
+
         } catch (error) {
-            this._buildLock = false;
+            this._builderLock = false;
             GlobalEvent.emit('error', error);
             return {
                 success: false,
@@ -4574,7 +4576,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             GlobalEvent.emit('msg', newMessage('Error', 'No active project !'));
             return;
         }
-        if (this._buildLock) {
+        if (this._builderLock) {
             GlobalEvent.emit('msg', newMessage('Error', 'builder busy !, please wait !'));
             return;
         }

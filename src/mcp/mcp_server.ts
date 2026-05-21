@@ -33,7 +33,7 @@ import { InMemoryEventStore } from '@modelcontextprotocol/sdk/examples/shared/in
 import { CallToolResult } from '@modelcontextprotocol/sdk/types';
 import * as FileLock from '../../lib/node-utility/FileLock';
 import { File } from '../../lib/node-utility/File';
-import { createMcpServer } from './mcp_core';
+import { createMcpServer } from './mcp_proxy_tools';
 import {
     attachFrameReader,
     getIpcPort,
@@ -175,14 +175,26 @@ class InstanceRouter {
     }
 }
 
-function parseArgs(argv: string[]): number {
+interface ProxyArgs {
+    port: number;
+    version: string;
+    bundleId: string;
+}
+
+function parseArgs(argv: string[]): ProxyArgs {
     let port = 8940;
+    let version = '';
+    let bundleId = '';
     for (let i = 2; i < argv.length; i++) {
         if (argv[i] === '--port' && argv[i + 1]) {
             port = parseInt(argv[++i], 10);
+        } else if (argv[i] === '--version' && argv[i + 1]) {
+            version = argv[++i];
+        } else if (argv[i] === '--bundle-id' && argv[i + 1]) {
+            bundleId = argv[++i];
         }
     }
-    return port;
+    return { port, version, bundleId };
 }
 
 function appendLog(logPath: string, msg: string): void {
@@ -195,7 +207,7 @@ function appendLog(logPath: string, msg: string): void {
 }
 
 async function main(): Promise<void> {
-    const httpPort = parseArgs(process.argv);
+    const { port: httpPort, version, bundleId } = parseArgs(process.argv);
     const ipcPort = getIpcPort(httpPort);
     const mcpDir = getMcpTmpDir();
     const lockPath = getLockPath(httpPort);
@@ -307,7 +319,7 @@ async function main(): Promise<void> {
     let authMiddleware: RequestHandler | null = null;
 
     app.get('/health', (_req: Request, res: Response) => {
-        res.json({ ok: true, httpPort, ipcPort, pid: process.pid });
+        res.json({ ok: true, httpPort, ipcPort, pid: process.pid, version, bundleId });
     });
 
     const mcpPostHandler = async (req: Request, res: Response) => {

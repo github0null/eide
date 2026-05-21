@@ -454,6 +454,8 @@ export abstract class CodeBuilder {
         // select linker driver for gcc family toolchain
         if (toolchain.categoryName.toLowerCase() == 'gcc' && 
             toolchain.name != 'ANY_GCC') {
+            if (builderOptions.options.linker === undefined)
+                builderOptions.options.linker = {};
             let tool = builderOptions.options?.linker['$toolName'];
             // we need to detect source files type ?
             if (tool == 'auto' || tool == undefined || tool == null) {

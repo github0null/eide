@@ -22,9 +22,11 @@
     SOFTWARE.
 */
 
+import * as fs from 'fs';
 import * as net from 'net';
 import * as os from 'os';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types';
 
 export interface McpProjectInfo {
@@ -37,6 +39,23 @@ export interface McpHealthResponse {
     httpPort: number;
     ipcPort: number;
     pid: number;
+    version?: string;
+    bundleId?: string;
+}
+
+export function getMcpBundleId(serverJs: string): string {
+    const content = fs.readFileSync(serverJs);
+    const hash = crypto.createHash('sha256');
+    hash.update(content);
+    return hash.digest('hex');
+}
+
+export function isMcpHealthCompatible(
+    health: McpHealthResponse,
+    expectedVersion: string,
+    expectedBundleId: string
+): boolean {
+    return health.version === expectedVersion && health.bundleId === expectedBundleId;
 }
 
 export type IpcMessage =
@@ -47,9 +66,9 @@ export type IpcMessage =
     | { type: 'ping' }
     | { type: 'pong' };
 
-export const idleShutdownMs = 60_000;
-export const ipcConnectTimeoutMs = 15_000;
-export const ipcPingIntervalMs = 30_000;
+export const idleShutdownMs = 30_000;
+export const ipcConnectTimeoutMs = 5_000;
+export const ipcPingIntervalMs = 10_000;
 export const toolCallTimeoutMs = 300_000;
 export const healthCheckTimeoutMs = 3_000;
 

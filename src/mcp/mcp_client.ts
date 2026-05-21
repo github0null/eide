@@ -28,17 +28,20 @@ import * as path from 'path';
 import { ExeModule } from '../../lib/node-utility/Executable';
 import { ProjectExplorer } from '../EIDEProjectExplorer';
 import { GlobalEvent } from '../GlobalEvents';
-import { executeTool } from './mcp_core';
+import { executeTool } from './mcp_impl';
 import {
     attachFrameReader,
     getHealthUrl,
+    getMcpBundleId,
     healthCheckTimeoutMs,
     IpcMessage,
     ipcConnectTimeoutMs,
     ipcPingIntervalMs,
+    isMcpHealthCompatible,
     McpHealthResponse,
     McpProjectInfo,
-    sendMessage
+    sendMessage,
+    getLogPath
 } from './mcp_protocol';
 
 let socket: net.Socket | undefined;
@@ -107,14 +110,112 @@ function waitForProxyHealth(httpPort: number, timeoutMs: number): Promise<McpHea
     });
 }
 
-function spawnProxy(serverJs: string, httpPort: number): void {
+function spawnEnv(): NodeJS.ProcessEnv {
+    const env = { ...process.env };
+    delete env.NODE_OPTIONS;
+    return env;
+}
+
+function spawnProxy(serverJs: string, httpPort: number, version: string, bundleId: string): void {
+
     const exe = new ExeModule();
-    exe.Run(serverJs, ['--port', String(httpPort)], {
-        detached: true,
-        stdio: 'ignore',
-        env: process.env
+
+    const appendLog = (logPath: string, msg: string) => {
+        const line = `[${new Date().toISOString()}] ${msg}\n`;
+        try {
+            fs.appendFileSync(logPath, line);
+        } catch {
+            // ignore
+        }
+    }
+
+    const logPath = getLogPath(httpPort);
+
+    exe.on('close', (info) => {
+        appendLog(logPath, `exited. code=${info.code}`);
     });
-    exe.remove('error', () => { /* noop */ });
+    exe.on('errLine', (line) => {
+        appendLog(logPath, line);
+    });
+    exe.on('error', (err) => {
+        appendLog(logPath, `${err.name}: ${err.message}` + (err.stack ? `\n${err.stack}` : ''));
+    });
+
+    exe.Run(serverJs, [
+        '--port', String(httpPort),
+        '--version', version,
+        '--bundle-id', bundleId
+    ], {
+        detached: true,
+        stdio: 'pipe',
+        env: spawnEnv(),
+        execArgv: []
+    });
+}
+
+async function stopProxy(pid: number): Promise<void> {
+    try {
+        process.kill(pid, 'SIGTERM');
+    } catch {
+        // already stopped
+    }
+}
+
+async function waitForProxyGone(httpPort: number, timeoutMs: number): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+        const health = await checkProxyHealth(httpPort);
+        if (!health) {
+            return;
+        }
+        await new Promise(r => setTimeout(r, 200));
+    }
+
+    const health = await checkProxyHealth(httpPort);
+    if (health) {
+        try {
+            process.kill(health.pid, 'SIGKILL');
+        } catch {
+            // ignore
+        }
+        await new Promise(r => setTimeout(r, 500));
+    }
+}
+
+async function ensureProxyRunning(
+    httpPort: number,
+    serverJs: string,
+    extensionVersion: string,
+    bundleId: string
+): Promise<McpHealthResponse> {
+    let health = await checkProxyHealth(httpPort);
+
+    if (health && !isMcpHealthCompatible(health, extensionVersion, bundleId)) {
+        logInfo(
+            `MCP proxy outdated (running=${health.version ?? 'unknown'}/${health.bundleId ?? 'unknown'}, ` +
+            `expected=${extensionVersion}/${bundleId}), restarting...`
+        );
+        await stopProxy(health.pid);
+        await waitForProxyGone(httpPort, ipcConnectTimeoutMs);
+        health = undefined;
+    }
+
+    if (!health) {
+        spawnProxy(serverJs, httpPort, extensionVersion, bundleId);
+        health = await waitForProxyHealth(httpPort, ipcConnectTimeoutMs);
+        if (!health) {
+            throw new Error('MCP proxy failed to start');
+        }
+    }
+
+    if (!isMcpHealthCompatible(health, extensionVersion, bundleId)) {
+        throw new Error(
+            `MCP proxy version mismatch after restart (running=${health.version}/${health.bundleId}, ` +
+            `expected=${extensionVersion}/${bundleId})`
+        );
+    }
+
+    return health;
 }
 
 async function connectIpc(ipcPort: number): Promise<net.Socket> {
@@ -192,24 +293,22 @@ export function mcpClientInit(explorer: ProjectExplorer, sessionId: string): voi
     instanceId = sessionId;
 }
 
-export async function mcpClientConnect(httpPort: number, extensionPath: string): Promise<void> {
+export async function mcpClientConnect(
+    httpPort: number,
+    extensionPath: string,
+    extensionVersion: string
+): Promise<void> {
     if (!projectExplorer || !instanceId) {
         throw new Error('mcp client not inited');
     }
 
-    let health = await checkProxyHealth(httpPort);
-
-    if (!health) {
-        const serverJs = path.join(extensionPath, 'dist', 'mcp_server.js');
-        if (!fs.existsSync(serverJs)) {
-            throw new Error(`MCP proxy not found: ${serverJs}`);
-        }
-        spawnProxy(serverJs, httpPort);
-        health = await waitForProxyHealth(httpPort, ipcConnectTimeoutMs);
-        if (!health) {
-            throw new Error('MCP proxy failed to start');
-        }
+    const serverJs = path.join(extensionPath, 'dist', 'mcp_server.js');
+    if (!fs.existsSync(serverJs)) {
+        throw new Error(`MCP proxy not found: ${serverJs}`);
     }
+
+    const bundleId = getMcpBundleId(serverJs);
+    const health = await ensureProxyRunning(httpPort, serverJs, extensionVersion, bundleId);
 
     socket = await connectIpc(health.ipcPort);
     setupMessageHandler(socket, projectExplorer);

@@ -389,7 +389,7 @@ function postLaunchHook(extensionCtx: vscode.ExtensionContext) {
         const port = settingManager.getMcpServerPort();
         try {
             mcp.mcpServerInit(port, projectExplorer);
-            mcp.mcpServerStart(port, extensionCtx.extensionPath)
+            mcp.mcpServerStart(port, extensionCtx.extensionPath, extensionCtx.extension.packageJSON.version)
                 .catch(error => GlobalEvent.log_error(error));
         } catch (error) {
             GlobalEvent.log_error(error);
