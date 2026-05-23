@@ -3257,6 +3257,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     onDispose() {
+        this.cancelAllReloadPrompts();
         this.dataProvider.onDispose();
     }
 
@@ -3574,8 +3575,12 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     Close(item: ProjTreeItem) {
-        const uid = this.dataProvider.Close(item.val.projectIndex);
-        GlobalEvent.emit('project.closed', uid);
+        const prj = this.dataProvider.getProjectByIndex(item.val.projectIndex);
+        if (prj) {
+            this.cancelReloadPrompt(prj.getUid());
+            const uid = this.dataProvider.Close(item.val.projectIndex);
+            GlobalEvent.emit('project.closed', uid);
+        }
     }
 
     SaveAll() {
@@ -3637,8 +3642,9 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         prj.on('projectFileChanged', () => this.onProjectFileChanged(prj));
     }
 
-    private __autosaveDisableTimeoutTimer: NodeJS.Timeout | undefined;
-    private reloadPromptDeferred?: { uid: string; resolve: (action: 'yes' | 'later') => void; };
+    private autosaveDisableTimeoutTimer: NodeJS.Timeout | undefined;
+    private reloadPromptDeferreds = new Map<string, (action: 'yes' | 'later') => void>();
+    private reloadPromptProgressActive = new Set<string>();
 
     private async onProjectFileChanged(prj: AbstractProject) {
 
@@ -3649,11 +3655,11 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         // disable autosave
         this.enableAutoSave(false);
 
-        if (this.__autosaveDisableTimeoutTimer) {
-            this.__autosaveDisableTimeoutTimer.refresh();
+        if (this.autosaveDisableTimeoutTimer) {
+            this.autosaveDisableTimeoutTimer.refresh();
         } else {
-            this.__autosaveDisableTimeoutTimer = setTimeout((_this: ProjectExplorer) => {
-                _this.__autosaveDisableTimeoutTimer = undefined;
+            this.autosaveDisableTimeoutTimer = setTimeout((_this: ProjectExplorer) => {
+                _this.autosaveDisableTimeoutTimer = undefined;
                 _this.enableAutoSave(true);
             }, 5 * 60 * 1000, this);
         }
@@ -3663,57 +3669,68 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         // ask user to reload project in tree view
         this.dataProvider.markNeedReload(uid);
         this.dataProvider.UpdateView();
+
+        // avoid stacking progress bars when eide.yml changes repeatedly
+        if (this.reloadPromptProgressActive.has(uid)) {
+            return;
+        }
+        this.reloadPromptProgressActive.add(uid);
+
         const rootItem = this.dataProvider.treeCache.getRootTreeItem(prj);
 
-        await vscode.window.withProgress({
-            location: {
-                viewId: 'cl.eide.view.projects'
-            },
-            title: msg,
-            cancellable: true,
-        }, async (_progress, token) => {
+        try {
+            await vscode.window.withProgress({
+                location: {
+                    viewId: 'cl.eide.view.projects'
+                },
+                title: msg,
+                cancellable: true,
+            }, async (_progress, token) => {
 
-            if (rootItem) {
-                await this.view.reveal(rootItem, { select: false, focus: true, expand: true });
-            }
-
-            const action = await new Promise<'yes' | 'later'>((resolve) => {
-                const cancelListener = token.onCancellationRequested(() => {
-                    cancelListener.dispose();
-                    this.reloadPromptDeferred = undefined;
-                    this.dismissReloadPrompt(uid);
-                    resolve('later');
-                });
-                this.reloadPromptDeferred = {
-                    uid,
-                    resolve: (act) => {
+                const actionPromise = new Promise<'yes' | 'later'>((resolve) => {
+                    const cancelListener = token.onCancellationRequested(() => {
                         cancelListener.dispose();
+                        this.reloadPromptDeferreds.delete(uid);
+                        this.dismissReloadPrompt(uid);
+                        resolve('later');
+                    });
+                    this.reloadPromptDeferreds.set(uid, (act) => {
+                        cancelListener.dispose();
+                        this.reloadPromptDeferreds.delete(uid);
                         resolve(act);
-                    }
-                };
+                    });
+                });
+
+                if (rootItem) {
+                    await this.view.reveal(rootItem, { select: false, focus: true, expand: true });
+                }
+
+                const action = await actionPromise;
+
+                if (token.isCancellationRequested || action === 'later') {
+                    this.dismissReloadPrompt(uid);
+                    return;
+                }
+
+                this.clearAutosaveDisableTimer();
+                this.enableAutoSave(true);
+
+                if (token.isCancellationRequested) {
+                    return;
+                }
+
+                await this.reloadProject(uid, false);
             });
-            this.reloadPromptDeferred = undefined;
-
-            if (token.isCancellationRequested || action === 'later') {
-                this.dismissReloadPrompt(uid);
-                return;
-            }
-
-            this.clearAutosaveDisableTimer();
-            this.enableAutoSave(true);
-
-            if (token.isCancellationRequested) {
-                return;
-            }
-
-            await this.reloadProject(uid, false);
-        });
+        } finally {
+            this.reloadPromptProgressActive.delete(uid);
+            this.reloadPromptDeferreds.delete(uid);
+        }
     }
 
     private clearAutosaveDisableTimer() {
-        if (this.__autosaveDisableTimeoutTimer) {
-            clearTimeout(this.__autosaveDisableTimeoutTimer);
-            this.__autosaveDisableTimeoutTimer = undefined;
+        if (this.autosaveDisableTimeoutTimer) {
+            clearTimeout(this.autosaveDisableTimeoutTimer);
+            this.autosaveDisableTimeoutTimer = undefined;
         }
     }
 
@@ -3730,9 +3747,23 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         this.enableAutoSave(true);
     }
 
+    private cancelReloadPrompt(uid: string) {
+        this.resolveReloadPrompt(uid, 'later');
+        this.reloadPromptProgressActive.delete(uid);
+    }
+
+    private cancelAllReloadPrompts() {
+        const uids = new Set([...this.reloadPromptDeferreds.keys(), ...this.reloadPromptProgressActive]);
+        for (const uid of uids) {
+            this.cancelReloadPrompt(uid);
+        }
+    }
+
     private resolveReloadPrompt(uid: string, action: 'yes' | 'later') {
-        if (this.reloadPromptDeferred?.uid === uid) {
-            this.reloadPromptDeferred.resolve(action);
+        const resolve = this.reloadPromptDeferreds.get(uid);
+        if (resolve) {
+            this.reloadPromptDeferreds.delete(uid);
+            resolve(action);
         }
     }
 
@@ -3744,7 +3775,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             return false;
         }
 
-        this.resolveReloadPrompt(uid, 'later');
+        this.cancelReloadPrompt(uid);
 
         const workspaceFile = this.dataProvider.getProjectByIndex(idx).getWorkspaceFile();
         this.dataProvider.Close(idx);
@@ -3771,6 +3802,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     private async onProjectClosed(uid: string | undefined) {
 
         if (!uid) return;
+
+        this.cancelReloadPrompt(uid);
 
         // clear vscode diags
         if (this.compiler_diags.has(uid)) {
