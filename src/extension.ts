@@ -415,7 +415,7 @@ async function checkAndInstallBuiltPyPkgs() {
         ? NodePath.join(NodePath.dirname(py3), 'Lib', 'site-packages', 'memap')
         : NodePath.join(resManager.getLegacyBuilderDir().path, 'utils', 'memap');
     if (File.IsDir(memapPath)) {
-        const patchVer = 1;
+        const patchVer = 2;
         const patchFile = File.from(memapPath, '.patch');
         let curVer = -1;
         if (patchFile.IsFile())
@@ -1865,10 +1865,11 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
                                 .execFileSync(py3, ['-m', 'memap', '-t', memapTyp, '-d', vInfo.treeDepth.toString(), vInfo.mapPath])
                                 .toString().split(/\r\n|\n/);
                         } else {
-                            const memapRoot = ResManager.GetInstance().getLegacyBuilderDir().path + File.sep + 'utils';
-                            const command = `python memap -t ${memapTyp} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`;
+                            // PYTHONPATH="/home/xxx/.eide/bin/builder/utils/memap" python -m memap -t GCC_ARM -d 100 "/home/xxx/build/Debug/stm32f1xx_gcc.map"
+                            const memapPkgDir = File.from(ResManager.GetInstance().getLegacyBuilderDir().path, 'utils', 'memap');
+                            const command = `PYTHONPATH="${memapPkgDir.path}" python -m memap -t ${memapTyp} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`;
                             lines = ChildProcess
-                                .execSync(command, { cwd: memapRoot })
+                                .execSync(command, { cwd: memapPkgDir.dir })
                                 .toString().split(/\r\n|\n/);
                         }
                     }

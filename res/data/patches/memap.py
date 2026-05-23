@@ -20,10 +20,10 @@ limitations under the License.
 from __future__ import print_function, division, absolute_import
 
 from abc import abstractmethod, ABCMeta
-from sys import stdout, exit, argv, path
 from os import sep
 from os.path import (basename, dirname, join, relpath, abspath, commonprefix,
                      splitext, exists, isabs, normpath)
+import sys
 import re
 import csv
 import json
@@ -36,11 +36,18 @@ from jinja2 import FileSystemLoader, StrictUndefined
 from jinja2.environment import Environment
 from future.utils import with_metaclass
 
-from .utils import (
-    argparse_filestring_type,
-    argparse_lowercase_hyphen_type,
-    argparse_uppercase_type
-)  # noqa: E402
+if sys.platform == "win32":
+    from .utils import (
+        argparse_filestring_type,
+        argparse_lowercase_hyphen_type,
+        argparse_uppercase_type
+    )  # noqa: E402
+else:
+    from tools.utils import (
+        argparse_filestring_type,
+        argparse_lowercase_hyphen_type,
+        argparse_uppercase_type
+    )  # noqa: E402
 
 TOOLCHAIN_BINDIR=None
 TOOLCHAIN_ROOTDIR=None
@@ -638,7 +645,7 @@ class MemapParser(object):
             if file_output:
                 file_desc = open(file_output, 'w')
             else:
-                file_desc = stdout
+                file_desc = sys.stdout
         except IOError as error:
             print("I/O error({0}): {1}".format(error.errno, error.strerror))
             return False
@@ -649,7 +656,7 @@ class MemapParser(object):
                    'table': self.generate_table}[export_format]
         output = to_call(file_desc)
 
-        if file_desc is not stdout:
+        if file_desc is not sys.stdout:
             file_desc.close()
 
         return output
@@ -963,9 +970,9 @@ def main():
     parser.add_argument('-v', '--version', action='version', version=version)
 
     # Parse/run command
-    if len(argv) <= 1:
+    if len(sys.argv) <= 1:
         parser.print_help()
-        exit(1)
+        sys.exit(1)
 
     args = parser.parse_args()
 
@@ -983,7 +990,7 @@ def main():
                     TOOLCHAIN_BINDIR = dirname(mapViewData['compilerPath'])
                     TOOLCHAIN_ROOTDIR = dirname(TOOLCHAIN_BINDIR)
         if memap.parse(args.file, args.toolchain) is False:
-            exit(0)
+            sys.exit(0)
 
     if args.depth is None:
         depth = 2  # default depth level
@@ -1004,7 +1011,7 @@ def main():
     if args.export == 'table' and returned_string:
         print(returned_string)
 
-    exit(0)
+    sys.exit(0)
 
 
 if __name__ == "__main__":
