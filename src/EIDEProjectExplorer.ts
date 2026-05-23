@@ -205,7 +205,11 @@ enum TreeItemType {
     OUTPUT_FILE_ITEM,
 
     ACTIVED_ITEM,
-    ACTIVED_GROUP
+    ACTIVED_GROUP,
+
+    RELOAD_ROOT,
+    RELOAD_YES_ITEM,
+    RELOAD_LATER_ITEM
 }
 
 function getTreeItemTypeName(typ: TreeItemType): string {
@@ -315,7 +319,7 @@ export class ProjTreeItem extends vscode.TreeItem {
         // setup unique id
         if (prjUid) {
             // tree root's id is project uid
-            if (type == TreeItemType.SOLUTION) {
+            if (type == TreeItemType.SOLUTION || type == TreeItemType.RELOAD_ROOT) {
                 this.id = prjUid;
             }
             // tree sub item's id is their type
@@ -566,6 +570,15 @@ export class ProjTreeItem extends vscode.TreeItem {
             case TreeItemType.OUTPUT_FOLDER:
                 name = 'folder_type_binary.svg';
                 break;
+            case TreeItemType.RELOAD_ROOT:
+                name = 'StatusWarning_16x.svg';
+                break;
+            case TreeItemType.RELOAD_YES_ITEM:
+                name = new vscode.ThemeIcon('check');
+                break;
+            case TreeItemType.RELOAD_LATER_ITEM:
+                name = new vscode.ThemeIcon('close');
+                break;
             default:
                 {
                     // if it's a source file, get icon
@@ -673,6 +686,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
     // project tree item refresh cache
     treeCache: ProjectItemCache = new ProjectItemCache();
+
+    private pendingReloadUids = new Set<string>();
 
     onDidChangeTreeData?: vscode.Event<ProjTreeItem | null | undefined> | undefined;
     dataChangedEvent: vscode.EventEmitter<ProjTreeItem | undefined>;
@@ -997,6 +1012,39 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         this.treeCache.clear();
     }
 
+    markNeedReload(uid: string) {
+        this.pendingReloadUids.add(uid);
+        this.syncReloadPendingContext();
+    }
+
+    clearNeedReload(uid: string) {
+        this.pendingReloadUids.delete(uid);
+        this.syncReloadPendingContext();
+    }
+
+    private syncReloadPendingContext() {
+        const pending = this.pendingReloadUids.size > 0;
+        void vscode.commands.executeCommand('setContext', 'cl.eide.reloadPending', pending);
+        // disable statusbar buttons when pending, 
+        // because they will cause error if click when project is in reloading
+        const buildBar = StatusBarManager.getInstance().get('build');
+        const flashBar = StatusBarManager.getInstance().get('flash');
+        const projectBar = StatusBarManager.getInstance().get('project');
+        if (buildBar) {
+            buildBar.command = pending ? undefined : '_cl.eide.statusbar.build';
+        }
+        if (flashBar) {
+            flashBar.command = pending ? undefined : '_cl.eide.statusbar.flash';
+        }
+        if (projectBar) {
+            projectBar.command = pending ? undefined : '_cl.eide.statusbar.switch-target';
+        }
+    }
+
+    isNeedReload(uid: string): boolean {
+        return this.pendingReloadUids.has(uid);
+    }
+
     isRootWorkspaceProject(prj: AbstractProject): boolean {
         const rootDir = prj.GetRootDir();
         const wsDir = WorkspaceManager.getInstance().getWorkspaceRoot();
@@ -1020,8 +1068,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
     getParent(element: ProjTreeItem): vscode.ProviderResult<ProjTreeItem> {
 
-        if (element.type == TreeItemType.SOLUTION)
+        if (element.type == TreeItemType.SOLUTION || element.type == TreeItemType.RELOAD_ROOT)
             return undefined;
+
+        if (element.type == TreeItemType.RELOAD_YES_ITEM || element.type == TreeItemType.RELOAD_LATER_ITEM)
+            return this.treeCache.getRootTreeItem(this.GetProjectByIndex(element.val.projectIndex));
 
         if (ProjTreeItem.PROJ_ROOT_ITEM_TYPES.includes(element.type))
             return this.treeCache.getRootTreeItem(this.GetProjectByIndex(element.val.projectIndex));
@@ -1041,6 +1092,18 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         if (element === undefined) {
 
             this.prjList.forEach((project, projectIndex) => {
+
+                if (this.isNeedReload(project.getUid())) {
+                    const msg = view_str$prompt$need_reload_project.replace('{}', project.getProjectName());
+                    const cItem = new ProjTreeItem(TreeItemType.RELOAD_ROOT, {
+                        value: msg,
+                        projectIndex: projectIndex,
+                        tooltip: msg,
+                    }, project.getUid());
+                    iList.push(cItem);
+                    this.treeCache.setTreeItem(project, cItem, true);
+                    return;
+                }
 
                 // --- init root Treeitem
 
@@ -1128,6 +1191,20 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             const prjExtraArgs = project.getSourceExtraArgsCfg();
 
             switch (element.type) {
+                case TreeItemType.RELOAD_ROOT:
+                    {
+                        iList.push(new ProjTreeItem(TreeItemType.RELOAD_YES_ITEM, {
+                            label: txt_yes,
+                            value: txt_yes,
+                            projectIndex: element.val.projectIndex,
+                        }, project.getUid()));
+                        iList.push(new ProjTreeItem(TreeItemType.RELOAD_LATER_ITEM, {
+                            label: txt_no,
+                            value: txt_no,
+                            projectIndex: element.val.projectIndex,
+                        }, project.getUid()));
+                    }
+                    break;
                 case TreeItemType.SOLUTION:
                     {
                         const itemTypes: TreeItemType[] = [
@@ -2932,6 +3009,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
     }
 
     CloseAll() {
+        this.pendingReloadUids.clear();
+        this.syncReloadPendingContext();
         this.prjList.forEach(sln => sln.Close());
         this.prjList = [];
     }
@@ -3016,6 +3095,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
         const sln = this.prjList[index];
 
+        this.clearNeedReload(sln.getUid());
         sln.Close();
         this.prjList.splice(index, 1);
         this.UpdateView();
@@ -3558,9 +3638,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     private __autosaveDisableTimeoutTimer: NodeJS.Timeout | undefined;
+    private reloadPromptDeferred?: { uid: string; resolve: (action: 'yes' | 'later') => void; };
+
     private async onProjectFileChanged(prj: AbstractProject) {
 
-        const nam = prj.getProjectName();
         const uid = prj.getUid();
 
         prj.clearPendingSave();
@@ -3577,20 +3658,82 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }, 5 * 60 * 1000, this);
         }
 
-        // ask user to reload project
         const msg = view_str$prompt$need_reload_project.replace('{}', prj.getProjectName());
-        const ans = await vscode.window.showInformationMessage(msg, 'Yes', 'No');
-        if (ans == 'Yes') {
-            await this.reloadProject(uid, true);
-        }
 
+        // ask user to reload project in tree view
+        this.dataProvider.markNeedReload(uid);
+        this.dataProvider.UpdateView();
+        const rootItem = this.dataProvider.treeCache.getRootTreeItem(prj);
+
+        await vscode.window.withProgress({
+            location: {
+                viewId: 'cl.eide.view.projects'
+            },
+            title: msg,
+            cancellable: true,
+        }, async (_progress, token) => {
+
+            if (rootItem) {
+                await this.view.reveal(rootItem, { select: false, focus: true, expand: true });
+            }
+
+            const action = await new Promise<'yes' | 'later'>((resolve) => {
+                const cancelListener = token.onCancellationRequested(() => {
+                    cancelListener.dispose();
+                    this.reloadPromptDeferred = undefined;
+                    this.dismissReloadPrompt(uid);
+                    resolve('later');
+                });
+                this.reloadPromptDeferred = {
+                    uid,
+                    resolve: (act) => {
+                        cancelListener.dispose();
+                        resolve(act);
+                    }
+                };
+            });
+            this.reloadPromptDeferred = undefined;
+
+            if (token.isCancellationRequested || action === 'later') {
+                this.dismissReloadPrompt(uid);
+                return;
+            }
+
+            this.clearAutosaveDisableTimer();
+            this.enableAutoSave(true);
+
+            if (token.isCancellationRequested) {
+                return;
+            }
+
+            await this.reloadProject(uid, false);
+        });
+    }
+
+    private clearAutosaveDisableTimer() {
         if (this.__autosaveDisableTimeoutTimer) {
             clearTimeout(this.__autosaveDisableTimeoutTimer);
             this.__autosaveDisableTimeoutTimer = undefined;
         }
+    }
 
-        // enable auto save
+    private restoreProjectTreeBeforeReload(uid: string) {
+        this.dataProvider.clearNeedReload(uid);
+        if (this.dataProvider.getIndexByProjectUid(uid) !== -1) {
+            this.dataProvider.UpdateView();
+        }
+    }
+
+    private dismissReloadPrompt(uid: string) {
+        this.restoreProjectTreeBeforeReload(uid);
+        this.clearAutosaveDisableTimer();
         this.enableAutoSave(true);
+    }
+
+    private resolveReloadPrompt(uid: string, action: 'yes' | 'later') {
+        if (this.reloadPromptDeferred?.uid === uid) {
+            this.reloadPromptDeferred.resolve(action);
+        }
     }
 
     async reloadProject(uid: string, restartWorkspace: boolean): Promise<boolean> {
@@ -3600,6 +3743,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             GlobalEvent.show_msgbox('Error', `Project '${uid}' is not actived !`);
             return false;
         }
+
+        this.resolveReloadPrompt(uid, 'later');
 
         const workspaceFile = this.dataProvider.getProjectByIndex(idx).getWorkspaceFile();
         this.dataProvider.Close(idx);
@@ -7760,6 +7905,22 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     private prev_click_info: ItemClickInfo | undefined = undefined;
 
     private async OnTreeItemClick(item: ProjTreeItem) {
+
+        if (item.type === TreeItemType.RELOAD_YES_ITEM) {
+            const prj = this.getProjectByTreeItem(item);
+            if (prj) {
+                this.resolveReloadPrompt(prj.getUid(), 'yes');
+            }
+            return;
+        }
+
+        if (item.type === TreeItemType.RELOAD_LATER_ITEM) {
+            const prj = this.getProjectByTreeItem(item);
+            if (prj) {
+                this.resolveReloadPrompt(prj.getUid(), 'later');
+            }
+            return;
+        }
 
         if (ProjTreeItem.isFileItem(item.type)) {
 

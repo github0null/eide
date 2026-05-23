@@ -560,6 +560,7 @@
                 "command": "eide.debug.start",
                 "category": "eide",
                 "title": "%eide.project.debug.start%",
+                "enablement": "cl.eide.projectActived && !cl.eide.reloadPending",
                 "icon": {
                     "dark": "./res/icon/Run_16x.svg",
                     "light": "./res/icon/Run_16x.svg"
@@ -569,6 +570,7 @@
                 "command": "eide.debug.start.attach",
                 "category": "eide",
                 "title": "%eide.project.debug.start.attach%",
+                "enablement": "cl.eide.projectActived && !cl.eide.reloadPending",
                 "icon": {
                     "dark": "./res/icon/Run_blue_16x.svg",
                     "light": "./res/icon/Run_blue_16x.svg"
@@ -603,6 +605,7 @@
                 "command": "eide.project.build",
                 "category": "eide",
                 "title": "%eide.project.build%",
+                "enablement": "cl.eide.projectActived && !cl.eide.reloadPending",
                 "icon": {
                     "dark": "./res/icon/BuildSelection_16x.svg",
                     "light": "./res/icon/BuildSelection_16x.svg"
@@ -612,6 +615,7 @@
                 "command": "eide.project.rebuild",
                 "category": "eide",
                 "title": "%eide.project.rebuild%",
+                "enablement": "cl.eide.projectActived && !cl.eide.reloadPending",
                 "icon": {
                     "dark": "./res/icon/BuildSolution_16x.svg",
                     "light": "./res/icon/BuildSolution_16x.svg"
@@ -621,6 +625,7 @@
                 "command": "eide.project.clean",
                 "category": "eide",
                 "title": "%eide.project.clean%",
+                "enablement": "cl.eide.projectActived && !cl.eide.reloadPending",
                 "icon": {
                     "dark": "./res/icon/clean_dark_16x.svg",
                     "light": "./res/icon/clean_light_16x.svg"
@@ -630,6 +635,7 @@
                 "command": "eide.project.uploadToDevice",
                 "title": "%eide.project.upload%",
                 "category": "eide",
+                "enablement": "cl.eide.projectActived && !cl.eide.reloadPending",
                 "icon": {
                     "dark": "./res/icon/TransferDownload_16x.svg",
                     "light": "./res/icon/TransferDownload_16x.svg"
@@ -704,6 +710,7 @@
             {
                 "command": "_cl.eide.workspace.build",
                 "title": "%eide.workspace.build%",
+                "enablement": "!cl.eide.reloadPending",
                 "icon": {
                     "dark": "./res/icon/BuildSelection_16x.svg",
                     "light": "./res/icon/BuildSelection_16x.svg"
@@ -712,6 +719,7 @@
             {
                 "command": "_cl.eide.workspace.rebuild",
                 "title": "%eide.workspace.rebuild%",
+                "enablement": "!cl.eide.reloadPending",
                 "icon": {
                     "dark": "./res/icon/BuildSolution_16x.svg",
                     "light": "./res/icon/BuildSolution_16x.svg"
@@ -856,6 +864,7 @@
             {
                 "command": "_cl.eide.project.saveAll",
                 "title": "%eide.project.save.all%",
+                "enablement": "!cl.eide.reloadPending",
                 "icon": {
                     "dark": "./res/icon/SaveAll_16x.svg",
                     "light": "./res/icon/SaveAll_16x.svg"
@@ -1169,22 +1178,22 @@
             {
                 "command": "eide.project.flash.erase.all",
                 "key": "ctrl+alt+e",
-                "when": "cl.eide.projectActived"
+                "when": "cl.eide.projectActived && !cl.eide.reloadPending"
             },
             {
                 "command": "eide.project.uploadToDevice",
                 "key": "ctrl+alt+d",
-                "when": "cl.eide.projectActived"
+                "when": "cl.eide.projectActived && !cl.eide.reloadPending"
             },
             {
                 "command": "eide.project.rebuild",
                 "key": "ctrl+alt+f7",
-                "when": "cl.eide.projectActived"
+                "when": "cl.eide.projectActived && !cl.eide.reloadPending"
             },
             {
                 "command": "eide.project.build",
                 "key": "f7",
-                "when": "cl.eide.projectActived && !isInDiffEditor"
+                "when": "cl.eide.projectActived && !isInDiffEditor && !cl.eide.reloadPending"
             },
             {
                 "command": "_cl.eide.project.static-check.cppcheck",
