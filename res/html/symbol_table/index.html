@@ -227,10 +227,10 @@
     }
 
     .col-type,
-    .col-loca {
+    .col-location {
       font-size: 11px;
       opacity: 0.85;
-      max-width: 160px;
+      max-width: 150px;
       overflow: hidden;
       text-overflow: ellipsis;
     }
@@ -319,7 +319,7 @@
         id="searchInput"
         class="search-input"
         type="text"
-        placeholder="Filter by name, type ..."
+        placeholder="Filter by name, location ..."
       />
       <span id="countBadge" class="badge">0 symbols</span>
     </div>
@@ -335,6 +335,7 @@
             <th class="sortable" data-key="size">Size <span class="sort-indicator">↕</span></th>
             <th class="sortable" data-key="type">Type <span class="sort-indicator">↕</span></th>
             <th class="sortable" data-key="name">Name <span class="sort-indicator">↕</span></th>
+            <th class="sortable" data-key="location">Location <span class="sort-indicator">↕</span></th>
           </tr>
           </thead>
           <tbody id="tableBody">
@@ -415,6 +416,17 @@
     return Number.isNaN(v) ? 0 : v;
   }
 
+  /** 从 loca 提取 filename:line:column 用于展示 */
+  function formatLocation(loca) {
+    if (!loca || loca === "--" || loca === "---") return "";
+    const m = /([^/\\]+?\.(?:c|cpp|cxx|c\+\+|cc|h|hpp|s|asm|sx|inc)):(\d+)(?::(\d+))?$/i.exec(loca);
+    if (!m) return "";
+    const filename = m[1];
+    const line = m[2];
+    const column = m[3] ?? "0";
+    return `${filename}:${line}:${column}`;
+  }
+
   const tableBody = document.getElementById("tableBody");
   const emptyState = document.getElementById("emptyState");
   const countBadge = document.getElementById("countBadge");
@@ -454,11 +466,11 @@
   function applyFilter(list) {
     const t = filterText.trim().toLowerCase();
     if (!t) return list;
-    return list.filter(s =>
-      (s.name && s.name.toLowerCase().includes(t)) ||
-      (s.type && s.type.toLowerCase().includes(t)) ||
-      (s.loca && s.loca.toLowerCase().includes(t))
-    );
+    return list.filter(s => {
+      const location = formatLocation(s.loca);
+      return (s.name && s.name.toLowerCase().includes(t)) ||
+             (location && location.toLowerCase().includes(t));
+    });
   }
 
   function applySort(list) {
@@ -483,6 +495,10 @@
         case "name":
           av = a.name || "";
           bv = b.name || "";
+          return av.localeCompare(bv) * dirFactor;
+        case "location":
+          av = formatLocation(a.loca);
+          bv = formatLocation(b.loca);
           return av.localeCompare(bv) * dirFactor;
         default:
           return 0;
@@ -574,11 +590,14 @@
         // 把 loca 信息挂在行元素上，供右键菜单回调使用
         tr.dataset.loca = s.loca || "";
 
+        const location = formatLocation(s.loca);
+
         tr.innerHTML = `
           <td class="col-addr" title="${s.addr || ""}">${s.addr || ""}</td>
           <td class="col-size" style="--size-fill:${percent}" title="${s.size || ""}"><span>${s.size || ""}</span></td>
           <td class="col-type" title="${s.type || ""}">${s.type || ""}</td>
           <td class="col-name" title="${s.name || ""}">${s.name || ""}</td>
+          <td class="col-location" title="${location}">${location}</td>
         `;
 
         // 为每一行添加右键菜单

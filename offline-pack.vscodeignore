@@ -44,3 +44,4 @@ note.md
 
 # shell script
 *.sh
+.envrc

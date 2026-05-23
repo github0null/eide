@@ -37,7 +37,8 @@
 * 内置多种实用工具，`CMSIS Config Wizard UI`, `反汇编查看`，`程序资源视图` ...
 * 内置 C/C++ 插件的 `C/C++ IntelliSense Provider`，**无需配置** `c_cpp_properties.json` 即可获得源码跳转，补全提示功能。
 * 内置 Msys Unix Shell 环境，方便执行 shell 命令或脚本
-* 内置 callgraph 调用图可视化工具（仅限gcc编译器）
+* 内置 Callgraph 调用图可视化工具（仅限gcc编译器）
+* 支持 MCP Tools 调用内置插件的基本功能（需在设置中开启MCP服务器，默认关闭）. [Skills](https://gist.github.com/github0null/5c08fb61bb4a705f1dc9b03dcb980f93)
 
 ***
 
