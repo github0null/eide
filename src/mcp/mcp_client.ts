@@ -30,6 +30,7 @@ import { ProjectExplorer } from '../EIDEProjectExplorer';
 import { GlobalEvent } from '../GlobalEvents';
 import { executeTool } from './mcp_impl';
 import {
+    appendMcpLog,
     attachFrameReader,
     getHealthUrl,
     getMcpBundleId,
@@ -120,25 +121,16 @@ function spawnProxy(serverJs: string, httpPort: number, version: string, bundleI
 
     const exe = new ExeModule();
 
-    const appendLog = (logPath: string, msg: string) => {
-        const line = `[${new Date().toISOString()}] ${msg}\n`;
-        try {
-            fs.appendFileSync(logPath, line);
-        } catch {
-            // ignore
-        }
-    }
-
     const logPath = getLogPath(httpPort);
 
     exe.on('close', (info) => {
-        appendLog(logPath, `exited. code=${info.code}`);
+        appendMcpLog(logPath, `exited. code=${info.code}`);
     });
     exe.on('errLine', (line) => {
-        appendLog(logPath, line);
+        appendMcpLog(logPath, line);
     });
     exe.on('error', (err) => {
-        appendLog(logPath, `${err.name}: ${err.message}` + (err.stack ? `\n${err.stack}` : ''));
+        appendMcpLog(logPath, `${err.name}: ${err.message}` + (err.stack ? `\n${err.stack}` : ''));
     });
 
     exe.Run(serverJs, [

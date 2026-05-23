@@ -35,6 +35,7 @@ import * as FileLock from '../../lib/node-utility/FileLock';
 import { File } from '../../lib/node-utility/File';
 import { createMcpServer } from './mcp_proxy_tools';
 import {
+    appendMcpLog,
     attachFrameReader,
     getIpcPort,
     getLockPath,
@@ -197,15 +198,6 @@ function parseArgs(argv: string[]): ProxyArgs {
     return { port, version, bundleId };
 }
 
-function appendLog(logPath: string, msg: string): void {
-    const line = `[${new Date().toISOString()}] ${msg}\n`;
-    try {
-        fs.appendFileSync(logPath, line);
-    } catch {
-        // ignore
-    }
-}
-
 async function main(): Promise<void> {
     const { port: httpPort, version, bundleId } = parseArgs(process.argv);
     const ipcPort = getIpcPort(httpPort);
@@ -222,9 +214,9 @@ async function main(): Promise<void> {
         process.exit(1);
     }
 
-    const logInfo = (msg: string) => appendLog(logPath, msg);
+    const logInfo = (msg: string) => appendMcpLog(logPath, msg);
     const logError = (msg: string, err?: unknown) => {
-        appendLog(logPath, err ? `${msg} ${err}` : msg);
+        appendMcpLog(logPath, err ? `${msg} ${err}` : msg);
     };
 
     const instanceRouter = new InstanceRouter();
@@ -368,9 +360,13 @@ async function main(): Promise<void> {
                     }
                 };
 
-                const server = createMcpServer((tool, args) =>
-                    instanceRouter.delegateToolCall(tool, args, boundInstanceId)
-                );
+                const server = createMcpServer(async (tool, args) => {
+                    const started = performance.now();
+                    const result = await instanceRouter.delegateToolCall(tool, args, boundInstanceId);
+                    const sec = ((performance.now() - started) / 1000).toFixed(2);
+                    logInfo(`call tool "${tool}" -> ${result.isError ? 'fail' : 'ok'}, ${sec}sec`);
+                    return result;
+                });
                 await server.connect(transport);
                 await transport.handleRequest(req, res, req.body);
                 return;

@@ -94,6 +94,37 @@ export function getLogPath(httpPort: number): string {
     return path.join(getMcpTmpDir(), `mcp_proxy_${httpPort}.log`);
 }
 
+export const mcpLogMaxSizeBytes = 200 * 1024;
+
+export function rotateLogIfNeeded(logPath: string): void {
+    try {
+        if (!fs.existsSync(logPath)) {
+            return;
+        }
+        const stat = fs.statSync(logPath);
+        if (stat.size <= mcpLogMaxSizeBytes) {
+            return;
+        }
+        const dir = path.dirname(logPath);
+        const ext = path.extname(logPath);
+        const base = path.basename(logPath, ext);
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        fs.renameSync(logPath, path.join(dir, `${base}.${timestamp}${ext}`));
+    } catch {
+        // ignore
+    }
+}
+
+export function appendMcpLog(logPath: string, msg: string): void {
+    const line = `[${new Date().toISOString()}] ${msg}\n`;
+    try {
+        rotateLogIfNeeded(logPath);
+        fs.appendFileSync(logPath, line);
+    } catch {
+        // ignore
+    }
+}
+
 export function encodeMessage(msg: IpcMessage): Buffer {
     const body = Buffer.from(JSON.stringify(msg), 'utf8');
     const header = Buffer.alloc(4);
