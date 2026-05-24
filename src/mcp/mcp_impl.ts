@@ -112,9 +112,10 @@ export async function executeTool(
             const prj = resolveProject(explorer, uid);
             if (!prj)
                 return projectNotFound(uid);
+            await new Promise(r => setTimeout(r, 1500)); // delay before reload project.
             const ok = await explorer.reloadProject(prj.getUid(), false);
             const result = makeTextResult(ok, ok ? 'Succeed.' : 'Failed.');
-            await new Promise(r => setTimeout(r, ok ? 3000 : 500)); // delay after reload project.
+            await new Promise(r => setTimeout(r, ok ? 2000 : 500)); // delay after reload project.
             return result;
         }
         case 'eide_switch_target': {

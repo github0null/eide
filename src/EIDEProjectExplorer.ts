@@ -209,7 +209,7 @@ enum TreeItemType {
 
     RELOAD_ROOT,
     RELOAD_YES_ITEM,
-    RELOAD_LATER_ITEM
+    RELOAD_NO_ITEM
 }
 
 function getTreeItemTypeName(typ: TreeItemType): string {
@@ -296,6 +296,8 @@ export class ProjTreeItem extends vscode.TreeItem {
         TreeItemType.UPLOAD_OPTION,
         TreeItemType.DEPENDENCE,
         TreeItemType.SETTINGS,
+        TreeItemType.RELOAD_YES_ITEM,
+        TreeItemType.RELOAD_NO_ITEM
     ];
 
     type: TreeItemType;
@@ -576,7 +578,7 @@ export class ProjTreeItem extends vscode.TreeItem {
             case TreeItemType.RELOAD_YES_ITEM:
                 name = new vscode.ThemeIcon('check');
                 break;
-            case TreeItemType.RELOAD_LATER_ITEM:
+            case TreeItemType.RELOAD_NO_ITEM:
                 name = new vscode.ThemeIcon('close');
                 break;
             default:
@@ -687,7 +689,13 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
     // project tree item refresh cache
     treeCache: ProjectItemCache = new ProjectItemCache();
 
-    private pendingReloadUids = new Set<string>();
+    private needReload?: (uid: string) => boolean;
+    private hasReloadPending?: () => boolean;
+
+    bindReloadChecker(needReload: (uid: string) => boolean, hasAny: () => boolean) {
+        this.needReload = needReload;
+        this.hasReloadPending = hasAny;
+    }
 
     onDidChangeTreeData?: vscode.Event<ProjTreeItem | null | undefined> | undefined;
     dataChangedEvent: vscode.EventEmitter<ProjTreeItem | undefined>;
@@ -1012,18 +1020,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         this.treeCache.clear();
     }
 
-    markNeedReload(uid: string) {
-        this.pendingReloadUids.add(uid);
-        this.syncReloadPendingContext();
-    }
-
-    clearNeedReload(uid: string) {
-        this.pendingReloadUids.delete(uid);
-        this.syncReloadPendingContext();
-    }
-
-    private syncReloadPendingContext() {
-        const pending = this.pendingReloadUids.size > 0;
+    syncReloadPendingContext() {
+        const pending = this.hasReloadPending?.() ?? false;
         void vscode.commands.executeCommand('setContext', 'cl.eide.reloadPending', pending);
         // disable statusbar buttons when pending, 
         // because they will cause error if click when project is in reloading
@@ -1042,7 +1040,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
     }
 
     isNeedReload(uid: string): boolean {
-        return this.pendingReloadUids.has(uid);
+        return this.needReload?.(uid) ?? false;
     }
 
     isRootWorkspaceProject(prj: AbstractProject): boolean {
@@ -1071,11 +1069,8 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         if (element.type == TreeItemType.SOLUTION || element.type == TreeItemType.RELOAD_ROOT)
             return undefined;
 
-        if (element.type == TreeItemType.RELOAD_YES_ITEM || element.type == TreeItemType.RELOAD_LATER_ITEM)
-            return this.treeCache.getRootTreeItem(this.GetProjectByIndex(element.val.projectIndex));
-
         if (ProjTreeItem.PROJ_ROOT_ITEM_TYPES.includes(element.type))
-            return this.treeCache.getRootTreeItem(this.GetProjectByIndex(element.val.projectIndex));
+            return this.treeCache.getRootTreeItem(this.getProjectByIndex(element.val.projectIndex));
 
         /* 除了几个根节点之外，其他的忽略，getParent 主要用于 {@link TreeView.reveal reveal} API. */
         return undefined;
@@ -1094,14 +1089,29 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             this.prjList.forEach((project, projectIndex) => {
 
                 if (this.isNeedReload(project.getUid())) {
+                    // root
                     const msg = view_str$prompt$need_reload_project.replace('{}', project.getProjectName());
-                    const cItem = new ProjTreeItem(TreeItemType.RELOAD_ROOT, {
+                    const rootItem = new ProjTreeItem(TreeItemType.RELOAD_ROOT, {
                         value: msg,
                         projectIndex: projectIndex,
                         tooltip: msg,
                     }, project.getUid());
-                    iList.push(cItem);
-                    this.treeCache.setTreeItem(project, cItem, true);
+                    iList.push(rootItem);
+                    this.treeCache.setTreeItem(project, rootItem, true);
+                    // child: ok item
+                    const okItem = new ProjTreeItem(TreeItemType.RELOAD_YES_ITEM, {
+                        label: txt_yes,
+                        value: txt_yes,
+                        projectIndex: projectIndex,
+                    }, project.getUid())
+                    this.treeCache.setTreeItem(project, okItem, false);
+                    // child: no item
+                    const noItem = new ProjTreeItem(TreeItemType.RELOAD_NO_ITEM, {
+                        label: txt_no,
+                        value: txt_no,
+                        projectIndex: projectIndex,
+                    }, project.getUid())
+                    this.treeCache.setTreeItem(project, noItem, false);
                     return;
                 }
 
@@ -1193,16 +1203,17 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             switch (element.type) {
                 case TreeItemType.RELOAD_ROOT:
                     {
-                        iList.push(new ProjTreeItem(TreeItemType.RELOAD_YES_ITEM, {
-                            label: txt_yes,
-                            value: txt_yes,
-                            projectIndex: element.val.projectIndex,
-                        }, project.getUid()));
-                        iList.push(new ProjTreeItem(TreeItemType.RELOAD_LATER_ITEM, {
-                            label: txt_no,
-                            value: txt_no,
-                            projectIndex: element.val.projectIndex,
-                        }, project.getUid()));
+                        const itemTypes: TreeItemType[] = [
+                            TreeItemType.RELOAD_YES_ITEM,
+                            TreeItemType.RELOAD_NO_ITEM
+                        ];
+
+                        for (const itemType of itemTypes) {
+                            const item = this.treeCache.getTreeItem(project, itemType);
+                            if (item) {
+                                iList.push(item);
+                            }
+                        }
                     }
                     break;
                 case TreeItemType.SOLUTION:
@@ -3009,8 +3020,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
     }
 
     CloseAll() {
-        this.pendingReloadUids.clear();
-        this.syncReloadPendingContext();
         this.prjList.forEach(sln => sln.Close());
         this.prjList = [];
     }
@@ -3095,7 +3104,6 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
         const sln = this.prjList[index];
 
-        this.clearNeedReload(sln.getUid());
         sln.Close();
         this.prjList.splice(index, 1);
         this.UpdateView();
@@ -3171,12 +3179,21 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     private isRevealed: boolean = false; // 用于标记，初始化后是否已触发了展开首个树视图的操作
 
+    // reload project
+    private autosaveDisableTimeoutTimer: NodeJS.Timeout | undefined;
+    /** null = reload UI shown; function = waiting yes/later (progress bar) */
+    private reloadPrompts = new Map<string, ((action: 'yes' | 'later') => void) | null>();
+
     constructor(context: vscode.ExtensionContext) {
 
         this._event = new events.EventEmitter();
         this.compiler_diags = new Map();
 
         this.dataProvider = new ProjectDataProvider(context);
+        this.dataProvider.bindReloadChecker(
+            (uid) => this.reloadPrompts.has(uid),
+            () => this.reloadPrompts.size > 0
+        );
         this.cppcheck_diag = vscode.languages.createDiagnosticCollection('cppcheck');
 
         this.view = vscode.window.createTreeView('cl.eide.view.projects', {
@@ -3257,7 +3274,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     onDispose() {
-        this.cancelAllReloadPrompts();
+        for (const uid of this.reloadPrompts.keys()) {
+            this.finishReloadPrompt(uid, 'later');
+            this.cleanReloadPrompt(uid);
+        }
         this.dataProvider.onDispose();
     }
 
@@ -3577,9 +3597,11 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     Close(item: ProjTreeItem) {
         const prj = this.dataProvider.getProjectByIndex(item.val.projectIndex);
         if (prj) {
-            this.cancelReloadPrompt(prj.getUid());
-            const uid = this.dataProvider.Close(item.val.projectIndex);
-            GlobalEvent.emit('project.closed', uid);
+            const uid = prj.getUid();
+            this.finishReloadPrompt(uid, 'later');
+            this.cleanReloadPrompt(uid);
+            const closedUid = this.dataProvider.Close(item.val.projectIndex);
+            GlobalEvent.emit('project.closed', closedUid);
         }
     }
 
@@ -3639,20 +3661,36 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         this.updateCompilerDiagsAfterBuild(prj);
 
-        prj.on('projectFileChanged', () => this.onProjectFileChanged(prj));
+        prj.on('projectFileChanged', () => this.noticeUserReloadProject(prj));
     }
 
-    private autosaveDisableTimeoutTimer: NodeJS.Timeout | undefined;
-    private reloadPromptDeferreds = new Map<string, (action: 'yes' | 'later') => void>();
-    private reloadPromptProgressActive = new Set<string>();
+    private finishReloadPrompt(uid: string, action: 'yes' | 'later') {
+        const resolve = this.reloadPrompts.get(uid);
+        if (typeof resolve === 'function') {
+            resolve(action);
+        }
+    }
 
-    private async onProjectFileChanged(prj: AbstractProject) {
+    private cleanReloadPrompt(uid: string) {
+        this.reloadPrompts.delete(uid);
+        this.dataProvider.syncReloadPendingContext();
+        this.dataProvider.UpdateView();
+        this.clearAutosaveDisableTimer();
+        this.enableAutoSave(true);
+    }
+
+    private async noticeUserReloadProject(prj: AbstractProject) {
 
         const uid = prj.getUid();
 
-        prj.clearPendingSave();
+        if (this.reloadPrompts.has(uid)) {
+            if (typeof this.reloadPrompts.get(uid) === 'function') {
+                this.dataProvider.UpdateView();
+            }
+            return;
+        }
 
-        // disable autosave
+        prj.clearPendingSave();
         this.enableAutoSave(false);
 
         if (this.autosaveDisableTimeoutTimer) {
@@ -3664,66 +3702,50 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             }, 5 * 60 * 1000, this);
         }
 
-        const msg = view_str$prompt$need_reload_project.replace('{}', prj.getProjectName());
-
-        // ask user to reload project in tree view
-        this.dataProvider.markNeedReload(uid);
+        this.reloadPrompts.set(uid, null);
+        this.dataProvider.syncReloadPendingContext();
         this.dataProvider.UpdateView();
-
-        // avoid stacking progress bars when eide.yml changes repeatedly
-        if (this.reloadPromptProgressActive.has(uid)) {
-            return;
-        }
-        this.reloadPromptProgressActive.add(uid);
-
-        const rootItem = this.dataProvider.treeCache.getRootTreeItem(prj);
 
         try {
             await vscode.window.withProgress({
-                location: {
-                    viewId: 'cl.eide.view.projects'
-                },
-                title: msg,
+                location: { viewId: 'cl.eide.view.projects' },
+                title: view_str$prompt$need_reload_project.replace('{}', prj.getProjectName()),
                 cancellable: true,
             }, async (_progress, token) => {
 
-                const actionPromise = new Promise<'yes' | 'later'>((resolve) => {
+                await new Promise(r => setTimeout(r, 300));
+
+                // show reload prompt for user
+                const rootItem = this.dataProvider.treeCache.getRootTreeItem(prj);
+                if (rootItem)
+                    await this.view.reveal(rootItem, { select: false, focus: false, expand: true });
+                const okItem = this.dataProvider.treeCache.getTreeItem(prj, TreeItemType.RELOAD_YES_ITEM);
+                if (okItem)
+                    await this.view.reveal(okItem, { select: false, focus: true, expand: true });
+
+                const action = await new Promise<'yes' | 'later'>((resolve) => {
                     const cancelListener = token.onCancellationRequested(() => {
                         cancelListener.dispose();
-                        this.reloadPromptDeferreds.delete(uid);
-                        this.dismissReloadPrompt(uid);
                         resolve('later');
                     });
-                    this.reloadPromptDeferreds.set(uid, (act) => {
+                    this.reloadPrompts.set(uid, (act) => {
                         cancelListener.dispose();
-                        this.reloadPromptDeferreds.delete(uid);
                         resolve(act);
                     });
                 });
 
-                if (rootItem) {
-                    await this.view.reveal(rootItem, { select: false, focus: true, expand: true });
-                }
-
-                const action = await actionPromise;
-
-                if (token.isCancellationRequested || action === 'later') {
-                    this.dismissReloadPrompt(uid);
+                if (action === 'later') {
+                    this.cleanReloadPrompt(uid);
                     return;
                 }
 
                 this.clearAutosaveDisableTimer();
                 this.enableAutoSave(true);
-
-                if (token.isCancellationRequested) {
-                    return;
-                }
-
+                this.reloadPrompts.set(uid, null);
                 await this.reloadProject(uid, false);
             });
         } finally {
-            this.reloadPromptProgressActive.delete(uid);
-            this.reloadPromptDeferreds.delete(uid);
+            this.cleanReloadPrompt(uid);
         }
     }
 
@@ -3731,39 +3753,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (this.autosaveDisableTimeoutTimer) {
             clearTimeout(this.autosaveDisableTimeoutTimer);
             this.autosaveDisableTimeoutTimer = undefined;
-        }
-    }
-
-    private restoreProjectTreeBeforeReload(uid: string) {
-        this.dataProvider.clearNeedReload(uid);
-        if (this.dataProvider.getIndexByProjectUid(uid) !== -1) {
-            this.dataProvider.UpdateView();
-        }
-    }
-
-    private dismissReloadPrompt(uid: string) {
-        this.restoreProjectTreeBeforeReload(uid);
-        this.clearAutosaveDisableTimer();
-        this.enableAutoSave(true);
-    }
-
-    private cancelReloadPrompt(uid: string) {
-        this.resolveReloadPrompt(uid, 'later');
-        this.reloadPromptProgressActive.delete(uid);
-    }
-
-    private cancelAllReloadPrompts() {
-        const uids = new Set([...this.reloadPromptDeferreds.keys(), ...this.reloadPromptProgressActive]);
-        for (const uid of uids) {
-            this.cancelReloadPrompt(uid);
-        }
-    }
-
-    private resolveReloadPrompt(uid: string, action: 'yes' | 'later') {
-        const resolve = this.reloadPromptDeferreds.get(uid);
-        if (resolve) {
-            this.reloadPromptDeferreds.delete(uid);
-            resolve(action);
         }
     }
 
@@ -3775,35 +3764,46 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             return false;
         }
 
-        this.cancelReloadPrompt(uid);
+        this.finishReloadPrompt(uid, 'later');
 
-        const workspaceFile = this.dataProvider.getProjectByIndex(idx).getWorkspaceFile();
-        this.dataProvider.Close(idx);
+        try {
+            const workspaceFile = this.dataProvider.getProjectByIndex(idx).getWorkspaceFile();
+            this.dataProvider.Close(idx);
 
-        return new Promise((resolve) => {
-            setTimeout(async () => {
-                try {
-                    let p: AbstractProject | undefined;
-                    if (restartWorkspace) {
-                        p = await this.dataProvider.OpenProject(workspaceFile.path, true);
-                    } else {
-                        p = await this.dataProvider._OpenProject(workspaceFile.path, getGlobalState());
+            return await new Promise<boolean>((resolve) => {
+                setTimeout(async () => {
+                    try {
+                        let p: AbstractProject | undefined;
+                        if (restartWorkspace) {
+                            p = await this.dataProvider.OpenProject(workspaceFile.path, true);
+                        } else {
+                            p = await this.dataProvider._OpenProject(workspaceFile.path, getGlobalState());
+                        }
+                        this.Refresh();
+                        resolve(p !== undefined);
+                    } catch (error) {
+                        GlobalEvent.emit('error', error);
+                        resolve(false);
+                    } finally {
+                        this.reloadPrompts.delete(uid);
+                        this.dataProvider.syncReloadPendingContext();
                     }
-                    this.Refresh();
-                    resolve(p !== undefined);
-                } catch (error) {
-                    GlobalEvent.emit('error', error);
-                    resolve(false);
-                }
-            }, 500);
-        });
+                }, 500);
+            });
+        } catch (error) {
+            this.reloadPrompts.delete(uid);
+            this.dataProvider.syncReloadPendingContext();
+            GlobalEvent.emit('error', error);
+            return false;
+        }
     }
 
     private async onProjectClosed(uid: string | undefined) {
 
         if (!uid) return;
 
-        this.cancelReloadPrompt(uid);
+        this.finishReloadPrompt(uid, 'later');
+        this.cleanReloadPrompt(uid);
 
         // clear vscode diags
         if (this.compiler_diags.has(uid)) {
@@ -7942,15 +7942,15 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         if (item.type === TreeItemType.RELOAD_YES_ITEM) {
             const prj = this.getProjectByTreeItem(item);
             if (prj) {
-                this.resolveReloadPrompt(prj.getUid(), 'yes');
+                this.finishReloadPrompt(prj.getUid(), 'yes');
             }
             return;
         }
 
-        if (item.type === TreeItemType.RELOAD_LATER_ITEM) {
+        if (item.type === TreeItemType.RELOAD_NO_ITEM) {
             const prj = this.getProjectByTreeItem(item);
             if (prj) {
-                this.resolveReloadPrompt(prj.getUid(), 'later');
+                this.finishReloadPrompt(prj.getUid(), 'later');
             }
             return;
         }
