@@ -6,7 +6,7 @@ All notable version changes will be recorded in this file.
 
 ***
 
-### [v3.26.13] preview
+### [v3.26.14] preview
 
 **New**:
   - `MCP Server`: Add mcp server to export eide built-in functions. settings: `EIDE.MCP.Server.Enable`, `EIDE.MCP.Server.Port`
