@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { NEmpty, NSelect, NSpace, NText, NTooltip, type SelectOption } from 'naive-ui';
+import {
+  NCheckbox,
+  NEmpty,
+  NSelect,
+  NSpace,
+  NText,
+  NTooltip,
+  type SelectOption,
+} from 'naive-ui';
 
 const maxStackUsageTooltip =
   'Max Stack Usage = 本函数局部栈（GCC -fstack-usage）+ 被调用函数中最大的 Max Stack Usage。' +
@@ -12,7 +20,15 @@ import {
 } from '../composables/useBuildReport';
 import { useCallgraphKeyboard } from '../composables/useCallgraphKeyboard';
 import { useCallgraphSearch } from '../composables/useCallgraphSearch';
-import { callgraphSession } from '../composables/usePageSessionState';
+import {
+  callgraphSession,
+  defaultCallgraphSourceApplied,
+} from '../composables/usePageSessionState';
+import { filterOrphanNodes, isOrphanNode } from '../utils/callgraph-orphan';
+import {
+  DEFAULT_CALLGRAPH_SOURCE_BASENAME,
+  findCallgraphIndexByBasename,
+} from '../utils/callgraph-source';
 import { hostBridge } from '../host-bridge';
 import { parseCallsiteLabel } from '../utils/callgraph-edge';
 import { buildStackUsageIndex } from '../utils/stack-usage-lookup';
@@ -44,6 +60,7 @@ const {
   selectedIndex,
   searchText,
   layoutDirection,
+  hideOrphanNodes,
   selectedNodeId,
   selectedEdge,
   selectedEdgeFlowId,
@@ -55,6 +72,14 @@ watch(
     if (graphs.length === 0) {
       return;
     }
+    if (!defaultCallgraphSourceApplied.value) {
+      defaultCallgraphSourceApplied.value = true;
+      const mainIndex = findCallgraphIndexByBasename(
+        graphs,
+        DEFAULT_CALLGRAPH_SOURCE_BASENAME,
+      );
+      selectedIndex.value = mainIndex ?? ALL_CALLGRAPH_GRAPHS;
+    }
     if (
       selectedIndex.value !== ALL_CALLGRAPH_GRAPHS &&
       selectedIndex.value >= graphs.length
@@ -65,7 +90,7 @@ watch(
   { immediate: true },
 );
 
-watch([selectedIndex, layoutDirection], () => {
+watch([selectedIndex, layoutDirection, hideOrphanNodes], () => {
   selectedNodeId.value = null;
   selectedEdge.value = null;
   selectedEdgeFlowId.value = null;
@@ -115,8 +140,22 @@ const currentGraphMeta = computed(() => {
   return callgraphGraphs.value[selectedIndex.value] ?? null;
 });
 
+const displayedGraphMeta = computed(() => {
+  const meta = currentGraphMeta.value;
+  if (!meta || !hideOrphanNodes.value) {
+    return meta;
+  }
+  const { nodes, edges } = filterOrphanNodes(meta.nodes, meta.edges);
+  return {
+    ...meta,
+    nodes,
+    edges,
+    isEmpty: nodes.length === 0,
+  };
+});
+
 watch(
-  [currentGraphMeta, hasCallgraph],
+  [displayedGraphMeta, hasCallgraph],
   ([meta, hasGraph]) => {
     if (!hasGraph || !meta) {
       callgraphSession.graphStats.value = null;
@@ -130,14 +169,16 @@ watch(
   { immediate: true },
 );
 
-const graphCanvasKey = computed(() =>
-  selectedIndex.value === ALL_CALLGRAPH_GRAPHS
-    ? '__merged__'
-    : (currentGraphMeta.value?.title ?? String(selectedIndex.value)),
-);
+const graphCanvasKey = computed(() => {
+  const base =
+    selectedIndex.value === ALL_CALLGRAPH_GRAPHS
+      ? '__merged__'
+      : (currentGraphMeta.value?.title ?? String(selectedIndex.value));
+  return hideOrphanNodes.value ? `${base}::no-orphan` : base;
+});
 
 const currentGraph = computed(() => {
-  const meta = currentGraphMeta.value;
+  const meta = displayedGraphMeta.value;
   if (!meta) {
     return null;
   }
@@ -148,7 +189,30 @@ const currentGraph = computed(() => {
   };
 });
 
-const currentGraphNodes = computed(() => currentGraphMeta.value?.nodes ?? []);
+const currentGraphNodes = computed(() => displayedGraphMeta.value?.nodes ?? []);
+
+watch([hideOrphanNodes, currentGraphMeta], () => {
+  const meta = currentGraphMeta.value;
+  if (!meta || !hideOrphanNodes.value) {
+    return;
+  }
+  if (
+    selectedNodeId.value &&
+    isOrphanNode(selectedNodeId.value, meta.edges)
+  ) {
+    selectedNodeId.value = null;
+  }
+  if (selectedEdge.value) {
+    const { sourcename, targetname } = selectedEdge.value;
+    if (
+      isOrphanNode(sourcename, meta.edges) ||
+      isOrphanNode(targetname, meta.edges)
+    ) {
+      selectedEdge.value = null;
+      selectedEdgeFlowId.value = null;
+    }
+  }
+});
 
 const {
   matches: searchMatches,
@@ -391,14 +455,19 @@ function gotoSelectedEdge() {
         </ul>
         </div>
       </div>
-      <NSelect
-        v-model:value="layoutDirection"
-        class="layout-select"
-        :options="layoutOptions"
-        size="small"
-      />
+      <div class="toolbar-end">
+        <NCheckbox v-model:checked="hideOrphanNodes" size="large">
+          Hide Orphan Nodes
+        </NCheckbox>
+        <NSelect
+          v-model:value="layoutDirection"
+          class="layout-select"
+          :options="layoutOptions"
+          size="small"
+        />
+      </div>
     </div>
-    <div v-if="currentGraphMeta?.isEmpty" class="empty-center">
+    <div v-if="displayedGraphMeta?.isEmpty" class="empty-center">
       <NEmpty description="No callgraph data" />
     </div>
     <div v-else class="callgraph-flow-wrap">
@@ -588,4 +657,25 @@ function gotoSelectedEdge() {
   background: var(--vscode-list-activeSelectionBackground, #094771);
   color: var(--vscode-list-activeSelectionForeground, #ffffff);
 }
+
+.toolbar-end {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.toolbar-end :deep(.n-checkbox) {
+  --n-color: var(--vscode-settings-checkboxBackground);
+  --n-color-checked: var(--vscode-settings-checkboxBackground);
+  --n-check-mark-color: var(--vscode-settings-checkboxForeground);
+  --n-border: 1px solid var(--vscode-settings-checkboxBorder);
+  --n-border-checked: 1px solid var(--vscode-settings-checkboxBorder);
+  --n-border-focus: 1px solid var(--vscode-settings-checkboxBorder);
+}
+
+.toolbar-end :deep(.n-checkbox .n-checkbox__label) {
+  white-space: nowrap;
+}
+
 </style>

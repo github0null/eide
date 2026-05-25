@@ -8,12 +8,16 @@ export const callgraphSession = {
   selectedIndex: ref<number>(ALL_CALLGRAPH_GRAPHS),
   searchText: ref(''),
   layoutDirection: ref<'TB' | 'LR'>('LR'),
+  hideOrphanNodes: ref(true),
   selectedNodeId: ref<string | null>(null),
   selectedEdge: ref<VcgEdge | null>(null),
   selectedEdgeFlowId: ref<string | null>(null),
   /** 标题栏右侧展示的当前图统计 */
   graphStats: ref<{ nodes: number; edges: number } | null>(null),
 };
+
+/** 首次加载报告后应用默认数据源（main.c，否则 Merged） */
+export const defaultCallgraphSourceApplied = ref(false);
 
 /** flowInstanceKey → 画布视口 */
 export const callgraphViewportByFlowKey = new Map<string, ViewportTransform>();

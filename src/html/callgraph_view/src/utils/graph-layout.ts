@@ -3,8 +3,8 @@ import { MarkerType, Position, type Edge, type Node } from '@vue-flow/core';
 import { edgeFlowId } from './callgraph-edge';
 import type { VcgEdge, VcgNode } from '../types/build-report';
 
-const NODE_WIDTH = 180;
-const NODE_HEIGHT = 52;
+const NODE_WIDTH = 160;
+const NODE_HEIGHT = 48;
 
 function handlePositions(direction: 'TB' | 'LR'): {
   source: Position;
@@ -29,7 +29,7 @@ function layoutGraph(
 ): dagre.graphlib.Graph {
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: direction, nodesep: 48, ranksep: 72 });
+  g.setGraph({ rankdir: direction, nodesep: 24, ranksep: 72 });
   nodes.forEach((n) => {
     g.setNode(titleToFlowId.get(n.title)!, { width: NODE_WIDTH, height: NODE_HEIGHT });
   });

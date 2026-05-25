@@ -34,6 +34,18 @@ function buildOverrides(): GlobalThemeOverrides {
     '#cccccc80',
   );
   const sideBarBg = readCssVar('--vscode-sideBar-background', '#252526');
+  const checkboxBg = readCssVar(
+    '--vscode-settings-checkboxBackground',
+    inputBg,
+  );
+  const checkboxFg = readCssVar(
+    '--vscode-settings-checkboxForeground',
+    fg,
+  );
+  const checkboxBorder = readCssVar(
+    '--vscode-settings-checkboxBorder',
+    border,
+  );
 
   return {
     common: {
@@ -156,6 +168,14 @@ function buildOverrides(): GlobalThemeOverrides {
     Tooltip: {
       color: widgetBg,
       textColor: fg,
+    },
+    Checkbox: {
+      color: checkboxBg,
+      colorChecked: checkboxBg,
+      checkMarkColor: checkboxFg,
+      border: `1px solid ${checkboxBorder}`,
+      borderChecked: `1px solid ${checkboxBorder}`,
+      borderFocus: `1px solid ${checkboxBorder}`,
     },
   };
 }
