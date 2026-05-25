@@ -6,10 +6,11 @@ All notable version changes will be recorded in this file.
 
 ***
 
-### [v3.26.14] preview
+### [v3.27.0] update
 
 **New**:
-  - `MCP Server`: Add mcp server to export eide built-in functions. settings: `EIDE.MCP.Server.Enable`, `EIDE.MCP.Server.Port`
+  - `MCP Server`: Add mcp server to export eide built-in functions. Settings: `EIDE.MCP.Server.Enable`, `EIDE.MCP.Server.Port`
+  - `MCP SKILL`: https://gist.github.com/github0null/5c08fb61bb4a705f1dc9b03dcb980f93
   - `Callgraph View`: Add callgraph view and new options `-fcallgraph-info`, `-fstack-usage` for gcc toolchain.
 
 **Fix**:
