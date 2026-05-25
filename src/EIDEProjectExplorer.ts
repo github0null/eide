@@ -96,7 +96,7 @@ import {
 import { CodeBuilder, BuildOptions } from './CodeBuilder';
 import { ExceptionToMessage, newMessage } from './Message';
 import { SettingManager } from './SettingManager';
-import { HexUploaderManager, HexUploaderType, JLinkOptions, JLinkProtocolType, OpenOCDFlashOptions, PyOCDFlashOptions } from './HexUploader';
+import { FlashCommandResult, HexUploaderManager, HexUploaderType, JLinkOptions, JLinkProtocolType, OpenOCDFlashOptions, PyOCDFlashOptions } from './HexUploader';
 import { SevenZipper, CompressOption } from './Compress';
 import { DependenceManager } from './DependenceManager';
 import { ArrayDelRepetition } from '../lib/node-utility/Utility';
@@ -132,7 +132,12 @@ import {
 } from 'vscode-cpptools';
 import * as eclipseParser from './EclipseProjectParser';
 import { isArray } from 'util';
-import { parseIarCompilerLog, CompilerDiagnostics, parseGccCompilerLog, parseArmccCompilerLog, parseKeilc51CompilerLog, parseSdccCompilerLog, parseCosmicStm8CompilerLog, EideDiagnosticCode } from './ProblemMatcher';
+import {
+    parseIarCompilerLog, 
+    CompilerDiagnostics, parseGccCompilerLog, parseArmccCompilerLog, 
+    parseKeilc51CompilerLog, parseSdccCompilerLog, parseCosmicStm8CompilerLog, 
+    EideDiagnosticCode
+} from './ProblemMatcher';
 import * as iarParser from './IarProjectParser';
 import * as ArmCpuUtils from './ArmCpuUtils';
 import { ShellFlasherIndexItem } from './WebInterface/WebInterface';
@@ -141,6 +146,7 @@ import { SimpleUIConfig, SimpleUIConfigData_input, SimpleUIConfigData_options, S
 import { StatusBarManager } from './StatusBarManager';
 import { doMigration, detectProject } from './EIDEProjectMigration';
 import { onRegisterClangdProvider } from './clangdConfigProvider';
+import * as hooks from './Hooks';
 
 enum TreeItemType {
     SOLUTION,
@@ -199,7 +205,11 @@ enum TreeItemType {
     OUTPUT_FILE_ITEM,
 
     ACTIVED_ITEM,
-    ACTIVED_GROUP
+    ACTIVED_GROUP,
+
+    RELOAD_ROOT,
+    RELOAD_YES_ITEM,
+    RELOAD_NO_ITEM
 }
 
 function getTreeItemTypeName(typ: TreeItemType): string {
@@ -286,6 +296,8 @@ export class ProjTreeItem extends vscode.TreeItem {
         TreeItemType.UPLOAD_OPTION,
         TreeItemType.DEPENDENCE,
         TreeItemType.SETTINGS,
+        TreeItemType.RELOAD_YES_ITEM,
+        TreeItemType.RELOAD_NO_ITEM
     ];
 
     type: TreeItemType;
@@ -309,7 +321,7 @@ export class ProjTreeItem extends vscode.TreeItem {
         // setup unique id
         if (prjUid) {
             // tree root's id is project uid
-            if (type == TreeItemType.SOLUTION) {
+            if (type == TreeItemType.SOLUTION || type == TreeItemType.RELOAD_ROOT) {
                 this.id = prjUid;
             }
             // tree sub item's id is their type
@@ -560,6 +572,15 @@ export class ProjTreeItem extends vscode.TreeItem {
             case TreeItemType.OUTPUT_FOLDER:
                 name = 'folder_type_binary.svg';
                 break;
+            case TreeItemType.RELOAD_ROOT:
+                name = 'StatusWarning_16x.svg';
+                break;
+            case TreeItemType.RELOAD_YES_ITEM:
+                name = new vscode.ThemeIcon('check');
+                break;
+            case TreeItemType.RELOAD_NO_ITEM:
+                name = new vscode.ThemeIcon('close');
+                break;
             default:
                 {
                     // if it's a source file, get icon
@@ -667,6 +688,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
     // project tree item refresh cache
     treeCache: ProjectItemCache = new ProjectItemCache();
+
+    private needReload?: (uid: string) => boolean;
+    private hasReloadPending?: () => boolean;
+
+    bindReloadChecker(needReload: (uid: string) => boolean, hasAny: () => boolean) {
+        this.needReload = needReload;
+        this.hasReloadPending = hasAny;
+    }
 
     onDidChangeTreeData?: vscode.Event<ProjTreeItem | null | undefined> | undefined;
     dataChangedEvent: vscode.EventEmitter<ProjTreeItem | undefined>;
@@ -873,7 +902,14 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         }
     }
 
+    /**
+     * @deprecated please use getProjectByIndex
+    */
     GetProjectByIndex(index: number): AbstractProject {
+        return this.prjList[index];
+    }
+
+    getProjectByIndex(index: number): AbstractProject {
         return this.prjList[index];
     }
 
@@ -984,6 +1020,29 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         this.treeCache.clear();
     }
 
+    syncReloadPendingContext() {
+        const pending = this.hasReloadPending?.() ?? false;
+        void vscode.commands.executeCommand('setContext', 'cl.eide.reloadPending', pending);
+        // disable statusbar buttons when pending, 
+        // because they will cause error if click when project is in reloading
+        const buildBar = StatusBarManager.getInstance().get('build');
+        const flashBar = StatusBarManager.getInstance().get('flash');
+        const projectBar = StatusBarManager.getInstance().get('project');
+        if (buildBar) {
+            buildBar.command = pending ? undefined : '_cl.eide.statusbar.build';
+        }
+        if (flashBar) {
+            flashBar.command = pending ? undefined : '_cl.eide.statusbar.flash';
+        }
+        if (projectBar) {
+            projectBar.command = pending ? undefined : '_cl.eide.statusbar.switch-target';
+        }
+    }
+
+    isNeedReload(uid: string): boolean {
+        return this.needReload?.(uid) ?? false;
+    }
+
     isRootWorkspaceProject(prj: AbstractProject): boolean {
         const rootDir = prj.GetRootDir();
         const wsDir = WorkspaceManager.getInstance().getWorkspaceRoot();
@@ -1007,11 +1066,11 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
 
     getParent(element: ProjTreeItem): vscode.ProviderResult<ProjTreeItem> {
 
-        if (element.type == TreeItemType.SOLUTION)
+        if (element.type == TreeItemType.SOLUTION || element.type == TreeItemType.RELOAD_ROOT)
             return undefined;
 
         if (ProjTreeItem.PROJ_ROOT_ITEM_TYPES.includes(element.type))
-            return this.treeCache.getRootTreeItem(this.GetProjectByIndex(element.val.projectIndex));
+            return this.treeCache.getRootTreeItem(this.getProjectByIndex(element.val.projectIndex));
 
         /* 除了几个根节点之外，其他的忽略，getParent 主要用于 {@link TreeView.reveal reveal} API. */
         return undefined;
@@ -1028,6 +1087,33 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         if (element === undefined) {
 
             this.prjList.forEach((project, projectIndex) => {
+
+                if (this.isNeedReload(project.getUid())) {
+                    // root
+                    const msg = view_str$prompt$need_reload_project.replace('{}', project.getProjectName());
+                    const rootItem = new ProjTreeItem(TreeItemType.RELOAD_ROOT, {
+                        value: msg,
+                        projectIndex: projectIndex,
+                        tooltip: msg,
+                    }, project.getUid());
+                    iList.push(rootItem);
+                    this.treeCache.setTreeItem(project, rootItem, true);
+                    // child: ok item
+                    const okItem = new ProjTreeItem(TreeItemType.RELOAD_YES_ITEM, {
+                        label: txt_yes,
+                        value: txt_yes,
+                        projectIndex: projectIndex,
+                    }, project.getUid())
+                    this.treeCache.setTreeItem(project, okItem, false);
+                    // child: no item
+                    const noItem = new ProjTreeItem(TreeItemType.RELOAD_NO_ITEM, {
+                        label: txt_no,
+                        value: txt_no,
+                        projectIndex: projectIndex,
+                    }, project.getUid())
+                    this.treeCache.setTreeItem(project, noItem, false);
+                    return;
+                }
 
                 // --- init root Treeitem
 
@@ -1115,6 +1201,21 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             const prjExtraArgs = project.getSourceExtraArgsCfg();
 
             switch (element.type) {
+                case TreeItemType.RELOAD_ROOT:
+                    {
+                        const itemTypes: TreeItemType[] = [
+                            TreeItemType.RELOAD_YES_ITEM,
+                            TreeItemType.RELOAD_NO_ITEM
+                        ];
+
+                        for (const itemType of itemTypes) {
+                            const item = this.treeCache.getTreeItem(project, itemType);
+                            if (item) {
+                                iList.push(item);
+                            }
+                        }
+                    }
+                    break;
                 case TreeItemType.SOLUTION:
                     {
                         const itemTypes: TreeItemType[] = [
@@ -1602,6 +1703,19 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                     icon: `Table_16x.svg`
                                 }));
                             }
+
+                            // Callgraph View
+                            if (isGccFamilyToolchain(project.getToolchain().name)) {
+                                iList.push(new ProjTreeItem(TreeItemType.OUTPUT_FILE_ITEM, {
+                                    label: `Callgraph View`,
+                                    value: File.from(`${project.getUid()}.elf-callgraph`),
+                                    isVirtualFile: true,
+                                    collapsibleState: vscode.TreeItemCollapsibleState.None,
+                                    projectIndex: element.val.projectIndex,
+                                    tooltip: `Callgraph View`,
+                                    icon: `ShowCallGraph_16x.svg`
+                                }));
+                            }
                         }
                     }
                     break;
@@ -1741,7 +1855,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
         return iList;
     }
 
-    private async _OpenProject(workspaceFilePath: string, workspaceState: vscode.Memento): Promise<AbstractProject | undefined> {
+    async _OpenProject(workspaceFilePath: string, workspaceState: vscode.Memento): Promise<AbstractProject | undefined> {
 
         const wsFile: File = new File(workspaceFilePath);
         if (!wsFile.IsFile()) {
@@ -2817,7 +2931,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
             const err = await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
                 title: `Creating project`
-            }, async (progress): Promise<Error> => {
+            }, async (progress): Promise<Error | void> => {
 
                 progress.report({ message: 'Unzip template', increment: 10 });
 
@@ -2860,7 +2974,7 @@ class ProjectDataProvider implements vscode.TreeDataProvider<ProjTreeItem>, vsco
                                 }
                             }
 
-                            resolve(undefined);
+                            resolve();
 
                         } catch (error) {
                             resolve(error);
@@ -3065,12 +3179,21 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     private isRevealed: boolean = false; // 用于标记，初始化后是否已触发了展开首个树视图的操作
 
+    // reload project
+    private autosaveDisableTimeoutTimer: NodeJS.Timeout | undefined;
+    /** null = reload UI shown; function = waiting yes/later (progress bar) */
+    private reloadPrompts = new Map<string, ((action: 'yes' | 'later') => void) | null>();
+
     constructor(context: vscode.ExtensionContext) {
 
         this._event = new events.EventEmitter();
         this.compiler_diags = new Map();
 
         this.dataProvider = new ProjectDataProvider(context);
+        this.dataProvider.bindReloadChecker(
+            (uid) => this.reloadPrompts.has(uid),
+            () => this.reloadPrompts.size > 0
+        );
         this.cppcheck_diag = vscode.languages.createDiagnosticCollection('cppcheck');
 
         this.view = vscode.window.createTreeView('cl.eide.view.projects', {
@@ -3151,6 +3274,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     onDispose() {
+        for (const uid of this.reloadPrompts.keys()) {
+            this.finishReloadPrompt(uid, 'later');
+            this.cleanReloadPrompt(uid);
+        }
         this.dataProvider.onDispose();
     }
 
@@ -3450,6 +3577,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             this.getActiveProject();
     }
 
+    getProjectByUid(uid: string): AbstractProject | undefined {
+        return this.dataProvider.getProjectByUid(uid);
+    }
+
     getActiveProject(): AbstractProject | undefined {
         return this.dataProvider.getActiveProject();
     }
@@ -3464,8 +3595,14 @@ export class ProjectExplorer implements CustomConfigurationProvider {
     }
 
     Close(item: ProjTreeItem) {
-        const uid = this.dataProvider.Close(item.val.projectIndex);
-        GlobalEvent.emit('project.closed', uid);
+        const prj = this.dataProvider.getProjectByIndex(item.val.projectIndex);
+        if (prj) {
+            const uid = prj.getUid();
+            this.finishReloadPrompt(uid, 'later');
+            this.cleanReloadPrompt(uid);
+            const closedUid = this.dataProvider.Close(item.val.projectIndex);
+            GlobalEvent.emit('project.closed', closedUid);
+        }
     }
 
     SaveAll() {
@@ -3524,73 +3661,149 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         this.updateCompilerDiagsAfterBuild(prj);
 
-        prj.on('projectFileChanged', () => this.onProjectFileChanged(prj));
+        prj.on('projectFileChanged', () => this.noticeUserReloadProject(prj));
     }
 
-    private __autosaveDisableTimeoutTimer: NodeJS.Timeout | undefined;
-    private async onProjectFileChanged(prj: AbstractProject) {
+    private finishReloadPrompt(uid: string, action: 'yes' | 'later') {
+        const resolve = this.reloadPrompts.get(uid);
+        if (typeof resolve === 'function') {
+            resolve(action);
+        }
+    }
 
-        const nam = prj.getProjectName();
+    private cleanReloadPrompt(uid: string) {
+        this.reloadPrompts.delete(uid);
+        this.dataProvider.syncReloadPendingContext();
+        this.dataProvider.UpdateView();
+        this.clearAutosaveDisableTimer();
+        this.enableAutoSave(true);
+    }
+
+    private async noticeUserReloadProject(prj: AbstractProject) {
+
         const uid = prj.getUid();
-        const wsf = prj.getWorkspaceFile();
+
+        if (this.reloadPrompts.has(uid)) {
+            if (typeof this.reloadPrompts.get(uid) === 'function') {
+                this.dataProvider.UpdateView();
+            }
+            return;
+        }
 
         prj.clearPendingSave();
-
-        // disable autosave
         this.enableAutoSave(false);
 
-        if (this.__autosaveDisableTimeoutTimer) {
-            this.__autosaveDisableTimeoutTimer.refresh();
+        if (this.autosaveDisableTimeoutTimer) {
+            this.autosaveDisableTimeoutTimer.refresh();
         } else {
-            this.__autosaveDisableTimeoutTimer = setTimeout((_this: ProjectExplorer) => {
-                _this.__autosaveDisableTimeoutTimer = undefined;
+            this.autosaveDisableTimeoutTimer = setTimeout((_this: ProjectExplorer) => {
+                _this.autosaveDisableTimeoutTimer = undefined;
                 _this.enableAutoSave(true);
             }, 5 * 60 * 1000, this);
         }
 
-        // ask user to reload project
-        const msg = view_str$prompt$need_reload_project.replace('{}', prj.getProjectName());
-        const ans = await vscode.window.showInformationMessage(msg, 'Yes', 'No');
-        if (ans == 'Yes') {
-            await this.reloadProject(uid, wsf);
-        }
+        this.reloadPrompts.set(uid, null);
+        this.dataProvider.syncReloadPendingContext();
+        this.dataProvider.UpdateView();
 
-        if (this.__autosaveDisableTimeoutTimer) {
-            clearTimeout(this.__autosaveDisableTimeoutTimer);
-            this.__autosaveDisableTimeoutTimer = undefined;
-        }
+        try {
+            await vscode.window.withProgress({
+                location: { viewId: 'cl.eide.view.projects' },
+                title: view_str$prompt$need_reload_project.replace('{}', prj.getProjectName()),
+                cancellable: true,
+            }, async (_progress, token) => {
 
-        // enable auto save
-        this.enableAutoSave(true);
+                await new Promise(r => setTimeout(r, 300));
+
+                // show reload prompt for user
+                const rootItem = this.dataProvider.treeCache.getRootTreeItem(prj);
+                if (rootItem)
+                    await this.view.reveal(rootItem, { select: false, focus: false, expand: true });
+                const okItem = this.dataProvider.treeCache.getTreeItem(prj, TreeItemType.RELOAD_YES_ITEM);
+                if (okItem)
+                    await this.view.reveal(okItem, { select: false, focus: true, expand: true });
+
+                const action = await new Promise<'yes' | 'later'>((resolve) => {
+                    const cancelListener = token.onCancellationRequested(() => {
+                        cancelListener.dispose();
+                        resolve('later');
+                    });
+                    this.reloadPrompts.set(uid, (act) => {
+                        cancelListener.dispose();
+                        resolve(act);
+                    });
+                });
+
+                if (action === 'later') {
+                    this.cleanReloadPrompt(uid);
+                    return;
+                }
+
+                this.clearAutosaveDisableTimer();
+                this.enableAutoSave(true);
+                this.reloadPrompts.set(uid, null);
+                await this.reloadProject(uid, false);
+            });
+        } finally {
+            this.cleanReloadPrompt(uid);
+        }
     }
 
-    private async reloadProject(uid: string, workspaceFile: File): Promise<boolean> {
+    private clearAutosaveDisableTimer() {
+        if (this.autosaveDisableTimeoutTimer) {
+            clearTimeout(this.autosaveDisableTimeoutTimer);
+            this.autosaveDisableTimeoutTimer = undefined;
+        }
+    }
+
+    async reloadProject(uid: string, restartWorkspace: boolean): Promise<boolean> {
 
         const idx = this.dataProvider.getIndexByProjectUid(uid);
         if (idx == -1) {
-            GlobalEvent.emit('msg', newMessage('Error', `Project '${uid}' is not actived !`));
+            GlobalEvent.show_msgbox('Error', `Project '${uid}' is not actived !`);
             return false;
         }
 
-        this.dataProvider.Close(idx);
+        this.finishReloadPrompt(uid, 'later');
 
-        return new Promise((resolve) => {
-            setTimeout(async () => {
-                try {
-                    await this.dataProvider.OpenProject(workspaceFile.path, true);
-                    this.Refresh();
-                    resolve(true);
-                } catch (error) {
-                    GlobalEvent.emit('error', error);
-                    resolve(false);
-                }
-            }, 500);
-        });
+        try {
+            const workspaceFile = this.dataProvider.getProjectByIndex(idx).getWorkspaceFile();
+            this.dataProvider.Close(idx);
+
+            return await new Promise<boolean>((resolve) => {
+                setTimeout(async () => {
+                    try {
+                        let p: AbstractProject | undefined;
+                        if (restartWorkspace) {
+                            p = await this.dataProvider.OpenProject(workspaceFile.path, true);
+                        } else {
+                            p = await this.dataProvider._OpenProject(workspaceFile.path, getGlobalState());
+                        }
+                        this.Refresh();
+                        resolve(p !== undefined);
+                    } catch (error) {
+                        GlobalEvent.emit('error', error);
+                        resolve(false);
+                    } finally {
+                        this.reloadPrompts.delete(uid);
+                        this.dataProvider.syncReloadPendingContext();
+                    }
+                }, 500);
+            });
+        } catch (error) {
+            this.reloadPrompts.delete(uid);
+            this.dataProvider.syncReloadPendingContext();
+            GlobalEvent.emit('error', error);
+            return false;
+        }
     }
 
     private async onProjectClosed(uid: string | undefined) {
 
         if (!uid) return;
+
+        this.finishReloadPrompt(uid, 'later');
+        this.cleanReloadPrompt(uid);
 
         // clear vscode diags
         if (this.compiler_diags.has(uid)) {
@@ -3796,60 +4009,121 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         prj.Save();
     }
 
-    private _buildLock: boolean = false;
-    BuildSolution(prjItem?: ProjTreeItem, options?: BuildOptions) {
+    private _builderLock: boolean = false;
+    async buildProject(prj?: AbstractProject, options?: BuildOptions, noTerminal?: boolean): Promise<{ success: boolean; message: string; }> {
+
+        if (prj === undefined) {
+            GlobalEvent.show_msgbox('Warning', 'No active project !');
+            return {
+                success: false,
+                message: 'No active project !'
+            };
+        }
+
+        if (this._builderLock) {
+            GlobalEvent.show_msgbox('Warning', 'Builder busy ! Please wait !');
+            return {
+                success: false,
+                message: 'Builder busy ! Please wait !'
+            };
+        }
 
         try {
-
-            const prj = this.getProjectByTreeItem(prjItem);
-
-            if (prj === undefined) {
-                GlobalEvent.emit('msg', newMessage('Warning', 'No active project !'));
-                return;
-            }
-
-            if (this._buildLock) {
-                GlobalEvent.emit('msg', newMessage('Warning', 'build busy !, please wait !'));
-                return;
-            }
-
-            this._buildLock = true;
+            this._builderLock = true;
 
             // save project before build
             prj.Save(true);
 
-            const codeBuilder = CodeBuilder.NewBuilder(prj);
+            const builder = CodeBuilder.NewBuilder(prj);
             const toolchain = prj.getToolchain().name;
 
-            // build launched event
-            codeBuilder.on('launched', () => {
-                if (this.compiler_diags.has(prj.getUid())) {
-                    this.compiler_diags.get(prj.getUid())?.clear();
-                }
-                const buildbar = StatusBarManager.getInstance().get('build');
-                if (buildbar) {
-                    buildbar.text = `$(loading~spin) Building`;
+            const res = await new Promise<{ success: boolean; message: string; }>((resolve) => {
+                if (noTerminal) {
+                    const commandLine = builder.genBuildCommand(options);
+                    if (commandLine) {
+                        // launched
+                        if (this.compiler_diags.has(prj.getUid())) {
+                            this.compiler_diags.get(prj.getUid())?.clear();
+                        }
+                        const buildbar = StatusBarManager.getInstance().get('build');
+                        if (buildbar) {
+                            buildbar.text = `$(loading~spin) Building`;
+                        }
+                        child_process.exec(commandLine, { cwd: prj.getProjectRoot().path }, (error, stdout, stderr) => {
+                            prj.notifyUpdateSourceRefs(toolchain);
+                            this.notifyUpdateOutputFolder(prj);
+                            this.updateCompilerDiagsAfterBuild(prj);
+                            this.dataProvider.updateStatusBarForActiveProjects();
+                            hooks.onProjectBuildFinished(prj, error ? false : true);
+                            if (error) {
+                                resolve({
+                                    success: false,
+                                    message: `Failed.\n\nError: ${error.message}\n\nBuilder log:\n\n${stdout.toString()}`
+                                });
+                            } else {
+                                resolve({
+                                    success: true,
+                                    message: `Succeed.\n\nBuilder log:\n\n${stdout.toString()}`
+                                });
+                            }
+                        });
+                    } else {
+                        resolve({
+                            success: false,
+                            message: 'Error: builder.genBuildCommand return null.'
+                        });
+                    }
+                } else {
+                    // build launched event
+                    builder.on('launched', () => {
+                        if (this.compiler_diags.has(prj.getUid())) {
+                            this.compiler_diags.get(prj.getUid())?.clear();
+                        }
+                        const buildbar = StatusBarManager.getInstance().get('build');
+                        if (buildbar) {
+                            buildbar.text = `$(loading~spin) Building`;
+                        }
+                    });
+
+                    // build finish event
+                    builder.on('finished', (done) => {
+                        prj.notifyUpdateSourceRefs(toolchain);
+                        this.notifyUpdateOutputFolder(prj);
+                        this.updateCompilerDiagsAfterBuild(prj);
+                        if (options?.flashAfterBuild && done)
+                            this.programFlashProject(prj);
+                        this.dataProvider.updateStatusBarForActiveProjects();
+                        hooks.onProjectBuildFinished(prj, done);
+                        if (done) {
+                            resolve({
+                                success: true,
+                                message: 'Succeed.'
+                            });
+                        } else {
+                            resolve({
+                                success: false,
+                                message: 'Failed.'
+                            });
+                        }
+                    });
+
+                    // start build
+                    builder.build(options);
+
+                    this._builderLock = false;
                 }
             });
 
-            // build finish event
-            codeBuilder.on('finished', (done) => {
-                prj.notifyUpdateSourceRefs(toolchain);
-                this.notifyUpdateOutputFolder(prj);
-                this.updateCompilerDiagsAfterBuild(prj);
-                if (options?.flashAfterBuild && done) this.UploadToDevice(prjItem);
-                this.dataProvider.updateStatusBarForActiveProjects();
-            });
-
-            // start build
-            codeBuilder.build(options);
-
-            setTimeout(() => {
-                this._buildLock = false;
-            }, 500);
+            this._builderLock = false;
+            return res;
 
         } catch (error) {
+            this._builderLock = false;
             GlobalEvent.emit('error', error);
+            return {
+                success: false,
+                message: `${ExceptionToMessage(error).type}:${ExceptionToMessage(error).content}`
+            };
         }
     }
 
@@ -4038,13 +4312,13 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             // make default order is 100
             if (buildCfg.order == undefined ||
                 buildCfg.order == null ||
-                buildCfg.order == NaN) {
+                Number.isNaN(buildCfg.order)) {
                 buildCfg.order = 100;
             }
 
             /* gen command */
             const builder = CodeBuilder.NewBuilder(project);
-            const cmdLine = builder.genBuildCommand({ not_rebuild: !rebuild }, true);
+            const cmdLine = builder.genBuildCommand({ notRebuild: !rebuild });
             if (cmdLine) {
                 buildCfg.command = cmdLine || '';
                 cmdList.push(buildCfg);
@@ -4072,56 +4346,109 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         }
     }
 
-    BuildClean(prjItem?: ProjTreeItem) {
-
-        const prj = this.getProjectByTreeItem(prjItem);
+    async cleanProject(prj?: AbstractProject, noTerminal?: boolean): Promise<{ success: boolean; message: string; }> {
 
         if (prj === undefined) {
-            GlobalEvent.emit('msg', newMessage('Warning', 'No active project !'));
-            return;
-        }
-
-        const outDir = prj.ToAbsolutePath(prj.getOutputDir());
-        if (os.platform() == 'win32') {
-            sendCommandToTerminal('clean', `cmd /E:ON /C del /S /Q "${outDir}"`);
-        } else {
-            if (outDir == '/' || outDir == userhome()) {
-                GlobalEvent.emit('msg', newMessage('Error', `Cannot delete ${outDir} !`));
-            } else {
-                sendCommandToTerminal('clean', `rm -rf -v "${outDir}"`);
+            GlobalEvent.show_msgbox('Warning', 'No active project !');
+            return {
+                success: false,
+                message: 'No active project !'
             }
         }
 
-        setTimeout(() => {
-            this.notifyUpdateOutputFolder(prj);
-        }, 1500);
+        return new Promise((resolve) => {
+
+            if (noTerminal) {
+                const outDir = prj.ToAbsolutePath(prj.getOutputDir());
+                let commandLine: string;
+                if (os.platform() == 'win32') {
+                    commandLine = `cmd /E:ON /C del /S /Q "${outDir}"`;
+                } else {
+                    if (outDir == '/' || outDir == userhome()) {
+                        resolve({
+                            success: false,
+                            message: `Cannot delete ${outDir} !`
+                        });
+                        return;
+                    } else {
+                        commandLine = `rm -rf -v "${outDir}"`;
+                    }
+                }
+                child_process.exec(commandLine, { cwd: prj.getProjectRoot().path }, (error, stdout, stderr) => {
+                    this.notifyUpdateOutputFolder(prj);
+                    if (error) {
+                        resolve({
+                            success: false,
+                            message: `Failed.\n\nError: ${error.message}\n\n${stdout.toString()}\n${stderr.toString()}`
+                        });
+                    } else {
+                        resolve({
+                            success: true,
+                            message: `Succeed.\n\n${stdout.toString()}`
+                        });
+                    }
+                });
+            } else {
+                const outDir = prj.ToAbsolutePath(prj.getOutputDir());
+                if (os.platform() == 'win32') {
+                    sendCommandToTerminal('clean', `cmd /E:ON /C del /S /Q "${outDir}"`);
+                } else {
+                    if (outDir == '/' || outDir == userhome()) {
+                        GlobalEvent.show_msgbox('Error', `Cannot delete ${outDir} !`);
+                    } else {
+                        sendCommandToTerminal('clean', `rm -rf -v "${outDir}"`);
+                    }
+                }
+                setTimeout(() => {
+                    this.notifyUpdateOutputFolder(prj);
+                    resolve({
+                        success: true,
+                        message: ''
+                    });
+                }, 1500);
+            }
+        });
     }
 
     private _uploadLock: boolean = false;
-    async UploadToDevice(prjItem?: ProjTreeItem, eraseAll?: boolean) {
-
-        const prj = this.getProjectByTreeItem(prjItem);
+    async programFlashProject(prj?: AbstractProject, eraseAll?: boolean, noTerminal?: boolean): Promise<FlashCommandResult | void> {
 
         if (prj === undefined) {
-            GlobalEvent.emit('msg', newMessage('Warning', 'No active project !'));
-            return;
+            GlobalEvent.show_msgbox('Warning', 'No active project !');
+            return {
+                success: false,
+                message: 'No active project !'
+            }
         }
 
         if (this._uploadLock) {
-            GlobalEvent.emit('msg', newMessage('Warning', 'upload busy !, please wait !'));
-            return;
+            GlobalEvent.show_msgbox('Warning', 'Busy ! Please wait.');
+            return {
+                success: false,
+                message: 'Busy ! Please wait.'
+            }
         }
 
         this._uploadLock = true;
-        const uploader = HexUploaderManager.getInstance().createUploader(prj);
 
+        let result: FlashCommandResult | void;
         try {
-            await uploader.upload(eraseAll);
+            const uploader = HexUploaderManager.getInstance().createUploader(prj);
+            if (noTerminal)
+                uploader.disableTerminal();
+            result = await uploader.upload(eraseAll);
         } catch (error) {
             GlobalEvent.emit('error', error);
+            result = {
+                success: false,
+                message: (<Error>error).message,
+                error
+            };
         }
 
         this._uploadLock = false;
+
+        return result;
     }
 
     compileSingleFile(item: ProjTreeItem) {
@@ -4427,7 +4754,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             GlobalEvent.emit('msg', newMessage('Error', 'No active project !'));
             return;
         }
-        if (this._buildLock) {
+        if (this._builderLock) {
             GlobalEvent.emit('msg', newMessage('Error', 'builder busy !, please wait !'));
             return;
         }
@@ -4551,7 +4878,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 location: vscode.ProgressLocation.Notification,
                 title: isWorkspace ? `Packing workspace` : `Packing project`,
                 cancellable: false
-            }, (progress, __): Thenable<Error | null> => {
+            }, (progress, __): Thenable<Error | void> => {
                 return new Promise(async (resolve) => {
 
                     progress.report({ message: 'zipping ...' });
@@ -4659,24 +4986,13 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             });
 
             if (folderList && folderList.length > 0) {
-
                 for (const folderUri of folderList) {
-
-                    const folderPath = folderUri.fsPath;
-                    const rePath = prj.ToRelativePath(folderPath);
-
-                    // if can't calculate repath, skip
-                    if (rePath === undefined || rePath.trim() === '') {
-                        GlobalEvent.emit('msg', newMessage('Warning', `Can't calculate relative path for '${folderPath}' !`));
+                    const res = prj.getNormalSourceManager().verify(folderUri.fsPath);
+                    if (!res.valid) {
+                        GlobalEvent.show_msgbox(`Warning`, res.message);
                         continue;
                     }
-
-                    if (rePath === '.' || rePath.split('/').every(p => p == '..')) { // ignore these folders
-                        GlobalEvent.emit('msg', newMessage('Warning', `source folder can not be '${rePath}' !`));
-                        continue;
-                    }
-
-                    prj.GetConfiguration().AddSrcDir(folderPath);
+                    prj.GetConfiguration().AddSrcDir(folderUri.fsPath);
                 }
             }
         }
@@ -5469,17 +5785,17 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 location: vscode.ProgressLocation.Notification,
                 title: 'Disassemble program',
                 cancellable: false,
-            }, async (progress): Promise<Error | undefined> => {
+            }, async (progress): Promise<Error | void> => {
                 try {
                     progress.report({ message: elfPath });
-                    await new Promise((resolve) => { setTimeout(() => resolve(), 500); });
+                    await new Promise<void>((resolve) => { setTimeout(() => resolve(), 500); });
 
                     // run
                     const cmdLine = CmdLineHandler.getCommandLine(exeFile.path, cmds, false);
                     child_process.execSync(cmdLine, { encoding: 'ascii' });
 
                     progress.report({ message: 'Done !' });
-                    await new Promise((resolve) => { setTimeout(() => resolve(), 500); });
+                    await new Promise<void>((resolve) => { setTimeout(() => resolve(), 500); });
                 } catch (error) {
                     return error;
                 }
@@ -5747,8 +6063,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
         /* prepare cppcheck */
         const cmds: string[] = [];
-        const confRootDir: File = File.fromArray([prj.ToAbsolutePath(prj.getOutputRoot()), '.cppcheck']);
-        const confFile: File = File.fromArray([confRootDir.path, 'tmp.cppcheck']);
+        const confRootDir: File = prj.getOutputFolder();
+        const confFile: File = File.from(confRootDir.path, 'tmp.cppcheck');
         confRootDir.CreateDir(true);
         let cppcheckConf: string = confTmpFile.Read();
 
@@ -5758,7 +6074,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
         const depMerge = prjConfig.GetAllMergeDep();
         const builderOpts = prjConfig.toolchainConfigModel.getOptions();
         const defMacros: string[] = ['__VSCODE_CPPTOOL']; /* it's for internal force include header */
-        let defList: string[] = defMacros.concat(depMerge.defineList);
         depMerge.incList = ArrayDelRepetition(depMerge.incList.concat(prj.getSourceIncludeList()));
         const includeList: string[] = depMerge.incList.map(p => prj.resolveEnvVar(p)).map(p => File.ToUnixPath(confRootDir.ToRelativePath(p) || p));
         const intrHeader: string[] | undefined = toolchain.getForceIncludeHeaders();
@@ -5794,9 +6109,26 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             return;
         }
 
+        const macroDefines: { name: string; value?: string; }[] = defMacros.concat(depMerge.defineList)
+            .map(item => {
+                const s = item.indexOf('=');
+                if (s !== -1) {
+                    return {
+                        name: item.substring(0, s),
+                        value: item.substring(s + 1)
+                    };
+                } else {
+                    return {
+                        name: item
+                    }
+                }
+            });
         toolchain.getInternalDefines(<any>prjConfig.config.toolchainConfig, builderOpts).forEach(d => {
             if (d.type === 'var')
-                defList.push(`${d.name}=${d.value}`);
+                macroDefines.push({
+                    name: d.name,
+                    value: d.value
+                });
         });
 
         if (toolchain.name == 'ANY_GCC' && toolchain.getToolchainPrefix) {
@@ -5807,8 +6139,6 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                 cfgList.push('std');
             }
         }
-
-        const fixedDefList = defList.map((str) => str.replace(/"/g, '&quot;'));
 
         let cppcheck_plat: string = 'unix32';
         if (is8bit) {
@@ -5824,7 +6154,8 @@ export class ProjectExplorer implements CustomConfigurationProvider {
             .replace('${platform}', cppcheck_plat)
             .replace('${lib_list}', cfgList.map((str) => `<library>${escapeXml(str)}</library>`).join(os.EOL + '\t\t'))
             .replace('${include_list}', includeList.map((str) => `<dir name="${escapeXml(str)}/"/>`).join(os.EOL + '\t\t'))
-            .replace('${macro_list}', fixedDefList.map((str) => `<define name="${escapeXml(str)}"/>`).join(os.EOL + '\t\t'))
+            .replace('${macro_list}', macroDefines.map((item) => 
+                `<define name="${item.name}" value="${escapeXml(item.value ?? '')}"/>`).join(os.EOL + '\t\t'))
             .replace('${source_list}', sourceList.map((str) => `<dir name="${escapeXml(str)}"/>`).join(os.EOL + '\t\t'));
 
         confFile.Write(cppcheckConf);
@@ -6257,7 +6588,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     // show progress message
                     //
                     progress.report({ message: `running importer ...` });
-                    await new Promise((resolve) => {
+                    await new Promise<void>((resolve) => {
                         setTimeout(() => resolve(), 500);
                     });
 
@@ -6387,7 +6718,7 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
                     prj.Save();
 
-                    await new Promise((resolve) => {
+                    await new Promise<void>((resolve) => {
                         setTimeout(() => resolve(), 1000);
                     });
 
@@ -7608,6 +7939,22 @@ export class ProjectExplorer implements CustomConfigurationProvider {
 
     private async OnTreeItemClick(item: ProjTreeItem) {
 
+        if (item.type === TreeItemType.RELOAD_YES_ITEM) {
+            const prj = this.getProjectByTreeItem(item);
+            if (prj) {
+                this.finishReloadPrompt(prj.getUid(), 'yes');
+            }
+            return;
+        }
+
+        if (item.type === TreeItemType.RELOAD_NO_ITEM) {
+            const prj = this.getProjectByTreeItem(item);
+            if (prj) {
+                this.finishReloadPrompt(prj.getUid(), 'later');
+            }
+            return;
+        }
+
         if (ProjTreeItem.isFileItem(item.type)) {
 
             const file = <File>item.val.value;
@@ -7638,6 +7985,10 @@ export class ProjectExplorer implements CustomConfigurationProvider {
                     const prj = this.getProjectByTreeItem(item);
                     if (prj)
                         WebPanelManager.instance().showSymbolTable(prj);
+                } else if (item.label == 'Callgraph View') {
+                    const prj = this.getProjectByTreeItem(item);
+                    if (prj)
+                        WebPanelManager.instance().showCallgraphView(prj);
                 } else if (item.val.isVirtualFile && vdoc.hasDocument(file.path)) {
                     const uri = vscode.Uri.parse(vdoc.getUriByPath(file.path));
                     vdoc.updateDocument(file.path);

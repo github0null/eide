@@ -1,0 +1,56 @@
+/**
+ * Maps Naive UI CSS variables to VS Code theme tokens when inline-theme-disabled is on.
+ */
+.n-config-provider,
+:root {
+  --n-bezier: cubic-bezier(0.4, 0, 0.2, 1);
+  --n-bezier-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --n-bezier-ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  --n-color: var(--vscode-editor-background, #1e1e1e);
+  --n-color-modal: var(--vscode-editorWidget-background, #252526);
+  --n-color-popover: var(--vscode-editorWidget-background, #252526);
+  --n-color-embedded: var(--vscode-editorWidget-background, #252526);
+  --n-color-embedded-modal: var(--vscode-editorWidget-background, #252526);
+  --n-color-embedded-popover: var(--vscode-editorWidget-background, #252526);
+  --n-color-target: var(--vscode-list-activeSelectionBackground, #094771);
+
+  --n-text-color: var(--vscode-editor-foreground, #d4d4d4);
+  --n-text-color-1: var(--vscode-editor-foreground, #d4d4d4);
+  --n-text-color-2: var(--vscode-descriptionForeground, #ccccccb3);
+  --n-text-color-3: var(--vscode-descriptionForeground, #cccccc80);
+  --n-text-color-disabled: var(--vscode-disabledForeground, #cccccc80);
+
+  --n-border-color: var(--vscode-editorWidget-border, #3c3c3c);
+  --n-divider-color: var(--vscode-editorWidget-border, #3c3c3c);
+
+  --n-icon-color: var(--vscode-icon-foreground, #cccccc);
+  --n-icon-color-hover: var(--vscode-foreground, #cccccc);
+  --n-icon-color-pressed: var(--vscode-foreground, #cccccc);
+  --n-icon-color-disabled: var(--vscode-disabledForeground, #cccccc80);
+
+  --n-close-color: var(--vscode-icon-foreground, #cccccc);
+  --n-close-color-hover: var(--vscode-foreground, #cccccc);
+  --n-close-color-pressed: var(--vscode-foreground, #cccccc);
+
+  --n-clear-color: var(--vscode-icon-foreground, #cccccc);
+  --n-clear-color-hover: var(--vscode-foreground, #cccccc);
+  --n-clear-color-pressed: var(--vscode-foreground, #cccccc);
+
+  --n-scrollbar-color: var(--vscode-scrollbarSlider-background, rgba(121, 121, 121, 0.4));
+  --n-scrollbar-color-hover: var(--vscode-scrollbarSlider-hoverBackground, rgba(100, 100, 100, 0.7));
+
+  --n-primary-color: var(--vscode-button-background, #0e639c);
+  --n-primary-color-hover: var(--vscode-button-hoverBackground, #1177bb);
+  --n-primary-color-pressed: var(--vscode-button-hoverBackground, #1177bb);
+  --n-primary-color-suppl: var(--vscode-button-hoverBackground, #1177bb);
+
+  --n-info-color: var(--vscode-button-background, #0e639c);
+  --n-success-color: var(--vscode-charts-green, #89d185);
+  --n-warning-color: var(--vscode-charts-orange, #cca700);
+  --n-error-color: var(--vscode-errorForeground, #f48771);
+
+  --n-placeholder-color: var(--vscode-input-placeholderForeground, #cccccc80);
+  --n-opacity-disabled: 0.5;
+  --n-font-weight-strong: 600;
+}

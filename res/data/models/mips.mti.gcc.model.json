@@ -88,6 +88,34 @@
                 "asm"
             ]
         },
+        "callgraph-info": {
+            "type": "selectable",
+            "command": {
+                "true": "-fcallgraph-info",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "asm",
+                "cpp",
+                "linker",
+                "linker-g++"
+            ]
+        },
+        "stack-usage": {
+            "type": "selectable",
+            "command": {
+                "true": "-fstack-usage",
+                "false": ""
+            },
+            "group": [
+                "c",
+                "asm",
+                "cpp",
+                "linker",
+                "linker-g++"
+            ]
+        },
         "C_FLAGS": {
             "type": "list",
             "command": "",

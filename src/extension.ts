@@ -36,6 +36,7 @@ import { ProjectExplorer, ProjTreeItem } from './EIDEProjectExplorer';
 import { ResManager } from './ResManager';
 import { LogAnalyzer } from './LogAnalyzer';
 import { ResInstaller } from './ResInstaller';
+import * as mcp from './MCPServer';
 
 import {
     ERROR, WARNING, INFORMATION,
@@ -161,14 +162,14 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // project user cmds
     subscriptions.push(vscode.commands.registerCommand('eide.project.save', (item) => projectExplorer.saveProject(item)));
-    subscriptions.push(vscode.commands.registerCommand('eide.project.rebuild', (item) => projectExplorer.BuildSolution(item)));
-    subscriptions.push(vscode.commands.registerCommand('eide.project.build', (item) => projectExplorer.BuildSolution(item, { not_rebuild: true })));
-    subscriptions.push(vscode.commands.registerCommand('eide.project.clean', (item) => projectExplorer.BuildClean(item)));
-    subscriptions.push(vscode.commands.registerCommand('eide.project.uploadToDevice', (item) => projectExplorer.UploadToDevice(item)));
+    subscriptions.push(vscode.commands.registerCommand('eide.project.rebuild', (item) => projectExplorer.buildProject(projectExplorer.getProjectByTreeItem(item))));
+    subscriptions.push(vscode.commands.registerCommand('eide.project.build', (item) => projectExplorer.buildProject(projectExplorer.getProjectByTreeItem(item), { notRebuild: true })));
+    subscriptions.push(vscode.commands.registerCommand('eide.project.clean', (item) => projectExplorer.cleanProject(projectExplorer.getProjectByTreeItem(item))));
+    subscriptions.push(vscode.commands.registerCommand('eide.project.uploadToDevice', (item) => projectExplorer.programFlashProject(projectExplorer.getProjectByTreeItem(item))));
     subscriptions.push(vscode.commands.registerCommand('eide.reinstall.binaries', () => checkAndInstallBinaries(true)));
-    subscriptions.push(vscode.commands.registerCommand('eide.project.flash.erase.all', (item) => projectExplorer.UploadToDevice(item, true)));
-    subscriptions.push(vscode.commands.registerCommand('eide.project.buildAndFlash', (item) => projectExplorer.BuildSolution(item, { not_rebuild: true, flashAfterBuild: true })));
-    subscriptions.push(vscode.commands.registerCommand('eide.project.genBuilderParams', (item) => projectExplorer.BuildSolution(item, { not_rebuild: true, onlyDumpBuilderParams: true })));
+    subscriptions.push(vscode.commands.registerCommand('eide.project.flash.erase.all', (item) => projectExplorer.programFlashProject(projectExplorer.getProjectByTreeItem(item), true)));
+    subscriptions.push(vscode.commands.registerCommand('eide.project.buildAndFlash', (item) => projectExplorer.buildProject(projectExplorer.getProjectByTreeItem(item), { notRebuild: true, flashAfterBuild: true })));
+    subscriptions.push(vscode.commands.registerCommand('eide.project.genBuilderParams', (item) => projectExplorer.buildProject(projectExplorer.getProjectByTreeItem(item), { notRebuild: true, onlyDumpBuilderParams: true })));
     subscriptions.push(vscode.commands.registerCommand('eide.open.makelibs.cfg', (item) => projectExplorer.openLibsGeneratorConfig(item)));
     subscriptions.push(vscode.commands.registerCommand('eide.project.create_sys_stubs', (projuid) => projectExplorer.createSysStubs(projuid)));
 
@@ -177,7 +178,7 @@ export async function activate(context: vscode.ExtensionContext) {
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.clearHistoryRecord', () => projectExplorer.clearAllHistoryRecords()));
 
     // project
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.showBuildParams', (item) => projectExplorer.BuildSolution(item, { onlyDumpCompilerInfo: true })));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.showBuildParams', (item) => projectExplorer.buildProject(projectExplorer.getProjectByTreeItem(item), { onlyDumpCompilerInfo: true })));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.setActive', (item) => projectExplorer.setActiveProject(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.close', (item) => projectExplorer.Close(item)));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.project.saveAll', () => projectExplorer.SaveAll()));
@@ -283,8 +284,8 @@ export async function activate(context: vscode.ExtensionContext) {
     // status bar
     //subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.switch-project', () => projectExplorer.showQuickPickAndSwitchActiveProject()));
     subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.switch-target', () => projectExplorer.switchTarget()));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.build', () => projectExplorer.BuildSolution(undefined, { not_rebuild: true })));
-    subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.flash', () => projectExplorer.UploadToDevice(undefined)));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.build', () => projectExplorer.buildProject(projectExplorer.getProjectByTreeItem(), { notRebuild: true })));
+    subscriptions.push(vscode.commands.registerCommand('_cl.eide.statusbar.flash', () => projectExplorer.programFlashProject(projectExplorer.getProjectByTreeItem())));
 
     // debug config providers
     vscode.debug.registerDebugConfigurationProvider('cortex-debug', new ExternalDebugConfigProvider('cortex-debug'),
@@ -323,10 +324,12 @@ export function deactivate() {
     ResManager.instance().onDispose();
     LogDumper.getInstance().onDispose();
     StatusBarManager.getInstance().disposeAll();
+    mcp.mcpServerStop().catch(err => GlobalEvent.log_error(err));
 }
 
 function postLaunchHook(extensionCtx: vscode.ExtensionContext) {
 
+    const settingManager = SettingManager.instance();
     const resManager = ResManager.instance();
     const appUsrData = resManager.getAppUsrData() || {};
     const isFirstLaunch = appUsrData['InstallTime'] == undefined;
@@ -341,7 +344,7 @@ function postLaunchHook(extensionCtx: vscode.ExtensionContext) {
         const timeZone = Math.floor((new Date().getTimezoneOffset() / 60) * -1);
         if (timeZone != 8) {
             // disable settings: 'EIDE.Repository.UseProxy'
-            SettingManager.GetInstance().setConfigValue('Repository.UseProxy', false);
+            settingManager.setConfigValue('Repository.UseProxy', false);
         }
     }
 
@@ -380,6 +383,18 @@ function postLaunchHook(extensionCtx: vscode.ExtensionContext) {
     // check py pkgs
     checkAndInstallBuiltPyPkgs()
         .catch(err => GlobalEvent.log_warn(err));
+
+    // MCP
+    if (settingManager.isMcpServerEnable()) {
+        const port = settingManager.getMcpServerPort();
+        try {
+            mcp.mcpServerInit(port, projectExplorer);
+            mcp.mcpServerStart(port, extensionCtx.extensionPath, extensionCtx.extension.packageJSON.version)
+                .catch(error => GlobalEvent.log_error(error));
+        } catch (error) {
+            GlobalEvent.log_error(error);
+        }
+    }
 }
 
 //////////////////////////////////////////////////
@@ -400,7 +415,7 @@ async function checkAndInstallBuiltPyPkgs() {
         ? NodePath.join(NodePath.dirname(py3), 'Lib', 'site-packages', 'memap')
         : NodePath.join(resManager.getLegacyBuilderDir().path, 'utils', 'memap');
     if (File.IsDir(memapPath)) {
-        const patchVer = 1;
+        const patchVer = 2;
         const patchFile = File.from(memapPath, '.patch');
         let curVer = -1;
         if (patchFile.IsFile())
@@ -1648,7 +1663,7 @@ interface MapViewRef {
 
     uid: string;
 
-    vscWebview: vscode.Webview;
+    vscWebview?: vscode.Webview;
 
     title: string;
 
@@ -1850,10 +1865,11 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
                                 .execFileSync(py3, ['-m', 'memap', '-t', memapTyp, '-d', vInfo.treeDepth.toString(), vInfo.mapPath])
                                 .toString().split(/\r\n|\n/);
                         } else {
-                            const memapRoot = ResManager.GetInstance().getLegacyBuilderDir().path + File.sep + 'utils';
-                            const command = `python memap -t ${memapTyp} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`;
+                            // PYTHONPATH="/home/xxx/.eide/bin/builder/utils/memap" python -m memap -t GCC_ARM -d 100 "/home/xxx/build/Debug/stm32f1xx_gcc.map"
+                            const memapPkgDir = File.from(ResManager.GetInstance().getLegacyBuilderDir().path, 'utils', 'memap');
+                            const command = `PYTHONPATH="${memapPkgDir.path}" python -m memap -t ${memapTyp} -d ${vInfo.treeDepth} "${vInfo.mapPath}"`;
                             lines = ChildProcess
-                                .execSync(command, { cwd: memapRoot })
+                                .execSync(command, { cwd: memapPkgDir.dir })
                                 .toString().split(/\r\n|\n/);
                         }
                     }
@@ -1874,13 +1890,17 @@ class MapViewEditorProvider implements vscode.CustomTextEditorProvider {
                         }
                     }
 
-                    vInfo.vscWebview.options = {
-			            enableScripts: true
-		            };
-                    vInfo.vscWebview.html = this.genMapViewHtml(vInfo.vscWebview, vInfo.title, lines.join('\n'));
+                    if (vInfo.vscWebview) {
+                        vInfo.vscWebview.options = {
+                            enableScripts: true
+                        };
+                        vInfo.vscWebview.html = this.genMapViewHtml(vInfo.vscWebview, vInfo.title, lines.join('\n'));
+                    }
 
                 } catch (error) {
-                    vInfo.vscWebview.html = this.genErrorHtml(vInfo.title, `<span class="error">Parse error</span>: \r\n${error.message}`);
+                    if (vInfo.vscWebview)
+                        vInfo.vscWebview.html = this.genErrorHtml(
+                            vInfo.title, `<span class="error">Parse error</span>: \r\n${error.message}`);
                 }
             }
         });

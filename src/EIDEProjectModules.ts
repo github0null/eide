@@ -286,7 +286,7 @@ export abstract class ConfigModel<DataType> {
                         case 'INPUT_INTEGER':
                             if (val) {
                                 const num = parseInt(val.trim());
-                                if (num !== NaN) {
+                                if (!Number.isNaN(num)) {
                                     this.SetKeyValue(key, num);
                                 }
                             }

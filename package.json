@@ -36,10 +36,10 @@
     "homepage": "https://em-ide.com",
     "license": "MIT",
     "description": "A mcu development environment for 8051/AVR/STM8/Cortex-M/MIPS/RISC-V",
-    "version": "3.26.9",
+    "version": "3.27.0",
     "preview": false,
     "engines": {
-        "vscode": "^1.67.0"
+        "vscode": "^1.89.0"
     },
     "categories": [
         "Programming Languages",
@@ -72,31 +72,36 @@
         "webpack": "webpack --mode development",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
-        "test": "npm run compile && node ./node_modules/vscode/bin/test"
+        "test": "npm run compile && node ./node_modules/vscode/bin/test",
+        "build:callgraph-view": "npm --prefix src/html/callgraph_view run build"
     },
     "devDependencies": {
         "@babel/core": "^7.24.7",
         "@babel/plugin-proposal-nullish-coalescing-operator": "^7.18.6",
         "@babel/preset-env": "^7.24.7",
+        "@types/cors": "^2.8.6",
         "@types/ftp": "^0.3.31",
         "@types/iconv-lite": "0.0.1",
         "@types/ini": "^1.3.30",
         "@types/micromatch": "^4.0.2",
         "@types/mocha": "^5.2.7",
-        "@types/node": "^12.12.17",
+        "@types/mock-require": "^3.0.0",
+        "@types/node": "^18.18.2",
         "@types/node-7z": "^2.1.4",
-        "@types/vscode": "1.67.0",
+        "@types/vscode": "^1.89.0",
         "@types/x2js": "^3.1.0",
         "@types/xml2js": "^0.4.11",
         "babel-loader": "^8.3.0",
-        "ts-loader": "^6.2.1",
-        "tslint": "^5.20.1",
-        "typescript": "^3.7.3",
+        "mock-require": "^3.0.3",
+        "ts-loader": "^9.5.1",
+        "typescript": "^5.8.2",
         "webpack": "^5.93.0",
         "webpack-cli": "^5.1.4"
     },
     "dependencies": {
         "@clangd/vscode-clangd": "^0.0.0",
+        "@modelcontextprotocol/sdk": "^1.29.0",
+        "ajv": "^8.20.0",
         "iconv-lite": "^0.5.0",
         "ini": "^2.0.0",
         "jsonc": "^2.0.0",
@@ -109,7 +114,8 @@
         "x2js": "^3.4.1",
         "xml-formatter": "^2.6.1",
         "xml2js": "^0.6.2",
-        "yaml": "2.8.1"
+        "yaml": "2.8.1",
+        "zod": "^4.4.3"
     },
     "contributes": {
         "terminal": {
@@ -184,6 +190,18 @@
             {
                 "title": "Embedded IDE",
                 "properties": {
+                    "EIDE.MCP.Server.Enable": {
+                        "type": "boolean",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.mcp.server.enable%",
+                        "default": false
+                    },
+                    "EIDE.MCP.Server.Port": {
+                        "type": "number",
+                        "scope": "resource",
+                        "markdownDescription": "%settings.mcp.server.port%",
+                        "default": 8940
+                    },
                     "EIDE.Win32.Msys.Enable": {
                         "type": "boolean",
                         "scope": "resource",
@@ -542,6 +560,7 @@
                 "command": "eide.debug.start",
                 "category": "eide",
                 "title": "%eide.project.debug.start%",
+                "enablement": "cl.eide.projectActived && !cl.eide.reloadPending",
                 "icon": {
                     "dark": "./res/icon/Run_16x.svg",
                     "light": "./res/icon/Run_16x.svg"
@@ -551,6 +570,7 @@
                 "command": "eide.debug.start.attach",
                 "category": "eide",
                 "title": "%eide.project.debug.start.attach%",
+                "enablement": "cl.eide.projectActived && !cl.eide.reloadPending",
                 "icon": {
                     "dark": "./res/icon/Run_blue_16x.svg",
                     "light": "./res/icon/Run_blue_16x.svg"
@@ -585,6 +605,7 @@
                 "command": "eide.project.build",
                 "category": "eide",
                 "title": "%eide.project.build%",
+                "enablement": "cl.eide.projectActived && !cl.eide.reloadPending",
                 "icon": {
                     "dark": "./res/icon/BuildSelection_16x.svg",
                     "light": "./res/icon/BuildSelection_16x.svg"
@@ -594,6 +615,7 @@
                 "command": "eide.project.rebuild",
                 "category": "eide",
                 "title": "%eide.project.rebuild%",
+                "enablement": "cl.eide.projectActived && !cl.eide.reloadPending",
                 "icon": {
                     "dark": "./res/icon/BuildSolution_16x.svg",
                     "light": "./res/icon/BuildSolution_16x.svg"
@@ -603,6 +625,7 @@
                 "command": "eide.project.clean",
                 "category": "eide",
                 "title": "%eide.project.clean%",
+                "enablement": "cl.eide.projectActived && !cl.eide.reloadPending",
                 "icon": {
                     "dark": "./res/icon/clean_dark_16x.svg",
                     "light": "./res/icon/clean_light_16x.svg"
@@ -612,6 +635,7 @@
                 "command": "eide.project.uploadToDevice",
                 "title": "%eide.project.upload%",
                 "category": "eide",
+                "enablement": "cl.eide.projectActived && !cl.eide.reloadPending",
                 "icon": {
                     "dark": "./res/icon/TransferDownload_16x.svg",
                     "light": "./res/icon/TransferDownload_16x.svg"
@@ -686,6 +710,7 @@
             {
                 "command": "_cl.eide.workspace.build",
                 "title": "%eide.workspace.build%",
+                "enablement": "!cl.eide.reloadPending",
                 "icon": {
                     "dark": "./res/icon/BuildSelection_16x.svg",
                     "light": "./res/icon/BuildSelection_16x.svg"
@@ -694,6 +719,7 @@
             {
                 "command": "_cl.eide.workspace.rebuild",
                 "title": "%eide.workspace.rebuild%",
+                "enablement": "!cl.eide.reloadPending",
                 "icon": {
                     "dark": "./res/icon/BuildSolution_16x.svg",
                     "light": "./res/icon/BuildSolution_16x.svg"
@@ -838,6 +864,7 @@
             {
                 "command": "_cl.eide.project.saveAll",
                 "title": "%eide.project.save.all%",
+                "enablement": "!cl.eide.reloadPending",
                 "icon": {
                     "dark": "./res/icon/SaveAll_16x.svg",
                     "light": "./res/icon/SaveAll_16x.svg"
@@ -1151,22 +1178,22 @@
             {
                 "command": "eide.project.flash.erase.all",
                 "key": "ctrl+alt+e",
-                "when": "cl.eide.projectActived"
+                "when": "cl.eide.projectActived && !cl.eide.reloadPending"
             },
             {
                 "command": "eide.project.uploadToDevice",
                 "key": "ctrl+alt+d",
-                "when": "cl.eide.projectActived"
+                "when": "cl.eide.projectActived && !cl.eide.reloadPending"
             },
             {
                 "command": "eide.project.rebuild",
                 "key": "ctrl+alt+f7",
-                "when": "cl.eide.projectActived"
+                "when": "cl.eide.projectActived && !cl.eide.reloadPending"
             },
             {
                 "command": "eide.project.build",
                 "key": "f7",
-                "when": "cl.eide.projectActived && !isInDiffEditor"
+                "when": "cl.eide.projectActived && !isInDiffEditor && !cl.eide.reloadPending"
             },
             {
                 "command": "_cl.eide.project.static-check.cppcheck",

@@ -78,6 +78,27 @@ export const DEBUGGER_MAPS: { [id: string]: debuggerInfo } = {
     },
 };
 
+export function checkGccFFlag(cmdline: string, fname: string): boolean {
+    let idx = cmdline.indexOf(`-f${fname}`);
+    if (idx !== -1) {
+        let nidx = cmdline.indexOf(`-fno-${fname}`);
+        if (nidx !== -1 && nidx > idx) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+    return false;
+};
+
+export function reverseStringMap(original: Map<string, string>): Map<string, string> {
+    const revMap = new Map<string, string>();
+    for (const [key, value] of Object.entries(original)) {
+        revMap.set(value, key);
+    }
+    return revMap;
+}
+
 /**
  * It's a symbol demangler that can be used as a replacement for the GNU c++filt tool. 
  * It takes a series of symbol names and prints their demangled form on the standard output stream. 

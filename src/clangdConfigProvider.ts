@@ -140,24 +140,38 @@ export async function onRegisterClangdProvider(prj: AbstractProject) {
             cfg['CompileFlags']['CompilationDatabase'] = './' + File.ToUnixPath(prj.getOutputDir());
             const toolchain = prj.getToolchain();
             const gccLikePath = toolchain.getGccFamilyCompilerPathForCpptools('c');
+            const sysIncPrefix = '-isystem'; // 用 -isystem 引入系统头文件
             if (gccLikePath) { // clangd 仅兼容gcc的编译器
                 cfg['CompileFlags']['Compiler'] = gccLikePath;
                 let clangdCompileFlags = <string[]>(cfg['CompileFlags']['Add']);
                 let compilerArgs = prj.getCpptoolsConfig().cppCompilerArgs;
+                // 用 -isystem 引入系统头文件，避免 clangd 对系统头进行诊断；
+                // 兼容历史遗留的 -I 入口，便于切换工具链时清理旧路径。
+                const stripIncludePrefix = (s: string): string | undefined => {
+                    if (s.startsWith(sysIncPrefix)) return s.substring(sysIncPrefix.length);
+                    if (s.startsWith('-I')) return s.substring(2);
+                    return undefined;
+                };
                 if (isGccFamilyToolchain(toolchain.name)) {
                     const tRoot = toolchain.getToolchainDir().path;
-                    clangdCompileFlags = clangdCompileFlags.filter(p => !File.isSubPathOf(tRoot, p.substr(2)));
+                    // 移除旧的系统头路径
+                    clangdCompileFlags = clangdCompileFlags.filter(p => {
+                        const incPath = stripIncludePrefix(p);
+                        // 保留非 include 路径相关的 flag
+                        if (incPath === undefined) return true;
+                        // 移除工具链目录下的 include 路径（系统头路径）
+                        return !File.isSubPathOf(tRoot, incPath);
+                    });
                     let li = getGccSystemSearchList(File.ToLocalPath(gccLikePath), ['-xc++'].concat(compilerArgs || []));
                     if (li) {
-                        li.forEach(p => {
-                            clangdCompileFlags.push(`-I${File.normalize(p)}`);
-                        });
+                        // 重新添加系统头路径。使用 -isystem 前缀，避免 clangd 对系统头进行诊断
+                        li.forEach(p => { clangdCompileFlags.push(sysIncPrefix + File.normalize(p)); });
                     }
                 } else if (toolchain.name == 'LLVM_ARM') {
                     // nothing todo. This is llvm.
                 } else {
-                    clangdCompileFlags.push(`-I${toolchain.getToolchainDir().path}/include`);
-                    clangdCompileFlags.push(`-I${toolchain.getToolchainDir().path}/include/libcxx`);
+                    clangdCompileFlags.push(`${sysIncPrefix}${toolchain.getToolchainDir().path}/include`);
+                    clangdCompileFlags.push(`${sysIncPrefix}${toolchain.getToolchainDir().path}/include/libcxx`);
                 }
                 // // add flags
                 // if (compilerArgs)
@@ -175,12 +189,45 @@ export async function onRegisterClangdProvider(prj: AbstractProject) {
             else if (toolchain.name == 'AC5' || toolchain.name == 'SDCC' || toolchain.name == 'GNU_SDCC_MCS51') {
                 const builderOpts = prj.getBuilderOptions();
                 const prjConfig = prj.GetConfiguration();
-                const compilerFlags: string[] = cfg['CompileFlags']['Add'] || [];
+                let compilerFlags: string[] = cfg['CompileFlags']['Add'] ?? [];
+                // 删除旧版本错误使用了引号的 flag
+                const flagPrefixesToRemove = ['-I"', '-D"'];
+                compilerFlags = compilerFlags.filter(f => {
+                    for (const prefix of flagPrefixesToRemove) {
+                        if (f.startsWith(prefix) && f.endsWith('"')) {
+                            return false;
+                        }
+                    }
+                    return true;
+                });
+                // 重新添加系统头路径和预定义宏
                 toolchain.getSystemIncludeList(builderOpts)
-                    .forEach(p => compilerFlags.push(`-I"${p}"`));
+                    .forEach(p => compilerFlags.push(sysIncPrefix + p));
                 toolchain.getInternalDefines(<any>prjConfig.config.toolchainConfig, builderOpts)
-                    .forEach(d => compilerFlags.push(`-D"${d.name}=${d.value}"`));
+                    .forEach(d => compilerFlags.push(`-D${d.name}=${d.value}`));
+                // 移除错误数量限制，避免 fatal_too_many_errors 错误
+                compilerFlags.push("-ferror-limit=0");
                 cfg['CompileFlags']['Add'] = ArrayDelRepetition(compilerFlags);
+                // 移除 AC5 的专有参数，避免 clang 报错
+                let removeFlags = <string[]>cfg['CompileFlags']['Remove'] ?? [];
+                removeFlags = removeFlags.concat([
+                    "--cpu",
+                    "--li",
+                    "--c99",
+                    "--split_sections",
+                    "--diag_suppress=*",
+                    "--no_depend_system_headers",
+                    "--depend",
+                    "--strict",
+                    "--enum_is_int",
+                    "--gnu",
+                    "--apcs=*",
+                    "--signed_chars",
+                    "--split_ldm",
+                    "--execute_only",
+                    "-Otime",
+                ]);
+                cfg['CompileFlags']['Remove'] = ArrayDelRepetition(removeFlags);
                 // 禁用所有诊断错误，因为 clangd 不支持这些编译器
                 cfg['Diagnostics'] = { 'Suppress': '*' }
             }

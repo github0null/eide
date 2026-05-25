@@ -28,6 +28,7 @@ import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as NodePath from 'path';
 import { jsonc } from 'jsonc';
+import * as jsonc_parser from 'jsonc-parser';
 import * as child_process from 'child_process';
 import * as yaml from "yaml";
 
@@ -510,11 +511,11 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         this.watcher.OnRename = _cb;
     }
 
-    static parseProjectFile<T>(input: string): ProjectConfigData<T> {
+    static parseProjectFile<T extends BuilderConfigData>(input: string): ProjectConfigData<T> {
         return yaml.parse(input);
     }
 
-    static dumpProjectFile<T>(obj: ProjectConfigData<T>): string {
+    static dumpProjectFile<T extends BuilderConfigData>(obj: ProjectConfigData<T>): string {
         const keyOrder = [
             'version',
             'name',
@@ -543,7 +544,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
                 } else {
                     return i_a - i_b;
                 }
-            } 
+            }
         });
     }
 
@@ -746,6 +747,28 @@ export class ProjectConfiguration<T extends BuilderConfigData>
             default:
                 throw new Error(`not support this project type: '${type}'`);
         }
+    }
+
+    getDefaultTargetInfo(): ProjectTargetInfo {
+        return {
+            excludeList: [],
+            toolchain: this.config.toolchain,
+            toolchainConfig: {},
+            toolchainConfigMap: {},
+            uploader: this.config.uploader,
+            uploadConfig: {},
+            uploadConfigMap: {},
+            cppPreprocessAttrs: {
+                name: 'default',
+                incList: [],
+                libList: [],
+                defineList: []
+            },
+            builderOptions: {},
+            settings: {
+                debugger: this.config.type === 'C51' ? 'unknown' : 'cortex-debug'
+            }
+        };
     }
 
     setHexUploader(uploader: HexUploaderType) {
@@ -1345,18 +1368,19 @@ export class ProjectConfiguration<T extends BuilderConfigData>
     cloneCurrentTarget(): ProjectTargetInfo {
 
         const target = this.config;
+        const defTarget = this.getDefaultTargetInfo();
 
         const custom_dep = <Dependence>utility.deepCloneObject(this.CustomDep_getDependence());
         custom_dep.incList = custom_dep.incList.map((path) => this.toRelativePath(path));
         custom_dep.libList = custom_dep.libList.map((path) => this.toRelativePath(path));
 
-        let builderOpts: any = {};
+        let builderOpts = defTarget.builderOptions;
         if (target.targets[target.mode] &&
             target.targets[target.mode].builderOptions !== undefined) {
             builderOpts = utility.deepCloneObject(target.targets[target.mode].builderOptions);
         }
 
-        let settings: any = {};
+        let settings = defTarget.settings;
         if (target.targets[target.mode] &&
             target.targets[target.mode].settings) {
             settings = utility.deepCloneObject(target.targets[target.mode].settings);
@@ -1530,25 +1554,7 @@ export class ProjectConfiguration<T extends BuilderConfigData>
         }
 
         // init targets default value
-        const defTargetInfo: ProjectTargetInfo = {
-            excludeList: [],
-            toolchain: this.config.toolchain,
-            toolchainConfig: {},
-            toolchainConfigMap: {},
-            uploader: this.config.uploader,
-            uploadConfig: {},
-            uploadConfigMap: {},
-            cppPreprocessAttrs: {
-                name: 'default',
-                incList: [],
-                libList: [],
-                defineList: []
-            },
-            builderOptions: {},
-            settings: {
-                debugger: this.config.type === 'C51' ? 'unknown' : 'cortex-debug'
-            }
-        };
+        const defTargetInfo: ProjectTargetInfo = this.getDefaultTargetInfo();
         for (const name in this.config.targets) {
             const target = this.config.targets[name];
             for (const key in defTargetInfo) {
@@ -1642,13 +1648,22 @@ export class WorkspaceConfiguration extends Configuration<WorkspaceConfig> {
 
     protected parse(jsonStr: string): WorkspaceConfig {
         try {
-            const obj = <any>jsonc.parse(jsonStr);
+            const errors: jsonc_parser.ParseError[] = [];
+            const obj = <any>jsonc_parser.parse(jsonStr, errors, { allowTrailingComma: true });
+            if (errors.length > 0 || obj == undefined) {
+                throw new Error(
+                    errors.map(e => `${jsonc_parser.printParseErrorCode(e.error)} at offset ${e.offset}`)
+                        .join('; ')
+                    || 'invalid workspace config'
+                );
+            }
             this.isLoadFailed = false;
             return obj;
         } catch (error) {
             GlobalEvent.log_error(error);
-            GlobalEvent.emit('msg', newMessage('Warning', 
-                view_str$prompt$loadws_cfg_failed.replace('{}', this.FILE_NAME)));
+            GlobalEvent.emit('msg', newMessage(
+                'Warning', view_str$prompt$loadws_cfg_failed.replace('{}', this.FILE_NAME)
+            ));
             this.isLoadFailed = true;
             return this.GetDefault();
         }

@@ -62,7 +62,7 @@ import { view_str$gen_sct_failed } from './StringTable';
 
 export interface BuildOptions {
 
-    not_rebuild?: boolean; // true: 增量编译，false: 重新编译所有
+    notRebuild?: boolean; // true: 增量编译，false: 重新编译所有
 
     flashAfterBuild?: boolean;
 
@@ -123,13 +123,13 @@ export abstract class CodeBuilder {
     }
 
     on(event: 'launched', listener: () => void): void;
-    on(event: 'finished', listener: (done?: boolean) => void): void;
+    on(event: 'finished', listener: (done: boolean) => void): void;
     on(event: any, listener: (arg: any) => void): void {
         this._event.on(event, listener);
     }
 
     private emit(event: 'launched'): void;
-    private emit(event: 'finished', done?: boolean): void;
+    private emit(event: 'finished', done: boolean): void;
     private emit(event: any, arg?: any): void {
         this._event.emit(event, arg);
     }
@@ -350,10 +350,10 @@ export abstract class CodeBuilder {
         this.emit('launched');
     }
 
-    genBuildCommand(options?: BuildOptions, disPowershell?: boolean): string | undefined {
+    genBuildCommand(options?: BuildOptions): string | undefined {
 
         // setup build mode
-        this.useFastCompile = options?.not_rebuild;
+        this.useFastCompile = options?.notRebuild;
         this.onlyDumpCompilerInfo = options?.onlyDumpCompilerInfo;
         this.otherArgs = options?.otherArgs;
 
@@ -454,6 +454,8 @@ export abstract class CodeBuilder {
         // select linker driver for gcc family toolchain
         if (toolchain.categoryName.toLowerCase() == 'gcc' && 
             toolchain.name != 'ANY_GCC') {
+            if (builderOptions.options.linker === undefined)
+                builderOptions.options.linker = {};
             let tool = builderOptions.options?.linker['$toolName'];
             // we need to detect source files type ?
             if (tool == 'auto' || tool == undefined || tool == null) {

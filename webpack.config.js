@@ -6,10 +6,13 @@ const path = require('path');
 
 const config = {
     target: 'node',
-    entry: './src/extension.ts',
+    entry: {
+        extension: './src/extension.ts',
+        mcp_server: './src/mcp/mcp_server.ts'
+    },
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: 'extension.js',
+        filename: '[name].js',
         libraryTarget: 'commonjs2',
         devtoolModuleFilenameTemplate: '../[resource-path]'
     },
@@ -17,12 +20,9 @@ const config = {
     externals: {
         vscode: 'commonjs vscode',
         x2js: 'x2js',
-        iconv_lite: 'iconv-lite',
         jsonc: 'jsonc',
-        ini: 'ini',
-        yaml: 'yaml',
-        unzipper: 'unzipper',
-        jsonc_parser: 'jsonc-parser'
+        'iconv-lite': 'iconv-lite',
+        '@modelcontextprotocol/sdk': '@modelcontextprotocol/sdk'
     },
     resolve: {
         // support reading TypeScript and JavaScript files, 📖 -> https://github.com/TypeStrong/ts-loader

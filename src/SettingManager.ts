@@ -35,7 +35,7 @@ import * as Utility from './utility';
 import { find, exeSuffix, userhome, osType } from './Platform';
 import { WorkspaceManager } from './WorkspaceManager';
 import { ToolchainName } from './ToolchainManager';
-import { view_str$prompt$needReloadToUpdateEnv, WARNING } from './StringTable';
+import { view_str$prompt$needReloadToUpdateEnv, WARNING, view_str$prompt$needReload } from './StringTable';
 import { xpackRequireDevTools } from './XpackDevTools';
 
 export enum CheckStatus {
@@ -121,6 +121,10 @@ export class SettingManager {
 
                     if (e.affectsConfiguration('EIDE.Win32.Msys.Enable')) {
                         Utility.notifyReloadWindow(view_str$prompt$needReloadToUpdateEnv);
+                    }
+
+                    if (e.affectsConfiguration('EIDE.MCP.Server.Enable')) {
+                        Utility.notifyReloadWindow(view_str$prompt$needReload);
                     }
 
                     //! 暂时弃用 ccache
@@ -216,7 +220,17 @@ export class SettingManager {
         await vscode.commands.executeCommand('workbench.action.openSettings', name);
     }
 
-    // --- source tree
+    //------------------------- MCP --------------------------
+
+    isMcpServerEnable(): boolean {
+        return this.getConfiguration().get<boolean>('MCP.Server.Enable') || false;
+    }
+
+    getMcpServerPort(): number {
+        return this.getConfiguration().get<number>('MCP.Server.Port') || 8940;
+    }
+
+    //------------------------- source tree --------------------------
 
     isAutoSearchIncludePath(): boolean {
         return this.getConfiguration().get<boolean>('SourceTree.AutoSearchIncludePath') || false;

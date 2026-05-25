@@ -144,6 +144,16 @@
                         "enable with dwarf-5"
                     ]
                 },
+                "callgraph-info": {
+                    "markdownDescription": "Enable callgraph information (-fcallgraph-info)",
+                    "description.zh-cn": "生成调用图信息(-fcallgraph-info)",
+                    "type": "boolean"
+                },
+                "stack-usage": {
+                    "markdownDescription": "Enable stack usage information (-fstack-usage)",
+                    "description.zh-cn": "生成堆栈统计信息(-fstack-usage)",
+                    "type": "boolean"
+                },
                 "$float-abi-type": {
                     "markdownDescription": "Hardware floating-point ABI",
                     "description.zh-cn": "硬件浮点 ABI",

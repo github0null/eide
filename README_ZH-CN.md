@@ -37,6 +37,8 @@
 * 内置多种实用工具，`CMSIS Config Wizard UI`, `反汇编查看`，`程序资源视图` ...
 * 内置 C/C++ 插件的 `C/C++ IntelliSense Provider`，**无需配置** `c_cpp_properties.json` 即可获得源码跳转，补全提示功能。
 * 内置 Msys Unix Shell 环境，方便执行 shell 命令或脚本
+* 内置 Callgraph 调用图可视化工具（仅限gcc编译器）
+* 支持 MCP Tools 调用内置插件的基本功能（需在设置中开启MCP服务器，默认关闭）. [Skills](https://gist.github.com/github0null/5c08fb61bb4a705f1dc9b03dcb980f93)
 
 ***
 
@@ -77,10 +79,10 @@
 你可以自行构建该扩展
 
 > [!IMPORTANT]  
-> 由于这个扩展有一些历史原因，因此要求的 node 版本是 16。
+> 由于这个扩展有一些历史原因，因此要求的 node 版本是 18。
 
-1. 安装 `NodeJS 16`（建议版本：v16.20.2）；推荐使用 nvm 工具管理 NodeJS 版本
-   安装 `vsce`; 执行：`npm install -g cheerio@1.0.0-rc.9 vsce@2.15.0`
+1. 安装 `NodeJS 18`（建议版本：v18.18.2）；推荐使用 nvm 工具管理 NodeJS 版本
+   安装 `vsce`; 执行：`npm install -g cheerio@1.0.0-rc.9 @vscode/vsce@2.15.0`
 
 2. 克隆该仓库，用 VSCode 打开该项目，并执行如下命令
 
@@ -95,7 +97,7 @@
    - 使用 `build vsix` 构建并打包成 VSIX
 
 > [!NOTE]  
-> 注意：VSCode 打开工程源码可能会语法报错，这是由于这个项目使用了较老版本的 TypeScript，请按下 `Ctrl+Shift+P` 执行 `TypeScript: Select TypeScript Version...` 选择工作区中的版本 `v3.9.x`.
+> 注意：VSCode 打开工程源码可能会语法报错，这是由于这个项目使用了较老版本的 TypeScript，请按下 `Ctrl+Shift+P` 执行 `TypeScript: Select TypeScript Version...` 选择工作区中的版本 `v5.8.2`.
 
 ## 贡献指南
 

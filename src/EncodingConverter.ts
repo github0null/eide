@@ -40,22 +40,21 @@ export class EncodingConverter {
 
     static trimUtf8BomHeader(str: string | Buffer): string {
 
-        if (str instanceof Buffer) {
+        if (Buffer.isBuffer(str)) {
             if (str[0] == 0xef &&
                 str[1] == 0xbb &&
                 str[2] == 0xbf) {
                 str = str.subarray(3);
             }
             return str.toString();
+        } else {
+            if (str.charCodeAt(0) == 0xef &&
+                str.charCodeAt(1) == 0xbb &&
+                str.charCodeAt(2) == 0xbf) {
+                return str.substr(3);
+            }
+            return str;
         }
-
-        if (str.charCodeAt(0) == 0xef &&
-            str.charCodeAt(1) == 0xbb &&
-            str.charCodeAt(2) == 0xbf) {
-            return str.substr(3);
-        }
-
-        return str;
     }
 
     private static getCodeType(bomHead: Buffer): EncodingType {

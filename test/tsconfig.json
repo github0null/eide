@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es2018",
+        "outDir": "../out/tmp",
+        "rootDir": "..",
+        "strict": true,
+        "types": ["node"],
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+		"useUnknownInCatchVariables": false,
+    },
+    "include": [
+        "../src/GccCallgraphParser.ts",
+        "../src/GccStackUsageParser.ts",
+        "scripts/**/*.ts"
+    ]
+}
