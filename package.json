@@ -76,7 +76,7 @@
         "build:callgraph-view": "npm --prefix src/html/callgraph_view run build"
     },
     "devDependencies": {
-        "@babel/core": "^7.24.7",
+        "@babel/core": "^7.29.6",
         "@babel/plugin-proposal-nullish-coalescing-operator": "^7.18.6",
         "@babel/preset-env": "^7.24.7",
         "@types/cors": "^2.8.6",
